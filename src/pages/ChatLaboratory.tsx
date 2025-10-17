@@ -1489,63 +1489,51 @@ const ChatLaboratory = () => {
 
           {/* Controlli Audio e Toggle BarChat - Prima dell'input */}
           {!isMobile && (
-            <div className="mb-2 space-y-3">
-              {/* 🎤 MICROFONO DESKTOP (Bar Mode) */}
+            <div className="mb-2 flex items-center gap-4">
+              {/* Controlli Audio a sinistra (solo in Bar Mode) */}
               {isBarMode && (
-                <div className="border border-border/40 rounded-lg p-3 bg-muted/10">
-                  <div className="mb-2">
-                    <h4 className="text-xs font-semibold text-primary">
-                      🎤 MICROFONO DESKTOP (Bar Mode)
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      ⚠️ Questo microfono è DIVERSO da quello sulla destra e dai microfoni sotto
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    {/* Dropdown Modalità Conversazione */}
-                    <select
-                      value={conversationMode}
-                      onChange={(e) => setConversationMode(e.target.value as 'ptt' | 'continuous')}
-                      className="px-3 py-2 bg-background border border-input rounded-md text-sm h-10"
-                      title="Seleziona modalità conversazione"
-                    >
-                      <option value="ptt">🎤 Push-to-Talk</option>
-                      <option value="continuous">🔴 Live Continua</option>
-                    </select>
+                <div className="flex items-center gap-3">
+                  {/* Dropdown Modalità Conversazione */}
+                  <select
+                    value={conversationMode}
+                    onChange={(e) => setConversationMode(e.target.value as 'ptt' | 'continuous')}
+                    className="px-3 py-2 bg-background border border-input rounded-md text-sm h-10"
+                    title="Seleziona modalità conversazione"
+                  >
+                    <option value="ptt">🎤 Push-to-Talk</option>
+                    <option value="continuous">🔴 Live Continua</option>
+                  </select>
 
-                    {/* Microfono Push-to-Talk */}
-                    {conversationMode === 'ptt' && (
-                      <BarVoiceRecorder
-                        conversationId={currentConversationId}
-                        onTranscriptionComplete={(text) => {
-                          if (text.trim()) {
-                            handleSubmit({ preventDefault: () => {} } as any, text);
-                          }
-                        }}
-                        isDisabled={isAISpeaking}
-                      />
-                    )}
-
-                    {/* Microfono Conversazione Continua */}
-                    {conversationMode === 'continuous' && (
-                      <div className="text-xs text-muted-foreground px-3 py-2 bg-muted/20 rounded-md border border-border/40">
-                        🔴 Modalità Live attiva
-                      </div>
-                    )}
-
-                    <InterruptButton
-                      isAISpeaking={isAISpeaking}
-                      onInterrupt={() => {
-                        console.log('🛑 Interruzione audio AI richiesta');
-                        setIsAISpeaking(false);
+                  {/* Microfono Push-to-Talk */}
+                  {conversationMode === 'ptt' && (
+                    <BarVoiceRecorder
+                      conversationId={currentConversationId}
+                      onTranscriptionComplete={(text) => {
+                        if (text.trim()) {
+                          handleSubmit({ preventDefault: () => {} } as any, text);
+                        }
                       }}
+                      isDisabled={isAISpeaking}
                     />
-                  </div>
+                  )}
+
+                  {/* Microfono Conversazione Continua */}
+                  {conversationMode === 'continuous' && (
+                    <div className="text-xs text-muted-foreground px-3 py-2 bg-muted/20 rounded-md border border-border/40">
+                      🔴 Modalità Live attiva
+                    </div>
+                  )}
+
+                  <InterruptButton
+                    isAISpeaking={isAISpeaking}
+                    onInterrupt={() => {
+                      console.log('🛑 Interruzione audio AI richiesta');
+                      setIsAISpeaking(false);
+                    }}
+                  />
                 </div>
               )}
               
-              {/* Toggle e 4 bottoni */}
               <div className="flex flex-col items-center gap-1.5">
                 {/* Toggle BarChat */}
                 <BarModeToggle

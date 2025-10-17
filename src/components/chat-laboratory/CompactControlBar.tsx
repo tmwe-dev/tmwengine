@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge';
 import { DynamicTabs, TabItem } from '@/components/design-system';
 import { InterruptButton } from './InterruptButton';
 import { BarModeToggle } from './BarModeToggle';
@@ -25,6 +26,8 @@ interface CompactControlBarProps {
   onTranscriptionComplete: (text: string) => void;
   className?: string;
   position?: 'top' | 'bottom';
+  isAutoFollowEnabled?: boolean;
+  onAutoFollowChange?: (enabled: boolean) => void;
 }
 
 export const CompactControlBar = ({
@@ -35,7 +38,9 @@ export const CompactControlBar = ({
   onInterrupt,
   onTranscriptionComplete,
   className,
-  position = 'bottom'
+  position = 'bottom',
+  isAutoFollowEnabled = true,
+  onAutoFollowChange
 }: CompactControlBarProps) => {
   const [isPaused, setIsPaused] = useState(false);
   const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
@@ -325,7 +330,7 @@ export const CompactControlBar = ({
 
   const Separator = () => <div className="h-4 w-px bg-border/40" />;
 
-  // TOP: Solo InterruptButton, BarModeToggle, AudioModeSelector
+  // TOP: Solo InterruptButton, BarModeToggle, AudioModeSelector, Auto-Follow Toggle
   if (position === 'top') {
     return (
       <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
@@ -354,6 +359,25 @@ export const CompactControlBar = ({
               onTranscriptionComplete={onTranscriptionComplete}
               isAISpeaking={isAISpeaking}
             />
+            
+            <Separator />
+            
+            {/* Toggle Auto-Follow */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                Auto-Follow
+              </span>
+              <Switch
+                checked={isAutoFollowEnabled}
+                onCheckedChange={onAutoFollowChange}
+                className="data-[state=checked]:bg-green-500"
+              />
+              {isAutoFollowEnabled && (
+                <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30 text-xs">
+                  ON
+                </Badge>
+              )}
+            </div>
           </>
         )}
       </div>

@@ -23,6 +23,8 @@ interface Message {
 
 interface MessageTabsViewProps {
   messages: Message[];
+  isAutoFollowEnabled?: boolean;
+  onAutoFollowChange?: (enabled: boolean) => void;
 }
 
 const getTabIcon = (type: string) => {
@@ -44,13 +46,24 @@ const getTabLabel = (message: Message, index: number) => {
   return `${index + 1}. ${message.sender_name}`;
 };
 
-export const MessageTabsView = ({ messages }: MessageTabsViewProps) => {
+export const MessageTabsView = ({ 
+  messages,
+  isAutoFollowEnabled: externalAutoFollow,
+  onAutoFollowChange 
+}: MessageTabsViewProps) => {
+  // Usa lo stato esterno se fornito, altrimenti usa lo stato interno
+  const isAutoFollowEnabled = externalAutoFollow ?? true;
+  
   const [activeTab, setActiveTab] = useState(messages.length > 0 ? messages[0].id : '');
   const [showNewMessages, setShowNewMessages] = useState(false);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const tabContentRef = useRef<HTMLDivElement>(null);
   const previousMessagesLengthRef = useRef(0);
+  
+  // Auto-follow e gestione audio
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
   
   // Drag-to-scroll state
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -59,26 +72,59 @@ export const MessageTabsView = ({ messages }: MessageTabsViewProps) => {
   const [scrollLeft, setScrollLeft] = useState(0);
 
   useEffect(() => {
-    const container = tabContentRef.current;
-    if (!container) return;
-
-    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-    
     if (messages.length > previousMessagesLengthRef.current) {
-      const newCount = messages.length - previousMessagesLengthRef.current;
+      const newMessage = messages[messages.length - 1];
       
-      if (isNearBottom) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        setShowNewMessages(false);
-        setNewMessagesCount(0);
+      // Se auto-follow è disabilitato, usa logica attuale
+      if (!isAutoFollowEnabled) {
+        const container = tabContentRef.current;
+        if (!container) return;
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+        
+        if (isNearBottom) {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          setShowNewMessages(false);
+          setNewMessagesCount(0);
+        } else {
+          setShowNewMessages(true);
+          setNewMessagesCount(prev => prev + 1);
+        }
       } else {
-        setShowNewMessages(true);
-        setNewMessagesCount(prev => prev + newCount);
+        // Auto-follow abilitato
+        if (isAudioPlaying) {
+          // Se c'è un audio in riproduzione, metti in coda il cambio tab
+          console.log(`🎵 Audio in riproduzione, tab in coda: ${newMessage.sender_name}`);
+          setPendingTabSwitch(newMessage.id);
+        } else {
+          // Nessun audio in riproduzione, cambia tab immediatamente
+          console.log(`✅ Auto-follow: cambio a ${newMessage.sender_name}`);
+          setActiveTab(newMessage.id);
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }
       }
     }
     
     previousMessagesLengthRef.current = messages.length;
-  }, [messages]);
+  }, [messages, isAutoFollowEnabled, isAudioPlaying]);
+
+  // Quando l'audio finisce e c'è un tab in coda, cambia tab
+  useEffect(() => {
+    if (!isAudioPlaying && pendingTabSwitch && isAutoFollowEnabled) {
+      console.log(`🎬 Audio terminato, cambio a tab in coda: ${pendingTabSwitch}`);
+      setActiveTab(pendingTabSwitch);
+      setPendingTabSwitch(null);
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [isAudioPlaying, pendingTabSwitch, isAutoFollowEnabled]);
+
+  const handleAudioPlayStateChange = (playing: boolean) => {
+    console.log(`🔊 Audio state: ${playing ? 'Playing' : 'Stopped'}`);
+    setIsAudioPlaying(playing);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -199,7 +245,10 @@ export const MessageTabsView = ({ messages }: MessageTabsViewProps) => {
             className="absolute inset-0 m-0 overflow-y-auto data-[state=inactive]:hidden focus-visible:outline-none focus-visible:ring-0"
           >
             <div className="container mx-auto max-w-4xl p-4">
-              <MultiAgentMessage message={message} />
+              <MultiAgentMessage 
+                message={message} 
+                onAIPlayStateChange={handleAudioPlayStateChange}
+              />
               <div ref={messagesEndRef} />
             </div>
           </TabsContent>

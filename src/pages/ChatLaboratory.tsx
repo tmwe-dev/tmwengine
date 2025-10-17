@@ -110,6 +110,7 @@ const ChatLaboratory = () => {
   const [activeKnowledgeBase, setActiveKnowledgeBase] = useState<string | null>(null);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [conversationMode, setConversationMode] = useState<'ptt' | 'continuous'>('ptt');
+  const [isAutoFollowEnabled, setIsAutoFollowEnabled] = useState(true);
 
   // Forza vista tabs quando Bar Mode è attivo
   useEffect(() => {
@@ -1458,7 +1459,11 @@ const ChatLaboratory = () => {
             </div>
           </div>
         ) : (
-          <MessageTabsView messages={messages} />
+          <MessageTabsView 
+            messages={messages}
+            isAutoFollowEnabled={isAutoFollowEnabled}
+            onAutoFollowChange={setIsAutoFollowEnabled}
+          />
         )}
 
 
@@ -1511,6 +1516,8 @@ const ChatLaboratory = () => {
                     handleSubmit({ preventDefault: () => {} } as any, text);
                   }
                 }}
+                isAutoFollowEnabled={isAutoFollowEnabled}
+                onAutoFollowChange={setIsAutoFollowEnabled}
               />
             </div>
           )}

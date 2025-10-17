@@ -36,16 +36,57 @@ export const CalibrationTestZone = ({
     setIsRunning(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Non autenticato');
+
+      // 1️⃣ Crea conversazione temporanea
+      const { data: tempConv, error: convError } = await supabase
+        .from('chat_laboratory_conversations')
+        .insert({
+          titolo: `🧪 Calibration Test ${new Date().toLocaleTimeString()}`,
+          active_participants: [{ type: 'ai', name: 'Test AI' }],
+          user_id: user.id
+        })
+        .select()
+        .single();
+
+      if (convError) throw convError;
+
+      // 2️⃣ Abilita Bar Mode per questa conversazione
+      await supabase.from('chat_laboratory_bar_mode').insert({
+        conversation_id: tempConv.id,
+        mode: 'bar',
+        voice_enabled: false,
+        user_id: user.id
+      });
+
+      // 3️⃣ Inserisci almeno 1 partecipante AI attivo
+      await supabase.from('chat_laboratory_participants').insert({
+        conversation_id: tempConv.id,
+        type: 'ai',
+        name: 'Test AI',
+        system_prompt: 'You are a helpful AI assistant for testing purposes.',
+        is_active: true
+      });
+
+      // 4️⃣ Salva messaggio utente
+      await supabase.from('chat_laboratory_messages').insert({
+        conversation_id: tempConv.id,
+        message_sequence: 1,
+        sender_type: 'human',
+        sender_name: 'Test User',
+        content: testMessage,
+        is_visible_to_ai: true
+      });
+
       const startTime = Date.now();
 
-      // Call the orchestrator with current config
+      // 5️⃣ Chiama orchestrator con dati reali
       const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
         body: {
-          conversationId: 'calibration-test',
+          conversationId: tempConv.id,
           userMessage: testMessage,
-          participants: [],
-          calibrationMode: true,
-          calibrationConfig: config
+          participants: [{ type: 'ai', name: 'Test AI', is_active: true }]
         }
       });
 
@@ -53,8 +94,9 @@ export const CalibrationTestZone = ({
 
       if (error) throw error;
 
+      // 6️⃣ Estrai risultati
       const result: TestResult = {
-        provider: data.speaker || 'unknown',
+        provider: data.speaker || 'Test AI',
         latency: endTime - startTime,
         tokens_in: data.tokens_in || 0,
         tokens_out: data.tokens_out || 0,
@@ -65,6 +107,12 @@ export const CalibrationTestZone = ({
       };
 
       onTestComplete([result]);
+
+      // 7️⃣ Cleanup: Elimina conversazione temporanea
+      await supabase.from('chat_laboratory_messages').delete().eq('conversation_id', tempConv.id);
+      await supabase.from('chat_laboratory_participants').delete().eq('conversation_id', tempConv.id);
+      await supabase.from('chat_laboratory_bar_mode').delete().eq('conversation_id', tempConv.id);
+      await supabase.from('chat_laboratory_conversations').delete().eq('id', tempConv.id);
 
       toast({
         title: "✅ Test completato",

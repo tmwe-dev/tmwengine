@@ -1076,6 +1076,12 @@ const ChatLaboratory = () => {
                       isBarMode={isBarMode}
                       onBarModeToggle={setIsBarMode}
                       onKBChange={setActiveKnowledgeBase}
+                      onTranscriptionComplete={(text) => {
+                        if (text.trim()) {
+                          handleSubmit({ preventDefault: () => {} } as any, text);
+                        }
+                      }}
+                      isAISpeaking={isAISpeaking}
                     />
                   </CardContent>
                 </Card>

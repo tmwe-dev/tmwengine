@@ -8,13 +8,17 @@ interface CollapsibleBarSectionProps {
   isBarMode: boolean;
   onBarModeToggle: (enabled: boolean) => void;
   onKBChange: (kb: string | null) => void;
+  onTranscriptionComplete: (text: string) => void;
+  isAISpeaking: boolean;
 }
 
 export const CollapsibleBarSection = ({
   conversationId,
   isBarMode,
   onBarModeToggle,
-  onKBChange
+  onKBChange,
+  onTranscriptionComplete,
+  isAISpeaking
 }: CollapsibleBarSectionProps) => {
 
   return (
@@ -30,7 +34,11 @@ export const CollapsibleBarSection = ({
       {/* Bar Mode sempre aperto quando attivo */}
       {isBarMode && (
         <div className="space-y-3 mt-2">
-          <AudioModeSelector conversationId={conversationId} />
+          <AudioModeSelector 
+            conversationId={conversationId}
+            onTranscriptionComplete={onTranscriptionComplete}
+            isAISpeaking={isAISpeaking}
+          />
           
           <div className="flex justify-center">
             <BarModeControls conversationId={conversationId} />

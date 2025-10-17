@@ -1229,6 +1229,12 @@ const ChatLaboratory = () => {
                       isBarMode={isBarMode}
                       onBarModeToggle={setIsBarMode}
                       onKBChange={setActiveKnowledgeBase}
+                      onTranscriptionComplete={(text) => {
+                        if (text.trim()) {
+                          handleSubmit({ preventDefault: () => {} } as any, text);
+                        }
+                      }}
+                      isAISpeaking={isAISpeaking}
                     />
                   </CardContent>
                 </Card>
@@ -1493,37 +1499,6 @@ const ChatLaboratory = () => {
               {/* Controlli Audio a sinistra (solo in Bar Mode) */}
               {isBarMode && (
                 <div className="flex items-center gap-3">
-                  {/* Dropdown Modalità Conversazione */}
-                  <select
-                    value={conversationMode}
-                    onChange={(e) => setConversationMode(e.target.value as 'ptt' | 'continuous')}
-                    className="px-3 py-2 bg-background border border-input rounded-md text-sm h-10"
-                    title="Seleziona modalità conversazione"
-                  >
-                    <option value="ptt">🎤 Push-to-Talk</option>
-                    <option value="continuous">🔴 Live Continua</option>
-                  </select>
-
-                  {/* Microfono Push-to-Talk (NON modificato) */}
-                  {conversationMode === 'ptt' && (
-                    <BarVoiceRecorder
-                      conversationId={currentConversationId}
-                      onTranscriptionComplete={(text) => {
-                        if (text.trim()) {
-                          handleSubmit({ preventDefault: () => {} } as any, text);
-                        }
-                      }}
-                      isDisabled={isAISpeaking}
-                    />
-                  )}
-
-                  {/* Microfono Conversazione Continua */}
-                  {conversationMode === 'continuous' && (
-                    <div className="text-xs text-muted-foreground px-3 py-2 bg-muted/20 rounded-md border border-border/40">
-                      🔴 Modalità Live attiva
-                    </div>
-                  )}
-
                   <InterruptButton
                     isAISpeaking={isAISpeaking}
                     onInterrupt={() => {
@@ -1534,21 +1509,27 @@ const ChatLaboratory = () => {
                 </div>
               )}
               
-                <div className="flex flex-col items-center gap-1.5">
-                  {/* Toggle BarChat */}
-                  <BarModeToggle
+              <div className="flex flex-col items-center gap-1.5">
+                {/* Toggle BarChat */}
+                <BarModeToggle
+                  conversationId={currentConversationId}
+                  isBarMode={isBarMode}
+                  onToggle={setIsBarMode}
+                />
+                
+                {/* Selettore Modalità Audio con microfoni integrati */}
+                {isBarMode && (
+                  <AudioModeSelector 
                     conversationId={currentConversationId}
-                    isBarMode={isBarMode}
-                    onToggle={setIsBarMode}
+                    onTranscriptionComplete={(text) => {
+                      if (text.trim()) {
+                        handleSubmit({ preventDefault: () => {} } as any, text);
+                      }
+                    }}
+                    isAISpeaking={isAISpeaking}
                   />
-                  
-                  {/* Selettore Modalità Audio - sotto il toggle */}
-                  {isBarMode && (
-                    <AudioModeSelector 
-                      conversationId={currentConversationId} 
-                    />
-                  )}
-                </div>
+                )}
+              </div>
             </div>
           )}
 

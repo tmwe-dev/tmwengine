@@ -6,6 +6,7 @@ import { DynamicTabs, TabItem } from '@/components/design-system';
 import { InterruptButton } from './InterruptButton';
 import { BarModeToggle } from './BarModeToggle';
 import { AudioModeSelector } from './AudioModeSelector';
+import { LaboratoryPromptManager } from './LaboratoryPromptManager';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarVoiceRecorderV2_Continuous } from './BarVoiceRecorderV2_Continuous';
 import { BarVoiceRecorderV2_Extended } from './BarVoiceRecorderV2_Extended';
@@ -364,6 +365,11 @@ export const CompactControlBar = ({
 
   return (
     <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
+      {/* Brain Button */}
+      <LaboratoryPromptManager />
+      
+      <Separator />
+      
       {/* Thunder Switch */}
       <Zap className="h-3.5 w-3.5 text-muted-foreground" />
       <Switch

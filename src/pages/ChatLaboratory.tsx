@@ -1526,7 +1526,6 @@ const ChatLaboratory = () => {
                 <ImageGenerator
                   onImageGenerated={setGeneratedImage}
                 />
-                <LaboratoryPromptManager />
               </div>
               
               <Textarea

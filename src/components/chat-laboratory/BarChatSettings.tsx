@@ -5,15 +5,13 @@ import { Slider } from '@/components/ui/slider';
 import { MessageSquare, Timer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { LiveConversationSettings } from './LiveConversationSettings';
 
 interface BarChatSettingsProps {
   conversationId: string | null;
-  conversationMode: 'ptt' | 'continuous';
   onSettingsChange?: (settings: { conversation_style: string; vad_silence_duration: number }) => void;
 }
 
-export const BarChatSettings = ({ conversationId, conversationMode, onSettingsChange }: BarChatSettingsProps) => {
+export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSettingsProps) => {
   const [conversationStyle, setConversationStyle] = useState('colleagues');
   const [vadDuration, setVadDuration] = useState(3000);
   const [isLoading, setIsLoading] = useState(false);
@@ -154,24 +152,6 @@ export const BarChatSettings = ({ conversationId, conversationMode, onSettingsCh
           Tempo di silenzio prima di inviare (1-5 sec)
         </p>
       </div>
-
-      {/* Impostazioni Live Continua (solo quando conversationMode === 'continuous') */}
-      {conversationMode === 'continuous' && (
-        <>
-          <div className="border-t border-border/40 pt-4" />
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold flex items-center gap-2">
-              🔴 Impostazioni Conversazione Live
-            </Label>
-            <LiveConversationSettings
-              conversationId={conversationId}
-              onSettingsChange={(settings) => {
-                console.log('📝 Live Settings aggiornati:', settings);
-              }}
-            />
-          </div>
-        </>
-      )}
     </div>
   );
 };

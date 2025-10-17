@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarModeToggle } from './BarModeToggle';
 import { BarModeControls } from './BarModeControls';
 import { KnowledgeBaseSelector } from './KnowledgeBaseSelector';
@@ -22,7 +22,17 @@ export const CollapsibleBarSection = ({
   onTranscriptionComplete,
   isAISpeaking
 }: CollapsibleBarSectionProps) => {
-  const [audioMode, setAudioMode] = useState<AudioMode>('stable');
+  const [audioMode, setAudioMode] = useState<AudioMode>(() => {
+    const stored = localStorage.getItem('global-audio-mode');
+    return (stored as AudioMode) || 'stable';
+  });
+
+  useEffect(() => {
+    const stored = localStorage.getItem('global-audio-mode');
+    if (stored) {
+      setAudioMode(stored as AudioMode);
+    }
+  }, []);
 
   return (
     <div className="space-y-2">

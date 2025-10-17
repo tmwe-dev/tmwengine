@@ -24,49 +24,14 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (conversationId) {
-      loadAudioMode();
-    }
-  }, [conversationId]);
-
-  useEffect(() => {
-    if (externalAudioMode) {
+    if (externalAudioMode !== undefined) {
       setSelectedMode(externalAudioMode);
     }
   }, [externalAudioMode]);
 
-  const loadAudioMode = async () => {
-    if (!conversationId) return;
-
-    try {
-      const stored = localStorage.getItem(`audio-mode-${conversationId}`);
-      if (stored) {
-        setSelectedMode(stored as any);
-      }
-    } catch (err) {
-      console.error('❌ Errore caricamento audio mode:', err);
-    }
-  };
-
   const updateAudioMode = async (mode: 'stable' | 'v2_continuous' | 'v2_hybrid') => {
-    if (!conversationId) return;
-
-    try {
-      localStorage.setItem(`audio-mode-${conversationId}`, mode);
-      setSelectedMode(mode);
-      onModeChange?.(mode);
-      
-      const modeNames = {
-        stable: 'STABLE (PTT 3s)',
-        v2_continuous: 'Continuous (1.5s)',
-        v2_hybrid: 'Hybrid (Listen)'
-      };
-      
-      toast.success(`Modalità audio: ${modeNames[mode]}`);
-    } catch (err) {
-      console.error('❌ Errore aggiornamento audio mode:', err);
-      toast.error('Errore aggiornamento modalità audio');
-    }
+    setSelectedMode(mode);
+    onModeChange?.(mode);
   };
 
   const modes = [

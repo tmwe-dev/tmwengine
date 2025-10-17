@@ -1242,6 +1242,7 @@ const ChatLaboratory = () => {
                         onSettingsChange={(settings) => {
                           console.log('📝 Bar Chat Settings aggiornati:', settings);
                         }}
+                        onAutoAdvanceChange={setAutoAdvanceTabs}
                       />
                     </CardContent>
                   </Card>

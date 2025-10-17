@@ -264,29 +264,20 @@ export const BarVoiceRecorderV2_Continuous = ({
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      {/* Indicatore modalità */}
-      <div className="text-xs text-muted-foreground">
-        ⚡ Modalità: Auto-stop silenzio
-      </div>
-
-      <div className="flex items-center gap-3">
-        <Button
-          variant={isRecording ? "destructive" : "default"}
-          size="lg"
-          onClick={handleToggle}
-          disabled={isDisabled || isProcessing}
-          className="relative"
-          title="🎤 CONTINUOUS: Premi per iniziare. Stop automatico dopo 1.5s silenzio. Ripremi per fermare manualmente."
-        >
+    <div className="flex items-center gap-3">
+      <Button
+        variant={isRecording ? "destructive" : "default"}
+        size="icon"
+        onClick={handleToggle}
+        disabled={isDisabled || isProcessing}
+        className="relative"
+        title="🎤 CONTINUOUS: Premi per iniziare. Stop automatico dopo 1.5s silenzio. Ripremi per fermare manualmente."
+      >
         {isProcessing ? (
           <div className="animate-spin">⏳</div>
         ) : (
           <Mic className={`h-5 w-5 ${isRecording ? 'animate-pulse' : ''}`} />
         )}
-        <span className="ml-2">
-          {isProcessing ? 'Elaborazione...' : isRecording ? 'Stop' : 'Parla'}
-        </span>
       </Button>
 
       {isRecording && (
@@ -305,7 +296,6 @@ export const BarVoiceRecorderV2_Continuous = ({
           )}
         </div>
       )}
-      </div>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarVoiceRecorderV2_Continuous } from './BarVoiceRecorderV2_Continuous';
-import { BarVoiceRecorderV2_Extended } from './BarVoiceRecorderV2_Extended';
+
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
 import { InterruptButton } from './InterruptButton';
 import { Switch } from '@/components/ui/switch';
@@ -36,7 +36,7 @@ export const BarChatAudioControls = ({
   const [enableDirectCall, setEnableDirectCall] = useState<boolean>(true);
   
   // 🧪 Test Switcher: Scegli quale variante audio usare
-  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>('stable');
+  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_hybrid'>('stable');
 
   useEffect(() => {
     if (conversationId) {
@@ -239,13 +239,6 @@ export const BarChatAudioControls = ({
             />
           )}
           
-          {audioMode === 'v2_extended' && (
-            <BarVoiceRecorderV2_Extended
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking || isPaused}
-            />
-          )}
           
           {audioMode === 'v2_hybrid' && (
             <BarVoiceRecorderV2_Hybrid
@@ -274,7 +267,7 @@ export const BarChatAudioControls = ({
           >
             <option value="stable">✅ STABLE (PTT 3s)</option>
             <option value="v2_continuous">🔵 Continuous (1.5s)</option>
-            <option value="v2_extended">🟢 Extended (Hold)</option>
+            
             <option value="v2_hybrid">🟡 Hybrid (Listen)</option>
           </select>
         </div>

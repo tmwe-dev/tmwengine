@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { BarModeToggle } from './BarModeToggle';
 import { BarModeControls } from './BarModeControls';
 import { KnowledgeBaseSelector } from './KnowledgeBaseSelector';
 import { AudioModeSelector } from './AudioModeSelector';
-import { AudioModeButtons } from './AudioModeButtons';
+import { AudioModeButtons, type AudioMode } from './AudioModeButtons';
 
 interface CollapsibleBarSectionProps {
   conversationId: string | null;
@@ -21,12 +22,13 @@ export const CollapsibleBarSection = ({
   onTranscriptionComplete,
   isAISpeaking
 }: CollapsibleBarSectionProps) => {
+  const [audioMode, setAudioMode] = useState<AudioMode>('stable');
 
   return (
     <div className="space-y-2">
       {/* Prima riga: 4 bottoni modalità audio allineati a destra */}
       <div className="flex items-center justify-end">
-        <AudioModeButtons />
+        <AudioModeButtons onModeChange={setAudioMode} />
       </div>
 
       {/* Seconda riga: Toggle Bar Chat allineato a sinistra */}

@@ -69,7 +69,7 @@ export function DynamicTabs({
               {Icon && <Icon className="h-4 w-4" />}
               <span>{tab.label}</span>
               {tab.badge !== undefined && (
-                <Badge variant="secondary" className="ml-1">
+                <Badge variant="secondary" className="ml-1 bg-transparent border-0">
                   {tab.badge}
                 </Badge>
               )}

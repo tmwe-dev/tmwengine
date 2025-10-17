@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Play, Save } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { ActiveConfigSummary } from './ActiveConfigSummary';
 
 interface OrchestratorTestPanelProps {
   config: {
@@ -62,6 +62,15 @@ export function OrchestratorTestPanel({
           <CardTitle className="text-lg">🎯 Configurazione Orchestrator</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Configurazione Attiva - Always Visible */}
+          <ActiveConfigSummary
+            turnStrategy={config.turnStrategy}
+            pauseBetweenTurns={config.pauseBetweenTurns}
+            enableDirectCalls={config.enableDirectCalls}
+            voiceEnabled={config.voiceEnabled}
+            lastResponse={lastResponse}
+          />
+
           {/* Turn Strategy */}
           <div className="space-y-2">
             <Label>Turn Strategy</Label>
@@ -134,41 +143,6 @@ export function OrchestratorTestPanel({
                 Salva Configurazione
               </Button>
             )}
-          </div>
-
-          {/* 🆕 Riga di Riepilogo */}
-          <div className="pt-4 border-t">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-muted-foreground font-medium">Config:</span>
-              <Badge variant="outline" className="font-mono">
-                {config.turnStrategy === 'RANDOM_30' ? 'R30' : 'SMART'}
-              </Badge>
-              <Badge variant="secondary" className="font-mono">
-                {config.pauseBetweenTurns}ms
-              </Badge>
-              <Badge variant={config.enableDirectCalls ? 'default' : 'secondary'}>
-                DC: {config.enableDirectCalls ? 'ON' : 'OFF'}
-              </Badge>
-              <Badge variant={config.voiceEnabled ? 'default' : 'secondary'}>
-                Voice: {config.voiceEnabled ? 'ON' : 'OFF'}
-              </Badge>
-              {lastResponse && (
-                <>
-                  <span className="text-muted-foreground">→</span>
-                  <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
-                    {lastResponse.speaker}
-                  </Badge>
-                  <Badge variant="outline" className="font-mono">
-                    {lastResponse.responseTime}ms
-                  </Badge>
-                  {lastResponse.tokensUsed && (
-                    <Badge variant="outline" className="font-mono">
-                      {lastResponse.tokensUsed.input + lastResponse.tokensUsed.output} tok
-                    </Badge>
-                  )}
-                </>
-              )}
-            </div>
           </div>
         </CardContent>
       </Card>

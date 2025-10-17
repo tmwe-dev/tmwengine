@@ -1457,6 +1457,27 @@ const ChatLaboratory = () => {
           />
         )}
 
+        {/* Bar Chat Audio Controls - Microfono Bar Chat */}
+        {isBarMode && currentConversationId && (
+          <div className="border-t border-border/40">
+            <BarChatAudioControls
+              conversationId={currentConversationId}
+              isAISpeaking={isAISpeaking}
+              onTranscriptionComplete={(text) => {
+                setPrompt(text);
+                // Auto-submit dopo trascrizione
+                if (text.trim()) {
+                  handleSubmit({ preventDefault: () => {} } as any);
+                }
+              }}
+              onInterrupt={() => {
+                console.log('🛑 Interruzione audio AI richiesta');
+                setIsAISpeaking(false);
+              }}
+            />
+          </div>
+        )}
+
         {/* New Messages Indicator */}
         {viewMode === 'classic' && showNewMessages && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 animate-fade-in">
@@ -1548,7 +1569,7 @@ const ChatLaboratory = () => {
                   onRecordingStateChange={setRecordingState}
                 />
                 
-                {isBarMode && (
+                {viewMode === 'tabs' && (
                   <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/40 bg-card/40">
                     <Label htmlFor="auto-advance" className="text-sm font-medium cursor-pointer">
                       🎬 Auto-advance

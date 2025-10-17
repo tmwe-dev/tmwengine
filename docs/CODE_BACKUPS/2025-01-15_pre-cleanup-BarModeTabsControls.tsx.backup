@@ -1,0 +1,397 @@
+// ============================================
+// BACKUP PRE-CLEANUP MICROFONI
+// Data: 2025-01-15
+// File Originale: src/components/chat-laboratory/BarModeTabsControls.tsx
+// Motivo: Salvataggio prima di semplificazione sistema audio
+// Stato: FUNZIONANTE - Pannello completo con 3 tabs
+// Configurazioni: Audio Mode selector + Turn Strategy + Test Audio
+// ============================================
+
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pause, Play, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { InterruptButton } from './InterruptButton';
+import { MicrophoneTest } from './MicrophoneTest';
+import { DynamicTabs, type TabItem } from '@/components/ui/dynamic-tabs';
+import { BarVoiceRecorder } from './BarVoiceRecorder';
+import { BarVoiceRecorderV2_Continuous } from './BarVoiceRecorderV2_Continuous';
+import { BarVoiceRecorderV2_Extended } from './BarVoiceRecorderV2_Extended';
+import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
+
+interface BarModeTabsControlsProps {
+  conversationId: string | null;
+  isAISpeaking: boolean;
+  onTranscriptionComplete: (text: string) => void;
+  onInterrupt?: () => void;
+  className?: string;
+}
+
+export const BarModeTabsControls = ({
+  conversationId,
+  isAISpeaking,
+  onTranscriptionComplete,
+  onInterrupt,
+  className
+}: BarModeTabsControlsProps) => {
+  const [isPaused, setIsPaused] = useState(false);
+  const [turnStrategy, setTurnStrategy] = useState<'random' | 'smart'>('random');
+  const [pauseBetweenTurns, setPauseBetweenTurns] = useState(500);
+  const [enableDirectCall, setEnableDirectCall] = useState(false);
+  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>('stable');
+
+  // Load settings from localStorage and Supabase
+  useEffect(() => {
+    if (!conversationId) return;
+    
+    loadAudioMode();
+    loadPauseState();
+    loadDynamicTurnSettings();
+  }, [conversationId]);
+
+  const loadAudioMode = () => {
+    const saved = localStorage.getItem('barAudioMode');
+    if (saved) {
+      setAudioMode(saved as typeof audioMode);
+    }
+  };
+
+  const loadPauseState = async () => {
+    if (!conversationId) return;
+
+    const { data, error } = await supabase
+      .from('chat_laboratory_conversations')
+      .select('is_paused')
+      .eq('id', conversationId)
+      .single();
+
+    if (error) {
+      console.error('Error loading pause state:', error);
+      return;
+    }
+
+    setIsPaused(data?.is_paused || false);
+  };
+
+  const loadDynamicTurnSettings = async () => {
+    if (!conversationId) return;
+
+    const { data, error } = await supabase
+      .from('chat_laboratory_conversations')
+      .select('turn_strategy, pause_between_turns_ms, enable_direct_call_detection')
+      .eq('id', conversationId)
+      .single();
+
+    if (error) {
+      console.error('Error loading dynamic turn settings:', error);
+      return;
+    }
+
+    if (data) {
+      setTurnStrategy((data.turn_strategy as 'random' | 'smart') || 'random');
+      setPauseBetweenTurns(data.pause_between_turns_ms || 500);
+      setEnableDirectCall(data.enable_direct_call_detection || false);
+    }
+  };
+
+  const updateTurnStrategy = async (newStrategy: 'random' | 'smart') => {
+    if (!conversationId) return;
+
+    setTurnStrategy(newStrategy);
+
+    const { error } = await supabase
+      .from('chat_laboratory_conversations')
+      .update({ turn_strategy: newStrategy })
+      .eq('id', conversationId);
+
+    if (error) {
+      console.error('Error updating turn strategy:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare la strategia turni",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Strategia turni aggiornata",
+        description: newStrategy === 'smart' ? "Smart Turn-Taking attivo" : "Random Turn-Taking attivo"
+      });
+    }
+  };
+
+  const updatePauseBetweenTurns = async (newPause: number) => {
+    if (!conversationId) return;
+
+    setPauseBetweenTurns(newPause);
+
+    const { error } = await supabase
+      .from('chat_laboratory_conversations')
+      .update({ pause_between_turns_ms: newPause })
+      .eq('id', conversationId);
+
+    if (error) {
+      console.error('Error updating pause between turns:', error);
+    }
+  };
+
+  const updateDirectCallDetection = async (enabled: boolean) => {
+    if (!conversationId) return;
+
+    setEnableDirectCall(enabled);
+
+    const { error } = await supabase
+      .from('chat_laboratory_conversations')
+      .update({ enable_direct_call_detection: enabled })
+      .eq('id', conversationId);
+
+    if (error) {
+      console.error('Error updating direct call detection:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare impostazione chiamate dirette",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: enabled ? "Chiamate dirette attive" : "Chiamate dirette disattivate",
+        description: enabled ? "Usa @nome per parlare direttamente con un agent" : "Sistema turni normale"
+      });
+    }
+  };
+
+  const togglePause = async () => {
+    if (!conversationId) return;
+
+    const newPauseState = !isPaused;
+    setIsPaused(newPauseState);
+
+    const { error } = await supabase
+      .from('chat_laboratory_conversations')
+      .update({ is_paused: newPauseState })
+      .eq('id', conversationId);
+
+    if (error) {
+      console.error('Error toggling pause:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare lo stato della conversazione",
+        variant: "destructive"
+      });
+      setIsPaused(!newPauseState);
+    } else {
+      toast({
+        title: newPauseState ? "Conversazione in pausa" : "Conversazione ripresa",
+        description: newPauseState 
+          ? "Gli agent non risponderanno finché non riprendi" 
+          : "Gli agent possono rispondere di nuovo"
+      });
+    }
+  };
+
+  const handleAudioModeChange = (mode: typeof audioMode) => {
+    setAudioMode(mode);
+    localStorage.setItem('barAudioMode', mode);
+    
+    const modeNames = {
+      stable: 'PTT Stable (VAD 3s)',
+      v2_continuous: 'V2 Continuous (VAD 1.5s)',
+      v2_extended: 'V2 Extended (Press & Hold)',
+      v2_hybrid: 'V2 Hybrid (Always Listening)'
+    };
+    
+    toast({
+      title: "Modalità audio cambiata",
+      description: modeNames[mode]
+    });
+  };
+
+  const tabs: TabItem[] = [
+    {
+      id: 'audio',
+      label: '🎙️ Controlli Audio',
+      content: (
+        <div className="space-y-4 p-4">
+          {/* Audio Mode Selector */}
+          <div className="space-y-2">
+            <Label>Modalità Audio</Label>
+            <Select value={audioMode} onValueChange={(v) => handleAudioModeChange(v as typeof audioMode)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="stable">🎤 PTT Stable (VAD 3s)</SelectItem>
+                <SelectItem value="v2_continuous">⚡ V2 Continuous (VAD 1.5s)</SelectItem>
+                <SelectItem value="v2_extended">🤚 V2 Extended (Press & Hold)</SelectItem>
+                <SelectItem value="v2_hybrid">🔄 V2 Hybrid (Always Listening)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Microphone Component */}
+          <div className="pt-2">
+            {audioMode === 'stable' && (
+              <BarVoiceRecorder
+                conversationId={conversationId}
+                onTranscriptionComplete={onTranscriptionComplete}
+                isDisabled={!conversationId || isPaused}
+              />
+            )}
+            {audioMode === 'v2_continuous' && conversationId && (
+              <BarVoiceRecorderV2_Continuous
+                conversationId={conversationId}
+                onTranscriptionComplete={onTranscriptionComplete}
+                isDisabled={!conversationId || isPaused}
+              />
+            )}
+            {audioMode === 'v2_extended' && conversationId && (
+              <BarVoiceRecorderV2_Extended
+                conversationId={conversationId}
+                onTranscriptionComplete={onTranscriptionComplete}
+                isDisabled={!conversationId || isPaused}
+              />
+            )}
+            {audioMode === 'v2_hybrid' && conversationId && (
+              <BarVoiceRecorderV2_Hybrid
+                conversationId={conversationId}
+                onTranscriptionComplete={onTranscriptionComplete}
+                isDisabled={!conversationId || isPaused}
+              />
+            )}
+          </div>
+
+          {/* Pause Section */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Sezione Pausa
+            </h3>
+            <div className="flex items-center gap-3">
+              <Button
+                variant={isPaused ? "default" : "outline"}
+                size="sm"
+                onClick={togglePause}
+                disabled={!conversationId}
+                className={cn(
+                  "gap-2",
+                  isPaused && "bg-amber-500 hover:bg-amber-600"
+                )}
+              >
+                {isPaused ? (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Riprendi Conversazione
+                  </>
+                ) : (
+                  <>
+                    <Pause className="h-4 w-4" />
+                    Metti in Pausa
+                  </>
+                )}
+              </Button>
+
+              {isPaused && (
+                <span className="text-xs text-amber-600 font-medium">
+                  ⏸️ Conversazione in pausa
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Interrupt Button */}
+          {isAISpeaking && onInterrupt && (
+            <div className="border-t pt-4">
+              <InterruptButton onClick={onInterrupt} />
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      id: 'strategy',
+      label: '🎯 Strategia Turni',
+      content: (
+        <div className="space-y-6 p-4">
+          {/* Turn Strategy */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="turn-strategy" className="text-sm font-medium">
+                Smart Turn-Taking
+              </Label>
+              <Switch
+                id="turn-strategy"
+                checked={turnStrategy === 'smart'}
+                onCheckedChange={(checked) => updateTurnStrategy(checked ? 'smart' : 'random')}
+                disabled={!conversationId}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {turnStrategy === 'smart' 
+                ? '🧠 AI sceglie agent più rilevante basato su contesto'
+                : '🎲 Agent selezionato casualmente'}
+            </p>
+          </div>
+
+          {/* Pause Between Turns */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">
+              Pausa tra turni: {pauseBetweenTurns}ms
+            </Label>
+            <Slider
+              value={[pauseBetweenTurns]}
+              onValueChange={([value]) => updatePauseBetweenTurns(value)}
+              min={0}
+              max={3000}
+              step={100}
+              disabled={!conversationId}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground">
+              Tempo di attesa prima che il prossimo agent risponda
+            </p>
+          </div>
+
+          {/* Direct Call Detection */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="direct-call" className="text-sm font-medium">
+                Chiamate Dirette (@nome)
+              </Label>
+              <Switch
+                id="direct-call"
+                checked={enableDirectCall}
+                onCheckedChange={updateDirectCallDetection}
+                disabled={!conversationId}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {enableDirectCall 
+                ? '✅ Usa @nome per parlare direttamente con un agent specifico'
+                : '❌ Sistema turni normale (tutti gli agent possono rispondere)'}
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'test',
+      label: '🧪 Test Audio',
+      content: (
+        <div className="flex items-center justify-center p-6">
+          <MicrophoneTest />
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <div className={cn("w-full", className)}>
+      <DynamicTabs tabs={tabs} defaultTabId="audio" />
+    </div>
+  );
+};

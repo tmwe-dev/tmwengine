@@ -4,11 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const OAuthCallback = () => {
   const navigate = useNavigate();
   const { login } = useTMWEAuth();
   const [isProcessing, setIsProcessing] = useState(true);
+  const [extractedToken, setExtractedToken] = useState<string | null>(null);
+  const [tmweToken, setTmweToken] = useState<string | null>(null);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -54,6 +57,11 @@ const OAuthCallback = () => {
 
         // ✅ CORRECCIÓN: Extraer token_hash del magic link
         const { magicLink, email, profile, tmwe_access_token } = data;
+        
+        // Guardar TMWE token para visualización
+        if (tmwe_access_token) {
+          setTmweToken(tmwe_access_token);
+        }
 
         if (!magicLink) {
           throw new Error('Magic link not received');
@@ -77,6 +85,9 @@ const OAuthCallback = () => {
         console.log('🔑 Extracted token:', token.substring(0, 20) + '...');
         console.log('🔑 Type:', type);
         console.log('🔑 Verifying OTP with Supabase...');
+        
+        // Guardar token estratto per visualizzazione
+        setExtractedToken(token);
 
         // ✅ Verificar el OTP con Supabase usando el token
         const { data: sessionData, error: sessionError } = await supabase.auth.verifyOtp({
@@ -125,12 +136,48 @@ const OAuthCallback = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-subtle p-4">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-lg text-muted-foreground">
-          {isProcessing ? 'Autenticazione in corso...' : 'Reindirizzamento...'}
-        </p>
-      </div>
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle className="text-center">🔐 Autenticazione OAuth2 in corso...</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Token Supabase */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">Supabase Token:</p>
+            {extractedToken ? (
+              <p className="text-sm font-mono text-green-600 break-all">
+                {extractedToken.substring(0, 60)}...
+              </p>
+            ) : (
+              <p className="text-sm font-semibold text-red-600">
+                ❌ Token non disponibile
+              </p>
+            )}
+          </div>
+
+          {/* Token TMWE */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">TMWE Access Token:</p>
+            {tmweToken ? (
+              <p className="text-sm font-mono text-green-600 break-all">
+                {tmweToken.substring(0, 60)}...
+              </p>
+            ) : (
+              <p className="text-sm font-semibold text-red-600">
+                ❌ Token non disponibile
+              </p>
+            )}
+          </div>
+
+          {/* Status */}
+          <div className="flex flex-col items-center gap-4 pt-4 border-t">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="text-lg text-muted-foreground">
+              {isProcessing ? 'Autenticazione in corso...' : 'Reindirizzamento...'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

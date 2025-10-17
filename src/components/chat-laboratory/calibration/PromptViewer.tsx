@@ -161,19 +161,18 @@ export const PromptViewer = ({ structuredPrompt, onSectionEdit }: PromptViewerPr
   const totalTokens = sections.reduce((sum, s) => sum + (s.tokenCount || 0), 0);
 
   return (
-    <Card className="border-2 shadow-lg">
-      <CardHeader className="pb-3 px-4 sm:px-6 sticky top-0 bg-card z-10 border-b">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <span className="text-xl">🔍</span>
-            <span>Prompt Strutturato</span>
+    <Card className="border-2">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            🔍 Prompt Strutturato
           </CardTitle>
-          <Badge variant="outline" className="font-mono text-xs w-fit">
-            ~{totalTokens} tokens
+          <Badge variant="outline" className="font-mono">
+            ~{totalTokens} tokens totali
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2 px-4 sm:px-6 max-h-[400px] sm:max-h-[500px] lg:max-h-[600px] overflow-y-auto">
+      <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
         {sections.map((section) => {
           if (!section.content) return null;
           
@@ -186,16 +185,16 @@ export const PromptViewer = ({ structuredPrompt, onSectionEdit }: PromptViewerPr
               className={`border rounded-lg ${section.bgColor} transition-all`}
             >
               <div
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-2 sm:p-3 gap-2 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
+                className="flex items-center justify-between p-3 cursor-pointer hover:bg-black/5"
                 onClick={() => !isEditing && toggleSection(section.key)}
               >
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
                   {isExpanded ? (
                     <ChevronDown className="h-4 w-4" />
                   ) : (
                     <ChevronRight className="h-4 w-4" />
                   )}
-                  <span className={`text-xs sm:text-sm font-semibold ${section.color}`}>
+                  <span className={`font-semibold ${section.color}`}>
                     {section.label}
                   </span>
                   <Badge variant="secondary" className="text-xs">
@@ -211,7 +210,6 @@ export const PromptViewer = ({ structuredPrompt, onSectionEdit }: PromptViewerPr
                           size="sm"
                           variant="ghost"
                           onClick={saveEdit}
-                          className="h-8 w-8 p-0"
                         >
                           <Check className="h-4 w-4 text-green-600" />
                         </Button>
@@ -219,7 +217,6 @@ export const PromptViewer = ({ structuredPrompt, onSectionEdit }: PromptViewerPr
                           size="sm"
                           variant="ghost"
                           onClick={cancelEdit}
-                          className="h-8 w-8 p-0"
                         >
                           <X className="h-4 w-4 text-red-600" />
                         </Button>
@@ -230,7 +227,6 @@ export const PromptViewer = ({ structuredPrompt, onSectionEdit }: PromptViewerPr
                           size="sm"
                           variant="ghost"
                           onClick={() => startEditing(section)}
-                          className="h-8 w-8 p-0"
                         >
                           <Edit2 className="h-3 w-3" />
                         </Button>
@@ -238,7 +234,6 @@ export const PromptViewer = ({ structuredPrompt, onSectionEdit }: PromptViewerPr
                           size="sm"
                           variant="ghost"
                           onClick={() => handleCopy(section.content, section.label)}
-                          className="h-8 w-8 p-0"
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
@@ -249,16 +244,16 @@ export const PromptViewer = ({ structuredPrompt, onSectionEdit }: PromptViewerPr
               </div>
 
               {isExpanded && (
-                <div className="px-2 sm:px-3 pb-2 sm:pb-3">
+                <div className="px-3 pb-3">
                   {isEditing ? (
                     <Textarea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
-                      className="min-h-[150px] sm:min-h-[200px] font-mono text-xs sm:text-sm"
+                      className="min-h-[200px] font-mono text-sm"
                       autoFocus
                     />
                   ) : (
-                    <pre className="text-[10px] sm:text-xs whitespace-pre-wrap font-mono bg-background/50 p-2 sm:p-3 rounded border overflow-x-auto">
+                    <pre className="text-xs whitespace-pre-wrap font-mono bg-background/50 p-3 rounded border">
                       {section.content}
                     </pre>
                   )}

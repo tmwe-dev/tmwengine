@@ -16,10 +16,10 @@ export const CalibrationMetricsCard = ({ result }: CalibrationMetricsCardProps) 
   };
 
   return (
-    <Card className="border shadow-sm">
-      <CardHeader className="pb-3 px-4 sm:px-6">
+    <Card>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm sm:text-base">
+          <CardTitle className="text-sm">
             {result.provider === 'chatgpt' && '🤖 OpenAI'}
             {result.provider === 'gemini' && '✨ Gemini'}
             {result.provider === 'claude' && '🧠 Claude'}
@@ -34,7 +34,7 @@ export const CalibrationMetricsCard = ({ result }: CalibrationMetricsCardProps) 
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2 px-4 sm:px-6">
+      <CardContent className="space-y-2">
         {result.success ? (
           <>
             <MetricRow
@@ -62,13 +62,13 @@ export const CalibrationMetricsCard = ({ result }: CalibrationMetricsCardProps) 
             )}
             {result.response_preview && (
               <div className="pt-2 border-t">
-                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Preview:</p>
-                <p className="text-xs sm:text-sm italic line-clamp-2">{result.response_preview}...</p>
+                <p className="text-xs text-muted-foreground mb-1">Preview:</p>
+                <p className="text-xs italic">{result.response_preview}...</p>
               </div>
             )}
           </>
         ) : (
-          <div className="text-xs sm:text-sm text-destructive">
+          <div className="text-xs text-destructive">
             {result.error_message || 'Test fallito'}
           </div>
         )}

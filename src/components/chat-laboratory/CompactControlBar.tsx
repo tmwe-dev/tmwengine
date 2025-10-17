@@ -202,9 +202,95 @@ export const CompactControlBar = ({
       icon: Brain,
       content: (
         <div className="space-y-4 max-h-[40vh] overflow-y-auto p-4">
-          <p className="text-sm text-muted-foreground">
-            Le impostazioni dei turni sono disponibili nella barra dei controlli principale.
-          </p>
+          {/* Stato Corrente */}
+          <div className="p-3 bg-muted/30 rounded-lg border space-y-2">
+            <h4 className="text-sm font-semibold mb-2">⚙️ Configurazione Attiva</h4>
+            
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Modalità Audio:</span>
+              <span className="font-medium uppercase">{audioMode.replace('v2_', '')}</span>
+            </div>
+            
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">⚡ Smart Turn-Taking:</span>
+              <span className={cn("font-medium", isSmartMode ? "text-green-500" : "text-orange-500")}>
+                {isSmartMode ? "Attivo" : "Disattivo"}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">📞 Chiamate Dirette:</span>
+              <span className={cn("font-medium", enableDirectCall ? "text-green-500" : "text-orange-500")}>
+                {enableDirectCall ? "Abilitate" : "Disabilitate"}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Pausa tra Turni:</span>
+              <span className="font-medium">{pauseBetweenTurns}ms</span>
+            </div>
+          </div>
+
+          {/* Caratteristiche Microfono Attivo */}
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
+            <h4 className="text-sm font-semibold mb-2">🎤 Microfono: {audioMode.toUpperCase().replace('V2_', '')}</h4>
+            
+            {audioMode === 'stable' && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Modalità:</strong> Push-to-Talk con Auto-Stop
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Funzionamento:</strong> Premi e rilascia. Si ferma automaticamente dopo 3s di silenzio.
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  <strong>✅ Risultato:</strong> Registrazione affidabile, nessun rumore di fondo.
+                </p>
+              </>
+            )}
+            
+            {audioMode === 'v2_continuous' && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Modalità:</strong> Registrazione Continua
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Funzionamento:</strong> Sempre attivo. Auto-stop dopo 1.5s di silenzio.
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  <strong>✅ Risultato:</strong> Conversazione naturale hands-free.
+                </p>
+              </>
+            )}
+            
+            {audioMode === 'v2_extended' && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Modalità:</strong> Hold-to-Record
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Funzionamento:</strong> Tieni premuto per registrare, rilascia per inviare.
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  <strong>✅ Risultato:</strong> Controllo totale sulla durata della registrazione.
+                </p>
+              </>
+            )}
+            
+            {audioMode === 'v2_hybrid' && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Modalità:</strong> Ascolto Intelligente
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Funzionamento:</strong> VAD automatico rileva quando parli e quando smetti.
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  <strong>✅ Risultato:</strong> Esperienza più naturale con rilevamento vocale avanzato.
+                </p>
+              </>
+            )}
+          </div>
         </div>
       )
     },

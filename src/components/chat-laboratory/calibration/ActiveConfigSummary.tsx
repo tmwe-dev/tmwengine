@@ -21,9 +21,18 @@ export function ActiveConfigSummary({
   audioMode,
   lastResponse
 }: ActiveConfigSummaryProps) {
+  console.log('🔄 ActiveConfigSummary render:', {
+    turnStrategy,
+    pauseBetweenTurns,
+    enableDirectCalls,
+    voiceEnabled,
+    audioMode,
+    lastResponse: lastResponse?.speaker
+  });
+
   return (
     <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
-      <h4 className="text-sm font-semibold text-foreground">Configurazione Attiva</h4>
+      <h4 className="text-sm font-semibold text-foreground">⚙️ Configurazione Attiva</h4>
       
       <div className="space-y-2 text-xs">
         {audioMode && (

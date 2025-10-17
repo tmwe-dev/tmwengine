@@ -50,7 +50,12 @@ export function useOrchestratorTest(conversationId: string) {
   const { toast } = useToast();
 
   const updateConfig = (updates: Partial<TestConfig>) => {
-    setCurrentConfig(prev => ({ ...prev, ...updates }));
+    console.log('🔧 updateConfig chiamato con:', updates);
+    setCurrentConfig(prev => {
+      const newConfig = { ...prev, ...updates };
+      console.log('📝 Nuovo config:', newConfig);
+      return newConfig;
+    });
   };
 
   const saveConfig = async (configName: string) => {

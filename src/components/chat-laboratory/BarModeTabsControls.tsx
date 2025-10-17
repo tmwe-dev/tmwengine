@@ -258,25 +258,6 @@ export const BarModeTabsControls = ({
             />
           </div>
 
-          {/* Dropdown Modalità Audio */}
-          <div className="flex items-center gap-3 p-3 bg-muted/10 rounded-lg border border-border/20 w-fit">
-            <select
-              value={audioMode}
-              onChange={(e) => {
-                const newMode = e.target.value as any;
-                setAudioMode(newMode);
-                if (conversationId) {
-                  localStorage.setItem(`audio-mode-${conversationId}`, newMode);
-                }
-              }}
-              className="px-3 py-2 bg-background border border-input rounded-md text-sm w-auto min-w-0"
-            >
-              <option value="stable">✅ STABLE (PTT 3s)</option>
-              <option value="v2_continuous">🔵 Continuous (1.5s)</option>
-              <option value="v2_extended">🟢 Extended (Hold)</option>
-              <option value="v2_hybrid">🟡 Hybrid (Listen)</option>
-            </select>
-          </div>
         </div>
       )
     },
@@ -359,53 +340,91 @@ export const BarModeTabsControls = ({
     },
     {
       value: 'test',
-      label: 'Test Audio',
+      label: 'Laboratorio Audio',
       icon: Beaker,
       badge: '🧪',
       content: (
         <div className="space-y-4 max-h-[40vh] overflow-y-auto p-4">
-          {/* Audio Mode Selector */}
-          <div className="space-y-3 p-3 bg-muted/10 rounded-lg border border-border/20">
-            <Label className="text-sm font-medium">
-              🧪 Seleziona Modalità Audio Sperimentale
-            </Label>
-            <select
-              value={audioMode}
-              onChange={(e) => {
-                const newMode = e.target.value as any;
-                setAudioMode(newMode);
-                if (conversationId) {
-                  localStorage.setItem(`audio-mode-${conversationId}`, newMode);
-                }
-              }}
-              className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm"
-            >
-              <option value="stable">✅ STABLE (PTT 3s)</option>
-              <option value="v2_continuous">🔵 Continuous (1.5s)</option>
-              <option value="v2_extended">🟢 Extended (Hold)</option>
-              <option value="v2_hybrid">🟡 Hybrid (Listen)</option>
-            </select>
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
+            <p className="text-xs text-blue-800 dark:text-blue-200">
+              <strong>Laboratorio di Comparazione:</strong> Testa tutte e 4 le modalità contemporaneamente per trovare quella più adatta.
+            </p>
           </div>
 
-          {/* Descrizione modalità selezionata */}
-          <div className="p-4 bg-muted/20 rounded-lg border border-border/40">
-            <h4 className="text-sm font-medium mb-2">
-              {audioMode === 'stable' && '✅ STABLE - Push-to-Talk con silenzio 3s'}
-              {audioMode === 'v2_continuous' && '🔵 CONTINUOUS - Auto-stop dopo 1.5s silenzio'}
-              {audioMode === 'v2_extended' && '🟢 EXTENDED - Hold continuo'}
-              {audioMode === 'v2_hybrid' && '🟡 HYBRID - Ascolto intelligente'}
-            </h4>
-            <p className="text-xs text-muted-foreground">
-              {audioMode === 'stable' && 'Premi e rilascia. Registra per max 3 secondi di silenzio.'}
-              {audioMode === 'v2_continuous' && 'Registrazione continua fino a 1.5 secondi di silenzio.'}
-              {audioMode === 'v2_extended' && 'Tieni premuto per registrare, rilascia per fermare.'}
-              {audioMode === 'v2_hybrid' && 'Ascolto intelligente con rilevamento automatico del silenzio.'}
-            </p>
+          {/* Grid con 4 microfoni */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* STABLE */}
+            <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold">✅ STABLE</h4>
+                <span className="text-xs text-muted-foreground">PTT 3s</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">Premi e rilascia. Auto-stop dopo 3s silenzio.</p>
+              <BarVoiceRecorder
+                conversationId={conversationId}
+                onTranscriptionComplete={(text) => {
+                  console.log('🎤 STABLE:', text);
+                  onTranscriptionComplete(text);
+                }}
+                isDisabled={isAISpeaking || isPaused}
+              />
+            </div>
+
+            {/* CONTINUOUS */}
+            <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold">🔵 CONTINUOUS</h4>
+                <span className="text-xs text-muted-foreground">1.5s VAD</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">Registrazione continua con auto-stop 1.5s silenzio.</p>
+              <BarVoiceRecorderV2_Continuous
+                conversationId={conversationId}
+                onTranscriptionComplete={(text) => {
+                  console.log('🎤 CONTINUOUS:', text);
+                  onTranscriptionComplete(text);
+                }}
+                isDisabled={isAISpeaking || isPaused}
+              />
+            </div>
+
+            {/* EXTENDED */}
+            <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold">🟢 EXTENDED</h4>
+                <span className="text-xs text-muted-foreground">Hold</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">Tieni premuto per registrare, rilascia per inviare.</p>
+              <BarVoiceRecorderV2_Extended
+                conversationId={conversationId}
+                onTranscriptionComplete={(text) => {
+                  console.log('🎤 EXTENDED:', text);
+                  onTranscriptionComplete(text);
+                }}
+                isDisabled={isAISpeaking || isPaused}
+              />
+            </div>
+
+            {/* HYBRID */}
+            <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold">🟡 HYBRID</h4>
+                <span className="text-xs text-muted-foreground">Smart Listen</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">Ascolto continuo intelligente con VAD automatico.</p>
+              <BarVoiceRecorderV2_Hybrid
+                conversationId={conversationId}
+                onTranscriptionComplete={(text) => {
+                  console.log('🎤 HYBRID:', text);
+                  onTranscriptionComplete(text);
+                }}
+                isDisabled={isAISpeaking || isPaused}
+              />
+            </div>
           </div>
 
           <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
             <p className="text-xs text-yellow-800 dark:text-yellow-200">
-              ⚠️ <strong>Modalità sperimentali:</strong> Queste varianti sono in fase di test e potrebbero non funzionare come previsto.
+              ⚠️ Le trascrizioni verranno loggiate in console per confronto. Ogni microfono funziona indipendentemente.
             </p>
           </div>
         </div>

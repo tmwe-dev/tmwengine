@@ -113,10 +113,10 @@ const ChatLaboratoryCalibration = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20 p-4">
-      <div className="container mx-auto max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900/10 via-background to-violet-900/10 p-3 sm:p-4 lg:p-6">
+      <div className="container mx-auto max-w-[1600px]">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -126,11 +126,11 @@ const ChatLaboratoryCalibration = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent flex items-center gap-2">
-                <Settings2 className="h-6 w-6 text-indigo-600" />
+              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent flex items-center gap-2">
+                <Settings2 className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
                 AI Calibration Center
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
                 Test, optimize, and fine-tune AI parameters
               </p>
             </div>
@@ -141,17 +141,18 @@ const ChatLaboratoryCalibration = () => {
               const name = prompt('Nome configurazione:');
               if (name) handleSaveConfig(name);
             }}
-            className="gap-2"
+            className="gap-2 w-full sm:w-auto"
           >
             <Save className="h-4 w-4" />
-            Salva Config
+            <span className="hidden sm:inline">Salva Config</span>
+            <span className="sm:hidden">Salva</span>
           </Button>
         </div>
 
         {/* Main Grid */}
-        <div className="grid grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[300px_1fr_340px] gap-4 lg:gap-6">
           {/* Left Sidebar - Parameters */}
-          <div className="col-span-3">
+          <div className="order-2 md:order-1">
             <CalibrationParamsPanel
               config={config}
               onChange={setConfig}
@@ -159,7 +160,7 @@ const ChatLaboratoryCalibration = () => {
           </div>
 
           {/* Center - Test Zone & Prompt Viewer */}
-          <div className="col-span-6 space-y-4">
+          <div className="order-1 md:order-2 space-y-4 lg:space-y-6">
             <CalibrationTestZone
               config={config}
               onTestComplete={handleTestComplete}
@@ -181,7 +182,7 @@ const ChatLaboratoryCalibration = () => {
           </div>
 
           {/* Right Sidebar - Metrics */}
-          <div className="col-span-3 space-y-4">
+          <div className="order-3 md:col-span-2 lg:col-span-1 space-y-4">
             {testResults.map((result, idx) => (
               <CalibrationMetricsCard
                 key={idx}

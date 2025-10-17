@@ -95,22 +95,26 @@ export const CalibrationTestZone = ({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          🧪 Test Zone
+    <Card className="border-2 border-primary/20 shadow-md">
+      <CardHeader className="pb-3 px-4 sm:px-6">
+        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+          <span className="text-xl">🧪</span>
+          <span>Test Zone</span>
         </CardTitle>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+          Esegui un test per verificare le performance
+        </p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-4 sm:px-6">
         <div>
-          <label className="text-sm font-medium mb-2 block">
+          <label className="text-xs sm:text-sm font-medium mb-2 block">
             Messaggio di Test
           </label>
           <Textarea
             value={testMessage}
             onChange={(e) => setTestMessage(e.target.value)}
             placeholder="Inserisci un messaggio per testare la configurazione..."
-            className="min-h-[100px]"
+            className="min-h-[80px] sm:min-h-[100px] text-sm"
             disabled={isRunning}
           />
         </div>
@@ -124,12 +128,13 @@ export const CalibrationTestZone = ({
           {isRunning ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Test in corso...
+              <span className="hidden sm:inline">Test in corso...</span>
+              <span className="sm:hidden">Testing...</span>
             </>
           ) : (
             <>
               <Play className="h-4 w-4" />
-              Esegui Test
+              <span>Esegui Test</span>
             </>
           )}
         </Button>

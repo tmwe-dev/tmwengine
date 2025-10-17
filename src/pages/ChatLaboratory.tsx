@@ -106,6 +106,13 @@ const ChatLaboratory = () => {
   const [isBarMode, setIsBarMode] = useState(false);
   const [activeKnowledgeBase, setActiveKnowledgeBase] = useState<string | null>(null);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
+
+  // Forza vista tabs quando Bar Mode è attivo
+  useEffect(() => {
+    if (isBarMode) {
+      setViewMode('tabs');
+    }
+  }, [isBarMode]);
   
   // Settings Drawer State
   const [settingsOpen, setSettingsOpen] = useState(false);

@@ -88,6 +88,19 @@ export const CalibrationTestZone = ({
     };
 
     loadRealConfiguration();
+    
+    // Ricarica quando la pagina torna visibile
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadRealConfiguration();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const runTest = async () => {

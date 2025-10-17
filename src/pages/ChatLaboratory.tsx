@@ -490,6 +490,7 @@ const ChatLaboratory = () => {
       if (error) throw error;
       
       setCurrentConversationId(data.id);
+      localStorage.setItem('last_lab_conversation_id', data.id);
       
       // ✅ Se Bar Mode attivo, abilita audio automaticamente
       if (isBarMode) {

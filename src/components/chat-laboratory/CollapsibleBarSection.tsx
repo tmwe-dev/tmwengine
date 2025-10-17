@@ -12,6 +12,7 @@ interface CollapsibleBarSectionProps {
   onKBChange: (kb: string | null) => void;
   onTranscriptionComplete: (text: string) => void;
   isAISpeaking: boolean;
+  onAudioModeChange?: (mode: AudioMode) => void;
 }
 
 export const CollapsibleBarSection = ({
@@ -20,7 +21,8 @@ export const CollapsibleBarSection = ({
   onBarModeToggle,
   onKBChange,
   onTranscriptionComplete,
-  isAISpeaking
+  isAISpeaking,
+  onAudioModeChange
 }: CollapsibleBarSectionProps) => {
   const [audioMode, setAudioMode] = useState<AudioMode>(() => {
     const stored = localStorage.getItem('global-audio-mode');
@@ -38,7 +40,10 @@ export const CollapsibleBarSection = ({
     <div className="space-y-2">
       {/* Prima riga: 4 bottoni modalità audio allineati a destra */}
       <div className="flex items-center justify-end">
-        <AudioModeButtons onModeChange={setAudioMode} />
+        <AudioModeButtons onModeChange={(mode) => {
+          setAudioMode(mode);
+          onAudioModeChange?.(mode);
+        }} />
       </div>
 
       {/* Seconda riga: Toggle Bar Chat allineato a sinistra */}

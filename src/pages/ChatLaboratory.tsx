@@ -1271,6 +1271,7 @@ const ChatLaboratory = () => {
                         }
                       }}
                       isAISpeaking={isAISpeaking}
+                      onAudioModeChange={setAudioMode}
                     />
                   </CardContent>
                 </Card>

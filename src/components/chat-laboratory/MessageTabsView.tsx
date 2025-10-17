@@ -23,7 +23,6 @@ interface Message {
 
 interface MessageTabsViewProps {
   messages: Message[];
-  autoAdvanceEnabled?: boolean;
 }
 
 const getTabIcon = (type: string) => {
@@ -45,7 +44,7 @@ const getTabLabel = (message: Message, index: number) => {
   return `${index + 1}. ${message.sender_name}`;
 };
 
-export const MessageTabsView = ({ messages, autoAdvanceEnabled = false }: MessageTabsViewProps) => {
+export const MessageTabsView = ({ messages }: MessageTabsViewProps) => {
   const [activeTab, setActiveTab] = useState(messages.length > 0 ? messages[0].id : '');
   const [showNewMessages, setShowNewMessages] = useState(false);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
@@ -68,20 +67,7 @@ export const MessageTabsView = ({ messages, autoAdvanceEnabled = false }: Messag
     if (messages.length > previousMessagesLengthRef.current) {
       const newCount = messages.length - previousMessagesLengthRef.current;
       
-      const latestMessage = messages[messages.length - 1];
-      
-      // Auto-advance al nuovo messaggio se abilitato
-      if (autoAdvanceEnabled && latestMessage.id !== activeTab) {
-        console.log('📬 Auto-advance: passaggio a messaggio', messages.length - 1);
-        setActiveTab(latestMessage.id);
-        
-        // Reset scroll dopo cambio tab
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-          setShowNewMessages(false);
-          setNewMessagesCount(0);
-        }, 100);
-      } else if (isNearBottom) {
+      if (isNearBottom) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         setShowNewMessages(false);
         setNewMessagesCount(0);
@@ -92,7 +78,7 @@ export const MessageTabsView = ({ messages, autoAdvanceEnabled = false }: Messag
     }
     
     previousMessagesLengthRef.current = messages.length;
-  }, [messages, autoAdvanceEnabled, activeTab]);
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -182,10 +168,6 @@ export const MessageTabsView = ({ messages, autoAdvanceEnabled = false }: Messag
               <TabsTrigger
                 key={message.id}
                 value={message.id}
-                onClick={() => {
-                  console.log('🔄 Tab cliccato manualmente:', message.id);
-                  setActiveTab(message.id);
-                }}
                 className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 {getTabIcon(message.sender_type)}

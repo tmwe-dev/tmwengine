@@ -3,8 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, Phone, Columns, MessagesSquare, Settings2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -108,14 +106,13 @@ const ChatLaboratory = () => {
   const [isBarMode, setIsBarMode] = useState(false);
   const [activeKnowledgeBase, setActiveKnowledgeBase] = useState<string | null>(null);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
-  const [autoAdvanceTabs, setAutoAdvanceTabs] = useState(false);
 
-  // Forza vista tabs quando Bar Mode è attivo O quando ci sono messaggi
+  // Forza vista tabs quando Bar Mode è attivo
   useEffect(() => {
-    if (isBarMode || (messages.length > 0 && viewMode === 'classic')) {
+    if (isBarMode) {
       setViewMode('tabs');
     }
-  }, [isBarMode, messages.length, viewMode]);
+  }, [isBarMode]);
   
   // Settings Drawer State
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -1451,31 +1448,7 @@ const ChatLaboratory = () => {
             </div>
           </div>
         ) : (
-          <MessageTabsView 
-            messages={messages}
-            autoAdvanceEnabled={autoAdvanceTabs}
-          />
-        )}
-
-        {/* Bar Chat Audio Controls - Microfono Bar Chat */}
-        {isBarMode && currentConversationId && (
-          <div className="border-t border-border/40">
-            <BarChatAudioControls
-              conversationId={currentConversationId}
-              isAISpeaking={isAISpeaking}
-              onTranscriptionComplete={(text) => {
-                setPrompt(text);
-                // Auto-submit dopo trascrizione
-                if (text.trim()) {
-                  handleSubmit({ preventDefault: () => {} } as any);
-                }
-              }}
-              onInterrupt={() => {
-                console.log('🛑 Interruzione audio AI richiesta');
-                setIsAISpeaking(false);
-              }}
-            />
-          </div>
+          <MessageTabsView messages={messages} />
         )}
 
         {/* New Messages Indicator */}
@@ -1556,34 +1529,9 @@ const ChatLaboratory = () => {
             </div>
           )}
 
-          {/* Bar Mode Toggle & Auto-Advance - Desktop Quick Access */}
+          {/* Bar Mode Toggle - Desktop Quick Access */}
           {!isMobile && (
-            <div className="mt-2 flex justify-between items-center gap-4">
-              {/* Voice Recorder e Auto-advance a sinistra */}
-              <div className="flex items-center gap-3">
-                <VoiceRecorder
-                  ref={voiceRecorderRef}
-                  onTranscription={(text) => {
-                    setPrompt(text);
-                  }}
-                  onRecordingStateChange={setRecordingState}
-                />
-                
-                {viewMode === 'tabs' && (
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/40 bg-card/40">
-                    <Label htmlFor="auto-advance" className="text-sm font-medium cursor-pointer">
-                      🎬 Auto-advance
-                    </Label>
-                    <Switch
-                      id="auto-advance"
-                      checked={autoAdvanceTabs}
-                      onCheckedChange={setAutoAdvanceTabs}
-                    />
-                  </div>
-                )}
-              </div>
-              
-              {/* Bar Mode Toggle a destra */}
+            <div className="mt-2 flex justify-center">
               <BarModeToggle
                 conversationId={currentConversationId}
                 isBarMode={isBarMode}

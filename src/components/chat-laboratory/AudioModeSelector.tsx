@@ -7,12 +7,11 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarVoiceRecorderV2_Continuous } from './BarVoiceRecorderV2_Continuous';
-import { BarVoiceRecorderV2_Extended } from './BarVoiceRecorderV2_Extended';
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
 
 interface AudioModeSelectorProps {
   conversationId: string | null;
-  onModeChange?: (mode: 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid') => void;
+  onModeChange?: (mode: 'stable' | 'v2_continuous' | 'v2_hybrid') => void;
   onTranscriptionComplete: (text: string) => void;
   isAISpeaking: boolean;
   showOnlyButtons?: boolean;
@@ -20,7 +19,7 @@ interface AudioModeSelectorProps {
 }
 
 export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptionComplete, isAISpeaking, showOnlyButtons = false, showOnlyRecorder = false }: AudioModeSelectorProps) => {
-  const [selectedMode, setSelectedMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>('stable');
+  const [selectedMode, setSelectedMode] = useState<'stable' | 'v2_continuous' | 'v2_hybrid'>('stable');
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -42,7 +41,7 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
     }
   };
 
-  const updateAudioMode = async (mode: 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid') => {
+  const updateAudioMode = async (mode: 'stable' | 'v2_continuous' | 'v2_hybrid') => {
     if (!conversationId) return;
 
     try {
@@ -53,7 +52,6 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
       const modeNames = {
         stable: 'STABLE (PTT 3s)',
         v2_continuous: 'Continuous (1.5s)',
-        v2_extended: 'Extended (Hold)',
         v2_hybrid: 'Hybrid (Listen)'
       };
       
@@ -76,12 +74,6 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
       label: 'Live 1.5s', 
       icon: Radio,
       description: 'Conversazione continua con stop a 1.5s di silenzio'
-    },
-    { 
-      id: 'v2_extended' as const, 
-      label: 'Hold', 
-      icon: Clock,
-      description: 'Registrazione estesa, tieni premuto'
     },
     { 
       id: 'v2_hybrid' as const, 
@@ -143,14 +135,6 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
           />
         )}
         
-        {selectedMode === 'v2_extended' && (
-          <BarVoiceRecorderV2_Extended
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
-        
         {selectedMode === 'v2_hybrid' && (
           <BarVoiceRecorderV2_Hybrid
             conversationId={conversationId}
@@ -204,14 +188,6 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
           
           {selectedMode === 'v2_continuous' && (
             <BarVoiceRecorderV2_Continuous
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking}
-            />
-          )}
-          
-          {selectedMode === 'v2_extended' && (
-            <BarVoiceRecorderV2_Extended
               conversationId={conversationId}
               onTranscriptionComplete={onTranscriptionComplete}
               isDisabled={isAISpeaking}

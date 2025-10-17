@@ -7,7 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const AUDIO_MODE_STORAGE_KEY = 'global-audio-mode';
 
-export type AudioMode = 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid';
+export type AudioMode = 'stable' | 'v2_continuous' | 'v2_hybrid';
 
 interface AudioModeButtonsProps {
   onModeChange?: (mode: AudioMode) => void;
@@ -34,7 +34,6 @@ export const AudioModeButtons = ({ onModeChange }: AudioModeButtonsProps) => {
     const modeNames = {
       stable: 'PTT 3s',
       v2_continuous: 'Live 1.5s',
-      v2_extended: 'Hold',
       v2_hybrid: 'Listen'
     };
     
@@ -53,12 +52,6 @@ export const AudioModeButtons = ({ onModeChange }: AudioModeButtonsProps) => {
       label: 'Live', 
       icon: Radio,
       description: 'Conversazione continua (1.5s silenzio)'
-    },
-    { 
-      id: 'v2_extended' as const, 
-      label: 'Hold', 
-      icon: Clock,
-      description: 'Tieni premuto per registrare'
     },
     { 
       id: 'v2_hybrid' as const, 

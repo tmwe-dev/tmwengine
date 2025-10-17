@@ -22,7 +22,7 @@ import { LabHeaderControls } from '@/components/chat-laboratory/LabHeaderControl
 import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
-import { BarChatAudioControls } from '@/components/chat-laboratory/BarChatAudioControls';
+import { BarModeTabsControls } from '@/components/chat-laboratory/BarModeTabsControls';
 import { BarVoiceRecorder } from '@/components/chat-laboratory/BarVoiceRecorder';
 import { InterruptButton } from '@/components/chat-laboratory/InterruptButton';
 import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
@@ -1612,25 +1612,23 @@ const ChatLaboratory = () => {
             </div>
           </form>
 
-          {/* Bar Chat Audio Controls - Posizionati sotto la textarea */}
+          {/* Bar Mode Tabs Controls - Posizionati sotto la textarea */}
           {isBarMode && currentConversationId && (
-            <div className="mt-4 flex justify-start max-h-[35vh] overflow-y-auto">
-              <div className="w-full max-w-2xl">
-                <BarChatAudioControls
-                  conversationId={currentConversationId}
-                  isAISpeaking={isAISpeaking}
-                  onTranscriptionComplete={(text) => {
-                    setPrompt(text);
-                    if (text.trim()) {
-                      handleSubmit({ preventDefault: () => {} } as any);
-                    }
-                  }}
-                  onInterrupt={() => {
-                    console.log('🛑 Interruzione audio AI richiesta');
-                    setIsAISpeaking(false);
-                  }}
-                />
-              </div>
+            <div className="mt-4">
+              <BarModeTabsControls
+                conversationId={currentConversationId}
+                isAISpeaking={isAISpeaking}
+                onTranscriptionComplete={(text) => {
+                  setPrompt(text);
+                  if (text.trim()) {
+                    handleSubmit({ preventDefault: () => {} } as any);
+                  }
+                }}
+                onInterrupt={() => {
+                  console.log('🛑 Interruzione audio AI richiesta');
+                  setIsAISpeaking(false);
+                }}
+              />
             </div>
           )}
 

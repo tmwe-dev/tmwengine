@@ -76,6 +76,12 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
 
       onToggle(enabled);
       
+      console.log('🍺 BarMode toggled:', { 
+        enabled, 
+        conversationId, 
+        hasConversationId: !!conversationId 
+      });
+      
       // toast({
       //   title: enabled ? "🍺 Bar Mode Attivo" : "Modalità Laboratory",
       //   description: enabled 

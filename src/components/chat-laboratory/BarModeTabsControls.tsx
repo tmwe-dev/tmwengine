@@ -36,6 +36,7 @@ export const BarModeTabsControls = ({
   const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>('stable');
 
   useEffect(() => {
+    console.log('🎛️ BarModeTabsControls mounted:', { conversationId });
     if (conversationId) {
       loadPauseState();
       loadDynamicTurnSettings();

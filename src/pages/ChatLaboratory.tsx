@@ -1495,7 +1495,7 @@ const ChatLaboratory = () => {
 
           {/* Compact Control Bar TOP - Solo elementi selezionati */}
           {!isMobile && (
-            <div className="mb-2 flex justify-center">
+            <div className="mb-2 flex justify-start">
               <CompactControlBar
                 position="top"
                 conversationId={currentConversationId}

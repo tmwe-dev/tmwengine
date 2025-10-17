@@ -93,62 +93,80 @@ export const CompactControlBar = ({
   };
 
   const updateTurnStrategy = async (newStrategy: string) => {
-    if (!conversationId) return;
+    setTurnStrategy(newStrategy); // Aggiorna immediatamente UI
+    if (!conversationId) {
+      localStorage.setItem('turn-strategy-pending', newStrategy);
+      return;
+    }
     try {
       const { error } = await supabase
         .from('chat_laboratory_bar_mode')
         .update({ turn_strategy: newStrategy })
         .eq('conversation_id', conversationId);
       if (error) throw error;
-      setTurnStrategy(newStrategy);
       toast.success("Strategia aggiornata", {
         description: `Ora usando: ${newStrategy === 'RANDOM_30' ? 'Random' : 'Smart Turn-Taking'}`
       });
     } catch (error) {
       console.error('Error updating turn strategy:', error);
       toast.error("Errore aggiornamento strategia");
+      // Rollback su errore
+      setTurnStrategy(newStrategy === 'RANDOM_30' ? 'SMART_PRIORITY' : 'RANDOM_30');
     }
   };
 
   const updatePauseBetweenTurns = async (newPause: number) => {
-    if (!conversationId) return;
+    setPauseBetweenTurns(newPause); // Aggiorna immediatamente UI
+    if (!conversationId) {
+      localStorage.setItem('pause-between-turns-pending', String(newPause));
+      return;
+    }
     try {
       const { error } = await supabase
         .from('chat_laboratory_bar_mode')
         .update({ pause_between_turns_ms: newPause })
         .eq('conversation_id', conversationId);
       if (error) throw error;
-      setPauseBetweenTurns(newPause);
     } catch (error) {
       console.error('Error updating pause:', error);
+      toast.error("Errore aggiornamento pausa");
     }
   };
 
   const updateDirectCallDetection = async (enabled: boolean) => {
-    if (!conversationId) return;
+    setEnableDirectCall(enabled); // Aggiorna immediatamente UI
+    if (!conversationId) {
+      localStorage.setItem('direct-call-pending', String(enabled));
+      return;
+    }
     try {
       const { error } = await supabase
         .from('chat_laboratory_bar_mode')
         .update({ enable_direct_call_detection: enabled })
         .eq('conversation_id', conversationId);
       if (error) throw error;
-      setEnableDirectCall(enabled);
       toast.success(enabled ? "Chiamate dirette abilitate" : "Chiamate dirette disabilitate");
     } catch (error) {
       console.error('Error updating direct call detection:', error);
+      toast.error("Errore aggiornamento chiamate dirette");
+      // Rollback su errore
+      setEnableDirectCall(!enabled);
     }
   };
 
   const togglePause = async () => {
-    if (!conversationId) return;
+    if (!conversationId) {
+      toast.warning("Avvia una conversazione prima di mettere in pausa");
+      return;
+    }
     const newPauseState = !isPaused;
+    setIsPaused(newPauseState); // Aggiorna immediatamente UI
     try {
       const { error } = await supabase
         .from('chat_laboratory_conversations')
         .update({ is_paused: newPauseState })
         .eq('id', conversationId);
       if (error) throw error;
-      setIsPaused(newPauseState);
       toast[newPauseState ? 'warning' : 'success'](
         newPauseState ? "⏸️ Conversazione in Pausa" : "▶️ Conversazione Ripresa",
         {
@@ -160,6 +178,8 @@ export const CompactControlBar = ({
     } catch (error) {
       console.error('Error toggling pause:', error);
       toast.error("Errore", { description: "Impossibile cambiare stato pausa" });
+      // Rollback su errore
+      setIsPaused(!newPauseState);
     }
   };
 
@@ -299,7 +319,6 @@ export const CompactControlBar = ({
         onCheckedChange={(checked) => 
           updateTurnStrategy(checked ? 'SMART_PRIORITY' : 'RANDOM_30')
         }
-        disabled={!conversationId}
       />
       
       <Separator />
@@ -309,7 +328,6 @@ export const CompactControlBar = ({
       <Switch
         checked={enableDirectCall}
         onCheckedChange={updateDirectCallDetection}
-        disabled={!conversationId}
       />
       
       <Separator />
@@ -322,7 +340,6 @@ export const CompactControlBar = ({
         max={2000}
         step={100}
         className="w-20 max-w-[80px]"
-        disabled={!conversationId}
       />
       <span className="text-[10px] text-muted-foreground whitespace-nowrap min-w-[40px]">
         {pauseBetweenTurns}ms

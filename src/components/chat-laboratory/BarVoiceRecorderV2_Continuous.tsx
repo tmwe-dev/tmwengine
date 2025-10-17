@@ -264,12 +264,7 @@ export const BarVoiceRecorderV2_Continuous = ({
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      {/* Indicatore modalità */}
-      <div className="text-xs text-muted-foreground">
-        ⚡ Modalità: Auto-stop silenzio
-      </div>
-
+    <div className="flex flex-col items-end gap-2">
       <div className="flex items-center gap-3">
         <Button
           variant={isRecording ? "destructive" : "default"}
@@ -305,6 +300,11 @@ export const BarVoiceRecorderV2_Continuous = ({
           )}
         </div>
       )}
+      </div>
+      
+      {/* Indicatore modalità sotto, allineato a destra */}
+      <div className="text-xs text-muted-foreground">
+        ⚡ Modalità: Auto-stop silenzio
       </div>
     </div>
   );

@@ -317,9 +317,8 @@ serve(async (req) => {
       let composedPrompt = globalSystemPrompt + '\n\n';
       
       // Add BASE sections (cached)
-        composedPrompt += '=== CONTESTO BASE ===\n';
-        composedPrompt += baseContent + '\n\n';
-      }
+      composedPrompt += '=== CONTESTO BASE ===\n';
+      composedPrompt += baseContent + '\n\n';
 
       // Add AGENT_PERSONALITY (cached)
       if (agentPersonality) {

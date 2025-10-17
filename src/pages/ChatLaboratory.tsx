@@ -1530,9 +1530,8 @@ const ChatLaboratory = () => {
                 <VoiceRecorder
                   ref={voiceRecorderRef}
                   onTranscription={(text) => {
-                    setPrompt(text);
                     if (text.trim()) {
-                      handleSubmit({ preventDefault: () => {} } as any);
+                      handleSubmit({ preventDefault: () => {} } as any, text);
                     }
                   }}
                   onRecordingStateChange={setRecordingState}

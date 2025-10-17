@@ -23,6 +23,7 @@ interface CompactControlBarProps {
   onInterrupt: () => void;
   onTranscriptionComplete: (text: string) => void;
   className?: string;
+  position?: 'top' | 'bottom';
 }
 
 export const CompactControlBar = ({
@@ -32,7 +33,8 @@ export const CompactControlBar = ({
   onToggleBarMode,
   onInterrupt,
   onTranscriptionComplete,
-  className
+  className,
+  position = 'bottom'
 }: CompactControlBarProps) => {
   const [isPaused, setIsPaused] = useState(false);
   const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
@@ -281,36 +283,46 @@ export const CompactControlBar = ({
 
   const Separator = () => <div className="h-4 w-px bg-border/40" />;
 
+  // TOP: Solo InterruptButton, BarModeToggle, AudioModeSelector
+  if (position === 'top') {
+    return (
+      <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
+        {/* Interrupt Button */}
+        {isBarMode && isAISpeaking && (
+          <>
+            <InterruptButton isAISpeaking={isAISpeaking} onInterrupt={onInterrupt} />
+            <Separator />
+          </>
+        )}
+
+        {/* Bar Mode Toggle */}
+        <BarModeToggle
+          conversationId={conversationId}
+          isBarMode={isBarMode}
+          onToggle={onToggleBarMode}
+        />
+
+        {isBarMode && (
+          <>
+            <Separator />
+            
+            {/* Audio Mode Selector */}
+            <AudioModeSelector 
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isAISpeaking={isAISpeaking}
+            />
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // BOTTOM: Tutti gli altri elementi
   return (
     <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
-      {/* Interrupt Button */}
-      {isBarMode && isAISpeaking && (
-        <>
-          <InterruptButton isAISpeaking={isAISpeaking} onInterrupt={onInterrupt} />
-          <Separator />
-        </>
-      )}
-
-      {/* Bar Mode Toggle */}
-      <BarModeToggle
-        conversationId={conversationId}
-        isBarMode={isBarMode}
-        onToggle={onToggleBarMode}
-      />
-
       {isBarMode && (
         <>
-          <Separator />
-          
-          {/* Audio Mode Selector */}
-          <AudioModeSelector 
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isAISpeaking={isAISpeaking}
-          />
-          
-          <Separator />
-          
           {/* Thunder Switch */}
           <Zap className="h-3.5 w-3.5 text-muted-foreground" />
           <Switch

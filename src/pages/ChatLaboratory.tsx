@@ -1494,10 +1494,11 @@ const ChatLaboratory = () => {
             </div>
           )}
 
-          {/* Compact Control Bar - Sopra l'area di testo centrato */}
+          {/* Compact Control Bar TOP - Solo elementi selezionati */}
           {!isMobile && (
             <div className="mb-2 flex justify-center">
               <CompactControlBar
+                position="top"
                 conversationId={currentConversationId}
                 isBarMode={isBarMode}
                 isAISpeaking={isAISpeaking}
@@ -1575,6 +1576,27 @@ const ChatLaboratory = () => {
             </div>
           </form>
 
+          {/* Compact Control Bar BOTTOM - Resto degli elementi */}
+          {!isMobile && (
+            <div className="mt-2 w-full">
+              <CompactControlBar
+                position="bottom"
+                conversationId={currentConversationId}
+                isBarMode={isBarMode}
+                isAISpeaking={isAISpeaking}
+                onToggleBarMode={setIsBarMode}
+                onInterrupt={() => {
+                  console.log('🛑 Interruzione audio AI richiesta');
+                  setIsAISpeaking(false);
+                }}
+                onTranscriptionComplete={(text) => {
+                  if (text.trim()) {
+                    handleSubmit({ preventDefault: () => {} } as any, text);
+                  }
+                }}
+              />
+            </div>
+          )}
 
         </div>
       </div>

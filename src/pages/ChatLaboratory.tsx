@@ -108,6 +108,7 @@ const ChatLaboratory = () => {
   const [isBarMode, setIsBarMode] = useState(false);
   const [activeKnowledgeBase, setActiveKnowledgeBase] = useState<string | null>(null);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [conversationMode, setConversationMode] = useState<'ptt' | 'continuous'>('ptt');
 
   // Forza vista tabs quando Bar Mode è attivo
   useEffect(() => {
@@ -1572,15 +1573,37 @@ const ChatLaboratory = () => {
               {/* Controlli Audio a sinistra (solo in Bar Mode) */}
               {isBarMode && (
                 <div className="flex items-center gap-3">
-                  <BarVoiceRecorder
-                    conversationId={currentConversationId}
-                    onTranscriptionComplete={(text) => {
-                      if (text.trim()) {
-                        handleSubmit({ preventDefault: () => {} } as any, text);
-                      }
-                    }}
-                    isDisabled={isAISpeaking}
-                  />
+                  {/* Dropdown Modalità Conversazione */}
+                  <select
+                    value={conversationMode}
+                    onChange={(e) => setConversationMode(e.target.value as 'ptt' | 'continuous')}
+                    className="px-3 py-2 bg-background border border-input rounded-md text-sm h-10"
+                    title="Seleziona modalità conversazione"
+                  >
+                    <option value="ptt">🎤 Push-to-Talk</option>
+                    <option value="continuous">🔴 Live Continua</option>
+                  </select>
+
+                  {/* Microfono Push-to-Talk (NON modificato) */}
+                  {conversationMode === 'ptt' && (
+                    <BarVoiceRecorder
+                      conversationId={currentConversationId}
+                      onTranscriptionComplete={(text) => {
+                        if (text.trim()) {
+                          handleSubmit({ preventDefault: () => {} } as any, text);
+                        }
+                      }}
+                      isDisabled={isAISpeaking}
+                    />
+                  )}
+
+                  {/* Microfono Conversazione Continua */}
+                  {conversationMode === 'continuous' && (
+                    <div className="text-xs text-muted-foreground px-3 py-2 bg-muted/20 rounded-md border border-border/40">
+                      🔴 Modalità Live attiva
+                    </div>
+                  )}
+
                   <InterruptButton
                     isAISpeaking={isAISpeaking}
                     onInterrupt={() => {

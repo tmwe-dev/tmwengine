@@ -23,6 +23,8 @@ import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 import { BarChatAudioControls } from '@/components/chat-laboratory/BarChatAudioControls';
+import { BarVoiceRecorder } from '@/components/chat-laboratory/BarVoiceRecorder';
+import { InterruptButton } from '@/components/chat-laboratory/InterruptButton';
 import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
 import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggle';
 import { BarChatSettings } from '@/components/chat-laboratory/BarChatSettings';
@@ -1564,14 +1566,45 @@ const ChatLaboratory = () => {
             </div>
           )}
 
-          {/* Bar Mode Toggle - Desktop Quick Access */}
+          {/* Controlli Audio e Toggle BarChat */}
           {!isMobile && (
-            <div className="mt-2 flex justify-center">
-              <BarModeToggle
-                conversationId={currentConversationId}
-                isBarMode={isBarMode}
-                onToggle={setIsBarMode}
-              />
+            <div className="mt-2 flex items-center gap-4">
+              {/* Controlli Audio a sinistra (solo in Bar Mode) */}
+              {isBarMode && (
+                <div className="flex items-center gap-3">
+                  <BarVoiceRecorder
+                    conversationId={currentConversationId}
+                    onTranscriptionComplete={(text) => {
+                      if (text.trim()) {
+                        handleSubmit({ preventDefault: () => {} } as any, text);
+                      }
+                    }}
+                    isDisabled={isAISpeaking}
+                  />
+                  <InterruptButton
+                    isAISpeaking={isAISpeaking}
+                    onInterrupt={() => {
+                      console.log('🛑 Interruzione audio AI richiesta');
+                      setIsAISpeaking(false);
+                    }}
+                  />
+                </div>
+              )}
+              
+              {/* Toggle BarChat - centrato */}
+              <div className="flex-1 flex justify-center">
+                <BarModeToggle
+                  conversationId={currentConversationId}
+                  isBarMode={isBarMode}
+                  onToggle={setIsBarMode}
+                />
+              </div>
+              
+              {/* Spacer a destra per mantenere il toggle centrato */}
+              {isBarMode && <div className="flex items-center gap-3 opacity-0 pointer-events-none">
+                <div className="w-10 h-10" />
+                <div className="w-10 h-10" />
+              </div>}
             </div>
           )}
 

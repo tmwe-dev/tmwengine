@@ -442,7 +442,6 @@ serve(async (req) => {
         console.log(`✅ Forzato switch a: ${selectedParticipant.name}`);
       }
     }
-    }
     
     console.log('🎯 Agente Bar Chat selezionato:', selectedParticipant.name);
 

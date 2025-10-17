@@ -1492,13 +1492,6 @@ const ChatLaboratory = () => {
                   onImageGenerated={setGeneratedImage}
                 />
                 <LaboratoryPromptManager />
-                <VoiceRecorder
-                  ref={voiceRecorderRef}
-                  onTranscription={(text) => {
-                    setPrompt(text);
-                  }}
-                  onRecordingStateChange={setRecordingState}
-                />
               </div>
               
               <Textarea
@@ -1545,22 +1538,29 @@ const ChatLaboratory = () => {
           {/* Bar Mode Toggle & Auto-Advance - Desktop Quick Access */}
           {!isMobile && (
             <div className="mt-2 flex justify-between items-center gap-4">
-              {/* Auto-advance a sinistra */}
-              {isBarMode && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/40 bg-card/40">
-                  <Label htmlFor="auto-advance" className="text-sm font-medium cursor-pointer">
-                    🎬 Auto-advance
-                  </Label>
-                  <Switch
-                    id="auto-advance"
-                    checked={autoAdvanceTabs}
-                    onCheckedChange={setAutoAdvanceTabs}
-                  />
-                </div>
-              )}
-              
-              {/* Spacer quando non c'è auto-advance */}
-              {!isBarMode && <div />}
+              {/* Voice Recorder e Auto-advance a sinistra */}
+              <div className="flex items-center gap-3">
+                <VoiceRecorder
+                  ref={voiceRecorderRef}
+                  onTranscription={(text) => {
+                    setPrompt(text);
+                  }}
+                  onRecordingStateChange={setRecordingState}
+                />
+                
+                {isBarMode && (
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/40 bg-card/40">
+                    <Label htmlFor="auto-advance" className="text-sm font-medium cursor-pointer">
+                      🎬 Auto-advance
+                    </Label>
+                    <Switch
+                      id="auto-advance"
+                      checked={autoAdvanceTabs}
+                      onCheckedChange={setAutoAdvanceTabs}
+                    />
+                  </div>
+                )}
+              </div>
               
               {/* Bar Mode Toggle a destra */}
               <BarModeToggle

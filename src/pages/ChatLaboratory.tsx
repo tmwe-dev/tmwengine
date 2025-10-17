@@ -1528,19 +1528,17 @@ const ChatLaboratory = () => {
                 }}
               />
 
-              {/* Microfono Standard - Solo quando Bar Mode è OFF */}
-              {!isBarMode && (
-                <VoiceRecorder
-                  ref={voiceRecorderRef}
-                  onTranscription={(text) => {
-                    if (text.trim()) {
-                      handleSubmit({ preventDefault: () => {} } as any, text);
-                    }
-                  }}
-                  onRecordingStateChange={setRecordingState}
-                  conversationId={currentConversationId}
-                />
-              )}
+              {/* Microfono Standard - Sempre visibile */}
+              <VoiceRecorder
+                ref={voiceRecorderRef}
+                onTranscription={(text) => {
+                  if (text.trim()) {
+                    handleSubmit({ preventDefault: () => {} } as any, text);
+                  }
+                }}
+                onRecordingStateChange={setRecordingState}
+                conversationId={currentConversationId}
+              />
 
               <Button 
                 type="submit" 

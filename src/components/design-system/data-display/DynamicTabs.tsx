@@ -43,7 +43,7 @@ export function DynamicTabs({
   variant = 'default'
 }: DynamicTabsProps) {
   const tabsListClasses = cn(
-    variant === 'pills' && 'bg-muted/50 p-1 rounded-lg',
+    variant === 'pills' && 'bg-muted/50 p-0.5 rounded-md h-7',
     orientation === 'vertical' && 'flex-col h-full'
   );
 
@@ -51,7 +51,7 @@ export function DynamicTabs({
     <Tabs
       defaultValue={defaultValue || tabs[0]?.value}
       orientation={orientation}
-      className={cn('w-full', className)}
+      className={cn('w-auto flex items-center gap-2', className)}
     >
       <TabsList className={tabsListClasses}>
         {tabs.map((tab) => {
@@ -62,11 +62,11 @@ export function DynamicTabs({
               value={tab.value}
               disabled={tab.disabled}
               className={cn(
-                'flex items-center justify-center p-2',
+                'flex items-center justify-center p-1 h-6 min-w-6 text-xs',
                 variant === 'pills' && 'data-[state=active]:bg-background'
               )}
             >
-              {Icon && <Icon className="h-4 w-4" />}
+              {Icon && <Icon className="h-3 w-3" />}
               {tab.badge !== undefined && (
                 <Badge variant="secondary" className="ml-1 bg-transparent border-0">
                   {tab.badge}
@@ -78,7 +78,7 @@ export function DynamicTabs({
       </TabsList>
 
       {tabs.map((tab) => (
-        <TabsContent key={tab.value} value={tab.value} className="mt-2">
+        <TabsContent key={tab.value} value={tab.value} className="mt-0 absolute top-full left-0 right-0 z-10">
           {tab.content}
         </TabsContent>
       ))}

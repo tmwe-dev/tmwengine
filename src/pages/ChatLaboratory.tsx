@@ -1613,23 +1613,21 @@ const ChatLaboratory = () => {
                 </div>
               )}
               
-                {/* Toggle BarChat */}
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-1.5">
+                  {/* Toggle BarChat */}
                   <BarModeToggle
                     conversationId={currentConversationId}
                     isBarMode={isBarMode}
                     onToggle={setIsBarMode}
                   />
-                </div>
-
-                {/* Selettore Modalità Audio - visibile solo quando Bar Chat è attivo */}
-                {isBarMode && (
-                  <div className="flex-1 flex justify-end pr-4">
+                  
+                  {/* Selettore Modalità Audio - sotto il toggle */}
+                  {isBarMode && (
                     <AudioModeSelector 
                       conversationId={currentConversationId} 
                     />
-                  </div>
-                )}
+                  )}
+                </div>
             </div>
           )}
 

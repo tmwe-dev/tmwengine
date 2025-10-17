@@ -4,6 +4,7 @@ import { Mic, Radio, Clock, Headphones } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AudioModeSelectorProps {
   conversationId: string | null;
@@ -12,6 +13,7 @@ interface AudioModeSelectorProps {
 
 export const AudioModeSelector = ({ conversationId, onModeChange }: AudioModeSelectorProps) => {
   const [selectedMode, setSelectedMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>('stable');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (conversationId) {
@@ -82,33 +84,31 @@ export const AudioModeSelector = ({ conversationId, onModeChange }: AudioModeSel
   ];
 
   return (
-    <div className="space-y-2">
-      <div className="text-xs text-white/70 font-medium">Modalità Audio Real-Time</div>
-      <div className="grid grid-cols-4 gap-2">
-        {modes.map((mode) => {
-          const Icon = mode.icon;
-          const isSelected = selectedMode === mode.id;
-          
-          return (
-            <Button
-              key={mode.id}
-              onClick={() => updateAudioMode(mode.id)}
-              variant={isSelected ? "default" : "outline"}
-              size="sm"
-              className={cn(
-                "flex flex-col items-center gap-1 h-auto py-2 px-2",
-                isSelected 
-                  ? "bg-primary text-primary-foreground border-primary" 
-                  : "bg-white/5 text-white/80 border-white/20 hover:bg-white/10 hover:text-white"
-              )}
-              title={mode.description}
-            >
-              <Icon className="h-4 w-4" />
-              <span className="text-xs font-medium">{mode.label}</span>
-            </Button>
-          );
-        })}
-      </div>
+    <div className="flex items-center gap-1.5">
+      {modes.map((mode) => {
+        const Icon = mode.icon;
+        const isSelected = selectedMode === mode.id;
+        
+        return (
+          <Button
+            key={mode.id}
+            onClick={() => updateAudioMode(mode.id)}
+            variant={isSelected ? "default" : "outline"}
+            size="sm"
+            className={cn(
+              "h-8 px-2",
+              isMobile ? "w-8" : "min-w-[4rem]",
+              isSelected 
+                ? "bg-primary text-primary-foreground border-primary" 
+                : "bg-white/5 text-white/80 border-white/20 hover:bg-white/10 hover:text-white"
+            )}
+            title={mode.description}
+          >
+            <Icon className={cn("h-4 w-4", !isMobile && "mr-1")} />
+            {!isMobile && <span className="text-xs font-medium">{mode.label}</span>}
+          </Button>
+        );
+      })}
     </div>
   );
 };

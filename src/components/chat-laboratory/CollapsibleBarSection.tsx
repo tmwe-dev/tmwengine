@@ -12,6 +12,7 @@ interface CollapsibleBarSectionProps {
   onKBChange: (kb: string | null) => void;
   onTranscriptionComplete: (text: string) => void;
   isAISpeaking: boolean;
+  audioMode?: AudioMode;
   onAudioModeChange?: (mode: AudioMode) => void;
 }
 
@@ -22,19 +23,9 @@ export const CollapsibleBarSection = ({
   onKBChange,
   onTranscriptionComplete,
   isAISpeaking,
+  audioMode,
   onAudioModeChange
 }: CollapsibleBarSectionProps) => {
-  const [audioMode, setAudioMode] = useState<AudioMode>(() => {
-    const stored = localStorage.getItem('global-audio-mode');
-    return (stored as AudioMode) || 'stable';
-  });
-
-  useEffect(() => {
-    const stored = localStorage.getItem('global-audio-mode');
-    if (stored) {
-      setAudioMode(stored as AudioMode);
-    }
-  }, []);
 
   return (
     <div className="space-y-2">
@@ -42,7 +33,6 @@ export const CollapsibleBarSection = ({
       <div className="flex items-center justify-end">
         <AudioModeButtons onModeChange={(mode) => {
           console.log('🎤 AudioModeButtons: Mode changed to:', mode);
-          setAudioMode(mode);
           console.log('📤 CollapsibleBarSection: Calling onAudioModeChange with:', mode);
           onAudioModeChange?.(mode);
         }} />
@@ -65,7 +55,7 @@ export const CollapsibleBarSection = ({
             onTranscriptionComplete={onTranscriptionComplete}
             isAISpeaking={isAISpeaking}
             showOnlyRecorder={true}
-            audioMode={audioMode}
+            audioMode={audioMode || 'stable'}
           />
           
           <div className="flex justify-center">

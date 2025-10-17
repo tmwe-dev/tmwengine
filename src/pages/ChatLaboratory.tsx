@@ -1271,6 +1271,7 @@ const ChatLaboratory = () => {
                         }
                       }}
                       isAISpeaking={isAISpeaking}
+                      audioMode={audioMode}
                       onAudioModeChange={(mode) => {
                         console.log('📥 ChatLaboratory: Received audioMode change:', mode);
                         setAudioMode(mode);

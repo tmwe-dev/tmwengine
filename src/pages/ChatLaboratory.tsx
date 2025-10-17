@@ -106,6 +106,7 @@ const ChatLaboratory = () => {
   const [isBarMode, setIsBarMode] = useState(false);
   const [activeKnowledgeBase, setActiveKnowledgeBase] = useState<string | null>(null);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [autoAdvanceTabs, setAutoAdvanceTabs] = useState(false);
 
   // Forza vista tabs quando Bar Mode è attivo
   useEffect(() => {
@@ -1448,7 +1449,10 @@ const ChatLaboratory = () => {
             </div>
           </div>
         ) : (
-          <MessageTabsView messages={messages} />
+          <MessageTabsView 
+            messages={messages}
+            autoAdvanceEnabled={autoAdvanceTabs}
+          />
         )}
 
         {/* New Messages Indicator */}

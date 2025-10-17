@@ -34,6 +34,7 @@ export const BarChatAudioControls = ({
   const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
   const [pauseBetweenTurns, setPauseBetweenTurns] = useState<number>(800);
   const [enableDirectCall, setEnableDirectCall] = useState<boolean>(true);
+  const [autoAdvanceTabs, setAutoAdvanceTabs] = useState<boolean>(false);
   
   // 🧪 Test Switcher: Scegli quale variante audio usare
   const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>('stable');
@@ -69,7 +70,7 @@ export const BarChatAudioControls = ({
     try {
       const { data, error } = await supabase
         .from('chat_laboratory_bar_mode')
-        .select('turn_strategy, pause_between_turns_ms, enable_direct_call_detection')
+        .select('turn_strategy, pause_between_turns_ms, enable_direct_call_detection, auto_advance_tabs')
         .eq('conversation_id', conversationId)
         .single();
       
@@ -79,6 +80,7 @@ export const BarChatAudioControls = ({
         setTurnStrategy(data.turn_strategy || 'RANDOM_30');
         setPauseBetweenTurns(data.pause_between_turns_ms || 800);
         setEnableDirectCall(data.enable_direct_call_detection ?? true);
+        setAutoAdvanceTabs(data.auto_advance_tabs ?? false);
       }
     } catch (error) {
       console.error('Error loading dynamic turn settings:', error);
@@ -138,6 +140,24 @@ export const BarChatAudioControls = ({
       toast.success(enabled ? "Chiamate dirette abilitate" : "Chiamate dirette disabilitate");
     } catch (error) {
       console.error('Error updating direct call detection:', error);
+    }
+  };
+
+  const updateAutoAdvanceTabs = async (enabled: boolean) => {
+    if (!conversationId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_bar_mode')
+        .update({ auto_advance_tabs: enabled })
+        .eq('conversation_id', conversationId);
+      
+      if (error) throw error;
+      
+      setAutoAdvanceTabs(enabled);
+      toast.success(enabled ? "🎬 Auto-advance attivo" : "⏸️ Auto-advance disattivato");
+    } catch (error) {
+      console.error('Error updating auto-advance:', error);
     }
   };
 
@@ -331,6 +351,18 @@ export const BarChatAudioControls = ({
           />
           <Label className="text-sm cursor-pointer">
             Chiamate dirette (@nome)
+          </Label>
+        </div>
+
+        {/* Auto-Advance Tabs Switch */}
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={autoAdvanceTabs}
+            onCheckedChange={updateAutoAdvanceTabs}
+            disabled={!conversationId}
+          />
+          <Label className="text-sm cursor-pointer">
+            🎬 Auto-advance tabs
           </Label>
         </div>
       </div>

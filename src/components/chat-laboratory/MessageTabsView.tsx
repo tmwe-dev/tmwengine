@@ -23,6 +23,7 @@ interface Message {
 
 interface MessageTabsViewProps {
   messages: Message[];
+  autoAdvanceEnabled?: boolean;
 }
 
 const getTabIcon = (type: string) => {

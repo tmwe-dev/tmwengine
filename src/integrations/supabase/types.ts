@@ -367,6 +367,7 @@ export type Database = {
         Row: {
           active_kb_id: string | null
           audio_mode: string
+          auto_advance_tabs: boolean | null
           auto_play_audio: boolean
           cognitive_buffers: Json | null
           continuous_mic_enabled: boolean | null
@@ -391,6 +392,7 @@ export type Database = {
         Insert: {
           active_kb_id?: string | null
           audio_mode?: string
+          auto_advance_tabs?: boolean | null
           auto_play_audio?: boolean
           cognitive_buffers?: Json | null
           continuous_mic_enabled?: boolean | null
@@ -415,6 +417,7 @@ export type Database = {
         Update: {
           active_kb_id?: string | null
           audio_mode?: string
+          auto_advance_tabs?: boolean | null
           auto_play_audio?: boolean
           cognitive_buffers?: Json | null
           continuous_mic_enabled?: boolean | null

@@ -1494,6 +1494,26 @@ const ChatLaboratory = () => {
             </div>
           )}
 
+          {/* Compact Control Bar - Sopra l'area di testo centrato */}
+          {!isMobile && (
+            <div className="mb-2 flex justify-center">
+              <CompactControlBar
+                conversationId={currentConversationId}
+                isBarMode={isBarMode}
+                isAISpeaking={isAISpeaking}
+                onToggleBarMode={setIsBarMode}
+                onInterrupt={() => {
+                  console.log('🛑 Interruzione audio AI richiesta');
+                  setIsAISpeaking(false);
+                }}
+                onTranscriptionComplete={(text) => {
+                  if (text.trim()) {
+                    handleSubmit({ preventDefault: () => {} } as any, text);
+                  }
+                }}
+              />
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-0.5">
             {/* Textarea con icone a sinistra */}
@@ -1555,26 +1575,6 @@ const ChatLaboratory = () => {
             </div>
           </form>
 
-          {/* Compact Control Bar - Tutti gli elementi su una riga */}
-          {!isMobile && (
-            <div className="mt-2 w-full">
-              <CompactControlBar
-                conversationId={currentConversationId}
-                isBarMode={isBarMode}
-                isAISpeaking={isAISpeaking}
-                onToggleBarMode={setIsBarMode}
-                onInterrupt={() => {
-                  console.log('🛑 Interruzione audio AI richiesta');
-                  setIsAISpeaking(false);
-                }}
-                onTranscriptionComplete={(text) => {
-                  if (text.trim()) {
-                    handleSubmit({ preventDefault: () => {} } as any, text);
-                  }
-                }}
-              />
-            </div>
-          )}
 
         </div>
       </div>

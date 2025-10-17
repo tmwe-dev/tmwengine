@@ -42,6 +42,7 @@ import { TokenWarningBanner } from '@/components/chat-laboratory/TokenWarningBan
 import { TokenUsageChart } from '@/components/chat-laboratory/TokenUsageChart';
 import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
 import { AudioModeSelector } from '@/components/chat-laboratory/AudioModeSelector';
+import { CompactControlBar } from '@/components/chat-laboratory/CompactControlBar';
 
 interface Message {
   id: string;
@@ -1493,45 +1494,6 @@ const ChatLaboratory = () => {
             </div>
           )}
 
-          {/* Controlli Audio e Toggle BarChat - Prima dell'input */}
-          {!isMobile && (
-            <div className="mb-2 flex items-center gap-4">
-              {/* Controlli Audio a sinistra (solo in Bar Mode) */}
-              {isBarMode && (
-                <div className="flex items-center gap-3">
-                  <InterruptButton
-                    isAISpeaking={isAISpeaking}
-                    onInterrupt={() => {
-                      console.log('🛑 Interruzione audio AI richiesta');
-                      setIsAISpeaking(false);
-                    }}
-                  />
-                </div>
-              )}
-              
-              <div className="flex flex-col items-center gap-1.5">
-                {/* Toggle BarChat */}
-                <BarModeToggle
-                  conversationId={currentConversationId}
-                  isBarMode={isBarMode}
-                  onToggle={setIsBarMode}
-                />
-                
-                {/* Selettore Modalità Audio con microfoni integrati */}
-                {isBarMode && (
-                  <AudioModeSelector 
-                    conversationId={currentConversationId}
-                    onTranscriptionComplete={(text) => {
-                      if (text.trim()) {
-                        handleSubmit({ preventDefault: () => {} } as any, text);
-                      }
-                    }}
-                    isAISpeaking={isAISpeaking}
-                  />
-                )}
-              </div>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-0.5">
             {/* Textarea con icone a sinistra */}
@@ -1593,21 +1555,22 @@ const ChatLaboratory = () => {
             </div>
           </form>
 
-          {/* Bar Mode Tabs Controls - Affiancati tutto su una riga */}
-          {isBarMode && (
+          {/* Compact Control Bar - Tutti gli elementi su una riga */}
+          {!isMobile && (
             <div className="mt-2 w-full">
-              <BarModeTabsControls
+              <CompactControlBar
                 conversationId={currentConversationId}
+                isBarMode={isBarMode}
                 isAISpeaking={isAISpeaking}
-                onTranscriptionComplete={(text) => {
-                  setPrompt(text);
-                  if (text.trim()) {
-                    handleSubmit({ preventDefault: () => {} } as any);
-                  }
-                }}
+                onToggleBarMode={setIsBarMode}
                 onInterrupt={() => {
                   console.log('🛑 Interruzione audio AI richiesta');
                   setIsAISpeaking(false);
+                }}
+                onTranscriptionComplete={(text) => {
+                  if (text.trim()) {
+                    handleSubmit({ preventDefault: () => {} } as any, text);
+                  }
                 }}
               />
             </div>

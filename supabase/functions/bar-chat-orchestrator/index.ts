@@ -858,7 +858,10 @@ serve(async (req) => {
               gapPenalty: (participants.reduce((sum: number, pp: any) => sum + (pp.response_count || 0), 0) / participants.length) - (p.participant.response_count || 0)
             }))
           })
-        }
+        },
+        
+        // 🆕 STRUCTURED PROMPT PER DEBUG
+        structured_prompt: structuredPrompt
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

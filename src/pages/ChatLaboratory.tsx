@@ -1356,6 +1356,27 @@ const ChatLaboratory = () => {
                 <TokenWarningBanner conversationId={currentConversationId} />
               )}
 
+              {/* Token Usage Chart Miniatura - Centrato sopra la sezione */}
+              {currentConversationId && messages.length > 0 && (
+                <div className="flex justify-center">
+                  <div style={{ transform: 'scale(0.6)', transformOrigin: 'top center' }}>
+                    <TokenUsageChart 
+                      conversationId={currentConversationId}
+                      compact
+                      onTotalTokensChange={setTotalTokensUsed}
+                    />
+                  </div>
+                  {totalTokensUsed > 50000 && (
+                    <div className={`ml-2 px-2 py-1 rounded-full text-xs font-bold self-start ${
+                      totalTokensUsed >= 100000 
+                        ? 'bg-red-500 text-white animate-pulse' 
+                        : 'bg-yellow-500 text-black'
+                    }`}>
+                      {totalTokensUsed >= 100000 ? '⛔ BLOCCATO' : '⚠️ ' + Math.round((totalTokensUsed / 100000) * 100) + '%'}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Convergence Indicator */}
               {currentConversationId && messages.length >= 10 && (
@@ -1572,23 +1593,24 @@ const ChatLaboratory = () => {
             </div>
           </form>
 
-          {/* Barra Compatta Bar Mode - TUTTO SU UNA RIGA */}
-          {isBarMode && currentConversationId && (
-            <BarModeTabsControls
-              conversationId={currentConversationId}
-              isAISpeaking={isAISpeaking}
-              onTranscriptionComplete={(text) => {
-                setPrompt(text);
-                if (text.trim()) {
-                  handleSubmit({ preventDefault: () => {} } as any);
-                }
-              }}
-              onInterrupt={() => {
-                console.log('🛑 Interruzione audio AI richiesta');
-                setIsAISpeaking(false);
-              }}
-              totalTokensUsed={totalTokensUsed}
-            />
+          {/* Bar Mode Tabs Controls - Affiancati tutto su una riga */}
+          {isBarMode && (
+            <div className="mt-2 w-full">
+              <BarModeTabsControls
+                conversationId={currentConversationId}
+                isAISpeaking={isAISpeaking}
+                onTranscriptionComplete={(text) => {
+                  setPrompt(text);
+                  if (text.trim()) {
+                    handleSubmit({ preventDefault: () => {} } as any);
+                  }
+                }}
+                onInterrupt={() => {
+                  console.log('🛑 Interruzione audio AI richiesta');
+                  setIsAISpeaking(false);
+                }}
+              />
+            </div>
           )}
 
         </div>

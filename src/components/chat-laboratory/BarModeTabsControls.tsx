@@ -19,7 +19,6 @@ interface BarModeTabsControlsProps {
   isAISpeaking: boolean;
   onTranscriptionComplete: (text: string) => void;
   onInterrupt: () => void;
-  totalTokensUsed?: number;
   className?: string;
 }
 
@@ -28,7 +27,6 @@ export const BarModeTabsControls = ({
   isAISpeaking,
   onTranscriptionComplete,
   onInterrupt,
-  totalTokensUsed = 0,
   className
 }: BarModeTabsControlsProps) => {
   const [isPaused, setIsPaused] = useState(false);
@@ -371,52 +369,16 @@ export const BarModeTabsControls = ({
   ];
 
   return (
-    <div className={cn("mt-2 flex items-center gap-2 px-2 py-1.5 bg-muted/20 rounded-md border border-border/20", className)}>
-      {/* Totali Token - Ultra compatti affiancati */}
-      <div className="flex items-center gap-2 text-xs shrink-0">
-        <div className="flex items-center gap-1">
-          <Zap className="w-3 h-3 text-blue-500" />
-          <span className="font-semibold">{(totalTokensUsed / 2).toLocaleString('it-IT', { maximumFractionDigits: 0 })}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Zap className="w-3 h-3 text-purple-500" />
-          <span className="font-semibold">{(totalTokensUsed / 2).toLocaleString('it-IT', { maximumFractionDigits: 0 })}</span>
-        </div>
-      </div>
-
-      {/* Separatore */}
-      <div className="h-4 w-px bg-border shrink-0" />
-
-      {/* Slider Pausa - Mini */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        <span className="text-[10px] text-muted-foreground whitespace-nowrap w-8">{pauseBetweenTurns}ms</span>
-        <Slider
-          value={[pauseBetweenTurns]}
-          onValueChange={(values) => updatePauseBetweenTurns(values[0])}
-          min={400}
-          max={2000}
-          step={100}
-          className="w-16"
-          disabled={!conversationId}
-        />
-      </div>
-
-      {/* Separatore */}
-      <div className="h-4 w-px bg-border shrink-0" />
-
-      {/* Tabs - Compatti */}
-      <div className="flex-1 min-w-0">
+    <div className={cn("w-full flex items-center gap-2", className)}>
+      <div className="flex-1">
         <DynamicTabs 
           tabs={tabs} 
           defaultValue="audio" 
           variant="pills"
         />
       </div>
-
-      {/* Separatore */}
-      <div className="h-4 w-px bg-border shrink-0" />
       
-      {/* Controlli finali: Pausa + Microfono */}
+      {/* Controlli a destra: Pausa + Microfono */}
       <div className="flex items-center gap-2 shrink-0">
         {/* Icona Pausa */}
         <Button
@@ -424,15 +386,15 @@ export const BarModeTabsControls = ({
           size="icon"
           onClick={togglePause}
           className={cn(
-            "h-7 w-7 rounded-full transition-all",
+            "h-8 w-8 rounded-full transition-all",
             isPaused && "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30"
           )}
           title={isPaused ? "Riprendi conversazione" : "Pausa conversazione"}
         >
-          {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+          {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
         </Button>
         
-        {/* Microfono attivo */}
+        {/* Microfono attivo (solo icona) */}
         <div className="flex items-center">
           {audioMode === 'stable' && (
             <BarVoiceRecorder

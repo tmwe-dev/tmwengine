@@ -1539,7 +1539,7 @@ const ChatLaboratory = () => {
           {!isMobile && (
             <div className="mt-2 flex justify-between items-center gap-4">
               {/* Auto-advance a sinistra */}
-              {isBarMode && currentConversationId && (
+              {isBarMode && (
                 <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/40 bg-card/40">
                   <Label htmlFor="auto-advance" className="text-sm font-medium cursor-pointer">
                     🎬 Auto-advance
@@ -1553,7 +1553,7 @@ const ChatLaboratory = () => {
               )}
               
               {/* Spacer quando non c'è auto-advance */}
-              {(!isBarMode || !currentConversationId) && <div />}
+              {!isBarMode && <div />}
               
               {/* Bar Mode Toggle a destra */}
               <BarModeToggle

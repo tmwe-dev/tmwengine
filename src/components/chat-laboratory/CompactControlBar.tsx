@@ -182,35 +182,9 @@ export const CompactControlBar = ({
       icon: Brain,
       content: (
         <div className="space-y-4 max-h-[40vh] overflow-y-auto p-4">
-          <div className="flex items-center justify-end gap-3 p-2">
-            <Zap className="h-4 w-4 text-muted-foreground" />
-            <Switch
-              checked={isSmartMode}
-              onCheckedChange={(checked) => 
-                updateTurnStrategy(checked ? 'SMART_PRIORITY' : 'RANDOM_30')
-              }
-              disabled={!conversationId}
-            />
-            <div className="h-4 w-px bg-border" />
-            <span className="text-xs text-muted-foreground whitespace-nowrap">{pauseBetweenTurns}ms</span>
-            <Slider
-              value={[pauseBetweenTurns]}
-              onValueChange={(values) => updatePauseBetweenTurns(values[0])}
-              min={400}
-              max={2000}
-              step={100}
-              className="w-20 max-w-[80px]"
-              disabled={!conversationId}
-            />
-          </div>
-          <div className="flex items-center justify-end gap-2 p-2">
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            <Switch
-              checked={enableDirectCall}
-              onCheckedChange={updateDirectCallDetection}
-              disabled={!conversationId}
-            />
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Le impostazioni dei turni sono disponibili nella barra dei controlli principale.
+          </p>
         </div>
       )
     },

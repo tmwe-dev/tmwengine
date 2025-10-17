@@ -278,34 +278,33 @@ const EmailDashboard = () => {
     },
   });
 
-  const emailsFromPages = (messagesData?.pages || []).flatMap(page => 
-    (page?.messages || []).map((msg: any) => {
-      // Debug: Log message structure to understand attachment indicators
-      if (msg.uid === 6624) {
-        console.log('📎 Message structure for email with known attachment:', msg);
-      }
-      
+  const emailsFromPages = (messagesData?.pages || []).flatMap(page => {
+    const messages = page?.messages || page?.data || [];
+    
+    if (!Array.isArray(messages)) {
+      return [];
+    }
+    
+    return messages.map((msg: any) => {
       return {
         id: String(msg.uid || msg.id),
         subject: msg.subject || '(No Subject)',
         from: typeof msg.from === 'object' ? msg.from.email : msg.from,
-        preview: '', // TMWE API doesn't provide preview in list
+        preview: '',
         date: msg.date,
         read: msg.is_read === true || msg.seen === 1,
         starred: msg.is_flagged === true || msg.flagged === 1,
-        // Check various possible attachment indicators from the API
         hasAttachments: !!(
           msg.has_attachments || 
           msg.hasAttachments || 
           msg.attachment_count > 0 ||
           msg.attachmentCount > 0 ||
           (msg.attachments && msg.attachments.length > 0) ||
-          // Use size as a heuristic: emails > 50KB likely have attachments
           (msg.size && parseInt(msg.size) > 50000)
         ),
       };
-    })
-  );
+    });
+  });
 
   // Usa sempre emailsFromPages (dalle API)
   const emailsToUse = emailsFromPages;

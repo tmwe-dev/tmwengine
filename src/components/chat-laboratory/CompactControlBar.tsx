@@ -313,102 +313,100 @@ export const CompactControlBar = ({
     );
   }
 
-  // BOTTOM: Tutti gli altri elementi
+  // BOTTOM: Tutti gli altri elementi (solo se isBarMode è attivo)
+  if (!isBarMode) return null;
+
   return (
     <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
-      {isBarMode && (
-        <>
-          {/* Thunder Switch */}
-          <Zap className="h-3.5 w-3.5 text-muted-foreground" />
-          <Switch
-            checked={isSmartMode}
-            onCheckedChange={(checked) => 
-              updateTurnStrategy(checked ? 'SMART_PRIORITY' : 'RANDOM_30')
-            }
-            disabled={!conversationId}
-          />
-          
-          <Separator />
-          
-          {/* Phone Switch */}
-          <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-          <Switch
-            checked={enableDirectCall}
-            onCheckedChange={updateDirectCallDetection}
-            disabled={!conversationId}
-          />
-          
-          <Separator />
-          
-          {/* Pause Slider */}
-          <Slider
-            value={[pauseBetweenTurns]}
-            onValueChange={(values) => updatePauseBetweenTurns(values[0])}
-            min={400}
-            max={2000}
-            step={100}
-            className="w-20 max-w-[80px]"
-            disabled={!conversationId}
-          />
-          <span className="text-[10px] text-muted-foreground whitespace-nowrap min-w-[40px]">
-            {pauseBetweenTurns}ms
-          </span>
-          
-          <Separator />
-          
-          {/* Tabs */}
-          <div className="flex-1">
-            <DynamicTabs tabs={tabs} defaultValue="audio" variant="pills" />
-          </div>
-          
-          <Separator />
-          
-          {/* Pause/Play Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={togglePause}
-            className={cn(
-              "h-7 w-7 rounded-full transition-all shrink-0",
-              isPaused && "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30"
-            )}
-            title={isPaused ? "Riprendi conversazione" : "Pausa conversazione"}
-          >
-            {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-          </Button>
-          
-          <Separator />
-          
-          {/* Active Microphone */}
-          {audioMode === 'stable' && (
-            <BarVoiceRecorder
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking || isPaused}
-            />
-          )}
-          {audioMode === 'v2_continuous' && (
-            <BarVoiceRecorderV2_Continuous
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking || isPaused}
-            />
-          )}
-          {audioMode === 'v2_extended' && (
-            <BarVoiceRecorderV2_Extended
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking || isPaused}
-            />
-          )}
-          {audioMode === 'v2_hybrid' && (
-            <BarVoiceRecorderV2_Hybrid
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking || isPaused}
-            />
-          )}
-        </>
+      {/* Thunder Switch */}
+      <Zap className="h-3.5 w-3.5 text-muted-foreground" />
+      <Switch
+        checked={isSmartMode}
+        onCheckedChange={(checked) => 
+          updateTurnStrategy(checked ? 'SMART_PRIORITY' : 'RANDOM_30')
+        }
+        disabled={!conversationId}
+      />
+      
+      <Separator />
+      
+      {/* Phone Switch */}
+      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+      <Switch
+        checked={enableDirectCall}
+        onCheckedChange={updateDirectCallDetection}
+        disabled={!conversationId}
+      />
+      
+      <Separator />
+      
+      {/* Pause Slider */}
+      <Slider
+        value={[pauseBetweenTurns]}
+        onValueChange={(values) => updatePauseBetweenTurns(values[0])}
+        min={400}
+        max={2000}
+        step={100}
+        className="w-20 max-w-[80px]"
+        disabled={!conversationId}
+      />
+      <span className="text-[10px] text-muted-foreground whitespace-nowrap min-w-[40px]">
+        {pauseBetweenTurns}ms
+      </span>
+      
+      <Separator />
+      
+      {/* Tabs */}
+      <div className="flex-1">
+        <DynamicTabs tabs={tabs} defaultValue="audio" variant="pills" />
+      </div>
+      
+      <Separator />
+      
+      {/* Pause/Play Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={togglePause}
+        className={cn(
+          "h-7 w-7 rounded-full transition-all shrink-0",
+          isPaused && "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30"
+        )}
+        title={isPaused ? "Riprendi conversazione" : "Pausa conversazione"}
+      >
+        {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+      </Button>
+      
+      <Separator />
+      
+      {/* Active Microphone */}
+      {audioMode === 'stable' && (
+        <BarVoiceRecorder
+          conversationId={conversationId}
+          onTranscriptionComplete={onTranscriptionComplete}
+          isDisabled={isAISpeaking || isPaused}
+        />
+      )}
+      {audioMode === 'v2_continuous' && (
+        <BarVoiceRecorderV2_Continuous
+          conversationId={conversationId}
+          onTranscriptionComplete={onTranscriptionComplete}
+          isDisabled={isAISpeaking || isPaused}
+        />
+      )}
+      {audioMode === 'v2_extended' && (
+        <BarVoiceRecorderV2_Extended
+          conversationId={conversationId}
+          onTranscriptionComplete={onTranscriptionComplete}
+          isDisabled={isAISpeaking || isPaused}
+        />
+      )}
+      {audioMode === 'v2_hybrid' && (
+        <BarVoiceRecorderV2_Hybrid
+          conversationId={conversationId}
+          onTranscriptionComplete={onTranscriptionComplete}
+          isDisabled={isAISpeaking || isPaused}
+        />
       )}
     </div>
   );

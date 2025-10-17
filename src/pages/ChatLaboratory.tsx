@@ -41,6 +41,7 @@ import { KnowledgeGraphViewer } from '@/components/chat-laboratory/KnowledgeGrap
 import { TokenWarningBanner } from '@/components/chat-laboratory/TokenWarningBanner';
 import { TokenUsageChart } from '@/components/chat-laboratory/TokenUsageChart';
 import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
+import { AudioModeSelector } from '@/components/chat-laboratory/AudioModeSelector';
 
 interface Message {
   id: string;
@@ -1612,20 +1613,23 @@ const ChatLaboratory = () => {
                 </div>
               )}
               
-              {/* Toggle BarChat - centrato */}
-              <div className="flex-1 flex justify-center">
-                <BarModeToggle
-                  conversationId={currentConversationId}
-                  isBarMode={isBarMode}
-                  onToggle={setIsBarMode}
-                />
-              </div>
-              
-              {/* Spacer a destra per mantenere il toggle centrato */}
-              {isBarMode && <div className="flex items-center gap-3 opacity-0 pointer-events-none">
-                <div className="w-10 h-10" />
-                <div className="w-10 h-10" />
-              </div>}
+                {/* Toggle BarChat */}
+                <div className="flex justify-center">
+                  <BarModeToggle
+                    conversationId={currentConversationId}
+                    isBarMode={isBarMode}
+                    onToggle={setIsBarMode}
+                  />
+                </div>
+
+                {/* Selettore Modalità Audio - visibile solo quando Bar Chat è attivo */}
+                {isBarMode && (
+                  <div className="flex-1 flex justify-end pr-4">
+                    <AudioModeSelector 
+                      conversationId={currentConversationId} 
+                    />
+                  </div>
+                )}
             </div>
           )}
 

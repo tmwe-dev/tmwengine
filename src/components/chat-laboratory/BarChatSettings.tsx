@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { MessageSquare, Timer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -10,13 +9,11 @@ import { toast } from 'sonner';
 interface BarChatSettingsProps {
   conversationId: string | null;
   onSettingsChange?: (settings: { conversation_style: string; vad_silence_duration: number }) => void;
-  onAutoAdvanceChange?: (enabled: boolean) => void;
 }
 
-export const BarChatSettings = ({ conversationId, onSettingsChange, onAutoAdvanceChange }: BarChatSettingsProps) => {
+export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSettingsProps) => {
   const [conversationStyle, setConversationStyle] = useState('colleagues');
   const [vadDuration, setVadDuration] = useState(3000);
-  const [autoAdvanceTabs, setAutoAdvanceTabs] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -29,30 +26,17 @@ export const BarChatSettings = ({ conversationId, onSettingsChange, onAutoAdvanc
     if (!conversationId) return;
 
     try {
-      // Load from chat_laboratory_conversations
-      const { data: convData, error: convError } = await supabase
+      const { data, error } = await supabase
         .from('chat_laboratory_conversations')
         .select('conversation_style, vad_silence_duration')
         .eq('id', conversationId)
         .single();
 
-      if (convError) throw convError;
+      if (error) throw error;
 
-      if (convData) {
-        setConversationStyle(convData.conversation_style || 'colleagues');
-        setVadDuration(convData.vad_silence_duration || 3000);
-      }
-
-      // Load auto_advance_tabs from chat_laboratory_bar_mode
-      const { data: barData, error: barError } = await supabase
-        .from('chat_laboratory_bar_mode')
-        .select('auto_advance_tabs')
-        .eq('conversation_id', conversationId)
-        .single();
-
-      if (!barError && barData) {
-        setAutoAdvanceTabs(barData.auto_advance_tabs ?? false);
-        onAutoAdvanceChange?.(barData.auto_advance_tabs ?? false);
+      if (data) {
+        setConversationStyle(data.conversation_style || 'colleagues');
+        setVadDuration(data.vad_silence_duration || 3000);
       }
     } catch (error) {
       console.error('Error loading bar chat settings:', error);
@@ -100,29 +84,6 @@ export const BarChatSettings = ({ conversationId, onSettingsChange, onAutoAdvanc
     } catch (error) {
       console.error('Error updating bar chat setting:', error);
       toast.error('Errore aggiornamento');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const updateAutoAdvanceTabs = async (enabled: boolean) => {
-    if (!conversationId) return;
-    
-    setIsLoading(true);
-    try {
-      const { error } = await supabase
-        .from('chat_laboratory_bar_mode')
-        .update({ auto_advance_tabs: enabled })
-        .eq('conversation_id', conversationId);
-      
-      if (error) throw error;
-      
-      setAutoAdvanceTabs(enabled);
-      onAutoAdvanceChange?.(enabled);
-      toast.success(enabled ? "🎬 Auto-advance attivo" : "⏸️ Auto-advance disattivato");
-    } catch (error) {
-      console.error('Error updating auto-advance:', error);
-      toast.error('Errore aggiornamento auto-advance');
     } finally {
       setIsLoading(false);
     }
@@ -190,23 +151,6 @@ export const BarChatSettings = ({ conversationId, onSettingsChange, onAutoAdvanc
         <p className="text-xs text-muted-foreground">
           Tempo di silenzio prima di inviare (1-5 sec)
         </p>
-      </div>
-
-      {/* Auto-Advance Tabs */}
-      <div className="flex flex-col gap-2 pt-2 border-t border-border/20">
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label className="text-sm font-medium">🎬 Auto-advance tabs</Label>
-            <p className="text-xs text-muted-foreground">
-              Passa automaticamente al prossimo agente quando finisce l'audio
-            </p>
-          </div>
-          <Switch
-            checked={autoAdvanceTabs}
-            onCheckedChange={updateAutoAdvanceTabs}
-            disabled={isLoading || !conversationId}
-          />
-        </div>
       </div>
     </div>
   );

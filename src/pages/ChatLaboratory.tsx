@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, Phone, Columns, MessagesSquare, Settings2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -1242,7 +1244,6 @@ const ChatLaboratory = () => {
                         onSettingsChange={(settings) => {
                           console.log('📝 Bar Chat Settings aggiornati:', settings);
                         }}
-                        onAutoAdvanceChange={setAutoAdvanceTabs}
                       />
                     </CardContent>
                   </Card>
@@ -1534,9 +1535,27 @@ const ChatLaboratory = () => {
             </div>
           )}
 
-          {/* Bar Mode Toggle - Desktop Quick Access */}
+          {/* Bar Mode Toggle & Auto-Advance - Desktop Quick Access */}
           {!isMobile && (
-            <div className="mt-2 flex justify-center">
+            <div className="mt-2 flex justify-between items-center gap-4">
+              {/* Auto-advance a sinistra */}
+              {isBarMode && currentConversationId && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/40 bg-card/40">
+                  <Label htmlFor="auto-advance" className="text-sm font-medium cursor-pointer">
+                    🎬 Auto-advance
+                  </Label>
+                  <Switch
+                    id="auto-advance"
+                    checked={autoAdvanceTabs}
+                    onCheckedChange={setAutoAdvanceTabs}
+                  />
+                </div>
+              )}
+              
+              {/* Spacer quando non c'è auto-advance */}
+              {(!isBarMode || !currentConversationId) && <div />}
+              
+              {/* Bar Mode Toggle a destra */}
               <BarModeToggle
                 conversationId={currentConversationId}
                 isBarMode={isBarMode}

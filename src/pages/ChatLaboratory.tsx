@@ -1516,18 +1516,8 @@ const ChatLaboratory = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-0.5">
-            {/* Textarea con icone a sinistra */}
+            {/* Textarea con microfono */}
             <div className="flex gap-2">
-              {/* Icone verticali a sinistra */}
-              <div className="flex flex-col gap-1">
-                <FileUploader
-                  onFilesUploaded={setUploadedFiles}
-                />
-                <ImageGenerator
-                  onImageGenerated={setGeneratedImage}
-                />
-              </div>
-              
               <Textarea
                 ref={textareaRef}
                 value={prompt}
@@ -1576,7 +1566,7 @@ const ChatLaboratory = () => {
 
           {/* Compact Control Bar BOTTOM - Resto degli elementi */}
           {!isMobile && (
-            <div className="mt-2 w-full">
+            <div className="mt-2 w-full flex items-center justify-between gap-2">
               <CompactControlBar
                 position="bottom"
                 conversationId={currentConversationId}
@@ -1593,6 +1583,16 @@ const ChatLaboratory = () => {
                   }
                 }}
               />
+              
+              {/* Icone a destra */}
+              <div className="flex items-center gap-1">
+                <FileUploader
+                  onFilesUploaded={setUploadedFiles}
+                />
+                <ImageGenerator
+                  onImageGenerated={setGeneratedImage}
+                />
+              </div>
             </div>
           )}
 

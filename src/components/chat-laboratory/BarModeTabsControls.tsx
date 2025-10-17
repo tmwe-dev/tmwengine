@@ -187,77 +187,13 @@ export const BarModeTabsControls = ({
       icon: Mic,
       content: (
         <div className="space-y-4 max-h-[40vh] overflow-y-auto p-4">
-          {/* Sezione Pausa */}
-          <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg border border-border/40">
-            <div className="flex items-center gap-3">
-              <Button
-                variant={isPaused ? "default" : "ghost"}
-                size="icon"
-                onClick={togglePause}
-                className={cn(
-                  "h-10 w-10 rounded-full transition-all",
-                  isPaused && "bg-yellow-500 hover:bg-yellow-600 text-white"
-                )}
-                title={isPaused ? "Riprendi conversazione" : "Pausa conversazione"}
-              >
-                {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-              </Button>
-              
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">
-                  {isPaused ? '⏸️ Conversazione in Pausa' : '▶️ Conversazione Attiva'}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {isPaused 
-                    ? 'Nessuno può inviare messaggi' 
-                    : 'Gli AI possono rispondere'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Controlli Microfono e Interrupt */}
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* Conditional Audio Recorder */}
-            {audioMode === 'stable' && (
-              <BarVoiceRecorder
-                conversationId={conversationId}
-                onTranscriptionComplete={onTranscriptionComplete}
-                isDisabled={isAISpeaking || isPaused}
-              />
-            )}
-            
-            {audioMode === 'v2_continuous' && (
-              <BarVoiceRecorderV2_Continuous
-                conversationId={conversationId}
-                onTranscriptionComplete={onTranscriptionComplete}
-                isDisabled={isAISpeaking || isPaused}
-              />
-            )}
-            
-            {audioMode === 'v2_extended' && (
-              <BarVoiceRecorderV2_Extended
-                conversationId={conversationId}
-                onTranscriptionComplete={onTranscriptionComplete}
-                isDisabled={isAISpeaking || isPaused}
-              />
-            )}
-            
-            {audioMode === 'v2_hybrid' && (
-              <BarVoiceRecorderV2_Hybrid
-                conversationId={conversationId}
-                onTranscriptionComplete={onTranscriptionComplete}
-                isDisabled={isAISpeaking || isPaused}
-              />
-            )}
-
-            {/* Interrupt Button */}
+          {/* Controlli Interrupt */}
+          <div className="flex items-center gap-4">
             <InterruptButton
               isAISpeaking={isAISpeaking}
               onInterrupt={onInterrupt}
             />
           </div>
-
         </div>
       )
     },
@@ -433,12 +369,66 @@ export const BarModeTabsControls = ({
   ];
 
   return (
-    <div className={cn("w-full border-2 border-red-500", className)}>
-      <DynamicTabs 
-        tabs={tabs} 
-        defaultValue="audio" 
-        variant="pills"
-      />
+    <div className={cn("w-full flex items-center gap-2", className)}>
+      <div className="flex-1">
+        <DynamicTabs 
+          tabs={tabs} 
+          defaultValue="audio" 
+          variant="pills"
+        />
+      </div>
+      
+      {/* Controlli a destra: Pausa + Microfono */}
+      <div className="flex items-center gap-2 shrink-0">
+        {/* Icona Pausa */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={togglePause}
+          className={cn(
+            "h-8 w-8 rounded-full transition-all",
+            isPaused && "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30"
+          )}
+          title={isPaused ? "Riprendi conversazione" : "Pausa conversazione"}
+        >
+          {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+        </Button>
+        
+        {/* Microfono attivo (solo icona) */}
+        <div className="flex items-center">
+          {audioMode === 'stable' && (
+            <BarVoiceRecorder
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={isAISpeaking || isPaused}
+            />
+          )}
+          
+          {audioMode === 'v2_continuous' && (
+            <BarVoiceRecorderV2_Continuous
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={isAISpeaking || isPaused}
+            />
+          )}
+          
+          {audioMode === 'v2_extended' && (
+            <BarVoiceRecorderV2_Extended
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={isAISpeaking || isPaused}
+            />
+          )}
+          
+          {audioMode === 'v2_hybrid' && (
+            <BarVoiceRecorderV2_Hybrid
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={isAISpeaking || isPaused}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 };

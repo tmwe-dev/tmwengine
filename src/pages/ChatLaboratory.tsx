@@ -684,6 +684,12 @@ const ChatLaboratory = () => {
         // 🍹 BAR MODE: sempre modalità sequenziale (1 agente alla volta)
         console.log('🎯 Bar Mode - Modalità Sequenziale (una chiamata all\'orchestrator)');
         
+        console.log('📤 Invocando bar-chat-orchestrator con payload:', {
+          conversationId,
+          userMessage: currentPrompt,
+          participants: activeAIParticipants.map(p => ({ type: p.type, name: p.name }))
+        });
+        
         const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
           body: { 
             conversationId,
@@ -691,6 +697,8 @@ const ChatLaboratory = () => {
             participants: activeAIParticipants
           }
         });
+        
+        console.log('📥 Risposta da bar-chat-orchestrator:', { data, error });
         
         if (error) {
           // 🆕 Gestione specifica per pausa
@@ -704,6 +712,11 @@ const ChatLaboratory = () => {
           }
           
           console.error('❌ ERRORE Bar Mode:', JSON.stringify(error, null, 2));
+          toast({
+            title: '❌ Errore Bar Mode',
+            description: error.message || 'Errore durante l\'invocazione dell\'orchestrator',
+            variant: 'destructive',
+          });
         } else {
           console.log('✅ Risposta completata:', data);
           

@@ -12,8 +12,10 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🍹 ========== BAR CHAT ORCHESTRATOR START ==========');
+    
     const { conversationId, userMessage, participants } = await req.json();
-    console.log('🍹 Bar Chat Orchestrator riceve:', { conversationId, userMessage, participants });
+    console.log('📨 Request payload:', JSON.stringify({ conversationId, userMessage, participants }, null, 2));
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -23,6 +25,11 @@ serve(async (req) => {
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
     const openAIKey = Deno.env.get('OPENAI_API_KEY');
     const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
+
+    console.log('🔑 API Keys disponibili:');
+    console.log('  - Anthropic:', anthropicKey ? '✅ SET' : '❌ NOT SET');
+    console.log('  - OpenAI:', openAIKey ? '✅ SET' : '❌ NOT SET');
+    console.log('  - Lovable AI:', lovableAIKey ? '✅ SET' : '❌ NOT SET');
 
     if (!anthropicKey && !openAIKey && !lovableAIKey) {
       throw new Error('Nessuna chiave API configurata');

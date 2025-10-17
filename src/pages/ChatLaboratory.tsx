@@ -1451,6 +1451,26 @@ const ChatLaboratory = () => {
           <MessageTabsView messages={messages} />
         )}
 
+        {/* Bar Chat Audio Controls - Solo quando Bar Mode è attivo */}
+        {isBarMode && currentConversationId && (
+          <div className="border-t border-border/40 bg-card/40 backdrop-blur p-3">
+            <BarChatAudioControls
+              conversationId={currentConversationId}
+              isAISpeaking={isAISpeaking}
+              onTranscriptionComplete={(text) => {
+                setPrompt(text);
+                if (text.trim()) {
+                  handleSubmit({ preventDefault: () => {} } as any);
+                }
+              }}
+              onInterrupt={() => {
+                console.log('🛑 Interruzione audio AI richiesta');
+                setIsAISpeaking(false);
+              }}
+            />
+          </div>
+        )}
+
         {/* New Messages Indicator */}
         {viewMode === 'classic' && showNewMessages && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 animate-fade-in">
@@ -1504,20 +1524,33 @@ const ChatLaboratory = () => {
                   }
                 }}
               />
-                <Button 
-                  type="submit" 
-                  size="icon"
-                  disabled={isSubmitting || isLoading || (!prompt.trim() && recordingState === 'idle')}
-                  className="h-auto px-3 md:px-4 shrink-0"
-                  onClick={(e) => {
-                    if (recordingState !== 'idle' && recordingState !== 'processing') {
-                      e.preventDefault();
-                      voiceRecorderRef.current?.stopAndTranscribe();
-                    }
+
+              {/* Microfono Standard - Solo quando Bar Mode è OFF */}
+              {!isBarMode && (
+                <VoiceRecorder
+                  ref={voiceRecorderRef}
+                  onTranscription={(text) => {
+                    setPrompt(text);
                   }}
-                >
-                  <Send className="h-4 w-4 md:h-5 md:w-5" />
-                </Button>
+                  onRecordingStateChange={setRecordingState}
+                  conversationId={currentConversationId}
+                />
+              )}
+
+              <Button 
+                type="submit" 
+                size="icon"
+                disabled={isSubmitting || isLoading || (!prompt.trim() && recordingState === 'idle')}
+                className="h-auto px-3 md:px-4 shrink-0"
+                onClick={(e) => {
+                  if (recordingState !== 'idle' && recordingState !== 'processing') {
+                    e.preventDefault();
+                    voiceRecorderRef.current?.stopAndTranscribe();
+                  }
+                }}
+              >
+                <Send className="h-4 w-4 md:h-5 md:w-5" />
+              </Button>
             </div>
           </form>
 

@@ -108,10 +108,11 @@ export function useOrchestratorTest(conversationId: string) {
     const startTime = Date.now();
 
     try {
-      // 1. Aggiorna le impostazioni Bar Mode
+      // 1. Aggiorna le impostazioni Bar Mode (forza mode = 'bar')
       await supabase
         .from('chat_laboratory_bar_mode')
         .update({
+          mode: 'bar',
           turn_strategy: currentConfig.turnStrategy,
           pause_between_turns_ms: currentConfig.pauseBetweenTurns,
           enable_direct_call_detection: currentConfig.enableDirectCalls,

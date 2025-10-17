@@ -42,8 +42,17 @@ export const BarChatAudioControls = ({
     if (conversationId) {
       loadPauseState();
       loadDynamicTurnSettings();
+      loadAudioMode();
     }
   }, [conversationId]);
+
+  const loadAudioMode = () => {
+    if (!conversationId) return;
+    const stored = localStorage.getItem(`audio-mode-${conversationId}`);
+    if (stored) {
+      setAudioMode(stored as any);
+    }
+  };
 
 
   const loadPauseState = async () => {

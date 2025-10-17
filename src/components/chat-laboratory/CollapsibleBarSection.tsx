@@ -1,6 +1,7 @@
 import { BarModeToggle } from './BarModeToggle';
 import { BarModeControls } from './BarModeControls';
 import { KnowledgeBaseSelector } from './KnowledgeBaseSelector';
+import { AudioModeSelector } from './AudioModeSelector';
 
 interface CollapsibleBarSectionProps {
   conversationId: string | null;
@@ -29,6 +30,8 @@ export const CollapsibleBarSection = ({
       {/* Bar Mode sempre aperto quando attivo */}
       {isBarMode && (
         <div className="space-y-3 mt-2">
+          <AudioModeSelector conversationId={conversationId} />
+          
           <div className="flex justify-center">
             <BarModeControls conversationId={conversationId} />
           </div>

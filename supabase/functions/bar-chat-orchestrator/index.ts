@@ -106,6 +106,62 @@ function collapseConsecutiveMessages(messages: any[]): any[] {
   return collapsed;
 }
 
+// ============ PROMPT CACHE GLOBALE ============
+// Cache in-memory per ridurre query ripetute (TTL: 5 minuti)
+interface PromptCache {
+  globalPrompt: string;
+  baseSections: string;
+  agentPersonalities: Map<string, string>;
+  timestamp: number;
+}
+
+let promptCache: PromptCache | null = null;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minuti
+
+async function getCachedPrompts(supabase: any): Promise<PromptCache> {
+  const now = Date.now();
+  
+  if (!promptCache || (now - promptCache.timestamp > CACHE_TTL)) {
+    console.log('📦 Ricaricando prompt cache...');
+    
+    // Una query batch per tutti i prompts
+    const [globalData, baseData, personalityData] = await Promise.all([
+      supabase.from('chat_laboratory_system_prompts')
+        .select('contenuto')
+        .eq('attivo', true)
+        .limit(1)
+        .maybeSingle(),
+      
+      supabase.from('chat_laboratory_prompt_sections')
+        .select('content')
+        .eq('section_type', 'BASE')
+        .eq('is_active', true)
+        .order('order_priority', { ascending: true }),
+      
+      supabase.from('chat_laboratory_prompt_sections')
+        .select('section_name, content')
+        .eq('section_type', 'AGENT_PERSONALITY')
+        .eq('is_active', true)
+    ]);
+    
+    promptCache = {
+      globalPrompt: globalData.data?.contenuto || 'Sei un assistente AI intelligente che partecipa a discussioni costruttive in un bar virtuale.',
+      baseSections: baseData.data?.map((s: any) => s.content).join('\n\n') || '',
+      agentPersonalities: new Map(
+        personalityData.data?.map((p: any) => [
+          p.section_name.toLowerCase(),
+          p.content
+        ]) || []
+      ),
+      timestamp: now
+    };
+    
+    console.log(`✅ Cache aggiornata: ${promptCache.agentPersonalities.size} personalità caricate`);
+  }
+  
+  return promptCache;
+}
+
 // ============================================================
 
 serve(async (req) => {
@@ -155,54 +211,14 @@ serve(async (req) => {
     const selectedTopic = barModeSettings.selected_topic;
     const activeKbId = barModeSettings.active_kb_id;
     const voiceEnabled = barModeSettings.voice_enabled ?? true;
-    console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno');
-    console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna');
+    console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno (non usato)');
+    console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna (temporaneamente disabilitata)');
     console.log('🎤 Voice enabled dal DB:', voiceEnabled);
     
-    // ============ RAG KNOWLEDGE BASE INTEGRATION ============
+    // ============ KB TEMPORANEAMENTE DISABILITATO ============
+    // Struttura conservata per futuri usi - eliminata chiamata API e RPC
     let kbContext = '';
-    if (activeKbId) {
-      try {
-        console.log('📚 Generazione embedding per KB search...');
-        // Generate embedding for user message
-        const embeddingResponse = await fetchWithTimeout('https://ai.gateway.lovable.dev/v1/embeddings', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'text-embedding-3-small',
-            input: userMessage
-          })
-        }, 5000);
-        
-        if (embeddingResponse.ok) {
-          const embData = await embeddingResponse.json();
-          const embedding = embData.data[0].embedding;
-          
-          // Search KB documents
-          const { data: kbDocs } = await supabaseClient.rpc('search_kb_documents', {
-            p_kb_id: activeKbId,
-            p_query_embedding: `[${embedding.join(',')}]`,
-            p_match_threshold: 0.7,
-            p_match_count: 3
-          });
-          
-          if (kbDocs && kbDocs.length > 0) {
-            kbContext = '\n=== 📚 KNOWLEDGE BASE (Documenti Rilevanti) ===\n';
-            kbContext += kbDocs.map((doc: any, idx: number) => 
-              `${idx + 1}. **${doc.title}** (similarità: ${(doc.similarity * 100).toFixed(1)}%)\n${doc.content.substring(0, 500)}...`
-            ).join('\n\n') + '\n\n';
-            console.log(`📚 KB: ${kbDocs.length} documenti trovati (top similarity: ${(kbDocs[0].similarity * 100).toFixed(1)}%)`);
-          } else {
-            console.log('📚 KB: nessun documento rilevante trovato');
-          }
-        }
-      } catch (kbError: any) {
-        console.error('⚠️ KB search failed:', kbError.message);
-      }
-    }
+    // if (activeKbId) { ... } ← RIMOSSO per ottimizzazione
 
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabaseClient
@@ -234,55 +250,17 @@ serve(async (req) => {
     const cumulativeSummary = conversation?.riassunto_contesto || null;
     console.log('📚 Riassunto cumulativo:', cumulativeSummary ? `${cumulativeSummary.substring(0, 100)}...` : 'Nessuno');
 
-    // Fetch global system prompt
-    const { data: systemPrompts } = await supabaseClient
-      .from('chat_laboratory_system_prompts')
-      .select('contenuto')
-      .eq('attivo', true)
-      .order('created_at', { ascending: false })
-      .limit(1);
+    // ============ CARICAMENTO PROMPTS CACHED ============
+    const cachedPrompts = await getCachedPrompts(supabaseClient);
+    const globalSystemPrompt = cachedPrompts.globalPrompt;
+    const baseContent = cachedPrompts.baseSections;
+    console.log(`📦 Prompts cached caricati (BASE: ${baseContent.length} chars)`);
 
-    const globalSystemPrompt = systemPrompts?.[0]?.contenuto || 
-      "Sei un assistente AI intelligente che partecipa a discussioni costruttive in un bar virtuale.";
-
-    // Fetch BASE sections (sempre attive)
-    const { data: baseSections } = await supabaseClient
-      .from('chat_laboratory_prompt_sections')
-      .select('content')
-      .eq('section_type', 'BASE')
-      .eq('is_active', true)
-      .order('order_priority', { ascending: true });
-
-    console.log(`📦 Sezioni BASE: ${baseSections?.length || 0}`);
-
-    // Fetch TOPIC sections (solo se topic selezionato)
+    // ============ TOPIC E KB_CONTEXT TEMPORANEAMENTE DISABILITATI ============
+    // Struttura conservata per futuri usi
     let topicSections: any[] = [];
-    if (selectedTopic) {
-      const { data } = await supabaseClient
-        .from('chat_laboratory_prompt_sections')
-        .select('content')
-        .eq('section_type', 'TOPIC')
-        .eq('is_active', true)
-        .contains('topic_tags', [selectedTopic])
-        .order('order_priority', { ascending: true });
-      
-      topicSections = data || [];
-      console.log(`📦 Sezioni TOPIC (${selectedTopic}): ${topicSections.length}`);
-    }
-    
-    // Fetch KB_CONTEXT sections (solo se KB attiva)
     let kbContextSections: any[] = [];
-    if (activeKbId) {
-      const { data } = await supabaseClient
-        .from('chat_laboratory_prompt_sections')
-        .select('content')
-        .eq('section_type', 'KB_CONTEXT')
-        .eq('is_active', true)
-        .order('order_priority', { ascending: true });
-      
-      kbContextSections = data || [];
-      console.log(`📚 Sezioni KB_CONTEXT: ${kbContextSections.length}`);
-    }
+    // console.log('⚠️ TOPIC e KB_CONTEXT sections disabilitate per ottimizzazione');
 
   // Fetch conversation messages - 🎯 LIMIT agli ultimi 20 messaggi
   const { data: messages } = await supabaseClient
@@ -307,230 +285,94 @@ serve(async (req) => {
       };
     });
 
-    // ============ CONTEXT MATCHING: Rilevamento Menzioni Dirette ============
-    const userMessageLower = userMessage.toLowerCase().trim();
-    let selectedParticipant: any = null;
-    let currentTurnIndex = conversation.current_turn_index || 0;
-    const lastSpeakerIndex = conversation.last_speaker_index || 0;
-    let mentionDetected = false;
+    // ============ LOGICA SEQUENZIALE: Chiamata tutti gli agenti attivi ============
+    const activeParticipants = participants.filter((p: any) => p.is_active);
+    console.log(`🎯 Chiamata sequenziale di ${activeParticipants.length} agenti attivi`);
     
-    // ============ ANTI-MONOPOLIO: Blocca agente dopo 2 risposte consecutive ============
-    const lastTwoMessages = recentMessages.slice(-2);
-    const lastTwoSpeakers = lastTwoMessages
-      .filter(m => m.sender_type !== 'user')
-      .map(m => m.sender_name);
+    const allResponses: any[] = [];
+    
+    for (let i = 0; i < activeParticipants.length; i++) {
+      const currentAgent = activeParticipants[i];
+      console.log(`\n🎯 Agente ${i + 1}/${activeParticipants.length}: ${currentAgent.name}`);
+      
+      // ============ CONTEXT CUMULATIVO: Messaggio utente + risposte precedenti di QUESTO turno ============
+      const turnContext = [
+        { role: 'user', content: userMessage },
+        ...allResponses.map(r => ({
+          role: 'assistant',
+          content: `[${r.agentName}]: ${r.content}`
+        }))
+      ];
+      
+      console.log(`📝 Context include: messaggio utente + ${allResponses.length} risposte precedenti`);
 
-    // Se lo stesso agente ha parlato 2 volte di fila, DEVE cambiare
-    const sameAgentTwice = lastTwoSpeakers.length === 2 && 
-                           lastTwoSpeakers[0] === lastTwoSpeakers[1];
-    let monopolyBlocked = false;
-    
-    // 1. Cerca menzioni dirette robuste (alias vocali comuni: "renny?", "vittorio", "tonino", "@gpt", etc.)
-    for (const p of participants) {
-      const namePattern = p.name.toLowerCase().replace(/[^a-z]/g, '');
-      const typePattern = p.type.toLowerCase();
+      // ============ RECUPERA PERSONALITÀ DA CACHE ============
+      const agentPersonality = cachedPrompts.agentPersonalities.get(
+        currentAgent.name.toLowerCase()
+      ) || '';
       
-      // 🔥 Alias vocali estesi per robustezza
-      const aliases = [
-        namePattern, // es: "rennygpt"
-        p.name.split('-')[0].trim().toLowerCase(), // es: "renny"
-        p.name.split(' ')[0].trim().toLowerCase(), // es: "vittorio"
-        typePattern, // es: "openai"
-        // Alias specifici per provider comuni
-        (typePattern === 'openai' || typePattern === 'chatgpt') ? 'gpt' : null,
-        typePattern === 'anthropic' ? 'claude' : null,
-        typePattern === 'gemini' ? 'gemini' : null
-      ].filter(Boolean);
+      console.log(`👤 Personalità ${currentAgent.name}: ${agentPersonality.length} chars (cached)`);
+
+      // ============ COMPONI PROMPT SEMPLIFICATO ============
+      let composedPrompt = globalSystemPrompt + '\n\n';
       
-      const patterns = aliases.map(alias => new RegExp(`\\b${alias}\\??\\b`, 'i'));
-      patterns.push(new RegExp(`@(${aliases.join('|')})`, 'i')); // @mention
-      
-      const matched = patterns.some(regex => regex.test(userMessageLower));
-      
-      if (matched) {
-        selectedParticipant = p;
-        currentTurnIndex = participants.findIndex(x => x.id === p.id);
-        mentionDetected = true;
-        const detectedAlias = aliases.find(a => new RegExp(`\\b${a}\\??\\b`, 'i').test(userMessageLower));
-        console.log(`🎯 Menzione diretta rilevata → forza risposta: ${p.name} (alias: ${detectedAlias})`);
-        break;
+      // Add BASE sections (cached)
+        composedPrompt += '=== CONTESTO BASE ===\n';
+        composedPrompt += baseContent + '\n\n';
       }
-    }
-    
-    // 2. Se nessuna menzione, usa turn_strategy dal DB
-    let participantScores: any[] | undefined;
-    let userKeywords: string[] | undefined;
-    const turnStrategy = barModeSettings?.turn_strategy || 'RANDOM_30';
-    
-    if (!selectedParticipant) {
-      console.log(`🎯 Strategia turno: ${turnStrategy}`);
-      
-      if (turnStrategy === 'SMART_PRIORITY') {
-        // 🧠 Smart Priority: analizza keyword + expertise + bilanciamento
-        console.log('🧠 SMART_PRIORITY: analizzando expertise...');
-        
-        // Estrai keyword dal messaggio (semplice split per ora)
-        userKeywords = userMessage.toLowerCase()
-          .split(/\s+/)
-          .filter(w => w.length > 4); // solo parole > 4 char
-        
-        // Calcola score per ogni partecipante
-        participantScores = participants.map((p: any) => {
-          let score = 0;
-          const expertiseKeywords = p.expertise_keywords || [];
-          
-          // 1. Match expertise (peso 50)
-          const matchCount = userKeywords.filter(uk => 
-            expertiseKeywords.some((ek: string) => ek.toLowerCase().includes(uk) || uk.includes(ek.toLowerCase()))
-          ).length;
-          score += matchCount * 50;
-          
-          // 2. Bilanciamento response_count (peso 30)
-          const avgResponses = participants.reduce((sum: number, pp: any) => sum + (pp.response_count || 0), 0) / participants.length;
-          const responseGap = avgResponses - (p.response_count || 0);
-          score += responseGap * 30;
-          
-          // 3. Non ha ancora risposto questo turno (peso 20)
-          if (!p.has_responded_current_turn) {
-            score += 20;
-          }
-          
-          console.log(`  ${p.name}: score=${score.toFixed(1)} (expertise=${matchCount}, gap=${responseGap.toFixed(1)})`);
-          return { participant: p, score };
-        });
-        
-        // Seleziona il più adatto
-        participantScores.sort((a, b) => b.score - a.score);
-        selectedParticipant = participantScores[0].participant;
-        currentTurnIndex = participants.findIndex((x: any) => x.id === selectedParticipant.id);
-        console.log(`🧠 Selected: ${selectedParticipant.name} (score: ${participantScores[0].score.toFixed(1)})`);
-        
-      } else {
-        // 🎲 RANDOM_30: 50% random (più equo), 50% sequenziale
-        const isRandom = Math.random() < 0.5;
-        
-        if (isRandom) {
-          // Scegli casualmente ma evita l'ultimo speaker se possibile
-          const otherAgents = participants.filter((p: any, idx: number) => idx !== lastSpeakerIndex);
-          const randomAgent = otherAgents.length > 0 
-            ? otherAgents[Math.floor(Math.random() * otherAgents.length)]
-            : participants[Math.floor(Math.random() * participants.length)];
-          
-          currentTurnIndex = participants.findIndex((x: any) => x.id === randomAgent.id);
-          console.log('🎲 Turno randomizzato:', randomAgent.name);
-        } else {
-          currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
-          console.log('➡️ Turno sequenziale:', participants[currentTurnIndex].name);
-        }
-        selectedParticipant = participants[currentTurnIndex];
+
+      // Add AGENT_PERSONALITY (cached)
+      if (agentPersonality) {
+        composedPrompt += '=== TUA PERSONALITÀ ===\n';
+        composedPrompt += agentPersonality + '\n\n';
       }
-    }
-    
-    // ✅ APPLICA ANTI-MONOPOLIO (dopo la selezione normale)
-    if (sameAgentTwice && !mentionDetected) {
-      const blockedAgentName = lastTwoSpeakers[0];
-      console.log(`🚫 ANTI-MONOPOLIO: ${blockedAgentName} ha parlato 2 volte consecutive, forzo cambio`);
-      
-      // Trova agenti disponibili (escluso quello bloccato)
-      const availableAgents = participants.filter((p: any) => p.name !== blockedAgentName);
-      
-      if (availableAgents.length > 0) {
-        // Scegli casualmente tra gli altri
-        selectedParticipant = availableAgents[Math.floor(Math.random() * availableAgents.length)];
-        currentTurnIndex = participants.findIndex((x: any) => x.id === selectedParticipant.id);
-        monopolyBlocked = true;
-        console.log(`✅ Forzato switch a: ${selectedParticipant.name}`);
+
+      // TOPIC e KB_CONTEXT temporaneamente disabilitati (struttura conservata)
+      // if (topicSections.length > 0) { ... }
+      // if (kbContextSections.length > 0) { ... }
+      // if (kbContext) { ... }
+
+      console.log('📝 Prompt finale composto:', composedPrompt.substring(0, 200) + '...');
+
+      // Prepare conversation history con context cumulativo
+      const conversationHistory = [
+        { role: 'system', content: composedPrompt },
+        // ✅ INSERIMENTO SUMMARY CUMULATIVO (se esiste)
+        ...(cumulativeSummary ? [{ 
+          role: 'system', 
+          content: `📚 CONTESTO PRECEDENTE (Riassunto cumulativo):\n${cumulativeSummary}\n\n---\n\n` 
+        }] : []),
+        ...historyMessages,
+        ...turnContext // ← Context cumulativo del turno (user message + risposte precedenti)
+      ];
+
+      // 📊 LOG DIMENSIONI CONTESTO (per monitoraggio)
+      const totalContextChars = conversationHistory
+        .map(m => m.content.length)
+        .reduce((sum, len) => sum + len, 0);
+
+      const estimatedTokens = Math.ceil(totalContextChars / 4);
+
+      console.log('📊 CONTEXT SIZE:', {
+        systemPromptChars: composedPrompt.length,
+        cumulativeSummaryChars: cumulativeSummary?.length || 0,
+        historyMessagesCount: historyMessages.length,
+        turnContextMessages: turnContext.length,
+        totalContextChars: totalContextChars,
+        estimatedTokens: estimatedTokens
+      });
+
+      if (estimatedTokens > 50000) {
+        console.warn('⚠️ CONTEXT SIZE ECCESSIVO!', estimatedTokens, 'tokens');
       }
-    }
-    
-    console.log('🎯 Agente Bar Chat selezionato:', selectedParticipant.name);
 
-    // Thinking delay rimosso - risposta immediata
+      let aiResponse = '';
+      let tokenInput = 0;
+      let tokenOutput = 0;
+      const startTime = Date.now();
 
-    // Fetch AGENT_PERSONALITY sections (filtrate per nome agente)
-    const { data: agentPersonalitySections } = await supabaseClient
-      .from('chat_laboratory_prompt_sections')
-      .select('content')
-      .eq('section_type', 'AGENT_PERSONALITY')
-      .eq('is_active', true)
-      .ilike('section_name', `%${selectedParticipant.name}%`)
-      .order('order_priority', { ascending: true });
-
-    console.log(`👤 Sezioni AGENT_PERSONALITY per ${selectedParticipant.name}: ${agentPersonalitySections?.length || 0}`);
-
-    // Compose final system prompt
-    let composedPrompt = globalSystemPrompt + '\n\n';
-    
-    // Add BASE sections
-    if (baseSections && baseSections.length > 0) {
-      composedPrompt += '=== CONTESTO BASE ===\n';
-      composedPrompt += baseSections.map(s => s.content).join('\n\n') + '\n\n';
-    }
-
-    // Add AGENT_PERSONALITY sections
-    if (agentPersonalitySections && agentPersonalitySections.length > 0) {
-      composedPrompt += '=== TUA PERSONALITÀ ===\n';
-      composedPrompt += agentPersonalitySections.map(s => s.content).join('\n\n') + '\n\n';
-    }
-
-    // Add TOPIC sections
-    if (topicSections.length > 0) {
-      composedPrompt += `=== FOCUS TOPIC: ${selectedTopic} ===\n`;
-      composedPrompt += topicSections.map(s => s.content).join('\n\n') + '\n\n';
-    }
-    
-    // Add KB_CONTEXT sections
-    if (kbContextSections.length > 0) {
-      composedPrompt += '=== 📚 ISTRUZIONI KNOWLEDGE BASE ===\n';
-      composedPrompt += kbContextSections.map(s => s.content).join('\n\n') + '\n\n';
-    }
-    
-    // Add KB context (RAG documents)
-    if (kbContext) {
-      composedPrompt += kbContext;
-    }
-
-    console.log('📝 Prompt finale composto:', composedPrompt.substring(0, 200) + '...');
-
-    // Prepare conversation history
-    const conversationHistory = [
-      { role: 'system', content: composedPrompt },
-      // ✅ INSERIMENTO SUMMARY CUMULATIVO (se esiste)
-      ...(cumulativeSummary ? [{ 
-        role: 'system', 
-        content: `📚 CONTESTO PRECEDENTE (Riassunto cumulativo):\n${cumulativeSummary}\n\n---\n\n` 
-      }] : []),
-      ...historyMessages,
-      { role: 'user', content: userMessage }
-    ];
-
-    // 📊 LOG DIMENSIONI CONTESTO (per monitoraggio)
-    const totalContextChars = conversationHistory
-      .map(m => m.content.length)
-      .reduce((sum, len) => sum + len, 0);
-
-    const estimatedTokens = Math.ceil(totalContextChars / 4);
-
-    console.log('📊 CONTEXT SIZE:', {
-      systemPromptChars: composedPrompt.length,
-      cumulativeSummaryChars: cumulativeSummary?.length || 0,
-      historyMessagesCount: historyMessages.length,
-      totalContextChars: totalContextChars,
-      estimatedTokens: estimatedTokens,
-      kbDocsIncluded: kbContext ? 'YES' : 'NO'
-    });
-
-    if (estimatedTokens > 50000) {
-      console.warn('⚠️ CONTEXT SIZE ECCESSIVO!', estimatedTokens, 'tokens');
-    }
-
-    let aiResponse = '';
-    let tokenInput = 0;
-    let tokenOutput = 0;
-    const startTime = Date.now();
-
-    // Route to appropriate AI provider
-    if ((selectedParticipant.type === 'anthropic' || selectedParticipant.type === 'claude') && anthropicConfig?.api_key) {
+      // ============ CHIAMATA AI PROVIDER ============
+      if ((currentAgent.type === 'anthropic' || currentAgent.type === 'claude') && anthropicConfig?.api_key) {
       console.log('🤖 Calling Anthropic (Claude)...');
       
       const result = await withRetry(async () => {
@@ -584,7 +426,7 @@ serve(async (req) => {
       tokenOutput = result.tokensOut;
       console.log(`✅ Claude: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
     }
-    else if ((selectedParticipant.type === 'openai' || selectedParticipant.type === 'chatgpt') && openaiConfig?.api_key) {
+    else if ((currentAgent.type === 'openai' || currentAgent.type === 'chatgpt') && openaiConfig?.api_key) {
       console.log('🤖 Calling OpenAI (GPT)...');
       
       const modelName = openaiConfig.modello || 'gpt-5-2025-08-07';
@@ -660,7 +502,7 @@ serve(async (req) => {
       tokenOutput = result.tokensOut;
       console.log(`✅ ChatGPT: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
     }
-    else if (selectedParticipant.type === 'gemini' && LOVABLE_API_KEY) {
+    else if (currentAgent.type === 'gemini' && LOVABLE_API_KEY) {
       console.log('🤖 Calling Lovable AI (Gemini)...');
       
       const result = await withRetry(async () => {
@@ -706,105 +548,102 @@ serve(async (req) => {
       throw new Error(`No API key available for ${selectedParticipant.type}`);
     }
 
-    // ⚠️ SAFETY: truncate se risposta supera 15k chars (fallback per modelli senza max_tokens)
-    if (aiResponse.length > 15000) {
-      console.warn(`⚠️ Risposta troppo lunga (${aiResponse.length} chars), troncamento a 15k...`);
-      aiResponse = aiResponse.substring(0, 15000) + '\n\n[... risposta troncata per lunghezza]';
-    }
+      // ⚠️ SAFETY: truncate se risposta supera 15k chars (fallback per modelli senza max_tokens)
+      if (aiResponse.length > 15000) {
+        console.warn(`⚠️ Risposta troppo lunga (${aiResponse.length} chars), troncamento a 15k...`);
+        aiResponse = aiResponse.substring(0, 15000) + '\n\n[... risposta troncata per lunghezza]';
+      }
+      
+      const responseTime = Date.now() - startTime;
+      console.log(`✅ ${currentAgent.name} risposta ricevuta in ${responseTime}ms`);
     
-    const responseTime = Date.now() - startTime;
-    console.log(`✅ Bar Chat risposta ricevuta in ${responseTime}ms`);
-    
-    // ============ TELEMETRIA STRUTTURATA + DEBUG INFO ============
-    const debugInfo = {
-      provider: selectedParticipant.type,
-      model: selectedParticipant.type === 'anthropic' ? 'claude-sonnet-4-5' 
-           : selectedParticipant.type === 'openai' ? (openaiConfig?.modello || 'gpt-5-2025-08-07')
-           : 'gemini-2.5-flash',
-      timeout: selectedParticipant.type === 'anthropic' ? 43000 
-             : selectedParticipant.type === 'openai' ? 43000 
-             : 43000,
-      tokens_estimated: estimatedTokens,
-      turn_strategy: turnStrategy,
-      agent_selection_reason: mentionDetected ? 'direct_mention' 
-                            : monopolyBlocked ? 'anti_monopoly_forced' 
-                            : turnStrategy === 'RANDOM_30' ? 'random_or_sequential'
-                            : 'smart_priority',
-      last_two_speakers: lastTwoSpeakers,
-      blocked_monopoly: monopolyBlocked
-    };
-    
-    const telemetry = {
-      conversation_id: conversationId,
-      provider: selectedParticipant.type,
-      agent_name: selectedParticipant.name,
-      latency_ms: responseTime,
-      tokens_in: tokenInput,
-      tokens_out: tokenOutput,
-      mention_detected: mentionDetected,
-      debug_info: debugInfo,
-      timestamp: new Date().toISOString()
-    };
-    console.log('📊 TELEMETRY:', JSON.stringify(telemetry));
-
-    // Save AI response to database
-    const { data: maxSeq } = await supabaseClient
-      .from('chat_laboratory_messages')
-      .select('message_sequence')
-      .eq('conversation_id', conversationId)
-      .order('message_sequence', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    
-    const nextSequence = (maxSeq?.message_sequence || 0) + 1;
-
-    const { data: savedMessage, error: saveError } = await supabaseClient
-      .from('chat_laboratory_messages')
-      .insert({
+      // ============ TELEMETRIA STRUTTURATA + DEBUG INFO ============
+      const debugInfo = {
+        provider: currentAgent.type,
+        model: currentAgent.type === 'anthropic' ? 'claude-sonnet-4-5' 
+             : currentAgent.type === 'openai' ? (openaiConfig?.modello || 'gpt-5-2025-08-07')
+             : 'gemini-2.5-flash',
+        timeout: 43000,
+        tokens_estimated: estimatedTokens,
+        agent_index_in_turn: i + 1,
+        total_agents_in_turn: activeParticipants.length,
+        turn_context_messages: turnContext.length
+      };
+      
+      const telemetry = {
         conversation_id: conversationId,
-        message_sequence: nextSequence,
-        sender_type: selectedParticipant.type,
-        sender_name: selectedParticipant.name,
+        provider: currentAgent.type,
+        agent_name: currentAgent.name,
+        latency_ms: responseTime,
+        tokens_in: tokenInput,
+        tokens_out: tokenOutput,
+        debug_info: debugInfo,
+        timestamp: new Date().toISOString()
+      };
+      console.log('📊 TELEMETRY:', JSON.stringify(telemetry));
+
+      // ============ SALVA RISPOSTA IMMEDIATAMENTE ============
+      const { data: maxSeq } = await supabaseClient
+        .from('chat_laboratory_messages')
+        .select('message_sequence')
+        .eq('conversation_id', conversationId)
+        .order('message_sequence', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      const nextSequence = (maxSeq?.message_sequence || 0) + 1;
+
+      const { data: savedMessage, error: saveError } = await supabaseClient
+        .from('chat_laboratory_messages')
+        .insert({
+          conversation_id: conversationId,
+          message_sequence: nextSequence,
+          sender_type: currentAgent.type,
+          sender_name: currentAgent.name,
+          content: aiResponse,
+          token_input: tokenInput,
+          token_output: tokenOutput,
+          tempo_risposta_ms: responseTime,
+          attachments: {
+            structured_prompt: {
+              timestamp: new Date().toISOString(),
+              global_system_prompt: globalSystemPrompt,
+              base_sections_cached: baseContent.substring(0, 200) + '...',
+              agent_personality_cached: agentPersonality.substring(0, 200) + '...',
+              cumulative_summary: cumulativeSummary || null,
+              message_history_count: historyMessages.length,
+              turn_context_count: turnContext.length
+            },
+            debug_info: debugInfo
+          }
+        })
+        .select()
+        .single();
+
+      if (saveError || !savedMessage) {
+        console.error('❌ Errore salvataggio messaggio:', saveError);
+        throw new Error('Errore salvataggio messaggio');
+      }
+      
+      console.log(`✅ Messaggio salvato (ID: ${savedMessage.id})`);
+      
+      // ============ AGGIUNGI ALLA LISTA RISPOSTE ============
+      allResponses.push({
+        agentName: currentAgent.name,
+        agentType: currentAgent.type,
         content: aiResponse,
-        token_input: tokenInput,
-        token_output: tokenOutput,
-        tempo_risposta_ms: responseTime,
-        attachments: {
-          structured_prompt: {
-            timestamp: new Date().toISOString(),
-            global_system_prompt: globalSystemPrompt,
-            base_sections: baseSections?.map(s => s.content) || [],
-            topic_sections: topicSections.map(s => s.content),
-            kb_context_sections: kbContextSections.map(s => s.content),
-            kb_documents: kbContext || null,
-            cumulative_summary: cumulativeSummary || null,
-            message_history: historyMessages.map(m => m.content),
-            current_user_message: userMessage
-          },
-          debug_info: debugInfo
-        }
-      })
-      .select()
-      .single();
+        tokenInput,
+        tokenOutput,
+        responseTime,
+        messageId: savedMessage.id
+      });
+    } // ← Fine del loop for
 
-    if (saveError || !savedMessage) {
-      console.error('❌ Errore salvataggio messaggio:', saveError);
-      throw new Error('Errore salvataggio messaggio');
-    }
-
-    // Update conversation turn index
-    await supabaseClient
-      .from('chat_laboratory_conversations')
-      .update({ 
-        last_speaker_index: currentTurnIndex,
-        current_turn_index: (currentTurnIndex + 1) % participants.length
-      })
-      .eq('id', conversationId);
-
-    console.log(`✅ Messaggio salvato (ID: ${savedMessage.id}) e turno aggiornato`);
+    // ============ TURNO COMPLETATO ============
+    console.log(`\n✅ Turno completato: ${allResponses.length} agenti hanno risposto`);
 
     // ✅ AUTO-REGENERAZIONE SUMMARY ogni 20 messaggi
-    const totalMessages = (messages?.length || 0) + 2; // +2 per user+AI appena salvati
+    const totalMessages = (messages?.length || 0) + allResponses.length + 1; // +1 user + N agenti
     if (totalMessages % 20 === 0) {
       console.log(`🔄 Trigger auto-summary: ${totalMessages} messaggi raggiunti`);
       
@@ -824,43 +663,31 @@ serve(async (req) => {
       });
     }
 
+    // ============ RISPOSTA FINALE ============
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        content: aiResponse,
-        speaker: selectedParticipant.name,
-        tokens: { input: tokenInput, output: tokenOutput },
-        responseTime,
-        messageId: savedMessage.id,
-        audioGenerating: voiceEnabled,
+      JSON.stringify({
+        success: true,
+        total_responses: allResponses.length,
+        responses: allResponses.map(r => ({
+          speaker: r.agentName,
+          type: r.agentType,
+          message_id: r.messageId,
+          token_input: r.tokenInput,
+          token_output: r.tokenOutput,
+          response_time_ms: r.responseTime
+        })),
+        audioWillBeGenerated: voiceEnabled,
+        message: `${allResponses.length} agenti hanno risposto in sequenza`,
         
-        // 🆕 DATI TECNICI DI ORCHESTRAZIONE
+        // Telemetria aggregata
         orchestration: {
-          strategy: turnStrategy,
-          provider: selectedParticipant.type,
-          aiLatencyMs: responseTime,
-          directCallDetected: mentionDetected,
-          monopolyBlocked: monopolyBlocked,
-          turnIndex: currentTurnIndex,
-          
-          // Includi participantScores solo se esiste (SMART_PRIORITY)
-          ...(typeof participantScores !== 'undefined' && participantScores?.length > 0 ? {
-            selectedScore: participantScores[0].score,
-            allScores: participantScores.map((p: any) => ({
-              agent: p.participant.name,
-              score: p.score,
-              expertise: userKeywords?.filter((uk: string) => 
-                (p.participant.expertise_keywords || []).some((ek: string) => 
-                  ek.toLowerCase().includes(uk) || uk.includes(ek.toLowerCase())
-                )
-              ).length,
-              gapPenalty: (participants.reduce((sum: number, pp: any) => sum + (pp.response_count || 0), 0) / participants.length) - (p.participant.response_count || 0)
-            }))
-          } : {})
-        },
-        
-        // 🆕 STRUCTURED PROMPT PER DEBUG
-        structured_prompt: structuredPrompt
+          mode: 'sequential',
+          total_agents: allResponses.length,
+          total_latency_ms: allResponses.reduce((sum, r) => sum + r.responseTime, 0),
+          avg_latency_ms: Math.round(allResponses.reduce((sum, r) => sum + r.responseTime, 0) / allResponses.length),
+          total_tokens_in: allResponses.reduce((sum, r) => sum + r.tokenInput, 0),
+          total_tokens_out: allResponses.reduce((sum, r) => sum + r.tokenOutput, 0)
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

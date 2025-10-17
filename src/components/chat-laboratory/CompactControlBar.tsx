@@ -232,63 +232,29 @@ export const CompactControlBar = ({
           </div>
 
           {/* Caratteristiche Microfono Attivo */}
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
-            <h4 className="text-sm font-semibold mb-2">🎤 Microfono: {audioMode.toUpperCase().replace('V2_', '')}</h4>
-            
+          <div className="space-y-1">
             {audioMode === 'stable' && (
-              <>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Modalità:</strong> Push-to-Talk con Auto-Stop
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Funzionamento:</strong> Premi e rilascia. Si ferma automaticamente dopo 3s di silenzio.
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  <strong>✅ Risultato:</strong> Registrazione affidabile, nessun rumore di fondo.
-                </p>
-              </>
+              <p className="text-xs text-muted-foreground">
+                🎤 <strong>STABLE:</strong> PTT 3s auto-stop | Registrazione affidabile, zero rumore
+              </p>
             )}
             
             {audioMode === 'v2_continuous' && (
-              <>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Modalità:</strong> Registrazione Continua
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Funzionamento:</strong> Sempre attivo. Auto-stop dopo 1.5s di silenzio.
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  <strong>✅ Risultato:</strong> Conversazione naturale hands-free.
-                </p>
-              </>
+              <p className="text-xs text-muted-foreground">
+                🎤 <strong>CONTINUOUS:</strong> Sempre attivo, 1.5s VAD | Conversazione naturale hands-free
+              </p>
             )}
             
             {audioMode === 'v2_extended' && (
-              <>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Modalità:</strong> Hold-to-Record
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Funzionamento:</strong> Tieni premuto per registrare, rilascia per inviare.
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  <strong>✅ Risultato:</strong> Controllo totale sulla durata della registrazione.
-                </p>
-              </>
+              <p className="text-xs text-muted-foreground">
+                🎤 <strong>EXTENDED:</strong> Hold-to-record | Controllo totale durata registrazione
+              </p>
             )}
             
             {audioMode === 'v2_hybrid' && (
-              <>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Modalità:</strong> Ascolto Intelligente
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Funzionamento:</strong> VAD automatico rileva quando parli e quando smetti.
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  <strong>✅ Risultato:</strong> Esperienza più naturale con rilevamento vocale avanzato.
-                </p>
-              </>
+              <p className="text-xs text-muted-foreground">
+                🎤 <strong>HYBRID:</strong> VAD intelligente automatico | Rilevamento vocale avanzato
+              </p>
             )}
           </div>
         </div>

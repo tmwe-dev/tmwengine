@@ -203,19 +203,9 @@ export const BarModeTabsControls = ({
       icon: Brain,
       content: (
         <div className="space-y-4 max-h-[40vh] overflow-y-auto p-4">
-          {/* Turn Strategy Toggle */}
-          <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg border border-border/20">
-            <div className="flex items-center gap-3">
-              <Zap className="h-4 w-4 text-muted-foreground" />
-              <Label 
-                className={cn(
-                  "text-sm font-medium cursor-pointer transition-colors",
-                  !isSmartMode ? "text-foreground" : "text-muted-foreground"
-                )}
-              >
-                Random
-              </Label>
-            </div>
+          {/* Turn Strategy Toggle - Compatto */}
+          <div className="flex items-center justify-end gap-2 p-2">
+            <Zap className="h-4 w-4 text-muted-foreground" />
             <Switch
               checked={isSmartMode}
               onCheckedChange={(checked) => 
@@ -223,17 +213,6 @@ export const BarModeTabsControls = ({
               }
               disabled={!conversationId}
             />
-            <div className="flex items-center gap-3">
-              <Brain className="h-4 w-4 text-muted-foreground" />
-              <Label 
-                className={cn(
-                  "text-sm font-medium cursor-pointer transition-colors",
-                  isSmartMode ? "text-foreground" : "text-muted-foreground"
-                )}
-              >
-                Smart Turn-Taking
-              </Label>
-            </div>
           </div>
 
           {/* Pause Between Turns Slider */}

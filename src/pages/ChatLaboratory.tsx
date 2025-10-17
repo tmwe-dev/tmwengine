@@ -1616,7 +1616,7 @@ const ChatLaboratory = () => {
 
           {/* === SEZIONE CONTROLLI BAR MODE (solo quando attivo) === */}
           {isBarMode && currentConversationId && (
-            <div className="mt-4 space-y-3 border-t border-border/40 pt-4">
+            <div className="mt-4 space-y-3 border-t border-border/40 pt-4 max-h-[40vh] overflow-y-auto">
               
               {/* 📌 TITOLO SEZIONE */}
               <div className="text-center">

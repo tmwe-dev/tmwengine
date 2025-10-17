@@ -42,7 +42,6 @@ import { TokenWarningBanner } from '@/components/chat-laboratory/TokenWarningBan
 import { TokenUsageChart } from '@/components/chat-laboratory/TokenUsageChart';
 import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
 import { AudioModeSelector } from '@/components/chat-laboratory/AudioModeSelector';
-import { AudioModeButtons } from '@/components/chat-laboratory/AudioModeButtons';
 
 interface Message {
   id: string;
@@ -1510,10 +1509,7 @@ const ChatLaboratory = () => {
                 </div>
               )}
               
-              <div className="flex items-center justify-end gap-2 w-full">
-                {/* Pulsanti modalità audio */}
-                <AudioModeButtons />
-                
+              <div className="flex flex-col items-center gap-1.5">
                 {/* Toggle BarChat */}
                 <BarModeToggle
                   conversationId={currentConversationId}
@@ -1521,7 +1517,7 @@ const ChatLaboratory = () => {
                   onToggle={setIsBarMode}
                 />
                 
-                {/* Microfono Bar Mode */}
+                {/* Selettore Modalità Audio con microfoni integrati */}
                 {isBarMode && (
                   <AudioModeSelector 
                     conversationId={currentConversationId}
@@ -1531,7 +1527,6 @@ const ChatLaboratory = () => {
                       }
                     }}
                     isAISpeaking={isAISpeaking}
-                    showOnlyRecorder={true}
                   />
                 )}
               </div>

@@ -164,7 +164,7 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
 
   // Layout completo (default): bottoni + microfono
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex items-center gap-3">
       {/* Bottoni Selezione Modalità */}
       <div className="flex items-center gap-1.5">
         {modes.map((mode) => {
@@ -178,24 +178,22 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
               variant={isSelected ? "default" : "outline"}
               size="sm"
               className={cn(
-                "h-8 px-2 cursor-pointer",
-                isMobile ? "w-8" : "min-w-[4rem]",
+                "h-8 w-8 p-0 cursor-pointer",
                 isSelected 
                   ? "bg-primary text-primary-foreground border-primary" 
                   : "bg-white/5 text-white/80 border-white/20 hover:bg-white/10 hover:text-white"
               )}
               title={mode.description}
             >
-              <Icon className={cn("h-4 w-4", !isMobile && "mr-1")} />
-              {!isMobile && <span className="text-xs font-medium">{mode.label}</span>}
+              <Icon className="h-4 w-4" />
             </Button>
           );
         })}
       </div>
 
-      {/* Microfono Attivo sotto i bottoni */}
+      {/* Microfono Attivo a destra */}
       {conversationId && (
-        <div className="w-full flex justify-center">
+        <div className="flex-1 flex justify-end">
           {selectedMode === 'stable' && (
             <BarVoiceRecorder
               conversationId={conversationId}

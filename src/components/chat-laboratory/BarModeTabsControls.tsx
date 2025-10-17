@@ -416,7 +416,7 @@ export const BarModeTabsControls = ({
   ];
 
   return (
-    <div className={cn("w-full max-w-4xl mx-auto", className)}>
+    <div className={cn("w-full border-2 border-red-500", className)}>
       <DynamicTabs 
         tabs={tabs} 
         defaultValue="audio" 

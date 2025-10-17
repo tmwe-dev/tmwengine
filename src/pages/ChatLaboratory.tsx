@@ -1614,7 +1614,7 @@ const ChatLaboratory = () => {
 
           {/* Bar Mode Tabs Controls - Posizionati sotto la textarea */}
           {isBarMode && currentConversationId && (
-            <div className="mt-4">
+            <div className="mt-4 w-full bg-card/60 p-4 rounded-lg border border-border/60">
               <BarModeTabsControls
                 conversationId={currentConversationId}
                 isAISpeaking={isAISpeaking}

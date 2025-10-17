@@ -212,93 +212,82 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
   };
 
   return (
-    <div className="space-y-4 p-4 bg-card rounded-lg border border-border">
-      {/* Preset Selector - Radio con Icone */}
-      <div className="space-y-2">
-        <Label className="text-sm font-semibold">Modalità Conversazione:</Label>
+    <div className="space-y-2 p-3 bg-card rounded-lg">
+      {/* Preset Selector - Una riga orizzontale */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Label className="text-xs font-semibold shrink-0">Modalità:</Label>
         
-        {/* Radio Group Container */}
-        <div className="grid grid-cols-3 gap-2">
-          
-          {/* Preset 1: Veloce */}
-          <button
-            type="button"
-            onClick={() => applyPreset('fast')}
-            className={cn(
-              "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
-              preset === 'fast' 
-                ? "border-primary bg-primary/10 text-primary" 
-                : "border-border hover:border-primary/50"
-            )}
-          >
-            <span className="text-2xl">⚡</span>
-            <span className="text-xs font-medium text-center">Veloce</span>
-          </button>
+        {/* Preset 1: Veloce */}
+        <button
+          type="button"
+          onClick={() => applyPreset('fast')}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md border transition-all text-xs",
+            preset === 'fast' 
+              ? "border-primary bg-primary/10 text-primary" 
+              : "border-border hover:border-primary/50"
+          )}
+        >
+          <span>⚡</span>
+          <span className="font-medium">Veloce</span>
+        </button>
 
-          {/* Preset 2: Professionale */}
-          <button
-            type="button"
-            onClick={() => applyPreset('professional')}
-            className={cn(
-              "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
-              preset === 'professional' 
-                ? "border-primary bg-primary/10 text-primary" 
-                : "border-border hover:border-primary/50"
-            )}
-          >
-            <span className="text-2xl">💼</span>
-            <span className="text-xs font-medium text-center">Professionale</span>
-          </button>
+        {/* Preset 2: Professionale */}
+        <button
+          type="button"
+          onClick={() => applyPreset('professional')}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md border transition-all text-xs",
+            preset === 'professional' 
+              ? "border-primary bg-primary/10 text-primary" 
+              : "border-border hover:border-primary/50"
+          )}
+        >
+          <span>💼</span>
+          <span className="font-medium">Professional</span>
+        </button>
 
-          {/* Preset 3: Profonda */}
-          <button
-            type="button"
-            onClick={() => applyPreset('deep')}
-            className={cn(
-              "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
-              preset === 'deep' 
-                ? "border-primary bg-primary/10 text-primary" 
-                : "border-border hover:border-primary/50"
-            )}
-          >
-            <span className="text-2xl">🧠</span>
-            <span className="text-xs font-medium text-center">Profonda</span>
-          </button>
-        </div>
-
-        {/* Descrizione dinamica sotto i pulsanti */}
-        <div className="text-xs text-muted-foreground text-center p-2 bg-muted/30 rounded">
-          {preset === 'fast' && '⚡ Premi 🎤 → Auto-stop silenzio 1.5s'}
-          {preset === 'professional' && '💼 Premi 🎤 → Ripremi per inviare'}
-          {preset === 'deep' && '🧠 TIENI PREMUTO 🎤 → Rilascia → Auto-invio'}
-          {preset === 'custom' && '⚙️ Configurazione personalizzata'}
-        </div>
+        {/* Preset 3: Profonda */}
+        <button
+          type="button"
+          onClick={() => applyPreset('deep')}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md border transition-all text-xs",
+            preset === 'deep' 
+              ? "border-primary bg-primary/10 text-primary" 
+              : "border-border hover:border-primary/50"
+          )}
+        >
+          <span>🧠</span>
+          <span className="font-medium">Profonda</span>
+        </button>
       </div>
 
       {/* Advanced Toggle */}
       <Collapsible>
-        <CollapsibleTrigger className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-          ⚙️ Avanzate
+        <CollapsibleTrigger className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+          <span>⚙️</span>
+          <span>Avanzate</span>
         </CollapsibleTrigger>
-        <CollapsibleContent className="mt-3 space-y-3">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="topic-select" className="text-sm">Argomento della conversazione</Label>
+        <CollapsibleContent className="mt-2 space-y-2">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="topic-select" className="text-xs shrink-0">Argomento:</Label>
             <Select value={selectedTopic || ''} onValueChange={updateTopic}>
-              <SelectTrigger id="topic-select">
-                <SelectValue placeholder="Seleziona un argomento" />
+              <SelectTrigger id="topic-select" className="h-8 text-xs">
+                <SelectValue placeholder="Seleziona" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="generale">Generale</SelectItem>
-                <SelectItem value="business">Business & Strategy</SelectItem>
-                <SelectItem value="tecnologia">Tecnologia & AI</SelectItem>
-                <SelectItem value="creativo">Creativo & Brainstorming</SelectItem>
-                <SelectItem value="educativo">Educativo & Formazione</SelectItem>
+                <SelectItem value="business">Business</SelectItem>
+                <SelectItem value="tecnologia">Tech & AI</SelectItem>
+                <SelectItem value="creativo">Creativo</SelectItem>
+                <SelectItem value="educativo">Educativo</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="pace-select" className="text-sm">Ritmo conversazione</Label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="pace-select" className="text-xs shrink-0">Ritmo:</Label>
             <Select 
               value={settings.conversation_pace} 
               onValueChange={(value: any) => {
@@ -306,7 +295,7 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
                 setPreset('custom');
               }}
             >
-              <SelectTrigger id="pace-select">
+              <SelectTrigger id="pace-select" className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -317,9 +306,9 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
             </Select>
           </div>
 
-          <div className="flex items-center justify-between">
-            <Label htmlFor="interruptions-toggle" className="text-sm">
-              Abilita interruzioni
+          <div className="flex items-center gap-2">
+            <Label htmlFor="interruptions-toggle" className="text-xs flex-1">
+              Interruzioni
             </Label>
             <Switch
               id="interruptions-toggle"
@@ -331,9 +320,9 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <Label htmlFor="voice-toggle" className="text-sm">
-              Voce AI attiva
+          <div className="flex items-center gap-2">
+            <Label htmlFor="voice-toggle" className="text-xs flex-1">
+              Voce AI
             </Label>
             <Switch
               id="voice-toggle"
@@ -349,18 +338,18 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
             <Button
               variant="outline"
               size="sm"
-              className="w-full text-xs"
+              className="w-full text-xs h-8"
               onClick={() => {
                 updateSetting('audio_mode', 'hybrid');
                 updateSetting('turn_strategy', 'RANDOM_30');
                 setPreset('custom');
                 toast({
-                  title: '🔄 Modalità Hybrid attivata',
-                  description: 'Multi-chunk con invio automatico ogni pausa.',
+                  title: '🔄 Hybrid attivata',
+                  description: 'Multi-chunk con invio automatico.',
                 });
               }}
             >
-              🔄 Attiva Modalità Hybrid (Sperimentale)
+              🔄 Hybrid (Sperimentale)
             </Button>
           </div>
         </CollapsibleContent>

@@ -62,12 +62,11 @@ export function DynamicTabs({
               value={tab.value}
               disabled={tab.disabled}
               className={cn(
-                'flex items-center gap-2',
+                'flex items-center justify-center p-2',
                 variant === 'pills' && 'data-[state=active]:bg-background'
               )}
             >
               {Icon && <Icon className="h-4 w-4" />}
-              <span>{tab.label}</span>
               {tab.badge !== undefined && (
                 <Badge variant="secondary" className="ml-1 bg-transparent border-0">
                   {tab.badge}
@@ -79,7 +78,7 @@ export function DynamicTabs({
       </TabsList>
 
       {tabs.map((tab) => (
-        <TabsContent key={tab.value} value={tab.value} className="mt-4">
+        <TabsContent key={tab.value} value={tab.value} className="mt-2">
           {tab.content}
         </TabsContent>
       ))}

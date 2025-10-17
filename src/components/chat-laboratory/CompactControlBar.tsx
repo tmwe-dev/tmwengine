@@ -21,6 +21,7 @@ interface CompactControlBarProps {
   conversationId: string | null;
   isBarMode: boolean;
   isAISpeaking: boolean;
+  audioMode?: 'stable' | 'v2_continuous' | 'v2_hybrid';
   onToggleBarMode: (value: boolean) => void;
   onInterrupt: () => void;
   onTranscriptionComplete: (text: string) => void;
@@ -34,6 +35,7 @@ export const CompactControlBar = ({
   conversationId,
   isBarMode,
   isAISpeaking,
+  audioMode: externalAudioMode,
   onToggleBarMode,
   onInterrupt,
   onTranscriptionComplete,
@@ -46,23 +48,22 @@ export const CompactControlBar = ({
   const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
   const [pauseBetweenTurns, setPauseBetweenTurns] = useState<number>(800);
   const [enableDirectCall, setEnableDirectCall] = useState<boolean>(true);
-  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_hybrid'>('stable');
+  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_hybrid'>(
+    externalAudioMode || 'stable'
+  );
+
+  useEffect(() => {
+    if (externalAudioMode) {
+      setAudioMode(externalAudioMode);
+    }
+  }, [externalAudioMode]);
 
   useEffect(() => {
     if (conversationId && isBarMode) {
       loadPauseState();
       loadDynamicTurnSettings();
-      loadAudioMode();
     }
   }, [conversationId, isBarMode]);
-
-  const loadAudioMode = () => {
-    if (!conversationId) return;
-    const stored = localStorage.getItem(`audio-mode-${conversationId}`);
-    if (stored) {
-      setAudioMode(stored as any);
-    }
-  };
 
   const loadPauseState = async () => {
     if (!conversationId) return;

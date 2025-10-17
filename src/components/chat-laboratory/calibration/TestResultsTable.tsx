@@ -15,6 +15,19 @@ interface TestResult {
   tokensOutput: number;
   success: boolean;
   errorMessage?: string;
+  
+  // 🆕 DATI TECNICI ORCHESTRAZIONE
+  provider?: string;
+  aiLatencyMs?: number;
+  directCallDetected?: boolean;
+  economyMode?: boolean;
+  selectedScore?: number;
+  allScores?: Array<{
+    agent: string;
+    score: number;
+    expertise: number;
+    gapPenalty: number;
+  }>;
 }
 
 interface TestResultsTableProps {
@@ -35,6 +48,25 @@ export function TestResultsTable({ results }: TestResultsTableProps) {
       <Badge variant="secondary">R30</Badge>
     ) : (
       <Badge variant="default">SMART</Badge>
+    );
+  };
+
+  const getProviderBadge = (provider?: string) => {
+    if (!provider || provider === 'unknown') return <Badge variant="outline">N/A</Badge>;
+    
+    const colors: Record<string, string> = {
+      claude: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+      anthropic: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+      openai: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
+      chatgpt: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
+      gemini: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+      google: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+    };
+    
+    return (
+      <Badge variant="outline" className={colors[provider.toLowerCase()] || ''}>
+        {provider}
+      </Badge>
     );
   };
 
@@ -72,55 +104,101 @@ export function TestResultsTable({ results }: TestResultsTableProps) {
                   <TableHead>Ora</TableHead>
                   <TableHead>Strategy</TableHead>
                   <TableHead>Agente</TableHead>
-                  <TableHead>Tempo</TableHead>
-                  <TableHead>Token In</TableHead>
-                  <TableHead>Token Out</TableHead>
+                  <TableHead>Provider</TableHead>
+                  <TableHead>AI Latency</TableHead>
+                  <TableHead>Overhead</TableHead>
+                  <TableHead>Tokens</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Direct</TableHead>
+                  <TableHead>Economy</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results.map((result) => (
-                  <TableRow key={result.id}>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {formatTimestamp(result.timestamp)}
-                    </TableCell>
-                    <TableCell>{getStrategyBadge(result.turnStrategy)}</TableCell>
-                    <TableCell className="font-medium">{result.selectedAgent}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatTime(result.responseTime)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {result.tokensInput}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {result.tokensOutput}
-                    </TableCell>
-                    <TableCell>
-                      {result.success ? (
-                        <Badge variant="default" className="gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Success
-                        </Badge>
-                      ) : (
-                        <Badge variant="destructive" className="gap-1">
-                          <XCircle className="h-3 w-3" />
-                          Error
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {fastestTest?.id === result.id && result.success && (
-                        <span className="text-xl" title="Test più veloce">
-                          🏆
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {results.map((result) => {
+                  const overhead = result.responseTime - (result.aiLatencyMs || result.responseTime);
+                  const totalTokens = result.tokensInput + result.tokensOutput;
+                  
+                  return (
+                    <TableRow key={result.id}>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {formatTimestamp(result.timestamp)}
+                      </TableCell>
+                      <TableCell>{getStrategyBadge(result.turnStrategy)}</TableCell>
+                      <TableCell className="font-medium">{result.selectedAgent}</TableCell>
+                      <TableCell>{getProviderBadge(result.provider)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 text-sm">
+                          <Clock className="h-3 w-3" />
+                          {formatTime(result.aiLatencyMs || result.responseTime)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {overhead > 0 ? (
+                          <span className="text-xs text-muted-foreground">
+                            +{formatTime(overhead)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{result.tokensInput}</span>
+                          <span className="mx-1">/</span>
+                          <span className="text-muted-foreground">{result.tokensOutput}</span>
+                          <span className="ml-1 font-medium">({totalTokens})</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {result.selectedScore !== undefined ? (
+                          <span className="text-sm font-mono">{result.selectedScore.toFixed(1)}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {result.directCallDetected !== undefined ? (
+                          <Badge variant={result.directCallDetected ? "default" : "secondary"} className="text-xs">
+                            {result.directCallDetected ? 'SI' : 'NO'}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {result.economyMode !== undefined ? (
+                          <Badge variant={result.economyMode ? "default" : "outline"} className="text-xs">
+                            {result.economyMode ? 'ON' : 'OFF'}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {result.success ? (
+                          <Badge variant="default" className="gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            OK
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive" className="gap-1">
+                            <XCircle className="h-3 w-3" />
+                            ERR
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {fastestTest?.id === result.id && result.success && (
+                          <span className="text-xl" title="Test più veloce">
+                            🏆
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

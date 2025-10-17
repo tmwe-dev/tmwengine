@@ -23,6 +23,19 @@ interface TestResult {
   tokensOutput: number;
   success: boolean;
   errorMessage?: string;
+  
+  // 🆕 DATI TECNICI ORCHESTRAZIONE
+  provider?: string;
+  aiLatencyMs?: number;
+  directCallDetected?: boolean;
+  economyMode?: boolean;
+  selectedScore?: number;
+  allScores?: Array<{
+    agent: string;
+    score: number;
+    expertise: number;
+    gapPenalty: number;
+  }>;
 }
 
 export function useOrchestratorTest(conversationId: string) {
@@ -157,9 +170,17 @@ export function useOrchestratorTest(conversationId: string) {
         enableDirectCalls: currentConfig.enableDirectCalls,
         selectedAgent: data.speaker || 'Unknown',
         responseTime,
-        tokensInput: data.tokensUsed?.input || 0,
-        tokensOutput: data.tokensUsed?.output || 0,
+        tokensInput: data.tokens?.input || 0,
+        tokensOutput: data.tokens?.output || 0,
         success: true,
+        
+        // 🆕 DATI TECNICI ORCHESTRAZIONE
+        provider: data.orchestration?.provider || 'unknown',
+        aiLatencyMs: data.orchestration?.aiLatencyMs || responseTime,
+        directCallDetected: data.orchestration?.directCallDetected || false,
+        economyMode: data.orchestration?.economyMode || false,
+        selectedScore: data.orchestration?.selectedScore,
+        allScores: data.orchestration?.allScores
       };
 
       if (user) {

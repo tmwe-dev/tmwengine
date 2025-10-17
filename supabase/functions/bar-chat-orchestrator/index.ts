@@ -356,8 +356,11 @@ serve(async (req) => {
     }
     
     // 2. Se nessuna menzione, usa turn_strategy dal DB
+    let participantScores: any[] | undefined;
+    let userKeywords: string[] | undefined;
+    const turnStrategy = barModeSettings?.turn_strategy || 'RANDOM_30';
+    
     if (!selectedParticipant) {
-      const turnStrategy = barModeSettings?.turn_strategy || 'RANDOM_30';
       console.log(`🎯 Strategia turno: ${turnStrategy}`);
       
       if (turnStrategy === 'SMART_PRIORITY') {
@@ -365,12 +368,12 @@ serve(async (req) => {
         console.log('🧠 SMART_PRIORITY: analizzando expertise...');
         
         // Estrai keyword dal messaggio (semplice split per ora)
-        const userKeywords = userMessage.toLowerCase()
+        userKeywords = userMessage.toLowerCase()
           .split(/\s+/)
           .filter(w => w.length > 4); // solo parole > 4 char
         
         // Calcola score per ogni partecipante
-        const participantScores = participants.map((p: any) => {
+        participantScores = participants.map((p: any) => {
           let score = 0;
           const expertiseKeywords = p.expertise_keywords || [];
           
@@ -773,7 +776,32 @@ serve(async (req) => {
         tokens: { input: tokenInput, output: tokenOutput },
         responseTime,
         messageId: savedMessage.id,
-        audioGenerating: voiceEnabled
+        audioGenerating: voiceEnabled,
+        
+        // 🆕 DATI TECNICI DI ORCHESTRAZIONE
+        orchestration: {
+          strategy: turnStrategy,
+          provider: selectedParticipant.type,
+          aiLatencyMs: responseTime,
+          directCallDetected: mentionDetected,
+          economyMode: useEconomyMode,
+          turnIndex: currentTurnIndex,
+          
+          // Includi participantScores solo se esiste (SMART_PRIORITY)
+          ...(typeof participantScores !== 'undefined' && participantScores?.length > 0 && {
+            selectedScore: participantScores[0].score,
+            allScores: participantScores.map((p: any) => ({
+              agent: p.participant.name,
+              score: p.score,
+              expertise: userKeywords?.filter((uk: string) => 
+                (p.participant.expertise_keywords || []).some((ek: string) => 
+                  ek.toLowerCase().includes(uk) || uk.includes(ek.toLowerCase())
+                )
+              ).length,
+              gapPenalty: (participants.reduce((sum: number, pp: any) => sum + (pp.response_count || 0), 0) / participants.length) - (p.participant.response_count || 0)
+            }))
+          })
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

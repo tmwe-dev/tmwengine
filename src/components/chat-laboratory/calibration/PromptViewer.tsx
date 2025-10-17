@@ -133,6 +133,7 @@ export const PromptViewer = ({ structuredPrompt }: PromptViewerProps) => {
   };
 
   const totalTokens = sections.reduce((sum, s) => sum + (s.tokenCount || 0), 0);
+  const debugInfo = (structuredPrompt as any)?.debug_info;
 
   return (
     <Card className="border-2">
@@ -145,6 +146,44 @@ export const PromptViewer = ({ structuredPrompt }: PromptViewerProps) => {
             ~{totalTokens} tokens totali
           </Badge>
         </div>
+        
+        {/* Debug Info Section */}
+        {debugInfo && (
+          <div className="mt-4 p-3 bg-muted/50 rounded-lg border">
+            <h4 className="font-semibold text-sm mb-2">🔍 Debug Info</h4>
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+              <div>
+                <span className="text-muted-foreground">Provider:</span>
+                <span className="ml-2 font-semibold">{debugInfo.provider}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Model:</span>
+                <span className="ml-2">{debugInfo.model}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Timeout:</span>
+                <span className="ml-2">{debugInfo.timeout}ms</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Tokens Est:</span>
+                <span className="ml-2">{debugInfo.tokens_estimated}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Strategy:</span>
+                <span className="ml-2">{debugInfo.turn_strategy}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Selection:</span>
+                <span className="ml-2 text-xs">{debugInfo.agent_selection_reason}</span>
+              </div>
+              {debugInfo.blocked_monopoly && (
+                <div className="col-span-2 bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded mt-1">
+                  🚫 Anti-monopolio attivato: {debugInfo.last_two_speakers?.join(' → ')}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
         {sections.map((section) => {

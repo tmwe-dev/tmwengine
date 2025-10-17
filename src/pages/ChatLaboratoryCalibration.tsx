@@ -191,8 +191,36 @@ const ChatLaboratoryCalibration = () => {
             )}
           </div>
 
-          {/* Right Column: Test Results */}
-          <div className="col-span-4">
+          {/* Right Column: Test Results + Debug Panel */}
+          <div className="col-span-4 space-y-4">
+            {/* Last Call Debug Panel */}
+            {lastResponse && (
+              <Card className="p-4">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  🔍 Last Call Debug
+                  <Badge variant="secondary" className="text-xs">Live</Badge>
+                </h3>
+                <div className="space-y-2 text-sm font-mono">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Agent:</span>
+                    <span className="font-semibold">{lastResponse.speaker}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Duration:</span>
+                    <span>{lastResponse.responseTime}ms</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tokens IN:</span>
+                    <span>{lastResponse.tokensUsed?.input || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tokens OUT:</span>
+                    <span>{lastResponse.tokensUsed?.output || 0}</span>
+                  </div>
+                </div>
+              </Card>
+            )}
+            
             <TestResultsTable results={orchestratorTest.testResults} />
           </div>
         </div>

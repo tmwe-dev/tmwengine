@@ -230,9 +230,8 @@ serve(async (req) => {
       );
     }
 
-    const useEconomyMode = conversation?.economy_mode ?? true;
+    // ✅ Economy Mode ELIMINATO - usiamo sempre content completo (20 messaggi)
     const cumulativeSummary = conversation?.riassunto_contesto || null;
-    console.log('💰 Economy Mode:', useEconomyMode ? 'ATTIVO (usa content_summary)' : 'DISATTIVO (usa content completo)');
     console.log('📚 Riassunto cumulativo:', cumulativeSummary ? `${cumulativeSummary.substring(0, 100)}...` : 'Nessuno');
 
     // Fetch global system prompt
@@ -296,19 +295,11 @@ serve(async (req) => {
   // 🔄 Inverti array per ripristinare cronologia corretta
   const recentMessages = (messages || []).reverse();
 
-    // 🎯 Apply economy mode: usa content_summary per messaggi AI quando disponibile
-    // CRITICO: i messaggi utente NON vengono MAI riassunti per preservare menzioni dirette
+    // ✅ SEMPRE 20 MESSAGGI COMPLETI - Economy mode eliminato
     const historyMessages = recentMessages.map((msg: any) => {
-      let messageContent = msg.content;
+      const messageContent = msg.content; // Sempre content completo
       
-      // ✅ Economy Mode: usa sempre summary per AI se disponibile (preserva brevità ultimi 20 msg)
-      if (useEconomyMode && msg.sender_type !== 'user' && msg.is_summary_available && msg.content_summary) {
-        messageContent = msg.content_summary;
-        console.log(`📝 [Economy] ${msg.sender_name} summary: ${messageContent.substring(0, 50)}...`);
-      } else if (msg.sender_type === 'user') {
-        // Log esplicito: messaggi utente sempre completi (preserva "@gpt", "claude?", etc.)
-        console.log(`💬 [User] Preservato contenuto completo (${messageContent.length} chars) - menzioni intatte`);
-      }
+      console.log(`📝 [${msg.sender_name}] Content completo: ${messageContent.length} chars`);
       
       return {
         role: msg.sender_type === 'user' ? 'user' : 'assistant',
@@ -322,6 +313,17 @@ serve(async (req) => {
     let currentTurnIndex = conversation.current_turn_index || 0;
     const lastSpeakerIndex = conversation.last_speaker_index || 0;
     let mentionDetected = false;
+    
+    // ============ ANTI-MONOPOLIO: Blocca agente dopo 2 risposte consecutive ============
+    const lastTwoMessages = recentMessages.slice(-2);
+    const lastTwoSpeakers = lastTwoMessages
+      .filter(m => m.sender_type !== 'user')
+      .map(m => m.sender_name);
+
+    // Se lo stesso agente ha parlato 2 volte di fila, DEVE cambiare
+    const sameAgentTwice = lastTwoSpeakers.length === 2 && 
+                           lastTwoSpeakers[0] === lastTwoSpeakers[1];
+    let monopolyBlocked = false;
     
     // 1. Cerca menzioni dirette robuste (alias vocali comuni: "renny?", "vittorio", "tonino", "@gpt", etc.)
     for (const p of participants) {
@@ -404,18 +406,42 @@ serve(async (req) => {
         console.log(`🧠 Selected: ${selectedParticipant.name} (score: ${participantScores[0].score.toFixed(1)})`);
         
       } else {
-        // 🎲 RANDOM_30: 30% random, 70% sequenziale
-        const isRandom = Math.random() < 0.3;
+        // 🎲 RANDOM_30: 50% random (più equo), 50% sequenziale
+        const isRandom = Math.random() < 0.5;
         
         if (isRandom) {
-          currentTurnIndex = Math.floor(Math.random() * participants.length);
-          console.log('🎲 Turno randomizzato:', currentTurnIndex);
+          // Scegli casualmente ma evita l'ultimo speaker se possibile
+          const otherAgents = participants.filter((p: any, idx: number) => idx !== lastSpeakerIndex);
+          const randomAgent = otherAgents.length > 0 
+            ? otherAgents[Math.floor(Math.random() * otherAgents.length)]
+            : participants[Math.floor(Math.random() * participants.length)];
+          
+          currentTurnIndex = participants.findIndex((x: any) => x.id === randomAgent.id);
+          console.log('🎲 Turno randomizzato:', randomAgent.name);
         } else {
           currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
-          console.log('➡️ Turno sequenziale:', currentTurnIndex);
+          console.log('➡️ Turno sequenziale:', participants[currentTurnIndex].name);
         }
         selectedParticipant = participants[currentTurnIndex];
       }
+    }
+    
+    // ✅ APPLICA ANTI-MONOPOLIO (dopo la selezione normale)
+    if (sameAgentTwice && !mentionDetected) {
+      const blockedAgentName = lastTwoSpeakers[0];
+      console.log(`🚫 ANTI-MONOPOLIO: ${blockedAgentName} ha parlato 2 volte consecutive, forzo cambio`);
+      
+      // Trova agenti disponibili (escluso quello bloccato)
+      const availableAgents = participants.filter((p: any) => p.name !== blockedAgentName);
+      
+      if (availableAgents.length > 0) {
+        // Scegli casualmente tra gli altri
+        selectedParticipant = availableAgents[Math.floor(Math.random() * availableAgents.length)];
+        currentTurnIndex = participants.findIndex((x: any) => x.id === selectedParticipant.id);
+        monopolyBlocked = true;
+        console.log(`✅ Forzato switch a: ${selectedParticipant.name}`);
+      }
+    }
     }
     
     console.log('🎯 Agente Bar Chat selezionato:', selectedParticipant.name);
@@ -492,8 +518,7 @@ serve(async (req) => {
       historyMessagesCount: historyMessages.length,
       totalContextChars: totalContextChars,
       estimatedTokens: estimatedTokens,
-      kbDocsIncluded: kbContext ? 'YES' : 'NO',
-      economyModeActive: useEconomyMode
+      kbDocsIncluded: kbContext ? 'YES' : 'NO'
     });
 
     if (estimatedTokens > 50000) {
@@ -691,7 +716,25 @@ serve(async (req) => {
     const responseTime = Date.now() - startTime;
     console.log(`✅ Bar Chat risposta ricevuta in ${responseTime}ms`);
     
-    // ============ TELEMETRIA STRUTTURATA ============
+    // ============ TELEMETRIA STRUTTURATA + DEBUG INFO ============
+    const debugInfo = {
+      provider: selectedParticipant.type,
+      model: selectedParticipant.type === 'anthropic' ? 'claude-sonnet-4-5' 
+           : selectedParticipant.type === 'openai' ? (openaiConfig?.modello || 'gpt-5-2025-08-07')
+           : 'gemini-2.5-flash',
+      timeout: selectedParticipant.type === 'anthropic' ? 43000 
+             : selectedParticipant.type === 'openai' ? 43000 
+             : 43000,
+      tokens_estimated: estimatedTokens,
+      turn_strategy: turnStrategy,
+      agent_selection_reason: mentionDetected ? 'direct_mention' 
+                            : monopolyBlocked ? 'anti_monopoly_forced' 
+                            : turnStrategy === 'RANDOM_30' ? 'random_or_sequential'
+                            : 'smart_priority',
+      last_two_speakers: lastTwoSpeakers,
+      blocked_monopoly: monopolyBlocked
+    };
+    
     const telemetry = {
       conversation_id: conversationId,
       provider: selectedParticipant.type,
@@ -700,7 +743,7 @@ serve(async (req) => {
       tokens_in: tokenInput,
       tokens_out: tokenOutput,
       mention_detected: mentionDetected,
-      economy_mode: useEconomyMode,
+      debug_info: debugInfo,
       timestamp: new Date().toISOString()
     };
     console.log('📊 TELEMETRY:', JSON.stringify(telemetry));
@@ -726,7 +769,21 @@ serve(async (req) => {
         content: aiResponse,
         token_input: tokenInput,
         token_output: tokenOutput,
-        tempo_risposta_ms: responseTime
+        tempo_risposta_ms: responseTime,
+        attachments: {
+          structured_prompt: {
+            timestamp: new Date().toISOString(),
+            global_system_prompt: globalSystemPrompt,
+            base_sections: baseSections?.map(s => s.content) || [],
+            topic_sections: topicSections.map(s => s.content),
+            kb_context_sections: kbContextSections.map(s => s.content),
+            kb_documents: kbContext || null,
+            cumulative_summary: cumulativeSummary || null,
+            message_history: historyMessages.map(m => m.content),
+            current_user_message: userMessage
+          },
+          debug_info: debugInfo
+        }
       })
       .select()
       .single();
@@ -784,7 +841,7 @@ serve(async (req) => {
           provider: selectedParticipant.type,
           aiLatencyMs: responseTime,
           directCallDetected: mentionDetected,
-          economyMode: useEconomyMode,
+          monopolyBlocked: monopolyBlocked,
           turnIndex: currentTurnIndex,
           
           // Includi participantScores solo se esiste (SMART_PRIORITY)

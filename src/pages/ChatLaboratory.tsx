@@ -1498,77 +1498,17 @@ const ChatLaboratory = () => {
       {!isFullScreenMode && (
       <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-1 shrink-0">
         <div className="container mx-auto px-2 md:px-3">
-          <form onSubmit={handleSubmit} className="space-y-0.5">
-            {/* Textarea con icone a sinistra */}
-            <div className="flex gap-2">
-              {/* Icone verticali a sinistra */}
-              <div className="flex flex-col gap-1">
-                <FileUploader
-                  onFilesUploaded={setUploadedFiles}
-                />
-                <ImageGenerator
-                  onImageGenerated={setGeneratedImage}
-                />
-                <LaboratoryPromptManager />
-              </div>
-              
-              <Textarea
-                ref={textareaRef}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder={isTokenLimitReached 
-                  ? "⛔ Limite 100K token raggiunto - Crea nuova conversazione" 
-                  : (isMobile ? "Scrivi il messaggio..." : "Scrivi il tuo messaggio... Gli agenti AI risponderanno in sequenza")}
-                disabled={isTokenLimitReached}
-                className={`min-h-[40px] md:min-h-[60px] resize-none text-sm md:text-base ${isTokenLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-              />
-
-              {/* Microfono Standard - Sempre visibile */}
-              <VoiceRecorder
-                ref={voiceRecorderRef}
-                onTranscription={(text) => {
-                  if (text.trim()) {
-                    handleSubmit({ preventDefault: () => {} } as any, text);
-                  }
-                }}
-                onRecordingStateChange={setRecordingState}
-                conversationId={currentConversationId}
-              />
-
-              <Button 
-                type="submit" 
-                size="icon"
-                disabled={isSubmitting || isLoading || (!prompt.trim() && recordingState === 'idle')}
-                className="h-auto px-3 md:px-4 shrink-0"
-                onClick={(e) => {
-                  if (recordingState !== 'idle' && recordingState !== 'processing') {
-                    e.preventDefault();
-                    voiceRecorderRef.current?.stopAndTranscribe();
-                  }
-                }}
-              >
-                <Send className="h-4 w-4 md:h-5 md:w-5" />
-              </Button>
-            </div>
-          </form>
-
-          {/* AI Response Indicator - Sempre visibile sotto l'input */}
+          {/* AI Response Indicator - Prima dell'input */}
           {isLoading && (
-            <div className="mt-2 flex items-center justify-center gap-2 py-2 px-4 rounded-md bg-muted/50 backdrop-blur-sm border border-border/40 animate-fade-in">
+            <div className="mb-2 flex items-center justify-center gap-2 py-2 px-4 rounded-md bg-muted/50 backdrop-blur-sm border border-border/40 animate-fade-in">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
               <span className="text-sm text-muted-foreground">🤖 L'AI sta rispondendo...</span>
             </div>
           )}
 
-          {/* Controlli Audio e Toggle BarChat */}
+          {/* Controlli Audio e Toggle BarChat - Prima dell'input */}
           {!isMobile && (
-            <div className="mt-2 flex items-center gap-4">
+            <div className="mb-2 flex items-center gap-4">
               {/* Controlli Audio a sinistra (solo in Bar Mode) */}
               {isBarMode && (
                 <div className="flex items-center gap-3">
@@ -1630,6 +1570,66 @@ const ChatLaboratory = () => {
                 </div>
             </div>
           )}
+
+          <form onSubmit={handleSubmit} className="space-y-0.5">
+            {/* Textarea con icone a sinistra */}
+            <div className="flex gap-2">
+              {/* Icone verticali a sinistra */}
+              <div className="flex flex-col gap-1">
+                <FileUploader
+                  onFilesUploaded={setUploadedFiles}
+                />
+                <ImageGenerator
+                  onImageGenerated={setGeneratedImage}
+                />
+                <LaboratoryPromptManager />
+              </div>
+              
+              <Textarea
+                ref={textareaRef}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder={isTokenLimitReached 
+                  ? "⛔ Limite 100K token raggiunto - Crea nuova conversazione" 
+                  : (isMobile ? "Scrivi il messaggio..." : "Scrivi il tuo messaggio... Gli agenti AI risponderanno in sequenza")}
+                disabled={isTokenLimitReached}
+                className={`min-h-[40px] md:min-h-[60px] resize-none text-sm md:text-base ${isTokenLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+              />
+
+              {/* Microfono Standard - Sempre visibile */}
+              <VoiceRecorder
+                ref={voiceRecorderRef}
+                onTranscription={(text) => {
+                  if (text.trim()) {
+                    handleSubmit({ preventDefault: () => {} } as any, text);
+                  }
+                }}
+                onRecordingStateChange={setRecordingState}
+                conversationId={currentConversationId}
+              />
+
+              <Button 
+                type="submit" 
+                size="icon"
+                disabled={isSubmitting || isLoading || (!prompt.trim() && recordingState === 'idle')}
+                className="h-auto px-3 md:px-4 shrink-0"
+                onClick={(e) => {
+                  if (recordingState !== 'idle' && recordingState !== 'processing') {
+                    e.preventDefault();
+                    voiceRecorderRef.current?.stopAndTranscribe();
+                  }
+                }}
+              >
+                <Send className="h-4 w-4 md:h-5 md:w-5" />
+              </Button>
+            </div>
+          </form>
 
         </div>
       </div>

@@ -1531,6 +1531,9 @@ const ChatLaboratory = () => {
                   ref={voiceRecorderRef}
                   onTranscription={(text) => {
                     setPrompt(text);
+                    if (text.trim()) {
+                      handleSubmit({ preventDefault: () => {} } as any);
+                    }
                   }}
                   onRecordingStateChange={setRecordingState}
                   conversationId={currentConversationId}

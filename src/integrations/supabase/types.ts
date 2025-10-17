@@ -453,6 +453,72 @@ export type Database = {
           },
         ]
       }
+      chat_laboratory_calibration_configs: {
+        Row: {
+          base_delay_ms: number | null
+          config_name: string
+          context_limit: number | null
+          conversation_style: string | null
+          created_at: string | null
+          economy_mode: boolean | null
+          id: string
+          is_active: boolean | null
+          kb_match_count: number | null
+          kb_match_threshold: number | null
+          max_retries: number | null
+          max_tokens: number | null
+          smart_weights: Json | null
+          temperature: number | null
+          timeout_ms: number | null
+          top_p: number | null
+          turn_strategy: string | null
+          updated_at: string | null
+          vad_silence_duration: number | null
+        }
+        Insert: {
+          base_delay_ms?: number | null
+          config_name: string
+          context_limit?: number | null
+          conversation_style?: string | null
+          created_at?: string | null
+          economy_mode?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          kb_match_count?: number | null
+          kb_match_threshold?: number | null
+          max_retries?: number | null
+          max_tokens?: number | null
+          smart_weights?: Json | null
+          temperature?: number | null
+          timeout_ms?: number | null
+          top_p?: number | null
+          turn_strategy?: string | null
+          updated_at?: string | null
+          vad_silence_duration?: number | null
+        }
+        Update: {
+          base_delay_ms?: number | null
+          config_name?: string
+          context_limit?: number | null
+          conversation_style?: string | null
+          created_at?: string | null
+          economy_mode?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          kb_match_count?: number | null
+          kb_match_threshold?: number | null
+          max_retries?: number | null
+          max_tokens?: number | null
+          smart_weights?: Json | null
+          temperature?: number | null
+          timeout_ms?: number | null
+          top_p?: number | null
+          turn_strategy?: string | null
+          updated_at?: string | null
+          vad_silence_duration?: number | null
+        }
+        Relationships: []
+      }
       chat_laboratory_conversations: {
         Row: {
           active_participants: Json | null

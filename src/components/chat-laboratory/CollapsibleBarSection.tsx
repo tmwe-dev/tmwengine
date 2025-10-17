@@ -2,7 +2,6 @@ import { BarModeToggle } from './BarModeToggle';
 import { BarModeControls } from './BarModeControls';
 import { KnowledgeBaseSelector } from './KnowledgeBaseSelector';
 import { AudioModeSelector } from './AudioModeSelector';
-import { AudioModeButtons } from './AudioModeButtons';
 
 interface CollapsibleBarSectionProps {
   conversationId: string | null;
@@ -24,12 +23,7 @@ export const CollapsibleBarSection = ({
 
   return (
     <div className="space-y-2">
-      {/* Prima riga: 4 bottoni modalità audio allineati a destra */}
-      <div className="flex items-center justify-end">
-        <AudioModeButtons />
-      </div>
-
-      {/* Seconda riga: Toggle Bar Chat allineato a sinistra */}
+      {/* Toggle Bar Chat */}
       <div className="flex items-center justify-start">
         <BarModeToggle
           conversationId={conversationId}

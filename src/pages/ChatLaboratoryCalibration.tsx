@@ -2,10 +2,14 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Clock, Zap, MessageSquare } from 'lucide-react';
+import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PromptViewer } from '@/components/chat-laboratory/calibration/PromptViewer';
+import { OrchestratorTestPanel } from '@/components/chat-laboratory/calibration/OrchestratorTestPanel';
+import { TestResultsTable } from '@/components/chat-laboratory/calibration/TestResultsTable';
+import { ConfigurationSelector } from '@/components/chat-laboratory/calibration/ConfigurationSelector';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrchestratorTest } from '@/hooks/useOrchestratorTest';
 
 interface Message {
   id: string;
@@ -23,6 +27,9 @@ const ChatLaboratoryCalibration = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedPrompt, setSelectedPrompt] = useState<any>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [lastResponse, setLastResponse] = useState<any>(null);
+
+  const orchestratorTest = useOrchestratorTest(conversationId || '');
 
   useEffect(() => {
     // Carica l'ultima conversazione dal localStorage
@@ -30,6 +37,9 @@ const ChatLaboratoryCalibration = () => {
     if (lastConvId) {
       setConversationId(lastConvId);
       loadMessages(lastConvId);
+      if (orchestratorTest) {
+        orchestratorTest.loadTestResults();
+      }
     }
   }, []);
 
@@ -59,6 +69,19 @@ const ChatLaboratoryCalibration = () => {
     }
   };
 
+  const handleRunTest = async (message: string) => {
+    const response = await orchestratorTest.runTest(message);
+    if (response) {
+      setLastResponse({
+        speaker: response.speaker,
+        content: response.content,
+        responseTime: response.responseTime || 0,
+        tokensUsed: response.tokensUsed,
+      });
+    }
+    return response;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20 p-4">
       <div className="container mx-auto max-w-7xl">
@@ -85,8 +108,8 @@ const ChatLaboratoryCalibration = () => {
 
         {/* Main Grid */}
         <div className="grid grid-cols-12 gap-4">
-          {/* Messages List */}
-          <div className="col-span-5 space-y-3">
+          {/* Left Column: Messages + Config Selector */}
+          <div className="col-span-4 space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -94,7 +117,7 @@ const ChatLaboratoryCalibration = () => {
                   Messaggi Recenti
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
+              <CardContent className="space-y-2 max-h-[400px] overflow-y-auto">
                 {messages.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">
                     Nessun messaggio disponibile
@@ -123,7 +146,6 @@ const ChatLaboratoryCalibration = () => {
                       <div className="flex flex-wrap gap-2">
                         {message.tempo_risposta_ms !== null && (
                           <Badge variant="secondary" className="text-xs gap-1">
-                            <Clock className="h-3 w-3" />
                             {message.tempo_risposta_ms}ms
                           </Badge>
                         )}
@@ -143,24 +165,35 @@ const ChatLaboratoryCalibration = () => {
                 )}
               </CardContent>
             </Card>
+
+            <ConfigurationSelector onLoadConfig={orchestratorTest.loadConfig} />
           </div>
 
-          {/* Prompt Viewer */}
-          <div className="col-span-7">
-            {selectedPrompt ? (
-              <PromptViewer
-                structuredPrompt={selectedPrompt}
+          {/* Center Column: Orchestrator Test Panel */}
+          <div className="col-span-4">
+            {conversationId ? (
+              <OrchestratorTestPanel
+                config={orchestratorTest.currentConfig}
+                onConfigChange={orchestratorTest.updateConfig}
+                onRunTest={handleRunTest}
+                onSaveConfig={orchestratorTest.saveConfig}
+                isRunning={orchestratorTest.isRunning}
+                lastResponse={lastResponse}
               />
             ) : (
               <Card className="h-full flex items-center justify-center">
                 <CardContent className="text-center py-12">
-                  <Zap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">
-                    Seleziona un messaggio per visualizzare il prompt strutturato
+                    Avvia una conversazione in Chat Laboratory per testare l'orchestrator
                   </p>
                 </CardContent>
               </Card>
             )}
+          </div>
+
+          {/* Right Column: Test Results */}
+          <div className="col-span-4">
+            <TestResultsTable results={orchestratorTest.testResults} />
           </div>
         </div>
       </div>

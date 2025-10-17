@@ -1477,7 +1477,7 @@ const ChatLaboratory = () => {
 
       {/* Input Area - nascosta in full screen */}
       {!isFullScreenMode && (
-      <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-1 shrink-0">
+      <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-1 min-h-fit">
         <div className="container mx-auto px-2 md:px-3">
           {/* AI Response Indicator - Prima dell'input */}
           {isLoading && (
@@ -1614,7 +1614,7 @@ const ChatLaboratory = () => {
 
           {/* Bar Chat Audio Controls - Posizionati sotto la textarea */}
           {isBarMode && currentConversationId && (
-            <div className="mt-4 flex justify-start">
+            <div className="mt-4 flex justify-start max-h-[35vh] overflow-y-auto">
               <div className="w-full max-w-2xl">
                 <BarChatAudioControls
                   conversationId={currentConversationId}

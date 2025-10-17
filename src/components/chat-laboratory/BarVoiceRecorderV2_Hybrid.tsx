@@ -42,9 +42,10 @@ export const BarVoiceRecorderV2_Hybrid = ({
   const audioChunksRef = useRef<Blob[]>([]);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const isActiveRef = useRef(false); // ✅ Fix stale closure per onstop handler
 
   const VAD_SILENCE_MS = 1500;
-  const VAD_THRESHOLD = 0.01;
+  const VAD_THRESHOLD = 0.05; // ✅ Uniformato con Stable per ridurre trigger su rumore
 
   const monitorAudioLevel = () => {
     if (!analyserRef.current) return;
@@ -141,8 +142,8 @@ export const BarVoiceRecorderV2_Hybrid = ({
         console.log('🎤 V2_Hybrid: Chunk fermato → Trascrizione');
         await transcribeCurrentChunk();
         
-        // 🔥 Riprendi ascolto se ancora attivo
-        if (isActive && mediaRecorderRef.current?.state === 'inactive') {
+        // ✅ Fix stale closure: usa ref invece di state
+        if (isActiveRef.current && mediaRecorderRef.current?.state === 'inactive') {
           audioChunksRef.current = [];
           setIsRecordingChunk(false);
           console.log('🎤 V2_Hybrid: Torno in ascolto...');
@@ -151,6 +152,7 @@ export const BarVoiceRecorderV2_Hybrid = ({
 
       mediaRecorderRef.current = mediaRecorder;
       setIsActive(true);
+      isActiveRef.current = true; // ✅ Sincronizza ref
 
       monitorAudioLevel();
 
@@ -203,6 +205,7 @@ export const BarVoiceRecorderV2_Hybrid = ({
     }
 
     setIsActive(false);
+    isActiveRef.current = false; // ✅ Sincronizza ref
     setIsRecordingChunk(false);
     setAudioLevel(0);
     setSilenceCountdown(null);
@@ -211,6 +214,14 @@ export const BarVoiceRecorderV2_Hybrid = ({
   const transcribeCurrentChunk = async () => {
     if (audioChunksRef.current.length === 0) {
       console.warn('⚠️ Nessun chunk da trascrivere');
+      return;
+    }
+
+    // ✅ Validazione dimensione chunks (uniformato con Stable)
+    const totalSize = audioChunksRef.current.reduce((acc, c) => acc + c.size, 0);
+    if (totalSize < 1000) {
+      console.warn('⚠️ Audio troppo corto (<1KB), skip trascrizione');
+      audioChunksRef.current = [];
       return;
     }
 
@@ -240,6 +251,28 @@ export const BarVoiceRecorderV2_Hybrid = ({
 
       const transcription = data.text || '';
       console.log('✅ Trascrizione chunk:', transcription);
+
+      // ✅ Filtro watermark (uniformato con Stable)
+      const suspiciousTexts = [
+        'sottotitoli creati',
+        'amara.org',
+        'community',
+        'subtitles by',
+      ];
+      
+      const isSuspicious = suspiciousTexts.some(text => 
+        transcription.toLowerCase().includes(text.toLowerCase())
+      );
+      
+      if (isSuspicious) {
+        console.warn('⚠️ Trascrizione sospetta (watermark):', transcription);
+        toast({
+          title: "Audio non riconosciuto",
+          description: "Riprova parlando più chiaramente",
+          variant: "destructive"
+        });
+        return;
+      }
 
       if (transcription.trim()) {
         onTranscriptionComplete(transcription);

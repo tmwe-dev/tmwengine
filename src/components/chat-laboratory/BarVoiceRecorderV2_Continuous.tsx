@@ -43,7 +43,7 @@ export const BarVoiceRecorderV2_Continuous = ({
 
   // 🔥 VARIANTE A: VAD ridotto a 1.5s
   const VAD_SILENCE_MS = 1500;
-  const VAD_THRESHOLD = 0.01;
+  const VAD_THRESHOLD = 0.05; // ✅ Uniformato con Stable per ridurre trigger su rumore
 
   const monitorAudioLevel = () => {
     if (!analyserRef.current) return;
@@ -193,6 +193,19 @@ export const BarVoiceRecorderV2_Continuous = ({
       return;
     }
 
+    // ✅ Validazione dimensione chunks (uniformato con Stable)
+    const totalSize = audioChunksRef.current.reduce((acc, c) => acc + c.size, 0);
+    if (totalSize < 1000) {
+      console.warn('⚠️ Audio troppo corto (<1KB), skip trascrizione');
+      toast({
+        title: "Audio troppo corto",
+        description: "Registra almeno 1 secondo di audio",
+        variant: "destructive"
+      });
+      audioChunksRef.current = [];
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
@@ -221,6 +234,28 @@ export const BarVoiceRecorderV2_Continuous = ({
 
       const transcription = data.text || '';
       console.log('✅ Trascrizione ricevuta:', transcription);
+
+      // ✅ Filtro watermark (uniformato con Stable)
+      const suspiciousTexts = [
+        'sottotitoli creati',
+        'amara.org',
+        'community',
+        'subtitles by',
+      ];
+      
+      const isSuspicious = suspiciousTexts.some(text => 
+        transcription.toLowerCase().includes(text.toLowerCase())
+      );
+      
+      if (isSuspicious) {
+        console.warn('⚠️ Trascrizione sospetta (watermark):', transcription);
+        toast({
+          title: "Audio non riconosciuto",
+          description: "Riprova parlando più chiaramente",
+          variant: "destructive"
+        });
+        return;
+      }
 
       if (transcription.trim()) {
         onTranscriptionComplete(transcription);

@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Pause, Play, Brain, Zap, Mic, Beaker } from 'lucide-react';
+import { Pause, Play, Brain, Zap, Mic, Beaker, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -226,16 +226,9 @@ export const BarModeTabsControls = ({
             />
           </div>
 
-          {/* Direct Call Detection Switch */}
-          <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg border border-border/20">
-            <div className="flex flex-col gap-1">
-              <Label className="text-sm font-medium">
-                Chiamate dirette (@nome)
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Permette di menzionare un AI specifico
-              </p>
-            </div>
+          {/* Direct Call Detection - Compatto */}
+          <div className="flex items-center justify-end gap-2 p-2">
+            <Phone className="h-4 w-4 text-muted-foreground" />
             <Switch
               checked={enableDirectCall}
               onCheckedChange={updateDirectCallDetection}

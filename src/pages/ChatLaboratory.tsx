@@ -23,7 +23,6 @@ import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 import { BarModeTabsControls } from '@/components/chat-laboratory/BarModeTabsControls';
-import { BarVoiceRecorder } from '@/components/chat-laboratory/BarVoiceRecorder';
 import { InterruptButton } from '@/components/chat-laboratory/InterruptButton';
 import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
 import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggle';

@@ -221,11 +221,6 @@ export const CompactControlBar = ({
       badge: '🧪',
       content: (
         <div className="space-y-4 max-h-[40vh] overflow-y-auto p-4">
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
-            <p className="text-xs text-blue-800 dark:text-blue-200">
-              <strong>Laboratorio di Comparazione:</strong> Testa tutte e 4 le modalità contemporaneamente.
-            </p>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
               <div className="flex items-center justify-between mb-2">

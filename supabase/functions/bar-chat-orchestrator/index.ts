@@ -865,7 +865,6 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  
   } catch (error: any) {
     console.error('❌ Bar Chat Orchestrator error:', error);
     return new Response(

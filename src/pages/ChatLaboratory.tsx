@@ -1455,25 +1455,6 @@ const ChatLaboratory = () => {
           <MessageTabsView messages={messages} />
         )}
 
-        {/* Bar Chat Audio Controls - Solo quando Bar Mode è attivo */}
-        {isBarMode && currentConversationId && (
-          <div className="border-t border-border/40 bg-card/40 backdrop-blur p-3">
-            <BarChatAudioControls
-              conversationId={currentConversationId}
-              isAISpeaking={isAISpeaking}
-              onTranscriptionComplete={(text) => {
-                setPrompt(text);
-                if (text.trim()) {
-                  handleSubmit({ preventDefault: () => {} } as any);
-                }
-              }}
-              onInterrupt={() => {
-                console.log('🛑 Interruzione audio AI richiesta');
-                setIsAISpeaking(false);
-              }}
-            />
-          </div>
-        )}
 
         {/* New Messages Indicator */}
         {viewMode === 'classic' && showNewMessages && (
@@ -1630,6 +1611,28 @@ const ChatLaboratory = () => {
               </Button>
             </div>
           </form>
+
+          {/* Bar Chat Audio Controls - Posizionati sotto la textarea */}
+          {isBarMode && currentConversationId && (
+            <div className="mt-4 flex justify-start">
+              <div className="w-full max-w-2xl">
+                <BarChatAudioControls
+                  conversationId={currentConversationId}
+                  isAISpeaking={isAISpeaking}
+                  onTranscriptionComplete={(text) => {
+                    setPrompt(text);
+                    if (text.trim()) {
+                      handleSubmit({ preventDefault: () => {} } as any);
+                    }
+                  }}
+                  onInterrupt={() => {
+                    console.log('🛑 Interruzione audio AI richiesta');
+                    setIsAISpeaking(false);
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
         </div>
       </div>

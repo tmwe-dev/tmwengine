@@ -23,11 +23,19 @@ export const CollapsibleBarSection = ({
 
   return (
     <div>
-      <div className="flex justify-center">
+      {/* Riga unica: Toggle Bar Chat a sinistra + 4 bottoni modalità a destra */}
+      <div className="flex items-center justify-between gap-3">
         <BarModeToggle
           conversationId={conversationId}
           isBarMode={isBarMode}
           onToggle={onBarModeToggle}
+        />
+        
+        <AudioModeSelector 
+          conversationId={conversationId}
+          onTranscriptionComplete={onTranscriptionComplete}
+          isAISpeaking={isAISpeaking}
+          showOnlyButtons={true}
         />
       </div>
 
@@ -38,6 +46,7 @@ export const CollapsibleBarSection = ({
             conversationId={conversationId}
             onTranscriptionComplete={onTranscriptionComplete}
             isAISpeaking={isAISpeaking}
+            showOnlyRecorder={true}
           />
           
           <div className="flex justify-center">

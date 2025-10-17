@@ -15,9 +15,11 @@ interface AudioModeSelectorProps {
   onModeChange?: (mode: 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid') => void;
   onTranscriptionComplete: (text: string) => void;
   isAISpeaking: boolean;
+  showOnlyButtons?: boolean;
+  showOnlyRecorder?: boolean;
 }
 
-export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptionComplete, isAISpeaking }: AudioModeSelectorProps) => {
+export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptionComplete, isAISpeaking, showOnlyButtons = false, showOnlyRecorder = false }: AudioModeSelectorProps) => {
   const [selectedMode, setSelectedMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>('stable');
   const isMobile = useIsMobile();
 
@@ -89,6 +91,78 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
     },
   ];
 
+  // Mostra solo i bottoni (senza microfono)
+  if (showOnlyButtons) {
+    return (
+      <div className="flex items-center gap-1.5">
+        {modes.map((mode) => {
+          const Icon = mode.icon;
+          const isSelected = selectedMode === mode.id;
+          
+          return (
+            <Button
+              key={mode.id}
+              onClick={() => updateAudioMode(mode.id)}
+              variant={isSelected ? "default" : "outline"}
+              size="sm"
+              className={cn(
+                "h-8 px-2 cursor-pointer",
+                isMobile ? "w-8" : "min-w-[4rem]",
+                isSelected 
+                  ? "bg-primary text-primary-foreground border-primary" 
+                  : "bg-white/5 text-white/80 border-white/20 hover:bg-white/10 hover:text-white"
+              )}
+              title={mode.description}
+            >
+              <Icon className={cn("h-4 w-4", !isMobile && "mr-1")} />
+              {!isMobile && <span className="text-xs font-medium">{mode.label}</span>}
+            </Button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Mostra solo il microfono attivo (senza bottoni)
+  if (showOnlyRecorder && conversationId) {
+    return (
+      <div className="w-full flex justify-center">
+        {selectedMode === 'stable' && (
+          <BarVoiceRecorder
+            conversationId={conversationId}
+            onTranscriptionComplete={onTranscriptionComplete}
+            isDisabled={isAISpeaking}
+          />
+        )}
+        
+        {selectedMode === 'v2_continuous' && (
+          <BarVoiceRecorderV2_Continuous
+            conversationId={conversationId}
+            onTranscriptionComplete={onTranscriptionComplete}
+            isDisabled={isAISpeaking}
+          />
+        )}
+        
+        {selectedMode === 'v2_extended' && (
+          <BarVoiceRecorderV2_Extended
+            conversationId={conversationId}
+            onTranscriptionComplete={onTranscriptionComplete}
+            isDisabled={isAISpeaking}
+          />
+        )}
+        
+        {selectedMode === 'v2_hybrid' && (
+          <BarVoiceRecorderV2_Hybrid
+            conversationId={conversationId}
+            onTranscriptionComplete={onTranscriptionComplete}
+            isDisabled={isAISpeaking}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Layout completo (default): bottoni + microfono
   return (
     <div className="flex flex-col items-center gap-2">
       {/* Bottoni Selezione Modalità */}
@@ -104,7 +178,7 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
               variant={isSelected ? "default" : "outline"}
               size="sm"
               className={cn(
-                "h-8 px-2",
+                "h-8 px-2 cursor-pointer",
                 isMobile ? "w-8" : "min-w-[4rem]",
                 isSelected 
                   ? "bg-primary text-primary-foreground border-primary" 

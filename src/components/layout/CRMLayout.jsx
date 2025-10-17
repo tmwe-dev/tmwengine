@@ -72,6 +72,13 @@ const CRMLayout = ({ children }) => {
   const navigate = useNavigate();
   const { userEmail, logout, userProfile } = useTMWEAuth();
   const { theme, setTheme, themes } = useTheme();
+  const [tmweToken, setTmweToken] = useState(null);
+
+  // Carica il TMWE access token da localStorage
+  useEffect(() => {
+    const token = localStorage.getItem('tmwe_access_token');
+    setTmweToken(token);
+  }, []);
 
   // Stato gruppi menu
   const [groupStates, setGroupStates] = useState(() => {
@@ -184,13 +191,25 @@ const CRMLayout = ({ children }) => {
           </Button>
 
           {/* Page Title */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1">
             {isMobile ? (
               <Home className="h-6 w-6 text-foreground" />
             ) : (
-              <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
-                {getCurrentPageTitle()}
-              </h1>
+              <>
+                <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
+                  {getCurrentPageTitle()}
+                </h1>
+                {/* TMWE Token Display */}
+                {tmweToken ? (
+                  <p className="text-xs font-mono text-green-600 px-3">
+                    Token: {tmweToken.substring(0, 40)}...
+                  </p>
+                ) : (
+                  <p className="text-xs font-semibold text-red-600 px-3">
+                    ❌ Token non disponibile
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -259,7 +259,7 @@ export const BarModeTabsControls = ({
           </div>
 
           {/* Dropdown Modalità Audio */}
-          <div className="flex items-center gap-3 p-3 bg-muted/10 rounded-lg border border-border/20">
+          <div className="flex items-center gap-3 p-3 bg-muted/10 rounded-lg border border-border/20 w-fit">
             <select
               value={audioMode}
               onChange={(e) => {
@@ -269,7 +269,7 @@ export const BarModeTabsControls = ({
                   localStorage.setItem(`audio-mode-${conversationId}`, newMode);
                 }
               }}
-              className="flex-1 px-3 py-2 bg-background border border-input rounded-md text-sm"
+              className="px-3 py-2 bg-background border border-input rounded-md text-sm w-auto min-w-0"
             >
               <option value="stable">✅ STABLE (PTT 3s)</option>
               <option value="v2_continuous">🔵 Continuous (1.5s)</option>

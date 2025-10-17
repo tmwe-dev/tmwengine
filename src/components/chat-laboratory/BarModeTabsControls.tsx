@@ -203,8 +203,8 @@ export const BarModeTabsControls = ({
       icon: Brain,
       content: (
         <div className="space-y-4 max-h-[40vh] overflow-y-auto p-4">
-          {/* Turn Strategy Toggle - Compatto */}
-          <div className="flex items-center justify-end gap-2 p-2">
+          {/* Turn Strategy + Pause Slider - Allineati a destra */}
+          <div className="flex items-center justify-end gap-3 p-2">
             <Zap className="h-4 w-4 text-muted-foreground" />
             <Switch
               checked={isSmartMode}
@@ -213,25 +213,17 @@ export const BarModeTabsControls = ({
               }
               disabled={!conversationId}
             />
-          </div>
-
-          {/* Pause Between Turns Slider */}
-          <div className="space-y-2 p-3 bg-muted/10 rounded-lg border border-border/20">
-            <Label className="text-sm font-medium">
-              Pausa tra turni: {pauseBetweenTurns}ms
-            </Label>
+            <div className="h-4 w-px bg-border" />
+            <span className="text-xs text-muted-foreground whitespace-nowrap">{pauseBetweenTurns}ms</span>
             <Slider
               value={[pauseBetweenTurns]}
               onValueChange={(values) => updatePauseBetweenTurns(values[0])}
               min={400}
               max={2000}
               step={100}
-              className="w-full"
+              className="w-20 max-w-[80px]"
               disabled={!conversationId}
             />
-            <p className="text-xs text-muted-foreground">
-              Tempo di attesa tra le risposte degli AI
-            </p>
           </div>
 
           {/* Direct Call Detection Switch */}

@@ -845,7 +845,7 @@ serve(async (req) => {
           turnIndex: currentTurnIndex,
           
           // Includi participantScores solo se esiste (SMART_PRIORITY)
-          ...(typeof participantScores !== 'undefined' && participantScores?.length > 0 && {
+          ...(typeof participantScores !== 'undefined' && participantScores?.length > 0 ? {
             selectedScore: participantScores[0].score,
             allScores: participantScores.map((p: any) => ({
               agent: p.participant.name,
@@ -857,7 +857,7 @@ serve(async (req) => {
               ).length,
               gapPenalty: (participants.reduce((sum: number, pp: any) => sum + (pp.response_count || 0), 0) / participants.length) - (p.participant.response_count || 0)
             }))
-          })
+          } : {})
         },
         
         // 🆕 STRUCTURED PROMPT PER DEBUG

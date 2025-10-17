@@ -101,7 +101,7 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 rounded-lg border border-border/40 bg-card/40">
+    <div className="flex items-center gap-2">
       {/* Birra con schiuma */}
       <div className="relative shrink-0">
         <Beer className={`h-5 w-5 ${isBarMode ? 'text-amber-500' : 'text-muted-foreground'}`} />

@@ -2,6 +2,7 @@ import { BarModeToggle } from './BarModeToggle';
 import { BarModeControls } from './BarModeControls';
 import { KnowledgeBaseSelector } from './KnowledgeBaseSelector';
 import { AudioModeSelector } from './AudioModeSelector';
+import { AudioModeButtons } from './AudioModeButtons';
 
 interface CollapsibleBarSectionProps {
   conversationId: string | null;
@@ -31,12 +32,7 @@ export const CollapsibleBarSection = ({
           onToggle={onBarModeToggle}
         />
         
-        <AudioModeSelector 
-          conversationId={conversationId}
-          onTranscriptionComplete={onTranscriptionComplete}
-          isAISpeaking={isAISpeaking}
-          showOnlyButtons={true}
-        />
+        <AudioModeButtons />
       </div>
 
       {/* Bar Mode sempre aperto quando attivo */}

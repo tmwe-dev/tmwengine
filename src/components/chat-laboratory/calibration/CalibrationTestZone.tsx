@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Play, Loader2 } from 'lucide-react';
+import { Play, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { CalibrationConfig, TestResult } from '@/pages/ChatLaboratoryCalibration';
@@ -14,6 +14,13 @@ interface CalibrationTestZoneProps {
   setIsRunning: (running: boolean) => void;
 }
 
+interface RealParticipant {
+  id: string;
+  type: 'human' | 'chatgpt' | 'gemini' | 'claude';
+  name: string;
+  is_active: boolean;
+}
+
 export const CalibrationTestZone = ({ 
   config, 
   onTestComplete, 
@@ -22,6 +29,66 @@ export const CalibrationTestZone = ({
 }: CalibrationTestZoneProps) => {
   const { toast } = useToast();
   const [testMessage, setTestMessage] = useState('Ciao, potresti spiegarmi come funziona la logistica internazionale?');
+  const [realConversationId, setRealConversationId] = useState<string | null>(null);
+  const [realParticipants, setRealParticipants] = useState<RealParticipant[]>([]);
+  const [configLoaded, setConfigLoaded] = useState(false);
+
+  // Carica configurazione reale all'avvio
+  useEffect(() => {
+    const loadRealConfiguration = async () => {
+      try {
+        // Leggi conversazione attiva da localStorage
+        const lastConvId = localStorage.getItem('last_lab_conversation_id');
+        
+        if (!lastConvId) {
+          toast({
+            title: "⚠️ Nessuna conversazione attiva",
+            description: "Apri prima una conversazione in Chat Laboratory",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setRealConversationId(lastConvId);
+
+        // Carica partecipanti attivi
+        const { data: participants, error: partError } = await supabase
+          .from('chat_laboratory_participants')
+          .select('id, type, name, is_active')
+          .eq('conversation_id', lastConvId)
+          .eq('is_active', true);
+
+        if (partError) throw partError;
+
+        if (!participants || participants.length === 0) {
+          toast({
+            title: "⚠️ Nessun partecipante attivo",
+            description: "Attiva almeno un AI agent nella conversazione",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setRealParticipants(participants as RealParticipant[]);
+        setConfigLoaded(true);
+
+        toast({
+          title: "✅ Configurazione caricata",
+          description: `${participants.length} partecipanti attivi trovati`,
+        });
+
+      } catch (error: any) {
+        console.error('Errore caricamento configurazione:', error);
+        toast({
+          title: "❌ Errore",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    };
+
+    loadRealConfiguration();
+  }, []);
 
   const runTest = async () => {
     if (!testMessage.trim()) {
@@ -33,60 +100,57 @@ export const CalibrationTestZone = ({
       return;
     }
 
+    if (!realConversationId) {
+      toast({
+        title: "⚠️ Configurazione mancante",
+        description: "Nessuna conversazione attiva. Apri Chat Laboratory prima.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (realParticipants.length === 0) {
+      toast({
+        title: "⚠️ Nessun partecipante",
+        description: "Attiva almeno un AI agent nella conversazione",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsRunning(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non autenticato');
+      // 1️⃣ Ottieni numero messaggio corrente
+      const { count } = await supabase
+        .from('chat_laboratory_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('conversation_id', realConversationId);
 
-      // 1️⃣ Crea conversazione temporanea
-      const { data: tempConv, error: convError } = await supabase
-        .from('chat_laboratory_conversations')
-        .insert({
-          titolo: `🧪 Calibration Test ${new Date().toLocaleTimeString()}`,
-          active_participants: [{ type: 'ai', name: 'Test AI' }],
-          user_id: user.id
-        })
-        .select()
-        .single();
+      const messageSequence = (count || 0) + 1;
 
-      if (convError) throw convError;
-
-      // 2️⃣ Abilita Bar Mode per questa conversazione
-      await supabase.from('chat_laboratory_bar_mode').insert({
-        conversation_id: tempConv.id,
-        mode: 'bar',
-        voice_enabled: false,
-        user_id: user.id
-      });
-
-      // 3️⃣ Inserisci almeno 1 partecipante AI attivo
-      await supabase.from('chat_laboratory_participants').insert({
-        conversation_id: tempConv.id,
-        type: 'ai',
-        name: 'Test AI',
-        system_prompt: 'You are a helpful AI assistant for testing purposes.',
-        is_active: true
-      });
-
-      // 4️⃣ Salva messaggio utente
+      // 2️⃣ Inserisci messaggio di test nella conversazione REALE
       await supabase.from('chat_laboratory_messages').insert({
-        conversation_id: tempConv.id,
-        message_sequence: 1,
+        conversation_id: realConversationId,
+        message_sequence: messageSequence,
         sender_type: 'human',
-        sender_name: 'Test User',
+        sender_name: '[TEST] User',
         content: testMessage,
         is_visible_to_ai: true
       });
 
       const startTime = Date.now();
 
-      // 5️⃣ Chiama orchestrator con dati reali
+      // 3️⃣ Chiama orchestrator con configurazione REALE
       const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
         body: {
-          conversationId: tempConv.id,
+          conversationId: realConversationId,
           userMessage: testMessage,
-          participants: [{ type: 'ai', name: 'Test AI', is_active: true }]
+          participants: realParticipants.map(p => ({
+            type: p.type,
+            name: p.name,
+            is_active: p.is_active
+          }))
         }
       });
 
@@ -94,9 +158,9 @@ export const CalibrationTestZone = ({
 
       if (error) throw error;
 
-      // 6️⃣ Estrai risultati
+      // 4️⃣ Estrai risultati
       const result: TestResult = {
-        provider: data.speaker || 'Test AI',
+        provider: data.speaker || realParticipants[0]?.name || 'AI',
         latency: endTime - startTime,
         tokens_in: data.tokens_in || 0,
         tokens_out: data.tokens_out || 0,
@@ -107,12 +171,6 @@ export const CalibrationTestZone = ({
       };
 
       onTestComplete([result]);
-
-      // 7️⃣ Cleanup: Elimina conversazione temporanea
-      await supabase.from('chat_laboratory_messages').delete().eq('conversation_id', tempConv.id);
-      await supabase.from('chat_laboratory_participants').delete().eq('conversation_id', tempConv.id);
-      await supabase.from('chat_laboratory_bar_mode').delete().eq('conversation_id', tempConv.id);
-      await supabase.from('chat_laboratory_conversations').delete().eq('id', tempConv.id);
 
       toast({
         title: "✅ Test completato",
@@ -150,7 +208,9 @@ export const CalibrationTestZone = ({
           <span>Test Zone</span>
         </CardTitle>
         <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Esegui un test per verificare le performance
+          {configLoaded 
+            ? `${realParticipants.length} partecipanti attivi • Configurazione reale caricata`
+            : 'Caricamento configurazione...'}
         </p>
       </CardHeader>
       <CardContent className="space-y-4 px-4 sm:px-6">
@@ -167,9 +227,18 @@ export const CalibrationTestZone = ({
           />
         </div>
 
+        {!configLoaded && (
+          <div className="flex items-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <span className="text-xs text-yellow-700">
+              Apri una conversazione in Chat Laboratory per testare
+            </span>
+          </div>
+        )}
+
         <Button
           onClick={runTest}
-          disabled={isRunning}
+          disabled={isRunning || !configLoaded}
           className="w-full gap-2"
           size="lg"
         >
@@ -182,7 +251,7 @@ export const CalibrationTestZone = ({
           ) : (
             <>
               <Play className="h-4 w-4" />
-              <span>Esegui Test</span>
+              <span>Esegui Test con Configurazione Reale</span>
             </>
           )}
         </Button>

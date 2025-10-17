@@ -444,6 +444,34 @@ const ChatLaboratory = () => {
     }
   };
 
+  const loadParticipants = async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_participants')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const dbParticipants: Participant[] = data.map(p => ({
+          id: p.id,
+          type: p.type as 'human' | 'chatgpt' | 'gemini' | 'claude',
+          name: p.name,
+          system_prompt: p.system_prompt || '',
+          is_active: p.is_active
+        }));
+        setParticipants(dbParticipants);
+      } else {
+        initializeParticipants();
+      }
+    } catch (error) {
+      console.error('Errore caricamento partecipanti:', error);
+      initializeParticipants();
+    }
+  };
+
   const createNewConversation = async () => {
     try {
       const { data, error } = await supabase
@@ -892,7 +920,9 @@ const ChatLaboratory = () => {
     }
     
     setCurrentConversationId(id);
+    localStorage.setItem('last_lab_conversation_id', id); // Salva per Calibration Center
     loadMessages(id);
+    loadParticipants(id); // Carica partecipanti dal DB
     setSidebarOpen(false);
     
     // Focus textarea dopo un breve delay

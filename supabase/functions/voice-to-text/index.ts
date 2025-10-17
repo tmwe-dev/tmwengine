@@ -48,6 +48,11 @@ serve(async (req) => {
       throw new Error('No audio data provided');
     }
 
+    // Validazione lunghezza base64
+    if (audio.length < 100) {
+      throw new Error('Audio data too short (likely empty)');
+    }
+
     // Recupera la chiave OpenAI dalla tabella config_ai
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.45.0');
     const supabaseClient = createClient(
@@ -70,6 +75,18 @@ serve(async (req) => {
 
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audio);
+    
+    // Validazione dimensione audio
+    const audioSizeKB = binaryAudio.length / 1024;
+    console.log('📊 Audio size:', audioSizeKB.toFixed(2), 'KB');
+
+    if (audioSizeKB < 1) {
+      throw new Error('Audio file too small (< 1KB)');
+    }
+
+    if (audioSizeKB > 10240) { // 10MB limit
+      throw new Error('Audio file too large (> 10MB)');
+    }
     
     // Prepare form data
     const formData = new FormData();

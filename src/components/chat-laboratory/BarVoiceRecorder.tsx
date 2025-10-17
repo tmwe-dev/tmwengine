@@ -117,6 +117,14 @@ export const BarVoiceRecorder = ({
 
       mediaRecorder.ondataavailable = (event) => {
         console.log('📦 Chunk ricevuto, size:', event.data.size);
+        console.log('📦 MediaRecorder state:', mediaRecorder.state);
+        console.log('📦 Stream active:', stream.active);
+        console.log('📦 Stream tracks:', stream.getTracks().map(t => ({ 
+          kind: t.kind, 
+          enabled: t.enabled, 
+          muted: t.muted 
+        })));
+        
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
@@ -172,8 +180,30 @@ export const BarVoiceRecorder = ({
   };
 
   const transcribeAudio = async () => {
+    console.log('🎤 Chunks totali raccolti:', chunksRef.current.length);
+    console.log('🎤 Dimensione totale audio:', 
+      chunksRef.current.reduce((acc, c) => acc + c.size, 0), 'bytes');
+    
     if (chunksRef.current.length === 0) {
-      // toast({ title: "Nessun audio registrato", variant: "destructive" });
+      console.log('⚠️ Nessun chunk audio, skip trascrizione');
+      toast({ 
+        title: "Nessun audio rilevato", 
+        description: "Prova a parlare più vicino al microfono",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // Controlla dimensione totale
+    const totalSize = chunksRef.current.reduce((acc, c) => acc + c.size, 0);
+    if (totalSize < 1000) { // Meno di 1KB = probabilmente solo rumore
+      console.log('⚠️ Audio troppo corto, skip trascrizione');
+      toast({ 
+        title: "Audio troppo corto", 
+        description: "Registra almeno 1 secondo di audio",
+        variant: "destructive" 
+      });
+      chunksRef.current = [];
       return;
     }
 
@@ -189,6 +219,19 @@ export const BarVoiceRecorder = ({
       reader.onloadend = async () => {
         const base64Audio = (reader.result as string).split(',')[1];
         
+        // Validazione base64
+        if (!base64Audio || base64Audio.length < 100) {
+          console.error('⚠️ Base64 audio troppo corto o vuoto');
+          toast({ 
+            title: "Errore audio", 
+            description: "Audio non valido",
+            variant: "destructive" 
+          });
+          setIsProcessing(false);
+          chunksRef.current = [];
+          return;
+        }
+        
         // Call voice-to-text edge function
         const { data, error } = await supabase.functions.invoke('voice-to-text', {
           body: { audio: base64Audio }
@@ -197,11 +240,32 @@ export const BarVoiceRecorder = ({
         if (error) throw error;
 
         const transcribedText = data.text;
-        console.log('📝 Trascrizione:', transcribedText);
-        console.log('🎤 Chunks totali raccolti:', chunksRef.current.length);
-        console.log('🎤 Dimensione totale audio:', 
-          chunksRef.current.reduce((acc, c) => acc + c.size, 0), 'bytes');
         
+        // Filtra trascrizioni sospette (watermark)
+        const suspiciousTexts = [
+          'sottotitoli creati',
+          'amara.org',
+          'community',
+          'subtitles by',
+        ];
+        
+        const isSuspicious = suspiciousTexts.some(text => 
+          transcribedText.toLowerCase().includes(text.toLowerCase())
+        );
+        
+        if (isSuspicious) {
+          console.warn('⚠️ Trascrizione sospetta (watermark):', transcribedText);
+          toast({ 
+            title: "Audio non riconosciuto", 
+            description: "Riprova parlando più chiaramente",
+            variant: "destructive" 
+          });
+          setIsProcessing(false);
+          chunksRef.current = [];
+          return;
+        }
+        
+        console.log('📝 Trascrizione valida:', transcribedText);
         onTranscriptionComplete(transcribedText);
         // toast({ title: "✓ Audio trascritto" });
       };

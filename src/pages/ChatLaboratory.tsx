@@ -1239,12 +1239,13 @@ const ChatLaboratory = () => {
                       <CardTitle className="text-white text-sm">🍺 Impostazioni Bar Chat</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <BarChatSettings 
-                        conversationId={currentConversationId}
-                        onSettingsChange={(settings) => {
-                          console.log('📝 Bar Chat Settings aggiornati:', settings);
-                        }}
-                      />
+              <BarChatSettings 
+                conversationId={currentConversationId}
+                conversationMode={conversationMode}
+                onSettingsChange={(settings) => {
+                  console.log('📝 Bar Chat Settings aggiornati:', settings);
+                }}
+              />
                     </CardContent>
                   </Card>
                 )}
@@ -1599,8 +1600,14 @@ const ChatLaboratory = () => {
 
                   {/* Microfono Conversazione Continua */}
                   {conversationMode === 'continuous' && (
-                    <div className="text-xs text-muted-foreground px-3 py-2 bg-muted/20 rounded-md border border-border/40">
-                      🔴 Modalità Live attiva
+                    <div className="text-xs text-muted-foreground px-4 py-3 bg-muted/20 rounded-lg border border-border/40 flex items-center gap-2">
+                      <span className="text-base">🔴</span>
+                      <span>
+                        Modalità Live attiva. 
+                        <span className="font-medium text-foreground ml-1">
+                          Configura le impostazioni nella sidebar →
+                        </span>
+                      </span>
                     </div>
                   )}
 

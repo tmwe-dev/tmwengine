@@ -41,7 +41,9 @@ export const CollapsibleBarSection = ({
       {/* Prima riga: 4 bottoni modalità audio allineati a destra */}
       <div className="flex items-center justify-end">
         <AudioModeButtons onModeChange={(mode) => {
+          console.log('🎤 AudioModeButtons: Mode changed to:', mode);
           setAudioMode(mode);
+          console.log('📤 CollapsibleBarSection: Calling onAudioModeChange with:', mode);
           onAudioModeChange?.(mode);
         }} />
       </div>

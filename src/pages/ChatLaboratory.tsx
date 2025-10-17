@@ -1271,7 +1271,11 @@ const ChatLaboratory = () => {
                         }
                       }}
                       isAISpeaking={isAISpeaking}
-                      onAudioModeChange={setAudioMode}
+                      onAudioModeChange={(mode) => {
+                        console.log('📥 ChatLaboratory: Received audioMode change:', mode);
+                        setAudioMode(mode);
+                        console.log('✅ ChatLaboratory: audioMode state updated to:', mode);
+                      }}
                     />
                   </CardContent>
                 </Card>
@@ -1612,6 +1616,7 @@ const ChatLaboratory = () => {
           {!isMobile && (
             <div className="mt-2 w-full flex items-center justify-between gap-2">
               <CompactControlBar
+                key={`compact-bar-bottom-${audioMode}`}
                 position="bottom"
                 conversationId={currentConversationId}
                 isBarMode={isBarMode}

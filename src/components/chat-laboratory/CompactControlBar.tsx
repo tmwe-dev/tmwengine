@@ -53,7 +53,9 @@ export const CompactControlBar = ({
   );
 
   useEffect(() => {
+    console.log('🔄 CompactControlBar: externalAudioMode changed to:', externalAudioMode);
     if (externalAudioMode !== undefined) {
+      console.log('✅ CompactControlBar: Updating local audioMode to:', externalAudioMode);
       setAudioMode(externalAudioMode);
     }
   }, [externalAudioMode]);

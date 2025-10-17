@@ -48,6 +48,7 @@ export const CollapsibleBarSection = ({
             onTranscriptionComplete={onTranscriptionComplete}
             isAISpeaking={isAISpeaking}
             showOnlyRecorder={true}
+            audioMode={audioMode}
           />
           
           <div className="flex justify-center">

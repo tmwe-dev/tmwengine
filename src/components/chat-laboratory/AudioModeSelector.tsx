@@ -16,9 +16,10 @@ interface AudioModeSelectorProps {
   isAISpeaking: boolean;
   showOnlyButtons?: boolean;
   showOnlyRecorder?: boolean;
+  audioMode?: 'stable' | 'v2_continuous' | 'v2_hybrid';
 }
 
-export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptionComplete, isAISpeaking, showOnlyButtons = false, showOnlyRecorder = false }: AudioModeSelectorProps) => {
+export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptionComplete, isAISpeaking, showOnlyButtons = false, showOnlyRecorder = false, audioMode: externalAudioMode }: AudioModeSelectorProps) => {
   const [selectedMode, setSelectedMode] = useState<'stable' | 'v2_continuous' | 'v2_hybrid'>('stable');
   const isMobile = useIsMobile();
 
@@ -27,6 +28,12 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
       loadAudioMode();
     }
   }, [conversationId]);
+
+  useEffect(() => {
+    if (externalAudioMode) {
+      setSelectedMode(externalAudioMode);
+    }
+  }, [externalAudioMode]);
 
   const loadAudioMode = async () => {
     if (!conversationId) return;

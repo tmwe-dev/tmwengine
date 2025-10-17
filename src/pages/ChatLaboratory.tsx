@@ -110,12 +110,12 @@ const ChatLaboratory = () => {
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [autoAdvanceTabs, setAutoAdvanceTabs] = useState(false);
 
-  // Forza vista tabs quando Bar Mode è attivo
+  // Forza vista tabs quando Bar Mode è attivo O quando ci sono messaggi
   useEffect(() => {
-    if (isBarMode) {
+    if (isBarMode || (messages.length > 0 && viewMode === 'classic')) {
       setViewMode('tabs');
     }
-  }, [isBarMode]);
+  }, [isBarMode, messages.length, viewMode]);
   
   // Settings Drawer State
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -1492,6 +1492,13 @@ const ChatLaboratory = () => {
                   onImageGenerated={setGeneratedImage}
                 />
                 <LaboratoryPromptManager />
+                <VoiceRecorder
+                  ref={voiceRecorderRef}
+                  onTranscription={(text) => {
+                    setPrompt(text);
+                  }}
+                  onRecordingStateChange={setRecordingState}
+                />
               </div>
               
               <Textarea

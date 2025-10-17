@@ -23,16 +23,19 @@ export const CollapsibleBarSection = ({
 }: CollapsibleBarSectionProps) => {
 
   return (
-    <div>
-      {/* Riga unica: Toggle Bar Chat a sinistra + 4 bottoni modalità a destra */}
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-2">
+      {/* Prima riga: 4 bottoni modalità audio allineati a destra */}
+      <div className="flex items-center justify-end">
+        <AudioModeButtons />
+      </div>
+
+      {/* Seconda riga: Toggle Bar Chat allineato a sinistra */}
+      <div className="flex items-center justify-start">
         <BarModeToggle
           conversationId={conversationId}
           isBarMode={isBarMode}
           onToggle={onBarModeToggle}
         />
-        
-        <AudioModeButtons />
       </div>
 
       {/* Bar Mode sempre aperto quando attivo */}

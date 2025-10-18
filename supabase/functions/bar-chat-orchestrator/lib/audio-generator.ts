@@ -82,7 +82,7 @@ export async function generateAudioForSingleResponse(params: {
       .update({ audio_url: audioUrl })
       .eq('id', messageId);
     
-    console.log(`✅ Audio generato: ${audioUrl.substring(0, 60)}...`);
+    console.log(`✅ [IMMEDIATO] Audio generato per ${messageId.substring(0, 8)}: ${audioUrl.substring(0, 60)}...`);
   } catch (error: any) {
     console.error(`⚠️ TTS fallito:`, error.message);
   }

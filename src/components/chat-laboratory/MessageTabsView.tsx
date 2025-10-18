@@ -77,8 +77,11 @@ export const MessageTabsView = ({
         return;
       }
       
-      // Verifica se è il primo messaggio della conversazione
-      const isFirstMessage = previousMessagesLengthRef.current === 0;
+      // Verifica se è il primo messaggio AI (non Human)
+      const aiMessagesBeforeThis = messages
+        .slice(0, previousMessagesLengthRef.current)
+        .filter(m => m.sender_type !== 'human').length;
+      const isFirstMessage = newMessage.sender_type !== 'human' && aiMessagesBeforeThis === 0;
       
       if (isAutoFollowEnabled) {
         if (isFirstMessage) {

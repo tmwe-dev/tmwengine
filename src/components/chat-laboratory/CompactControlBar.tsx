@@ -10,7 +10,7 @@ import { AutoFollowIndicator } from './AutoFollowIndicator';
 import { LaboratoryPromptManager } from './LaboratoryPromptManager';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
-import { Pause, Play, Brain, Zap, Mic, Beaker, Phone } from 'lucide-react';
+import { Pause, Play, Brain, Zap, Mic, Beaker, Phone, StopCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -348,6 +348,22 @@ export const CompactControlBar = ({
     <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
       {/* Brain Button */}
       <LaboratoryPromptManager isProcessing={isProcessing} />
+
+      {/* Stop AI Button - visibile solo quando isProcessing */}
+      {isProcessing && (
+        <>
+          <Separator />
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onInterrupt}
+            className="gap-1.5 h-8 px-3 animate-pulse"
+          >
+            <StopCircle className="h-3.5 w-3.5" />
+            <span className="text-xs font-medium">Stop AI</span>
+          </Button>
+        </>
+      )}
       
       <Separator />
       

@@ -167,6 +167,7 @@ const ChatLaboratory = () => {
   const voiceRecorderRef = useRef<VoiceRecorderRef>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousMessagesLengthRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Listener per beforeunload
   useEffect(() => {
@@ -734,6 +735,8 @@ const ChatLaboratory = () => {
         
         console.log('📤 Turno calcolato:', { actualResponseMode, targetParticipantType, lastSpeaker });
         
+        abortControllerRef.current = new AbortController();
+        
         const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
           body: { 
             conversationId,
@@ -777,6 +780,8 @@ const ChatLaboratory = () => {
         for (let i = 0; i < activeAIParticipants.length; i++) {
           const participant = activeAIParticipants[i];
           console.log(`⏳ [${i + 1}/${activeAIParticipants.length}] Chiamata ${participant.name}...`);
+          
+          abortControllerRef.current = new AbortController();
           
           const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
             body: { 
@@ -1520,8 +1525,12 @@ const ChatLaboratory = () => {
                 audioMode={audioMode}
                 onToggleBarMode={setIsBarMode}
                 onInterrupt={() => {
-                  console.log('🛑 Interruzione audio AI richiesta');
+                  console.log('🛑 Interruzione AI richiesta');
+                  if (abortControllerRef.current) {
+                    abortControllerRef.current.abort();
+                  }
                   setIsAISpeaking(false);
+                  setIsLoading(false);
                 }}
                 onTranscriptionComplete={(text) => {
                   if (text.trim()) {

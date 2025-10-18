@@ -17,6 +17,7 @@ interface InteractiveMicrophoneButtonProps {
   onSelect: () => void;
   vadTimeout?: number;
   description?: string;
+  onStatusChange?: (status: { isActive: boolean; audioLevel: number; silenceCountdown: number }) => void;
 }
 
 const SILENCE_DURATION = 2000; // Base per PTT
@@ -34,7 +35,8 @@ export const InteractiveMicrophoneButton = ({
   isSelected,
   onSelect,
   vadTimeout = 2,
-  description
+  description,
+  onStatusChange
 }: InteractiveMicrophoneButtonProps) => {
   // Stati comuni
   const [isActive, setIsActive] = useState(false); // recording per PTT, listening per HYBRID
@@ -52,6 +54,13 @@ export const InteractiveMicrophoneButton = ({
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSpeechTimeRef = useRef<number>(Date.now());
+  
+  // Notifica cambiamenti di stato al genitore
+  useEffect(() => {
+    if (onStatusChange) {
+      onStatusChange({ isActive, audioLevel, silenceCountdown });
+    }
+  }, [isActive, audioLevel, silenceCountdown, onStatusChange]);
 
   // Cleanup al unmount
   useEffect(() => {
@@ -401,49 +410,27 @@ export const InteractiveMicrophoneButton = ({
   };
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <Button
-        onClick={handleClick}
-        disabled={isDisabled || isProcessing}
-        className={cn(
-          "h-10 w-10 p-0 relative transition-all",
-          isSelected && "ring-2 ring-primary ring-offset-2",
-          isActive && mode === 'ptt' && "ring-2 ring-red-500 ring-offset-2 animate-pulse",
-          isActive && mode === 'hybrid' && "ring-2 ring-green-500 ring-offset-2",
-          !isSelected && "border-white/20 hover:border-white/40"
-        )}
-        title={description}
-      >
-        <span className="absolute -top-1 -right-1 bg-primary text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center text-primary-foreground z-10">
-          {number}
-        </span>
-        <Icon className={cn(
-          "h-4 w-4",
-          isActive && mode === 'ptt' && "text-red-500",
-          isActive && mode === 'hybrid' && "text-green-500",
-          isProcessing && "animate-spin"
-        )} />
-      </Button>
-
-      {/* Volume bar - solo quando attivo */}
-      {isActive && (
-        <div className="flex items-center gap-1 w-24">
-          <Volume2 className="h-3 w-3 text-amber-500" />
-          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-amber-500 to-red-500 transition-all"
-              style={{ width: `${audioLevel * 100}%` }}
-            />
-          </div>
-        </div>
+    <Button
+      onClick={handleClick}
+      disabled={isDisabled || isProcessing}
+      className={cn(
+        "h-10 w-10 p-0 relative transition-all",
+        isSelected && "ring-2 ring-primary ring-offset-2",
+        isActive && mode === 'ptt' && "ring-2 ring-red-500 ring-offset-2 animate-pulse",
+        isActive && mode === 'hybrid' && "ring-2 ring-green-500 ring-offset-2",
+        !isSelected && "border-white/20 hover:border-white/40"
       )}
-
-      {/* Countdown silenzio */}
-      {silenceCountdown > 0 && (
-        <div className="text-xs text-amber-600 font-medium">
-          Invio tra {silenceCountdown}s...
-        </div>
-      )}
-    </div>
+      title={description}
+    >
+      <span className="absolute -top-1 -right-1 bg-primary text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center text-primary-foreground z-10">
+        {number}
+      </span>
+      <Icon className={cn(
+        "h-4 w-4",
+        isActive && mode === 'ptt' && "text-red-500",
+        isActive && mode === 'hybrid' && "text-green-500",
+        isProcessing && "animate-spin"
+      )} />
+    </Button>
   );
 };

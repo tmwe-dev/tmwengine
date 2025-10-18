@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Mic, Headphones } from 'lucide-react';
+import { Mic, Headphones, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -25,6 +25,7 @@ interface AudioModeSelectorProps {
 export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptionComplete, isAISpeaking, showOnlyButtons = false, showOnlyRecorder = false, audioMode: externalAudioMode }: AudioModeSelectorProps) => {
   const [selectedMode, setSelectedMode] = useState<AudioMode>('stable');
   const [vadTimeout, setVadTimeout] = useState<number>(2); // Default 2 seconds
+  const [micStatus, setMicStatus] = useState<{ isActive: boolean; audioLevel: number; silenceCountdown: number }>({ isActive: false, audioLevel: 0, silenceCountdown: 0 });
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -133,42 +134,63 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
 
   // Layout completo (default): bottoni con microfono integrato direttamente
   return (
-    <div className="flex items-center gap-2">
-      {/* Tasti interattivi 1 e 2 con microfono integrato */}
-      {modes.map((mode) => (
-        <InteractiveMicrophoneButton
-          key={mode.id}
-          mode={mode.id === 'stable' ? 'ptt' : 'hybrid'}
-          number={mode.number}
-          label={mode.label}
-          icon={mode.icon}
-          conversationId={conversationId}
-          onTranscriptionComplete={onTranscriptionComplete}
-          isDisabled={mode.disabled || isAISpeaking}
-          isSelected={selectedMode === mode.id}
-          onSelect={() => updateAudioMode(mode.id)}
-          vadTimeout={mode.id === 'stable' ? vadTimeout : undefined}
-          description={mode.description}
-        />
-      ))}
-      
-      {/* VAD Slider + Settings - solo per PTT selezionato */}
-      {selectedMode === 'stable' && (
-        <div className="flex items-center gap-1">
-          <div className="flex items-center gap-1 w-24">
-            <span className="text-xs text-muted-foreground">{vadTimeout}s</span>
-            <Slider
-              value={[vadTimeout]}
-              onValueChange={(values) => setVadTimeout(values[0])}
-              min={1}
-              max={5}
-              step={0.5}
-              className="flex-1"
+    <div className="flex flex-col gap-2">
+      {/* Volume bar e countdown - Mostrati SOPRA i bottoni */}
+      {micStatus.isActive && (
+        <div className="flex items-center gap-2 px-2 py-1 bg-muted/20 rounded-md border border-border/40 animate-fade-in">
+          <Volume2 className="h-3 w-3 text-amber-500" />
+          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-amber-500 to-red-500 transition-all"
+              style={{ width: `${micStatus.audioLevel * 100}%` }}
             />
           </div>
-          <AudioSettingsPopup conversationId={conversationId} />
+          {micStatus.silenceCountdown > 0 && (
+            <span className="text-xs text-amber-600 font-medium">
+              Invio tra {micStatus.silenceCountdown}s...
+            </span>
+          )}
         </div>
       )}
+
+      <div className="flex items-center gap-2">
+        {/* Tasti interattivi 1 e 2 con microfono integrato */}
+        {modes.map((mode) => (
+          <InteractiveMicrophoneButton
+            key={mode.id}
+            mode={mode.id === 'stable' ? 'ptt' : 'hybrid'}
+            number={mode.number}
+            label={mode.label}
+            icon={mode.icon}
+            conversationId={conversationId}
+            onTranscriptionComplete={onTranscriptionComplete}
+            isDisabled={mode.disabled || isAISpeaking}
+            isSelected={selectedMode === mode.id}
+            onSelect={() => updateAudioMode(mode.id)}
+            vadTimeout={mode.id === 'stable' ? vadTimeout : undefined}
+            description={mode.description}
+            onStatusChange={setMicStatus}
+          />
+        ))}
+        
+        {/* VAD Slider + Settings - solo per PTT selezionato */}
+        {selectedMode === 'stable' && (
+          <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 w-24">
+              <span className="text-xs text-muted-foreground">{vadTimeout}s</span>
+              <Slider
+                value={[vadTimeout]}
+                onValueChange={(values) => setVadTimeout(values[0])}
+                min={1}
+                max={5}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+            <AudioSettingsPopup conversationId={conversationId} />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

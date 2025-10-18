@@ -270,8 +270,8 @@ ESEMPI:
   // Filter sections by type
   const baseSections = sections.filter(s => s.section_type === 'base');
   const personalitySections = sections.filter(s => s.section_type === 'agent_personality');
-  const styleSections = sections.filter(s => s.section_type === 'conversation_style');
-  const orchestratorSection = sections.find(s => s.section_type === 'orchestrator_rules');
+  const styleSections = sections.filter(s => s.section_type === 'CONVERSATION_STYLE');
+  const orchestratorSection = sections.find(s => s.section_type === 'ORCHESTRATOR_RULES');
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

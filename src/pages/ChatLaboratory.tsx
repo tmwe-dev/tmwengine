@@ -40,7 +40,6 @@ import { KnowledgeGraphViewer } from '@/components/chat-laboratory/KnowledgeGrap
 import { TokenWarningBanner } from '@/components/chat-laboratory/TokenWarningBanner';
 import { TokenUsageChart } from '@/components/chat-laboratory/TokenUsageChart';
 import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
-import { AudioModeSelector } from '@/components/chat-laboratory/AudioModeSelector';
 import { CompactControlBar } from '@/components/chat-laboratory/CompactControlBar';
 
 interface Message {

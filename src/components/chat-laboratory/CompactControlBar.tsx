@@ -2,15 +2,14 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { Badge } from '@/components/ui/badge';
 import { DynamicTabs, TabItem } from '@/components/design-system';
 import { InterruptButton } from './InterruptButton';
 import { BarModeToggle } from './BarModeToggle';
-import { AudioModeSelector } from './AudioModeSelector';
-import { LaboratoryPromptManager } from './LaboratoryPromptManager';
+import { InteractiveMicrophoneButton } from './InteractiveMicrophoneButton';
+import { AutoFollowIndicator } from './AutoFollowIndicator';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
-import { Pause, Play, Brain, Zap, Mic, Beaker, Phone } from 'lucide-react';
+import { Brain, Zap, Phone, Mic, Beaker } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -296,8 +295,10 @@ export const CompactControlBar = ({
 
   const Separator = () => <div className="h-4 w-px bg-border/40" />;
 
-  // TOP: Solo InterruptButton, BarModeToggle, AudioModeSelector, Auto-Follow Toggle
+  // TOP: Bar Chat + Mic 1 & 2 + VAD Slider + Semaforo
   if (position === 'top') {
+    const [vadTimeout, setVadTimeout] = useState(2);
+    
     return (
       <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
         {/* Interrupt Button */}
@@ -308,7 +309,7 @@ export const CompactControlBar = ({
           </>
         )}
 
-        {/* Bar Mode Toggle */}
+        {/* Bar Mode Toggle - Clickable beer */}
         <BarModeToggle
           conversationId={conversationId}
           isBarMode={isBarMode}
@@ -319,47 +320,58 @@ export const CompactControlBar = ({
           <>
             <Separator />
             
-            {/* Audio Mode Selector */}
-            <AudioModeSelector 
+            {/* Interactive Microphone 1 - PTT */}
+            <InteractiveMicrophoneButton
+              mode="ptt"
+              number={1}
               conversationId={conversationId}
               onTranscriptionComplete={onTranscriptionComplete}
-              isAISpeaking={isAISpeaking}
+              isDisabled={isAISpeaking || isPaused}
+              vadTimeout={vadTimeout}
             />
+            
+            {/* Interactive Microphone 2 - HYBRID (Disabled) */}
+            <InteractiveMicrophoneButton
+              mode="hybrid"
+              number={2}
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={true}
+            />
+            
+            {/* VAD Timeout Slider */}
+            <div className="flex items-center gap-2">
+              <Slider
+                value={[vadTimeout]}
+                onValueChange={(values) => setVadTimeout(values[0])}
+                min={1}
+                max={5}
+                step={1}
+                className="w-16"
+              />
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap min-w-[24px]">
+                {vadTimeout}s
+              </span>
+            </div>
             
             <Separator />
             
-            {/* Toggle Auto-Follow */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground hidden sm:inline">
-                Auto-Follow
-              </span>
-              <Switch
-                checked={isAutoFollowEnabled}
-                onCheckedChange={onAutoFollowChange}
-                className="data-[state=checked]:bg-green-500"
-              />
-              {isAutoFollowEnabled && (
-                <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30 text-xs">
-                  ON
-                </Badge>
-              )}
-            </div>
+            {/* Auto-Follow Traffic Light */}
+            <AutoFollowIndicator
+              enabled={isAutoFollowEnabled || false}
+              onChange={onAutoFollowChange || (() => {})}
+            />
           </>
         )}
       </div>
     );
   }
 
-  // BOTTOM: Tutti gli altri elementi (solo se isBarMode è attivo)
+  // BOTTOM: Solo le tab (Audio, Turni, Lab) - Eliminati microfono duplicato e pausa
   if (!isBarMode) return null;
 
   return (
     <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
-      {/* Brain Button */}
-      <LaboratoryPromptManager />
-      
-      <Separator />
-      
       {/* Thunder Switch */}
       <Zap className="h-3.5 w-3.5 text-muted-foreground" />
       <Switch
@@ -395,45 +407,10 @@ export const CompactControlBar = ({
       
       <Separator />
       
-      {/* Tabs */}
+      {/* Tabs: Audio, Turni, Lab */}
       <div className="flex-1">
         <DynamicTabs tabs={tabs} defaultValue="audio" variant="pills" />
       </div>
-      
-      <Separator />
-      
-      {/* Pause/Play Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={togglePause}
-        className={cn(
-          "h-7 w-7 rounded-full transition-all shrink-0",
-          isPaused && "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30"
-        )}
-        title={isPaused ? "Riprendi conversazione" : "Pausa conversazione"}
-      >
-        {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-      </Button>
-      
-      <Separator />
-      
-      {/* Active Microphone */}
-      {audioMode === 'stable' && (
-        <BarVoiceRecorder
-          conversationId={conversationId}
-          onTranscriptionComplete={onTranscriptionComplete}
-          isDisabled={isAISpeaking || isPaused}
-          vadTimeout={2}
-        />
-      )}
-      {audioMode === 'v2_hybrid' && (
-        <BarVoiceRecorderV2_Hybrid
-          conversationId={conversationId}
-          onTranscriptionComplete={onTranscriptionComplete}
-          isDisabled={isAISpeaking || isPaused}
-        />
-      )}
     </div>
   );
 };

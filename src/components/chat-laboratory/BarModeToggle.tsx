@@ -1,9 +1,7 @@
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Beer } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface BarModeToggleProps {
   conversationId: string | null;
@@ -12,13 +10,12 @@ interface BarModeToggleProps {
 }
 
 export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeToggleProps) => {
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleToggle = async (enabled: boolean) => {
+  const handleToggle = async () => {
+    const enabled = !isBarMode;
     setIsLoading(true);
     try {
-      // MODALITÀ PRE-CONVERSAZIONE: salva in localStorage
       if (!conversationId) {
         localStorage.setItem('bar-mode-pending', JSON.stringify({
           mode: enabled ? 'bar' : 'laboratory',
@@ -26,19 +23,10 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
         }));
         
         onToggle(enabled);
-        
-        // toast({
-        //   title: enabled ? "🍺 Bar Mode Attivo" : "Modalità Laboratory",
-        //   description: enabled 
-        //     ? "Configura gli agenti prima di iniziare la chat"
-        //     : "Modalità standard selezionata",
-        // });
-        
         setIsLoading(false);
         return;
       }
 
-      // MODALITÀ POST-CONVERSAZIONE: salva nel database
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Utente non autenticato");
 
@@ -81,46 +69,41 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
         conversationId, 
         hasConversationId: !!conversationId 
       });
-      
-      // toast({
-      //   title: enabled ? "🍺 Bar Mode Attivo" : "Modalità Laboratory",
-      //   description: enabled 
-      //     ? "Conversazione in stile bar con agenti vocali"
-      //     : "Modalità standard ripristinata",
-      // });
     } catch (error) {
       console.error('Errore toggle Bar Mode:', error);
-      // toast({
-      //   title: "Errore",
-      //   description: "Impossibile cambiare modalità",
-      //   variant: "destructive",
-      // });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center gap-2">
-      {/* Birra con schiuma */}
+    <button
+      onClick={handleToggle}
+      disabled={isLoading}
+      className={cn(
+        "flex items-center gap-2 px-3 py-2 rounded-lg transition-all",
+        "hover:bg-accent/50 cursor-pointer",
+        isLoading && "opacity-50 cursor-not-allowed"
+      )}
+      title="Attiva/Disattiva Bar Chat"
+    >
       <div className="relative shrink-0">
-        <Beer className={`h-5 w-5 ${isBarMode ? 'text-amber-500' : 'text-muted-foreground'}`} />
-        {/* Schiuma bianca sopra */}
-        <div className={`absolute -top-0.5 left-1/2 -translate-x-1/2 w-4 h-1.5 rounded-full ${
+        <Beer className={cn(
+          "h-5 w-5 transition-colors",
+          isBarMode ? 'text-amber-500' : 'text-muted-foreground'
+        )} />
+        <div className={cn(
+          "absolute -top-0.5 left-1/2 -translate-x-1/2 w-4 h-1.5 rounded-full",
           isBarMode ? 'bg-white' : 'bg-muted-foreground/30'
-        }`} />
+        )} />
       </div>
       
-      <Label htmlFor="bar-mode" className="text-sm font-semibold cursor-pointer">
+      <span className={cn(
+        "text-sm font-medium transition-colors",
+        isBarMode ? 'text-foreground' : 'text-muted-foreground'
+      )}>
         Bar Chat
-      </Label>
-      
-      <Switch
-        id="bar-mode"
-        checked={isBarMode}
-        onCheckedChange={handleToggle}
-        disabled={isLoading}
-      />
-    </div>
+      </span>
+    </button>
   );
 };

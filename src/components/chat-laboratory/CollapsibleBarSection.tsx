@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
 import { BarModeToggle } from './BarModeToggle';
 import { BarModeControls } from './BarModeControls';
 import { KnowledgeBaseSelector } from './KnowledgeBaseSelector';
-import { AudioModeSelector } from './AudioModeSelector';
-import { AudioModeButtons, type AudioMode } from './AudioModeButtons';
+
+export type AudioMode = 'stable' | 'v2_hybrid';
 
 interface CollapsibleBarSectionProps {
   conversationId: string | null;
@@ -29,16 +28,7 @@ export const CollapsibleBarSection = ({
 
   return (
     <div className="space-y-2">
-      {/* Prima riga: 4 bottoni modalità audio allineati a destra */}
-      <div className="flex items-center justify-end">
-        <AudioModeButtons onModeChange={(mode) => {
-          console.log('🎤 AudioModeButtons: Mode changed to:', mode);
-          console.log('📤 CollapsibleBarSection: Calling onAudioModeChange with:', mode);
-          onAudioModeChange?.(mode);
-        }} />
-      </div>
-
-      {/* Seconda riga: Toggle Bar Chat allineato a sinistra */}
+      {/* Toggle Bar Chat */}
       <div className="flex items-center justify-start">
         <BarModeToggle
           conversationId={conversationId}
@@ -50,14 +40,6 @@ export const CollapsibleBarSection = ({
       {/* Bar Mode sempre aperto quando attivo */}
       {isBarMode && (
         <div className="space-y-3 mt-2">
-          <AudioModeSelector 
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isAISpeaking={isAISpeaking}
-            showOnlyRecorder={true}
-            audioMode={audioMode || 'stable'}
-          />
-          
           <div className="flex justify-center">
             <BarModeControls conversationId={conversationId} />
           </div>

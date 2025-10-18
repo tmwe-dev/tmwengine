@@ -106,7 +106,7 @@ export const BarVoiceRecorderV2_Hybrid = ({
       
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: 24000,
+          sampleRate: 48000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
@@ -116,7 +116,7 @@ export const BarVoiceRecorderV2_Hybrid = ({
 
       audioStreamRef.current = stream;
 
-      const audioContext = new AudioContext({ sampleRate: 24000 });
+      const audioContext = new AudioContext({ sampleRate: 48000 });
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;

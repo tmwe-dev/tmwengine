@@ -78,38 +78,26 @@ export const MessageTabsView = ({
 
   useEffect(() => {
     if (messages.length > previousMessagesLengthRef.current) {
-      const newMessage = messages[previousMessagesLengthRef.current];
+      const lastMessage = messages[messages.length - 1];
       
-      if (!newMessage) {
+      if (!lastMessage) {
         previousMessagesLengthRef.current = messages.length;
         return;
       }
       
-      // Verifica se è il primo messaggio AI (non Human)
-      const aiMessagesBeforeThis = messages
-        .slice(0, previousMessagesLengthRef.current)
-        .filter(m => m.sender_type !== 'human').length;
-      const isFirstMessage = newMessage.sender_type !== 'human' && aiMessagesBeforeThis === 0;
-      
       if (isAutoFollowEnabled) {
-        if (isFirstMessage) {
-          // ✅ SOLO per il primo messaggio: cambia tab immediatamente e avvia audio
-          console.log(`📨 Primo messaggio da ${newMessage.sender_name} → Cambio tab e avvio audio`);
-          setActiveTab(newMessage.id);
-          
-          setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
-        } else {
-          // ⏳ Messaggi successivi: NON cambiare tab (audio in corso)
-          console.log(`📨 Nuovo messaggio da ${newMessage.sender_name} → In coda (audio in corso)`);
-          // handleAudioEnd si occuperà del cambio tab quando l'audio finisce
-        }
+        // ✅ Attiva SEMPRE l'ultimo messaggio (sia human che AI)
+        console.log(`📨 Nuovo messaggio da ${lastMessage.sender_name} → Attivo tab`);
+        setActiveTab(lastMessage.id);
+        
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
       } else {
         // Auto-follow disabilitato: mostra indicatore se necessario
         const container = tabContentRef.current;
         if (!container) {
-          previousMessagesLengthRef.current++;
+          previousMessagesLengthRef.current = messages.length;
           return;
         }
         const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
@@ -124,8 +112,7 @@ export const MessageTabsView = ({
         }
       }
       
-      // ✅ Incrementa SEMPRE il contatore dopo aver processato il messaggio
-      previousMessagesLengthRef.current++;
+      previousMessagesLengthRef.current = messages.length;
     }
   }, [messages, isAutoFollowEnabled]);
 

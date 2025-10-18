@@ -5,7 +5,6 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export type AudioConfig = 'standard' | 'mac' | 'windows' | 'mobile';
@@ -54,67 +53,24 @@ export const AudioSettingsPopup = ({ conversationId, onConfigChange }: AudioSett
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    loadAudioConfig();
-  }, [conversationId]);
-
-  const loadAudioConfig = async () => {
-    // Pre-conversazione: carica da localStorage
-    if (!conversationId) {
-      const saved = localStorage.getItem('audio-config-pending');
-      if (saved) {
-        setSelectedConfig(saved as AudioConfig);
-      }
-      return;
+    // Carica sempre da localStorage
+    const saved = localStorage.getItem('audio-config');
+    if (saved) {
+      setSelectedConfig(saved as AudioConfig);
     }
+  }, []);
 
-    // Post-conversazione: carica da DB
-    try {
-      const { data, error } = await supabase
-        .from('chat_laboratory_bar_mode')
-        .select('audio_config')
-        .eq('conversation_id', conversationId)
-        .single();
-
-      if (error) throw error;
-      if (data?.audio_config) {
-        setSelectedConfig(data.audio_config as AudioConfig);
-      }
-    } catch (error) {
-      console.error('Error loading audio config:', error);
-    }
-  };
-
-  const saveAudioConfig = async (config: AudioConfig) => {
+  const saveAudioConfig = (config: AudioConfig) => {
     setSelectedConfig(config);
     onConfigChange?.(config);
-
-    // Pre-conversazione: salva in localStorage
-    if (!conversationId) {
-      localStorage.setItem('audio-config-pending', config);
-      toast.success('Configurazione salvata', {
-        description: `Applicherà alla prossima conversazione`
-      });
-      setIsOpen(false);
-      return;
-    }
-
-    // Post-conversazione: salva in DB
-    try {
-      const { error } = await supabase
-        .from('chat_laboratory_bar_mode')
-        .update({ audio_config: config })
-        .eq('conversation_id', conversationId);
-
-      if (error) throw error;
-      
-      toast.success('Configurazione aggiornata', {
-        description: `Ora usando: ${config.toUpperCase()}`
-      });
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Error saving audio config:', error);
-      toast.error('Errore salvataggio configurazione');
-    }
+    
+    // Salva in localStorage
+    localStorage.setItem('audio-config', config);
+    
+    toast.success('Configurazione salvata', {
+      description: `Ora usando: ${config.toUpperCase()}`
+    });
+    setIsOpen(false);
   };
 
   const configs = [

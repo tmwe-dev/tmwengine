@@ -197,10 +197,15 @@ export async function loadConversationData(supabaseClient: any, conversationId: 
 
   const recentMessages = (messages || []).reverse();
 
+  // MEMORIA PULITA: no riassunto per conversazioni nuove/brevi (< 10 messaggi)
+  const cumulativeSummary = (recentMessages.length >= 10)
+    ? (conversation?.riassunto_contesto || null)
+    : null;
+
   return {
     isPaused: false,
     conversation,
     recentMessages,
-    cumulativeSummary: conversation?.riassunto_contesto || null
+    cumulativeSummary
   };
 }

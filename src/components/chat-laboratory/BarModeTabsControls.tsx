@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DynamicTabs, TabItem } from '@/components/design-system';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
-import { BarVoiceRecorderV2_Continuous } from './BarVoiceRecorderV2_Continuous';
-import { BarVoiceRecorderV2_Extended } from './BarVoiceRecorderV2_Extended';
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
 import { InterruptButton } from './InterruptButton';
 import { Switch } from '@/components/ui/switch';
@@ -33,7 +31,7 @@ export const BarModeTabsControls = ({
   const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
   const [pauseBetweenTurns, setPauseBetweenTurns] = useState<number>(800);
   const [enableDirectCall, setEnableDirectCall] = useState<boolean>(true);
-  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>('stable');
+  const [audioMode, setAudioMode] = useState<'stable' | 'v2_hybrid'>('stable');
 
   useEffect(() => {
     console.log('🎛️ BarModeTabsControls mounted:', { conversationId });
@@ -247,85 +245,46 @@ export const BarModeTabsControls = ({
         <div className="space-y-4 max-h-[40vh] overflow-y-auto p-4">
           <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
             <p className="text-xs text-blue-800 dark:text-blue-200">
-              <strong>Laboratorio di Comparazione:</strong> Testa tutte e 4 le modalità contemporaneamente per trovare quella più adatta.
+              <strong>Laboratorio:</strong> Testa i microfoni disponibili.
             </p>
           </div>
 
-          {/* Grid con 4 microfoni */}
+          {/* Grid con microfoni */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* STABLE */}
+            {/* PTT */}
             <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-semibold">✅ STABLE</h4>
-                <span className="text-xs text-muted-foreground">PTT 3s</span>
+                <h4 className="text-sm font-semibold">✅ PTT</h4>
+                <span className="text-xs text-muted-foreground">VAD Configurabile</span>
               </div>
-              <p className="text-xs text-muted-foreground mb-3">Premi e rilascia. Auto-stop dopo 3s silenzio.</p>
+              <p className="text-xs text-muted-foreground mb-3">Premi e rilascia. Auto-stop configurabile 1-5s.</p>
               <BarVoiceRecorder
                 conversationId={conversationId}
                 onTranscriptionComplete={(text) => {
-                  console.log('🎤 STABLE:', text);
+                  console.log('🎤 PTT:', text);
                   onTranscriptionComplete(text);
                 }}
                 isDisabled={isAISpeaking || isPaused}
-              />
-            </div>
-
-            {/* CONTINUOUS */}
-            <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-semibold">🔵 CONTINUOUS</h4>
-                <span className="text-xs text-muted-foreground">1.5s VAD</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">Registrazione continua con auto-stop 1.5s silenzio.</p>
-              <BarVoiceRecorderV2_Continuous
-                conversationId={conversationId}
-                onTranscriptionComplete={(text) => {
-                  console.log('🎤 CONTINUOUS:', text);
-                  onTranscriptionComplete(text);
-                }}
-                isDisabled={isAISpeaking || isPaused}
-              />
-            </div>
-
-            {/* EXTENDED */}
-            <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-semibold">🟢 EXTENDED</h4>
-                <span className="text-xs text-muted-foreground">Hold</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">Tieni premuto per registrare, rilascia per inviare.</p>
-              <BarVoiceRecorderV2_Extended
-                conversationId={conversationId}
-                onTranscriptionComplete={(text) => {
-                  console.log('🎤 EXTENDED:', text);
-                  onTranscriptionComplete(text);
-                }}
-                isDisabled={isAISpeaking || isPaused}
+                vadTimeout={2}
               />
             </div>
 
             {/* HYBRID */}
-            <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
+            <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2 opacity-50">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-semibold">🟡 HYBRID</h4>
-                <span className="text-xs text-muted-foreground">Smart Listen</span>
+                <span className="text-xs text-muted-foreground">Coming Soon</span>
               </div>
-              <p className="text-xs text-muted-foreground mb-3">Ascolto continuo intelligente con VAD automatico.</p>
+              <p className="text-xs text-muted-foreground mb-3">Ascolto continuo intelligente - In sviluppo.</p>
               <BarVoiceRecorderV2_Hybrid
                 conversationId={conversationId}
                 onTranscriptionComplete={(text) => {
                   console.log('🎤 HYBRID:', text);
                   onTranscriptionComplete(text);
                 }}
-                isDisabled={isAISpeaking || isPaused}
+                isDisabled={true}
               />
             </div>
-          </div>
-
-          <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-            <p className="text-xs text-yellow-800 dark:text-yellow-200">
-              ⚠️ Le trascrizioni verranno loggiate in console per confronto. Ogni microfono funziona indipendentemente.
-            </p>
           </div>
         </div>
       )
@@ -365,22 +324,7 @@ export const BarModeTabsControls = ({
               conversationId={conversationId}
               onTranscriptionComplete={onTranscriptionComplete}
               isDisabled={isAISpeaking || isPaused}
-            />
-          )}
-          
-          {audioMode === 'v2_continuous' && (
-            <BarVoiceRecorderV2_Continuous
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking || isPaused}
-            />
-          )}
-          
-          {audioMode === 'v2_extended' && (
-            <BarVoiceRecorderV2_Extended
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking || isPaused}
+              vadTimeout={2}
             />
           )}
           

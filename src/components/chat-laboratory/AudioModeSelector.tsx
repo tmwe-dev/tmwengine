@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, Radio, Clock, Headphones } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Mic, Headphones } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
-import { BarVoiceRecorderV2_Continuous } from './BarVoiceRecorderV2_Continuous';
-import { BarVoiceRecorderV2_Extended } from './BarVoiceRecorderV2_Extended';
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
 
-export type AudioMode = 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid';
+export type AudioMode = 'stable' | 'v2_hybrid';
 
 interface AudioModeSelectorProps {
   conversationId: string | null;
@@ -24,6 +23,7 @@ interface AudioModeSelectorProps {
 
 export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptionComplete, isAISpeaking, showOnlyButtons = false, showOnlyRecorder = false, audioMode: externalAudioMode }: AudioModeSelectorProps) => {
   const [selectedMode, setSelectedMode] = useState<AudioMode>('stable');
+  const [vadTimeout, setVadTimeout] = useState<number>(2); // Default 2 seconds
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -41,30 +41,18 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
     { 
       id: 'stable' as const,
       number: 1,
-      label: 'PTT 3s', 
+      label: 'PTT', 
       icon: Mic,
-      description: 'Push-to-talk con stop automatico a 3s di silenzio'
-    },
-    { 
-      id: 'v2_continuous' as const,
-      number: 2,
-      label: 'Live 1.5s', 
-      icon: Radio,
-      description: 'Conversazione continua con stop a 1.5s di silenzio'
-    },
-    { 
-      id: 'v2_extended' as const,
-      number: 3,
-      label: 'Hold', 
-      icon: Clock,
-      description: 'Press & Hold - stop automatico al rilascio'
+      description: 'Push-to-talk con VAD configurabile',
+      disabled: false
     },
     { 
       id: 'v2_hybrid' as const,
-      number: 4,
+      number: 2,
       label: 'Listen', 
       icon: Headphones,
-      description: 'Modalità ibrida con ascolto attivo'
+      description: 'Coming Soon - Modalità ascolto continuo',
+      disabled: true
     },
   ];
 
@@ -108,29 +96,27 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
   // Mostra solo il microfono attivo (senza bottoni)
   if (showOnlyRecorder && conversationId) {
     return (
-      <div className="w-full flex justify-center">
+      <div className="w-full flex flex-col items-center gap-2">
         {selectedMode === 'stable' && (
-          <BarVoiceRecorder
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
-        
-        {selectedMode === 'v2_continuous' && (
-          <BarVoiceRecorderV2_Continuous
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
-        
-        {selectedMode === 'v2_extended' && (
-          <BarVoiceRecorderV2_Extended
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
+          <>
+            <BarVoiceRecorder
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={isAISpeaking}
+              vadTimeout={vadTimeout}
+            />
+            <div className="flex items-center gap-2 w-32">
+              <span className="text-xs text-muted-foreground">{vadTimeout}s</span>
+              <Slider
+                value={[vadTimeout]}
+                onValueChange={(values) => setVadTimeout(values[0])}
+                min={1}
+                max={5}
+                step={0.5}
+                className="flex-1"
+              />
+            </div>
+          </>
         )}
         
         {selectedMode === 'v2_hybrid' && (
@@ -156,11 +142,13 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
           return (
             <Button
               key={mode.id}
-              onClick={() => updateAudioMode(mode.id)}
+              onClick={() => !mode.disabled && updateAudioMode(mode.id)}
               variant={isSelected ? "default" : "outline"}
               size="sm"
+              disabled={mode.disabled}
               className={cn(
-                "h-12 w-10 p-0 cursor-pointer",
+                "h-12 w-10 p-0",
+                mode.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
                 isSelected 
                   ? "bg-primary text-primary-foreground border-primary" 
                   : "bg-white/5 text-white/80 border-white/20 hover:bg-white/10 hover:text-white"
@@ -178,29 +166,27 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
 
       {/* Microfono Attivo a destra */}
       {conversationId && (
-        <div className="flex-1 flex justify-end">
+        <div className="flex-1 flex flex-col items-end gap-2">
           {selectedMode === 'stable' && (
-            <BarVoiceRecorder
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking}
-            />
-          )}
-          
-          {selectedMode === 'v2_continuous' && (
-            <BarVoiceRecorderV2_Continuous
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking}
-            />
-          )}
-          
-          {selectedMode === 'v2_extended' && (
-            <BarVoiceRecorderV2_Extended
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking}
-            />
+            <>
+              <BarVoiceRecorder
+                conversationId={conversationId}
+                onTranscriptionComplete={onTranscriptionComplete}
+                isDisabled={isAISpeaking}
+                vadTimeout={vadTimeout}
+              />
+              <div className="flex items-center gap-2 w-32">
+                <span className="text-xs text-muted-foreground">{vadTimeout}s</span>
+                <Slider
+                  value={[vadTimeout]}
+                  onValueChange={(values) => setVadTimeout(values[0])}
+                  min={1}
+                  max={5}
+                  step={0.5}
+                  className="flex-1"
+                />
+              </div>
+            </>
           )}
           
           {selectedMode === 'v2_hybrid' && (

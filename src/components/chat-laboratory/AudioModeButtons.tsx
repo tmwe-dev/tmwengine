@@ -7,7 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const AUDIO_MODE_STORAGE_KEY = 'global-audio-mode';
 
-export type AudioMode = 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid';
+export type AudioMode = 'stable' | 'v2_hybrid';
 
 interface AudioModeButtonsProps {
   onModeChange?: (mode: AudioMode) => void;
@@ -32,10 +32,8 @@ export const AudioModeButtons = ({ onModeChange }: AudioModeButtonsProps) => {
     onModeChange?.(mode);
     
     const modeNames = {
-      stable: 'PTT 3s',
-      v2_continuous: 'Live 1.5s',
-      v2_extended: 'Hold',
-      v2_hybrid: 'Listen'
+      stable: 'PTT',
+      v2_hybrid: 'Listen (Coming Soon)'
     };
     
     toast.success(`Modalità: ${modeNames[mode]}`);
@@ -47,28 +45,16 @@ export const AudioModeButtons = ({ onModeChange }: AudioModeButtonsProps) => {
       number: 1,
       label: 'PTT', 
       icon: Mic,
-      description: 'Push-to-talk con stop automatico a 3s'
-    },
-    { 
-      id: 'v2_continuous' as const,
-      number: 2,
-      label: 'Live', 
-      icon: Radio,
-      description: 'Conversazione continua (1.5s silenzio)'
-    },
-    { 
-      id: 'v2_extended' as const,
-      number: 3,
-      label: 'Hold', 
-      icon: Clock,
-      description: 'Press & Hold - stop automatico al rilascio'
+      description: 'Push-to-talk con VAD configurabile',
+      disabled: false
     },
     { 
       id: 'v2_hybrid' as const,
-      number: 4,
+      number: 2,
       label: 'Listen', 
       icon: Headphones,
-      description: 'Modalità ibrida con ascolto attivo'
+      description: 'Coming Soon - Modalità ascolto continuo',
+      disabled: true
     },
   ];
 
@@ -81,11 +67,13 @@ export const AudioModeButtons = ({ onModeChange }: AudioModeButtonsProps) => {
         return (
           <Button
             key={mode.id}
-            onClick={() => updateAudioMode(mode.id)}
+            onClick={() => !mode.disabled && updateAudioMode(mode.id)}
             variant={isSelected ? "default" : "outline"}
             size="sm"
+            disabled={mode.disabled}
             className={cn(
-              "h-12 px-2 cursor-pointer transition-all",
+              "h-12 px-2 transition-all",
+              mode.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
               isMobile ? "w-10" : "min-w-[4.5rem]",
               isSelected 
                 ? "bg-primary text-primary-foreground border-primary" 

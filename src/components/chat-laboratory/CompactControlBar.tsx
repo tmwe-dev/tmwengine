@@ -9,8 +9,6 @@ import { BarModeToggle } from './BarModeToggle';
 import { AudioModeSelector } from './AudioModeSelector';
 import { LaboratoryPromptManager } from './LaboratoryPromptManager';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
-import { BarVoiceRecorderV2_Continuous } from './BarVoiceRecorderV2_Continuous';
-
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
 import { Pause, Play, Brain, Zap, Mic, Beaker, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -21,7 +19,7 @@ interface CompactControlBarProps {
   conversationId: string | null;
   isBarMode: boolean;
   isAISpeaking: boolean;
-  audioMode?: 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid';
+  audioMode?: 'stable' | 'v2_hybrid';
   onToggleBarMode: (value: boolean) => void;
   onInterrupt: () => void;
   onTranscriptionComplete: (text: string) => void;
@@ -48,7 +46,7 @@ export const CompactControlBar = ({
   const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
   const [pauseBetweenTurns, setPauseBetweenTurns] = useState<number>(800);
   const [enableDirectCall, setEnableDirectCall] = useState<boolean>(true);
-  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>(
+  const [audioMode, setAudioMode] = useState<'stable' | 'v2_hybrid'>(
     externalAudioMode || 'stable'
   );
 
@@ -244,19 +242,13 @@ export const CompactControlBar = ({
           <div className="space-y-1">
             {audioMode === 'stable' && (
               <p className="text-xs text-muted-foreground">
-                🎤 <strong>STABLE:</strong> PTT 3s auto-stop | Registrazione affidabile, zero rumore
-              </p>
-            )}
-            
-            {audioMode === 'v2_continuous' && (
-              <p className="text-xs text-muted-foreground">
-                🎤 <strong>CONTINUOUS:</strong> Sempre attivo, 1.5s VAD | Conversazione naturale hands-free
+                🎤 <strong>PTT:</strong> Push-to-talk con VAD configurabile | Affidabile e preciso
               </p>
             )}
             
             {audioMode === 'v2_hybrid' && (
               <p className="text-xs text-muted-foreground">
-                🎤 <strong>HYBRID:</strong> VAD intelligente automatico | Rilevamento vocale avanzato
+                🎤 <strong>HYBRID:</strong> Ascolto continuo (Coming Soon) | VAD intelligente automatico
               </p>
             )}
           </div>
@@ -273,38 +265,27 @@ export const CompactControlBar = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-semibold">✅ STABLE</h4>
-                <span className="text-xs text-muted-foreground">PTT 3s</span>
+                <h4 className="text-sm font-semibold">✅ PTT</h4>
+                <span className="text-xs text-muted-foreground">VAD Configurabile</span>
               </div>
-              <p className="text-xs text-muted-foreground mb-3">Premi e rilascia. Auto-stop dopo 3s silenzio.</p>
+              <p className="text-xs text-muted-foreground mb-3">Premi e rilascia. Auto-stop dopo silenzio (1-5s configurabile).</p>
               <BarVoiceRecorder
                 conversationId={conversationId}
                 onTranscriptionComplete={onTranscriptionComplete}
                 isDisabled={isAISpeaking || isPaused}
+                vadTimeout={2}
               />
             </div>
-            <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-semibold">🔵 CONTINUOUS</h4>
-                <span className="text-xs text-muted-foreground">1.5s VAD</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">Registrazione continua con auto-stop 1.5s silenzio.</p>
-              <BarVoiceRecorderV2_Continuous
-                conversationId={conversationId}
-                onTranscriptionComplete={onTranscriptionComplete}
-                isDisabled={isAISpeaking || isPaused}
-              />
-            </div>
-            <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2">
+            <div className="p-4 bg-muted/10 rounded-lg border border-border/20 space-y-2 opacity-50">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-semibold">🟡 HYBRID</h4>
-                <span className="text-xs text-muted-foreground">Smart Listen</span>
+                <span className="text-xs text-muted-foreground">Coming Soon</span>
               </div>
-              <p className="text-xs text-muted-foreground mb-3">Ascolto continuo intelligente con VAD automatico.</p>
+              <p className="text-xs text-muted-foreground mb-3">Ascolto continuo intelligente - In sviluppo.</p>
               <BarVoiceRecorderV2_Hybrid
                 conversationId={conversationId}
                 onTranscriptionComplete={onTranscriptionComplete}
-                isDisabled={isAISpeaking || isPaused}
+                isDisabled={true}
               />
             </div>
           </div>
@@ -443,13 +424,7 @@ export const CompactControlBar = ({
           conversationId={conversationId}
           onTranscriptionComplete={onTranscriptionComplete}
           isDisabled={isAISpeaking || isPaused}
-        />
-      )}
-      {audioMode === 'v2_continuous' && (
-        <BarVoiceRecorderV2_Continuous
-          conversationId={conversationId}
-          onTranscriptionComplete={onTranscriptionComplete}
-          isDisabled={isAISpeaking || isPaused}
+          vadTimeout={2}
         />
       )}
       {audioMode === 'v2_hybrid' && (

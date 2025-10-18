@@ -9,12 +9,14 @@ interface BarVoiceRecorderProps {
   conversationId: string | null;
   onTranscriptionComplete: (text: string) => void;
   isDisabled?: boolean;
+  vadTimeout?: number; // VAD timeout in seconds (1-5)
 }
 
 export const BarVoiceRecorder = ({ 
   conversationId, 
   onTranscriptionComplete,
-  isDisabled = false
+  isDisabled = false,
+  vadTimeout = 2
 }: BarVoiceRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -30,7 +32,7 @@ export const BarVoiceRecorder = ({
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const SILENCE_THRESHOLD = 0.05;  // Volume sotto questo = silenzio
-  const SILENCE_DURATION = 3000;    // 3 secondi di silenzio prima di stop
+  const SILENCE_DURATION = vadTimeout * 1000;    // VAD timeout configurabile in millisecondi
 
   // Cleanup on unmount
   useEffect(() => {

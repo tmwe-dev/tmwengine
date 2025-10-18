@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
-import { BarVoiceRecorderV2_Continuous } from './BarVoiceRecorderV2_Continuous';
-
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
 import { InterruptButton } from './InterruptButton';
 import { Switch } from '@/components/ui/switch';
@@ -36,7 +34,7 @@ export const BarChatAudioControls = ({
   const [enableDirectCall, setEnableDirectCall] = useState<boolean>(true);
   
   // 🧪 Test Switcher: Scegli quale variante audio usare
-  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_hybrid'>('stable');
+  const [audioMode, setAudioMode] = useState<'stable' | 'v2_hybrid'>('stable');
 
   useEffect(() => {
     if (conversationId) {
@@ -228,17 +226,9 @@ export const BarChatAudioControls = ({
               conversationId={conversationId}
               onTranscriptionComplete={onTranscriptionComplete}
               isDisabled={isAISpeaking || isPaused}
+              vadTimeout={2}
             />
           )}
-          
-          {audioMode === 'v2_continuous' && (
-            <BarVoiceRecorderV2_Continuous
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking || isPaused}
-            />
-          )}
-          
           
           {audioMode === 'v2_hybrid' && (
             <BarVoiceRecorderV2_Hybrid
@@ -265,10 +255,8 @@ export const BarChatAudioControls = ({
             onChange={(e) => setAudioMode(e.target.value as any)}
             className="px-3 py-2 bg-background border border-input rounded-md text-sm z-50"
           >
-            <option value="stable">✅ STABLE (PTT 3s)</option>
-            <option value="v2_continuous">🔵 Continuous (1.5s)</option>
-            
-            <option value="v2_hybrid">🟡 Hybrid (Listen)</option>
+            <option value="stable">✅ PTT (VAD)</option>
+            <option value="v2_hybrid" disabled>🟡 Hybrid (Coming Soon)</option>
           </select>
         </div>
       </div>

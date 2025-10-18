@@ -124,16 +124,16 @@ const ChatLaboratory = () => {
   
   // Full Screen Mode State
   const [isFullScreenMode, setIsFullScreenMode] = useState(false);
-  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>(() => {
+  const [audioMode, setAudioMode] = useState<'stable' | 'v2_hybrid'>(() => {
     const stored = localStorage.getItem('global-audio-mode');
-    return (stored as 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid') || 'stable';
+    return (stored as 'stable' | 'v2_hybrid') || 'stable';
   });
 
   useEffect(() => {
     const handleStorageChange = () => {
       const stored = localStorage.getItem('global-audio-mode');
       if (stored) {
-        setAudioMode(stored as 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid');
+        setAudioMode(stored as 'stable' | 'v2_hybrid');
       }
     };
     
@@ -142,7 +142,7 @@ const ChatLaboratory = () => {
     // Check immediato al mount
     const stored = localStorage.getItem('global-audio-mode');
     if (stored) {
-      setAudioMode(stored as 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid');
+      setAudioMode(stored as 'stable' | 'v2_hybrid');
     }
     
     return () => window.removeEventListener('storage', handleStorageChange);
@@ -1097,7 +1097,7 @@ const ChatLaboratory = () => {
   };
 
   // Calcola se la modalità full screen è abilitabile
-  const canEnableFullScreen = isBarMode && (audioMode === 'v2_continuous' || audioMode === 'v2_hybrid');
+  const canEnableFullScreen = isBarMode && audioMode === 'v2_hybrid';
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20 p-0 m-0">

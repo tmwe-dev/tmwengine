@@ -45,9 +45,6 @@ export const CompactControlBar = ({
   onAutoFollowChange
 }: CompactControlBarProps) => {
   const [isPaused, setIsPaused] = useState(false);
-  const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
-  const [pauseBetweenTurns, setPauseBetweenTurns] = useState<number>(800);
-  const [enableDirectCall, setEnableDirectCall] = useState<boolean>(true);
   const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_hybrid'>(
     externalAudioMode || 'stable'
   );
@@ -63,7 +60,6 @@ export const CompactControlBar = ({
   useEffect(() => {
     if (conversationId && isBarMode) {
       loadPauseState();
-      loadDynamicTurnSettings();
     }
   }, [conversationId, isBarMode]);
 
@@ -82,86 +78,6 @@ export const CompactControlBar = ({
     }
   };
 
-  const loadDynamicTurnSettings = async () => {
-    if (!conversationId) return;
-    try {
-      const { data, error } = await supabase
-        .from('chat_laboratory_bar_mode')
-        .select('turn_strategy, pause_between_turns_ms, enable_direct_call_detection')
-        .eq('conversation_id', conversationId)
-        .single();
-      if (error) throw error;
-      if (data) {
-        setTurnStrategy(data.turn_strategy || 'RANDOM_30');
-        setPauseBetweenTurns(data.pause_between_turns_ms || 800);
-        setEnableDirectCall(data.enable_direct_call_detection ?? true);
-      }
-    } catch (error) {
-      console.error('Error loading dynamic turn settings:', error);
-    }
-  };
-
-  const updateTurnStrategy = async (newStrategy: string) => {
-    setTurnStrategy(newStrategy); // Aggiorna immediatamente UI
-    if (!conversationId) {
-      localStorage.setItem('turn-strategy-pending', newStrategy);
-      return;
-    }
-    try {
-      const { error } = await supabase
-        .from('chat_laboratory_bar_mode')
-        .update({ turn_strategy: newStrategy })
-        .eq('conversation_id', conversationId);
-      if (error) throw error;
-      toast.success("Strategia aggiornata", {
-        description: `Ora usando: ${newStrategy === 'RANDOM_30' ? 'Random' : 'Smart Turn-Taking'}`
-      });
-    } catch (error) {
-      console.error('Error updating turn strategy:', error);
-      toast.error("Errore aggiornamento strategia");
-      // Rollback su errore
-      setTurnStrategy(newStrategy === 'RANDOM_30' ? 'SMART_PRIORITY' : 'RANDOM_30');
-    }
-  };
-
-  const updatePauseBetweenTurns = async (newPause: number) => {
-    setPauseBetweenTurns(newPause); // Aggiorna immediatamente UI
-    if (!conversationId) {
-      localStorage.setItem('pause-between-turns-pending', String(newPause));
-      return;
-    }
-    try {
-      const { error } = await supabase
-        .from('chat_laboratory_bar_mode')
-        .update({ pause_between_turns_ms: newPause })
-        .eq('conversation_id', conversationId);
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error updating pause:', error);
-      toast.error("Errore aggiornamento pausa");
-    }
-  };
-
-  const updateDirectCallDetection = async (enabled: boolean) => {
-    setEnableDirectCall(enabled); // Aggiorna immediatamente UI
-    if (!conversationId) {
-      localStorage.setItem('direct-call-pending', String(enabled));
-      return;
-    }
-    try {
-      const { error } = await supabase
-        .from('chat_laboratory_bar_mode')
-        .update({ enable_direct_call_detection: enabled })
-        .eq('conversation_id', conversationId);
-      if (error) throw error;
-      toast.success(enabled ? "Chiamate dirette abilitate" : "Chiamate dirette disabilitate");
-    } catch (error) {
-      console.error('Error updating direct call detection:', error);
-      toast.error("Errore aggiornamento chiamate dirette");
-      // Rollback su errore
-      setEnableDirectCall(!enabled);
-    }
-  };
 
   const togglePause = async () => {
     if (!conversationId) {
@@ -192,8 +108,6 @@ export const CompactControlBar = ({
     }
   };
 
-  const isSmartMode = turnStrategy !== 'RANDOM_30';
-
   const tabs: TabItem[] = [
     {
       value: 'audio',
@@ -211,36 +125,15 @@ export const CompactControlBar = ({
       icon: Brain,
       content: (
         <div className="space-y-4 max-h-[40vh] overflow-y-auto p-4">
-          {/* Stato Corrente */}
           <div className="p-3 bg-muted/30 rounded-lg border space-y-2">
-            <h4 className="text-sm font-semibold mb-2">⚙️ Configurazione Attiva</h4>
+            <h4 className="text-sm font-semibold mb-2">⚙️ Configurazione Audio Attiva</h4>
             
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Modalità Audio:</span>
               <span className="font-medium uppercase">{audioMode.replace('v2_', '')}</span>
             </div>
-            
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">⚡ Smart Turn-Taking:</span>
-              <span className={cn("font-medium", isSmartMode ? "text-green-500" : "text-orange-500")}>
-                {isSmartMode ? "Attivo" : "Disattivo"}
-              </span>
-            </div>
-            
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">📞 Chiamate Dirette:</span>
-              <span className={cn("font-medium", enableDirectCall ? "text-green-500" : "text-orange-500")}>
-                {enableDirectCall ? "Abilitate" : "Disabilitate"}
-              </span>
-            </div>
-            
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Pausa tra Turni:</span>
-              <span className="font-medium">{pauseBetweenTurns}ms</span>
-            </div>
           </div>
 
-          {/* Caratteristiche Microfono Attivo */}
           <div className="space-y-1">
             {audioMode === 'stable' && (
               <p className="text-xs text-muted-foreground">
@@ -376,41 +269,6 @@ export const CompactControlBar = ({
     <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
       {/* Brain Button */}
       <LaboratoryPromptManager />
-      
-      <Separator />
-      
-      {/* Thunder Switch */}
-      <Zap className="h-3.5 w-3.5 text-muted-foreground" />
-      <Switch
-        checked={isSmartMode}
-        onCheckedChange={(checked) => 
-          updateTurnStrategy(checked ? 'SMART_PRIORITY' : 'RANDOM_30')
-        }
-      />
-      
-      <Separator />
-      
-      {/* Phone Switch */}
-      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-      <Switch
-        checked={enableDirectCall}
-        onCheckedChange={updateDirectCallDetection}
-      />
-      
-      <Separator />
-      
-      {/* Pause Slider */}
-      <Slider
-        value={[pauseBetweenTurns]}
-        onValueChange={(values) => updatePauseBetweenTurns(values[0])}
-        min={400}
-        max={2000}
-        step={100}
-        className="w-20 max-w-[80px]"
-      />
-      <span className="text-[10px] text-muted-foreground whitespace-nowrap min-w-[40px]">
-        {pauseBetweenTurns}ms
-      </span>
       
       <Separator />
       

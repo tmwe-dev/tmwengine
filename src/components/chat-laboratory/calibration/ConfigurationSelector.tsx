@@ -144,13 +144,6 @@ export function ConfigurationSelector({ onLoadConfig }: ConfigurationSelectorPro
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-3">
-                  <Badge variant="secondary">
-                    {config.turn_strategy === 'RANDOM_30' ? 'R30' : 'SMART'}
-                  </Badge>
-                  <Badge variant="outline">{config.pause_between_turns_ms}ms</Badge>
-                  {config.enable_direct_calls && (
-                    <Badge variant="outline">Direct Calls</Badge>
-                  )}
                   {config.voice_enabled && (
                     <Badge variant="outline">🎤 Voice</Badge>
                   )}

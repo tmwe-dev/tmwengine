@@ -80,7 +80,7 @@ serve(async (req) => {
     }
 
     const { recentMessages, cumulativeSummary } = conversationData;
-    console.log('📚 Riassunto cumulativo:', cumulativeSummary ? 'Nessuno' : `${cumulativeSummary.substring(0, 100)}...`);
+    console.log('📚 Riassunto cumulativo:', cumulativeSummary ? `${cumulativeSummary.substring(0, 100)}...` : 'Nessuno');
 
     // ============ LOAD CACHED PROMPTS ============
     const cachedPrompts = await getCachedPrompts(supabaseClient);

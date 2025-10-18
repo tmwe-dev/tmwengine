@@ -229,6 +229,28 @@ serve(async (req) => {
       pauseBetweenTurnsMs,
       voiceEnabled
     });
+
+    // 🎤 Fetch configurazione ElevenLabs se voice è abilitato
+    let elevenLabsApiKey: string | null = null;
+    let activeVoiceAgents: Array<{ elevenlabs_agent_id: string; name: string; voice_id: string }> = [];
+    
+    if (voiceEnabled) {
+      const { data: voiceConfig } = await supabaseClient
+        .from('voice_agent_config')
+        .select('elevenlabs_api_key')
+        .maybeSingle();
+      
+      elevenLabsApiKey = voiceConfig?.elevenlabs_api_key || null;
+
+      const { data: voiceAgents } = await supabaseClient
+        .from('elevenlabs_agents')
+        .select('elevenlabs_agent_id, name, voice_id')
+        .eq('is_active', true)
+        .order('order_index');
+      
+      activeVoiceAgents = voiceAgents || [];
+      console.log(`🎤 Voice enabled dal DB: ${voiceEnabled}, ${activeVoiceAgents.length} voice agents attivi`);
+    }
     
     // ============ KB TEMPORANEAMENTE DISABILITATO ============
     // Struttura conservata per futuri usi - eliminata chiamata API e RPC
@@ -794,6 +816,98 @@ serve(async (req) => {
       
       console.log(`✅ Messaggio salvato (ID: ${savedMessage.id})`);
       
+      // ============ GENERAZIONE AUDIO TTS (se abilitato) ============
+      let audioUrl: string | null = null;
+      
+      if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.length > 0) {
+        try {
+          // Seleziona voice_id appropriato per l'agente
+          const agentVoice = activeVoiceAgents.find(
+            (v: any) => v.name.toLowerCase().includes(currentAgent.name.toLowerCase())
+          ) || activeVoiceAgents[0]; // Fallback al primo
+          
+          const voiceId = agentVoice.voice_id;
+          console.log(`🎵 Generazione audio per ${currentAgent.name} con voice_id: ${voiceId}`);
+          
+          // Tronca testo per TTS (max 500 chars)
+          const ttsText = aiResponse.length > 500 
+            ? aiResponse.substring(0, 500) + '...' 
+            : aiResponse;
+          
+          // Chiamata ElevenLabs API con retry
+          const audioResult = await withRetry(async () => {
+            const ttsResponse = await fetchWithTimeout(
+              `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+              {
+                method: 'POST',
+                headers: {
+                  'xi-api-key': elevenLabsApiKey!,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  text: ttsText,
+                  model_id: 'eleven_multilingual_v2',
+                  voice_settings: {
+                    stability: 0.5,
+                    similarity_boost: 0.75
+                  }
+                })
+              },
+              30000
+            );
+            
+            if (!ttsResponse.ok) {
+              const errorText = await ttsResponse.text();
+              console.error(`❌ ElevenLabs TTS error ${ttsResponse.status}:`, errorText);
+              
+              if (ttsResponse.status === 429) throw new Error('429');
+              if (ttsResponse.status >= 500) throw new Error('5xx');
+              throw new Error(`ElevenLabs error ${ttsResponse.status}`);
+            }
+            
+            return ttsResponse;
+          }, { retries: 2, baseDelayMs: 500 });
+          
+          // Converti audio in blob
+          const audioBlob = await audioResult.blob();
+          const audioArrayBuffer = await audioBlob.arrayBuffer();
+          const audioFile = new File([audioArrayBuffer], `${savedMessage.id}.mp3`, { type: 'audio/mpeg' });
+          
+          // Upload su Supabase Storage
+          const storagePath = `${conversationId}/${savedMessage.id}.mp3`;
+          const { data: uploadData, error: uploadError } = await supabaseClient.storage
+            .from('audio-responses')
+            .upload(storagePath, audioFile, {
+              contentType: 'audio/mpeg',
+              upsert: true
+            });
+          
+          if (uploadError) {
+            console.error('❌ Errore upload audio:', uploadError);
+          } else {
+            console.log(`✅ Audio caricato su Storage: ${storagePath}`);
+            
+            // Ottieni URL pubblico
+            const { data: urlData } = supabaseClient.storage
+              .from('audio-responses')
+              .getPublicUrl(storagePath);
+            
+            audioUrl = urlData.publicUrl;
+            
+            // Aggiorna audio_url nel messaggio
+            await supabaseClient
+              .from('chat_laboratory_messages')
+              .update({ audio_url: audioUrl })
+              .eq('id', savedMessage.id);
+            
+            console.log(`✅ audio_url aggiornato per messageId: ${savedMessage.id}`);
+          }
+        } catch (audioError: any) {
+          console.error(`⚠️ Errore generazione TTS per ${currentAgent.name}:`, audioError.message);
+          // Non bloccare il flusso se TTS fallisce (messaggio già salvato)
+        }
+      }
+      
       // ============ AGGIUNGI ALLA LISTA RISPOSTE ============
       allResponses.push({
         agentName: currentAgent.name,
@@ -802,7 +916,8 @@ serve(async (req) => {
         tokenInput,
         tokenOutput,
         responseTime,
-        messageId: savedMessage.id
+        messageId: savedMessage.id,
+        audioUrl
       });
     } // ← Fine del loop for
 
@@ -839,11 +954,11 @@ serve(async (req) => {
           speaker: r.agentName,
           type: r.agentType,
           message_id: r.messageId,
+          audio_url: r.audioUrl || null,
           token_input: r.tokenInput,
           token_output: r.tokenOutput,
           response_time_ms: r.responseTime
         })),
-        audioWillBeGenerated: voiceEnabled,
         message: `${allResponses.length} agenti hanno risposto in sequenza`,
         
         // Telemetria aggregata

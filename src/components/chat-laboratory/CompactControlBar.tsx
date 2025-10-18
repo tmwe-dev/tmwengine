@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { Badge } from '@/components/ui/badge';
 import { DynamicTabs, TabItem } from '@/components/design-system';
 import { InterruptButton } from './InterruptButton';
 import { BarModeToggle } from './BarModeToggle';
 import { AudioModeSelector } from './AudioModeSelector';
+import { AutoFollowIndicator } from './AutoFollowIndicator';
 import { LaboratoryPromptManager } from './LaboratoryPromptManager';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
@@ -296,7 +296,7 @@ export const CompactControlBar = ({
 
   const Separator = () => <div className="h-4 w-px bg-border/40" />;
 
-  // TOP: Solo InterruptButton, BarModeToggle, AudioModeSelector, Auto-Follow Toggle
+  // TOP: Interrupt, BarMode, AudioMode, Auto-Follow
   if (position === 'top') {
     return (
       <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
@@ -308,7 +308,7 @@ export const CompactControlBar = ({
           </>
         )}
 
-        {/* Bar Mode Toggle */}
+        {/* Bar Mode Toggle (clickable) */}
         <BarModeToggle
           conversationId={conversationId}
           isBarMode={isBarMode}
@@ -319,7 +319,7 @@ export const CompactControlBar = ({
           <>
             <Separator />
             
-            {/* Audio Mode Selector */}
+            {/* Audio Mode Selector con microfoni integrati */}
             <AudioModeSelector 
               conversationId={conversationId}
               onTranscriptionComplete={onTranscriptionComplete}
@@ -328,22 +328,11 @@ export const CompactControlBar = ({
             
             <Separator />
             
-            {/* Toggle Auto-Follow */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground hidden sm:inline">
-                Auto-Follow
-              </span>
-              <Switch
-                checked={isAutoFollowEnabled}
-                onCheckedChange={onAutoFollowChange}
-                className="data-[state=checked]:bg-green-500"
-              />
-              {isAutoFollowEnabled && (
-                <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30 text-xs">
-                  ON
-                </Badge>
-              )}
-            </div>
+            {/* Auto-Follow Semaforo */}
+            <AutoFollowIndicator
+              isEnabled={isAutoFollowEnabled}
+              onChange={onAutoFollowChange}
+            />
           </>
         )}
       </div>
@@ -415,25 +404,6 @@ export const CompactControlBar = ({
       >
         {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
       </Button>
-      
-      <Separator />
-      
-      {/* Active Microphone */}
-      {audioMode === 'stable' && (
-        <BarVoiceRecorder
-          conversationId={conversationId}
-          onTranscriptionComplete={onTranscriptionComplete}
-          isDisabled={isAISpeaking || isPaused}
-          vadTimeout={2}
-        />
-      )}
-      {audioMode === 'v2_hybrid' && (
-        <BarVoiceRecorderV2_Hybrid
-          conversationId={conversationId}
-          onTranscriptionComplete={onTranscriptionComplete}
-          isDisabled={isAISpeaking || isPaused}
-        />
-      )}
     </div>
   );
 };

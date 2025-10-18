@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
+import { AudioSettingsPopup } from './AudioSettingsPopup';
 
 export type AudioMode = 'stable' | 'v2_hybrid';
 
@@ -130,24 +131,23 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
     );
   }
 
-  // Layout completo (default): bottoni + microfono
+  // Layout completo (default): bottoni + microfono integrati
   return (
-    <div className="flex items-center gap-3">
-      {/* Bottoni Selezione Modalità */}
-      <div className="flex items-center gap-1.5">
-        {modes.map((mode) => {
-          const Icon = mode.icon;
-          const isSelected = selectedMode === mode.id;
-          
-          return (
+    <div className="flex items-center gap-2">
+      {/* Bottoni con microfono integrato */}
+      {modes.map((mode) => {
+        const Icon = mode.icon;
+        const isSelected = selectedMode === mode.id;
+        
+        return (
+          <div key={mode.id} className="flex flex-col items-center gap-1">
             <Button
-              key={mode.id}
               onClick={() => !mode.disabled && updateAudioMode(mode.id)}
               variant={isSelected ? "default" : "outline"}
               size="sm"
               disabled={mode.disabled}
               className={cn(
-                "h-12 w-10 p-0",
+                "h-10 w-10 p-0 relative",
                 mode.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
                 isSelected 
                   ? "bg-primary text-primary-foreground border-primary" 
@@ -155,47 +155,52 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
               )}
               title={mode.description}
             >
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[10px] font-bold opacity-60">{mode.number}</span>
-                <Icon className="h-4 w-4" />
-              </div>
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                {mode.number}
+              </span>
+              <Icon className="h-4 w-4" />
             </Button>
-          );
-        })}
-      </div>
-
-      {/* Microfono Attivo a destra */}
-      {conversationId && (
-        <div className="flex-1 flex flex-col items-end gap-2">
-          {selectedMode === 'stable' && (
-            <>
-              <BarVoiceRecorder
-                conversationId={conversationId}
-                onTranscriptionComplete={onTranscriptionComplete}
-                isDisabled={isAISpeaking}
-                vadTimeout={vadTimeout}
-              />
-              <div className="flex items-center gap-2 w-32">
-                <span className="text-xs text-muted-foreground">{vadTimeout}s</span>
-                <Slider
-                  value={[vadTimeout]}
-                  onValueChange={(values) => setVadTimeout(values[0])}
-                  min={1}
-                  max={5}
-                  step={0.5}
-                  className="flex-1"
-                />
+            
+            {/* Microfono attivo integrato nel bottone selezionato */}
+            {isSelected && conversationId && (
+              <div className="flex flex-col items-center gap-1">
+                {selectedMode === 'stable' && (
+                  <BarVoiceRecorder
+                    conversationId={conversationId}
+                    onTranscriptionComplete={onTranscriptionComplete}
+                    isDisabled={isAISpeaking}
+                    vadTimeout={vadTimeout}
+                  />
+                )}
+                
+                {selectedMode === 'v2_hybrid' && (
+                  <BarVoiceRecorderV2_Hybrid
+                    conversationId={conversationId}
+                    onTranscriptionComplete={onTranscriptionComplete}
+                    isDisabled={isAISpeaking}
+                  />
+                )}
               </div>
-            </>
-          )}
-          
-          {selectedMode === 'v2_hybrid' && (
-            <BarVoiceRecorderV2_Hybrid
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking}
+            )}
+          </div>
+        );
+      })}
+      
+      {/* VAD Slider + Settings - solo per PTT */}
+      {selectedMode === 'stable' && (
+        <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 w-24">
+            <span className="text-xs text-muted-foreground">{vadTimeout}s</span>
+            <Slider
+              value={[vadTimeout]}
+              onValueChange={(values) => setVadTimeout(values[0])}
+              min={1}
+              max={5}
+              step={0.5}
+              className="flex-1"
             />
-          )}
+          </div>
+          <AudioSettingsPopup conversationId={conversationId} />
         </div>
       )}
     </div>

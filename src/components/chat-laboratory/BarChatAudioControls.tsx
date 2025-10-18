@@ -30,11 +30,13 @@ export const BarChatAudioControls = ({
 }: BarChatAudioControlsProps) => {
   const [isPaused, setIsPaused] = useState(false);
   const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_hybrid'>('stable');
+  const [enableDirectCall, setEnableDirectCall] = useState(true);
 
   useEffect(() => {
     if (conversationId) {
       loadPauseState();
       loadAudioMode();
+      loadDirectCallDetection();
     }
   }, [conversationId]);
 
@@ -43,6 +45,21 @@ export const BarChatAudioControls = ({
     const stored = localStorage.getItem(`audio-mode-${conversationId}`);
     if (stored) {
       setAudioMode(stored as any);
+    }
+  };
+
+  const loadDirectCallDetection = async () => {
+    if (!conversationId) return;
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_bar_mode')
+        .select('enable_direct_call_detection')
+        .eq('conversation_id', conversationId)
+        .single();
+      if (error) throw error;
+      setEnableDirectCall(data?.enable_direct_call_detection ?? true);
+    } catch (error) {
+      console.error('Error loading direct call detection:', error);
     }
   };
 
@@ -96,6 +113,22 @@ export const BarChatAudioControls = ({
     }
   };
 
+  const updateDirectCallDetection = async (enabled: boolean) => {
+    if (!conversationId) return;
+    setEnableDirectCall(enabled);
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_bar_mode')
+        .update({ enable_direct_call_detection: enabled })
+        .eq('conversation_id', conversationId);
+      if (error) throw error;
+      toast.success(enabled ? "✅ Direct Call Detection attivo" : "⛔ Direct Call Detection disattivato");
+    } catch (error) {
+      console.error('Error updating direct call detection:', error);
+      toast.error("Errore aggiornamento Direct Call Detection");
+    }
+  };
+
   return (
     <div className={cn(
       "border-t border-border/40 backdrop-blur-xl bg-background/80",
@@ -130,6 +163,17 @@ export const BarChatAudioControls = ({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Direct Call Detection */}
+      <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg border border-border/20">
+        <div className="flex flex-col gap-1">
+          <Label className="text-sm font-medium">🎯 Rileva Chiamate Dirette</Label>
+          <span className="text-xs text-muted-foreground">
+            L'orchestrator riconosce se nomini un agente (es. "Marco, cosa ne pensi?")
+          </span>
+        </div>
+        <Switch checked={enableDirectCall} onCheckedChange={updateDirectCallDetection} />
       </div>
 
       {/* Riga 1: Controlli principali */}

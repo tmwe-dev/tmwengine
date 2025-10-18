@@ -95,19 +95,27 @@ export const MessageTabsView = ({
           setNewMessagesCount(prev => prev + 1);
         }
       } else {
-        // Auto-follow abilitato
-        if (isAudioPlaying) {
-          // Se c'è un audio in riproduzione, metti in coda il cambio tab
-          console.log(`🎵 Audio in riproduzione, tab in coda: ${newMessage.sender_name}`);
-          setPendingTabQueue(prev => [...prev, newMessage.id]);
-        } else {
-          // Nessun audio in riproduzione, cambia tab immediatamente
-          console.log(`✅ Auto-follow: cambio a ${newMessage.sender_name}`);
-          setActiveTab(newMessage.id);
-          setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
-        }
+        // Auto-follow abilitato - ✅ SEMPRE IN CODA
+        console.log(`📨 Nuovo messaggio ricevuto:`, {
+          sender: newMessage.sender_name,
+          sequence: previousMessagesLengthRef.current,
+          totalMessages: messages.length,
+          isAudioPlaying,
+          queueLength: pendingTabQueue.length
+        });
+
+        console.log(`🎵 Nuovo messaggio da ${newMessage.sender_name} → In coda (audio controlla il tab)`);
+        setPendingTabQueue(prev => {
+          const newQueue = [...prev, newMessage.id];
+          console.log(`📋 Coda aggiornata:`, {
+            queue: newQueue.map((id, idx) => {
+              const msg = messages.find(m => m.id === id);
+              return `${idx + 1}. ${msg?.sender_name || id}`;
+            }),
+            length: newQueue.length
+          });
+          return newQueue;
+        });
       }
       
       previousMessagesLengthRef.current = previousMessagesLengthRef.current + 1;
@@ -118,14 +126,22 @@ export const MessageTabsView = ({
   useEffect(() => {
     if (!isAudioPlaying && pendingTabQueue.length > 0 && isAutoFollowEnabled) {
       const nextTab = pendingTabQueue[0];
-      console.log(`🎬 Audio terminato, cambio a tab in coda: ${nextTab}`);
+      if (!nextTab) return;
+
+      console.log(`🎬 Tab cambiato:`, {
+        from: activeTab,
+        to: nextTab,
+        sender: messages.find(m => m.id === nextTab)?.sender_name,
+        remainingQueue: pendingTabQueue.length - 1
+      });
+
       setActiveTab(nextTab);
       setPendingTabQueue(prev => prev.slice(1));
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
-  }, [isAudioPlaying, pendingTabQueue, isAutoFollowEnabled]);
+  }, [isAudioPlaying, pendingTabQueue, isAutoFollowEnabled, activeTab, messages]);
 
   const handleAudioPlayStateChange = (playing: boolean) => {
     console.log(`🔊 Audio state: ${playing ? 'Playing' : 'Stopped'}`);

@@ -2,15 +2,13 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
-// Helper: Generate message summaries rimosso - latenza inutile
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 // ═══════════════════════════════════════════════════════════
-// HELPERS PER ORCHESTRAZIONE PARALLELA ROBUSTA
+// HELPERS PER ORCHESTRAZIONE SEQUENZIALE ROBUSTA
 // ═══════════════════════════════════════════════════════════
 
 function delay(ms: number): Promise<void> {
@@ -78,7 +76,6 @@ async function withRetry<T>(
 
 /**
  * Chiamata a un provider AI con timeout, retry e NO limiti token.
- * Include "soft prompt" per incoraggiare concisione.
  */
 async function callAIProvider(
   participant: any,
@@ -93,7 +90,6 @@ async function callAIProvider(
 ): Promise<{ content: string; tokensIn: number; tokensOut: number; duration: number }> {
   const startTime = Date.now();
   
-  // ✅ SOFT PROMPT: Suggerisce concisione senza limitare
   const concisePrompt = `${config.basePrompt}
 
 **Linee guida di risposta**:
@@ -107,7 +103,6 @@ async function callAIProvider(
     let headers: Record<string, string>;
     let body: any;
     
-    // Prepara request in base al provider
     if (participant.type === 'claude' || participant.type === 'anthropic') {
       url = 'https://api.anthropic.com/v1/messages';
       headers = {
@@ -117,7 +112,7 @@ async function callAIProvider(
       };
       body = {
         model: config.model,
-        max_tokens: 2500, // ✅ Limite conversazionale (reports/code: nessun limite)
+        max_tokens: 2500,
         messages: [{
           role: 'user',
           content: `${concisePrompt}\n\nConversazione:\n${config.visibleHistory}\n\nNuovo:\n${config.userMessage}`
@@ -131,8 +126,7 @@ async function callAIProvider(
       };
       body = {
         model: config.model,
-        max_completion_tokens: 2500, // ✅ Limite conversazionale per GPT-5+
-        // temperature usa default (1.0) - non supportato da gpt-5-2025-08-07
+        max_completion_tokens: 2500,
         messages: [
           { role: 'system', content: concisePrompt },
           { 
@@ -149,7 +143,7 @@ async function callAIProvider(
       };
       body = {
         model: config.model,
-        max_tokens: 2500, // ✅ Limite conversazionale (Gemini allineato)
+        max_tokens: 2500,
         temperature: 0.7,
         messages: [{
           role: 'user',
@@ -170,19 +164,14 @@ async function callAIProvider(
       const errorText = await response.text();
       console.error(`❌ ${participant.name} error ${response.status}:`, errorText);
       
-      if (response.status === 429) {
-        throw new Error('429'); // Trigger retry
-      }
-      if (response.status >= 500) {
-        throw new Error(`5xx`); // Trigger retry
-      }
+      if (response.status === 429) throw new Error('429');
+      if (response.status >= 500) throw new Error(`5xx`);
       throw new Error(`API error ${response.status}: ${errorText}`);
     }
     
     const data = await response.json();
     const duration = Date.now() - startTime;
     
-    // Estrai risposta in base al provider
     let content: string;
     let tokensIn: number;
     let tokensOut: number;
@@ -199,7 +188,6 @@ async function callAIProvider(
     
     console.log(`✅ ${participant.name}: ${tokensOut} token out (${tokensIn} in) in ${duration}ms`);
     
-    // ⚠️ Soft warning se risposta molto verbosa (solo log, non errore)
     if (tokensOut > 2000) {
       console.warn(`⚠️ ${participant.name} ha generato ${tokensOut} token (>2000). Considera ottimizzazione prompt.`);
     }
@@ -207,8 +195,6 @@ async function callAIProvider(
     return { content, tokensIn, tokensOut, duration };
   }, { retries: 2, baseDelayMs: 300 });
 }
-
-// Funzione checkIfShouldSkip rimossa - non più necessaria con orchestrazione parallela
 
 // ═══════════════════════════════════════════════════════════
 // MAIN HANDLER
@@ -234,11 +220,12 @@ serve(async (req) => {
     // Carica conversation settings
     const { data: conversation } = await supabaseClient
       .from('chat_laboratory_conversations')
-      .select('last_speaker_index, economy_mode')
+      .select('last_speaker_index, economy_mode, pause_between_agents_ms')
       .eq('id', conversationId)
       .single();
 
     const useEconomyMode = conversation?.economy_mode ?? true;
+    const pauseMs = conversation?.pause_between_agents_ms ?? 50;
 
     // Carica il prompt globale
     const { data: globalPrompt } = await supabaseClient
@@ -269,10 +256,9 @@ REGOLE CRITICHE:
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
-    // Filtra solo gli AI attivi (escludi human)
+    // Filtra solo gli AI attivi
     const activeAIs = participants.filter((p: any) => p.type !== 'human');
     
-    // Verifica che ci siano agenti attivi
     if (activeAIs.length === 0) {
       console.error('❌ Nessun agente AI attivo!');
       return new Response(
@@ -289,13 +275,12 @@ REGOLE CRITICHE:
 
     const startTime = Date.now();
 
-    // Costruisci history completa con economy mode
+    // Costruisci history completa
     let visibleHistory = (messages || [])
       .filter((msg: any) => msg.is_visible_to_ai !== false)
       .map((msg: any) => {
         let content = msg.content;
         
-        // Use ultra-compressed summary in economy mode for AI messages
         if (useEconomyMode && msg.is_summary_available && msg.content_summary && msg.sender_name !== 'Utente') {
           content = msg.content_summary;
         }
@@ -304,10 +289,10 @@ REGOLE CRITICHE:
       })
       .join('\n');
 
-    // ✅ COMPRESSIONE HISTORY se troppo lunga (>2000 token stimati)
+    // ✅ COMPRESSIONE HISTORY se troppo lunga
     const estimatedTokens = visibleHistory.length / 4;
     if (estimatedTokens > 2000) {
-      console.log(`⚠️ History troppo lunga (~${estimatedTokens} token). Compressione in corso...`);
+      console.log(`⚠️ History troppo lunga (~${estimatedTokens} token). Compressione...`);
       
       const recentMessages = (messages || []).slice(-20);
       visibleHistory = recentMessages
@@ -324,23 +309,41 @@ REGOLE CRITICHE:
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ORCHESTRAZIONE PARALLELA CON DEADLINE GLOBALE
+    // ORCHESTRAZIONE SEQUENZIALE (Gemini → OpenAI → Claude)
     // ═══════════════════════════════════════════════════════════
 
-    console.log(`🚀 Avvio orchestrazione parallela per ${activeAIs.length} agenti`);
-    
-    console.log('🔍 DEBUG ORCHESTRAZIONE:', {
-      activeAIsCount: activeAIs.length,
-      activeAIsNames: activeAIs.map((p: any) => p.name),
-      visibleHistoryLength: visibleHistory.length,
-      userMessageLength: userMessage.length,
-      economyMode: useEconomyMode
-    });
+    console.log(`🚀 Avvio orchestrazione SEQUENZIALE per ${activeAIs.length} agenti`);
 
-    const GLOBAL_DEADLINE_MS = 45000; // 45 secondi per tutto
-    const PER_AGENT_TIMEOUT_MS = 43000; // 43s per agent (margine per retry)
+    // ⚡ RIORDINA agenti per velocità
+    const geminiAgent = activeAIs.find((p: any) => 
+      p.type === 'lovable_ai' || p.type === 'gemini' || p.type === 'google'
+    );
+    const openaiAgent = activeAIs.find((p: any) => 
+      p.type === 'openai' || p.type === 'chatgpt'
+    );
+    const claudeAgent = activeAIs.find((p: any) => 
+      p.type === 'anthropic' || p.type === 'claude'
+    );
+    const otherAgents = activeAIs.filter((p: any) => 
+      p.type !== 'lovable_ai' && 
+      p.type !== 'gemini' && 
+      p.type !== 'google' &&
+      p.type !== 'openai' && 
+      p.type !== 'chatgpt' &&
+      p.type !== 'anthropic' && 
+      p.type !== 'claude'
+    );
 
-    // Recupera API keys per tutti i provider attivi
+    const sortedParticipants = [
+      geminiAgent,
+      openaiAgent,
+      claudeAgent,
+      ...otherAgents
+    ].filter(Boolean);
+
+    console.log(`⚡ Ordine chiamate: ${sortedParticipants.map((p: any) => p.name).join(' → ')}`);
+
+    // Recupera API keys PRIMA del loop
     const { data: anthropicConfig } = await supabaseClient
       .from('config_ai')
       .select('api_key')
@@ -353,63 +356,101 @@ REGOLE CRITICHE:
       .eq('provider', 'openai')
       .maybeSingle();
 
-    // Crea array di Promise per chiamate parallele
-    const agentTasks = activeAIs.map(async (participant: any) => {
+    const orchestrationStart = Date.now();
+    const allResponses: any[] = [];
+    const results: any[] = [];
+
+    // ✅ LOOP SEQUENZIALE: Un agente alla volta
+    for (let i = 0; i < sortedParticipants.length; i++) {
+      const participant = sortedParticipants[i];
+      const agentStartTime = Date.now();
+      
+      console.log(`\n🎯 Agente ${i + 1}/${sortedParticipants.length}: ${participant.name}`);
+      
       try {
+        // ============ CONTEXT CUMULATIVO ============
+        const turnContext = allResponses.map(r => ({
+          role: 'assistant',
+          content: `[${r.participant.name}]: ${r.content}`
+        }));
+        
+        console.log(`📝 Context include: ${allResponses.length} risposte precedenti di questo turno`);
+        
+        // Componi history arricchita
+        const enrichedHistory = visibleHistory + '\n\n' + 
+          turnContext.map(tc => `${tc.content}`).join('\n\n');
+        
+        // Determina API key e modello
         let apiKey: string;
         let model: string;
         
         if (participant.type === 'claude' || participant.type === 'anthropic') {
-          if (!anthropicConfig?.api_key) {
-            throw new Error('Anthropic API key non configurata');
-          }
+          if (!anthropicConfig?.api_key) throw new Error('Anthropic API key non configurata');
           apiKey = anthropicConfig.api_key;
           model = 'claude-sonnet-4-5';
         } else if (participant.type === 'chatgpt' || participant.type === 'openai') {
-          if (!openaiConfig?.api_key) {
-            throw new Error('OpenAI API key non configurata');
-          }
+          if (!openaiConfig?.api_key) throw new Error('OpenAI API key non configurata');
           apiKey = openaiConfig.api_key;
           model = openaiConfig.modello || 'gpt-5-2025-08-07';
-    } else if (participant.type === 'gemini') {
+        } else if (participant.type === 'gemini' || participant.type === 'google') {
           apiKey = LOVABLE_API_KEY;
           model = 'google/gemini-2.5-flash';
         } else {
           throw new Error(`Provider sconosciuto: ${participant.type}`);
         }
         
+        // Chiama l'agente con history ARRICCHITA
         const result = await callAIProvider(participant, {
           apiKey,
           model,
           basePrompt,
-          visibleHistory,
+          visibleHistory: enrichedHistory, // ✅ Include risposte precedenti
           userMessage,
-          timeoutMs: PER_AGENT_TIMEOUT_MS
+          timeoutMs: 43000
         });
         
-        return {
+        const agentDuration = Date.now() - agentStartTime;
+        console.log(`✅ ${participant.name} completato in ${agentDuration}ms`);
+        
+        // Aggiungi a allResponses per il prossimo agente
+        allResponses.push({
           success: true,
           participant,
           ...result
-        };
+        });
+        
+        results.push({
+          status: 'fulfilled',
+          value: {
+            success: true,
+            participant,
+            ...result
+          }
+        });
+        
+        // ⏱️ PAUSA tra agenti (tranne l'ultimo)
+        if (i < sortedParticipants.length - 1) {
+          console.log(`⏸️ Pausa di ${pauseMs}ms prima del prossimo agente...`);
+          await delay(pauseMs);
+        }
+        
       } catch (error: any) {
         console.error(`❌ ${participant.name} fallito:`, error.message);
-        return {
-          success: false,
-          participant,
-          error: error.message
-        };
+        results.push({
+          status: 'fulfilled',
+          value: {
+            success: false,
+            participant,
+            error: error.message
+          }
+        });
       }
-    });
+    }
 
-    // Esegui tutte le chiamate in parallelo con deadline globale
-    const orchestrationStart = Date.now();
-    const results = await Promise.allSettled(agentTasks);
     const orchestrationDuration = Date.now() - orchestrationStart;
+    console.log(`🎯 Orchestrazione sequenziale completata in ${orchestrationDuration}ms`);
 
-    console.log(`🎯 Orchestrazione completata in ${orchestrationDuration}ms`);
-
-    // 🎯 Calcola nextSequence UNA SOLA VOLTA prima del loop (cache)
+    // 🎯 Calcola nextSequence UNA SOLA VOLTA
     const { data: maxSeq } = await supabaseClient
       .from('chat_laboratory_messages')
       .select('message_sequence')
@@ -420,7 +461,7 @@ REGOLE CRITICHE:
     
     let nextSequence = (maxSeq?.message_sequence || 0) + 1;
 
-    // Elabora risultati e salva nel database
+    // Elabora risultati e salva
     const successfulResponses: any[] = [];
     const failedResponses: any[] = [];
     let totalTokensOut = 0;
@@ -432,13 +473,11 @@ REGOLE CRITICHE:
         successfulResponses.push(value);
         totalTokensOut += value.tokensOut;
         
-        // Sequence number ottimizzato (calcolato una volta fuori dal loop)
-        
         const { data: savedMessage, error: insertError } = await supabaseClient
           .from('chat_laboratory_messages')
           .insert({
             conversation_id: conversationId,
-            message_sequence: nextSequence++, // ✅ Incrementa in cache
+            message_sequence: nextSequence++,
             sender_type: value.participant.type,
             sender_name: value.participant.name,
             content: value.content,
@@ -452,7 +491,7 @@ REGOLE CRITICHE:
             tempo_risposta_ms: value.duration,
             attachments: {
               structured_prompt: {
-                message_id: null, // Popolato dopo
+                message_id: null,
                 timestamp: new Date().toISOString(),
                 global_system_prompt: basePrompt,
                 base_sections: [],
@@ -488,7 +527,6 @@ REGOLE CRITICHE:
           .select()
           .single();
         
-        // Aggiorna message_id negli attachments
         if (savedMessage?.id) {
           await supabaseClient
             .from('chat_laboratory_messages')
@@ -504,7 +542,7 @@ REGOLE CRITICHE:
             .eq('id', savedMessage.id);
         }
 
-        // Trigger background summary generation
+        // Trigger summary generation
         supabaseClient.functions.invoke('generate-message-summaries', {
           body: { 
             messageId: savedMessage.id, 
@@ -524,7 +562,7 @@ REGOLE CRITICHE:
     console.log(`✅ Successi: ${successfulResponses.length}, ❌ Falliti: ${failedResponses.length}`);
     console.log(`📊 Token totali generati: ${totalTokensOut}`);
 
-    // Aggiorna last_speaker_index (usa primo agente di successo)
+    // Aggiorna last_speaker_index
     if (successfulResponses.length > 0) {
       const firstSuccessIndex = activeAIs.findIndex(
         (p: any) => p.name === successfulResponses[0].participant.name
@@ -540,7 +578,7 @@ REGOLE CRITICHE:
       JSON.stringify({
         success: true,
         orchestrationTimeMs: orchestrationDuration,
-        totalTokensOut, // ✅ Nuovo campo per monitoring
+        totalTokensOut,
         responses: successfulResponses.map(r => ({
           participant: r.participant.name,
           content: r.content,
@@ -554,7 +592,6 @@ REGOLE CRITICHE:
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
 
   } catch (error) {
     console.error('❌ Orchestrator error:', error);

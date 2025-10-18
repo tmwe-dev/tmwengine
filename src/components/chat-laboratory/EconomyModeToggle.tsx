@@ -45,7 +45,7 @@ export const EconomyModeToggle = ({ conversationId, onSettingsChange }: EconomyM
         setEconomyMode(data.economy_mode ?? true);
         setShowSummaries(data.show_summaries_only ?? true);
         setReduceUserMessages(data.reduce_user_messages ?? true);
-        setPauseBetweenAgents(data.pause_between_agents_ms ?? 800);
+        setPauseBetweenAgents(data.pause_between_agents_ms ?? 50);
       }
     } catch (error) {
       console.error('Error loading economy settings:', error);

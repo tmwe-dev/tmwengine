@@ -7,8 +7,13 @@ import { Brain, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
-export const LaboratoryPromptManager = () => {
+interface LaboratoryPromptManagerProps {
+  isProcessing?: boolean;
+}
+
+export const LaboratoryPromptManager = ({ isProcessing = false }: LaboratoryPromptManagerProps) => {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -124,10 +129,16 @@ ESEMPI:
         <Button 
           variant="ghost" 
           size="icon" 
-          className="shrink-0 bg-transparent hover:bg-transparent"
+          className={cn(
+            "shrink-0 bg-transparent hover:bg-transparent transition-all",
+            isProcessing && "animate-heartbeat"
+          )}
           title="System Prompt"
         >
-          <Brain className="h-4 w-4" />
+          <Brain className={cn(
+            "h-4 w-4 transition-colors",
+            isProcessing && "text-red-500"
+          )} />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">

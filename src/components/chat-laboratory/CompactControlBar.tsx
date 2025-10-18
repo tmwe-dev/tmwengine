@@ -19,6 +19,7 @@ interface CompactControlBarProps {
   conversationId: string | null;
   isBarMode: boolean;
   isAISpeaking: boolean;
+  isProcessing?: boolean;
   audioMode?: 'stable' | 'v2_hybrid';
   onToggleBarMode: (value: boolean) => void;
   onInterrupt: () => void;
@@ -33,6 +34,7 @@ export const CompactControlBar = ({
   conversationId,
   isBarMode,
   isAISpeaking,
+  isProcessing = false,
   audioMode: externalAudioMode,
   onToggleBarMode,
   onInterrupt,
@@ -345,7 +347,7 @@ export const CompactControlBar = ({
   return (
     <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
       {/* Brain Button */}
-      <LaboratoryPromptManager />
+      <LaboratoryPromptManager isProcessing={isProcessing} />
       
       <Separator />
       

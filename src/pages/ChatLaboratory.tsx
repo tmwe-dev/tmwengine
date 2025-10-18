@@ -744,28 +744,12 @@ const ChatLaboratory = () => {
           }
         });
 
-        // Mostra toast se audio in generazione
-        if (!error && data?.responses) {
-          const hasAudioPending = data.responses.some((r: any) => !r.audioUrl);
-          if (hasAudioPending) {
-            toast({
-              title: '🎵 Generazione audio...',
-              description: 'Gli audio saranno disponibili tra pochi secondi',
-              duration: 3000,
-            });
-          }
-        }
         
         console.log('📥 Risposta da bar-chat-orchestrator:', { data, error });
         
         if (error) {
           // 🆕 Gestione specifica per pausa
           if (error.context?.status === 423) {
-            toast({
-              title: '⏸️ Conversazione in Pausa',
-              description: 'Ripremi il pulsante Play per continuare',
-              variant: 'default',
-            });
             return; // Non mostrare errore generico
           }
           
@@ -1539,6 +1523,7 @@ const ChatLaboratory = () => {
                 conversationId={currentConversationId}
                 isBarMode={isBarMode}
                 isAISpeaking={isAISpeaking}
+                isProcessing={isLoading}
                 audioMode={audioMode}
                 onToggleBarMode={setIsBarMode}
                 onInterrupt={() => {
@@ -1614,6 +1599,7 @@ const ChatLaboratory = () => {
                 conversationId={currentConversationId}
                 isBarMode={isBarMode}
                 isAISpeaking={isAISpeaking}
+                isProcessing={isLoading}
                 audioMode={audioMode}
                 onToggleBarMode={setIsBarMode}
                 onInterrupt={() => {

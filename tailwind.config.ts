@@ -202,6 +202,10 @@ export default {
             backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
         },
+        "heartbeat": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.2)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.3s ease-out",
@@ -211,6 +215,7 @@ export default {
         "slide-up": "slide-up 0.3s ease-out",
         "wiggle": "wiggle 0.8s ease-in-out",
         "line-bounce": "line-bounce 1.2s ease-in-out",
+        "heartbeat": "heartbeat 1s ease-in-out infinite",
       },
     },
   },

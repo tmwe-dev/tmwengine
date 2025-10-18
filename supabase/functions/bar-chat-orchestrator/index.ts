@@ -14,7 +14,7 @@ const corsHeaders = {
 async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
-  timeoutMs: number = 8000
+  timeoutMs: number = 60000
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -287,13 +287,41 @@ serve(async (req) => {
 
     // ============ LOGICA SEQUENZIALE: Chiamata tutti gli agenti attivi ============
     const activeParticipants = participants.filter((p: any) => p.is_active);
-    console.log(`🎯 Chiamata sequenziale di ${activeParticipants.length} agenti attivi`);
+    
+    // ⚡ OTTIMIZZAZIONE: Riordina agenti per velocità (Gemini → OpenAI → Claude)
+    const geminiAgent = activeParticipants.find((p: any) => 
+      p.type === 'lovable_ai' || p.type === 'gemini'
+    );
+    const openaiAgent = activeParticipants.find((p: any) => 
+      p.type === 'openai' || p.type === 'chatgpt'
+    );
+    const claudeAgent = activeParticipants.find((p: any) => 
+      p.type === 'anthropic' || p.type === 'claude'
+    );
+    const otherAgents = activeParticipants.filter((p: any) => 
+      p.type !== 'lovable_ai' && 
+      p.type !== 'gemini' && 
+      p.type !== 'openai' && 
+      p.type !== 'chatgpt' &&
+      p.type !== 'anthropic' && 
+      p.type !== 'claude'
+    );
+    
+    const sortedParticipants = [
+      geminiAgent,
+      openaiAgent,
+      claudeAgent,
+      ...otherAgents
+    ].filter(Boolean);
+    
+    console.log(`⚡ Ordine chiamate ottimizzato: ${sortedParticipants.map((p: any) => p.name).join(' → ')}`);
+    console.log(`🎯 Chiamata sequenziale di ${sortedParticipants.length} agenti attivi`);
     
     const allResponses: any[] = [];
     
-    for (let i = 0; i < activeParticipants.length; i++) {
-      const currentAgent = activeParticipants[i];
-      console.log(`\n🎯 Agente ${i + 1}/${activeParticipants.length}: ${currentAgent.name}`);
+    for (let i = 0; i < sortedParticipants.length; i++) {
+      const currentAgent = sortedParticipants[i];
+      console.log(`\n🎯 Agente ${i + 1}/${sortedParticipants.length}: ${currentAgent.name}`);
       
       // ============ CONTEXT CUMULATIVO: Messaggio utente + risposte precedenti di QUESTO turno ============
       const turnContext = [
@@ -425,81 +453,125 @@ serve(async (req) => {
       tokenOutput = result.tokensOut;
       console.log(`✅ Claude: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
     }
-    else if ((currentAgent.type === 'openai' || currentAgent.type === 'chatgpt') && openaiConfig?.api_key) {
-      console.log('🤖 Calling OpenAI (GPT)...');
-      
-      const modelName = openaiConfig.modello || 'gpt-5-2025-08-07';
-      const isNewerModel = modelName.startsWith('gpt-5') || 
-                          modelName.startsWith('o3') || 
-                          modelName.startsWith('o4');
-      
-      console.log(`🎯 Modello: ${modelName} (${isNewerModel ? 'newer' : 'legacy'} parameters)`);
-      
-      const result = await withRetry(async () => {
-        // ✅ USA conversationHistory che include il summary!
-        const rawMessages = conversationHistory.map(msg => {
-          if (msg.role === 'system') {
-            return msg; // ✅ Mantieni system messages
-          }
-          // Converti human -> user per OpenAI
-          return {
-            role: msg.role === 'human' ? 'user' : msg.role,
-            content: msg.content
-          };
-        });
+    else if ((currentAgent.type === 'openai' || currentAgent.type === 'chatgpt')) {
+      // ⚡ PRIORITÀ: Usa GPT-5 via Lovable AI se disponibile (più veloce)
+      if (LOVABLE_API_KEY) {
+        console.log('🤖 Calling OpenAI GPT-5 via Lovable AI Gateway...');
         
-        // 🔧 Separa system da user/assistant e collassa consecutivi
-        const systemMsgs = rawMessages.filter(m => m.role === 'system');
-        const nonSystemMsgs = rawMessages.filter(m => m.role !== 'system');
-        const collapsedMsgs = collapseConsecutiveMessages(nonSystemMsgs);
-        const messages = [...systemMsgs, ...collapsedMsgs];
-        
-        console.log(`🔧 GPT: ${nonSystemMsgs.length} messaggi → ${collapsedMsgs.length} collassati`);
-        
-        const body: any = {
-          model: modelName,
-          messages: messages  // ✅ Usa la conversationHistory completa!
-        };
-        
-        // Parametri specifici per versione modello
-        if (isNewerModel) {
-          body.max_completion_tokens = 2500; // ✅ GPT-5+, O3, O4 - limite conversazionale esteso
-        } else {
-          body.max_tokens = 2500; // ✅ gpt-4o, gpt-4o-mini legacy - limite conversazionale esteso
-          body.temperature = 0.7; // Solo legacy models
-        }
-        
-        const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${openaiConfig.api_key}`
-          },
-          body: JSON.stringify(body)
-        }, 43000);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`❌ OpenAI error ${response.status}:`, errorText);
+        const result = await withRetry(async () => {
+          const response = await fetchWithTimeout('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${LOVABLE_API_KEY}`
+            },
+            body: JSON.stringify({
+              model: 'openai/gpt-5-mini',
+              max_completion_tokens: 2500,
+              messages: conversationHistory
+            })
+          }, 60000);
           
-          if (response.status === 429) throw new Error('429');
-          if (response.status >= 500) throw new Error('5xx');
-          throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
-        }
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Lovable AI (GPT-5) error ${response.status}:`, errorText);
+            
+            if (response.status === 429) throw new Error('429');
+            if (response.status === 402) throw new Error('Payment Required');
+            if (response.status >= 500) throw new Error('5xx');
+            throw new Error(`Lovable AI error ${response.status}: ${errorText}`);
+          }
+          
+          const data = await response.json();
+          return {
+            content: data.choices[0].message.content,
+            tokensIn: data.usage?.prompt_tokens || 0,
+            tokensOut: data.usage?.completion_tokens || 0,
+            duration: Date.now() - startTime
+          };
+        }, { retries: 2, baseDelayMs: 300 });
         
-        const data = await response.json();
-        return {
-          content: data.choices[0].message.content,
-          tokensIn: data.usage?.prompt_tokens || 0,
-          tokensOut: data.usage?.completion_tokens || 0,
-          duration: Date.now() - startTime
-        };
-      }, { retries: 2, baseDelayMs: 300 });
-      
-      aiResponse = result.content;
-      tokenInput = result.tokensIn;
-      tokenOutput = result.tokensOut;
-      console.log(`✅ ChatGPT: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
+        aiResponse = result.content;
+        tokenInput = result.tokensIn;
+        tokenOutput = result.tokensOut;
+        console.log(`✅ GPT-5 via Lovable: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
+      }
+      // ⚠️ FALLBACK: Usa OpenAI diretto se Lovable non disponibile
+      else if (openaiConfig?.api_key) {
+        console.log('⚠️ Fallback: Calling OpenAI direct API...');
+        
+        const modelName = openaiConfig.modello || 'gpt-5-2025-08-07';
+        const isNewerModel = modelName.startsWith('gpt-5') || 
+                            modelName.startsWith('o3') || 
+                            modelName.startsWith('o4');
+        
+        console.log(`🎯 Modello: ${modelName} (${isNewerModel ? 'newer' : 'legacy'} parameters)`);
+        
+        const result = await withRetry(async () => {
+          const rawMessages = conversationHistory.map(msg => {
+            if (msg.role === 'system') {
+              return msg;
+            }
+            return {
+              role: msg.role === 'human' ? 'user' : msg.role,
+              content: msg.content
+            };
+          });
+          
+          const systemMsgs = rawMessages.filter(m => m.role === 'system');
+          const nonSystemMsgs = rawMessages.filter(m => m.role !== 'system');
+          const collapsedMsgs = collapseConsecutiveMessages(nonSystemMsgs);
+          const messages = [...systemMsgs, ...collapsedMsgs];
+          
+          console.log(`🔧 GPT: ${nonSystemMsgs.length} messaggi → ${collapsedMsgs.length} collassati`);
+          
+          const body: any = {
+            model: modelName,
+            messages: messages
+          };
+          
+          if (isNewerModel) {
+            body.max_completion_tokens = 2500;
+          } else {
+            body.max_tokens = 2500;
+            body.temperature = 0.7;
+          }
+          
+          const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${openaiConfig.api_key}`
+            },
+            body: JSON.stringify(body)
+          }, 60000);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ OpenAI error ${response.status}:`, errorText);
+            
+            if (response.status === 429) throw new Error('429');
+            if (response.status >= 500) throw new Error('5xx');
+            throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
+          }
+          
+          const data = await response.json();
+          return {
+            content: data.choices[0].message.content,
+            tokensIn: data.usage?.prompt_tokens || 0,
+            tokensOut: data.usage?.completion_tokens || 0,
+            duration: Date.now() - startTime
+          };
+        }, { retries: 2, baseDelayMs: 300 });
+        
+        aiResponse = result.content;
+        tokenInput = result.tokensIn;
+        tokenOutput = result.tokensOut;
+        console.log(`✅ ChatGPT: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
+      }
+      else {
+        throw new Error('Nessuna chiave API disponibile per OpenAI');
+      }
     }
     else if (currentAgent.type === 'gemini' && LOVABLE_API_KEY) {
       console.log('🤖 Calling Lovable AI (Gemini)...');

@@ -9,10 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 interface SavedConfig {
   id: string;
   config_name: string;
-  turn_strategy: string;
   pause_between_turns_ms: number;
-  enable_direct_calls: boolean;
-  voice_enabled: boolean;
   is_favorite: boolean;
   created_at: string;
 }
@@ -144,16 +141,7 @@ export function ConfigurationSelector({ onLoadConfig }: ConfigurationSelectorPro
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-3">
-                  <Badge variant="secondary">
-                    {config.turn_strategy === 'RANDOM_30' ? 'R30' : 'SMART'}
-                  </Badge>
-                  <Badge variant="outline">{config.pause_between_turns_ms}ms</Badge>
-                  {config.enable_direct_calls && (
-                    <Badge variant="outline">Direct Calls</Badge>
-                  )}
-                  {config.voice_enabled && (
-                    <Badge variant="outline">🎤 Voice</Badge>
-                  )}
+                  <Badge variant="outline">{config.pause_between_turns_ms}ms pause</Badge>
                 </div>
 
                 <div className="flex gap-2">

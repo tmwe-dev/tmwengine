@@ -723,7 +723,9 @@ const ChatLaboratory = () => {
           body: { 
             conversationId,
             userMessage: currentPrompt,
-            participants: activeAIParticipants
+            participants: activeAIParticipants,
+            response_mode: responseMode,
+            targetParticipantType: targetParticipant
           }
         });
 

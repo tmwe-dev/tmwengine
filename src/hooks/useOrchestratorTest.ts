@@ -3,12 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface TestConfig {
-  turnStrategy: string;
   pauseBetweenTurns: number;
-  enableDirectCalls: boolean;
   selectedTopic?: string;
   activeKbId?: string;
-  voiceEnabled: boolean;
 }
 
 interface TestResult {
@@ -41,10 +38,7 @@ interface TestResult {
 export function useOrchestratorTest(conversationId: string) {
   const [isRunning, setIsRunning] = useState(false);
   const [currentConfig, setCurrentConfig] = useState<TestConfig>({
-    turnStrategy: 'RANDOM_30',
     pauseBetweenTurns: 800,
-    enableDirectCalls: true,
-    voiceEnabled: false,
   });
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const { toast } = useToast();
@@ -68,10 +62,9 @@ export function useOrchestratorTest(conversationId: string) {
         .insert({
           user_id: user.id,
           config_name: configName,
-          ...currentConfig,
+          pause_between_turns_ms: currentConfig.pauseBetweenTurns,
           active_kb_id: currentConfig.activeKbId,
           selected_topic: currentConfig.selectedTopic,
-          voice_enabled: currentConfig.voiceEnabled,
         });
 
       if (error) throw error;
@@ -100,12 +93,9 @@ export function useOrchestratorTest(conversationId: string) {
       if (error) throw error;
 
       setCurrentConfig({
-        turnStrategy: data.turn_strategy || 'RANDOM_30',
         pauseBetweenTurns: data.pause_between_turns_ms || 800,
-        enableDirectCalls: data.enable_direct_calls ?? true,
         selectedTopic: data.selected_topic,
         activeKbId: data.active_kb_id,
-        voiceEnabled: data.voice_enabled ?? false,
       });
 
       toast({
@@ -131,12 +121,9 @@ export function useOrchestratorTest(conversationId: string) {
         .from('chat_laboratory_bar_mode')
         .update({
           mode: 'bar',
-          turn_strategy: currentConfig.turnStrategy,
           pause_between_turns_ms: currentConfig.pauseBetweenTurns,
-          enable_direct_call_detection: currentConfig.enableDirectCalls,
           selected_topic: currentConfig.selectedTopic,
           active_kb_id: currentConfig.activeKbId,
-          voice_enabled: currentConfig.voiceEnabled,
         })
         .eq('conversation_id', conversationId);
 
@@ -170,9 +157,9 @@ export function useOrchestratorTest(conversationId: string) {
       const { data: { user } } = await supabase.auth.getUser();
       
       const testResult: Omit<TestResult, 'id' | 'timestamp'> = {
-        turnStrategy: currentConfig.turnStrategy,
+        turnStrategy: 'N/A',
         pauseBetweenTurns: currentConfig.pauseBetweenTurns,
-        enableDirectCalls: currentConfig.enableDirectCalls,
+        enableDirectCalls: false,
         selectedAgent: data.speaker || 'Unknown',
         responseTime,
         tokensInput: data.tokens?.input || 0,
@@ -220,9 +207,9 @@ export function useOrchestratorTest(conversationId: string) {
       const failedResult: TestResult = {
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
-        turnStrategy: currentConfig.turnStrategy,
+        turnStrategy: 'N/A',
         pauseBetweenTurns: currentConfig.pauseBetweenTurns,
-        enableDirectCalls: currentConfig.enableDirectCalls,
+        enableDirectCalls: false,
         selectedAgent: 'N/A',
         responseTime,
         tokensInput: 0,

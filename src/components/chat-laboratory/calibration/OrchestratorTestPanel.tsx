@@ -11,12 +11,9 @@ import { ActiveConfigSummary } from './ActiveConfigSummary';
 
 interface OrchestratorTestPanelProps {
   config: {
-    turnStrategy: string;
     pauseBetweenTurns: number;
-    enableDirectCalls: boolean;
     selectedTopic?: string;
     activeKbId?: string;
-    voiceEnabled: boolean;
   };
   onConfigChange: (updates: any) => void;
   onRunTest: (message: string) => Promise<any>;
@@ -62,32 +59,6 @@ export function OrchestratorTestPanel({
           <CardTitle className="text-lg">🎯 Configurazione Orchestrator</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Configurazione Attiva - Always Visible */}
-          <ActiveConfigSummary
-            turnStrategy={config.turnStrategy}
-            pauseBetweenTurns={config.pauseBetweenTurns}
-            enableDirectCalls={config.enableDirectCalls}
-            voiceEnabled={config.voiceEnabled}
-            lastResponse={lastResponse}
-          />
-
-          {/* Turn Strategy */}
-          <div className="space-y-2">
-            <Label>Turn Strategy</Label>
-            <Select
-              value={config.turnStrategy}
-              onValueChange={(value) => onConfigChange({ turnStrategy: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="RANDOM_30">RANDOM_30 (30% random)</SelectItem>
-                <SelectItem value="SMART_PRIORITY">SMART_PRIORITY (AI-based)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Pause Between Turns */}
           <div className="space-y-2">
             <Label>Pause Between Turns (ms)</Label>
@@ -99,24 +70,9 @@ export function OrchestratorTestPanel({
               max={5000}
               step={100}
             />
-          </div>
-
-          {/* Enable Direct Call Detection */}
-          <div className="flex items-center justify-between">
-            <Label>Enable Direct Call Detection</Label>
-            <Switch
-              checked={config.enableDirectCalls}
-              onCheckedChange={(checked) => onConfigChange({ enableDirectCalls: checked })}
-            />
-          </div>
-
-          {/* Voice Enabled */}
-          <div className="flex items-center justify-between">
-            <Label>Voice Enabled</Label>
-            <Switch
-              checked={config.voiceEnabled}
-              onCheckedChange={(checked) => onConfigChange({ voiceEnabled: checked })}
-            />
+            <p className="text-xs text-muted-foreground">
+              Pausa manuale tra risposte consecutive (0 = nessuna pausa)
+            </p>
           </div>
 
           {/* Actions */}

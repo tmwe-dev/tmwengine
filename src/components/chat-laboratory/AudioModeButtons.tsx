@@ -7,7 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const AUDIO_MODE_STORAGE_KEY = 'global-audio-mode';
 
-export type AudioMode = 'stable' | 'v2_continuous' | 'v2_hybrid';
+export type AudioMode = 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid';
 
 interface AudioModeButtonsProps {
   onModeChange?: (mode: AudioMode) => void;
@@ -34,6 +34,7 @@ export const AudioModeButtons = ({ onModeChange }: AudioModeButtonsProps) => {
     const modeNames = {
       stable: 'PTT 3s',
       v2_continuous: 'Live 1.5s',
+      v2_extended: 'Hold',
       v2_hybrid: 'Listen'
     };
     
@@ -42,19 +43,29 @@ export const AudioModeButtons = ({ onModeChange }: AudioModeButtonsProps) => {
 
   const modes = [
     { 
-      id: 'stable' as const, 
+      id: 'stable' as const,
+      number: 1,
       label: 'PTT', 
       icon: Mic,
       description: 'Push-to-talk con stop automatico a 3s'
     },
     { 
-      id: 'v2_continuous' as const, 
+      id: 'v2_continuous' as const,
+      number: 2,
       label: 'Live', 
       icon: Radio,
       description: 'Conversazione continua (1.5s silenzio)'
     },
     { 
-      id: 'v2_hybrid' as const, 
+      id: 'v2_extended' as const,
+      number: 3,
+      label: 'Hold', 
+      icon: Clock,
+      description: 'Press & Hold - stop automatico al rilascio'
+    },
+    { 
+      id: 'v2_hybrid' as const,
+      number: 4,
       label: 'Listen', 
       icon: Headphones,
       description: 'Modalità ibrida con ascolto attivo'
@@ -74,16 +85,21 @@ export const AudioModeButtons = ({ onModeChange }: AudioModeButtonsProps) => {
             variant={isSelected ? "default" : "outline"}
             size="sm"
             className={cn(
-              "h-8 px-2 cursor-pointer transition-all",
-              isMobile ? "w-8" : "min-w-[4rem]",
+              "h-12 px-2 cursor-pointer transition-all",
+              isMobile ? "w-10" : "min-w-[4.5rem]",
               isSelected 
                 ? "bg-primary text-primary-foreground border-primary" 
                 : "bg-card/40 border-border/40 hover:bg-card hover:border-border"
             )}
             title={mode.description}
           >
-            <Icon className={cn("h-4 w-4", !isMobile && "mr-1.5")} />
-            {!isMobile && <span className="text-xs font-medium">{mode.label}</span>}
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-[10px] font-bold opacity-60">{mode.number}</span>
+              <div className="flex items-center gap-1">
+                <Icon className="h-4 w-4" />
+                {!isMobile && <span className="text-xs font-medium">{mode.label}</span>}
+              </div>
+            </div>
           </Button>
         );
       })}

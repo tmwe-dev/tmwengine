@@ -21,7 +21,7 @@ interface CompactControlBarProps {
   conversationId: string | null;
   isBarMode: boolean;
   isAISpeaking: boolean;
-  audioMode?: 'stable' | 'v2_continuous' | 'v2_hybrid';
+  audioMode?: 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid';
   onToggleBarMode: (value: boolean) => void;
   onInterrupt: () => void;
   onTranscriptionComplete: (text: string) => void;
@@ -48,7 +48,7 @@ export const CompactControlBar = ({
   const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
   const [pauseBetweenTurns, setPauseBetweenTurns] = useState<number>(800);
   const [enableDirectCall, setEnableDirectCall] = useState<boolean>(true);
-  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_hybrid'>(
+  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>(
     externalAudioMode || 'stable'
   );
 

@@ -7,20 +7,23 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarVoiceRecorderV2_Continuous } from './BarVoiceRecorderV2_Continuous';
+import { BarVoiceRecorderV2_Extended } from './BarVoiceRecorderV2_Extended';
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
+
+export type AudioMode = 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid';
 
 interface AudioModeSelectorProps {
   conversationId: string | null;
-  onModeChange?: (mode: 'stable' | 'v2_continuous' | 'v2_hybrid') => void;
+  onModeChange?: (mode: AudioMode) => void;
   onTranscriptionComplete: (text: string) => void;
   isAISpeaking: boolean;
   showOnlyButtons?: boolean;
   showOnlyRecorder?: boolean;
-  audioMode?: 'stable' | 'v2_continuous' | 'v2_hybrid';
+  audioMode?: AudioMode;
 }
 
 export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptionComplete, isAISpeaking, showOnlyButtons = false, showOnlyRecorder = false, audioMode: externalAudioMode }: AudioModeSelectorProps) => {
-  const [selectedMode, setSelectedMode] = useState<'stable' | 'v2_continuous' | 'v2_hybrid'>('stable');
+  const [selectedMode, setSelectedMode] = useState<AudioMode>('stable');
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -29,26 +32,36 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
     }
   }, [externalAudioMode]);
 
-  const updateAudioMode = async (mode: 'stable' | 'v2_continuous' | 'v2_hybrid') => {
+  const updateAudioMode = async (mode: AudioMode) => {
     setSelectedMode(mode);
     onModeChange?.(mode);
   };
 
   const modes = [
     { 
-      id: 'stable' as const, 
+      id: 'stable' as const,
+      number: 1,
       label: 'PTT 3s', 
       icon: Mic,
       description: 'Push-to-talk con stop automatico a 3s di silenzio'
     },
     { 
-      id: 'v2_continuous' as const, 
+      id: 'v2_continuous' as const,
+      number: 2,
       label: 'Live 1.5s', 
       icon: Radio,
       description: 'Conversazione continua con stop a 1.5s di silenzio'
     },
     { 
-      id: 'v2_hybrid' as const, 
+      id: 'v2_extended' as const,
+      number: 3,
+      label: 'Hold', 
+      icon: Clock,
+      description: 'Press & Hold - stop automatico al rilascio'
+    },
+    { 
+      id: 'v2_hybrid' as const,
+      number: 4,
       label: 'Listen', 
       icon: Headphones,
       description: 'Modalità ibrida con ascolto attivo'
@@ -70,16 +83,21 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
               variant={isSelected ? "default" : "outline"}
               size="sm"
               className={cn(
-                "h-8 px-2 cursor-pointer",
-                isMobile ? "w-8" : "min-w-[4rem]",
+                "h-12 px-2 cursor-pointer",
+                isMobile ? "w-10" : "min-w-[4.5rem]",
                 isSelected 
                   ? "bg-primary text-primary-foreground border-primary" 
                   : "bg-white/5 text-white/80 border-white/20 hover:bg-white/10 hover:text-white"
               )}
               title={mode.description}
             >
-              <Icon className={cn("h-4 w-4", !isMobile && "mr-1")} />
-              {!isMobile && <span className="text-xs font-medium">{mode.label}</span>}
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-[10px] font-bold opacity-60">{mode.number}</span>
+                <div className="flex items-center gap-1">
+                  <Icon className="h-4 w-4" />
+                  {!isMobile && <span className="text-xs font-medium">{mode.label}</span>}
+                </div>
+              </div>
             </Button>
           );
         })}
@@ -101,6 +119,14 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
         
         {selectedMode === 'v2_continuous' && (
           <BarVoiceRecorderV2_Continuous
+            conversationId={conversationId}
+            onTranscriptionComplete={onTranscriptionComplete}
+            isDisabled={isAISpeaking}
+          />
+        )}
+        
+        {selectedMode === 'v2_extended' && (
+          <BarVoiceRecorderV2_Extended
             conversationId={conversationId}
             onTranscriptionComplete={onTranscriptionComplete}
             isDisabled={isAISpeaking}
@@ -134,14 +160,17 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
               variant={isSelected ? "default" : "outline"}
               size="sm"
               className={cn(
-                "h-8 w-8 p-0 cursor-pointer",
+                "h-12 w-10 p-0 cursor-pointer",
                 isSelected 
                   ? "bg-primary text-primary-foreground border-primary" 
                   : "bg-white/5 text-white/80 border-white/20 hover:bg-white/10 hover:text-white"
               )}
               title={mode.description}
             >
-              <Icon className="h-4 w-4" />
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-[10px] font-bold opacity-60">{mode.number}</span>
+                <Icon className="h-4 w-4" />
+              </div>
             </Button>
           );
         })}
@@ -160,6 +189,14 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
           
           {selectedMode === 'v2_continuous' && (
             <BarVoiceRecorderV2_Continuous
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={isAISpeaking}
+            />
+          )}
+          
+          {selectedMode === 'v2_extended' && (
+            <BarVoiceRecorderV2_Extended
               conversationId={conversationId}
               onTranscriptionComplete={onTranscriptionComplete}
               isDisabled={isAISpeaking}

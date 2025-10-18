@@ -124,16 +124,16 @@ const ChatLaboratory = () => {
   
   // Full Screen Mode State
   const [isFullScreenMode, setIsFullScreenMode] = useState(false);
-  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_hybrid'>(() => {
+  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>(() => {
     const stored = localStorage.getItem('global-audio-mode');
-    return (stored as 'stable' | 'v2_continuous' | 'v2_hybrid') || 'stable';
+    return (stored as 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid') || 'stable';
   });
 
   useEffect(() => {
     const handleStorageChange = () => {
       const stored = localStorage.getItem('global-audio-mode');
       if (stored) {
-        setAudioMode(stored as 'stable' | 'v2_continuous' | 'v2_hybrid');
+        setAudioMode(stored as 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid');
       }
     };
     
@@ -142,7 +142,7 @@ const ChatLaboratory = () => {
     // Check immediato al mount
     const stored = localStorage.getItem('global-audio-mode');
     if (stored) {
-      setAudioMode(stored as 'stable' | 'v2_continuous' | 'v2_hybrid');
+      setAudioMode(stored as 'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid');
     }
     
     return () => window.removeEventListener('storage', handleStorageChange);

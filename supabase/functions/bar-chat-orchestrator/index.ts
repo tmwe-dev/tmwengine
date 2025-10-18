@@ -93,6 +93,8 @@ serve(async (req) => {
 
     // ============ SEQUENTIAL AGENT CALLS ============
     const activeParticipants = participants.filter((p: any) => p.is_active);
+    let aiTurnsCount = 0; // ✅ Contatore turni AI
+    const MAX_AI_TURNS_BEFORE_USER = 6; // ✅ Limite turni
     
     // Optimize order: Gemini → ChatGPT → Claude
     const geminiAgent = activeParticipants.find((p: any) => 
@@ -274,6 +276,10 @@ serve(async (req) => {
           turn_context_messages: turnContext.length
         };
         
+        // ✅ Incrementa contatore turni AI
+        aiTurnsCount++;
+        console.log(`📊 Turni AI completati: ${aiTurnsCount}/${MAX_AI_TURNS_BEFORE_USER}`);
+        
         const telemetry = {
           conversation_id: conversationId,
           provider: currentAgent.type,
@@ -405,10 +411,15 @@ serve(async (req) => {
               console.log(`🧠 Orchestrator decisione:`, decision);
               
               if (decision.toLowerCase().includes('true') || decision.includes('"continue": true')) {
-                console.log(`🔄 Orchestrator: richiesto nuovo turno dopo ${currentAgent.name}`);
-                // Reset: tutti gli agenti rispondono di nuovo
-                i = -1; // Reset loop (verrà incrementato a 0 al prossimo ciclo)
-                allResponses.length = 0;
+                // ✅ Verifica limite turni
+                if (aiTurnsCount >= MAX_AI_TURNS_BEFORE_USER) {
+                  console.log(`⏸️ Limite turni AI raggiunto (${aiTurnsCount}/${MAX_AI_TURNS_BEFORE_USER}) → Attendo user`);
+                } else {
+                  console.log(`🔄 Orchestrator: richiesto nuovo turno dopo ${currentAgent.name}`);
+                  // Reset: tutti gli agenti rispondono di nuovo
+                  i = -1; // Reset loop (verrà incrementato a 0 al prossimo ciclo)
+                  allResponses.length = 0;
+                }
               }
             }
           } catch (orchError) {

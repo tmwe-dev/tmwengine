@@ -78,26 +78,45 @@ export const MessageTabsView = ({
 
   useEffect(() => {
     if (messages.length > previousMessagesLengthRef.current) {
-      const lastMessage = messages[messages.length - 1];
+      const newMessage = messages[previousMessagesLengthRef.current];
       
-      if (!lastMessage) {
+      if (!newMessage) {
         previousMessagesLengthRef.current = messages.length;
         return;
       }
       
+      // Determina se è il primo messaggio AI
+      const aiMessagesBeforeThis = messages
+        .slice(0, previousMessagesLengthRef.current)
+        .filter(m => m.sender_type !== 'human').length;
+      const isFirstMessage = newMessage.sender_type !== 'human' && aiMessagesBeforeThis === 0;
+      
       if (isAutoFollowEnabled) {
-        // ✅ Attiva SEMPRE l'ultimo messaggio (sia human che AI)
-        console.log(`📨 Nuovo messaggio da ${lastMessage.sender_name} → Attivo tab`);
-        setActiveTab(lastMessage.id);
-        
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
+        // ✅ MESSAGGIO HUMAN: attiva sempre immediatamente
+        if (newMessage.sender_type === 'human') {
+          console.log(`📨 Messaggio user → Attivo tab immediatamente`);
+          setActiveTab(newMessage.id);
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }
+        // ✅ PRIMO MESSAGGIO AI: attiva tab e avvia audio
+        else if (isFirstMessage) {
+          console.log(`📨 Primo messaggio AI da ${newMessage.sender_name} → Cambio tab`);
+          setActiveTab(newMessage.id);
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }
+        // ⏳ MESSAGGI AI SUCCESSIVI: NON cambiare tab (aspetta handleAudioEnd)
+        else {
+          console.log(`📨 Messaggio AI da ${newMessage.sender_name} → In coda (audio in corso)`);
+        }
       } else {
         // Auto-follow disabilitato: mostra indicatore se necessario
         const container = tabContentRef.current;
         if (!container) {
-          previousMessagesLengthRef.current = messages.length;
+          previousMessagesLengthRef.current++;
           return;
         }
         const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
@@ -112,7 +131,7 @@ export const MessageTabsView = ({
         }
       }
       
-      previousMessagesLengthRef.current = messages.length;
+      previousMessagesLengthRef.current++;
     }
   }, [messages, isAutoFollowEnabled]);
 

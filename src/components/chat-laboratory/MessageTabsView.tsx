@@ -68,6 +68,14 @@ export const MessageTabsView = ({
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
 
+  // ✅ Monitora cambio tab e triggera audio se disponibile
+  useEffect(() => {
+    const currentMessage = messages.find(m => m.id === activeTab);
+    if (currentMessage?.sender_type !== 'human') {
+      console.log(`🔊 Tab attivo: ${currentMessage?.sender_name} - Audio pronto per partire`);
+    }
+  }, [activeTab, messages]);
+
   useEffect(() => {
     if (messages.length > previousMessagesLengthRef.current) {
       const newMessage = messages[previousMessagesLengthRef.current];

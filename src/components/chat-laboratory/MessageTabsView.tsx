@@ -77,14 +77,23 @@ export const MessageTabsView = ({
         return;
       }
       
+      // Verifica se è il primo messaggio della conversazione
+      const isFirstMessage = previousMessagesLengthRef.current === 0;
+      
       if (isAutoFollowEnabled) {
-        // ✅ Auto-follow: cambia tab immediatamente
-        console.log(`📨 Nuovo messaggio da ${newMessage.sender_name} → Cambio tab`);
-        setActiveTab(newMessage.id);
-        
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
+        if (isFirstMessage) {
+          // ✅ SOLO per il primo messaggio: cambia tab immediatamente e avvia audio
+          console.log(`📨 Primo messaggio da ${newMessage.sender_name} → Cambio tab e avvio audio`);
+          setActiveTab(newMessage.id);
+          
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        } else {
+          // ⏳ Messaggi successivi: NON cambiare tab (audio in corso)
+          console.log(`📨 Nuovo messaggio da ${newMessage.sender_name} → In coda (audio in corso)`);
+          // handleAudioEnd si occuperà del cambio tab quando l'audio finisce
+        }
       } else {
         // Auto-follow disabilitato: mostra indicatore se necessario
         const container = tabContentRef.current;

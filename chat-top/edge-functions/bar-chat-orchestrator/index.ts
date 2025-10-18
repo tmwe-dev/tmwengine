@@ -48,12 +48,10 @@ serve(async (req) => {
 
     const selectedTopic = barModeSettings.selected_topic;
     const activeKbId = barModeSettings.active_kb_id;
-    const enableDirectCalls = barModeSettings.enable_direct_call_detection ?? true;
 
     console.log('⚙️ IMPOSTAZIONI BAR MODE:');
     console.log('  📌 Topic:', selectedTopic || 'Nessuno');
     console.log('  📚 KB:', activeKbId || 'Nessuna');
-    console.log('  🎯 Direct Call Detection:', enableDirectCalls ? 'ATTIVO' : 'DISATTIVO');
 
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabase
@@ -112,28 +110,9 @@ serve(async (req) => {
       content: `[${msg.sender_name}]: ${msg.content}`
     }));
 
-    // 🎯 DIRECT CALL DETECTION (opzionale, sovrascrive response_mode se necessario)
-    let directCallTarget: string | null = null;
-    if (enableDirectCalls && userMessage) {
-      const lowerMsg = userMessage.toLowerCase();
-      for (const p of participants) {
-        if (p.type !== 'human' && p.name && lowerMsg.includes(p.name.toLowerCase())) {
-          directCallTarget = p.type;
-          console.log(`🎯 Direct Call rilevata → ${p.name} (${p.type})`);
-          break;
-        }
-      }
-    }
-
-    // NOTE: selectedParticipant viene ora passato dal frontend o determinato dal Direct Call
+    // NOTE: selectedParticipant viene ora passato dal frontend
     // Il nuovo sistema usa response_mode gestito dal TurnControlButtons
-    let selectedParticipant = participants[0]; // Fallback
-    
-    // Se c'è un direct call, sovrascrive la selezione
-    if (directCallTarget) {
-      selectedParticipant = participants.find(p => p.type === directCallTarget) || participants[0];
-      console.log(`🔀 Override Direct Call: selectedParticipant → ${selectedParticipant.name} (${selectedParticipant.type})`);
-    }
+    const selectedParticipant = participants[0]; // Fallback - normalmente passato in request
     
     console.log('✅ AGENTE SELEZIONATO:', selectedParticipant.name, `(${selectedParticipant.type})`);
 

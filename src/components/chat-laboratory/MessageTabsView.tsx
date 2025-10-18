@@ -100,7 +100,10 @@ export const MessageTabsView = ({
       } else {
         // Auto-follow disabilitato: mostra indicatore se necessario
         const container = tabContentRef.current;
-        if (!container) return;
+        if (!container) {
+          previousMessagesLengthRef.current++;
+          return;
+        }
         const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
         
         if (isNearBottom) {
@@ -113,6 +116,7 @@ export const MessageTabsView = ({
         }
       }
       
+      // ✅ Incrementa SEMPRE il contatore dopo aver processato il messaggio
       previousMessagesLengthRef.current++;
     }
   }, [messages, isAutoFollowEnabled]);

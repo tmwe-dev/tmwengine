@@ -710,22 +710,37 @@ const ChatLaboratory = () => {
       });
       
       if (isBarMode) {
-        // 🍹 BAR MODE: sempre modalità sequenziale (1 agente alla volta)
-        console.log('🎯 Bar Mode - Modalità Sequenziale (una chiamata all\'orchestrator)');
+        // 🍹 BAR MODE: sempre modalità sequenziale (1 agente alla volta con contesto completo)
+        console.log('🎯 Bar Mode - Modalità Sequenziale');
         
-        console.log('📤 Invocando bar-chat-orchestrator con payload:', {
-          conversationId,
-          userMessage: currentPrompt,
-          participants: activeAIParticipants.map(p => ({ type: p.type, name: p.name }))
-        });
+        // 🎯 Determina quale agente deve rispondere (round-robin)
+        const lastAIMessage = messages?.find(m => m.sender_type !== 'human');
+        const lastSpeaker = lastAIMessage?.sender_type;
+        
+        let targetParticipantType = null;
+        let actualResponseMode = 'auto';
+        
+        if (activeAIParticipants.length === 1) {
+          // Un solo agente: usa 'single'
+          actualResponseMode = 'single';
+          targetParticipantType = activeAIParticipants[0].type;
+        } else if (activeAIParticipants.length > 1) {
+          // Multi-agente: round-robin
+          const currentIndex = activeAIParticipants.findIndex(p => p.type === lastSpeaker);
+          const nextIndex = (currentIndex + 1) % activeAIParticipants.length;
+          targetParticipantType = activeAIParticipants[nextIndex].type;
+          actualResponseMode = 'single'; // ✅ Un agente alla volta
+        }
+        
+        console.log('📤 Turno calcolato:', { actualResponseMode, targetParticipantType, lastSpeaker });
         
         const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
           body: { 
             conversationId,
             userMessage: currentPrompt,
             participants: activeAIParticipants,
-            response_mode: 'auto', // Bar mode usa sempre turno automatico
-            targetParticipantType: null // Non serve in auto mode
+            response_mode: actualResponseMode,
+            targetParticipantType: targetParticipantType
           }
         });
 
@@ -769,70 +784,40 @@ const ChatLaboratory = () => {
           }
         }
       } else {
-        // ✅ MODALITÀ TESTUALE: Sequential orchestration
-        // Step 1: Determine orchestration mode (first turn = parallel, subsequent = sequential)
-        const isFirstTurn = messages.length === 0;
+        // ✅ MODALITÀ TESTUALE: SEMPRE sequenziale (1 agente alla volta con contesto completo)
+        console.log(`🔄 SEQUENTIAL MODE: ${activeAIParticipants.length} agenti con contesto progressivo`);
         
-        if (isFirstTurn) {
-          // Primo turno: parallelo (brainstorming iniziale)
-          console.log(`🚀 PRIMO TURNO: orchestrazione parallela per ${activeAIParticipants.length} agenti`);
+        const pauseMs = 800; // TODO: Load from conversation settings
+        let successCount = 0;
+        
+        for (let i = 0; i < activeAIParticipants.length; i++) {
+          const participant = activeAIParticipants[i];
+          console.log(`⏳ [${i + 1}/${activeAIParticipants.length}] Chiamata ${participant.name}...`);
           
           const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
             body: { 
               conversationId,
               userMessage: currentPrompt,
-              participants: activeAIParticipants,
-              sequentialMode: false
+              participants: [participant], // ✅ Solo questo AI - vede tutte le risposte precedenti
+              sequentialMode: true
             }
           });
 
           if (error) {
-            console.error('❌ Errore orchestrator:', error);
-            toast({
-              title: "Errore",
-              description: error.message || 'Impossibile ottenere risposte',
-              variant: "destructive",
-            });
+            console.error(`❌ Errore ${participant.name}:`, error);
           } else {
-            console.log('✅ Orchestrator completato:', data);
-            setConvergenceRefreshKey(prev => prev + 1);
-          }
-        } else {
-          // Turni successivi: sequenziale con contesto progressivo
-          console.log(`🔄 SEQUENTIAL MODE: ${activeAIParticipants.length} agenti con contesto progressivo`);
-          
-          const pauseMs = 800; // TODO: Load from conversation settings
-          let successCount = 0;
-          
-          for (let i = 0; i < activeAIParticipants.length; i++) {
-            const participant = activeAIParticipants[i];
-            console.log(`⏳ [${i + 1}/${activeAIParticipants.length}] Chiamata ${participant.name}...`);
-            
-            const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
-              body: { 
-                conversationId,
-                userMessage: currentPrompt,
-                participants: [participant], // Solo questo AI
-                sequentialMode: true
-              }
-            });
-
-            if (error) {
-              console.error(`❌ Errore ${participant.name}:`, error);
-            } else {
-              successCount++;
-              console.log(`✅ ${participant.name} completato (${data.responses?.[0]?.tokenOutput || 0} token)`);
-            }
-
-            // Pausa tra chiamate (tranne l'ultima)
-            if (i < activeAIParticipants.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, pauseMs));
-            }
+            successCount++;
+            console.log(`✅ ${participant.name} completato (${data.responses?.[0]?.tokenOutput || 0} token)`);
           }
 
-          console.log(`🎯 Sequential orchestration completata: ${successCount}/${activeAIParticipants.length} successi`);
-          setConvergenceRefreshKey(prev => prev + 1);
+          // Pausa tra chiamate (tranne l'ultima)
+          if (i < activeAIParticipants.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, pauseMs));
+          }
         }
+
+        console.log(`🎯 Sequential orchestration completata: ${successCount}/${activeAIParticipants.length} successi`);
+        setConvergenceRefreshKey(prev => prev + 1);
       }
 
       console.log('🎉 Completato!');

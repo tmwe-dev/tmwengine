@@ -1507,13 +1507,6 @@ const ChatLaboratory = () => {
       {!isFullScreenMode && (
       <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-1 min-h-fit">
         <div className="container mx-auto px-2 md:px-3">
-          {/* AI Response Indicator - Prima dell'input */}
-          {isLoading && (
-            <div className="mb-2 flex items-center justify-center gap-2 py-2 px-4 rounded-md bg-muted/50 backdrop-blur-sm border border-border/40 animate-fade-in">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-              <span className="text-sm text-muted-foreground">🤖 L'AI sta rispondendo...</span>
-            </div>
-          )}
 
           {/* Compact Control Bar TOP - Solo elementi selezionati */}
           {!isMobile && (

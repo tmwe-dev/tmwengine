@@ -48,10 +48,16 @@ serve(async (req) => {
 
     const selectedTopic = barModeSettings.selected_topic;
     const activeKbId = barModeSettings.active_kb_id;
+    const turnStrategy = barModeSettings?.turn_strategy || 'RANDOM_30';
+    const pauseBetweenTurns = barModeSettings?.pause_between_turns_ms || 0;
+    const enableDirectCalls = barModeSettings?.enable_direct_call_detection || true;
 
     console.log('⚙️ IMPOSTAZIONI BAR MODE:');
     console.log('  📌 Topic:', selectedTopic || 'Nessuno');
     console.log('  📚 KB:', activeKbId || 'Nessuna');
+    console.log('  🎯 Turn Strategy:', turnStrategy);
+    console.log('  ⏱️  Pause:', pauseBetweenTurns, 'ms');
+    console.log('  📞 Direct Calls:', enableDirectCalls ? 'ON' : 'OFF');
 
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabase
@@ -110,9 +116,91 @@ serve(async (req) => {
       content: `[${msg.sender_name}]: ${msg.content}`
     }));
 
-    // NOTE: selectedParticipant viene ora passato dal frontend
-    // Il nuovo sistema usa response_mode gestito dal TurnControlButtons
-    const selectedParticipant = participants[0]; // Fallback - normalmente passato in request
+    // STEP 1: Direct Call Detection
+    let targetedParticipant = null;
+    
+    if (enableDirectCalls) {
+      const lowerMessage = userMessage.toLowerCase();
+      
+      for (const participant of participants) {
+        const name = participant.name.toLowerCase();
+        if (lowerMessage.includes(name)) {
+          targetedParticipant = participant;
+          console.log('📞 CHIAMATA DIRETTA rilevata:', participant.name);
+          break;
+        }
+      }
+    }
+
+    // STEP 2: Turn-taking logic
+    let selectedParticipant;
+    
+    if (targetedParticipant) {
+      // Chiamata diretta ha priorità
+      selectedParticipant = targetedParticipant;
+    } else if (turnStrategy === 'SMART_PRIORITY') {
+      console.log('🧠 SMART_PRIORITY: l\'AI sceglie chi risponde...');
+      
+      // L'AI decide chi dovrebbe rispondere
+      const contextPrompt = `Dato il messaggio dell'utente: "${userMessage}"
+
+Partecipanti disponibili:
+${participants.map((p, i) => `${i + 1}. ${p.name} (${p.type})`).join('\n')}
+
+Chi dovrebbe rispondere a questo messaggio? Rispondi SOLO con il nome del partecipante, nient'altro.`;
+      
+      try {
+        const decisionResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${lovableAIKey}`
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [{ role: 'user', content: contextPrompt }],
+            max_tokens: 20
+          })
+        });
+        
+        if (decisionResponse.ok) {
+          const decisionData = await decisionResponse.json();
+          const chosenName = decisionData.choices[0].message.content.trim();
+          
+          selectedParticipant = participants.find(p => 
+            p.name.toLowerCase().includes(chosenName.toLowerCase()) ||
+            chosenName.toLowerCase().includes(p.name.toLowerCase())
+          );
+          
+          if (selectedParticipant) {
+            console.log('🎯 SMART_PRIORITY sceglie:', selectedParticipant.name);
+          } else {
+            console.log('⚠️ SMART_PRIORITY fallback: nome non trovato, uso primo partecipante');
+            selectedParticipant = participants[0];
+          }
+        } else {
+          console.log('⚠️ SMART_PRIORITY fallback: errore API, uso primo partecipante');
+          selectedParticipant = participants[0];
+        }
+      } catch (error) {
+        console.error('⚠️ SMART_PRIORITY error:', error);
+        selectedParticipant = participants[0];
+      }
+    } else {
+      // RANDOM_30 (logica esistente)
+      let currentTurnIndex = conversation.current_turn_index || 0;
+      const lastSpeakerIndex = conversation.last_speaker_index || 0;
+      
+      if (Math.random() < 0.3) {
+        currentTurnIndex = Math.floor(Math.random() * participants.length);
+        console.log('🎲 RANDOM_30: turno randomizzato ->', currentTurnIndex);
+      } else {
+        currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
+        console.log('➡️ RANDOM_30: turno sequenziale ->', currentTurnIndex);
+      }
+      
+      selectedParticipant = participants[currentTurnIndex];
+    }
     
     console.log('✅ AGENTE SELEZIONATO:', selectedParticipant.name, `(${selectedParticipant.type})`);
 
@@ -272,6 +360,12 @@ serve(async (req) => {
 
     const responseTime = Date.now() - startTime;
     console.log(`✅ Risposta ricevuta in ${responseTime}ms`);
+
+    // STEP 3: Pausa tra turni (se configurata)
+    if (pauseBetweenTurns > 0 && !targetedParticipant) {
+      console.log(`⏱️ Pausa di ${pauseBetweenTurns}ms prima del prossimo turno...`);
+      await new Promise(resolve => setTimeout(resolve, pauseBetweenTurns));
+    }
 
     // Save AI response to database
     await supabase

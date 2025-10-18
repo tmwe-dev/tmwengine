@@ -175,7 +175,7 @@ const ChatLaboratoryCalibration = () => {
 
           {/* Center Column: Orchestrator Test Panel */}
           <div className="col-span-4">
-          {conversationId ? (
+            {conversationId ? (
               <OrchestratorTestPanel
                 config={orchestratorTest.currentConfig}
                 onConfigChange={orchestratorTest.updateConfig}
@@ -183,9 +183,6 @@ const ChatLaboratoryCalibration = () => {
                 onSaveConfig={orchestratorTest.saveConfig}
                 isRunning={orchestratorTest.isRunning}
                 lastResponse={lastResponse}
-                debugTimeline={orchestratorTest.debugTimeline}
-                debugMeta={orchestratorTest.debugMeta}
-                lastTestMessage={orchestratorTest.lastTestMessage}
               />
             ) : (
               <Card className="h-full flex items-center justify-center">

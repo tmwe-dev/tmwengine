@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Play, Save, Eye } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, Play, Save } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { OrchestratorDebugModal } from './OrchestratorDebugModal';
+import { ActiveConfigSummary } from './ActiveConfigSummary';
 
 interface OrchestratorTestPanelProps {
   config: {
@@ -24,9 +25,6 @@ interface OrchestratorTestPanelProps {
     responseTime: number;
     tokensUsed?: { input: number; output: number };
   };
-  debugTimeline?: any[];
-  debugMeta?: any;
-  lastTestMessage?: string;
 }
 
 export function OrchestratorTestPanel({
@@ -36,14 +34,10 @@ export function OrchestratorTestPanel({
   onSaveConfig,
   isRunning,
   lastResponse,
-  debugTimeline = [],
-  debugMeta,
-  lastTestMessage = '',
 }: OrchestratorTestPanelProps) {
   const [testMessage, setTestMessage] = useState('');
   const [configName, setConfigName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [showDebugModal, setShowDebugModal] = useState(false);
 
   const handleTest = async () => {
     if (!testMessage.trim()) return;
@@ -158,28 +152,6 @@ export function OrchestratorTestPanel({
                 </div>
               )}
             </div>
-          )}
-
-          {/* Debug Button */}
-          {debugTimeline && debugTimeline.length > 0 && debugMeta && (
-            <>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowDebugModal(true)}
-                className="w-full gap-2"
-              >
-                <Eye className="h-4 w-4" />
-                🔍 View Orchestration Debug
-              </Button>
-
-              <OrchestratorDebugModal
-                open={showDebugModal}
-                onClose={() => setShowDebugModal(false)}
-                timeline={debugTimeline}
-                meta={debugMeta}
-                userMessage={lastTestMessage}
-              />
-            </>
           )}
         </CardContent>
       </Card>

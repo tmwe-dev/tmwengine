@@ -988,55 +988,55 @@ NON scrivere [SKIP] in questo caso.
   // ============ TURNO COMPLETATO ============
   console.log(`\n✅ Turno completato: ${allResponses.length} agenti hanno risposto`);
 
-    // ✅ AUTO-REGENERAZIONE SUMMARY ogni 20 messaggi
-    const totalMessages = (messages?.length || 0) + allResponses.length + 1; // +1 user + N agenti
-    if (totalMessages % 20 === 0) {
-      console.log(`🔄 Trigger auto-summary: ${totalMessages} messaggi raggiunti`);
-      
-      // Chiamata asincrona in background (non blocca la risposta)
-      supabaseClient.functions.invoke('generate-chunked-summary', {
-        body: {
-          conversationId,
-          chunkSize: 50,
-          includeAll: false
-        }
-      }).then(({ error: summaryError }) => {
-        if (summaryError) {
-          console.error('⚠️ Errore auto-summary:', summaryError);
-        } else {
-          console.log('✅ Summary cumulativo rigenerato automaticamente');
-        }
-      });
-    }
+  // ✅ AUTO-REGENERAZIONE SUMMARY ogni 20 messaggi
+  const totalMessages = (messages?.length || 0) + allResponses.length + 1; // +1 user + N agenti
+  if (totalMessages % 20 === 0) {
+    console.log(`🔄 Trigger auto-summary: ${totalMessages} messaggi raggiunti`);
+    
+    // Chiamata asincrona in background (non blocca la risposta)
+    supabaseClient.functions.invoke('generate-chunked-summary', {
+      body: {
+        conversationId,
+        chunkSize: 50,
+        includeAll: false
+      }
+    }).then(({ error: summaryError }) => {
+      if (summaryError) {
+        console.error('⚠️ Errore auto-summary:', summaryError);
+      } else {
+        console.log('✅ Summary cumulativo rigenerato automaticamente');
+      }
+    });
+  }
 
-    // ============ RISPOSTA FINALE ============
-    return new Response(
-      JSON.stringify({
-        success: true,
-        total_responses: allResponses.length,
-        responses: allResponses.map(r => ({
-          speaker: r.agentName,
-          type: r.agentType,
-          message_id: r.messageId,
-          audioUrl: r.audioUrl || null,
-          token_input: r.tokensIn,
-          token_output: r.tokensOut,
-          response_time_ms: r.duration
-        })),
-        message: `${allResponses.length} agenti hanno risposto in sequenza`,
-        
-        // Telemetria aggregata
-        orchestration: {
-          mode: 'sequential',
-          total_agents: allResponses.length,
-          total_latency_ms: allResponses.reduce((sum, r) => sum + r.duration, 0),
-          avg_latency_ms: Math.round(allResponses.reduce((sum, r) => sum + r.duration, 0) / allResponses.length),
-          total_tokens_in: allResponses.reduce((sum, r) => sum + r.tokensIn, 0),
-          total_tokens_out: allResponses.reduce((sum, r) => sum + r.tokensOut, 0)
-        }
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+  // ============ RISPOSTA FINALE ============
+  return new Response(
+    JSON.stringify({
+      success: true,
+      total_responses: allResponses.length,
+      responses: allResponses.map(r => ({
+        speaker: r.agentName,
+        type: r.agentType,
+        message_id: r.messageId,
+        audioUrl: r.audioUrl || null,
+        token_input: r.tokensIn,
+        token_output: r.tokensOut,
+        response_time_ms: r.duration
+      })),
+      message: `${allResponses.length} agenti hanno risposto in sequenza`,
+      
+      // Telemetria aggregata
+      orchestration: {
+        mode: 'sequential',
+        total_agents: allResponses.length,
+        total_latency_ms: allResponses.reduce((sum, r) => sum + r.duration, 0),
+        avg_latency_ms: Math.round(allResponses.reduce((sum, r) => sum + r.duration, 0) / allResponses.length),
+        total_tokens_in: allResponses.reduce((sum, r) => sum + r.tokensIn, 0),
+        total_tokens_out: allResponses.reduce((sum, r) => sum + r.tokensOut, 0)
+      }
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
   } catch (error: any) {
     console.error('❌ Bar Chat Orchestrator error:', error);
     return new Response(

@@ -31,7 +31,7 @@ type ViewMode = 'summary' | 'friendly' | 'full';
 
 interface MultiAgentMessageProps {
   message: Message;
-  onAIPlayStateChange?: (playing: boolean) => void;
+  onAudioEnd?: () => void;
 }
 
 const SENDER_CONFIG = {
@@ -69,7 +69,7 @@ const SENDER_CONFIG = {
   }
 };
 
-export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMessageProps) => {
+export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('friendly');
   const config = SENDER_CONFIG[message.sender_type];
   const Icon = config.icon;
@@ -290,13 +290,9 @@ export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMe
             <AudioMessagePlayer 
               audioUrl={message.audio_url}
               autoPlay={true}
-              onPlayStart={() => {
-                console.log(`🔊 Audio ${message.sender_name} started`);
-                onAIPlayStateChange?.(true);
-              }}
               onPlayEnd={() => {
-                console.log(`⏸️ Audio ${message.sender_name} ended`);
-                onAIPlayStateChange?.(false);
+                console.log(`⏸️ Audio ${message.sender_name} terminato`);
+                onAudioEnd?.();
               }}
             />
           </div>

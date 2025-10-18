@@ -61,9 +61,6 @@ export const MessageTabsView = ({
   const tabContentRef = useRef<HTMLDivElement>(null);
   const previousMessagesLengthRef = useRef(0);
   
-  // Auto-follow e gestione audio
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [pendingTabQueue, setPendingTabQueue] = useState<string[]>([]);
   
   // Drag-to-scroll state
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -80,8 +77,16 @@ export const MessageTabsView = ({
         return;
       }
       
-      // Se auto-follow è disabilitato, usa logica attuale
-      if (!isAutoFollowEnabled) {
+      if (isAutoFollowEnabled) {
+        // ✅ Auto-follow: cambia tab immediatamente
+        console.log(`📨 Nuovo messaggio da ${newMessage.sender_name} → Cambio tab`);
+        setActiveTab(newMessage.id);
+        
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      } else {
+        // Auto-follow disabilitato: mostra indicatore se necessario
         const container = tabContentRef.current;
         if (!container) return;
         const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
@@ -94,58 +99,25 @@ export const MessageTabsView = ({
           setShowNewMessages(true);
           setNewMessagesCount(prev => prev + 1);
         }
-      } else {
-        // Auto-follow abilitato - ✅ SEMPRE IN CODA
-        console.log(`📨 Nuovo messaggio ricevuto:`, {
-          sender: newMessage.sender_name,
-          sequence: previousMessagesLengthRef.current,
-          totalMessages: messages.length,
-          isAudioPlaying,
-          queueLength: pendingTabQueue.length
-        });
-
-        console.log(`🎵 Nuovo messaggio da ${newMessage.sender_name} → In coda (audio controlla il tab)`);
-        setPendingTabQueue(prev => {
-          const newQueue = [...prev, newMessage.id];
-          console.log(`📋 Coda aggiornata:`, {
-            queue: newQueue.map((id, idx) => {
-              const msg = messages.find(m => m.id === id);
-              return `${idx + 1}. ${msg?.sender_name || id}`;
-            }),
-            length: newQueue.length
-          });
-          return newQueue;
-        });
       }
       
-      previousMessagesLengthRef.current = previousMessagesLengthRef.current + 1;
+      previousMessagesLengthRef.current++;
     }
-  }, [messages, isAutoFollowEnabled, isAudioPlaying]);
+  }, [messages, isAutoFollowEnabled]);
 
-  // Quando l'audio finisce e c'è un tab in coda, cambia tab
-  useEffect(() => {
-    if (!isAudioPlaying && pendingTabQueue.length > 0 && isAutoFollowEnabled) {
-      const nextTab = pendingTabQueue[0];
-      if (!nextTab) return;
-
-      console.log(`🎬 Tab cambiato:`, {
-        from: activeTab,
-        to: nextTab,
-        sender: messages.find(m => m.id === nextTab)?.sender_name,
-        remainingQueue: pendingTabQueue.length - 1
-      });
-
-      setActiveTab(nextTab);
-      setPendingTabQueue(prev => prev.slice(1));
+  const handleAudioEnd = () => {
+    if (!isAutoFollowEnabled) return;
+    
+    const currentIndex = messages.findIndex(m => m.id === activeTab);
+    const nextMessage = messages[currentIndex + 1];
+    
+    if (nextMessage) {
+      console.log(`🎵 Audio finito → Passo al tab successivo: ${nextMessage.sender_name}`);
+      setActiveTab(nextMessage.id);
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
-  }, [isAudioPlaying, pendingTabQueue, isAutoFollowEnabled, activeTab, messages]);
-
-  const handleAudioPlayStateChange = (playing: boolean) => {
-    console.log(`🔊 Audio state: ${playing ? 'Playing' : 'Stopped'}`);
-    setIsAudioPlaying(playing);
   };
 
   const scrollToBottom = () => {
@@ -269,7 +241,7 @@ export const MessageTabsView = ({
             <div className="container mx-auto max-w-4xl p-4">
               <MultiAgentMessage 
                 message={message} 
-                onAIPlayStateChange={handleAudioPlayStateChange}
+                onAudioEnd={handleAudioEnd}
               />
               <div ref={messagesEndRef} />
             </div>

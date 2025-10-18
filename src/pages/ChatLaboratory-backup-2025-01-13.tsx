@@ -1241,7 +1241,7 @@ const ChatLaboratory = () => {
                 <div key={message.id}>
                   <MultiAgentMessage 
                     message={message}
-                    onAIPlayStateChange={setIsAISpeaking}
+                    onAudioEnd={() => {}}
                   />
                   {message.intent_tags && message.intent_tags.length > 0 && (
                     <div className="ml-16 -mt-2 mb-3">

@@ -380,11 +380,24 @@ serve(async (req) => {
 
         // ============ GENERATE AUDIO IMMEDIATELY ============
         if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.length > 0) {
-          const agentVoice = activeVoiceAgents.find(
-            (v: any) => v.name.toLowerCase().includes(currentAgent.name.toLowerCase())
-          );
-          
+          // Mapping keyword-based per trovare voice agent corretto
+          const agentKeywords: Record<string, string[]> = {
+            'chatgpt': ['gpt', 'openai', 'renny'],
+            'claude': ['anthropic', 'claude', 'tonino'],
+            'gemini': ['gemini', 'google', 'vittorio']
+          };
+
+          const agentKey = currentAgent.name.toLowerCase();
+          const searchKeywords = agentKeywords[agentKey] || [agentKey];
+
+          const agentVoice = activeVoiceAgents.find((v: any) => {
+            const voiceName = v.name.toLowerCase();
+            return searchKeywords.some(keyword => voiceName.includes(keyword));
+          });
+
           if (agentVoice) {
+            console.log(`🎤 Voice match: ${currentAgent.name} → ${agentVoice.name} (${agentVoice.voice_id.substring(0, 8)}...)`);
+            
             generateAudioForSingleResponse({
               supabaseClient,
               conversationId,
@@ -392,7 +405,12 @@ serve(async (req) => {
               content: aiResponse,
               voiceId: agentVoice.voice_id,
               elevenLabsApiKey
-            }).catch(err => console.warn(`⚠️ Audio fallito per ${currentAgent.name}:`, err));
+            }).catch(err => {
+              console.error(`❌ Audio generation failed for ${currentAgent.name}:`, err.message);
+            });
+          } else {
+            console.warn(`⚠️ No voice agent found for ${currentAgent.name} among:`, 
+              activeVoiceAgents.map((v: any) => v.name).join(', '));
           }
         }
 

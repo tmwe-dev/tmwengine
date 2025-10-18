@@ -1,0 +1,176 @@
+/**
+ * ============ PROMPT BUILDER ============
+ * Constructs dynamic prompts for AI agents
+ */
+
+export interface PromptParams {
+  globalPrompt: string;
+  baseContent: string;
+  agentPersonality: string;
+  conversationStyle: string;
+  agentMode: string;
+  previousResponses: any[];
+  wasCalledDirectly: boolean;
+  lastResponse?: any;
+}
+
+/**
+ * Build system prompt with style and mode injections
+ */
+export function buildSystemPrompt(params: PromptParams): string {
+  const {
+    globalPrompt,
+    baseContent,
+    agentPersonality,
+    conversationStyle,
+    agentMode,
+    previousResponses,
+    wasCalledDirectly,
+    lastResponse
+  } = params;
+
+  let composedPrompt = globalPrompt + '\n\n';
+  
+  // Add BASE sections
+  composedPrompt += '=== CONTESTO BASE ===\n';
+  composedPrompt += baseContent + '\n\n';
+
+  // Add AGENT_PERSONALITY
+  if (agentPersonality) {
+    composedPrompt += '=== TUA PERSONALITÀ ===\n';
+    composedPrompt += agentPersonality + '\n\n';
+  }
+
+  // Style injection
+  let styleInstructions = '';
+  
+  if (conversationStyle === 'boss_talk') {
+    styleInstructions = `
+🎯 STILE: Boss Talk (Pragmatico e Sintetico)
+- MAX 50-60 parole (~4 frasi brevi)
+- Focus su: decisioni, ROI, trade-off, next steps
+- Taglia tutto ciò che non è direttamente azionabile
+- Usa dati concreti: "Secondo benchmark X, l'opzione A costa il 30% in meno"
+- Tono diretto: "Dobbiamo decidere tra A e B. Pro di A: [lista]. Vai con B?"
+`;
+  } else if (conversationStyle === 'colleagues') {
+    styleInstructions = `
+🤝 STILE: Colleghi (Professionale ma Amichevole)
+- MAX 60-70 parole (~5 frasi)
+- Bilanciato tra tecnico e accessibile
+- Coinvolgi gli altri: "Come vedi tu [nome], sarebbe fattibile con i nostri constraint?"
+- Puoi usare metafore o esempi pratici
+- Tono collaborativo ma non eccessivamente formale
+`;
+  } else if (conversationStyle === 'bar_chat') {
+    styleInstructions = `
+🍺 STILE: Bar Chat (Informale e Rilassato)
+- MAX 40-50 parole (~3 frasi)
+- Attacco conversazionale: "Guarda...", "Senti...", "Allora..."
+- Scherzoso quando appropriato, ma non forzato
+- Coinvolgi con domande dirette: "Tu [nome], lo faresti diversamente?"
+- Tono da bar, non da conferenza: evita "in conclusione", "per riassumere"
+`;
+  }
+  
+  composedPrompt += styleInstructions + '\n\n';
+
+  // Add context about other agents
+  if (previousResponses.length > 0) {
+    const previousAgentsContext = previousResponses
+      .map(r => `${r.agentName}: ${r.content.substring(0, 200)}...`)
+      .join('\n\n');
+    
+    composedPrompt += `
+RISPOSTE PRECEDENTI IN QUESTO TURNO:
+${previousAgentsContext}
+
+Considera queste risposte quando formuli la tua. Puoi:
+- Concordare o aggiungere nuovi punti
+- Offrire una prospettiva diversa
+- Rispondere direttamente a uno degli altri agenti
+- Scrivere [SKIP] se non hai nulla di rilevante da aggiungere
+`;
+  }
+
+  // Direct call priority
+  if (wasCalledDirectly && lastResponse) {
+    composedPrompt += `
+🎯 SEI STATO CHIAMATO DIRETTAMENTE
+${lastResponse.agentName} ti ha menzionato esplicitamente nel suo ultimo intervento.
+Rispondi in modo specifico alla sua richiesta/domanda.
+NON scrivere [SKIP] in questo caso.
+
+`;
+  }
+  
+  // Agent mode injection
+  if (agentMode === 'consultation') {
+    composedPrompt += `
+📚 MODALITÀ: Consultazione Formale
+- Puoi essere dettagliato e approfondito (fino a 150 parole se necessario)
+- Usa linguaggio tecnico quando appropriato
+- Fornisci spiegazioni complete e strutturate
+- Cita fonti o riferimenti se rilevanti
+- Questo è il tuo UNICO intervento, quindi sii esaustivo
+
+`;
+  }
+
+  return composedPrompt;
+}
+
+/**
+ * Build full conversation history with system prompt and cumulative summary
+ */
+export function buildConversationHistory(params: {
+  systemPrompt: string;
+  cumulativeSummary: string | null;
+  historyMessages: any[];
+  turnContext: any[];
+}): any[] {
+  const { systemPrompt, cumulativeSummary, historyMessages, turnContext } = params;
+
+  return [
+    { role: 'system', content: systemPrompt },
+    // Cumulative summary if exists
+    ...(cumulativeSummary ? [{ 
+      role: 'system', 
+      content: `📚 CONTESTO PRECEDENTE (Riassunto cumulativo):\n${cumulativeSummary}\n\n---\n\n` 
+    }] : []),
+    ...historyMessages,
+    ...turnContext
+  ];
+}
+
+/**
+ * Convert database messages to conversation format
+ */
+export function formatHistoryMessages(messages: any[]): any[] {
+  return messages.map((msg: any) => {
+    const messageContent = msg.content;
+    
+    console.log(`📝 [${msg.sender_name}] Content completo: ${messageContent.length} chars`);
+    
+    return {
+      role: msg.sender_type === 'user' ? 'user' : 'assistant',
+      content: `[${msg.sender_name}]: ${messageContent}`
+    };
+  });
+}
+
+/**
+ * Calculate context size metrics
+ */
+export function calculateContextSize(conversationHistory: any[]): {
+  totalContextChars: number;
+  estimatedTokens: number;
+} {
+  const totalContextChars = conversationHistory
+    .map(m => m.content.length)
+    .reduce((sum, len) => sum + len, 0);
+
+  const estimatedTokens = Math.ceil(totalContextChars / 4);
+
+  return { totalContextChars, estimatedTokens };
+}

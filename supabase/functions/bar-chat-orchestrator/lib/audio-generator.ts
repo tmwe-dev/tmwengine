@@ -18,6 +18,77 @@ export interface AudioGenerationParams {
 }
 
 /**
+ * Generate audio for a single response immediately
+ */
+export async function generateAudioForSingleResponse(params: {
+  supabaseClient: any;
+  conversationId: string;
+  messageId: string;
+  content: string;
+  voiceId: string;
+  elevenLabsApiKey: string;
+}): Promise<void> {
+  const { supabaseClient, conversationId, messageId, content, voiceId, elevenLabsApiKey } = params;
+  
+  try {
+    const ttsText = content.length > 500 
+      ? content.substring(0, 500) + '...' 
+      : content;
+    
+    // Call ElevenLabs API
+    const ttsResponse = await fetchWithTimeout(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': elevenLabsApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          text: ttsText,
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+        })
+      },
+      15000
+    );
+    
+    if (!ttsResponse.ok) {
+      const errorText = await ttsResponse.text();
+      throw new Error(`TTS error ${ttsResponse.status}: ${errorText}`);
+    }
+    
+    const audioBlob = await ttsResponse.blob();
+    const audioArrayBuffer = await audioBlob.arrayBuffer();
+    const audioFile = new File([audioArrayBuffer], `${messageId}.mp3`, { type: 'audio/mpeg' });
+    
+    // Upload to Supabase Storage
+    const storagePath = `${conversationId}/${messageId}.mp3`;
+    const { error: uploadError } = await supabaseClient.storage
+      .from('audio-responses')
+      .upload(storagePath, audioFile, { contentType: 'audio/mpeg', upsert: true });
+    
+    if (uploadError) throw uploadError;
+    
+    const { data: urlData } = supabaseClient.storage
+      .from('audio-responses')
+      .getPublicUrl(storagePath);
+    
+    const audioUrl = urlData.publicUrl;
+    
+    // Update DB
+    await supabaseClient
+      .from('chat_laboratory_messages')
+      .update({ audio_url: audioUrl })
+      .eq('id', messageId);
+    
+    console.log(`✅ Audio generato: ${audioUrl.substring(0, 60)}...`);
+  } catch (error: any) {
+    console.error(`⚠️ TTS fallito:`, error.message);
+  }
+}
+
+/**
  * Generate audio for all responses in parallel
  */
 export async function generateAudioForResponses(params: AudioGenerationParams): Promise<void> {

@@ -11,7 +11,7 @@ import {
   calculateContextSize 
 } from './lib/prompt-builder.ts';
 import { callClaude, callChatGPT, callGemini } from './lib/ai-providers.ts';
-import { generateAudioForResponses } from './lib/audio-generator.ts';
+import { generateAudioForSingleResponse } from './lib/audio-generator.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -378,6 +378,24 @@ serve(async (req) => {
         
         console.log(`✅ ${currentAgent.name} processato in ${responseTime}ms`);
 
+        // ============ GENERATE AUDIO IMMEDIATELY ============
+        if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.length > 0) {
+          const agentVoice = activeVoiceAgents.find(
+            (v: any) => v.name.toLowerCase().includes(currentAgent.name.toLowerCase())
+          );
+          
+          if (agentVoice) {
+            generateAudioForSingleResponse({
+              supabaseClient,
+              conversationId,
+              messageId: savedMessage.id,
+              content: aiResponse,
+              voiceId: agentVoice.voice_id,
+              elevenLabsApiKey
+            }).catch(err => console.warn(`⚠️ Audio fallito per ${currentAgent.name}:`, err));
+          }
+        }
+
         // ============ PAUSE BETWEEN AGENTS ============
         if (!isDirectCall && i < sortedParticipants.length - 1) {
           const pauseMs = pauseBetweenTurnsMs;
@@ -391,17 +409,6 @@ serve(async (req) => {
         console.error(`❌ Errore con ${currentAgent.name}:`, error.message);
         continue;
       }
-    }
-
-    // ============ PARALLEL AUDIO GENERATION ============
-    if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.length > 0 && allResponses.length > 0) {
-      await generateAudioForResponses({
-        supabaseClient,
-        conversationId,
-        responses: allResponses,
-        elevenLabsApiKey,
-        activeVoiceAgents
-      });
     }
 
     // ============ TURNO COMPLETATO ============

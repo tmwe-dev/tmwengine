@@ -379,6 +379,43 @@ serve(async (req) => {
         
         console.log(`✅ ${currentAgent.name} processato in ${responseTime}ms`);
 
+        // ============ ORCHESTRATOR AUTONOMO ============
+        if (LOVABLE_API_KEY && cachedPrompts.orchestratorRules) {
+          try {
+            const orchestratorResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'google/gemini-2.5-flash-lite',
+                messages: [{
+                  role: 'user',
+                  content: `${cachedPrompts.orchestratorRules}\n\nMessaggio da analizzare:\n${aiResponse}`
+                }],
+                max_completion_tokens: 50
+              })
+            });
+
+            if (orchestratorResponse.ok) {
+              const data = await orchestratorResponse.json();
+              const decision = data.choices?.[0]?.message?.content || '';
+              
+              console.log(`🧠 Orchestrator decisione:`, decision);
+              
+              if (decision.toLowerCase().includes('true') || decision.includes('"continue": true')) {
+                console.log(`🔄 Orchestrator: richiesto nuovo turno dopo ${currentAgent.name}`);
+                // Reset: tutti gli agenti rispondono di nuovo
+                i = -1; // Reset loop (verrà incrementato a 0 al prossimo ciclo)
+                allResponses.length = 0;
+              }
+            }
+          } catch (orchError) {
+            console.warn('⚠️ Orchestrator errore (ignoro):', orchError.message);
+          }
+        }
+
         // ============ GENERATE AUDIO IMMEDIATELY ============
         if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.length > 0) {
           // Mapping keyword-based per trovare voice agent corretto

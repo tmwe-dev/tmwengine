@@ -271,6 +271,7 @@ ESEMPI:
   const baseSections = sections.filter(s => s.section_type === 'BASE');
   const personalitySections = sections.filter(s => s.section_type === 'AGENT_PERSONALITY');
   const styleSections = sections.filter(s => s.section_type === 'CONVERSATION_STYLE');
+  const orchestratorSection = sections.find(s => s.section_type === 'ORCHESTRATOR_RULES');
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -299,7 +300,7 @@ ESEMPI:
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="global">🌐 Globale</TabsTrigger>
             <TabsTrigger value="base">
               📚 Base {baseSections.length > 0 && `(${baseSections.length})`}
@@ -310,6 +311,7 @@ ESEMPI:
             <TabsTrigger value="styles">
               💬 Stili {styleSections.length > 0 && `(${styleSections.length})`}
             </TabsTrigger>
+            <TabsTrigger value="orchestrator">🧠 Orchestrator</TabsTrigger>
           </TabsList>
 
           {/* GLOBAL TAB */}
@@ -387,6 +389,52 @@ ESEMPI:
                 sectionType="CONVERSATION_STYLE"
                 sectionTypeLabel="Stile Conversazione"
               />
+            )}
+          </TabsContent>
+
+          {/* ORCHESTRATOR TAB */}
+          <TabsContent value="orchestrator" className="flex-1 overflow-y-auto">
+            {isLoadingSections ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : orchestratorSection ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">🧠 Regole Orchestrator Autonomo</h3>
+                </div>
+                
+                <p className="text-sm text-muted-foreground">
+                  L'orchestrator analizza automaticamente ogni risposta per decidere se continuare la conversazione. 
+                  Dopo ogni messaggio, chiede all'AI se c'è una richiesta di intervento.
+                </p>
+
+                <Label>Prompt Orchestrator (usa Gemini 2.5 Flash Lite)</Label>
+                <Textarea
+                  value={orchestratorSection.content}
+                  onChange={(e) => {
+                    const updated = sections.map(s => 
+                      s.id === orchestratorSection.id ? { ...s, content: e.target.value } : s
+                    );
+                    setSections(updated);
+                  }}
+                  className="min-h-[200px] font-mono text-sm"
+                  placeholder="Es: Leggi ultimo messaggio. Se c'è DOMANDA o RICHIESTA verso altri, rispondi TRUE. Altrimenti FALSE."
+                />
+
+                <p className="text-xs text-muted-foreground">
+                  L'AI deve rispondere "true" o JSON con "continue": true per avviare un nuovo turno.
+                  Tutti i limiti esistenti (pause, turni, ecc.) vengono rispettati.
+                </p>
+
+                <Button onClick={() => handleUpdateSection(orchestratorSection.id, orchestratorSection.content)}>
+                  Salva Regole Orchestrator
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                Nessuna sezione orchestrator trovata. Ricaricare la pagina.
+              </div>
             )}
           </TabsContent>
         </Tabs>

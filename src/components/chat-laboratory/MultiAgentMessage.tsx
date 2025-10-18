@@ -290,9 +290,15 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
             <AudioMessagePlayer 
               audioUrl={message.audio_url}
               autoPlay={true}
+              onPlayStart={() => {
+                console.log(`🔊 [MultiAgentMessage] Audio START: ${message.sender_name}`);
+              }}
               onPlayEnd={() => {
-                console.log(`⏸️ Audio ${message.sender_name} terminato`);
+                console.log(`⏸️ [MultiAgentMessage] Audio END: ${message.sender_name}`);
                 onAudioEnd?.();
+              }}
+              onPlayingChange={(playing) => {
+                console.log(`🎵 [MultiAgentMessage] Audio ${playing ? 'PLAYING' : 'PAUSED'}: ${message.sender_name}`);
               }}
             />
           </div>

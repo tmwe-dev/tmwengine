@@ -157,7 +157,7 @@ const ChatLaboratory = () => {
   const [summaryRefreshKey, setSummaryRefreshKey] = useState(0);
   const [convergenceRefreshKey, setConvergenceRefreshKey] = useState(0);
   
-  const SUBMIT_TIMEOUT = 120000; // 120 secondi (2 minuti)
+  const SUBMIT_TIMEOUT = 300000; // 300 secondi (5 minuti)
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -204,23 +204,23 @@ const ChatLaboratory = () => {
     previousMessagesLengthRef.current = messages.length;
   }, [messages]);
 
-  // ⚠️ Safety timeout per prevenire lock permanenti
+  // ⚠️ Safety timeout per prevenire lock permanenti (ma non durante riproduzione audio)
   useEffect(() => {
-    if (isSubmitting) {
+    if (isSubmitting && !isAISpeaking) {
       const timer = setTimeout(() => {
-        console.warn('⚠️ Timeout submit forzato - reset stato dopo 30s');
+        console.warn('⚠️ Timeout submit forzato dopo 5 minuti');
         setIsSubmitting(false);
         setIsLoading(false);
         toast({
           title: "Timeout",
-          description: "L'operazione sta impiegando troppo tempo. Riprova.",
+          description: "L'operazione ha impiegato troppo tempo.",
           variant: "destructive",
         });
       }, SUBMIT_TIMEOUT);
       
       return () => clearTimeout(timer);
     }
-  }, [isSubmitting, toast, SUBMIT_TIMEOUT]);
+  }, [isSubmitting, isAISpeaking, toast, SUBMIT_TIMEOUT]);
 
   // Auto-summary hook
   useSummaryAutoGenerator({

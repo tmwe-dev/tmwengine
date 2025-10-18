@@ -4,11 +4,11 @@ import { Slider } from '@/components/ui/slider';
 import { Mic, Headphones } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { InteractiveMicrophoneButton } from './InteractiveMicrophoneButton';
+import { AudioSettingsPopup } from './AudioSettingsPopup';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
-import { AudioSettingsPopup } from './AudioSettingsPopup';
 
 export type AudioMode = 'stable' | 'v2_hybrid';
 
@@ -41,7 +41,7 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
   const modes = [
     { 
       id: 'stable' as const,
-      number: 1,
+      number: 1 as const,
       label: 'PTT', 
       icon: Mic,
       description: 'Push-to-talk con VAD configurabile',
@@ -49,7 +49,7 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
     },
     { 
       id: 'v2_hybrid' as const,
-      number: 2,
+      number: 2 as const,
       label: 'Listen', 
       icon: Headphones,
       description: 'Coming Soon - Modalità ascolto continuo',
@@ -131,62 +131,28 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
     );
   }
 
-  // Layout completo (default): bottoni + microfono integrati
+  // Layout completo (default): bottoni con microfono integrato direttamente
   return (
     <div className="flex items-center gap-2">
-      {/* Bottoni con microfono integrato */}
-      {modes.map((mode) => {
-        const Icon = mode.icon;
-        const isSelected = selectedMode === mode.id;
-        
-        return (
-          <div key={mode.id} className="flex flex-col items-center gap-1">
-            <Button
-              onClick={() => !mode.disabled && updateAudioMode(mode.id)}
-              variant={isSelected ? "default" : "outline"}
-              size="sm"
-              disabled={mode.disabled}
-              className={cn(
-                "h-10 w-10 p-0 relative",
-                mode.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
-                isSelected 
-                  ? "bg-primary text-primary-foreground border-primary" 
-                  : "bg-white/5 text-white/80 border-white/20 hover:bg-white/10 hover:text-white"
-              )}
-              title={mode.description}
-            >
-              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                {mode.number}
-              </span>
-              <Icon className="h-4 w-4" />
-            </Button>
-            
-            {/* Microfono attivo integrato nel bottone selezionato */}
-            {isSelected && conversationId && (
-              <div className="flex flex-col items-center gap-1">
-                {selectedMode === 'stable' && (
-                  <BarVoiceRecorder
-                    conversationId={conversationId}
-                    onTranscriptionComplete={onTranscriptionComplete}
-                    isDisabled={isAISpeaking}
-                    vadTimeout={vadTimeout}
-                  />
-                )}
-                
-                {selectedMode === 'v2_hybrid' && (
-                  <BarVoiceRecorderV2_Hybrid
-                    conversationId={conversationId}
-                    onTranscriptionComplete={onTranscriptionComplete}
-                    isDisabled={isAISpeaking}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {/* Tasti interattivi 1 e 2 con microfono integrato */}
+      {modes.map((mode) => (
+        <InteractiveMicrophoneButton
+          key={mode.id}
+          mode={mode.id === 'stable' ? 'ptt' : 'hybrid'}
+          number={mode.number}
+          label={mode.label}
+          icon={mode.icon}
+          conversationId={conversationId}
+          onTranscriptionComplete={onTranscriptionComplete}
+          isDisabled={mode.disabled || isAISpeaking}
+          isSelected={selectedMode === mode.id}
+          onSelect={() => updateAudioMode(mode.id)}
+          vadTimeout={mode.id === 'stable' ? vadTimeout : undefined}
+          description={mode.description}
+        />
+      ))}
       
-      {/* VAD Slider + Settings - solo per PTT */}
+      {/* VAD Slider + Settings - solo per PTT selezionato */}
       {selectedMode === 'stable' && (
         <div className="flex items-center gap-1">
           <div className="flex items-center gap-1 w-24">

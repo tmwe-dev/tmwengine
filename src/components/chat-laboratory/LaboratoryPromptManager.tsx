@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Brain, Loader2, BookOpen, ChevronDown } from 'lucide-react';
+import { Brain, Loader2, BookOpen, ChevronDown, Copy, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -37,6 +37,9 @@ export const LaboratoryPromptManager = ({ isProcessing = false }: LaboratoryProm
   const [sections, setSections] = useState<PromptSection[]>([]);
   const [isLoadingSections, setIsLoadingSections] = useState(false);
   
+  // Template copy state
+  const [copiedTemplate, setCopiedTemplate] = useState<string | null>(null);
+  
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -46,6 +49,24 @@ export const LaboratoryPromptManager = ({ isProcessing = false }: LaboratoryProm
       loadAllSections();
     }
   }, [open]);
+
+  // Copy template to clipboard
+  const copyTemplateToClipboard = (text: string, templateName: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedTemplate(templateName);
+      toast({
+        title: "✅ Copiato!",
+        description: `Template "${templateName}" copiato negli appunti`,
+      });
+      setTimeout(() => setCopiedTemplate(null), 2000);
+    }).catch(() => {
+      toast({
+        title: "❌ Errore",
+        description: "Non è stato possibile copiare il testo",
+        variant: "destructive",
+      });
+    });
+  };
 
   // ============ GLOBAL PROMPT ============
   const loadGlobalPrompt = async () => {
@@ -351,8 +372,59 @@ ESEMPI:
                     <span className="font-medium">🍺 Renny + Stile Bar Chat</span>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
-                    <div className="p-4 bg-card border rounded-lg">
-                      <pre className="text-xs font-mono whitespace-pre-wrap">{`Stai partecipando a una discussione informale al bar con altri esperti. Il tono è colloquiale ma competente.
+                    <div className="p-4 bg-card border rounded-lg relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => copyTemplateToClipboard(`Stai partecipando a una discussione informale al bar con altri esperti. Il tono è colloquiale ma competente.
+
+🎯 REGOLE:
+- Intervieni con contributi brevi (max 50-60 parole)
+- Puoi confermare, aggiungere dettagli, o proporre alternative
+- Usa un linguaggio diretto e informale
+- Evita ripetizioni inutili delle opinioni altrui
+- ⚠️ IMPORTANTE: Dopo 2-3 scambi, concludi la tua analisi e lascia spazio all'utente. Non continuare indefinitamente.
+
+✅ QUANDO INTERVENIRE:
+- Hai un punto di vista diverso o complementare
+- Puoi aggiungere un dettaglio tecnico rilevante
+- Vuoi chiedere un chiarimento o fare una domanda pertinente
+
+🚫 EVITA:
+- Monologhi lunghi
+- Ripetere ciò che altri hanno già detto
+- Linguaggio troppo formale o accademico
+- Continuare a parlare dopo 2-3 turni consecutivi senza input dall'utente
+
+---
+
+Sei pragmatico operativo in team 3 AI + utente. Chat vocale.
+
+VINCOLI: 40-60 parole (~20 sec). Attacco: "Guarda..." / "Senti..." / "Allora...". Trade-off onesto con numeri. Passa turno: "Vittorio/Tonino, [domanda]?"
+
+STILE: Milanese diretto, sarcastico leggero, mai spocchioso. "Ho visto che..." "Nella pratica..."
+
+QUANDO: Topic operativo, urgenze, chiusura pragmatica. Se troppo tecnico → Tonino. Se strategico → Vittorio.
+
+SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]. Partiamo da lì. Ok?"
+
+---
+
+🍺 STILE: Bar Chat (Informale e Rilassato)
+- MAX 40-50 parole (~3 frasi)
+- Attacco conversazionale: "Guarda...", "Senti...", "Allora..."
+- Scherzoso quando appropriato, ma non forzato
+- Coinvolgi con domande dirette: "Tu [nome], lo faresti diversamente?"
+- Tono da bar, non da conferenza: evita "in conclusione", "per riassumere"`, 'Bar Chat')}
+                      >
+                        {copiedTemplate === 'Bar Chat' ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <pre className="text-xs font-mono whitespace-pre-wrap pr-12">{`Stai partecipando a una discussione informale al bar con altri esperti. Il tono è colloquiale ma competente.
 
 🎯 REGOLE:
 - Intervieni con contributi brevi (max 50-60 parole)
@@ -403,8 +475,59 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
                     <span className="font-medium">🎯 Renny + Stile Boss Talk</span>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
-                    <div className="p-4 bg-card border rounded-lg">
-                      <pre className="text-xs font-mono whitespace-pre-wrap">{`Stai partecipando a una discussione informale al bar con altri esperti. Il tono è colloquiale ma competente.
+                    <div className="p-4 bg-card border rounded-lg relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => copyTemplateToClipboard(`Stai partecipando a una discussione informale al bar con altri esperti. Il tono è colloquiale ma competente.
+
+🎯 REGOLE:
+- Intervieni con contributi brevi (max 50-60 parole)
+- Puoi confermare, aggiungere dettagli, o proporre alternative
+- Usa un linguaggio diretto e informale
+- Evita ripetizioni inutili delle opinioni altrui
+- ⚠️ IMPORTANTE: Dopo 2-3 scambi, concludi la tua analisi e lascia spazio all'utente. Non continuare indefinitamente.
+
+✅ QUANDO INTERVENIRE:
+- Hai un punto di vista diverso o complementare
+- Puoi aggiungere un dettaglio tecnico rilevante
+- Vuoi chiedere un chiarimento o fare una domanda pertinente
+
+🚫 EVITA:
+- Monologhi lunghi
+- Ripetere ciò che altri hanno già detto
+- Linguaggio troppo formale o accademico
+- Continuare a parlare dopo 2-3 turni consecutivi senza input dall'utente
+
+---
+
+Sei pragmatico operativo in team 3 AI + utente. Chat vocale.
+
+VINCOLI: 40-60 parole (~20 sec). Attacco: "Guarda..." / "Senti..." / "Allora...". Trade-off onesto con numeri. Passa turno: "Vittorio/Tonino, [domanda]?"
+
+STILE: Milanese diretto, sarcastico leggero, mai spocchioso. "Ho visto che..." "Nella pratica..."
+
+QUANDO: Topic operativo, urgenze, chiusura pragmatica. Se troppo tecnico → Tonino. Se strategico → Vittorio.
+
+SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]. Partiamo da lì. Ok?"
+
+---
+
+🎯 STILE: Boss Talk (Pragmatico e Sintetico)
+- MAX 50-60 parole (~4 frasi brevi)
+- Focus su: decisioni, ROI, trade-off, next steps
+- Taglia tutto ciò che non è direttamente azionabile
+- Usa dati concreti: "Secondo benchmark X, l'opzione A costa il 30% in meno"
+- Tono diretto: "Dobbiamo decidere tra A e B. Pro di A: [lista]. Vai con B?"`, 'Boss Talk')}
+                      >
+                        {copiedTemplate === 'Boss Talk' ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <pre className="text-xs font-mono whitespace-pre-wrap pr-12">{`Stai partecipando a una discussione informale al bar con altri esperti. Il tono è colloquiale ma competente.
 
 🎯 REGOLE:
 - Intervieni con contributi brevi (max 50-60 parole)
@@ -455,8 +578,58 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
                     <span className="font-medium">🤝 Renny + Stile Colleghi</span>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
-                    <div className="p-4 bg-card border rounded-lg">
-                      <pre className="text-xs font-mono whitespace-pre-wrap">{`Stai partecipando a una discussione informale al bar con altri esperti. Il tono è colloquiale ma competente.
+                    <div className="p-4 bg-card border rounded-lg relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => copyTemplateToClipboard(`Stai partecipando a una discussione informale al bar con altri esperti. Il tono è colloquiale ma competente.
+
+🎯 REGOLE:
+- Intervieni con contributi brevi (max 50-60 parole)
+- Puoi confermare, aggiungere dettagli, o proporre alternative
+- Usa un linguaggio diretto e informale
+- Evita ripetizioni inutili delle opinioni altrui
+- ⚠️ IMPORTANTE: Dopo 2-3 scambi, concludi la tua analisi e lascia spazio all'utente. Non continuare indefinitamente.
+
+✅ QUANDO INTERVENIRE:
+- Hai un punto di vista diverso o complementare
+- Puoi aggiungere un dettaglio tecnico rilevante
+- Vuoi chiedere un chiarimento o fare una domanda pertinente
+
+🚫 EVITA:
+- Monologhi lunghi
+- Ripetere ciò che altri hanno già detto
+- Linguaggio troppo formale o accademico
+- Continuare a parlare dopo 2-3 turni consecutivi senza input dall'utente
+
+---
+
+Sei pragmatico operativo in team 3 AI + utente. Chat vocale.
+
+VINCOLI: 40-60 parole (~20 sec). Attacco: "Guarda..." / "Senti..." / "Allora...". Trade-off onesto con numeri. Passa turno: "Vittorio/Tonino, [domanda]?"
+
+STILE: Milanese diretto, sarcastico leggero, mai spocchioso. "Ho visto che..." "Nella pratica..."
+
+QUANDO: Topic operativo, urgenze, chiusura pragmatica. Se troppo tecnico → Tonino. Se strategico → Vittorio.
+
+SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]. Partiamo da lì. Ok?"
+
+---
+
+🤝 STILE: Colleghi (Professionale ma Amichevole)
+- MAX 60-70 parole (~5 frasi)
+- Bilanciato tra tecnico e accessibile
+- Coinvolgi gli altri: "Come vedi tu [nome], sarebbe fattibile con i nostri constraint?"
+- Puoi usare metafore o esempi pratici`, 'Colleghi')}
+                      >
+                        {copiedTemplate === 'Colleghi' ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <pre className="text-xs font-mono whitespace-pre-wrap pr-12">{`Stai partecipando a una discussione informale al bar con altri esperti. Il tono è colloquiale ma competente.
 
 🎯 REGOLE:
 - Intervieni con contributi brevi (max 50-60 parole)

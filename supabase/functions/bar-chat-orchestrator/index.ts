@@ -357,67 +357,68 @@ serve(async (req) => {
     const allResponses: any[] = [];
     
     for (let i = 0; i < sortedParticipants.length; i++) {
-      const currentAgent = sortedParticipants[i];
-      console.log(`\n🎯 Agente ${i + 1}/${sortedParticipants.length}: ${currentAgent.name}`);
-      
-      // ============ CONTEXT CUMULATIVO: Messaggio utente + risposte precedenti di QUESTO turno ============
-      const turnContext = [
-        { role: 'user', content: userMessage },
-        ...allResponses.map(r => ({
-          role: 'assistant',
-          content: `[${r.agentName}]: ${r.content}`
-        }))
-      ];
-      
-      console.log(`📝 Context include: messaggio utente + ${allResponses.length} risposte precedenti`);
+      try {
+        const currentAgent = sortedParticipants[i];
+        console.log(`\n🎯 Agente ${i + 1}/${sortedParticipants.length}: ${currentAgent.name}`);
+        
+        // ============ CONTEXT CUMULATIVO: Messaggio utente + risposte precedenti di QUESTO turno ============
+        const turnContext = [
+          { role: 'user', content: userMessage },
+          ...allResponses.map(r => ({
+            role: 'assistant',
+            content: `[${r.agentName}]: ${r.content}`
+          }))
+        ];
+        
+        console.log(`📝 Context include: messaggio utente + ${allResponses.length} risposte precedenti`);
 
-      // ============ DIRECT CALL DETECTION ============
-      // Controlla se l'ultimo agente ha chiamato esplicitamente questo agente
-      const lastResponse = allResponses[allResponses.length - 1];
-      const lastMessage = recentMessages.length > 0 ? recentMessages[recentMessages.length - 1] : null;
-      
-      const wasCalledByAgent = lastResponse && (
-        lastResponse.content.toLowerCase().includes(currentAgent.name.toLowerCase()) ||
-        lastResponse.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`) ||
-        lastResponse.content.match(new RegExp(`\\b${currentAgent.name}\\b`, 'i'))
-      );
-      
-      const wasDirectlyAddressed = lastMessage && (
-        lastMessage.content.toLowerCase().includes(currentAgent.name.toLowerCase()) ||
-        lastMessage.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`)
-      );
-      
-      const isDirectCall = wasCalledByAgent || wasDirectlyAddressed;
-      
-      if (wasCalledByAgent) {
-        console.log(`📢 ${lastResponse.agentName} ha chiamato ${currentAgent.name} → PRIORITÀ RISPOSTA`);
-      }
+        // ============ DIRECT CALL DETECTION ============
+        // Controlla se l'ultimo agente ha chiamato esplicitamente questo agente
+        const lastResponse = allResponses[allResponses.length - 1];
+        const lastMessage = recentMessages.length > 0 ? recentMessages[recentMessages.length - 1] : null;
+        
+        const wasCalledByAgent = lastResponse && (
+          lastResponse.content.toLowerCase().includes(currentAgent.name.toLowerCase()) ||
+          lastResponse.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`) ||
+          lastResponse.content.match(new RegExp(`\\b${currentAgent.name}\\b`, 'i'))
+        );
+        
+        const wasDirectlyAddressed = lastMessage && (
+          lastMessage.content.toLowerCase().includes(currentAgent.name.toLowerCase()) ||
+          lastMessage.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`)
+        );
+        
+        const isDirectCall = wasCalledByAgent || wasDirectlyAddressed;
+        
+        if (wasCalledByAgent) {
+          console.log(`📢 ${lastResponse.agentName} ha chiamato ${currentAgent.name} → PRIORITÀ RISPOSTA`);
+        }
 
-      // ============ RECUPERA PERSONALITÀ DA CACHE ============
-      const agentPersonality = cachedPrompts.agentPersonalities.get(
-        currentAgent.name.toLowerCase()
-      ) || '';
-      
-      console.log(`👤 Personalità ${currentAgent.name}: ${agentPersonality.length} chars (cached)`);
+        // ============ RECUPERA PERSONALITÀ DA CACHE ============
+        const agentPersonality = cachedPrompts.agentPersonalities.get(
+          currentAgent.name.toLowerCase()
+        ) || '';
+        
+        console.log(`👤 Personalità ${currentAgent.name}: ${agentPersonality.length} chars (cached)`);
 
-      // ============ COMPONI PROMPT SEMPLIFICATO ============
-      let composedPrompt = globalSystemPrompt + '\n\n';
-      
-      // Add BASE sections (cached)
-      composedPrompt += '=== CONTESTO BASE ===\n';
-      composedPrompt += baseContent + '\n\n';
+        // ============ COMPONI PROMPT SEMPLIFICATO ============
+        let composedPrompt = globalSystemPrompt + '\n\n';
+        
+        // Add BASE sections (cached)
+        composedPrompt += '=== CONTESTO BASE ===\n';
+        composedPrompt += baseContent + '\n\n';
 
-      // Add AGENT_PERSONALITY (cached)
-      if (agentPersonality) {
-        composedPrompt += '=== TUA PERSONALITÀ ===\n';
-        composedPrompt += agentPersonality + '\n\n';
-      }
+        // Add AGENT_PERSONALITY (cached)
+        if (agentPersonality) {
+          composedPrompt += '=== TUA PERSONALITÀ ===\n';
+          composedPrompt += agentPersonality + '\n\n';
+        }
 
-      // 🆕 INJECTION STILE CONVERSAZIONALE
-      let styleInstructions = '';
-      
-      if (conversationStyle === 'boss_talk') {
-        styleInstructions = `
+        // 🆕 INJECTION STILE CONVERSAZIONALE
+        let styleInstructions = '';
+        
+        if (conversationStyle === 'boss_talk') {
+          styleInstructions = `
 🎯 STILE: Boss Talk (Pragmatico e Sintetico)
 - MAX 50-60 parole (~4 frasi brevi)
 - Focus su: decisioni, ROI, trade-off, next steps
@@ -425,8 +426,8 @@ serve(async (req) => {
 - Usa dati concreti: "Secondo benchmark X, l'opzione A costa il 30% in meno"
 - Tono diretto: "Dobbiamo decidere tra A e B. Pro di A: [lista]. Vai con B?"
 `;
-      } else if (conversationStyle === 'colleagues') {
-        styleInstructions = `
+        } else if (conversationStyle === 'colleagues') {
+          styleInstructions = `
 🤝 STILE: Colleghi (Professionale ma Amichevole)
 - MAX 60-70 parole (~5 frasi)
 - Bilanciato tra tecnico e accessibile
@@ -434,8 +435,8 @@ serve(async (req) => {
 - Puoi usare metafore o esempi pratici
 - Tono collaborativo ma non eccessivamente formale
 `;
-      } else if (conversationStyle === 'bar_chat') {
-        styleInstructions = `
+        } else if (conversationStyle === 'bar_chat') {
+          styleInstructions = `
 🍺 STILE: Bar Chat (Informale e Rilassato)
 - MAX 40-50 parole (~3 frasi)
 - Attacco conversazionale: "Guarda...", "Senti...", "Allora..."
@@ -443,17 +444,17 @@ serve(async (req) => {
 - Coinvolgi con domande dirette: "Tu [nome], lo faresti diversamente?"
 - Tono da bar, non da conferenza: evita "in conclusione", "per riassumere"
 `;
-      }
-      
-      composedPrompt += styleInstructions + '\n\n';
-
-      // Add context about other agents in this turn
-      if (allResponses.length > 0) {
-        const previousAgentsContext = allResponses
-          .map(r => `${r.agentName}: ${r.content.substring(0, 200)}...`)
-          .join('\n\n');
+        }
         
-        composedPrompt += `
+        composedPrompt += styleInstructions + '\n\n';
+
+        // Add context about other agents in this turn
+        if (allResponses.length > 0) {
+          const previousAgentsContext = allResponses
+            .map(r => `${r.agentName}: ${r.content.substring(0, 200)}...`)
+            .join('\n\n');
+          
+          composedPrompt += `
 RISPOSTE PRECEDENTI IN QUESTO TURNO:
 ${previousAgentsContext}
 
@@ -463,22 +464,22 @@ Considera queste risposte quando formuli la tua. Puoi:
 - Rispondere direttamente a uno degli altri agenti
 - Scrivere [SKIP] se non hai nulla di rilevante da aggiungere
 `;
-      }
+        }
 
-      // Priorità se chiamato direttamente
-      if (wasCalledByAgent) {
-        composedPrompt += `
+        // Priorità se chiamato direttamente
+        if (wasCalledByAgent) {
+          composedPrompt += `
 🎯 SEI STATO CHIAMATO DIRETTAMENTE
 ${lastResponse.agentName} ti ha menzionato esplicitamente nel suo ultimo intervento.
 Rispondi in modo specifico alla sua richiesta/domanda.
 NON scrivere [SKIP] in questo caso.
 
 `;
-      }
-      
-      // 🆕 INJECTION MODALITÀ AGENTE
-      if (agentMode === 'consultation') {
-        composedPrompt += `
+        }
+        
+        // 🆕 INJECTION MODALITÀ AGENTE
+        if (agentMode === 'consultation') {
+          composedPrompt += `
 📚 MODALITÀ: Consultazione Formale
 - Puoi essere dettagliato e approfondito (fino a 150 parole se necessario)
 - Usa linguaggio tecnico quando appropriato
@@ -487,107 +488,107 @@ NON scrivere [SKIP] in questo caso.
 - Questo è il tuo UNICO intervento, quindi sii esaustivo
 
 `;
-      }
-
-      // TOPIC e KB_CONTEXT temporaneamente disabilitati (struttura conservata)
-      // if (topicSections.length > 0) { ... }
-      // if (kbContextSections.length > 0) { ... }
-      // if (kbContext) { ... }
-
-      console.log('📝 Prompt finale composto:', composedPrompt.substring(0, 200) + '...');
-
-      // Prepare conversation history con context cumulativo
-      const conversationHistory = [
-        { role: 'system', content: composedPrompt },
-        // ✅ INSERIMENTO SUMMARY CUMULATIVO (se esiste)
-        ...(cumulativeSummary ? [{ 
-          role: 'system', 
-          content: `📚 CONTESTO PRECEDENTE (Riassunto cumulativo):\n${cumulativeSummary}\n\n---\n\n` 
-        }] : []),
-        ...historyMessages,
-        ...turnContext // ← Context cumulativo del turno (user message + risposte precedenti)
-      ];
-
-      // 📊 LOG DIMENSIONI CONTESTO (per monitoraggio)
-      const totalContextChars = conversationHistory
-        .map(m => m.content.length)
-        .reduce((sum, len) => sum + len, 0);
-
-      const estimatedTokens = Math.ceil(totalContextChars / 4);
-
-      console.log('📊 CONTEXT SIZE:', {
-        systemPromptChars: composedPrompt.length,
-        cumulativeSummaryChars: cumulativeSummary?.length || 0,
-        historyMessagesCount: historyMessages.length,
-        turnContextMessages: turnContext.length,
-        totalContextChars: totalContextChars,
-        estimatedTokens: estimatedTokens
-      });
-
-      if (estimatedTokens > 50000) {
-        console.warn('⚠️ CONTEXT SIZE ECCESSIVO!', estimatedTokens, 'tokens');
-      }
-
-      let aiResponse = '';
-      let tokenInput = 0;
-      let tokenOutput = 0;
-      const startTime = Date.now();
-
-      // ============ CHIAMATA AI PROVIDER ============
-      if ((currentAgent.type === 'anthropic' || currentAgent.type === 'claude') && anthropicConfig?.api_key) {
-      console.log('🤖 Calling Anthropic (Claude)...');
-      
-      const result = await withRetry(async () => {
-        // ✅ Estrai tutti i system messages (prompt + summary)
-        const systemMessages = conversationHistory.filter(m => m.role === 'system');
-        const rawMessages = conversationHistory.filter(m => m.role !== 'system');
-        
-        // 🔧 Collassa messaggi consecutivi per alternanza user/assistant
-        const userMessages = collapseConsecutiveMessages(rawMessages);
-        console.log(`🔧 Claude: ${rawMessages.length} messaggi → ${userMessages.length} collassati`);
-        
-        // ✅ Componi UN SOLO system prompt con tutto
-        const fullSystemPrompt = systemMessages.map(m => m.content).join('\n\n---\n\n');
-        
-        const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': anthropicConfig.api_key,
-            'anthropic-version': '2023-06-01'
-          },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-5',
-            max_tokens: 2500, // ✅ Limite conversazionale esteso
-            temperature: 0.7, // ✅ Più creativo e naturale
-            messages: userMessages,  // ✅ Solo user/assistant
-            system: fullSystemPrompt // ✅ Prompt + Summary insieme
-          })
-        }, 43000);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`❌ Anthropic error ${response.status}:`, errorText);
-          
-          if (response.status === 429) throw new Error('429');
-          if (response.status >= 500) throw new Error('5xx');
-          throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
         }
+
+        // TOPIC e KB_CONTEXT temporaneamente disabilitati (struttura conservata)
+        // if (topicSections.length > 0) { ... }
+        // if (kbContextSections.length > 0) { ... }
+        // if (kbContext) { ... }
+
+        console.log('📝 Prompt finale composto:', composedPrompt.substring(0, 200) + '...');
+
+        // Prepare conversation history con context cumulativo
+        const conversationHistory = [
+          { role: 'system', content: composedPrompt },
+          // ✅ INSERIMENTO SUMMARY CUMULATIVO (se esiste)
+          ...(cumulativeSummary ? [{ 
+            role: 'system', 
+            content: `📚 CONTESTO PRECEDENTE (Riassunto cumulativo):\n${cumulativeSummary}\n\n---\n\n` 
+          }] : []),
+          ...historyMessages,
+          ...turnContext // ← Context cumulativo del turno (user message + risposte precedenti)
+        ];
+
+        // 📊 LOG DIMENSIONI CONTESTO (per monitoraggio)
+        const totalContextChars = conversationHistory
+          .map(m => m.content.length)
+          .reduce((sum, len) => sum + len, 0);
+
+        const estimatedTokens = Math.ceil(totalContextChars / 4);
+
+        console.log('📊 CONTEXT SIZE:', {
+          systemPromptChars: composedPrompt.length,
+          cumulativeSummaryChars: cumulativeSummary?.length || 0,
+          historyMessagesCount: historyMessages.length,
+          turnContextMessages: turnContext.length,
+          totalContextChars: totalContextChars,
+          estimatedTokens: estimatedTokens
+        });
+
+        if (estimatedTokens > 50000) {
+          console.warn('⚠️ CONTEXT SIZE ECCESSIVO!', estimatedTokens, 'tokens');
+        }
+
+        let aiResponse = '';
+        let tokenInput = 0;
+        let tokenOutput = 0;
+        const startTime = Date.now();
+
+        // ============ CHIAMATA AI PROVIDER ============
+        if ((currentAgent.type === 'anthropic' || currentAgent.type === 'claude') && anthropicConfig?.api_key) {
+        console.log('🤖 Calling Anthropic (Claude)...');
         
-        const data = await response.json();
-        return {
-          content: data.content[0].text,
-          tokensIn: data.usage?.input_tokens || 0,
-          tokensOut: data.usage?.output_tokens || 0,
-          duration: Date.now() - startTime
-        };
-      }, { retries: 2, baseDelayMs: 300 });
-      
-      aiResponse = result.content;
-      tokenInput = result.tokensIn;
-      tokenOutput = result.tokensOut;
-      console.log(`✅ Claude: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
-    }
+        const result = await withRetry(async () => {
+          // ✅ Estrai tutti i system messages (prompt + summary)
+          const systemMessages = conversationHistory.filter(m => m.role === 'system');
+          const rawMessages = conversationHistory.filter(m => m.role !== 'system');
+          
+          // 🔧 Collassa messaggi consecutivi per alternanza user/assistant
+          const userMessages = collapseConsecutiveMessages(rawMessages);
+          console.log(`🔧 Claude: ${rawMessages.length} messaggi → ${userMessages.length} collassati`);
+          
+          // ✅ Componi UN SOLO system prompt con tutto
+          const fullSystemPrompt = systemMessages.map(m => m.content).join('\n\n---\n\n');
+          
+          const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': anthropicConfig.api_key,
+              'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-5',
+              max_tokens: 2500,
+              temperature: 0.7,
+              messages: userMessages,
+              system: fullSystemPrompt
+            })
+          }, 43000);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Anthropic error ${response.status}:`, errorText);
+            
+            if (response.status === 429) throw new Error('429');
+            if (response.status >= 500) throw new Error('5xx');
+            throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
+          }
+          
+          const data = await response.json();
+          return {
+            content: data.content[0].text,
+            tokensIn: data.usage?.input_tokens || 0,
+            tokensOut: data.usage?.output_tokens || 0,
+            duration: Date.now() - startTime
+          };
+        }, { retries: 2, baseDelayMs: 300 });
+        
+        aiResponse = result.content;
+        tokenInput = result.tokensIn;
+        tokenOutput = result.tokensOut;
+        console.log(`✅ Claude: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
+      }
     else if ((currentAgent.type === 'openai' || currentAgent.type === 'chatgpt')) {
       // ⚡ PRIORITÀ: Usa GPT-5 via Lovable AI se disponibile (più veloce)
       if (LOVABLE_API_KEY) {

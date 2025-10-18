@@ -1010,6 +1010,59 @@ NON scrivere [SKIP] in questo caso.
     });
   }
 
+  // ============ DEBUG TIMELINE ============
+  const debugTimeline = allResponses.map((response, idx) => {
+    const contextInfo = idx === 0 
+      ? { 
+          type: 'initial' as const,
+          includes: ['user_message', 'last_20_messages'],
+          previousResponses: 0
+        }
+      : {
+          type: 'cumulative' as const,
+          includes: ['user_message', ...allResponses.slice(0, idx).map(r => r.agentName)],
+          previousResponses: idx
+        };
+    
+    // Stima durata audio (150 parole/min = 2.5 parole/sec)
+    const wordCount = response.content.split(/\s+/).length;
+    const estimatedAudioDurationSec = (wordCount / 2.5);
+    
+    // Cerca direct calls nel contenuto
+    const mentionsAgents = sortedParticipants
+      .filter((p: any) => 
+        response.content.toLowerCase().includes(p.name.toLowerCase()) ||
+        response.content.toLowerCase().includes(`@${p.name.toLowerCase()}`)
+      )
+      .map((p: any) => p.name);
+    
+    return {
+      order: idx + 1,
+      agentName: response.agentName,
+      agentType: response.agentType,
+      
+      // Timing
+      aiCallDurationMs: response.duration,
+      estimatedAudioDurationSec: estimatedAudioDurationSec,
+      
+      // Tokens
+      tokensIn: response.tokensIn,
+      tokensOut: response.tokensOut,
+      
+      // Context passato a questo agente
+      contextReceived: contextInfo,
+      
+      // Output
+      messageId: response.messageId,
+      contentPreview: response.content.substring(0, 100) + '...',
+      audioUrl: response.audioUrl || null,
+      
+      // Direct calls
+      directCallsTo: mentionsAgents.length > 0 ? mentionsAgents : null,
+      wasDirectCall: false
+    };
+  });
+
   // ============ RISPOSTA FINALE ============
   return new Response(
     JSON.stringify({
@@ -1034,6 +1087,16 @@ NON scrivere [SKIP] in questo caso.
         avg_latency_ms: Math.round(allResponses.reduce((sum, r) => sum + r.duration, 0) / allResponses.length),
         total_tokens_in: allResponses.reduce((sum, r) => sum + r.tokensIn, 0),
         total_tokens_out: allResponses.reduce((sum, r) => sum + r.tokensOut, 0)
+      },
+      
+      // ✅ DEBUG DATA
+      debugTimeline,
+      debugMeta: {
+        totalAgents: sortedParticipants.length,
+        autoFollowEnabled: true,
+        conversationPace: conversationPace || 'normal',
+        pauseBetweenTurnsMs: pauseBetweenTurnsMs,
+        voiceEnabled: voiceEnabled
       }
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -41,6 +41,9 @@ export function useOrchestratorTest(conversationId: string) {
     pauseBetweenTurns: 800,
   });
   const [testResults, setTestResults] = useState<TestResult[]>([]);
+  const [debugTimeline, setDebugTimeline] = useState<any[]>([]);
+  const [debugMeta, setDebugMeta] = useState<any>(null);
+  const [lastTestMessage, setLastTestMessage] = useState<string>('');
   const { toast } = useToast();
 
   const updateConfig = (updates: Partial<TestConfig>) => {
@@ -113,6 +116,7 @@ export function useOrchestratorTest(conversationId: string) {
 
   const runTest = async (testMessage: string) => {
     setIsRunning(true);
+    setLastTestMessage(testMessage);
     const startTime = Date.now();
 
     try {
@@ -151,6 +155,14 @@ export function useOrchestratorTest(conversationId: string) {
 
       if (error) {
         throw error;
+      }
+
+      // 🔍 Cattura dati debug
+      if (data.debugTimeline) {
+        setDebugTimeline(data.debugTimeline);
+      }
+      if (data.debugMeta) {
+        setDebugMeta(data.debugMeta);
       }
 
       // 4. Salva risultato
@@ -278,5 +290,8 @@ export function useOrchestratorTest(conversationId: string) {
     isRunning,
     testResults,
     loadTestResults,
+    debugTimeline,
+    debugMeta,
+    lastTestMessage,
   };
 }

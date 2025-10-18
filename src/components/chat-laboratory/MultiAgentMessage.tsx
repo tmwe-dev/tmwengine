@@ -7,6 +7,7 @@ import { UploadedFile } from '@/components/chat/FileUploader';
 import { toast } from '@/hooks/use-toast';
 import { AudioMessagePlayer } from '@/components/chat-laboratory/AudioMessagePlayer';
 import { DeliverableCard } from './DeliverableCard';
+import { MessageCostBadge } from './MessageCostBadge';
 
 interface Message {
   id: string;
@@ -148,6 +149,15 @@ export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMe
             <Badge className={config.badgeColor} variant="secondary">
               {message.sender_type.toUpperCase()}
             </Badge>
+            
+            {/* 💰 Badge costo messaggio */}
+            {message.token_input && message.token_output && (
+              <MessageCostBadge
+                provider={message.sender_type}
+                inputTokens={message.token_input}
+                outputTokens={message.token_output}
+              />
+            )}
             
             {/* Desktop only: View mode toggle for AI messages */}
             {message.sender_type !== 'human' && (

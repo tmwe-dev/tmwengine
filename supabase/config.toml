@@ -266,3 +266,9 @@ verify_jwt = true
 [functions.tmwe-jwt-refresh]
 verify_jwt = true
 
+[functions.sync-ai-pricing]
+verify_jwt = true
+
+[functions.generate-message-summaries]
+verify_jwt = true
+

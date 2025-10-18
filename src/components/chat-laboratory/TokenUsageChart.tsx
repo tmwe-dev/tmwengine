@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Euro } from "lucide-react";
 
 interface TokenUsageChartProps {
   conversationId: string;
@@ -18,6 +20,7 @@ export function TokenUsageChart({ conversationId, compact = false, onTotalTokens
     colorOut: string;
     baseHue: number;
   }>>([]);
+  const [totalCost, setTotalCost] = useState(0);
 
   useEffect(() => {
     loadTokenStats();
@@ -77,6 +80,21 @@ export function TokenUsageChart({ conversationId, compact = false, onTotalTokens
     // Notifica parent del totale
     const total = aggregated.reduce((sum, d) => sum + d.tokensIn + d.tokensOut, 0);
     onTotalTokensChange?.(total);
+    
+    // Calcola costo totale conversazione
+    loadTotalCost();
+  }
+
+  async function loadTotalCost() {
+    const { data } = await supabase
+      .from('ai_cost_tracking')
+      .select('cost_total_eur')
+      .eq('lab_conversation_id', conversationId);
+    
+    if (data) {
+      const sum = data.reduce((acc, row) => acc + (Number(row.cost_total_eur) || 0), 0);
+      setTotalCost(sum);
+    }
   }
 
   if (tokenData.length === 0) return null;
@@ -207,11 +225,29 @@ export function TokenUsageChart({ conversationId, compact = false, onTotalTokens
               dataKey="Token OUT" 
               fill="url(#gradientOut)" 
               radius={[8, 8, 0, 0]}
-              label={<CustomBarLabel />}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+            label={<CustomBarLabel />}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+
+      {/* 💰 Costo Totale Conversazione */}
+      <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">Costo Totale Conversazione:</span>
+        <Badge variant="outline" className="gap-2 text-base font-semibold">
+          <Euro className="h-4 w-4" />
+          {totalCost === 0 ? (
+            <span className="text-green-400">GRATIS</span>
+          ) : (
+            <>
+              €{totalCost.toFixed(4)}
+              <span className="text-xs text-muted-foreground ml-2">
+                (€{(totalCost * 1000).toFixed(2)} per 1000 msg)
+              </span>
+            </>
+          )}
+        </Badge>
+      </div>
+    </CardContent>
+  </Card>
   );
 }

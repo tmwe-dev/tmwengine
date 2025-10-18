@@ -540,6 +540,48 @@ REGOLE CRITICHE:
               }
             })
             .eq('id', savedMessage.id);
+
+          // 💰 CALCOLA E SALVA COSTI
+          const modelName = value.participant.type === 'claude' || value.participant.type === 'anthropic'
+            ? 'claude-sonnet-4-5'
+            : value.participant.type === 'chatgpt' || value.participant.type === 'openai'
+            ? 'gpt-5-2025-08-07'
+            : 'gemini-2.5-flash';
+
+          // Query pricing dal DB
+          const { data: pricingData } = await supabaseClient
+            .from('ai_pricing_config')
+            .select('cost_input_eur, cost_output_eur, is_free')
+            .eq('provider', value.participant.type === 'lovable_ai' ? 'lovable' : value.participant.type)
+            .eq('model', modelName)
+            .maybeSingle();
+
+          let costInput = 0;
+          let costOutput = 0;
+          let costTotal = 0;
+
+          if (pricingData && !pricingData.is_free) {
+            costInput = (value.tokensIn / 1_000_000) * pricingData.cost_input_eur;
+            costOutput = (value.tokensOut / 1_000_000) * pricingData.cost_output_eur;
+            costTotal = costInput + costOutput;
+            
+            console.log(`💰 Costo ${value.participant.name}: €${costTotal.toFixed(6)} (${value.tokensIn} in + ${value.tokensOut} out)`);
+          }
+
+          // Salva in ai_cost_tracking
+          await supabaseClient
+            .from('ai_cost_tracking')
+            .insert({
+              lab_conversation_id: conversationId,
+              provider: value.participant.type === 'lovable_ai' ? 'lovable' : value.participant.type,
+              model: modelName,
+              input_tokens: value.tokensIn,
+              output_tokens: value.tokensOut,
+              cost_input_eur: costInput,
+              cost_output_eur: costOutput,
+              cost_total_eur: costTotal,
+              operation_type: 'chat_laboratory'
+            });
         }
 
         // Trigger summary generation

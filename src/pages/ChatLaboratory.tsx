@@ -22,6 +22,7 @@ import { LabHeaderControls } from '@/components/chat-laboratory/LabHeaderControl
 import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
+import { SyncPricingButton } from '@/components/chat-laboratory/SyncPricingButton';
 import { BarModeTabsControls } from '@/components/chat-laboratory/BarModeTabsControls';
 import { InterruptButton } from '@/components/chat-laboratory/InterruptButton';
 import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
@@ -1293,6 +1294,7 @@ const ChatLaboratory = () => {
                           alertThreshold={15000}
                         />
                         <ConversationCostBadge labConversationId={currentConversationId} />
+                        <SyncPricingButton />
                       </>
                     ) : (
                       <p className="text-white/50 text-sm text-center py-4">

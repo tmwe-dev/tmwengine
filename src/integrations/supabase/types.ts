@@ -62,6 +62,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_pricing_config: {
+        Row: {
+          cost_input_eur: number
+          cost_output_eur: number
+          created_at: string | null
+          id: string
+          is_free: boolean
+          last_sync_at: string | null
+          model: string
+          provider: string
+          updated_at: string | null
+          usd_eur_rate: number
+        }
+        Insert: {
+          cost_input_eur?: number
+          cost_output_eur?: number
+          created_at?: string | null
+          id?: string
+          is_free?: boolean
+          last_sync_at?: string | null
+          model: string
+          provider: string
+          updated_at?: string | null
+          usd_eur_rate?: number
+        }
+        Update: {
+          cost_input_eur?: number
+          cost_output_eur?: number
+          created_at?: string | null
+          id?: string
+          is_free?: boolean
+          last_sync_at?: string | null
+          model?: string
+          provider?: string
+          updated_at?: string | null
+          usd_eur_rate?: number
+        }
+        Relationships: []
+      }
       attivita: {
         Row: {
           assegnato_a: string | null

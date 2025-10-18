@@ -181,7 +181,7 @@ serve(async (req) => {
           lastResponse
         });
 
-        console.log('📝 Prompt finale composto:', composedPrompt.substring(0, 200) + '...');
+        console.log('📝 Prompt finale composto:', composedPrompt ? composedPrompt.substring(0, 200) + '...' : 'Vuoto');
 
         // ============ BUILD CONVERSATION HISTORY ============
         const conversationHistory = buildConversationHistory({
@@ -252,7 +252,7 @@ serve(async (req) => {
         }
 
         // ============ SAFETY: TRUNCATE LONG RESPONSES ============
-        if (aiResponse.length > 15000) {
+        if (aiResponse && aiResponse.length > 15000) {
           console.warn(`⚠️ Risposta troppo lunga (${aiResponse.length} chars), troncamento a 15k...`);
           aiResponse = aiResponse.substring(0, 15000) + '\n\n[... risposta troncata per lunghezza]';
         }

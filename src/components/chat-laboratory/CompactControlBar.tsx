@@ -360,23 +360,32 @@ export const CompactControlBar = ({
       
       <Separator />
       
-      {/* Phone Switch */}
-      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-      <Switch
-        checked={enableDirectCall}
-        onCheckedChange={updateDirectCallDetection}
-      />
+      {/* Phone Icon - Indicatore verde/rosso */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => updateDirectCallDetection(!enableDirectCall)}
+        className={cn(
+          "h-7 w-7 rounded-full transition-all shrink-0",
+          enableDirectCall 
+            ? "bg-green-500/20 text-green-500 hover:bg-green-500/30" 
+            : "bg-red-500/20 text-red-500 hover:bg-red-500/30"
+        )}
+        title={enableDirectCall ? "Chiamate dirette abilitate" : "Chiamate dirette disabilitate"}
+      >
+        <Phone className="h-3.5 w-3.5" />
+      </Button>
       
       <Separator />
       
-      {/* Pause Slider */}
+      {/* Pause Slider - Linea sottile lilla */}
       <Slider
         value={[pauseBetweenTurns]}
         onValueChange={(values) => updatePauseBetweenTurns(values[0])}
         min={400}
         max={2000}
         step={100}
-        className="w-20 max-w-[80px]"
+        className="w-20 max-w-[80px] [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&>span:first-child]:h-0.5 [&>span:first-child>span]:bg-purple-500"
       />
       <span className="text-[10px] text-muted-foreground whitespace-nowrap min-w-[40px]">
         {pauseBetweenTurns}ms

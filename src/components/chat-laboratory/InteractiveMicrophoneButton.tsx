@@ -377,13 +377,13 @@ export const InteractiveMicrophoneButton = ({
 
   // Handler click principale
   const handleClick = () => {
-    // Se non selezionato, prima seleziona
+    // Se non selezionato, seleziona E attiva contemporaneamente
     if (!isSelected) {
       onSelect();
-      return;
+      // Non fare return, continua ad attivare il microfono
     }
 
-    // Se già selezionato, toggle registrazione/ascolto
+    // Toggle registrazione/ascolto
     if (mode === 'ptt') {
       if (isActive) {
         stopRecording(); // Ferma e invia subito

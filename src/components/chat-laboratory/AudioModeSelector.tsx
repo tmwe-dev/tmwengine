@@ -52,8 +52,8 @@ export const AudioModeSelector = ({ conversationId, onModeChange, onTranscriptio
       number: 2 as const,
       label: 'Listen', 
       icon: Headphones,
-      description: 'Coming Soon - Modalità ascolto continuo',
-      disabled: true
+      description: 'Modalità ascolto continuo (in beta)',
+      disabled: false
     },
   ];
 

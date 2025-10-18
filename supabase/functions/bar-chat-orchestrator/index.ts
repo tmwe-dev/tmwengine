@@ -80,7 +80,16 @@ serve(async (req) => {
     }
 
     const { recentMessages, cumulativeSummary } = conversationData;
-    console.log('📚 Riassunto cumulativo:', cumulativeSummary ? `${cumulativeSummary.substring(0, 100)}...` : 'Nessuno');
+    
+    // FIX 5: DIAGNOSTICA SUMMARY
+    console.log('📚 DIAGNOSTICA SUMMARY:', {
+      conversationId,
+      hasRecentMessages: recentMessages.length > 0,
+      recentMessagesCount: recentMessages.length,
+      hasCumulativeSummary: !!cumulativeSummary,
+      summaryLength: cumulativeSummary?.length || 0,
+      summaryPreview: cumulativeSummary ? cumulativeSummary.substring(0, 100) + '...' : 'NULL'
+    });
 
     // ============ LOAD CACHED PROMPTS ============
     const cachedPrompts = await getCachedPrompts(supabaseClient);

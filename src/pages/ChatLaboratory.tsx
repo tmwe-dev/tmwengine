@@ -494,10 +494,13 @@ const ChatLaboratory = () => {
         .insert({
           titolo: `Discussione Multi-Agente ${new Date().toLocaleString()}`,
           active_participants: participants.filter(p => p.is_active).map(p => ({ type: p.type, name: p.name })),
-          riassunto_contesto: null,
+          riassunto_contesto: null, // ✅ FIX 4: Esplicitamente NULL per nuove conversazioni
           last_message_summarized: 0,
-          summary_chunks: [],
-          economy_mode: true
+          last_summarized_at: null, // ✅ FIX 4: Timestamp nullo
+          summary_chunks: [], // ✅ FIX 4: Array vuoto per chunks
+          economy_mode: true,
+          token_count_current: 0, // ✅ FIX 4: Reset token contatore
+          token_count_total: 0 // ✅ FIX 4: Reset token totale
         })
         .select()
         .single();

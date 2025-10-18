@@ -197,10 +197,19 @@ export async function loadConversationData(supabaseClient: any, conversationId: 
 
   const recentMessages = (messages || []).reverse();
 
-  // MEMORIA PULITA: no riassunto per conversazioni nuove/brevi (< 10 messaggi)
-  const cumulativeSummary = (recentMessages.length >= 10)
-    ? (conversation?.riassunto_contesto || null)
-    : null;
+  // FIX 2: MEMORIA PULITA - no riassunto per conversazioni nuove/brevi (< 10 messaggi)
+  // + Safety check: forza NULL se summary è vuoto o se conversazione breve
+  let cumulativeSummary = null;
+  
+  if (recentMessages.length >= 10 && conversation?.riassunto_contesto) {
+    cumulativeSummary = conversation.riassunto_contesto;
+    
+    // ⚠️ SAFETY: Se summary è stringa vuota, forza NULL
+    if (cumulativeSummary === '' || cumulativeSummary.trim() === '') {
+      console.warn('⚠️ Summary vuoto rilevato, forzo NULL');
+      cumulativeSummary = null;
+    }
+  }
 
   return {
     isPaused: false,

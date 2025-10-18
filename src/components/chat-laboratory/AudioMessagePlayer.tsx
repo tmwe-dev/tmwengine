@@ -54,7 +54,7 @@ export const AudioMessagePlayer = ({
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [audioUrl, autoPlay]);
+  }, [audioUrl, autoPlay, onPlayingChange, onPlayStart, onPlayEnd]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -70,7 +70,6 @@ export const AudioMessagePlayer = ({
       audio.pause();
       setIsPlaying(false);
       onPlayingChange?.(false);
-      onPlayEnd?.();
     } else {
       audio.play().then(() => {
         setIsPlaying(true);

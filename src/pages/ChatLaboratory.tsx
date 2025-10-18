@@ -719,6 +719,18 @@ const ChatLaboratory = () => {
             participants: activeAIParticipants
           }
         });
+
+        // Mostra toast se audio in generazione
+        if (!error && data?.responses) {
+          const hasAudioPending = data.responses.some((r: any) => !r.audioUrl);
+          if (hasAudioPending) {
+            toast({
+              title: '🎵 Generazione audio...',
+              description: 'Gli audio saranno disponibili tra pochi secondi',
+              duration: 3000,
+            });
+          }
+        }
         
         console.log('📥 Risposta da bar-chat-orchestrator:', { data, error });
         

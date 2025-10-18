@@ -371,6 +371,28 @@ serve(async (req) => {
       
       console.log(`📝 Context include: messaggio utente + ${allResponses.length} risposte precedenti`);
 
+      // ============ DIRECT CALL DETECTION ============
+      // Controlla se l'ultimo agente ha chiamato esplicitamente questo agente
+      const lastResponse = allResponses[allResponses.length - 1];
+      const lastMessage = recentMessages.length > 0 ? recentMessages[recentMessages.length - 1] : null;
+      
+      const wasCalledByAgent = lastResponse && (
+        lastResponse.content.toLowerCase().includes(currentAgent.name.toLowerCase()) ||
+        lastResponse.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`) ||
+        lastResponse.content.match(new RegExp(`\\b${currentAgent.name}\\b`, 'i'))
+      );
+      
+      const wasDirectlyAddressed = lastMessage && (
+        lastMessage.content.toLowerCase().includes(currentAgent.name.toLowerCase()) ||
+        lastMessage.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`)
+      );
+      
+      const isDirectCall = wasCalledByAgent || wasDirectlyAddressed;
+      
+      if (wasCalledByAgent) {
+        console.log(`📢 ${lastResponse.agentName} ha chiamato ${currentAgent.name} → PRIORITÀ RISPOSTA`);
+      }
+
       // ============ RECUPERA PERSONALITÀ DA CACHE ============
       const agentPersonality = cachedPrompts.agentPersonalities.get(
         currentAgent.name.toLowerCase()
@@ -424,6 +446,35 @@ serve(async (req) => {
       }
       
       composedPrompt += styleInstructions + '\n\n';
+
+      // Add context about other agents in this turn
+      if (allResponses.length > 0) {
+        const previousAgentsContext = allResponses
+          .map(r => `${r.agentName}: ${r.content.substring(0, 200)}...`)
+          .join('\n\n');
+        
+        composedPrompt += `
+RISPOSTE PRECEDENTI IN QUESTO TURNO:
+${previousAgentsContext}
+
+Considera queste risposte quando formuli la tua. Puoi:
+- Concordare o aggiungere nuovi punti
+- Offrire una prospettiva diversa
+- Rispondere direttamente a uno degli altri agenti
+- Scrivere [SKIP] se non hai nulla di rilevante da aggiungere
+`;
+      }
+
+      // Priorità se chiamato direttamente
+      if (wasCalledByAgent) {
+        composedPrompt += `
+🎯 SEI STATO CHIAMATO DIRETTAMENTE
+${lastResponse.agentName} ti ha menzionato esplicitamente nel suo ultimo intervento.
+Rispondi in modo specifico alla sua richiesta/domanda.
+NON scrivere [SKIP] in questo caso.
+
+`;
+      }
       
       // 🆕 INJECTION MODALITÀ AGENTE
       if (agentMode === 'consultation') {
@@ -816,113 +867,126 @@ serve(async (req) => {
       
       console.log(`✅ Messaggio salvato (ID: ${savedMessage.id})`);
       
-      // ============ GENERAZIONE AUDIO TTS (se abilitato) ============
+      // Audio URL will be generated later in parallel
       let audioUrl: string | null = null;
-      
-      if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.length > 0) {
-        try {
-          // Seleziona voice_id appropriato per l'agente
-          const agentVoice = activeVoiceAgents.find(
-            (v: any) => v.name.toLowerCase().includes(currentAgent.name.toLowerCase())
-          ) || activeVoiceAgents[0]; // Fallback al primo
-          
-          const voiceId = agentVoice.voice_id;
-          console.log(`🎵 Generazione audio per ${currentAgent.name} con voice_id: ${voiceId}`);
-          
-          // Tronca testo per TTS (max 500 chars)
-          const ttsText = aiResponse.length > 500 
-            ? aiResponse.substring(0, 500) + '...' 
-            : aiResponse;
-          
-          // Chiamata ElevenLabs API con retry
-          const audioResult = await withRetry(async () => {
-            const ttsResponse = await fetchWithTimeout(
-              `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-              {
-                method: 'POST',
-                headers: {
-                  'xi-api-key': elevenLabsApiKey!,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  text: ttsText,
-                  model_id: 'eleven_multilingual_v2',
-                  voice_settings: {
-                    stability: 0.5,
-                    similarity_boost: 0.75
-                  }
-                })
-              },
-              30000
-            );
-            
-            if (!ttsResponse.ok) {
-              const errorText = await ttsResponse.text();
-              console.error(`❌ ElevenLabs TTS error ${ttsResponse.status}:`, errorText);
-              
-              if (ttsResponse.status === 429) throw new Error('429');
-              if (ttsResponse.status >= 500) throw new Error('5xx');
-              throw new Error(`ElevenLabs error ${ttsResponse.status}`);
-            }
-            
-            return ttsResponse;
-          }, { retries: 2, baseDelayMs: 500 });
-          
-          // Converti audio in blob
-          const audioBlob = await audioResult.blob();
-          const audioArrayBuffer = await audioBlob.arrayBuffer();
-          const audioFile = new File([audioArrayBuffer], `${savedMessage.id}.mp3`, { type: 'audio/mpeg' });
-          
-          // Upload su Supabase Storage
-          const storagePath = `${conversationId}/${savedMessage.id}.mp3`;
-          const { data: uploadData, error: uploadError } = await supabaseClient.storage
-            .from('audio-responses')
-            .upload(storagePath, audioFile, {
-              contentType: 'audio/mpeg',
-              upsert: true
-            });
-          
-          if (uploadError) {
-            console.error('❌ Errore upload audio:', uploadError);
-          } else {
-            console.log(`✅ Audio caricato su Storage: ${storagePath}`);
-            
-            // Ottieni URL pubblico
-            const { data: urlData } = supabaseClient.storage
-              .from('audio-responses')
-              .getPublicUrl(storagePath);
-            
-            audioUrl = urlData.publicUrl;
-            
-            // Aggiorna audio_url nel messaggio
-            await supabaseClient
-              .from('chat_laboratory_messages')
-              .update({ audio_url: audioUrl })
-              .eq('id', savedMessage.id);
-            
-            console.log(`✅ audio_url aggiornato per messageId: ${savedMessage.id}`);
-          }
-        } catch (audioError: any) {
-          console.error(`⚠️ Errore generazione TTS per ${currentAgent.name}:`, audioError.message);
-          // Non bloccare il flusso se TTS fallisce (messaggio già salvato)
-        }
-      }
       
       // ============ AGGIUNGI ALLA LISTA RISPOSTE ============
       allResponses.push({
         agentName: currentAgent.name,
         agentType: currentAgent.type,
         content: aiResponse,
-        tokenInput,
-        tokenOutput,
-        responseTime,
+        tokensIn: tokenInput,
+        tokensOut: tokenOutput,
+        duration: responseTime,
         messageId: savedMessage.id,
-        audioUrl
+        audioUrl: null
       });
-    } // ← Fine del loop for
+      
+      console.log(`✅ ${currentAgent.name} processato in ${responseTime}ms`);
 
-    // ============ TURNO COMPLETATO ============
-    console.log(`\n✅ Turno completato: ${allResponses.length} agenti hanno risposto`);
+      // ============ PAUSE BETWEEN AGENTS (non direct calls) ============
+      if (!isDirectCall && i < sortedParticipants.length - 1) {
+        const pauseMs = pauseBetweenTurnsMs || paceDelays[conversationPace];
+        if (pauseMs > 0) {
+          console.log(`⏸️  Pausa ${pauseMs}ms prima del prossimo agente...`);
+          await delay(pauseMs);
+        }
+      }
+
+    } catch (error: any) {
+      console.error(`❌ Errore con ${currentAgent.name}:`, error.message);
+      
+      // Continue with other agents
+      continue;
+    }
+  } // ← Fine del loop for
+
+  // ============ GENERAZIONE AUDIO IN PARALLELO (se abilitato) ============
+  if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.length > 0 && allResponses.length > 0) {
+    console.log(`🎵 Avvio generazione TTS per ${allResponses.length} messaggi in parallelo...`);
+    
+    const ttsPromises = allResponses.map(async (response) => {
+      try {
+        const agentVoice = activeVoiceAgents.find(
+          (v: any) => v.name.toLowerCase().includes(response.agentName.toLowerCase())
+        ) || activeVoiceAgents[0];
+        
+        const voiceId = agentVoice.voice_id;
+        const ttsText = response.content.length > 500 
+          ? response.content.substring(0, 500) + '...' 
+          : response.content;
+        
+        // Chiamata ElevenLabs con modello veloce
+        const ttsResponse = await fetchWithTimeout(
+          `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+          {
+            method: 'POST',
+            headers: {
+              'xi-api-key': elevenLabsApiKey!,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              text: ttsText,
+              model_id: 'eleven_turbo_v2_5',
+              voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+            })
+          },
+          15000
+        );
+        
+        if (!ttsResponse.ok) {
+          const errorText = await ttsResponse.text();
+          throw new Error(`TTS error ${ttsResponse.status}: ${errorText}`);
+        }
+        
+        const audioBlob = await ttsResponse.blob();
+        const audioArrayBuffer = await audioBlob.arrayBuffer();
+        const audioFile = new File([audioArrayBuffer], `${response.messageId}.mp3`, { type: 'audio/mpeg' });
+        
+        // Upload to Supabase Storage
+        const storagePath = `${conversationId}/${response.messageId}.mp3`;
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+          .from('audio-responses')
+          .upload(storagePath, audioFile, { contentType: 'audio/mpeg', upsert: true });
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: urlData } = supabaseClient.storage
+          .from('audio-responses')
+          .getPublicUrl(storagePath);
+        
+        const audioUrl = urlData.publicUrl;
+        
+        // Update DB
+        await supabaseClient
+          .from('chat_laboratory_messages')
+          .update({ audio_url: audioUrl })
+          .eq('id', response.messageId);
+        
+        console.log(`✅ Audio ${response.agentName}: ${audioUrl.substring(0, 60)}...`);
+        return { messageId: response.messageId, audioUrl };
+        
+      } catch (error: any) {
+        console.error(`⚠️ TTS fallito per ${response.agentName}:`, error.message);
+        return { messageId: response.messageId, audioUrl: null };
+      }
+    });
+    
+    const ttsResults = await Promise.allSettled(ttsPromises);
+    
+    // Aggiorna allResponses con gli audioUrl
+    ttsResults.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value.audioUrl) {
+        allResponses[index].audioUrl = result.value.audioUrl;
+      }
+    });
+    
+    const successCount = ttsResults.filter(r => r.status === 'fulfilled' && r.value.audioUrl).length;
+    console.log(`✅ TTS completato: ${successCount}/${allResponses.length} successi`);
+  }
+
+  // ============ TURNO COMPLETATO ============
+  console.log(`\n✅ Turno completato: ${allResponses.length} agenti hanno risposto`);
 
     // ✅ AUTO-REGENERAZIONE SUMMARY ogni 20 messaggi
     const totalMessages = (messages?.length || 0) + allResponses.length + 1; // +1 user + N agenti
@@ -954,10 +1018,10 @@ serve(async (req) => {
           speaker: r.agentName,
           type: r.agentType,
           message_id: r.messageId,
-          audio_url: r.audioUrl || null,
-          token_input: r.tokenInput,
-          token_output: r.tokenOutput,
-          response_time_ms: r.responseTime
+          audioUrl: r.audioUrl || null,
+          token_input: r.tokensIn,
+          token_output: r.tokensOut,
+          response_time_ms: r.duration
         })),
         message: `${allResponses.length} agenti hanno risposto in sequenza`,
         
@@ -965,10 +1029,10 @@ serve(async (req) => {
         orchestration: {
           mode: 'sequential',
           total_agents: allResponses.length,
-          total_latency_ms: allResponses.reduce((sum, r) => sum + r.responseTime, 0),
-          avg_latency_ms: Math.round(allResponses.reduce((sum, r) => sum + r.responseTime, 0) / allResponses.length),
-          total_tokens_in: allResponses.reduce((sum, r) => sum + r.tokenInput, 0),
-          total_tokens_out: allResponses.reduce((sum, r) => sum + r.tokenOutput, 0)
+          total_latency_ms: allResponses.reduce((sum, r) => sum + r.duration, 0),
+          avg_latency_ms: Math.round(allResponses.reduce((sum, r) => sum + r.duration, 0) / allResponses.length),
+          total_tokens_in: allResponses.reduce((sum, r) => sum + r.tokensIn, 0),
+          total_tokens_out: allResponses.reduce((sum, r) => sum + r.tokensOut, 0)
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

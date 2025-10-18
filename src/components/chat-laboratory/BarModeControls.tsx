@@ -4,9 +4,11 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Volume2 } from 'lucide-react';
 
 interface BarModeControlsProps {
   conversationId: string | null;
@@ -22,6 +24,7 @@ interface BarModeSettings {
   agent_interaction_mode?: 'consultation' | 'free_bar';
   conversation_style?: 'boss_talk' | 'colleagues' | 'bar_chat';
   preset?: string;
+  pause_between_turns_ms?: number;
 }
 
 export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeControlsProps) => {
@@ -222,6 +225,32 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
 
   return (
     <div className="space-y-2 p-3 bg-card rounded-lg">
+      {/* 🔊 TOGGLE AUDIO - Sempre visibile */}
+      <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+        <div className="flex items-center gap-2">
+          <Volume2 className={cn(
+            "h-5 w-5 transition-colors",
+            settings.voice_enabled ? "text-primary animate-pulse" : "text-muted-foreground"
+          )} />
+          <Label htmlFor="voice-main-toggle" className="text-sm font-semibold cursor-pointer">
+            Audio Agenti
+          </Label>
+        </div>
+        <Switch
+          id="voice-main-toggle"
+          checked={settings.voice_enabled}
+          onCheckedChange={(checked) => {
+            updateSetting('voice_enabled', checked);
+            toast({
+              title: checked ? '🔊 Audio attivato' : '🔇 Audio disattivato',
+              description: checked 
+                ? 'Gli agenti parleranno automaticamente' 
+                : 'Solo testo, nessun audio',
+            });
+          }}
+        />
+      </div>
+
       {/* Preset Selector - Una riga orizzontale */}
       <div className="flex items-center gap-2 flex-wrap">
         <Label className="text-xs font-semibold shrink-0">Modalità:</Label>
@@ -327,6 +356,28 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
           <span>Avanzate</span>
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2 space-y-2">
+          {/* Pausa manuale tra agenti */}
+          <div className="flex flex-col gap-2">
+            <Label className="text-xs">
+              Pausa tra agenti (ms)
+            </Label>
+            <Input
+              type="number"
+              min="0"
+              max="5000"
+              step="100"
+              value={settings.pause_between_turns_ms || 0}
+              onChange={(e) => {
+                updateSetting('pause_between_turns_ms', parseInt(e.target.value));
+                setPreset('custom');
+              }}
+              className="h-8 text-xs"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              0ms = Nessuna pausa (più veloce)
+            </p>
+          </div>
+
           <div className="flex items-center gap-2">
             <Label htmlFor="topic-select" className="text-xs shrink-0">Argomento:</Label>
             <Select value={selectedTopic || ''} onValueChange={updateTopic}>
@@ -372,20 +423,6 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
               checked={settings.enable_interruptions}
               onCheckedChange={(checked) => {
                 updateSetting('enable_interruptions', checked);
-                setPreset('custom');
-              }}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Label htmlFor="voice-toggle" className="text-xs flex-1">
-              Voce AI
-            </Label>
-            <Switch
-              id="voice-toggle"
-              checked={settings.voice_enabled}
-              onCheckedChange={(checked) => {
-                updateSetting('voice_enabled', checked);
                 setPreset('custom');
               }}
             />

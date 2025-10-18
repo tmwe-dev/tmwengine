@@ -679,7 +679,7 @@ const ChatLaboratory = () => {
       const nextSequence = (maxSeq?.message_sequence || 0) + 1;
 
       // Salva messaggio umano
-      const { error: insertError } = await supabase
+      const { data: savedUserMessage, error: insertError } = await supabase
         .from('chat_laboratory_messages')
         .insert([{
           conversation_id: conversationId,
@@ -692,9 +692,22 @@ const ChatLaboratory = () => {
           attachments: uploadedFiles as any,
           images: uploadedFiles.filter(f => f.isImage).map(f => f.url) as any,
           generated_images: generatedImage ? [generatedImage] as any : []
-        }]);
+        }])
+        .select()
+        .single();
 
       if (insertError) throw insertError;
+
+      // ✅ IMMEDIATAMENTE: Aggiungi messaggio user allo state locale e ricarica
+      if (savedUserMessage) {
+        await loadMessages(conversationId);
+        
+        // ✅ Forza apertura tab se in modalità tabs
+        if (viewMode === 'tabs') {
+          console.log('✅ Attivazione immediata tab dopo invio messaggio user');
+          // Il tab verrà attivato automaticamente da MessageTabsView grazie al refresh dei messaggi
+        }
+      }
 
       setUploadedFiles([]);
       setGeneratedImage(null);

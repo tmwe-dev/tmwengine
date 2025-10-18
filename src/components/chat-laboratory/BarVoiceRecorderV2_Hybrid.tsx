@@ -323,6 +323,9 @@ export const BarVoiceRecorderV2_Hybrid = ({
           className="relative"
           title="🎤 HYBRID: Premi per attivare microfono sempre acceso. Auto-invio ogni pausa 1.5s. Ripremi per disattivare."
         >
+        <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+          4
+        </span>
         {isProcessing ? (
           <div className="animate-spin">⏳</div>
         ) : (

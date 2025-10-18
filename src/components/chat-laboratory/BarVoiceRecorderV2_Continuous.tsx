@@ -308,6 +308,9 @@ export const BarVoiceRecorderV2_Continuous = ({
         className="relative"
         title="🎤 CONTINUOUS: Premi per iniziare. Stop automatico dopo 1.5s silenzio. Ripremi per fermare manualmente."
       >
+        <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+          2
+        </span>
         {isProcessing ? (
           <div className="animate-spin">⏳</div>
         ) : (

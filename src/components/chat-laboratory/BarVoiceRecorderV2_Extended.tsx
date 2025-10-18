@@ -286,6 +286,9 @@ export const BarVoiceRecorderV2_Extended = ({
           className="relative"
           title="🎤 EXTENDED: TIENI PREMUTO per parlare. Rilascia quando finisci. Auto-invio dopo 1.5s silenzio."
         >
+        <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+          3
+        </span>
         {isProcessing ? (
           <div className="animate-spin">⏳</div>
         ) : (

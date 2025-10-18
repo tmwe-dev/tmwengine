@@ -301,11 +301,14 @@ export const BarVoiceRecorder = ({
         disabled={isDisabled || isProcessing}
         onClick={handleToggle}
         className={cn(
-          "h-10 w-10 rounded-full transition-all",
+          "h-10 w-10 rounded-full transition-all relative",
           isRecording && "shadow-lg shadow-red-500/20",
           isProcessing && "opacity-70"
         )}
       >
+        <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+          1
+        </span>
         <Mic className={cn(
           "h-4 w-4",
           isRecording && "animate-pulse"

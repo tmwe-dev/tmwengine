@@ -1,3 +1,6 @@
+// 🚧 DEPRECATO - Funzionalità migrata in BarModeControls.tsx
+// Mantenuto per reference, ma non più utilizzato nell'UI
+
 import { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';

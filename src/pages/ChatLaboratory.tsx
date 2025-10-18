@@ -26,7 +26,7 @@ import { BarModeTabsControls } from '@/components/chat-laboratory/BarModeTabsCon
 import { InterruptButton } from '@/components/chat-laboratory/InterruptButton';
 import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
 import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggle';
-import { BarChatSettings } from '@/components/chat-laboratory/BarChatSettings';
+// import { BarChatSettings } from '@/components/chat-laboratory/BarChatSettings'; // 🗑️ Deprecato - funzionalità in BarModeControls
 import { BarModeControls } from '@/components/chat-laboratory/BarModeControls';
 import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNavigationBar';
 import { ConversationSummaryPanel } from '@/components/chat-laboratory/ConversationSummaryPanel';
@@ -1282,21 +1282,7 @@ const ChatLaboratory = () => {
                 </Card>
                 
                 {/* Bar Chat Settings - QUARTA (Stile Conversazione + VAD) */}
-                {isBarMode && (
-                  <Card className="bg-white/5 border-white/10">
-                    <CardHeader>
-                      <CardTitle className="text-white text-sm">🍺 Impostazioni Bar Chat</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <BarChatSettings 
-                        conversationId={currentConversationId}
-                        onSettingsChange={(settings) => {
-                          console.log('📝 Bar Chat Settings aggiornati:', settings);
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
+        {/* 🗑️ BarChatSettings rimosso - ora integrato in BarModeControls */}
                 
                 {/* Stats - QUARTA (in fondo, con placeholder se no conversazione) */}
                 <Card className="bg-white/5 border-white/10">

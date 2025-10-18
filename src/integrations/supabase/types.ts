@@ -366,6 +366,7 @@ export type Database = {
       chat_laboratory_bar_mode: {
         Row: {
           active_kb_id: string | null
+          agent_interaction_mode: string | null
           audio_mode: string
           auto_advance_tabs: boolean | null
           auto_play_audio: boolean
@@ -373,6 +374,7 @@ export type Database = {
           continuous_mic_enabled: boolean | null
           conversation_id: string
           conversation_pace: string
+          conversation_style: string | null
           created_at: string
           enable_direct_call_detection: boolean | null
           enable_interruptions: boolean
@@ -384,13 +386,14 @@ export type Database = {
           preset: string
           response_mode: string
           selected_topic: string | null
-          turn_strategy: string
+          turn_strategy: string | null
           updated_at: string
           user_id: string | null
           voice_enabled: boolean
         }
         Insert: {
           active_kb_id?: string | null
+          agent_interaction_mode?: string | null
           audio_mode?: string
           auto_advance_tabs?: boolean | null
           auto_play_audio?: boolean
@@ -398,6 +401,7 @@ export type Database = {
           continuous_mic_enabled?: boolean | null
           conversation_id: string
           conversation_pace?: string
+          conversation_style?: string | null
           created_at?: string
           enable_direct_call_detection?: boolean | null
           enable_interruptions?: boolean
@@ -409,13 +413,14 @@ export type Database = {
           preset?: string
           response_mode?: string
           selected_topic?: string | null
-          turn_strategy?: string
+          turn_strategy?: string | null
           updated_at?: string
           user_id?: string | null
           voice_enabled?: boolean
         }
         Update: {
           active_kb_id?: string | null
+          agent_interaction_mode?: string | null
           audio_mode?: string
           auto_advance_tabs?: boolean | null
           auto_play_audio?: boolean
@@ -423,6 +428,7 @@ export type Database = {
           continuous_mic_enabled?: boolean | null
           conversation_id?: string
           conversation_pace?: string
+          conversation_style?: string | null
           created_at?: string
           enable_direct_call_detection?: boolean | null
           enable_interruptions?: boolean
@@ -434,7 +440,7 @@ export type Database = {
           preset?: string
           response_mode?: string
           selected_topic?: string | null
-          turn_strategy?: string
+          turn_strategy?: string | null
           updated_at?: string
           user_id?: string | null
           voice_enabled?: boolean
@@ -530,6 +536,7 @@ export type Database = {
           conversation_style: string | null
           created_at: string | null
           current_turn_index: number | null
+          current_turn_interventions: Json | null
           economy_mode: boolean | null
           final_summary: string | null
           id: string
@@ -562,6 +569,7 @@ export type Database = {
           conversation_style?: string | null
           created_at?: string | null
           current_turn_index?: number | null
+          current_turn_interventions?: Json | null
           economy_mode?: boolean | null
           final_summary?: string | null
           id?: string
@@ -594,6 +602,7 @@ export type Database = {
           conversation_style?: string | null
           created_at?: string | null
           current_turn_index?: number | null
+          current_turn_interventions?: Json | null
           economy_mode?: boolean | null
           final_summary?: string | null
           id?: string

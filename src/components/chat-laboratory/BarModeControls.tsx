@@ -19,7 +19,8 @@ interface BarModeSettings {
   auto_play_audio: boolean;
   voice_enabled: boolean;
   audio_mode?: string;
-  turn_strategy?: string;
+  agent_interaction_mode?: 'consultation' | 'free_bar';
+  conversation_style?: 'boss_talk' | 'colleagues' | 'bar_chat';
   preset?: string;
 }
 
@@ -43,7 +44,8 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
       auto_play_audio: true,
       voice_enabled: true,
       audio_mode: 'stable',
-      turn_strategy: 'RANDOM_30',
+      agent_interaction_mode: 'consultation',
+      conversation_style: 'colleagues',
       preset: 'professional'
     };
 
@@ -145,41 +147,34 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     }
   };
 
-  // ⚠️ Validazione: Continuous + Smart Priority = INCOMPATIBILE
-  useEffect(() => {
-    if (settings.audio_mode === 'continuous' && settings.turn_strategy === 'SMART_PRIORITY') {
-      console.warn('⚠️ Continuous + Smart Priority incompatibile, switch a Random');
-      updateSetting('turn_strategy', 'RANDOM_30');
-      toast({
-        title: '⚠️ Configurazione incompatibile',
-        description: 'Continuous richiede Random Turn-Taking. Ho corretto automaticamente.',
-      });
-    }
-  }, [settings.audio_mode, settings.turn_strategy]);
+  // ✅ Validazione rimossa - turn_strategy obsoleto
 
-  // Applica preset completo
+  // Applica preset completo con nuove mappature
   const applyPreset = (presetName: 'fast' | 'professional' | 'deep') => {
     const presets = {
       fast: {
         audio_mode: 'continuous',
-        turn_strategy: 'RANDOM_30',
         conversation_pace: 'fast' as const,
         voice_enabled: true,
-        preset: 'fast'
+        preset: 'fast',
+        agent_interaction_mode: 'free_bar' as const,
+        conversation_style: 'colleagues' as const
       },
       professional: {
         audio_mode: 'stable',
-        turn_strategy: 'RANDOM_30',
         conversation_pace: 'normal' as const,
         voice_enabled: true,
-        preset: 'professional'
+        preset: 'professional',
+        agent_interaction_mode: 'consultation' as const,
+        conversation_style: 'colleagues' as const
       },
       deep: {
         audio_mode: 'extended',
-        turn_strategy: 'SMART_PRIORITY',
         conversation_pace: 'slow' as const,
         voice_enabled: true,
-        preset: 'deep'
+        preset: 'deep',
+        agent_interaction_mode: 'consultation' as const,
+        conversation_style: 'boss_talk' as const
       },
     };
 
@@ -192,13 +187,27 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     localStorage.setItem('barModeSettings', JSON.stringify(newSettings));
 
     if (conversationId) {
-      supabase
-        .from('chat_laboratory_bar_mode')
-        .update(config)
-        .eq('conversation_id', conversationId)
-        .then(({ error }) => {
-          if (error) console.error('❌ Errore salvataggio preset:', error);
-        });
+      Promise.all([
+        supabase
+          .from('chat_laboratory_bar_mode')
+          .update({
+            audio_mode: config.audio_mode,
+            conversation_pace: config.conversation_pace,
+            voice_enabled: config.voice_enabled,
+            preset: config.preset,
+            agent_interaction_mode: config.agent_interaction_mode,
+            conversation_style: config.conversation_style
+          })
+          .eq('conversation_id', conversationId),
+        
+        supabase
+          .from('chat_laboratory_conversations')
+          .update({ conversation_style: config.conversation_style })
+          .eq('id', conversationId)
+      ]).then(([barModeResult, conversationResult]) => {
+        if (barModeResult.error) console.error('❌ Errore salvataggio bar_mode:', barModeResult.error);
+        if (conversationResult.error) console.error('❌ Errore salvataggio conversation:', conversationResult.error);
+      });
     } else {
       localStorage.setItem('barModePendingSettings', JSON.stringify(newSettings));
     }
@@ -261,6 +270,54 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
           <span>🧠</span>
           <span className="font-medium">Profonda</span>
         </button>
+      </div>
+
+      {/* Stile Conversazione - Sempre visibile */}
+      <div className="flex flex-col gap-2 pt-2 border-t border-border/20">
+        <Label className="text-xs font-semibold flex items-center gap-2">
+          💬 Stile Conversazione
+        </Label>
+        <Select
+          value={settings.conversation_style || 'colleagues'}
+          onValueChange={(value: 'boss_talk' | 'colleagues' | 'bar_chat') => {
+            updateSetting('conversation_style', value);
+            setPreset('custom');
+            
+            if (conversationId) {
+              supabase
+                .from('chat_laboratory_conversations')
+                .update({ conversation_style: value })
+                .eq('id', conversationId);
+            }
+          }}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="boss_talk">
+              <div className="flex items-center gap-2">
+                <span>🎯</span>
+                <span className="font-medium">Boss Talk</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="colleagues">
+              <div className="flex items-center gap-2">
+                <span>🤝</span>
+                <span className="font-medium">Colleghi</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="bar_chat">
+              <div className="flex items-center gap-2">
+                <span>🍺</span>
+                <span className="font-medium">Bar Chat</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-[10px] text-muted-foreground leading-tight">
+          Tono della conversazione (sovrascrive personalità individuali)
+        </p>
       </div>
 
       {/* Advanced Toggle */}
@@ -334,6 +391,7 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
             />
           </div>
 
+          {/* 🚧 HYBRID MODE - Temporaneamente disabilitato
           <div className="pt-2 border-t border-border/40">
             <Button
               variant="outline"
@@ -341,7 +399,6 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
               className="w-full text-xs h-8"
               onClick={() => {
                 updateSetting('audio_mode', 'hybrid');
-                updateSetting('turn_strategy', 'RANDOM_30');
                 setPreset('custom');
                 toast({
                   title: '🔄 Hybrid attivata',
@@ -352,6 +409,7 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
               🔄 Hybrid (Sperimentale)
             </Button>
           </div>
+          */}
         </CollapsibleContent>
       </Collapsible>
     </div>

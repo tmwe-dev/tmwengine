@@ -197,10 +197,10 @@ serve(async (req) => {
       throw new Error('Nessuna chiave API configurata');
     }
 
-    // Fetch Bar Mode settings
+    // Fetch Bar Mode settings con nuove colonne
     const { data: barModeSettings } = await supabaseClient
       .from('chat_laboratory_bar_mode')
-      .select('*')
+      .select('mode, selected_topic, active_kb_id, voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms')
       .eq('conversation_id', conversationId)
       .single();
 
@@ -211,9 +211,24 @@ serve(async (req) => {
     const selectedTopic = barModeSettings.selected_topic;
     const activeKbId = barModeSettings.active_kb_id;
     const voiceEnabled = barModeSettings.voice_enabled ?? true;
-    console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno (non usato)');
-    console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna (temporaneamente disabilitata)');
-    console.log('🎤 Voice enabled dal DB:', voiceEnabled);
+    const agentMode = barModeSettings.agent_interaction_mode || 'consultation';
+    const conversationStyle = barModeSettings.conversation_style || 'colleagues';
+    const conversationPace = barModeSettings.conversation_pace || 'normal';
+
+    const paceDelays = {
+      slow: 2000,
+      normal: 800,
+      fast: 300
+    };
+    const pauseBetweenTurnsMs = barModeSettings.pause_between_turns_ms || paceDelays[conversationPace as keyof typeof paceDelays];
+
+    console.log('⚙️ Configurazione:', {
+      agentMode,
+      conversationStyle,
+      conversationPace,
+      pauseBetweenTurnsMs,
+      voiceEnabled
+    });
     
     // ============ KB TEMPORANEAMENTE DISABILITATO ============
     // Struttura conservata per futuri usi - eliminata chiamata API e RPC
@@ -352,6 +367,53 @@ serve(async (req) => {
       if (agentPersonality) {
         composedPrompt += '=== TUA PERSONALITÀ ===\n';
         composedPrompt += agentPersonality + '\n\n';
+      }
+
+      // 🆕 INJECTION STILE CONVERSAZIONALE
+      let styleInstructions = '';
+      
+      if (conversationStyle === 'boss_talk') {
+        styleInstructions = `
+🎯 STILE: Boss Talk (Pragmatico e Sintetico)
+- MAX 50-60 parole (~4 frasi brevi)
+- Focus su: decisioni, ROI, trade-off, next steps
+- Taglia tutto ciò che non è direttamente azionabile
+- Usa dati concreti: "Secondo benchmark X, l'opzione A costa il 30% in meno"
+- Tono diretto: "Dobbiamo decidere tra A e B. Pro di A: [lista]. Vai con B?"
+`;
+      } else if (conversationStyle === 'colleagues') {
+        styleInstructions = `
+🤝 STILE: Colleghi (Professionale ma Amichevole)
+- MAX 60-70 parole (~5 frasi)
+- Bilanciato tra tecnico e accessibile
+- Coinvolgi gli altri: "Come vedi tu [nome], sarebbe fattibile con i nostri constraint?"
+- Puoi usare metafore o esempi pratici
+- Tono collaborativo ma non eccessivamente formale
+`;
+      } else if (conversationStyle === 'bar_chat') {
+        styleInstructions = `
+🍺 STILE: Bar Chat (Informale e Rilassato)
+- MAX 40-50 parole (~3 frasi)
+- Attacco conversazionale: "Guarda...", "Senti...", "Allora..."
+- Scherzoso quando appropriato, ma non forzato
+- Coinvolgi con domande dirette: "Tu [nome], lo faresti diversamente?"
+- Tono da bar, non da conferenza: evita "in conclusione", "per riassumere"
+`;
+      }
+      
+      composedPrompt += styleInstructions + '\n\n';
+      
+      // 🆕 INJECTION MODALITÀ AGENTE
+      if (agentMode === 'consultation') {
+        composedPrompt += `
+📚 MODALITÀ: Consultazione Formale
+- Puoi essere dettagliato e approfondito (fino a 150 parole se necessario)
+- Usa linguaggio tecnico quando appropriato
+- Fornisci spiegazioni complete e strutturate
+- Cita fonti o riferimenti se rilevanti
+- Questo è il tuo UNICO intervento, quindi sii esaustivo
+
+`;
       }
 
       // TOPIC e KB_CONTEXT temporaneamente disabilitati (struttura conservata)

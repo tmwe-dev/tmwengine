@@ -724,8 +724,8 @@ const ChatLaboratory = () => {
             conversationId,
             userMessage: currentPrompt,
             participants: activeAIParticipants,
-            response_mode: responseMode,
-            targetParticipantType: targetParticipant
+            response_mode: 'auto', // Bar mode usa sempre turno automatico
+            targetParticipantType: null // Non serve in auto mode
           }
         });
 

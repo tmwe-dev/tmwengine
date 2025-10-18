@@ -253,16 +253,23 @@ const ChatLaboratory = () => {
   };
 
   useEffect(() => {
-    initializeParticipants();
-    loadConversations();
-    
-    const getCurrentUser = async () => {
+    const initialize = async () => {
+      initializeParticipants();
+      await loadConversations();
+      
       const { data } = await supabase.auth.getUser();
       if (data.user) {
         setCurrentUserId(data.user.id);
       }
+
+      // Auto-crea nuova conversazione se non esiste
+      if (!currentConversationId) {
+        console.log('🆕 Nessuna conversazione attiva - creazione automatica...');
+        await createNewConversation();
+      }
     };
-    getCurrentUser();
+    
+    initialize();
   }, []);
 
   useEffect(() => {

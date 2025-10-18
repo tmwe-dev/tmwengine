@@ -127,7 +127,11 @@ const ChatLaboratoryCalibration = () => {
                     <div
                       key={message.id}
                       onClick={() => handleMessageClick(message)}
-                      className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
+                      className={`border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors ${
+                        selectedPrompt?.message_id === message.id
+                          ? 'ring-2 ring-primary bg-accent/50'
+                          : ''
+                      }`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <span className="font-semibold text-sm">
@@ -191,8 +195,13 @@ const ChatLaboratoryCalibration = () => {
             )}
           </div>
 
-          {/* Right Column: Test Results + Debug Panel */}
+          {/* Right Column: Prompt Viewer + Test Results + Debug Panel */}
           <div className="col-span-4 space-y-4">
+            {/* Prompt Viewer - mostra il prompt del messaggio selezionato */}
+            {selectedPrompt && (
+              <PromptViewer structuredPrompt={selectedPrompt} />
+            )}
+
             {/* Last Call Debug Panel */}
             {lastResponse && (
               <Card className="p-4">

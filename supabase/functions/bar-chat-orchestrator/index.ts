@@ -605,13 +605,31 @@ serve(async (req) => {
           tempo_risposta_ms: responseTime,
           attachments: {
             structured_prompt: {
+              message_id: null, // Popolato dopo
               timestamp: new Date().toISOString(),
               global_system_prompt: globalSystemPrompt,
-              base_sections_cached: baseContent.substring(0, 200) + '...',
-              agent_personality_cached: agentPersonality.substring(0, 200) + '...',
+              base_sections: baseContent ? [{ type: 'BASE', content: baseContent }] : [],
+              agent_personality: agentPersonality ? [{ agent_name: currentAgent.name, content: agentPersonality }] : [],
+              topic_sections: [],
+              kb_context_sections: [],
+              kb_documents: [],
               cumulative_summary: cumulativeSummary || null,
-              message_history_count: historyMessages.length,
-              turn_context_count: turnContext.length
+              message_history: historyMessages.map(msg => ({
+                role: msg.role,
+                content: msg.content
+              })),
+              turn_context: turnContext.map(msg => ({
+                role: msg.role,
+                content: msg.content
+              })),
+              current_user_message: userMessage,
+              metadata: {
+                agent_index: i + 1,
+                total_agents: activeParticipants.length,
+                history_count: historyMessages.length,
+                turn_context_count: turnContext.length,
+                economy_mode: false
+              }
             },
             debug_info: debugInfo
           }
@@ -622,6 +640,22 @@ serve(async (req) => {
       if (saveError || !savedMessage) {
         console.error('❌ Errore salvataggio messaggio:', saveError);
         throw new Error('Errore salvataggio messaggio');
+      }
+
+      // Aggiorna message_id negli attachments
+      if (savedMessage?.id) {
+        await supabaseClient
+          .from('chat_laboratory_messages')
+          .update({
+            attachments: {
+              ...savedMessage.attachments,
+              structured_prompt: {
+                ...savedMessage.attachments.structured_prompt,
+                message_id: savedMessage.id
+              }
+            }
+          })
+          .eq('id', savedMessage.id);
       }
       
       console.log(`✅ Messaggio salvato (ID: ${savedMessage.id})`);

@@ -616,7 +616,31 @@ LIMITE RISPOSTA: La tua risposta non deve superare i ${config.max_token_conversa
             content: aiResponse || '[Errore: risposta vuota dal modello AI]',
             content_user_friendly: userFriendlySummary,
             content_summary: ultraCompressedSummary,
-            is_summary_available: true
+            is_summary_available: true,
+            attachments: {
+              structured_prompt: {
+                timestamp: new Date().toISOString(),
+                global_system_prompt: systemPromptWithLimit,
+                base_sections: [],
+                topic_sections: [],
+                kb_context_sections: [],
+                kb_documents: [],
+                cumulative_summary: null,
+                message_history: messages
+                  .filter((msg: any) => msg.role !== 'system')
+                  .map((msg: any) => ({
+                    role: msg.role,
+                    content: msg.content
+                  })),
+                current_user_message: prompt,
+                metadata: {
+                  provider: aiConfig.provider,
+                  model: aiConfig.modello,
+                  economy_mode: useEconomyMode,
+                  memoria_completa: useFullMemory
+                }
+              }
+            }
           });
 
         // Update conversation updated_at

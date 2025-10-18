@@ -449,11 +449,61 @@ REGOLE CRITICHE:
             intent_tags: [],
             token_input: value.tokensIn,
             token_output: value.tokensOut,
-            tempo_risposta_ms: value.duration
+            tempo_risposta_ms: value.duration,
+            attachments: {
+              structured_prompt: {
+                message_id: null, // Popolato dopo
+                timestamp: new Date().toISOString(),
+                global_system_prompt: basePrompt,
+                base_sections: [],
+                topic_sections: [],
+                kb_context_sections: [],
+                kb_documents: [],
+                cumulative_summary: null,
+                message_history: (messages || [])
+                  .filter((msg: any) => msg.is_visible_to_ai !== false)
+                  .map((msg: any) => ({
+                    sender_name: msg.sender_name,
+                    content: useEconomyMode && msg.is_summary_available && msg.content_summary && msg.sender_name !== 'Utente'
+                      ? msg.content_summary
+                      : msg.content,
+                    is_summary: useEconomyMode && !!msg.content_summary,
+                    created_at: msg.created_at
+                  })),
+                current_user_message: userMessage,
+                metadata: {
+                  participant_type: value.participant.type,
+                  participant_name: value.participant.name,
+                  history_count: messages?.length || 0,
+                  economy_mode: useEconomyMode
+                }
+              },
+              debug_info: {
+                orchestration_duration: orchestrationDuration,
+                agent_duration: value.duration,
+                timestamp: new Date().toISOString()
+              }
+            }
           })
           .select()
           .single();
         
+        // Aggiorna message_id negli attachments
+        if (savedMessage?.id) {
+          await supabaseClient
+            .from('chat_laboratory_messages')
+            .update({
+              attachments: {
+                ...savedMessage.attachments,
+                structured_prompt: {
+                  ...savedMessage.attachments.structured_prompt,
+                  message_id: savedMessage.id
+                }
+              }
+            })
+            .eq('id', savedMessage.id);
+        }
+
         // Trigger background summary generation
         supabaseClient.functions.invoke('generate-message-summaries', {
           body: { 

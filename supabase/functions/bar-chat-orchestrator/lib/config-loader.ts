@@ -8,6 +8,7 @@ interface PromptCache {
   globalPrompt: string;
   baseSections: string;
   agentPersonalities: Map<string, string>;
+  conversationStyles: Map<string, string>;
   timestamp: number;
 }
 
@@ -24,7 +25,7 @@ export async function getCachedPrompts(supabase: any): Promise<PromptCache> {
     console.log('📦 Ricaricando prompt cache...');
     
     // Una query batch per tutti i prompts
-    const [globalData, baseData, personalityData] = await Promise.all([
+    const [globalData, baseData, personalityData, styleData] = await Promise.all([
       supabase.from('chat_laboratory_system_prompts')
         .select('contenuto')
         .eq('attivo', true)
@@ -40,6 +41,11 @@ export async function getCachedPrompts(supabase: any): Promise<PromptCache> {
       supabase.from('chat_laboratory_prompt_sections')
         .select('section_name, content')
         .eq('section_type', 'AGENT_PERSONALITY')
+        .eq('is_active', true),
+      
+      supabase.from('chat_laboratory_prompt_sections')
+        .select('section_name, content')
+        .eq('section_type', 'CONVERSATION_STYLE')
         .eq('is_active', true)
     ]);
     
@@ -52,10 +58,16 @@ export async function getCachedPrompts(supabase: any): Promise<PromptCache> {
           p.content
         ]) || []
       ),
+      conversationStyles: new Map(
+        styleData.data?.map((s: any) => [
+          s.section_name.toLowerCase(),
+          s.content
+        ]) || []
+      ),
       timestamp: now
     };
     
-    console.log(`✅ Cache aggiornata: ${promptCache.agentPersonalities.size} personalità caricate`);
+    console.log(`✅ Cache aggiornata: ${promptCache.agentPersonalities.size} personalità, ${promptCache.conversationStyles.size} stili`);
   }
   
   return promptCache;

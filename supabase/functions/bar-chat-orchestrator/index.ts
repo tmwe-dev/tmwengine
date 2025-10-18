@@ -178,7 +178,8 @@ serve(async (req) => {
           agentMode,
           previousResponses: allResponses,
           wasCalledDirectly: wasCalledByAgent,
-          lastResponse
+          lastResponse,
+          styleSections: cachedPrompts.conversationStyles
         });
 
         console.log('📝 Prompt finale composto:', composedPrompt ? composedPrompt.substring(0, 200) + '...' : 'Vuoto');

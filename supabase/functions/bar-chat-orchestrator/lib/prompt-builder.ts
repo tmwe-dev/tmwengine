@@ -12,6 +12,7 @@ export interface PromptParams {
   previousResponses: any[];
   wasCalledDirectly: boolean;
   lastResponse?: any;
+  styleSections?: Map<string, string>;
 }
 
 /**
@@ -26,7 +27,8 @@ export function buildSystemPrompt(params: PromptParams): string {
     agentMode,
     previousResponses,
     wasCalledDirectly,
-    lastResponse
+    lastResponse,
+    styleSections
   } = params;
 
   let composedPrompt = globalPrompt + '\n\n';
@@ -41,11 +43,19 @@ export function buildSystemPrompt(params: PromptParams): string {
     composedPrompt += agentPersonality + '\n\n';
   }
 
-  // Style injection
+  // Style injection from DB (con fallback a hardcoded per retrocompatibilità)
   let styleInstructions = '';
   
-  if (conversationStyle === 'boss_talk') {
-    styleInstructions = `
+  if (styleSections && styleSections.has(conversationStyle)) {
+    // Usa stile dal database
+    styleInstructions = styleSections.get(conversationStyle) || '';
+    console.log(`✅ Usando stile DB: ${conversationStyle}`);
+  } else {
+    // Fallback a hardcoded (per retrocompatibilità durante migrazione)
+    console.warn(`⚠️ Stile '${conversationStyle}' non trovato in DB, uso fallback hardcoded`);
+    
+    if (conversationStyle === 'boss_talk') {
+      styleInstructions = `
 🎯 STILE: Boss Talk (Pragmatico e Sintetico)
 - MAX 50-60 parole (~4 frasi brevi)
 - Focus su: decisioni, ROI, trade-off, next steps
@@ -53,8 +63,8 @@ export function buildSystemPrompt(params: PromptParams): string {
 - Usa dati concreti: "Secondo benchmark X, l'opzione A costa il 30% in meno"
 - Tono diretto: "Dobbiamo decidere tra A e B. Pro di A: [lista]. Vai con B?"
 `;
-  } else if (conversationStyle === 'colleagues') {
-    styleInstructions = `
+    } else if (conversationStyle === 'colleagues') {
+      styleInstructions = `
 🤝 STILE: Colleghi (Professionale ma Amichevole)
 - MAX 60-70 parole (~5 frasi)
 - Bilanciato tra tecnico e accessibile
@@ -62,8 +72,8 @@ export function buildSystemPrompt(params: PromptParams): string {
 - Puoi usare metafore o esempi pratici
 - Tono collaborativo ma non eccessivamente formale
 `;
-  } else if (conversationStyle === 'bar_chat') {
-    styleInstructions = `
+    } else if (conversationStyle === 'bar_chat') {
+      styleInstructions = `
 🍺 STILE: Bar Chat (Informale e Rilassato)
 - MAX 40-50 parole (~3 frasi)
 - Attacco conversazionale: "Guarda...", "Senti...", "Allora..."
@@ -71,6 +81,7 @@ export function buildSystemPrompt(params: PromptParams): string {
 - Coinvolgi con domande dirette: "Tu [nome], lo faresti diversamente?"
 - Tono da bar, non da conferenza: evita "in conclusione", "per riassumere"
 `;
+    }
   }
   
   composedPrompt += styleInstructions + '\n\n';

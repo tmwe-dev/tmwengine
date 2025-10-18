@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Brain, Loader2 } from 'lucide-react';
@@ -8,26 +9,46 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { PromptSectionsList } from './PromptSectionsList';
 
 interface LaboratoryPromptManagerProps {
   isProcessing?: boolean;
 }
 
+interface PromptSection {
+  id: string;
+  section_type: string;
+  section_name: string;
+  content: string;
+  is_active: boolean;
+  order_priority: number;
+}
+
 export const LaboratoryPromptManager = ({ isProcessing = false }: LaboratoryPromptManagerProps) => {
   const [open, setOpen] = useState(false);
-  const [prompt, setPrompt] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('global');
+  
+  // Global prompt state
+  const [globalPrompt, setGlobalPrompt] = useState('');
+  const [isLoadingGlobal, setIsLoadingGlobal] = useState(false);
+  
+  // Sections state
+  const [sections, setSections] = useState<PromptSection[]>([]);
+  const [isLoadingSections, setIsLoadingSections] = useState(false);
+  
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open) {
-      loadPrompt();
+      loadGlobalPrompt();
+      loadAllSections();
     }
   }, [open]);
 
-  const loadPrompt = async () => {
-    setIsLoading(true);
+  // ============ GLOBAL PROMPT ============
+  const loadGlobalPrompt = async () => {
+    setIsLoadingGlobal(true);
     try {
       const { data, error } = await supabase
         .from('chat_laboratory_system_prompts')
@@ -38,10 +59,9 @@ export const LaboratoryPromptManager = ({ isProcessing = false }: LaboratoryProm
       if (error && error.code !== 'PGRST116') throw error;
 
       if (data) {
-        setPrompt(data.contenuto);
+        setGlobalPrompt(data.contenuto);
       } else {
-        // Prompt default
-        setPrompt(`Sei in una conversazione informale con altri esperti. Obiettivo: discutere e convergere su una soluzione pratica.
+        setGlobalPrompt(`Sei in una conversazione informale con altri esperti. Obiettivo: discutere e convergere su una soluzione pratica.
 
 STILE DI RISPOSTA:
 - Parla come in una chiacchierata al bar (tono amichevole, non formale)
@@ -65,19 +85,19 @@ ESEMPI:
 ❌ "In merito a quanto sopra esposto, ritengo opportuno evidenziare..."`);
       }
     } catch (error) {
-      console.error('Errore caricamento prompt:', error);
+      console.error('Errore caricamento prompt globale:', error);
       toast({
         title: "Errore",
-        description: "Impossibile caricare il prompt.",
+        description: "Impossibile caricare il prompt globale.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsLoadingGlobal(false);
     }
   };
 
-  const savePrompt = async () => {
-    if (!prompt.trim()) {
+  const saveGlobalPrompt = async () => {
+    if (!globalPrompt.trim()) {
       toast({
         title: "Attenzione",
         description: "Il prompt non può essere vuoto.",
@@ -86,31 +106,27 @@ ESEMPI:
       return;
     }
 
-    setIsLoading(true);
+    setIsLoadingGlobal(true);
     try {
-      // Disattiva tutti i prompt esistenti
       await supabase
         .from('chat_laboratory_system_prompts')
         .update({ attivo: false })
         .eq('attivo', true);
 
-      // Inserisci il nuovo prompt attivo
       const { error } = await supabase
         .from('chat_laboratory_system_prompts')
         .insert({
           nome: 'Prompt Globale Laboratory',
-          contenuto: prompt,
+          contenuto: globalPrompt,
           attivo: true
         });
 
       if (error) throw error;
 
       toast({
-        title: "Prompt Salvato",
-        description: "Il prompt globale è stato aggiornato con successo.",
+        title: "✅ Prompt Globale Salvato",
+        description: "Il prompt è stato aggiornato con successo.",
       });
-
-      setOpen(false);
     } catch (error) {
       console.error('Errore salvataggio prompt:', error);
       toast({
@@ -119,9 +135,142 @@ ESEMPI:
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsLoadingGlobal(false);
     }
   };
+
+  // ============ SECTIONS CRUD ============
+  const loadAllSections = async () => {
+    setIsLoadingSections(true);
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .select('*')
+        .order('section_type, order_priority');
+
+      if (error) throw error;
+      setSections(data || []);
+    } catch (error) {
+      console.error('Errore caricamento sezioni:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare le sezioni.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingSections(false);
+    }
+  };
+
+  const handleUpdateSection = async (id: string, content: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .update({ content, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Sezione Aggiornata",
+        description: "Le modifiche sono state salvate.",
+      });
+
+      loadAllSections();
+    } catch (error) {
+      console.error('Errore aggiornamento sezione:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare la sezione.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateSection = async (sectionType: string, name: string, content: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .insert({
+          section_type: sectionType,
+          section_name: name,
+          content: content,
+          is_active: true,
+          order_priority: 999
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Sezione Creata",
+        description: `La sezione "${name}" è stata creata.`,
+      });
+
+      loadAllSections();
+    } catch (error) {
+      console.error('Errore creazione sezione:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile creare la sezione.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSection = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "🗑️ Sezione Eliminata",
+        description: "La sezione è stata rimossa.",
+      });
+
+      loadAllSections();
+    } catch (error) {
+      console.error('Errore eliminazione sezione:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile eliminare la sezione.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleSection = async (id: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .update({ is_active: isActive })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: isActive ? "✅ Sezione Attivata" : "⏸️ Sezione Disattivata",
+        description: isActive ? "La sezione è ora attiva." : "La sezione è stata disattivata.",
+      });
+
+      loadAllSections();
+    } catch (error) {
+      console.error('Errore toggle sezione:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile modificare lo stato della sezione.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Filter sections by type
+  const baseSections = sections.filter(s => s.section_type === 'BASE');
+  const personalitySections = sections.filter(s => s.section_type === 'AGENT_PERSONALITY');
+  const styleSections = sections.filter(s => s.section_type === 'CONVERSATION_STYLE');
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -133,7 +282,7 @@ ESEMPI:
             "shrink-0 bg-transparent hover:bg-transparent transition-all",
             isProcessing && "animate-heartbeat"
           )}
-          title="System Prompt"
+          title="Gestione Prompt"
         >
           <Brain className={cn(
             "h-4 w-4 transition-colors",
@@ -141,57 +290,106 @@ ESEMPI:
           )} />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
-            Gestione System Prompt Globale
+            Gestione Prompt Sistema
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Prompt Globale per tutti gli Agenti AI</Label>
-            <Textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Inserisci il system prompt..."
-              className="min-h-[400px] font-mono text-sm"
-              disabled={isLoading}
-            />
-            <p className="text-xs text-muted-foreground">
-              Questo prompt verrà utilizzato come base per tutti gli agenti AI. Puoi personalizzarlo
-              per definire il comportamento, il tono e le regole che gli agenti devono seguire.
-            </p>
-          </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="global">🌐 Globale</TabsTrigger>
+            <TabsTrigger value="base">
+              📚 Base {baseSections.length > 0 && `(${baseSections.length})`}
+            </TabsTrigger>
+            <TabsTrigger value="personality">
+              🎭 Personalità {personalitySections.length > 0 && `(${personalitySections.length})`}
+            </TabsTrigger>
+            <TabsTrigger value="styles">
+              💬 Stili {styleSections.length > 0 && `(${styleSections.length})`}
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-            <h4 className="font-medium text-sm">💡 Suggerimenti</h4>
-            <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-              <li>Definisci un ruolo chiaro per ogni agente (es. "Sei un analista strategico")</li>
-              <li>Specifica regole di comportamento (tono, lunghezza risposte, ecc.)</li>
-              <li>Chiedi di non rivelare di essere un'AI per conversazioni più naturali</li>
-              <li>Stabilisci l'obiettivo della discussione (convergenza, brainstorming, ecc.)</li>
-            </ul>
-          </div>
+          {/* GLOBAL TAB */}
+          <TabsContent value="global" className="flex-1 overflow-y-auto">
+            <div className="space-y-4">
+              <Label>Prompt Globale per tutti gli Agenti AI</Label>
+              <Textarea
+                value={globalPrompt}
+                onChange={(e) => setGlobalPrompt(e.target.value)}
+                placeholder="Inserisci il system prompt..."
+                className="min-h-[400px] font-mono text-sm"
+                disabled={isLoadingGlobal}
+              />
+              <p className="text-xs text-muted-foreground">
+                Questo prompt verrà utilizzato come base per tutti gli agenti AI.
+              </p>
+              <Button onClick={saveGlobalPrompt} disabled={isLoadingGlobal}>
+                {isLoadingGlobal && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Salva Prompt Globale
+              </Button>
+            </div>
+          </TabsContent>
 
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={isLoading}
-            >
-              Annulla
-            </Button>
-            <Button
-              onClick={savePrompt}
-              disabled={isLoading}
-            >
-              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Salva Prompt
-            </Button>
-          </div>
-        </div>
+          {/* BASE TAB */}
+          <TabsContent value="base" className="flex-1 overflow-y-auto">
+            {isLoadingSections ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <PromptSectionsList
+                sections={baseSections}
+                onUpdate={handleUpdateSection}
+                onCreate={(name, content) => handleCreateSection('BASE', name, content)}
+                onDelete={handleDeleteSection}
+                onToggle={handleToggleSection}
+                sectionType="BASE"
+                sectionTypeLabel="Sezione Base"
+              />
+            )}
+          </TabsContent>
+
+          {/* PERSONALITY TAB */}
+          <TabsContent value="personality" className="flex-1 overflow-y-auto">
+            {isLoadingSections ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <PromptSectionsList
+                sections={personalitySections}
+                onUpdate={handleUpdateSection}
+                onCreate={(name, content) => handleCreateSection('AGENT_PERSONALITY', name, content)}
+                onDelete={handleDeleteSection}
+                onToggle={handleToggleSection}
+                sectionType="AGENT_PERSONALITY"
+                sectionTypeLabel="Personalità Agente"
+              />
+            )}
+          </TabsContent>
+
+          {/* STYLES TAB */}
+          <TabsContent value="styles" className="flex-1 overflow-y-auto">
+            {isLoadingSections ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <PromptSectionsList
+                sections={styleSections}
+                onUpdate={handleUpdateSection}
+                onCreate={(name, content) => handleCreateSection('CONVERSATION_STYLE', name, content)}
+                onDelete={handleDeleteSection}
+                onToggle={handleToggleSection}
+                sectionType="CONVERSATION_STYLE"
+                sectionTypeLabel="Stile Conversazione"
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

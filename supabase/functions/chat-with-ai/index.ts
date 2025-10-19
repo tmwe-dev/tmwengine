@@ -722,8 +722,8 @@ ${prompt}`;
                   })),
                 current_user_message: prompt,
                 metadata: {
-                  provider: aiConfig.provider,
-                  model: aiConfig.modello,
+                  provider: aiConfig?.provider || 'unknown',
+                  model: aiConfig?.modello || 'unknown',
                   economy_mode: useEconomyMode,
                   memoria_completa: useFullMemory
                 }
@@ -747,8 +747,8 @@ ${prompt}`;
         .from('chat_usage_stats')
         .insert({
           conversation_id: conversationId,
-          model_used: aiConfig.modello,
-          provider_used: aiConfig.provider,
+          model_used: aiConfig?.modello || 'unknown',
+          provider_used: aiConfig?.provider || 'unknown',
           tokens_input: tokensInput,
           tokens_output: tokensOutput,
           tokens_total: tokensUsed,

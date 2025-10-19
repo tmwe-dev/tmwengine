@@ -13,6 +13,7 @@ import {
 } from './lib/prompt-builder.ts';
 import { callClaude, callChatGPT, callGemini } from './lib/ai-providers.ts';
 import { generateAudioForSingleResponse } from './lib/audio-generator.ts';
+import { sanitizeForTTS, validateTTSText } from './lib/tts-sanitizer.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -213,16 +214,15 @@ serve(async (req) => {
           console.log(`   Uso default: ${maxWordsLimit} parole`);
         }
 
-        // Inietta istruzione dinamica nel prompt
+        // Inietta istruzione dinamica nel prompt (PULITA per TTS)
         const wordLimitInstruction = `
-🚨 LIMITE CRITICO LUNGHEZZA RISPOSTA 🚨
-La tua risposta DEVE essere MASSIMO ${maxWordsLimit} parole.
-Questo è un limite ASSOLUTO e NON NEGOZIABILE.
-Conta ogni parola prima di rispondere.
-Se superi ${maxWordsLimit} parole, la tua risposta verrà TRONCATA.
-
-IMPORTANTE: ${maxWordsLimit} parole è il MASSIMO, non un target.
-Risposte più brevi sono preferibili se trasmettono il messaggio completo.
+LIMITE LUNGHEZZA RISPOSTA
+Massimo ${maxWordsLimit} parole per questa risposta.
+Conta mentalmente le parole prima di rispondere.
+Risposte più brevi sono preferibili se complete.
+NON includere il conteggio parole nel testo finale.
+NON usare formattazione markdown nel testo.
+NON usare placeholder tra parentesi quadre.
 
 `;
 
@@ -323,6 +323,15 @@ Risposte più brevi sono preferibili se trasmettono il messaggio completo.
         if (aiResponse && aiResponse.length > 15000) {
           console.warn(`⚠️ Risposta troppo lunga (${aiResponse.length} chars), troncamento a 15k...`);
           aiResponse = aiResponse.substring(0, 15000) + '\n\n[... risposta troncata per lunghezza]';
+        }
+        
+        // ============ TTS SANITIZATION ============
+        const validation = validateTTSText(aiResponse);
+        if (!validation.isValid) {
+          console.warn(`⚠️ Risposta contiene elementi problematici per TTS:`, validation.issues);
+          const cleanedResponse = sanitizeForTTS(aiResponse);
+          console.log(`🧹 Testo pulito: ${aiResponse.length} → ${cleanedResponse.length} chars`);
+          aiResponse = cleanedResponse;
         }
         
         const responseTime = Date.now() - startTime;

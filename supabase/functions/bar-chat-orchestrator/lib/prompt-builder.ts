@@ -63,31 +63,37 @@ export function buildSystemPrompt(params: PromptParams): string {
     
     if (conversationStyle === 'boss_talk') {
       styleInstructions = `
-🎯 STILE: Boss Talk (Pragmatico e Sintetico)
-- MAX 50-60 parole (~4 frasi brevi)
-- Focus su: decisioni, ROI, trade-off, next steps
-- Taglia tutto ciò che non è direttamente azionabile
-- Usa dati concreti: "Secondo benchmark X, l'opzione A costa il 30% in meno"
-- Tono diretto: "Dobbiamo decidere tra A e B. Pro di A: [lista]. Vai con B?"
+STILE: Boss Talk - Pragmatico e Sintetico
+Massimo 50-60 parole, circa 4 frasi brevi.
+Focus su decisioni concrete, ROI, trade-off e prossimi passi.
+Taglia tutto ciò che non è direttamente azionabile.
+Usa dati concreti quando disponibili.
+Tono diretto e professionale.
+NON usare placeholder o testo tra parentesi quadre.
+NON aggiungere conteggi parole o metadata al testo.
 `;
     } else if (conversationStyle === 'colleagues') {
       styleInstructions = `
-🤝 STILE: Colleghi (Professionale ma Amichevole)
-- LIMITE RIGIDO: 60-70 parole MAX (~5 frasi brevi)
-- Usa frasi dirette e concrete
-- Coinvolgi gli altri: "Come vedi tu [nome], è fattibile?"
-- NO introduzioni lunghe, NO ripetizioni, NO conclusioni prolisse
-- Tono collaborativo ma estremamente conciso
-- Se non riesci a dire qualcosa in 60-70 parole, scrivi [SKIP]
+STILE: Colleghi - Professionale ma Amichevole
+LIMITE RIGIDO: massimo 60-70 parole, circa 5 frasi brevi.
+Usa frasi dirette e concrete.
+Coinvolgi gli altri con nomi reali se noti, altrimenti usa riferimenti naturali.
+Evita introduzioni lunghe, ripetizioni e conclusioni prolisse.
+Tono collaborativo ma estremamente conciso.
+NON usare placeholder come nome generico o testo tra parentesi quadre.
+NON aggiungere conteggi parole o metadata al testo.
+Se non hai nulla di rilevante da aggiungere, scrivi SKIP.
 `;
     } else if (conversationStyle === 'bar_chat') {
       styleInstructions = `
-🍺 STILE: Bar Chat (Informale e Rilassato)
-- MAX 40-50 parole (~3 frasi)
-- Attacco conversazionale: "Guarda...", "Senti...", "Allora..."
-- Scherzoso quando appropriato, ma non forzato
-- Coinvolgi con domande dirette: "Tu [nome], lo faresti diversamente?"
-- Tono da bar, non da conferenza: evita "in conclusione", "per riassumere"
+STILE: Bar Chat - Informale e Rilassato
+Massimo 40-50 parole, circa 3 frasi.
+Attacco conversazionale naturale come: Guarda, Senti, Allora.
+Scherzoso quando appropriato ma non forzato.
+Coinvolgi con domande dirette usando nomi reali se noti.
+Tono da conversazione informale, evita frasi conclusive formali.
+NON usare placeholder o testo tra parentesi quadre.
+NON aggiungere conteggi parole o metadata al testo.
 `;
     }
   }

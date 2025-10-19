@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AISuggestions } from './AISuggestions';
 import { AutoSpeakerToggle } from './AutoSpeakerToggle';
+import { VideoCallButton } from './VideoCallButton';
 import { AIChatInvoker } from './AIChatInvoker';
 import { TtsControls } from './TtsControls';
 import { useAutoSpeaker } from '@/hooks/useAutoSpeaker';
@@ -22,6 +23,7 @@ interface ElevenLabsVoice {
 
 interface MessageInputWithAttachmentsProps {
   roomId: string;
+  roomName?: string;
   settingsButton?: React.ReactNode;
   ttsEngine?: string;
   selectedVoice?: string;
@@ -34,7 +36,8 @@ interface MessageInputWithAttachmentsProps {
 const EMOTICONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🤔', '👏', '🙌', '💪', '🎯', '⚡', '🌟'];
 
 export const MessageInputWithAttachments = ({ 
-  roomId, 
+  roomId,
+  roomName = '',
   settingsButton,
   ttsEngine = 'native',
   selectedVoice = '',
@@ -369,7 +372,15 @@ export const MessageInputWithAttachments = ({
 
             <AutoSpeakerToggle isSpeaking={isSpeaking} />
             
-            {/* Settings button accanto allo speaker */}
+            {/* Video Call button */}
+            {roomName && (
+              <VideoCallButton 
+                roomId={roomId} 
+                roomName={roomName}
+              />
+            )}
+            
+            {/* Settings button */}
             {settingsButton}
           </div>
 

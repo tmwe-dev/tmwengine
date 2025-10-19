@@ -560,7 +560,8 @@ const Intranet = () => {
                 <Card className="bg-card-transparent">
                   <CardContent className="p-1">
                     <MessageInputWithAttachments 
-                      roomId={selectedRoomId} 
+                      roomId={selectedRoomId}
+                      roomName={selectedRoomName}
                       settingsButton={<SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />}
                       ttsEngine={ttsEngine}
                       selectedVoice={selectedVoice}

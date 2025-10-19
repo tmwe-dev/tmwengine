@@ -52,7 +52,13 @@ export const AudioMessagePlayer = ({
     };
 
     const handlePause = () => {
-      console.warn(`⏸️ [AudioPlayer] PAUSA rilevata a ${Math.floor(audio.currentTime)}s`);
+      // ⚠️ Se audio è terminato, ignora la pausa (già gestita da "ended")
+      if (audio.ended) {
+        console.log(`ℹ️ [AudioPlayer] Pausa ignorata (audio terminato naturalmente)`);
+        return;
+      }
+      
+      console.warn(`⏸️ [AudioPlayer] PAUSA manuale a ${Math.floor(audio.currentTime)}s`);
       setIsPlaying(false);
       onPlayingChange?.(false);
     };

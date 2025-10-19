@@ -14,20 +14,28 @@ export const useVideoCallNotifications = (roomId: string | null | undefined, cur
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!roomId || !currentUserId) return;
+    if (!currentUserId) return;
 
-    const channel = supabase.channel(`room-${roomId}`);
+    // STEP 2B: Ascolta canale globale sempre attivo
+    const channel = supabase.channel('global-video-notifications');
+    
+    console.log('[VideoCallNotifications] Subscribing to global video notifications channel');
     
     channel
       .on('broadcast', { event: 'video-call-started' }, ({ payload }: { payload: VideoCallPayload }) => {
+        console.log('[VideoCallNotifications] Received video call notification:', payload);
+        
         // Ignora le proprie notifiche
         if (payload.startedBy === currentUserId) return;
         
-        toast({
-          title: '📞 Videochiamata in corso',
-          description: `${payload.startedByName} ha avviato una chiamata in ${payload.roomName}. Clicca il pulsante VideoCall per unirti.`,
-          duration: 10000,
-        });
+        // Mostra toast solo se siamo nella stessa room
+        if (payload.roomId === roomId) {
+          toast({
+            title: '📞 Videochiamata in corso',
+            description: `${payload.startedByName} ha avviato una chiamata in ${payload.roomName}. Clicca il pulsante VideoCall per unirti.`,
+            duration: 10000,
+          });
+        }
       })
       .subscribe();
 

@@ -21,6 +21,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
   const pendingOfferRef = useRef<{ from: string; offer: RTCSessionDescriptionInit } | null>(null);
   const pendingCallDataRef = useRef<{ targetUserId: string; stream: MediaStream; pc: WebRTCPeerConnection } | null>(null);
   const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const offerSentRef = useRef(false);
 
   const { toast } = useToast();
   const { sendSignal, setHandlers } = useWebRTCSignaling(roomId, userId);
@@ -138,9 +139,13 @@ export const useAudioCall = (roomId: string, userId: string) => {
           
           await pc.addLocalStream(stream);
           const offer = await pc.createOffer();
+          
+          // STEP 1A: Marca che l'offer è stata inviata
+          offerSentRef.current = true;
+          
           await sendSignal({ type: 'offer', to: targetUserId, payload: offer });
           
-          // STEP 3: Invia tutti i candidates bufferizzati DOPO l'offer
+          // STEP 1A: Invia tutti i candidates bufferizzati DOPO l'offer
           console.log('[useAudioCall] Sending buffered ICE candidates:', pendingIceCandidatesRef.current.length);
           pendingIceCandidatesRef.current.forEach(candidate => {
             sendSignal({ type: 'ice-candidate', to: targetUserId, payload: candidate });
@@ -218,9 +223,14 @@ export const useAudioCall = (roomId: string, userId: string) => {
 
       const pc = new WebRTCPeerConnection({
         onIceCandidate: (candidate) => {
-          // STEP 3: Bufferizza ICE candidates invece di inviarli subito
-          pendingIceCandidatesRef.current.push(candidate);
-          console.log('[useAudioCall] Buffered ICE candidate, total:', pendingIceCandidatesRef.current.length);
+          // STEP 1A: Invia candidate subito se l'offer è già stata inviata, altrimenti bufferizza
+          if (offerSentRef.current && remotePeerId) {
+            console.log('[useAudioCall] Sending ICE candidate immediately (offer already sent)');
+            sendSignal({ type: 'ice-candidate', to: remotePeerId, payload: candidate });
+          } else {
+            pendingIceCandidatesRef.current.push(candidate);
+            console.log('[useAudioCall] Buffered ICE candidate, total:', pendingIceCandidatesRef.current.length);
+          }
         },
         onRemoteStream: (stream) => {
           console.log('[useAudioCall] Received remote stream');
@@ -329,6 +339,11 @@ export const useAudioCall = (roomId: string, userId: string) => {
       await pc.addLocalStream(stream);
       await pc.setRemoteDescription(offer);
       const answer = await pc.createAnswer();
+      
+      // STEP 1B: Aspetta 500ms per ricevere ICE candidates di Alice
+      console.log('[answerCall] Waiting 500ms for ICE candidates...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       await sendSignal({ type: 'answer', to: from, payload: answer });
 
       peerConnectionRef.current = pc;

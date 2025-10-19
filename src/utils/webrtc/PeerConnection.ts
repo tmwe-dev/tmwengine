@@ -35,9 +35,24 @@ export class WebRTCPeerConnection {
     };
 
     this.pc.onconnectionstatechange = () => {
+      console.log('[PeerConnection] Connection state:', this.pc.connectionState);
       if (this.onConnectionStateChange) {
         this.onConnectionStateChange(this.pc.connectionState);
       }
+    };
+
+    // STEP 1C: Monitor ICE connection state
+    this.pc.oniceconnectionstatechange = () => {
+      console.log('[PeerConnection] ICE connection state:', this.pc.iceConnectionState);
+      
+      if (this.pc.iceConnectionState === 'failed') {
+        console.error('[PeerConnection] ❌ ICE connection failed - attempting restart');
+        this.pc.restartIce();
+      }
+    };
+
+    this.pc.onicegatheringstatechange = () => {
+      console.log('[PeerConnection] ICE gathering state:', this.pc.iceGatheringState);
     };
   }
 

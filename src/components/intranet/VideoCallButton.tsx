@@ -36,33 +36,33 @@ export const VideoCallButton = ({ roomId, roomName, disabled }: VideoCallButtonP
   const handleStartCall = async () => {
     setVideoCallOpen(true);
     
-    // Broadcast notifica agli altri utenti della stanza
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const channel = supabase.channel(`room-${roomId}`);
-      
-      // IMPORTANTE: sottoscrivi PRIMA di inviare
-      await channel.subscribe();
-      
-      await channel.send({
-        type: 'broadcast',
-        event: 'video-call-started',
-        payload: {
-          roomId,
-          roomName,
-          startedBy: user.id,
-          startedByName: userDisplayName,
-          jitsiRoomName: `tmwengine-intranet-${roomId}`
-        }
-      });
-      
-      console.log('[VideoCallButton] Notification sent to room:', roomId);
-      
-      // Chiudi il canale dopo 2 secondi
-      setTimeout(() => {
-        channel.unsubscribe();
-      }, 2000);
-    }
+    if (!user) return;
+    
+    // STEP 2B: Usa canale globale sempre attivo invece di creare nuovo canale
+    const globalChannel = supabase.channel('global-video-notifications');
+    
+    // Sottoscrivi, invia, e mantieni aperto per 5 secondi
+    await globalChannel.subscribe();
+    
+    console.log('[VideoCallButton] Broadcasting video call notification to global channel');
+    
+    await globalChannel.send({
+      type: 'broadcast',
+      event: 'video-call-started',
+      payload: {
+        roomId,
+        roomName,
+        startedBy: user.id,
+        startedByName: userDisplayName,
+        jitsiRoomName: `tmwengine-intranet-${roomId}`
+      }
+    });
+    
+    // Unsubscribe dopo 5 secondi per dare tempo alla notifica di arrivare
+    setTimeout(() => {
+      globalChannel.unsubscribe();
+    }, 5000);
   };
 
   return (

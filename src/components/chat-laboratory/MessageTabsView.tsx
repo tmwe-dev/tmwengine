@@ -70,7 +70,11 @@ export const MessageTabsView = ({
   const onAudioEndComplete = () => {
     console.log(`🎬 [MessageTabsView] onAudioEndComplete chiamato`);
     audioEnd(); // Setta isAudioPlaying = false (asincrono)
-    setShouldSwitchTab(true); // Flag per cambio tab
+    
+    // 🔴 Delay per assicurare che isAudioPlaying sia aggiornato
+    setTimeout(() => {
+      setShouldSwitchTab(true);
+    }, 50); // 50ms delay
   };
 
   // 🎯 Effetto: cambia tab DOPO che isAudioPlaying è aggiornato

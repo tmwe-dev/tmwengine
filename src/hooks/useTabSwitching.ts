@@ -28,6 +28,7 @@ export const useTabSwitching = ({
   const [unseenMessagesQueue, setUnseenMessagesQueue] = useState<string[]>([]);
   const seenMessagesRef = useRef<Set<string>>(new Set());
   const previousMessagesLengthRef = useRef(0);
+  const lastHumanMessageIdRef = useRef<string | null>(null);
 
   // 🎯 Gestione nuovi messaggi
   useEffect(() => {
@@ -43,12 +44,22 @@ export const useTabSwitching = ({
     });
 
     newMessages.forEach((message) => {
+      console.log(`🆕 [useTabSwitching] Processando messaggio:`, {
+        id: message.id.substring(0, 8),
+        type: message.sender_type,
+        name: message.sender_name,
+        isAudioPlaying,
+        currentActiveTab: activeTab.substring(0, 8),
+        queueSize: unseenMessagesQueue.length
+      });
+
       // Messaggi HUMAN: sempre visibili immediatamente - PRIORITÀ ASSOLUTA
       if (message.sender_type === 'human') {
         console.log(`👤 [useTabSwitching] Messaggio HUMAN ricevuto → Attivo IMMEDIATAMENTE`);
         console.log(`   - Message ID: ${message.id}`);
         console.log(`   - Sender: ${message.sender_name}`);
         console.log(`   - isAudioPlaying IGNORATO (era: ${isAudioPlaying})`);
+        lastHumanMessageIdRef.current = message.id; // 🔴 MARKER HUMAN
         setActiveTab(message.id);
         seenMessagesRef.current.add(message.id);
         
@@ -90,7 +101,7 @@ export const useTabSwitching = ({
     });
 
     previousMessagesLengthRef.current = messages.length;
-  }, [messages, isAudioPlaying, activeTab, unseenMessagesQueue]);
+  }, [messages, isAudioPlaying]);
 
   // 🎯 Quando audio finisce, passa al PRIMO messaggio NON VISTO
   const handleAudioEnd = useCallback(() => {
@@ -98,8 +109,16 @@ export const useTabSwitching = ({
     console.log(`   - unseenMessagesQueue:`, unseenMessagesQueue);
     console.log(`   - unseenMessagesQueue.length:`, unseenMessagesQueue.length);
     console.log(`   - activeTab:`, activeTab);
+    console.log(`   - lastHumanMessageId:`, lastHumanMessageIdRef.current);
     console.log(`   - messages.length:`, messages.length);
     console.log(`   - seenMessages:`, Array.from(seenMessagesRef.current));
+
+    // 🔴 PROTEZIONE: Non cambiare tab se è un messaggio HUMAN
+    if (activeTab === lastHumanMessageIdRef.current) {
+      console.log(`🛡️ [handleAudioEnd] Tab corrente è HUMAN → NON cambio tab`);
+      lastHumanMessageIdRef.current = null; // Reset marker
+      return;
+    }
 
     if (unseenMessagesQueue.length > 0) {
       const nextMessageId = unseenMessagesQueue[0];

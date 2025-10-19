@@ -175,11 +175,12 @@ serve(async (req) => {
         }
 
         // ============ GET AGENT PERSONALITY ============
-        const agentPersonality = cachedPrompts.agentPersonalities.get(
-          currentAgent.name.toLowerCase()
-        ) || '';
+        // 🔥 PRIORITÀ: effective_prompt dal DB modulare → fallback cache legacy
+        const agentPersonality = currentAgent.effective_prompt || 
+          cachedPrompts.agentPersonalities.get(currentAgent.name.toLowerCase()) || 
+          '';
         
-        console.log(`👤 Personalità ${currentAgent.name}: ${agentPersonality.length} chars (cached)`);
+        console.log(`👤 Personalità ${currentAgent.name}: ${agentPersonality.length} chars ${currentAgent.effective_prompt ? '(DB modulare)' : '(cache legacy)'}`);
 
         // ============ BUILD PROMPT ============
         const composedPrompt = buildSystemPrompt({

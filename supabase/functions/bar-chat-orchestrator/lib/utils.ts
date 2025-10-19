@@ -79,8 +79,8 @@ export function collapseConsecutiveMessages(messages: any[]): any[] {
   let buffer = '';
 
   for (const msg of messages) {
-    if (msg.role === lastRole) {
-      // Accumula messaggi dello stesso tipo
+    if (msg.role === lastRole && msg.role === 'user') {
+      // Accumula solo messaggi user consecutivi (non assistant)
       buffer += '\n\n' + msg.content.trim();
     } else {
       // Salva il buffer precedente

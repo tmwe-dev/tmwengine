@@ -372,7 +372,13 @@ export const MessageInputWithAttachments = ({
 
             <AutoSpeakerToggle isSpeaking={isSpeaking} />
             
-            {/* Video Call button */}
+            {/* Settings button */}
+            {settingsButton}
+          </div>
+
+          {/* Input testo con VideoCall a sinistra e pulsante invio a destra */}
+          <div className="flex items-center gap-2">
+            {/* VideoCall button a sinistra */}
             {roomName && (
               <VideoCallButton 
                 roomId={roomId} 
@@ -380,12 +386,6 @@ export const MessageInputWithAttachments = ({
               />
             )}
             
-            {/* Settings button */}
-            {settingsButton}
-          </div>
-
-          {/* Input testo e pulsante invio sulla stessa riga */}
-          <div className="flex items-center gap-2">
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}

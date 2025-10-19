@@ -60,7 +60,6 @@ export const MessageTabsView = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const tabContentRef = useRef<HTMLDivElement>(null);
   const previousMessagesLengthRef = useRef(0);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);  // 🔥 Track audio state
   
   
   // Drag-to-scroll state
@@ -117,14 +116,7 @@ export const MessageTabsView = ({
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }, 100);
         }
-        // ⏳ MESSAGGI AI SUCCESSIVI: controlla se audio è attivo
-        else if (!isAudioPlaying) {
-          console.log(`📨 Messaggio AI da ${newMessage.sender_name} → Audio terminato, cambio tab immediatamente`);
-          setActiveTab(newMessage.id);
-          setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
-        }
+        // ⏳ MESSAGGI AI SUCCESSIVI: handleAudioEnd gestirà il cambio tab
         else {
           console.log(`📨 Messaggio AI da ${newMessage.sender_name} → In coda (audio in corso)`);
         }
@@ -289,7 +281,6 @@ export const MessageTabsView = ({
               <MultiAgentMessage 
                 message={message} 
                 onAudioEnd={handleAudioEnd}
-                onAudioStateChange={setIsAudioPlaying}
               />
               <div ref={messagesEndRef} />
             </div>

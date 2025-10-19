@@ -136,17 +136,18 @@ export const MessageTabsView = ({
   }, [messages, isAutoFollowEnabled]);
 
   const handleAudioEnd = () => {
-    if (!isAutoFollowEnabled) return;
-    
     const currentIndex = messages.findIndex(m => m.id === activeTab);
     const nextMessage = messages[currentIndex + 1];
     
     if (nextMessage) {
       console.log(`🎵 Audio finito → Passo al tab successivo: ${nextMessage.sender_name}`);
       setActiveTab(nextMessage.id);
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      
+      if (isAutoFollowEnabled) {
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
     }
   };
 

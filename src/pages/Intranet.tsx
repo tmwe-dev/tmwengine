@@ -14,6 +14,7 @@ import { OrganizationUsers } from '@/components/intranet/OrganizationUsers';
 import { AccessRequestsPanel } from '@/components/intranet/AccessRequestsPanel';
 import { EconomyModeToggle } from '@/components/intranet/EconomyModeToggle';
 import { UserLanguageSettings } from '@/components/intranet/UserLanguageSettings';
+import { VideoCallButton } from '@/components/intranet/VideoCallButton';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useGlobalIntranetPresence } from '@/hooks/useGlobalIntranetPresence';
 import { useIntranetNotifications } from '@/hooks/useIntranetNotifications';
@@ -531,8 +532,9 @@ const Intranet = () => {
             <div className="flex-1 overflow-hidden">
               <div className="w-full h-full flex flex-col">
                 {/* Header stanza */}
-                <div className="flex-shrink-0 pb-2 border-b mb-4">
+                <div className="flex-shrink-0 pb-2 border-b mb-4 flex justify-between items-center">
                   <h2 className="text-xl font-semibold">{selectedRoomName}</h2>
+                  <VideoCallButton roomId={selectedRoomId!} roomName={selectedRoomName} />
                 </div>
 
                 {/* Messaggi scrollabili */}

@@ -11,7 +11,8 @@ import {
   Sparkles, 
   Upload,
   Shield,
-  Database
+  Database,
+  Radio
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -62,6 +63,7 @@ export const useNavigationGroups = () => {
       items: [
         { name: t('nav.chat'), href: '/chat', icon: MessageSquare },
         { name: t('nav.laboratory'), href: '/chat-laboratory', icon: Sparkles },
+        { name: 'Radio Chat', href: '/radio-chat', icon: Radio },
         { name: 'Intranet', href: '/intranet', icon: MessageSquare },
         ...(isAdmin ? [{ name: 'Admin Intranet', href: '/intranet-admin', icon: Shield }] : [])
       ]

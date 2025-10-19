@@ -542,6 +542,167 @@ ${prompt}`;
             required: []
           }
         }
+      },
+      
+      // ========== RUBRICA AVANZATA ==========
+      {
+        type: "function",
+        function: {
+          name: "get_rubrica_statistics",
+          description: "Statistiche dettagliate rubrica: totali, per paese, per origine, con note, con azienda",
+          parameters: { type: "object", properties: {} }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "search_rubrica_advanced",
+          description: "Ricerca avanzata nella rubrica con filtri multipli",
+          parameters: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "Termine di ricerca (nome, azienda, email)" },
+              paese: { type: "string", description: "Filtro per paese" },
+              origine: { type: "string", description: "Filtro per origine" },
+              limit: { type: "number", description: "Numero risultati (default: 20)" }
+            }
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_rubrica_by_filters",
+          description: "Ottieni contatti rubrica applicando filtri specifici",
+          parameters: {
+            type: "object",
+            properties: {
+              paese: { type: "string", description: "Filtro per paese" },
+              citta: { type: "string", description: "Filtro per città (parziale)" },
+              origine: { type: "string", description: "Filtro per origine" },
+              has_activities: { type: "boolean", description: "Solo contatti con attività" }
+            }
+          }
+        }
+      },
+
+      // ========== IMPORT TEMPLATES ==========
+      {
+        type: "function",
+        function: {
+          name: "get_import_logs",
+          description: "Visualizza log degli import effettuati",
+          parameters: {
+            type: "object",
+            properties: {
+              limit: { type: "number", description: "Numero import da mostrare (default: 10)" },
+              stato: { type: "string", description: "Filtro per stato import" }
+            }
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_imported_contacts_stats",
+          description: "Statistiche contatti importati: totali, trasferiti, da trasferire",
+          parameters: { type: "object", properties: {} }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "search_imported_contacts",
+          description: "Cerca nei contatti importati (non ancora trasferiti in rubrica)",
+          parameters: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "Termine di ricerca" },
+              origin: { type: "string", description: "Filtro per origine" },
+              limit: { type: "number", description: "Numero risultati (default: 20)" }
+            }
+          }
+        }
+      },
+
+      // ========== ATTIVITÀ AVANZATE ==========
+      {
+        type: "function",
+        function: {
+          name: "get_activities_statistics",
+          description: "Statistiche complete attività: totali, per stato, per tipo, per priorità, scadute",
+          parameters: { type: "object", properties: {} }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_activities_by_status",
+          description: "Ottieni attività filtrate per stato specifico",
+          parameters: {
+            type: "object",
+            properties: {
+              stato: { type: "string", enum: ["aperta", "in_corso", "completata", "annullata"], description: "Stato attività" },
+              limit: { type: "number", description: "Numero risultati (default: 20)" }
+            },
+            required: ["stato"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_overdue_activities",
+          description: "Ottieni attività scadute (scadenza passata e non completate)",
+          parameters: { type: "object", properties: {} }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_user_activities",
+          description: "Ottieni attività assegnate a un utente specifico",
+          parameters: {
+            type: "object",
+            properties: {
+              user_id: { type: "string", format: "uuid", description: "ID utente" },
+              limit: { type: "number", description: "Numero risultati (default: 20)" }
+            },
+            required: ["user_id"]
+          }
+        }
+      },
+
+      // ========== CAMPAGNE AVANZATE ==========
+      {
+        type: "function",
+        function: {
+          name: "get_campaigns_statistics",
+          description: "Statistiche campagne: totali, per stato, budget totale, attive ora",
+          parameters: { type: "object", properties: {} }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_campaign_performance",
+          description: "Analisi performance singola campagna (attività, email in coda)",
+          parameters: {
+            type: "object",
+            properties: {
+              campaign_id: { type: "string", format: "uuid", description: "ID campagna" }
+            },
+            required: ["campaign_id"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_active_campaigns",
+          description: "Ottieni solo campagne attualmente attive (in corso ora)",
+          parameters: { type: "object", properties: {} }
+        }
       }
     ];
 

@@ -51,6 +51,7 @@ import EmailRules from "./pages/EmailRules";
 import CodeScreen from "./pages/admin/CodeScreen";
 import TMWEApiTester from "./pages/TMWEApiTester";
 import CodeReview from "./pages/CodeReview";
+import NotificationSettings from "./pages/NotificationSettings";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 
 const queryClient = new QueryClient();
@@ -330,6 +331,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <CodeReview />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/notification-settings" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <NotificationSettings />
                 </CRMLayout>
               </ProtectedRoute>
             } />

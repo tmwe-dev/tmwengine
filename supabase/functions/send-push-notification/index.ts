@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -75,24 +76,60 @@ serve(async (req) => {
     console.log('Push notification payload:', payload);
     console.log('Subscription endpoint:', subscription.endpoint);
 
-    // 4. Invia notifica usando Web Push Protocol
-    // NOTA: Per un'implementazione completa serve web-push library o chiamata diretta all'endpoint
-    // Per ora logghiamo che la notifica sarebbe stata inviata
-    console.log('✅ Push notification would be sent to:', subscription.endpoint);
-    console.log('Payload:', payload);
+    // 4. Configura VAPID details
+    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
+    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+    const vapidEmail = Deno.env.get('VAPID_EMAIL') || 'mailto:admin@example.com';
 
-    // TODO: Implementare invio reale con web-push
-    // const webpush = await import('web-push');
-    // await webpush.sendNotification(subscription, payload);
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      console.error('❌ VAPID keys not configured');
+      return new Response(
+        JSON.stringify({ error: 'VAPID keys not configured. Please add VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY secrets.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Notification prepared (actual sending not yet implemented)',
-        endpoint: subscription.endpoint
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    webpush.setVapidDetails(
+      vapidEmail,
+      vapidPublicKey,
+      vapidPrivateKey
     );
+
+    console.log('📤 Sending push notification to:', subscription.endpoint);
+
+    // 5. Invia notifica usando Web Push Protocol
+    try {
+      await webpush.sendNotification(subscription, payload);
+      console.log('✅ Push notification sent successfully!');
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Push notification sent successfully',
+          endpoint: subscription.endpoint
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (pushError: any) {
+      console.error('❌ Error sending push notification:', pushError);
+      
+      // Se il token è scaduto o invalido, rimuovilo dal database
+      if (pushError.statusCode === 410 || pushError.statusCode === 404) {
+        console.log('🗑️ Removing expired push token');
+        await supabaseAdmin
+          .from('user_notification_preferences')
+          .update({ push_token: null })
+          .eq('user_id', userId);
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to send push notification',
+          details: pushError.message 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
   } catch (error) {
     console.error('Error sending push notification:', error);
     return new Response(

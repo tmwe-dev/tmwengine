@@ -161,6 +161,21 @@ export const useIntranetNotifications = (
             });
           }
 
+          // 🔔 Invia Push Notification se l'utente non è nella room corrente
+          if (newMessage.room_id !== currentRoomId) {
+            console.log('[IntranetNotifications] 🔔 Sending push notification for message in different room');
+            supabase.functions.invoke('send-push-notification', {
+              body: {
+                userId: currentUserId,
+                title: `📩 ${sender?.display_name || 'Qualcuno'} in ${room?.name || 'Chat'}`,
+                body: newMessage.content.substring(0, 100),
+                url: `/intranet?room=${newMessage.room_id}`
+              }
+            }).catch(err => {
+              console.warn('[IntranetNotifications] ⚠️ Push notification failed:', err);
+            });
+          }
+
           // Ricarica conteggi
           await loadUnreadCounts();
         }

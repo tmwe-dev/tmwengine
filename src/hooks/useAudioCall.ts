@@ -293,6 +293,34 @@ export const useAudioCall = (roomId: string, userId: string) => {
         });
         
         console.log('[useAudioCall] ✅ Global call notification sent to:', targetUserId);
+
+        // 🔔 Invia Push Notification
+        try {
+          const { data: senderProfile } = await supabase
+            .from('user_profiles')
+            .select('display_name')
+            .eq('user_id', userId)
+            .single();
+
+          const { data: pushResult, error: pushError } = await supabase.functions.invoke('send-push-notification', {
+            body: {
+              userId: targetUserId,
+              title: '📞 Chiamata in arrivo',
+              body: `${senderProfile?.display_name || 'Qualcuno'} ti sta chiamando`,
+              url: `/call-room?acceptedCall=true&incomingFrom=${userId}`,
+              callId: userId,
+              roomId: targetUserId
+            }
+          });
+
+          if (pushError) {
+            console.warn('[startCall] ⚠️ Push notification failed:', pushError);
+          } else {
+            console.log('[startCall] ✅ Push notification sent:', pushResult);
+          }
+        } catch (pushError) {
+          console.warn('[startCall] ⚠️ Push notification error:', pushError);
+        }
         
         // Lascia aperto il canale per 2 secondi prima di chiuderlo
         setTimeout(() => {

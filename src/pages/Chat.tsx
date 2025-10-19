@@ -944,6 +944,47 @@ const Chat = () => {
             </Card>
           )}
 
+          {/* Quick Actions per System Analyst */}
+          {pageRoute === '/system-analyst' && currentConversationId && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPrompt("Esegui un'analisi completa dello stato del sistema")}
+              >
+                📊 Full System Audit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPrompt("Analizza tutte le RLS policies e trova vulnerabilità di sicurezza")}
+              >
+                🔒 Security Check
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPrompt("Identifica query lente e suggerisci indici da aggiungere")}
+              >
+                ⚡ Performance Review
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPrompt("Controlla la qualità dei dati: duplicati, inconsistenze, record orfani")}
+              >
+                🔍 Data Quality
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPrompt("Mostra errori critici degli ultimi 7 giorni e analizza le cause")}
+              >
+                🚨 Recent Errors
+              </Button>
+            </div>
+          )}
+
           {/* Area Input */}
           <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0' : ''}`}>
             {!shouldHideHeader && (
@@ -1005,6 +1046,12 @@ const Chat = () => {
                       >
                         <Sparkles className={`h-4 w-4 transition-colors ${useSystemPrompt ? 'text-yellow-500' : 'text-blue-500'}`} />
                       </Button>
+                      {pageRoute === '/system-analyst' && useSystemPrompt && (
+                        <Badge variant="secondary" className="ml-2">
+                          <Bot className="h-3 w-3 mr-1" />
+                          System Context
+                        </Badge>
+                      )}
                     </div>
                   ) : null}
                   <div className={shouldHideHeader ? 'flex items-center gap-2' : 'w-full flex justify-end items-center gap-2'}>

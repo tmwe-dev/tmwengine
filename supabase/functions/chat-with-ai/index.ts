@@ -59,6 +59,75 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Helper: Raccoglie snapshot completo del sistema
+async function collectSystemSnapshot(supabaseClient: any) {
+  const snapshot: any = {
+    timestamp: new Date().toISOString(),
+    version: '1.0'
+  };
+  
+  try {
+    // 1. Database Tables + Row Counts
+    const { data: tables } = await supabaseClient.rpc('get_tables_with_counts');
+    snapshot.database = {
+      total_tables: tables?.length || 0,
+      tables: tables || []
+    };
+    
+    // 2. RLS Policies (simulato - in produzione query pg_policies)
+    snapshot.rls_policies = {
+      note: "RLS policies would be queried from pg_policies here",
+      total_policies: 0
+    };
+    
+    // 3. Edge Functions
+    const { data: edgeFunctions } = await supabaseClient
+      .from('edge_function_versions')
+      .select('function_name, is_active, version_number, created_at')
+      .eq('is_active', true);
+    snapshot.edge_functions = {
+      total_functions: edgeFunctions?.length || 0,
+      functions: edgeFunctions || []
+    };
+    
+    // 4. AI Configurations
+    const { data: aiConfigs } = await supabaseClient
+      .from('config_ai')
+      .select('id, provider, modello, attivo')
+      .eq('attivo', true);
+    snapshot.ai_configurations = {
+      total_configs: aiConfigs?.length || 0,
+      configs: aiConfigs?.map(c => ({
+        provider: c.provider,
+        model: c.modello
+      })) || []
+    };
+    
+    // 5. System Prompts
+    const { data: prompts } = await supabaseClient
+      .from('page_system_prompts')
+      .select('page_route, page_name, attivo');
+    snapshot.system_prompts = {
+      total_prompts: prompts?.length || 0,
+      prompts: prompts || []
+    };
+    
+    // 6. Recent Errors (simulato)
+    snapshot.recent_errors = {
+      note: "PostgreSQL logs would be analyzed here",
+      placeholder: "No critical errors in last 7 days"
+    };
+    
+    return snapshot;
+  } catch (error) {
+    console.error('[SYSTEM SNAPSHOT ERROR]:', error);
+    return {
+      error: 'Failed to collect system snapshot',
+      partial_data: snapshot
+    };
+  }
+}
+
 // Helper to check if query is CRM-related
 function isCRMRelatedQuery(prompt: string, systemPrompt?: string): boolean {
   if (!prompt) return false;
@@ -78,6 +147,17 @@ serve(async (req) => {
 
     if (!prompt && (!images || images.length === 0)) {
       throw new Error('Prompt o immagini richiesti');
+    }
+
+    // Rileva se siamo in modalità System Analyst
+    const isSystemAnalyst = systemPrompt?.includes('CLAUDE - SYSTEM ANALYST');
+    let systemSnapshot = null;
+
+    // Se è System Analyst, raccogli snapshot sistema (solo primo messaggio)
+    if (isSystemAnalyst && !conversationId) {
+      console.log('[SYSTEM ANALYST] Collecting system snapshot...');
+      systemSnapshot = await collectSystemSnapshot(supabase);
+      console.log('[SYSTEM ANALYST] Snapshot collected:', Object.keys(systemSnapshot));
     }
 
     // Get AI configuration - either specific config or active one
@@ -214,7 +294,18 @@ LIMITE RISPOSTA: La tua risposta non deve superare i ${config.max_token_conversa
         }))
       ];
     } else {
-      userMessage.content = prompt;
+      // Se System Analyst + snapshot disponibile, prepend al prompt
+      if (systemSnapshot) {
+        userMessage.content = `[SYSTEM CONTEXT SNAPSHOT]
+${JSON.stringify(systemSnapshot, null, 2)}
+
+---
+
+[USER REQUEST]
+${prompt}`;
+      } else {
+        userMessage.content = prompt;
+      }
     }
 
     messages.push(userMessage);

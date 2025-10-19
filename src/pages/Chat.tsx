@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles, Cpu, FileText, ArrowLeft } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles, Cpu, FileText, ArrowLeft, Copy, Check } from 'lucide-react';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,6 +61,7 @@ interface Conversation {
 }
 
 const Chat = () => {
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const pageRoute = searchParams.get('page') || '/chat';
@@ -548,6 +549,34 @@ const Chat = () => {
     setShowPromptConfirm(false);
   };
 
+  const copyMessageToClipboard = async (messageId: string, content: string) => {
+    try {
+      // Remove HTML tags for clean copy
+      const cleanContent = content
+        .replace(/<br>/g, '\n')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
+      
+      await navigator.clipboard.writeText(cleanContent);
+      setCopiedMessageId(messageId);
+      
+      toast({
+        title: "Copiato!",
+        description: "Messaggio copiato negli appunti.",
+      });
+      
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: "Impossibile copiare il messaggio.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className={`${shouldHideHeader ? 'h-[calc(100vh-6rem)] flex flex-col overflow-hidden' : 'max-w-7xl mx-auto p-3 sm:p-6'}`}>
       {!shouldHideHeader && (
@@ -881,12 +910,27 @@ const Chat = () => {
                         <Bot className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                       )}
                       <div
-                        className={`max-w-[75%] p-3 rounded-lg border ${
+                        className={`max-w-[75%] p-3 rounded-lg border relative group ${
                           message.role === 'user'
                             ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20'
                             : 'bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20'
                         }`}
                       >
+                        {/* Copy button - appears on hover */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => copyMessageToClipboard(message.id, message.content)}
+                          className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-muted"
+                          title="Copia messaggio"
+                        >
+                          {copiedMessageId === message.id ? (
+                            <Check className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </Button>
+
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                           <span>{new Date(message.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}</span>
                           <span>{new Date(message.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>

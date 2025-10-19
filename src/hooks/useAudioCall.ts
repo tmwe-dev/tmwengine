@@ -134,18 +134,41 @@ export const useAudioCall = (roomId: string, userId: string) => {
           const { targetUserId, stream, pc } = pendingCallDataRef.current;
           console.log('[useAudioCall] Sending offer to ready recipient:', targetUserId);
           
-          // Reset ICE candidates buffer
-          pendingIceCandidatesRef.current = [];
-          
           await pc.addLocalStream(stream);
-          const offer = await pc.createOffer();
           
-          // STEP 1A: Marca che l'offer è stata inviata
+          // FIX 1 CRITICO: Aspetta che ICE gathering sia completo
+          console.log('[useAudioCall] Waiting for ICE gathering to complete...');
+          await new Promise<void>((resolve) => {
+            const checkGathering = () => {
+              const state = pc.getIceGatheringState();
+              console.log('[useAudioCall] ICE gathering state:', state);
+              
+              if (state === 'complete') {
+                console.log('[useAudioCall] ✅ ICE gathering complete');
+                resolve();
+              } else {
+                // Ricontrolla ogni 100ms
+                setTimeout(checkGathering, 100);
+              }
+            };
+            
+            // Avvia il check
+            checkGathering();
+            
+            // Timeout dopo 5 secondi (fallback)
+            setTimeout(() => {
+              console.warn('[useAudioCall] ⚠️ ICE gathering timeout after 5s');
+              resolve();
+            }, 5000);
+          });
+          
+          // Ora crea l'offer con TUTTI i candidates già inclusi
+          const offer = await pc.createOffer();
           offerSentRef.current = true;
           
           await sendSignal({ type: 'offer', to: targetUserId, payload: offer });
           
-          // STEP 1A: Invia tutti i candidates bufferizzati DOPO l'offer
+          // Invia anche i candidates bufferizzati (se ce ne sono ancora)
           console.log('[useAudioCall] Sending buffered ICE candidates:', pendingIceCandidatesRef.current.length);
           pendingIceCandidatesRef.current.forEach(candidate => {
             sendSignal({ type: 'ice-candidate', to: targetUserId, payload: candidate });
@@ -396,14 +419,14 @@ export const useAudioCall = (roomId: string, userId: string) => {
 
       await pc.addLocalStream(stream);
       await pc.setRemoteDescription(offer);
+      
+      // FIX 2 CRITICO: Aspetta 1000ms per ricevere i candidates di Alice PRIMA di creare answer
+      console.log('[answerCall] Waiting 1000ms for Alice\'s ICE candidates...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // ORA crea l'answer
       const answer = await pc.createAnswer();
-      
-      // STEP 1: CRITICO - Set local description PRIMA di inviare answer
       await pc.setLocalDescription(answer);
-      
-      // STEP 1B: Aspetta 500ms per ricevere ICE candidates di Alice
-      console.log('[answerCall] Waiting 500ms for ICE candidates...');
-      await new Promise(resolve => setTimeout(resolve, 500));
       
       await sendSignal({ type: 'answer', to: from, payload: answer });
 

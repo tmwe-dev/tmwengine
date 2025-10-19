@@ -95,6 +95,14 @@ export class WebRTCPeerConnection {
     return this.pc.getStats();
   }
 
+  getIceGatheringState(): RTCIceGatheringState {
+    return this.pc.iceGatheringState;
+  }
+
+  getIceConnectionState(): RTCIceConnectionState {
+    return this.pc.iceConnectionState;
+  }
+
   close() {
     this.localStream?.getTracks().forEach(track => track.stop());
     this.pc.close();

@@ -419,11 +419,6 @@ export const MessageInputWithAttachments = ({
             </Button>
           </div>
 
-          {/* Video Call Control */}
-          <TtsControls 
-            roomId={roomId}
-            roomName={roomName}
-          />
         </div>
       </div>
     </>

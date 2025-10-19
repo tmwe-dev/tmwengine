@@ -81,6 +81,8 @@ const SENDER_CONFIG = {
 
 export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('friendly');
+  const [appendixAudioPlaying, setAppendixAudioPlaying] = useState(false);
+  const [appendixOpen, setAppendixOpen] = useState(false);
   const config = SENDER_CONFIG[message.sender_type];
   const Icon = config.icon;
 
@@ -255,33 +257,64 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
           </div>
         </div>
 
-        {/* Content */}
-        <div className="prose dark:prose-invert max-w-none">
+        {/* Content - NO ReactMarkdown, puro testo conversazionale */}
+        <div className="max-w-none">
           {viewMode === 'summary' && tokenSavings > 0 && (
             <Badge variant="outline" className="mb-2 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30">
               ⚡ Economy Mode: -{tokenSavings} token
             </Badge>
           )}
-          <p className="whitespace-pre-wrap">{displayContent}</p>
+          <p className="whitespace-pre-wrap text-base leading-relaxed">{displayContent}</p>
         </div>
 
-        {/* ✅ APPENDICE: Supporto sia structured che legacy format */}
+        {/* ✅ APPUNTI: Supporto sia structured che legacy format + Audio on-expand */}
         {((isStructuredAttachments(message.attachments) && message.attachments.appendix) || (message.attachments as any)?.appendix) && message.sender_type !== 'human' && (
-          <Collapsible className="mt-3">
-            <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-sm font-medium group">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-foreground">📎 Appendice Tecnica</span>
+          <Collapsible 
+            className="mt-3" 
+            open={appendixOpen}
+            onOpenChange={(open) => {
+              setAppendixOpen(open);
+              if (open && !appendixAudioPlaying) {
+                setAppendixAudioPlaying(true);
+              }
+            }}
+          >
+            <CollapsibleTrigger className={`flex items-center gap-2 w-full p-3 rounded-lg transition-colors text-sm font-medium group ${config.bg} border ${config.border}`}>
+              <FileText className="h-4 w-4" />
+              <span className={config.textColor}>📋 Appunti</span>
               <Badge variant="outline" className="ml-auto text-xs">
                 {(isStructuredAttachments(message.attachments) ? message.attachments.appendix?.length : (message.attachments as any)?.appendix?.length) || 0} chars
               </Badge>
-              <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+              <ChevronDown className="h-4 w-4 ml-2 transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2 p-4 bg-muted/30 rounded-lg border border-border/40">
+            <CollapsibleContent className={`mt-2 p-4 rounded-lg border ${config.border} ${config.bg}`}>
               <div className="prose dark:prose-invert max-w-none text-sm">
-                <ReactMarkdown>
+                <ReactMarkdown
+                  components={{
+                    h2: ({ children }) => <h2 className={`text-lg font-semibold ${config.textColor} mb-3 mt-0`}>{children}</h2>,
+                    ul: ({ children }) => <ul className="list-disc pl-5 space-y-1">{children}</ul>,
+                    li: ({ children }) => <li className="text-sm">{children}</li>
+                  }}
+                >
                   {isStructuredAttachments(message.attachments) ? message.attachments.appendix : (message.attachments as any)?.appendix}
                 </ReactMarkdown>
               </div>
+              
+              {/* Audio Appunti - Auto-play quando si apre */}
+              {appendixAudioPlaying && (
+                <div className="mt-3">
+                  <AudioMessagePlayer 
+                    audioUrl={message.audio_url || ''} 
+                    autoPlay={false}
+                    onPlayStart={() => console.log('🔊 Audio Appunti START')}
+                    onPlayEnd={() => {
+                      console.log('⏸️ Audio Appunti END');
+                      setAppendixAudioPlaying(false);
+                    }}
+                    onPlayingChange={(playing) => console.log(`🎵 Audio Appunti ${playing ? 'PLAYING' : 'PAUSED'}`)}
+                  />
+                </div>
+              )}
             </CollapsibleContent>
           </Collapsible>
         )}

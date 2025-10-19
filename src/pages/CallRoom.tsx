@@ -13,6 +13,7 @@ const CallRoom = () => {
   const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState<string>('');
   const hasStartedCallRef = useRef(false);
+  const readySentRef = useRef(false);
   
   const targetUserId = searchParams.get('targetUserId');
   const roomId = 'global-call-room';
@@ -31,7 +32,7 @@ const CallRoom = () => {
     rejectCall
   } = useAudioCall(roomId, userId);
 
-  const { sendSignal } = useWebRTCSignaling(roomId, userId);
+  const { sendSignal, isReady } = useWebRTCSignaling(roomId, userId);
 
   useEffect(() => {
     const getUser = async () => {
@@ -47,17 +48,19 @@ const CallRoom = () => {
   useEffect(() => {
     const acceptedCall = searchParams.get('acceptedCall') === 'true';
     
-    if (acceptedCall && targetUserId && userId) {
+    if (acceptedCall && targetUserId && userId && isReady && !readySentRef.current) {
       // Chi riceve la chiamata: invia segnale "ready" per dire ad Alice di inviare l'offer
-      console.log('[CallRoom] 🟢 Incoming call mode - sending READY signal to:', targetUserId);
+      // ASPETTA che il canale sia pronto prima di inviare
+      console.log('[CallRoom] 🟢 Channel ready - sending READY signal to:', targetUserId);
       sendSignal({ type: 'ready', to: targetUserId, payload: {} });
+      readySentRef.current = true;
     } else if (targetUserId && !isInCall && userId && !hasStartedCallRef.current) {
       // Chi INIZIA la chiamata
       console.log('[CallRoom] Auto-starting outgoing call to:', targetUserId);
       hasStartedCallRef.current = true;
       startCall(targetUserId);
     }
-  }, [targetUserId, isInCall, userId, startCall, searchParams, roomId, sendSignal]);
+  }, [targetUserId, isInCall, userId, startCall, searchParams, sendSignal, isReady]);
 
   const qualityColors = {
     good: 'bg-green-500',

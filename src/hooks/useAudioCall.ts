@@ -20,6 +20,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const pendingOfferRef = useRef<{ from: string; offer: RTCSessionDescriptionInit } | null>(null);
   const pendingCallDataRef = useRef<{ targetUserId: string; stream: MediaStream; pc: WebRTCPeerConnection } | null>(null);
+  const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
 
   const { toast } = useToast();
   const { sendSignal, setHandlers } = useWebRTCSignaling(roomId, userId);
@@ -132,9 +133,20 @@ export const useAudioCall = (roomId: string, userId: string) => {
           const { targetUserId, stream, pc } = pendingCallDataRef.current;
           console.log('[useAudioCall] Sending offer to ready recipient:', targetUserId);
           
+          // Reset ICE candidates buffer
+          pendingIceCandidatesRef.current = [];
+          
           await pc.addLocalStream(stream);
           const offer = await pc.createOffer();
           await sendSignal({ type: 'offer', to: targetUserId, payload: offer });
+          
+          // STEP 3: Invia tutti i candidates bufferizzati DOPO l'offer
+          console.log('[useAudioCall] Sending buffered ICE candidates:', pendingIceCandidatesRef.current.length);
+          pendingIceCandidatesRef.current.forEach(candidate => {
+            sendSignal({ type: 'ice-candidate', to: targetUserId, payload: candidate });
+          });
+          pendingIceCandidatesRef.current = [];
+          
           await sendSignal({ type: 'call-start', to: targetUserId, payload: {} });
           
           pendingCallDataRef.current = null;
@@ -206,8 +218,9 @@ export const useAudioCall = (roomId: string, userId: string) => {
 
       const pc = new WebRTCPeerConnection({
         onIceCandidate: (candidate) => {
-          console.log('[useAudioCall] Sending ICE candidate to:', targetUserId);
-          sendSignal({ type: 'ice-candidate', to: targetUserId, payload: candidate });
+          // STEP 3: Bufferizza ICE candidates invece di inviarli subito
+          pendingIceCandidatesRef.current.push(candidate);
+          console.log('[useAudioCall] Buffered ICE candidate, total:', pendingIceCandidatesRef.current.length);
         },
         onRemoteStream: (stream) => {
           console.log('[useAudioCall] Received remote stream');

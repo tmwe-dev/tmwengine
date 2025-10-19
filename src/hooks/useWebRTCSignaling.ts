@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SignalingMessage {
@@ -10,6 +10,7 @@ interface SignalingMessage {
 
 export const useWebRTCSignaling = (roomId: string, userId: string) => {
   const channelRef = useRef<any>(null);
+  const [isReady, setIsReady] = useState(false);
   const handlersRef = useRef<{
     onOffer?: (offer: RTCSessionDescriptionInit, from: string) => void;
     onAnswer?: (answer: RTCSessionDescriptionInit) => void;
@@ -21,7 +22,10 @@ export const useWebRTCSignaling = (roomId: string, userId: string) => {
   }>({});
 
   useEffect(() => {
-    if (!roomId || !userId) return;
+    if (!roomId || !userId) {
+      setIsReady(false);
+      return;
+    }
 
     console.log('[WebRTCSignaling] Connecting to channel:', `call-room-${roomId}-webrtc`);
     const channel = supabase.channel(`call-room-${roomId}-webrtc`);
@@ -72,11 +76,21 @@ export const useWebRTCSignaling = (roomId: string, userId: string) => {
             break;
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[WebRTCSignaling] ✅ Channel ready and subscribed');
+          setIsReady(true);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[WebRTCSignaling] ❌ Channel error');
+          setIsReady(false);
+        }
+      });
 
     channelRef.current = channel;
 
     return () => {
+      console.log('[WebRTCSignaling] Unsubscribing from channel');
+      setIsReady(false);
       channel.unsubscribe();
     };
   }, [roomId, userId]);
@@ -96,5 +110,5 @@ export const useWebRTCSignaling = (roomId: string, userId: string) => {
     handlersRef.current = { ...handlersRef.current, ...handlers };
   }, []);
 
-  return { sendSignal, setHandlers };
+  return { sendSignal, setHandlers, isReady };
 };

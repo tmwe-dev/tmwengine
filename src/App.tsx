@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TMWEAuthProvider } from "@/hooks/useTMWEAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { GlobalCallHandler } from "@/components/GlobalCallHandler";
+import { GlobalVideoCallHandler } from "@/components/GlobalVideoCallHandler";
 import '@/i18n/config';
 
 import Auth from "./pages/Auth";
@@ -140,7 +141,8 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <GlobalCallHandler>
-          <Routes>
+              <GlobalVideoCallHandler />
+              <Routes>
             <Route path="/" element={
               <ProtectedRoute>
                 <CRMLayout><ImportTemplates /></CRMLayout>

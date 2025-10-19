@@ -11,6 +11,7 @@ interface NativeVideoCallDialogProps {
   targetUserName: string;
   currentUserId: string;
   roomId: string;
+  isIncoming?: boolean;
 }
 
 export const NativeVideoCallDialog = ({
@@ -19,7 +20,8 @@ export const NativeVideoCallDialog = ({
   targetUserId,
   targetUserName,
   currentUserId,
-  roomId
+  roomId,
+  isIncoming = false
 }: NativeVideoCallDialogProps) => {
   const {
     isInCall,
@@ -28,6 +30,7 @@ export const NativeVideoCallDialog = ({
     localVideoRef,
     remoteVideoRef,
     startCall,
+    answerCall,
     endCall,
     toggleMute,
     toggleVideo
@@ -35,9 +38,15 @@ export const NativeVideoCallDialog = ({
 
   useEffect(() => {
     if (isOpen && !isInCall) {
-      startCall(targetUserId);
+      if (isIncoming) {
+        console.log('[NativeVideoCallDialog] 📞 Answering incoming call from:', targetUserId);
+        answerCall(targetUserId);
+      } else {
+        console.log('[NativeVideoCallDialog] 📞 Starting outgoing call to:', targetUserId);
+        startCall(targetUserId);
+      }
     }
-  }, [isOpen, targetUserId]);
+  }, [isOpen, targetUserId, isIncoming, isInCall, answerCall, startCall]);
 
   const handleClose = () => {
     endCall();

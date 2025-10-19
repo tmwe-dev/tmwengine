@@ -69,16 +69,27 @@ export const useGlobalCallHandler = (currentUserId: string) => {
   const acceptCall = () => {
     if (!incomingCall) return;
     
-    // FIX #2 & #4: Navigazione ritardata solo al click, con parametro incomingFrom
-    console.log('[GlobalCallHandler] ✅ Call accepted, navigating to CallRoom...');
-    console.log('[GlobalCallHandler] 📍 Navigation params:', {
-      targetUserId: incomingCall.from,
-      roomId: incomingCall.roomId,
-      acceptedCall: true,
-      incomingFrom: incomingCall.from
-    });
+    console.log('[GlobalCallHandler] ✅ Call accepted');
     
-    navigate(`/call-room?targetUserId=${incomingCall.from}&roomId=${incomingCall.roomId}&acceptedCall=true&incomingFrom=${incomingCall.from}`);
+    // ✅ FIX: Differenzia comportamento per tipo chiamata
+    if (incomingCall.callType === 'video') {
+      console.log('[GlobalCallHandler] 📹 Video call - dispatching event');
+      
+      // Dispatch evento custom per aprire NativeVideoCallDialog
+      window.dispatchEvent(new CustomEvent('open-video-call-dialog', {
+        detail: {
+          targetUserId: incomingCall.from,
+          targetUserName: incomingCall.callerName,
+          roomId: incomingCall.roomId,
+          isIncoming: true
+        }
+      }));
+      
+    } else {
+      // Audio call - naviga a CallRoom (comportamento esistente)
+      console.log('[GlobalCallHandler] 📞 Audio call - navigating to CallRoom');
+      navigate(`/call-room?targetUserId=${incomingCall.from}&roomId=${incomingCall.roomId}&acceptedCall=true&incomingFrom=${incomingCall.from}`);
+    }
     
     setIncomingCall(null);
   };

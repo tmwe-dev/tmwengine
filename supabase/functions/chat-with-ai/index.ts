@@ -80,14 +80,11 @@ async function collectSystemSnapshot(supabaseClient: any) {
       total_policies: 0
     };
     
-    // 3. Edge Functions
-    const { data: edgeFunctions } = await supabaseClient
-      .from('edge_function_versions')
-      .select('function_name, is_active, version_number, created_at')
-      .eq('is_active', true);
+    // 3. Edge Functions (placeholder - table might not exist)
     snapshot.edge_functions = {
-      total_functions: edgeFunctions?.length || 0,
-      functions: edgeFunctions || []
+      note: "Edge function metadata would be queried here if table exists",
+      total_functions: 0,
+      functions: []
     };
     
     // 4. AI Configurations
@@ -175,10 +172,10 @@ serve(async (req) => {
       const { data, error } = await supabase
         .from('config_ai')
         .select('*')
-        .eq('provider', 'openai')
+        .eq('attivo', true)
         .maybeSingle();
       
-      if (error) throw new Error('Nessuna configurazione AI attiva');
+      if (error || !data) throw new Error('Nessuna configurazione AI attiva trovata');
       aiConfig = data;
     }
 

@@ -43,6 +43,14 @@ export const useVideoCall = (roomId: string, userId: string) => {
       onAnswer: async (answer) => {
         console.log('[useVideoCall] Received answer');
         try {
+          // FIX #2: Wait for offer to be set before applying answer
+          let retries = 0;
+          while (peerConnectionRef.current && 
+                 peerConnectionRef.current.getSignalingState() === 'have-local-offer' && 
+                 retries < 20) {
+            await new Promise(r => setTimeout(r, 100));
+            retries++;
+          }
           await peerConnectionRef.current?.setRemoteDescription(answer);
         } catch (error) {
           console.error('[useVideoCall] Error setting remote description:', error);
@@ -72,7 +80,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
         endCall();
       }
     });
-  }, [setHandlers, toast, callStatus]);
+  }, [setHandlers, toast]);
 
   const startCall = useCallback(async (targetUserId: string) => {
     try {
@@ -90,8 +98,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000
+          autoGainControl: true
         }
       });
 
@@ -109,8 +116,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
       localStreamRef.current = stream;
       
+      // FIX #7: Force play() on local video
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
+        await localVideoRef.current.play().catch(e => 
+          console.warn('[useVideoCall] Local play blocked:', e)
+        );
       }
 
       const pc = new WebRTCPeerConnection({
@@ -139,8 +150,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
           }
           
           remoteStreamRef.current = remoteStream;
+          // FIX #7: Force play() on remote video
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStream;
+            remoteVideoRef.current.play().catch(e => 
+              console.warn('[useVideoCall] Remote play blocked:', e)
+            );
           }
           setIsInCall(true);
         },
@@ -154,6 +169,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
       setCallStatus('calling');
 
       await pc.addLocalStream(stream);
+
+      // FIX #3: Process buffered ICE candidates
+      for (const candidate of pendingIceCandidatesRef.current) {
+        await pc.addIceCandidate(candidate);
+      }
+      pendingIceCandidatesRef.current = [];
 
       console.log('[useVideoCall] ⏳ Waiting for ICE gathering...');
       await new Promise<void>((resolve) => {
@@ -238,8 +259,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000
+          autoGainControl: true
         }
       });
 
@@ -256,8 +276,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
       }
 
       localStreamRef.current = stream;
+      // FIX #7: Force play() on local video
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
+        await localVideoRef.current.play().catch(e => 
+          console.warn('[useVideoCall] Local play blocked (answering):', e)
+        );
       }
 
       const pc = new WebRTCPeerConnection({
@@ -290,8 +314,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
           }
           
           remoteStreamRef.current = remoteStream;
+          // FIX #7: Force play() on remote video
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStream;
+            remoteVideoRef.current.play().catch(e => 
+              console.warn('[useVideoCall] Remote play blocked (answering):', e)
+            );
           }
           setIsInCall(true);
         },
@@ -302,6 +330,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
       setRemotePeerId(callerId);
       
       await pc.addLocalStream(stream);
+
+      // FIX #3: Process buffered ICE candidates
+      for (const candidate of pendingIceCandidatesRef.current) {
+        await pc.addIceCandidate(candidate);
+      }
+      pendingIceCandidatesRef.current = [];
 
       if (pendingOfferRef.current) {
         await pc.setRemoteDescription(pendingOfferRef.current.offer);

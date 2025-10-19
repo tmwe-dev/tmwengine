@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Video, VideoOff, Mic, MicOff, PhoneOff } from 'lucide-react';
 import { useVideoCall } from '@/hooks/useVideoCall';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface NativeVideoCallDialogProps {
   isOpen: boolean;
@@ -36,11 +36,16 @@ export const NativeVideoCallDialog = ({
     toggleVideo
   } = useVideoCall(roomId, currentUserId);
   
-  const hasInitiatedRef = useRef(false);
+  // FIX #6: Prevent double calls with lastCallParamsRef
+  const lastCallParamsRef = useRef('');
+  const [audioBlocked, setAudioBlocked] = useState(false);
 
   useEffect(() => {
-    if (isOpen && !hasInitiatedRef.current) {
-      hasInitiatedRef.current = true;
+    const callParams = `${isOpen}-${targetUserId}-${isIncoming}`;
+    
+    if (isOpen && callParams !== lastCallParamsRef.current) {
+      lastCallParamsRef.current = callParams;
+      
       if (isIncoming) {
         console.log('[NativeVideoCallDialog] 📞 Answering incoming call from:', targetUserId);
         answerCall(targetUserId);
@@ -51,14 +56,17 @@ export const NativeVideoCallDialog = ({
     }
     
     if (!isOpen) {
-      hasInitiatedRef.current = false;
+      lastCallParamsRef.current = '';
     }
   }, [isOpen, targetUserId, isIncoming, answerCall, startCall]);
 
+  // FIX #8: Handle autoplay blocking with UI fallback
   useEffect(() => {
-    if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
-      remoteVideoRef.current.play().catch(err => {
+    const remoteVideo = remoteVideoRef.current;
+    if (remoteVideo?.srcObject) {
+      remoteVideo.play().catch(err => {
         console.error('[NativeVideoCallDialog] ❌ Autoplay blocked:', err);
+        setAudioBlocked(true);
       });
     }
   }, [remoteVideoRef.current?.srcObject]);
@@ -76,22 +84,42 @@ export const NativeVideoCallDialog = ({
         </DialogHeader>
 
         <div className="flex-1 relative bg-black">
-          {/* Video remoto (fullscreen) */}
+          {/* Video remoto (fullscreen) - FIX #5: Explicit attributes */}
           <video
             ref={remoteVideoRef}
             autoPlay
             playsInline
+            muted={false}
+            controls={false}
+            style={{ objectFit: 'cover' }}
             className="w-full h-full object-cover"
           />
 
-          {/* Video locale (picture-in-picture) */}
+          {/* Video locale (picture-in-picture) - FIX #5: Explicit attributes */}
           <video
             ref={localVideoRef}
             autoPlay
             playsInline
-            muted
+            muted={true}
+            controls={false}
+            style={{ objectFit: 'cover' }}
             className="absolute top-4 right-4 w-48 h-36 rounded-lg border-2 border-white shadow-lg object-cover"
           />
+
+          {/* FIX #8: Audio activation fallback */}
+          {audioBlocked && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-6 rounded-lg">
+              <Button 
+                onClick={() => {
+                  remoteVideoRef.current?.play();
+                  setAudioBlocked(false);
+                }}
+                size="lg"
+              >
+                🔊 Attiva Audio
+              </Button>
+            </div>
+          )}
 
           {/* Controlli */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3">

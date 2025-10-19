@@ -49,6 +49,7 @@ import DatabaseSettings from "./pages/DatabaseSettings";
 import CallRoom from "./pages/CallRoom";
 import EmailRules from "./pages/EmailRules";
 import TMWEApiTester from "./pages/TMWEApiTester";
+import CodeReview from "./pages/CodeReview";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 
 const queryClient = new QueryClient();
@@ -317,6 +318,13 @@ const App = () => {
                     <TMWEApiTester />
                   </CRMLayout>
                 </IntegratedAuthGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/code-review" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <CodeReview />
+                </CRMLayout>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

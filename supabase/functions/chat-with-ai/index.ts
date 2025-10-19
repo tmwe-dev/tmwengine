@@ -703,6 +703,110 @@ ${prompt}`;
           description: "Ottieni solo campagne attualmente attive (in corso ora)",
           parameters: { type: "object", properties: {} }
         }
+      },
+
+      // ========== CODE ASSISTANT ==========
+      {
+        type: "function",
+        function: {
+          name: "list_project_files",
+          description: "Elenca file del progetto con filtri per tipo",
+          parameters: {
+            type: "object",
+            properties: {
+              file_type: { 
+                type: "string", 
+                enum: ["page", "component", "edge-function", "hook", "util", "type", "config"],
+                description: "Tipo di file da cercare" 
+              },
+              limit: { type: "number", description: "Numero max risultati (default: 50)" }
+            }
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "read_source_code",
+          description: "Leggi contenuto completo di un file sorgente",
+          parameters: {
+            type: "object",
+            properties: {
+              file_path: { type: "string", description: "Percorso file (es: src/pages/Chat.tsx)" }
+            },
+            required: ["file_path"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "analyze_component",
+          description: "Analisi dettagliata componente React: hooks, props, dipendenze",
+          parameters: {
+            type: "object",
+            properties: {
+              file_path: { type: "string", description: "Percorso file componente" }
+            },
+            required: ["file_path"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "search_code",
+          description: "Ricerca full-text nel codice sorgente",
+          parameters: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "Termine di ricerca" },
+              file_type: { type: "string", description: "Filtro per tipo file" },
+              limit: { type: "number", description: "Numero risultati (default: 20)" }
+            },
+            required: ["query"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_dependencies",
+          description: "Ottieni albero dipendenze di un file",
+          parameters: {
+            type: "object",
+            properties: {
+              file_path: { type: "string", description: "Percorso file" }
+            },
+            required: ["file_path"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "propose_code_change",
+          description: "Proponi modifica a un file (NON applica direttamente)",
+          parameters: {
+            type: "object",
+            properties: {
+              file_path: { type: "string", description: "Percorso file da modificare" },
+              proposed_code: { type: "string", description: "Codice completo proposto" },
+              reason: { type: "string", description: "Motivazione dettagliata" },
+              change_type: { 
+                type: "string", 
+                enum: ["modification", "refactor", "bug_fix", "optimization", "feature"],
+                description: "Tipo di modifica"
+              },
+              impact_level: { 
+                type: "string", 
+                enum: ["low", "medium", "high", "breaking"],
+                description: "Livello di impatto"
+              }
+            },
+            required: ["file_path", "proposed_code", "reason"]
+          }
+        }
       }
     ];
 
@@ -839,17 +943,35 @@ ${prompt}`;
         try {
           console.log(`[TOOL CALL] Executing: ${toolCall.function.name} with args: ${toolCall.function.arguments}`);
           
-          const toolResponse = await fetch(`${supabaseUrl}/functions/v1/crm-tools`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${supabaseKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              tool_name: toolCall.function.name,
-              parameters: JSON.parse(toolCall.function.arguments)
-            })
-          });
+          // Code Assistant tools
+          const codeAssistantTools = ['list_project_files', 'read_source_code', 'analyze_component', 'search_code', 'get_dependencies', 'propose_code_change'];
+          
+          let toolResponse;
+          if (codeAssistantTools.includes(toolCall.function.name)) {
+            toolResponse = await fetch(`${supabaseUrl}/functions/v1/code-assistant-tools`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                tool_name: toolCall.function.name,
+                parameters: JSON.parse(toolCall.function.arguments)
+              })
+            });
+          } else {
+            toolResponse = await fetch(`${supabaseUrl}/functions/v1/crm-tools`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                tool_name: toolCall.function.name,
+                parameters: JSON.parse(toolCall.function.arguments)
+              })
+            });
+          }
           
           const toolData = await toolResponse.json();
           toolResults.push({

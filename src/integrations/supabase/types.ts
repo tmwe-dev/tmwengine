@@ -1101,6 +1101,126 @@ export type Database = {
           },
         ]
       }
+      code_change_proposals: {
+        Row: {
+          affected_dependencies: Json | null
+          applied_at: string | null
+          approved_by: string | null
+          change_type: string | null
+          created_at: string | null
+          created_by_ai: boolean | null
+          diff: string | null
+          file_path: string
+          has_breaking_changes: boolean | null
+          id: string
+          impact_level: string | null
+          original_code: string | null
+          proposed_code: string
+          reason: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          status: string | null
+          syntax_valid: boolean | null
+        }
+        Insert: {
+          affected_dependencies?: Json | null
+          applied_at?: string | null
+          approved_by?: string | null
+          change_type?: string | null
+          created_at?: string | null
+          created_by_ai?: boolean | null
+          diff?: string | null
+          file_path: string
+          has_breaking_changes?: boolean | null
+          id?: string
+          impact_level?: string | null
+          original_code?: string | null
+          proposed_code: string
+          reason: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          status?: string | null
+          syntax_valid?: boolean | null
+        }
+        Update: {
+          affected_dependencies?: Json | null
+          applied_at?: string | null
+          approved_by?: string | null
+          change_type?: string | null
+          created_at?: string | null
+          created_by_ai?: boolean | null
+          diff?: string | null
+          file_path?: string
+          has_breaking_changes?: boolean | null
+          id?: string
+          impact_level?: string | null
+          original_code?: string | null
+          proposed_code?: string
+          reason?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          status?: string | null
+          syntax_valid?: boolean | null
+        }
+        Relationships: []
+      }
+      code_index: {
+        Row: {
+          complexity_score: number | null
+          components: Json | null
+          content: string
+          content_tsvector: unknown | null
+          created_at: string | null
+          dependencies: Json | null
+          exports: Json | null
+          file_path: string
+          file_type: string
+          functions: Json | null
+          id: string
+          imports: Json | null
+          language: string | null
+          last_updated: string | null
+          line_count: number | null
+          token_count: number | null
+        }
+        Insert: {
+          complexity_score?: number | null
+          components?: Json | null
+          content: string
+          content_tsvector?: unknown | null
+          created_at?: string | null
+          dependencies?: Json | null
+          exports?: Json | null
+          file_path: string
+          file_type: string
+          functions?: Json | null
+          id?: string
+          imports?: Json | null
+          language?: string | null
+          last_updated?: string | null
+          line_count?: number | null
+          token_count?: number | null
+        }
+        Update: {
+          complexity_score?: number | null
+          components?: Json | null
+          content?: string
+          content_tsvector?: unknown | null
+          created_at?: string | null
+          dependencies?: Json | null
+          exports?: Json | null
+          file_path?: string
+          file_type?: string
+          functions?: Json | null
+          id?: string
+          imports?: Json | null
+          language?: string | null
+          last_updated?: string | null
+          line_count?: number | null
+          token_count?: number | null
+        }
+        Relationships: []
+      }
       config_ai: {
         Row: {
           api_key: string
@@ -4187,6 +4307,26 @@ export type Database = {
           email: string
         }[]
       }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       halfvec_avg: {
         Args: { "": number[] }
         Returns: unknown
@@ -4337,6 +4477,18 @@ export type Database = {
           similarity: number
           title: string
         }[]
+      }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
       }
       sparsevec_out: {
         Args: { "": unknown }

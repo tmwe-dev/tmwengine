@@ -129,6 +129,10 @@ export class WebRTCPeerConnection {
     return this.pc.signalingState;
   }
 
+  getSenders(): RTCRtpSender[] {
+    return this.pc.getSenders();
+  }
+
   close() {
     if (this.pc.connectionState !== 'closed') {
       console.log('[PeerConnection] Closing connection');

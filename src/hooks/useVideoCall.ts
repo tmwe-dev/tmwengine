@@ -12,6 +12,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
   const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
   const [incomingCallFrom, setIncomingCallFrom] = useState<string | null>(null);
   const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'ringing' | 'connecting' | 'connected'>('idle');
+  const [connectionQuality, setConnectionQuality] = useState<'good' | 'medium' | 'poor'>('good');
 
   const peerConnectionRef = useRef<WebRTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -94,6 +95,39 @@ export const useVideoCall = (roomId: string, userId: string) => {
     });
   }, [setHandlers, toast]);
 
+  // FIX #9: Monitor connection quality with getStats()
+  useEffect(() => {
+    if (!isInCall || !peerConnectionRef.current) return;
+    
+    const monitorInterval = setInterval(async () => {
+      const stats = await peerConnectionRef.current?.getStats();
+      if (!stats) return;
+      
+      let packetsLost = 0;
+      let packetsReceived = 0;
+      
+      stats.forEach((report) => {
+        if (report.type === 'inbound-rtp' && report.kind === 'video') {
+          packetsLost = report.packetsLost || 0;
+          packetsReceived = report.packetsReceived || 0;
+        }
+      });
+      
+      const lossRate = packetsReceived > 0 ? packetsLost / packetsReceived : 0;
+      
+      if (lossRate > 0.1) {
+        setConnectionQuality('poor');
+        console.warn('[useVideoCall] ⚠️ High packet loss:', (lossRate * 100).toFixed(2) + '%');
+      } else if (lossRate > 0.05) {
+        setConnectionQuality('medium');
+      } else {
+        setConnectionQuality('good');
+      }
+    }, 2000);
+    
+    return () => clearInterval(monitorInterval);
+  }, [isInCall]);
+
   const startCall = useCallback(async (targetUserId: string) => {
     try {
       if (targetUserId === userId) {
@@ -101,10 +135,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
         return;
       }
 
+      // FIX #7: Use ideal/min constraints for cross-device compatibility
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+          frameRate: { ideal: 30, min: 15 },
           facingMode: 'user'
         },
         audio: {
@@ -127,6 +163,19 @@ export const useVideoCall = (roomId: string, userId: string) => {
       }
 
       localStreamRef.current = stream;
+
+      // FIX #6: Monitor track ended events
+      stream.getTracks().forEach(track => {
+        track.onended = () => {
+          console.error(`[useVideoCall] ⚠️ Track ended: ${track.kind}`);
+          toast({ 
+            title: 'Dispositivo disconnesso', 
+            description: `Il ${track.kind === 'audio' ? 'microfono' : 'video'} è stato disconnesso`,
+            variant: 'destructive' 
+          });
+          endCall();
+        };
+      });
       
       // FIX #7: Force play() on local video
       if (localVideoRef.current) {
@@ -291,8 +340,14 @@ export const useVideoCall = (roomId: string, userId: string) => {
       
       console.log('[useVideoCall] ✅ OFFER ready, proceeding with answer...');
       
+      // FIX #7: Use ideal/min constraints for cross-device compatibility
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: {
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+          frameRate: { ideal: 30, min: 15 },
+          facingMode: 'user'
+        },
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
@@ -313,6 +368,19 @@ export const useVideoCall = (roomId: string, userId: string) => {
       }
 
       localStreamRef.current = stream;
+
+      // FIX #6: Monitor track ended events
+      stream.getTracks().forEach(track => {
+        track.onended = () => {
+          console.error(`[useVideoCall] ⚠️ Track ended: ${track.kind}`);
+          toast({ 
+            title: 'Dispositivo disconnesso', 
+            description: `Il ${track.kind === 'audio' ? 'microfono' : 'video'} è stato disconnesso`,
+            variant: 'destructive' 
+          });
+          endCall();
+        };
+      });
       // FIX #7: Force play() on local video
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
@@ -363,17 +431,20 @@ export const useVideoCall = (roomId: string, userId: string) => {
         onConnectionStateChange: setConnectionState
       });
 
+      // FIX #10: Correct RFC 8829 sequence - addLocalStream BEFORE setRemoteDescription
       peerConnectionRef.current = pc;
       setRemotePeerId(callerId);
       
+      // 1️⃣ FIRST: Add local stream to peer connection
       await pc.addLocalStream(stream);
 
-      // FIX #3: Process buffered ICE candidates
+      // 2️⃣ THEN: Process buffered ICE candidates
       for (const candidate of pendingIceCandidatesRef.current) {
         await pc.addIceCandidate(candidate);
       }
       pendingIceCandidatesRef.current = [];
 
+      // 3️⃣ FINALLY: Set remote description (AFTER local stream is added)
       if (pendingOfferRef.current) {
         await pc.setRemoteDescription(pendingOfferRef.current.offer);
       }
@@ -454,6 +525,42 @@ export const useVideoCall = (roomId: string, userId: string) => {
     }
   }, []);
 
+  // FIX #8: Implement replaceTrack() for quality switching
+  const switchVideoQuality = useCallback(async (quality: 'low' | 'medium' | 'high') => {
+    if (!localStreamRef.current || !peerConnectionRef.current) return;
+    
+    const constraints = {
+      low: { width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 15 } },
+      medium: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24 } },
+      high: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }
+    };
+    
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: constraints[quality],
+        audio: false
+      });
+      
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      const oldVideoTrack = localStreamRef.current.getVideoTracks()[0];
+      
+      const sender = peerConnectionRef.current.getSenders()
+        .find(s => s.track?.kind === 'video');
+      
+      if (sender) {
+        await sender.replaceTrack(newVideoTrack);
+        oldVideoTrack.stop();
+        localStreamRef.current.removeTrack(oldVideoTrack);
+        localStreamRef.current.addTrack(newVideoTrack);
+        
+        console.log(`[useVideoCall] ✅ Switched video quality to ${quality}`);
+        toast({ title: 'Qualità video cambiata', description: `Ora: ${quality}` });
+      }
+    } catch (error) {
+      console.error('[useVideoCall] ❌ Error switching quality:', error);
+    }
+  }, [toast]);
+
   const endCall = useCallback(async () => {
     console.log('[useVideoCall] 🔚 Ending call');
     
@@ -506,12 +613,14 @@ export const useVideoCall = (roomId: string, userId: string) => {
     connectionState,
     incomingCallFrom,
     callStatus,
+    connectionQuality,
     localVideoRef,
     remoteVideoRef,
     startCall,
     answerCall,
     endCall,
     toggleMute,
-    toggleVideo
+    toggleVideo,
+    switchVideoQuality
   };
 };

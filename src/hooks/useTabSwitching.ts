@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface Message {
   id: string;
@@ -93,8 +93,13 @@ export const useTabSwitching = ({
   }, [messages, isAudioPlaying, activeTab, unseenMessagesQueue]);
 
   // 🎯 Quando audio finisce, passa al PRIMO messaggio NON VISTO
-  const handleAudioEnd = () => {
-    console.log(`🎵 [useTabSwitching] Audio terminato. Coda non visti:`, unseenMessagesQueue);
+  const handleAudioEnd = useCallback(() => {
+    console.log(`🎵 [handleAudioEnd] CHIAMATO`);
+    console.log(`   - unseenMessagesQueue:`, unseenMessagesQueue);
+    console.log(`   - unseenMessagesQueue.length:`, unseenMessagesQueue.length);
+    console.log(`   - activeTab:`, activeTab);
+    console.log(`   - messages.length:`, messages.length);
+    console.log(`   - seenMessages:`, Array.from(seenMessagesRef.current));
 
     if (unseenMessagesQueue.length > 0) {
       const nextMessageId = unseenMessagesQueue[0];
@@ -119,7 +124,7 @@ export const useTabSwitching = ({
         console.log(`⏹️ Nessun altro messaggio da mostrare`);
       }
     }
-  };
+  }, [unseenMessagesQueue, messages, activeTab]);
 
   return {
     activeTab,

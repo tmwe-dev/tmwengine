@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { MultiAgentMessage } from './MultiAgentMessage';
 import { TabNavigation } from './TabNavigation';
@@ -62,11 +63,24 @@ export const MessageTabsView = ({
     isAutoFollowEnabled
   });
 
-  // 🎯 Callback completo: quando audio finisce, sincronizza audio + tab
+  // 🎯 State per sincronizzare tab switch dopo audio end
+  const [shouldSwitchTab, setShouldSwitchTab] = useState(false);
+
+  // 🎯 Callback completo: quando audio finisce, setta flag per tab switch
   const onAudioEndComplete = () => {
-    audioEnd();
-    tabSwitchOnAudioEnd();
+    console.log(`🎬 [MessageTabsView] onAudioEndComplete chiamato`);
+    audioEnd(); // Setta isAudioPlaying = false (asincrono)
+    setShouldSwitchTab(true); // Flag per cambio tab
   };
+
+  // 🎯 Effetto: cambia tab DOPO che isAudioPlaying è aggiornato
+  useEffect(() => {
+    if (shouldSwitchTab && !isAudioPlaying) {
+      console.log(`🔄 [MessageTabsView] Sincronizzazione completata, cambio tab`);
+      tabSwitchOnAudioEnd();
+      setShouldSwitchTab(false);
+    }
+  }, [shouldSwitchTab, isAudioPlaying, tabSwitchOnAudioEnd]);
 
   if (messages.length === 0) {
     return null;

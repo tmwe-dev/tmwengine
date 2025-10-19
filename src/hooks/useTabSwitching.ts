@@ -35,20 +35,35 @@ export const useTabSwitching = ({
 
     const newMessages = messages.slice(previousMessagesLengthRef.current);
     console.log(`📨 [useTabSwitching] ${newMessages.length} nuovi messaggi ricevuti`);
+    console.log(`📊 [useTabSwitching] Stato corrente:`, {
+      activeTab,
+      isAudioPlaying,
+      unseenQueueLength: unseenMessagesQueue.length,
+      seenMessagesCount: seenMessagesRef.current.size
+    });
 
     newMessages.forEach((message) => {
-      // Messaggi HUMAN: sempre visibili immediatamente
+      // Messaggi HUMAN: sempre visibili immediatamente - PRIORITÀ ASSOLUTA
       if (message.sender_type === 'human') {
-        console.log(`👤 Messaggio HUMAN → Attivo immediatamente`);
+        console.log(`👤 [useTabSwitching] Messaggio HUMAN ricevuto → Attivo IMMEDIATAMENTE`);
+        console.log(`   - Message ID: ${message.id}`);
+        console.log(`   - Sender: ${message.sender_name}`);
+        console.log(`   - isAudioPlaying IGNORATO (era: ${isAudioPlaying})`);
         setActiveTab(message.id);
         seenMessagesRef.current.add(message.id);
+        
+        // ✅ SAFETY: Se audio era attivo, notifica ma NON bloccare
+        if (isAudioPlaying) {
+          console.warn(`⚠️ [useTabSwitching] Audio era attivo, ma messaggio HUMAN ha priorità assoluta`);
+        }
+        console.log(`✅ [useTabSwitching] Tab attivato su messaggio HUMAN`);
         return;
       }
 
       // Primo messaggio AI: attiva subito
       const isFirstAIMessage = seenMessagesRef.current.size === 0;
       if (isFirstAIMessage) {
-        console.log(`🤖 Primo messaggio AI da ${message.sender_name} → Attivo subito`);
+        console.log(`🤖 [useTabSwitching] Primo messaggio AI da ${message.sender_name} → Attivo subito`);
         setActiveTab(message.id);
         seenMessagesRef.current.add(message.id);
         return;
@@ -56,7 +71,7 @@ export const useTabSwitching = ({
 
       // Audio NON attivo: attiva subito
       if (!isAudioPlaying) {
-        console.log(`🤖 Audio non attivo → Attivo ${message.sender_name} subito`);
+        console.log(`🤖 [useTabSwitching] Audio non attivo → Attivo ${message.sender_name} subito`);
         setActiveTab(message.id);
         seenMessagesRef.current.add(message.id);
         return;
@@ -64,13 +79,18 @@ export const useTabSwitching = ({
 
       // Audio attivo: aggiungi a coda NON VISTI
       if (!seenMessagesRef.current.has(message.id)) {
-        console.log(`⏳ Audio attivo → ${message.sender_name} in coda`);
-        setUnseenMessagesQueue((prev) => [...prev, message.id]);
+        console.log(`⏳ [useTabSwitching] Audio attivo → ${message.sender_name} aggiunto in coda`);
+        console.log(`   - Queue length PRIMA: ${unseenMessagesQueue.length}`);
+        setUnseenMessagesQueue((prev) => {
+          const newQueue = [...prev, message.id];
+          console.log(`   - Queue length DOPO: ${newQueue.length}`);
+          return newQueue;
+        });
       }
     });
 
     previousMessagesLengthRef.current = messages.length;
-  }, [messages, isAudioPlaying]);
+  }, [messages, isAudioPlaying, activeTab, unseenMessagesQueue]);
 
   // 🎯 Quando audio finisce, passa al PRIMO messaggio NON VISTO
   const handleAudioEnd = () => {

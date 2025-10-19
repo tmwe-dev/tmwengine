@@ -25,45 +25,57 @@ export const AudioMessagePlayer = ({
   const [isMuted, setIsMuted] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const hasStartedRef = useRef<string | null>(null);
 
   useEffect(() => {
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
-    audio.addEventListener('loadedmetadata', () => {
-      setDuration(audio.duration);
-    });
-
-    audio.addEventListener('timeupdate', () => {
-      setCurrentTime(audio.currentTime);
-    });
-
-    audio.addEventListener('ended', () => {
+    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    
+    const handleEnded = () => {
       setIsPlaying(false);
       onPlayingChange?.(false);
       onPlayEnd?.();
-    });
+      hasStartedRef.current = null; // Reset per prossimo audio
+    };
 
-    audio.addEventListener('play', () => {
-      setIsPlaying(true);
-      onPlayingChange?.(true);
-      onPlayStart?.();
-    });
-
-    audio.addEventListener('pause', () => {
+    const handleError = () => {
+      console.error('❌ [AudioPlayer] Errore riproduzione audio');
       setIsPlaying(false);
       onPlayingChange?.(false);
-    });
+      hasStartedRef.current = null; // Reset su errore
+    };
 
-    if (autoPlay) {
-      audio.play().catch(err => console.error('Autoplay failed:', err));
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+
+    // ✅ Autoplay con protezione doppio trigger
+    if (autoPlay && hasStartedRef.current !== audioUrl) {
+      hasStartedRef.current = audioUrl; // Marca come avviato
+      audio.play().then(() => {
+        setIsPlaying(true);
+        onPlayingChange?.(true);
+        onPlayStart?.();
+        console.log(`🎵 [AudioPlayer] Audio avviato per URL: ${audioUrl.substring(0, 50)}...`);
+      }).catch((err) => {
+        console.error('❌ [AudioPlayer] Errore autoplay:', err);
+        hasStartedRef.current = null; // Reset su errore
+      });
     }
 
     return () => {
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
       audio.pause();
       audio.remove();
     };
-  }, [audioUrl, autoPlay]);
+  }, [audioUrl, autoPlay, onPlayStart, onPlayEnd, onPlayingChange]);
 
   useEffect(() => {
     if (audioRef.current) {

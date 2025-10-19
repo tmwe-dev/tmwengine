@@ -1202,14 +1202,12 @@ const ChatLaboratory = () => {
                   {viewMode === 'classic' ? <Columns className="h-4 w-4" /> : <MessagesSquare className="h-4 w-4" />}
                 </Button>
                 
-                {/* Word Limit Slider - visibile solo in Bar Mode */}
-                {isBarMode && currentConversationId && (
-                  <WordLimitSliderCompact
-                    conversationId={currentConversationId}
-                    value={globalMaxWords}
-                    onChange={setGlobalMaxWords}
-                  />
-                )}
+                {/* Word Limit Slider - sempre visibile */}
+                <WordLimitSliderCompact
+                  conversationId={currentConversationId}
+                  value={globalMaxWords}
+                  onChange={setGlobalMaxWords}
+                />
                 
                 {/* Maximize Button - sempre visibile */}
                 <MessageNavigationBar

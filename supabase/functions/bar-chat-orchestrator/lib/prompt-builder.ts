@@ -50,7 +50,7 @@ export function buildSystemPrompt(params: PromptParams): string {
     composedPrompt += agentPersonality + '\n\n';
   }
 
-  // Style injection from DB (con fallback a hardcoded per retrocompatibilità)
+  // Style injection from DB (con fallback a hardcoded SENZA limiti parole)
   let styleInstructions = '';
   
   if (styleSections && styleSections.has(conversationStyle)) {
@@ -58,13 +58,12 @@ export function buildSystemPrompt(params: PromptParams): string {
     styleInstructions = styleSections.get(conversationStyle) || '';
     console.log(`✅ Usando stile DB: ${conversationStyle}`);
   } else {
-    // Fallback a hardcoded (per retrocompatibilità durante migrazione)
+    // Fallback a hardcoded (SENZA limiti parole - usa solo dynamicWordLimit)
     console.warn(`⚠️ Stile '${conversationStyle}' non trovato in DB, uso fallback hardcoded`);
     
     if (conversationStyle === 'boss_talk') {
       styleInstructions = `
 🎯 STILE: Boss Talk (Pragmatico e Sintetico)
-- MAX 50-60 parole (~4 frasi brevi)
 - Focus su: decisioni, ROI, trade-off, next steps
 - Taglia tutto ciò che non è direttamente azionabile
 - Usa dati concreti: "Secondo benchmark X, l'opzione A costa il 30% in meno"
@@ -73,17 +72,15 @@ export function buildSystemPrompt(params: PromptParams): string {
     } else if (conversationStyle === 'colleagues') {
       styleInstructions = `
 🤝 STILE: Colleghi (Professionale ma Amichevole)
-- LIMITE RIGIDO: 60-70 parole MAX (~5 frasi brevi)
 - Usa frasi dirette e concrete
 - Coinvolgi gli altri: "Come vedi tu [nome], è fattibile?"
 - NO introduzioni lunghe, NO ripetizioni, NO conclusioni prolisse
 - Tono collaborativo ma estremamente conciso
-- Se non riesci a dire qualcosa in 60-70 parole, scrivi [SKIP]
+- Se non puoi contribuire in modo significativo, scrivi [SKIP]
 `;
     } else if (conversationStyle === 'bar_chat') {
       styleInstructions = `
 🍺 STILE: Bar Chat (Informale e Rilassato)
-- MAX 40-50 parole (~3 frasi)
 - Attacco conversazionale: "Guarda...", "Senti...", "Allora..."
 - Scherzoso quando appropriato, ma non forzato
 - Coinvolgi con domande dirette: "Tu [nome], lo faresti diversamente?"

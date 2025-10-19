@@ -98,7 +98,7 @@ export const CompactControlBar = ({
       if (error) throw error;
       if (data) {
         setTurnStrategy(data.turn_strategy || 'RANDOM_30');
-        setPauseBetweenTurns(data.pause_between_turns_ms || 50);
+        setPauseBetweenTurns(data.pause_between_turns_ms || 1000);
         setEnableDirectCall(data.enable_direct_call_detection ?? true);
       }
     } catch (error) {

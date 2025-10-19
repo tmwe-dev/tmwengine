@@ -212,9 +212,17 @@ export const useAudioCall = (roomId: string, userId: string) => {
         onRemoteStream: (stream) => {
           console.log('[useAudioCall] Received remote stream');
           remoteStreamRef.current = stream;
+          
+          // Aspetta che il ref sia pronto prima di assegnare lo stream
           if (remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = stream;
+            remoteAudioRef.current.play().catch(err => {
+              console.error('[useAudioCall] Audio play error:', err);
+            });
+          } else {
+            console.warn('[useAudioCall] remoteAudioRef not ready yet');
           }
+          
           setIsInCall(true);
         },
         onConnectionStateChange: (state) => {
@@ -297,6 +305,9 @@ export const useAudioCall = (roomId: string, userId: string) => {
           remoteStreamRef.current = stream;
           if (remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = stream;
+            remoteAudioRef.current.play().catch(err => {
+              console.error('[answerCall] Audio play error:', err);
+            });
           }
         },
         onConnectionStateChange: setConnectionState
@@ -313,6 +324,16 @@ export const useAudioCall = (roomId: string, userId: string) => {
       pendingOfferRef.current = null;
 
       statsIntervalRef.current = setInterval(monitorNetworkQuality, 5000);
+
+      // Su mobile, richiedi esplicitamente di riprodurre
+      if (remoteAudioRef.current && remoteStreamRef.current) {
+        try {
+          await remoteAudioRef.current.play();
+          console.log('[answerCall] Audio playback started');
+        } catch (e) {
+          console.warn('[answerCall] Autoplay blocked, user interaction needed');
+        }
+      }
 
       console.log('[answerCall] ✅ COMPLETED - WebRTC connection established, isInCall=true');
       

@@ -82,7 +82,13 @@ const CallRoom = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4">
-      <audio ref={remoteAudioRef} autoPlay />
+      <audio 
+        ref={remoteAudioRef} 
+        autoPlay 
+        playsInline
+        onCanPlay={() => console.log('[CallRoom] Audio ready to play')}
+        onError={(e) => console.error('[CallRoom] Audio error:', e)}
+      />
       
       <div className="max-w-4xl mx-auto">
         <div className="flex gap-2 mb-4">

@@ -40,6 +40,10 @@ export const VideoCallButton = ({ roomId, roomName, disabled }: VideoCallButtonP
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const channel = supabase.channel(`room-${roomId}`);
+      
+      // IMPORTANTE: sottoscrivi PRIMA di inviare
+      await channel.subscribe();
+      
       await channel.send({
         type: 'broadcast',
         event: 'video-call-started',
@@ -51,6 +55,13 @@ export const VideoCallButton = ({ roomId, roomName, disabled }: VideoCallButtonP
           jitsiRoomName: `tmwengine-intranet-${roomId}`
         }
       });
+      
+      console.log('[VideoCallButton] Notification sent to room:', roomId);
+      
+      // Chiudi il canale dopo 2 secondi
+      setTimeout(() => {
+        channel.unsubscribe();
+      }, 2000);
     }
   };
 

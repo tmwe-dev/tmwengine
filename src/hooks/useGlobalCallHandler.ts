@@ -22,6 +22,7 @@ export const useGlobalCallHandler = (currentUserId: string) => {
 
     // Sottoscrizione globale per tutte le chiamate dirette a questo utente
     const channel = supabase.channel(`user-calls-${currentUserId}`);
+    const webrtcChannels = new Map<string, any>();
 
     channel
       .on('broadcast', { event: 'incoming-call' }, async ({ payload }) => {
@@ -50,6 +51,27 @@ export const useGlobalCallHandler = (currentUserId: string) => {
         sessionStorage.setItem('pendingIncomingCall', JSON.stringify(callData));
         console.log('[GlobalCallHandler] ✅ Saved to sessionStorage:', callData);
 
+        // FIX #1: Sottoscrivi al canale WebRTC per intercettare l'offerta PRIMA che il dialog si apra
+        if (payload.callType === 'video') {
+          console.log('[GlobalCallHandler] 📡 Subscribing to WebRTC channel for offer interception');
+          const webrtcChannel = supabase.channel(`call-room-${payload.roomId}-webrtc`);
+          
+          webrtcChannel
+            .on('broadcast', { event: 'webrtc-signal' }, ({ payload: signalPayload }) => {
+              console.log('[GlobalCallHandler] 📥 WebRTC signal intercepted:', signalPayload.type);
+              
+              if (signalPayload.type === 'offer' && signalPayload.to === currentUserId) {
+                console.log('[GlobalCallHandler] 🎯 OFFER intercepted! Saving to sessionStorage');
+                sessionStorage.setItem('pendingOffer', JSON.stringify(signalPayload.payload));
+                sessionStorage.setItem('pendingOfferFrom', signalPayload.from);
+                console.log('[GlobalCallHandler] ✅ OFFER saved in sessionStorage');
+              }
+            })
+            .subscribe();
+          
+          webrtcChannels.set(payload.roomId, webrtcChannel);
+        }
+
         // Setta incomingCall per mostrare dialog
         console.log('[GlobalCallHandler] 🔔 Setting incoming call state');
         setIncomingCall(callData);
@@ -62,7 +84,9 @@ export const useGlobalCallHandler = (currentUserId: string) => {
       .subscribe();
 
     return () => {
+      console.log('[GlobalCallHandler] 🧹 Cleaning up channels');
       supabase.removeChannel(channel);
+      webrtcChannels.forEach(ch => supabase.removeChannel(ch));
     };
   }, [currentUserId, toast]);
 

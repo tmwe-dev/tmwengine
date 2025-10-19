@@ -11,7 +11,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
   const [remotePeerId, setRemotePeerId] = useState<string | null>(null);
   const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
   const [incomingCallFrom, setIncomingCallFrom] = useState<string | null>(null);
-  const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'ringing' | 'connected'>('idle');
+  const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'ringing' | 'connecting' | 'connected'>('idle');
 
   const peerConnectionRef = useRef<WebRTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -30,7 +30,11 @@ export const useVideoCall = (roomId: string, userId: string) => {
   useEffect(() => {
     setHandlers({
       onOffer: async (offer, from) => {
-        console.log('[useVideoCall] Received offer from:', from);
+        // FIX #5: Logging dettagliato per debug
+        const timestamp = new Date().toISOString();
+        console.log(`[useVideoCall] 📥 OFFER ricevuto alle ${timestamp} da:`, from);
+        console.log('[useVideoCall] pendingOfferRef prima:', pendingOfferRef.current ? 'POPULATED' : 'NULL');
+        
         if (callStatus !== 'idle') {
           console.warn('[useVideoCall] ⚠️ Already in call state:', callStatus);
         }
@@ -39,6 +43,14 @@ export const useVideoCall = (roomId: string, userId: string) => {
         setIncomingCallFrom(from);
         setRemotePeerId(from);
         setCallStatus('ringing');
+        
+        console.log('[useVideoCall] pendingOfferRef dopo:', pendingOfferRef.current ? 'POPULATED' : 'NULL');
+        console.log('[useVideoCall] ✅ OFFER salvato in pendingOfferRef');
+        
+        // FIX #5: Salva anche in sessionStorage come backup
+        sessionStorage.setItem('pendingOffer', JSON.stringify(offer));
+        sessionStorage.setItem('pendingOfferFrom', from);
+        console.log('[useVideoCall] ✅ OFFER salvato anche in sessionStorage');
       },
       onAnswer: async (answer) => {
         console.log('[useVideoCall] Received answer');
@@ -241,18 +253,43 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
   const answerCall = useCallback(async (callerId: string) => {
     try {
+      console.log('[useVideoCall] 📞 Answering call from:', callerId);
+      
+      setCallStatus('connecting');
+      setRemotePeerId(callerId);
+      
+      // FIX #2: Controlla sessionStorage per offerta pre-salvata
+      const savedOffer = sessionStorage.getItem('pendingOffer');
+      const savedOfferFrom = sessionStorage.getItem('pendingOfferFrom');
+      
+      if (savedOffer && !pendingOfferRef.current) {
+        console.log('[useVideoCall] 📦 Recuperata offerta da sessionStorage da:', savedOfferFrom);
+        pendingOfferRef.current = { from: savedOfferFrom || callerId, offer: JSON.parse(savedOffer) };
+        sessionStorage.removeItem('pendingOffer');
+        sessionStorage.removeItem('pendingOfferFrom');
+        console.log('[useVideoCall] ✅ OFFER caricata da sessionStorage');
+      }
+      
+      // FIX #4: Timeout più lungo per reti lente (8 secondi invece di 3)
       console.log('[useVideoCall] ⏳ Waiting for pendingOffer...');
       let retries = 0;
-      while (!pendingOfferRef.current && retries < 30) {
+      while (!pendingOfferRef.current && retries < 80) {
         await new Promise(resolve => setTimeout(resolve, 100));
         retries++;
+        
+        if (retries % 10 === 0) {
+          console.log(`[useVideoCall] ⏳ Still waiting... ${retries / 10}s elapsed`);
+        }
       }
       
       if (!pendingOfferRef.current) {
-        console.error('[useVideoCall] ❌ No pending offer after 3s');
-        toast({ title: 'Errore', description: 'Offerta non ricevuta', variant: 'destructive' });
+        console.error('[useVideoCall] ❌ No pending offer after 8s');
+        toast({ title: 'Errore', description: 'Offerta non ricevuta dopo 8 secondi', variant: 'destructive' });
+        setCallStatus('idle');
         return;
       }
+      
+      console.log('[useVideoCall] ✅ OFFER ready, proceeding with answer...');
       
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 } },

@@ -184,7 +184,7 @@ serve(async (req) => {
         const composedPrompt = buildSystemPrompt({
           globalPrompt: globalSystemPrompt,
           baseContent,
-          agentPersonality: participant.effective_prompt || agentPersonality,
+          agentPersonality: currentAgent.effective_prompt || agentPersonality,
           conversationStyle,
           agentMode,
           previousResponses: allResponses,

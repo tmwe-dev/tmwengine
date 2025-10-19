@@ -174,7 +174,7 @@ export function formatHistoryMessages(messages: any[]): any[] {
     console.log(`📝 [${msg.sender_name}] Content completo: ${messageContent.length} chars`);
     
     return {
-      role: msg.sender_type === 'user' ? 'user' : 'assistant',
+      role: msg.sender_type === 'human' ? 'user' : 'assistant',
       content: `[${msg.sender_name}]: ${messageContent}`
     };
   });

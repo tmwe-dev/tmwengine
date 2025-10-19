@@ -47,14 +47,17 @@ const CallRoom = () => {
 
   // Auto-avvia chiamata se c'è un targetUserId nei query params
   useEffect(() => {
-    // FIX 2: Rimosso readySentRef logic - il ready viene inviato da answerCall()
-    if (targetUserId && !isInCall && userId && !hasStartedCallRef.current) {
-      // Chi INIZIA la chiamata
-      console.log('[CallRoom] Auto-starting outgoing call to:', targetUserId);
+    // ✅ Verifica se è una chiamata OUTGOING (non incoming)
+    const isOutgoingCall = targetUserId && !isInCall && userId && !hasStartedCallRef.current && !acceptedCall;
+    
+    if (isOutgoingCall) {
+      console.log('[CallRoom] 📞 Auto-starting OUTGOING call to:', targetUserId);
       hasStartedCallRef.current = true;
       startCall(targetUserId);
+    } else if (targetUserId && acceptedCall) {
+      console.log('[CallRoom] ℹ️ INCOMING call - will be handled by auto-answer useEffect');
     }
-  }, [targetUserId, isInCall, userId, startCall]);
+  }, [targetUserId, isInCall, userId, startCall, acceptedCall]);
 
   // FIX #7: Auto-answer con sincronizzazione da sessionStorage se necessario
   useEffect(() => {

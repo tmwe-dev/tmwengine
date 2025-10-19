@@ -92,7 +92,8 @@ const Settings = () => {
     phoneFormat: 'international',
     autoDetectCountry: true,
     enableChatCallsMessages: false,
-    enablePushNotifications: false
+    enablePushNotifications: false,
+    useNativeWebRTC: false
   });
 
   const [browserSupported, setBrowserSupported] = useState(false);
@@ -1534,6 +1535,43 @@ const Settings = () => {
                 </CardContent>
               </Card>
 
+              {/* Card Modalità Videochiamata */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>📹 Modalità Videochiamata</CardTitle>
+                  <CardDescription>
+                    Scegli quale tecnologia usare per le videochiamate 1-a-1 dirette tra utenti
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <Label>Tecnologia Video</Label>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={phoneConfig.useNativeWebRTC}
+                        onCheckedChange={(checked) => {
+                          const newConfig = { ...phoneConfig, useNativeWebRTC: checked };
+                          setPhoneConfig(newConfig);
+                          localStorage.setItem('phone_config', JSON.stringify(newConfig));
+                          toast({
+                            title: "Modalità aggiornata",
+                            description: checked ? "Attivato WebRTC Nativo" : "Attivato Jitsi Meet",
+                          });
+                        }}
+                      />
+                      <span className="text-sm font-medium">
+                        {phoneConfig.useNativeWebRTC ? 'WebRTC Nativo' : 'Jitsi Meet'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="text-xs text-muted-foreground space-y-1 bg-muted/50 p-3 rounded-md">
+                    <p><strong>WebRTC Nativo:</strong> Connessione peer-to-peer diretta, maggiore controllo sulla qualità video</p>
+                    <p><strong>Jitsi Meet:</strong> Più stabile, supporto multi-piattaforma garantito, interfaccia completa</p>
+                  </div>
+                </CardContent>
+              </Card>
+
               <div className="bg-muted/20 p-4 rounded-lg">
                 <div className="flex items-start gap-3">
                   <Phone className="h-5 w-5 text-primary mt-0.5" />
@@ -1551,6 +1589,7 @@ const Settings = () => {
 
               <div className="flex justify-end">
                 <Button onClick={() => {
+                  localStorage.setItem('phone_config', JSON.stringify(phoneConfig));
                   toast({
                     title: "Impostazioni Salvate",
                     description: "Le impostazioni telefono sono state salvate con successo.",

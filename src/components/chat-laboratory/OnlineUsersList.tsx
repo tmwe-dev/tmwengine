@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Phone } from 'lucide-react';
 import { IconButton } from '@/components/design-system/buttons/IconButton';
+import { DirectVideoCallButton } from '@/components/intranet/DirectVideoCallButton';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,6 +17,7 @@ interface OnlineUsersListProps {
   conversationId: string;
   currentUserId: string;
   onCallUser: (userId: string) => void;
+  onVideoCallUser?: (userId: string) => void;
 }
 
 export const OnlineUsersList = ({ 
@@ -112,14 +114,20 @@ export const OnlineUsersList = ({
                 </div>
               </div>
               
-              <IconButton
-                icon={Phone}
-                onClick={() => onCallUser(user.user_id)}
-                tooltip={`Chiama ${displayName}`}
-                variant="ghost"
-                size="sm"
-                className="flex-shrink-0"
-              />
+              <div className="flex items-center gap-1">
+                <IconButton
+                  icon={Phone}
+                  onClick={() => onCallUser(user.user_id)}
+                  tooltip={`Chiama ${displayName}`}
+                  variant="ghost"
+                  size="sm"
+                />
+                
+                <DirectVideoCallButton
+                  targetUserId={user.user_id}
+                  targetUserName={displayName}
+                />
+              </div>
             </CardContent>
           </Card>
         );

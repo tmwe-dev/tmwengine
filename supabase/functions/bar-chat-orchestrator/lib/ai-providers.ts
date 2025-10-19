@@ -66,7 +66,7 @@ export async function callClaude(
     
     const data = await response.json();
     return {
-      content: data.content[0].text,
+      content: data.content?.[0]?.text?.trim() || '[ERRORE: Claude ha ritornato content vuoto]',
       tokensIn: data.usage?.input_tokens || 0,
       tokensOut: data.usage?.output_tokens || 0,
       duration: Date.now() - startTime
@@ -130,7 +130,7 @@ export async function callChatGPT(
       });
       
       return {
-        content: data.choices?.[0]?.message?.content || '[ERRORE: GPT-5 ha ritornato content vuoto]',
+        content: data.choices?.[0]?.message?.content?.trim() || '[ERRORE: GPT-5 ha ritornato content vuoto]',
         tokensIn: data.usage?.prompt_tokens || 0,
         tokensOut: data.usage?.completion_tokens || 0,
         duration: Date.now() - startTime
@@ -200,7 +200,7 @@ export async function callChatGPT(
       
       const data = await response.json();
       return {
-        content: data.choices[0].message.content,
+        content: data.choices?.[0]?.message?.content?.trim() || '[ERRORE: ChatGPT ha ritornato content vuoto]',
         tokensIn: data.usage?.prompt_tokens || 0,
         tokensOut: data.usage?.completion_tokens || 0,
         duration: Date.now() - startTime
@@ -251,7 +251,7 @@ export async function callGemini(
     
     const data = await response.json();
     return {
-      content: data.choices[0].message.content,
+      content: data.choices?.[0]?.message?.content?.trim() || '[ERRORE: Gemini ha ritornato content vuoto]',
       tokensIn: data.usage?.prompt_tokens || 0,
       tokensOut: data.usage?.completion_tokens || 0,
       duration: Date.now() - startTime

@@ -116,6 +116,7 @@ export const useStreamingChat = (): UseStreamingChatReturn => {
                   if (existingIndex >= 0) {
                     newProgress[existingIndex] = {
                       ...newProgress[existingIndex],
+                      total: event.data.total, // Ensure total is always set
                       status: 'running',
                       startMessage: event.data.message
                     };

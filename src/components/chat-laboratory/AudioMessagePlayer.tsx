@@ -71,7 +71,6 @@ export const AudioMessagePlayer = ({
       audio.pause();
       setIsPlaying(false);
       onPlayingChange?.(false);
-      onPlayEnd?.();
     } else {
       audio.play().then(() => {
         setIsPlaying(true);

@@ -37,13 +37,11 @@ export const VideoCallButton = ({ roomId, roomName, disabled }: VideoCallButtonP
     <>
       <Button
         variant="outline"
-        size="sm"
+        size="icon"
         onClick={() => setVideoCallOpen(true)}
         disabled={disabled}
-        className="gap-2"
       >
         <Video className="h-4 w-4" />
-        <span className="hidden sm:inline">Video Call</span>
       </Button>
 
       <VideoCallDialog

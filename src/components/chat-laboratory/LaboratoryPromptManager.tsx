@@ -40,6 +40,10 @@ export const LaboratoryPromptManager = ({ isProcessing = false }: LaboratoryProm
   // Template copy state
   const [copiedTemplate, setCopiedTemplate] = useState<string | null>(null);
   
+  // Preview prompts state
+  const [previewPrompts, setPreviewPrompts] = useState<{style: string, content: string}[]>([]);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -66,6 +70,97 @@ export const LaboratoryPromptManager = ({ isProcessing = false }: LaboratoryProm
         variant: "destructive",
       });
     });
+  };
+
+  // Load preview prompts from DB
+  const loadPreviewPrompts = async () => {
+    setLoadingPreview(true);
+    try {
+      // 1. Carica prompt globale
+      const { data: globalData } = await supabase
+        .from('chat_laboratory_system_prompts')
+        .select('contenuto')
+        .eq('attivo', true)
+        .maybeSingle();
+
+      // 2. Carica sezioni BASE (merged)
+      const { data: baseData } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .select('content')
+        .eq('section_type', 'base')
+        .eq('is_active', true)
+        .order('order_priority');
+
+      // 3. Carica personalità Renny
+      const { data: rennyData } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .select('content')
+        .eq('section_type', 'agent_personality')
+        .eq('section_name', 'Renny - Esperto Logistica')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      // 4. Carica 3 stili
+      const { data: stylesData } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .select('section_name, content')
+        .eq('section_type', 'conversation_style')
+        .eq('is_active', true)
+        .in('section_name', ['boss_talk', 'colleagues', 'bar_chat'])
+        .order('order_priority');
+
+      const globalPromptText = globalData?.contenuto || '';
+      const baseContent = (baseData || []).map(b => b.content).join('\n\n');
+      const rennyPersonality = rennyData?.content || '';
+      const styles = stylesData || [];
+
+      // 5. Costruisci 3 prompt finali
+      const previews = styles.map(style => {
+        const brevity = `🚨 VINCOLO ASSOLUTO DI BREVITÀ 🚨
+MASSIMO 60-70 PAROLE (450-500 caratteri).
+Se superi questo limite, la tua risposta sarà TRONCATA e considerata NON VALIDA.
+Scrivi risposte brevi, dirette e impattanti. Ogni parola deve contare.
+
+`;
+        const globalSection = `=== PROMPT GLOBALE ===
+${globalPromptText}
+
+`;
+        const baseSection = `=== CONTESTO BASE ===
+${baseContent}
+
+`;
+        const personalitySection = `=== TUA PERSONALITÀ ===
+${rennyPersonality}
+
+`;
+        const styleSection = `=== STILE CONVERSAZIONE: ${style.section_name} ===
+${style.content}
+
+`;
+
+        return {
+          style: style.section_name,
+          content: brevity + globalSection + baseSection + personalitySection + styleSection
+        };
+      });
+
+      setPreviewPrompts(previews);
+
+      toast({
+        title: "✅ Preview aggiornata",
+        description: `Caricati 3 prompt finali per Renny`,
+      });
+    } catch (error) {
+      console.error('Error loading preview:', error);
+      toast({
+        title: "❌ Errore",
+        description: "Impossibile caricare la preview dei prompt.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPreview(false);
+    }
   };
 
   // ============ GLOBAL PROMPT ============
@@ -672,9 +767,78 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
-              </div>
-            </div>
-          </TabsContent>
+                  </div>
+                </div>
+
+                {/* SEZIONE PREVIEW PROMPT FINALE */}
+                <div className="space-y-4 mt-8 pt-8 border-t">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">🔍 Preview Prompt Finale (Aggiornato DB)</h3>
+                    <Button
+                      onClick={loadPreviewPrompts}
+                      disabled={loadingPreview}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {loadingPreview ? (
+                        <>Caricamento...</>
+                      ) : (
+                        <>🔄 Aggiorna Preview</>
+                      )}
+                    </Button>
+                  </div>
+
+                  {previewPrompts.length > 0 && (
+                    <div className="space-y-4">
+                      {previewPrompts.map((preview, idx) => (
+                        <div key={idx} className="border rounded-lg overflow-hidden">
+                          <div className="bg-muted px-4 py-2 font-medium">
+                            📢 Renny - Stile: {preview.style}
+                          </div>
+                          <div className="p-4 space-y-3 text-sm font-mono whitespace-pre-wrap">
+                            {preview.content.split('\n\n').map((section, sIdx) => {
+                              let bgColor = '';
+                              let icon = '';
+                              
+                              if (section.includes('🚨 VINCOLO ASSOLUTO')) {
+                                bgColor = 'bg-red-50 dark:bg-red-950/20';
+                                icon = '🚨';
+                              } else if (section.includes('=== PROMPT GLOBALE ===')) {
+                                bgColor = 'bg-blue-50 dark:bg-blue-950/20';
+                                icon = '🌍';
+                              } else if (section.includes('=== CONTESTO BASE ===')) {
+                                bgColor = 'bg-green-50 dark:bg-green-950/20';
+                                icon = '🧩';
+                              } else if (section.includes('=== TUA PERSONALITÀ ===')) {
+                                bgColor = 'bg-yellow-50 dark:bg-yellow-950/20';
+                                icon = '👤';
+                              } else if (section.includes('=== STILE CONVERSAZIONE:')) {
+                                bgColor = 'bg-pink-50 dark:bg-pink-950/20';
+                                icon = '💬';
+                              }
+
+                              return (
+                                <div key={sIdx} className={`p-3 rounded border ${bgColor}`}>
+                                  <div className="flex items-start gap-2">
+                                    {icon && <span className="text-lg">{icon}</span>}
+                                    <div className="flex-1">{section}</div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {previewPrompts.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Premi "Aggiorna Preview" per vedere i prompt finali caricati dal database
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
 
           {/* BASE TAB */}
           <TabsContent value="base" className="flex-1 overflow-y-auto">

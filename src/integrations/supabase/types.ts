@@ -1301,6 +1301,7 @@ export type Database = {
           max_words_per_response: number
           name: string
           order_index: number
+          prompt_id: string | null
           response_style: string
           speaking_pace: string
           text_generation_prompt: string
@@ -1319,6 +1320,7 @@ export type Database = {
           max_words_per_response?: number
           name: string
           order_index?: number
+          prompt_id?: string | null
           response_style?: string
           speaking_pace?: string
           text_generation_prompt: string
@@ -1337,6 +1339,7 @@ export type Database = {
           max_words_per_response?: number
           name?: string
           order_index?: number
+          prompt_id?: string | null
           response_style?: string
           speaking_pace?: string
           text_generation_prompt?: string
@@ -1345,7 +1348,15 @@ export type Database = {
           user_id?: string | null
           voice_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "elevenlabs_agents_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_prompt_sections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       elevenlabs_usage_limits: {
         Row: {

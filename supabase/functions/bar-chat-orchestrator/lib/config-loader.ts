@@ -143,11 +143,22 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
 
     const { data: voiceAgents } = await supabaseClient
       .from('elevenlabs_agents')
-      .select('elevenlabs_agent_id, name, voice_id')
+      .select(`
+        elevenlabs_agent_id,
+        name,
+        voice_id,
+        text_generation_prompt,
+        prompt_id,
+        prompt:chat_laboratory_prompt_sections(content)
+      `)
       .eq('is_active', true)
       .order('order_index');
     
-    activeVoiceAgents = voiceAgents || [];
+    // Crea effective_prompt: usa modular se disponibile, altrimenti fallback a legacy
+    activeVoiceAgents = (voiceAgents || []).map(agent => ({
+      ...agent,
+      effective_prompt: agent.prompt?.content || agent.text_generation_prompt || ''
+    }));
     console.log(`🎤 Voice enabled dal DB: ${voiceEnabled}, ${activeVoiceAgents.length} voice agents attivi`);
   }
 

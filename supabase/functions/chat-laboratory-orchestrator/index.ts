@@ -86,17 +86,23 @@ async function callAIProvider(
     visibleHistory: string;
     userMessage: string;
     timeoutMs: number;
+    maxWords: number;
   }
 ): Promise<{ content: string; tokensIn: number; tokensOut: number; duration: number }> {
   const startTime = Date.now();
   
   const concisePrompt = `${config.basePrompt}
 
+LIMITE LUNGHEZZA RISPOSTA:
+Massimo ${config.maxWords} parole per questa risposta.
+Conta mentalmente le parole prima di rispondere.
+Risposte più brevi sono preferibili se complete.
+NON includere il conteggio parole nella risposta.
+
 **Linee guida di risposta**:
-- Sii preciso e sintetico, ma completo
-- Se serve codice/analisi approfondita, forniscila interamente
-- Evita ripetizioni inutili o digressioni
-- Target: 300-600 parole, ma estendi se necessario per completezza tecnica`;
+- Sii preciso e sintetico
+- Se serve codice/analisi, forniscila in modo conciso
+- Evita ripetizioni inutili o digressioni`;
 
   return withRetry(async () => {
     let url: string;
@@ -233,6 +239,16 @@ serve(async (req) => {
       .select('contenuto')
       .eq('attivo', true)
       .maybeSingle();
+
+    // 📏 Carica limite parole da voice agents attivi
+    const { data: activeVoiceAgents } = await supabaseClient
+      .from('elevenlabs_agents')
+      .select('name, max_words_per_response')
+      .eq('is_active', true)
+      .limit(1);
+
+    const maxWordsLimit = activeVoiceAgents?.[0]?.max_words_per_response || 150;
+    console.log(`📏 Limite parole attivo: ${maxWordsLimit} (da ${activeVoiceAgents?.[0]?.name || 'default'})`);
 
     const basePrompt = globalPrompt?.contenuto || `Sei un esperto in una discussione a turni.
 
@@ -406,7 +422,8 @@ REGOLE CRITICHE:
           basePrompt,
           visibleHistory: enrichedHistory, // ✅ Include risposte precedenti
           userMessage,
-          timeoutMs: 43000
+          timeoutMs: 43000,
+          maxWords: maxWordsLimit // ✅ Limite dal DB
         });
         
         const agentDuration = Date.now() - agentStartTime;

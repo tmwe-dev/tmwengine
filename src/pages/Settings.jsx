@@ -722,7 +722,7 @@ const Settings = () => {
         body: {
           personalityPrompt: newAgent.text_generation_prompt,
           testQuestion: "Ciao! Mi parli del tuo caffè preferito?",
-          maxWords: newAgent.max_words_per_response
+          agentId: newAgent.id // ✅ Passa agentId invece di maxWords
         }
       });
       

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,9 +12,22 @@ serve(async (req) => {
   }
 
   try {
-    const { personalityPrompt, testQuestion, maxWords } = await req.json();
+    const { personalityPrompt, testQuestion, agentId } = await req.json();
     
-    console.log('Generating personality preview:', { maxWords });
+    // 📏 Carica limite parole dal DB usando agentId
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: agent } = await supabaseClient
+      .from('elevenlabs_agents')
+      .select('max_words_per_response')
+      .eq('id', agentId)
+      .maybeSingle();
+
+    const maxWords = agent?.max_words_per_response || 60;
+    console.log(`📏 Preview usando limite: ${maxWords} parole (agentId: ${agentId})`);
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     

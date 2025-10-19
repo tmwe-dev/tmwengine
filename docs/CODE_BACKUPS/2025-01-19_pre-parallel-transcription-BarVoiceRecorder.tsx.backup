@@ -1,3 +1,10 @@
+// ============================================
+// BACKUP PRE-IMPLEMENTAZIONE PARALLEL TRANSCRIPTION
+// Data: 2025-01-19
+// File Originale: src/components/chat-laboratory/BarVoiceRecorder.tsx
+// Motivo: Implementazione invio placeholder immediato per avvio rapido AI (OPZIONE A)
+// ============================================
+
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Volume2 } from 'lucide-react';
@@ -134,7 +141,7 @@ export const BarVoiceRecorder = ({
 
       mediaRecorder.onstop = async () => {
         console.log('⏹️ Recording stopped, chunks totali:', chunksRef.current.length);
-        // ⚡ Trascrizione ora viene avviata in stopRecording() subito dopo placeholder
+        await transcribeAudio();
       };
 
       mediaRecorder.start(1000); // Richiede chunks ogni 1s
@@ -152,10 +159,6 @@ export const BarVoiceRecorder = ({
   };
 
   const stopRecording = () => {
-    // ⚡ NUOVO: Invia placeholder immediato PRIMA di qualsiasi cleanup
-    console.log('⚡ [BarVoiceRecorder] Invio placeholder immediato per avvio rapido AI');
-    onTranscriptionComplete('🎤 Trascrizione in corso...');
-
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
@@ -183,12 +186,9 @@ export const BarVoiceRecorder = ({
     setIsRecording(false);
     setAudioLevel(0);
     setSilenceCountdown(0);
-
-    // ⚡ NUOVO: Avvia trascrizione in background (non bloccante)
-    transcribeAudioInBackground();
   };
 
-  const transcribeAudioInBackground = async () => {
+  const transcribeAudio = async () => {
     console.log('🎤 Chunks totali raccolti:', chunksRef.current.length);
     console.log('🎤 Dimensione totale audio:', 
       chunksRef.current.reduce((acc, c) => acc + c.size, 0), 'bytes');

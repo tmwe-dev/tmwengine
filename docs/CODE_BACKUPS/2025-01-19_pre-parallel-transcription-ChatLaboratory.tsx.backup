@@ -1,0 +1,137 @@
+// ============================================
+// BACKUP PRE-IMPLEMENTAZIONE PARALLEL TRANSCRIPTION  
+// Data: 2025-01-19
+// File Originale: src/pages/ChatLaboratory.tsx (linee 600-750 circa)
+// Motivo: Implementazione gestione placeholder per avvio rapido AI (OPZIONE A)
+// ============================================
+
+// NOTA: Questo backup contiene solo la porzione rilevante del file ChatLaboratory.tsx
+// Per il file completo, riferirsi al repository Git
+
+// handleSubmit - linee 613-732 circa
+const handleSubmit = async (e?: React.FormEvent, overrideText?: string) => {
+  e?.preventDefault();
+  
+  if (isTokenLimitReached) {
+    toast({
+      title: "⛔ Limite Token Raggiunto",
+      description: `Hai raggiunto il limite di 100.000 token per questa conversazione (${totalTokensUsed.toLocaleString()} token usati). Crea una nuova conversazione per continuare.`,
+      variant: "destructive",
+      duration: 6000,
+    });
+    return;
+  }
+  
+  // ✅ Previeni invii multipli concorrenti
+  if (isSubmitting) {
+    console.log('⏸️ Submit già in corso, ignoro richiesta duplicata');
+    return;
+  }
+  
+  // ✅ Usa overrideText se fornito (da trascrizione), altrimenti usa prompt
+  const currentPrompt = overrideText || prompt.trim();
+  if (!currentPrompt) return;
+
+  setIsLoading(true);
+  setIsSubmitting(true);
+  setPrompt(''); // ✅ Pulisci sempre textarea
+
+  try {
+    // Crea conversazione inline se non esiste
+    let conversationId = currentConversationId;
+    if (!conversationId) {
+      const { data: newConv, error: convError } = await supabase
+        .from('chat_laboratory_conversations')
+        .insert({
+          titolo: `Discussione Multi-Agente ${new Date().toLocaleString()}`,
+          active_participants: participants.filter(p => p.is_active).map(p => ({ type: p.type, name: p.name }))
+        })
+        .select()
+        .single();
+
+      if (convError) throw convError;
+      conversationId = newConv.id;
+      setCurrentConversationId(conversationId);
+
+      // ✅ Se Bar Mode attivo, abilita audio automaticamente
+      const { data: { user } } = await supabase.auth.getUser();
+      if (isBarMode && user) {
+        await supabase
+          .from('chat_laboratory_bar_mode')
+          .upsert({
+            conversation_id: conversationId,
+            mode: 'bar',
+            voice_enabled: true,
+            user_id: user.id,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'conversation_id' });
+      }
+
+      // Salva partecipanti
+      for (const participant of participants.filter(p => p.is_active)) {
+        await supabase
+          .from('chat_laboratory_participants')
+          .insert({
+            conversation_id: conversationId,
+            type: participant.type,
+            name: participant.name,
+            system_prompt: participant.system_prompt,
+            is_active: true
+          });
+      }
+
+      // Trasferisci impostazioni pending
+      await transferPendingSettings(conversationId);
+      await loadMessages(conversationId);
+    }
+
+    // Get next sequence number
+    const { data: maxSeq } = await supabase
+      .from('chat_laboratory_messages')
+      .select('message_sequence')
+      .eq('conversation_id', conversationId)
+      .order('message_sequence', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nextSequence = (maxSeq?.message_sequence || 0) + 1;
+
+    // Salva messaggio umano
+    const { data: savedUserMessage, error: insertError } = await supabase
+      .from('chat_laboratory_messages')
+      .insert([{
+        conversation_id: conversationId,
+        message_sequence: nextSequence,
+        intent_tags: [],
+        sender_type: 'human',
+        sender_name: 'Tu',
+        content: currentPrompt,
+        is_visible_to_ai: true,
+        attachments: uploadedFiles as any,
+        images: uploadedFiles.filter(f => f.isImage).map(f => f.url) as any,
+        generated_images: generatedImage ? [generatedImage] as any : []
+      }])
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    // ✅ IMMEDIATAMENTE: Aggiungi messaggio user allo state locale e ricarica
+    if (savedUserMessage) {
+      await loadMessages(conversationId);
+      
+      // ✅ Forza apertura tab se in modalità tabs
+      if (viewMode === 'tabs') {
+        console.log('✅ Attivazione immediata tab dopo invio messaggio user');
+        // Il tab verrà attivato automaticamente da MessageTabsView grazie al refresh dei messaggi
+      }
+    }
+
+    setUploadedFiles([]);
+    setGeneratedImage(null);
+
+    // ... resto della logica handleSubmit
+  } catch (error) {
+    console.error('Errore in handleSubmit:', error);
+  }
+};

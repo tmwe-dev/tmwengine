@@ -156,6 +156,9 @@ const ChatLaboratory = () => {
   // ✅ Lock orchestrator per evitare chiamate parallele
   const isOrchestratorRunning = useRef(false);
   
+  // ⚡ NUOVO: Ref per tracking placeholder message ID
+  const lastPlaceholderMessageIdRef = useRef<string | null>(null);
+  
   // Summary States
   const [conversationData, setConversationData] = useState<Conversation | null>(null);
   const [summaryRefreshKey, setSummaryRefreshKey] = useState(0);
@@ -629,9 +632,42 @@ const ChatLaboratory = () => {
       return;
     }
     
-    // ✅ Usa overrideText se fornito (da trascrizione), altrimenti usa prompt
-    const currentPrompt = overrideText || prompt.trim();
-    if (!currentPrompt) return;
+    // ⚡ NUOVO: Gestisci placeholder vs trascrizione reale
+    let textToSave = overrideText || prompt.trim();
+    let isPlaceholder = false;
+    let isUpdate = false;
+    
+    // Verifica se è un placeholder
+    if (textToSave === '🎤 Trascrizione in corso...') {
+      isPlaceholder = true;
+      console.log('⚡ [ChatLaboratory] Ricevuto placeholder - inserimento immediato');
+    }
+    
+    // Verifica se è un update (trascrizione reale)
+    if (textToSave.includes('|||UPDATE|||')) {
+      textToSave = textToSave.replace('|||UPDATE|||', '');
+      isUpdate = true;
+      console.log('✅ [ChatLaboratory] Ricevuta trascrizione reale - aggiornamento messaggio');
+    }
+    
+    if (!textToSave) return;
+
+    // ✅ Se è update, aggiorna messaggio esistente e esci
+    if (isUpdate && lastPlaceholderMessageIdRef.current) {
+      try {
+        await supabase
+          .from('chat_laboratory_messages')
+          .update({ content: textToSave })
+          .eq('id', lastPlaceholderMessageIdRef.current);
+
+        lastPlaceholderMessageIdRef.current = null;
+        await loadMessages(currentConversationId!);
+        console.log('✅ [ChatLaboratory] Messaggio aggiornato con trascrizione reale');
+      } catch (error) {
+        console.error('❌ Errore aggiornamento messaggio:', error);
+      }
+      return;
+    }
 
     setIsLoading(true);
     setIsSubmitting(true);
@@ -706,7 +742,7 @@ const ChatLaboratory = () => {
           intent_tags: [],
           sender_type: 'human',
           sender_name: 'Tu',
-          content: currentPrompt,
+          content: textToSave,
           is_visible_to_ai: true,
           attachments: uploadedFiles as any,
           images: uploadedFiles.filter(f => f.isImage).map(f => f.url) as any,
@@ -717,14 +753,27 @@ const ChatLaboratory = () => {
 
       if (insertError) throw insertError;
 
-      // ✅ IMMEDIATAMENTE: Aggiungi messaggio user allo state locale e ricarica
-      if (savedUserMessage) {
+      // ⚡ NUOVO: Se è placeholder, salva ID per update successivo
+      if (isPlaceholder && savedUserMessage) {
+        lastPlaceholderMessageIdRef.current = savedUserMessage.id;
+        console.log('⚡ [ChatLaboratory] Placeholder salvato, ID:', savedUserMessage.id);
+        
+        // Ricarica messaggi e esci SUBITO (l'orchestrator partirà con il placeholder)
         await loadMessages(conversationId);
         
-        // ✅ Forza apertura tab se in modalità tabs
-        if (viewMode === 'tabs') {
-          console.log('✅ Attivazione immediata tab dopo invio messaggio user');
-          // Il tab verrà attivato automaticamente da MessageTabsView grazie al refresh dei messaggi
+        // ✅ NON eseguire setIsLoading/setIsSubmitting(false) qui - l'orchestrator deve partire!
+        console.log('⚡ [ChatLaboratory] Orchestrator parte immediatamente con placeholder');
+        // Continua con l'orchestrator normalmente
+      } else {
+        // ✅ Messaggio normale (non placeholder) - ricarica come prima
+        if (savedUserMessage) {
+          await loadMessages(conversationId);
+          
+          // ✅ Forza apertura tab se in modalità tabs
+          if (viewMode === 'tabs') {
+            console.log('✅ Attivazione immediata tab dopo invio messaggio user');
+            // Il tab verrà attivato automaticamente da MessageTabsView grazie al refresh dei messaggi
+          }
         }
       }
 

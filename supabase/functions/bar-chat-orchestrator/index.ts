@@ -438,6 +438,8 @@ CONTESTO CORRENTE:
 - Interventi totali di ${currentAgent.name} in questo turno: ${allResponses.filter(r => r.agentName === currentAgent.name).length}
 - Altri agenti nel turno: ${allResponses.filter(r => r.agentName !== currentAgent.name).map(r => r.agentName).join(', ') || 'nessuno'}
 
+⚠️ REGOLA CRITICA: ${currentAgent.name} NON può menzionare se stesso. Se trovi "@${currentAgent.name}" nel messaggio, IGNORALO dalla lista targets.
+
 MESSAGGIO DA ANALIZZARE:
 ${aiResponse}
 
@@ -445,7 +447,7 @@ Analizza se ci sono menzioni esplicite (@ChatGPT, @Claude, @Gemini) o implicite 
 Rispondi con JSON:
 {
   "continue": true/false,
-  "targets": ["chatgpt"] // solo se continue=true; lista agenti menzionati, o [] per tutti
+  "targets": ["chatgpt"] // solo se continue=true; lista agenti menzionati (ESCLUSO ${currentAgent.name}), o [] per tutti
 }`;
 
             const orchestratorResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -481,7 +483,8 @@ Rispondi con JSON:
                   // Menzione esplicita → solo agenti specifici
                   console.log(`🔄 Orchestrator: menzione esplicita → solo ${targets.join(', ')}`);
                   const targetParticipants = activeParticipants.filter(p => 
-                    targets.some(t => p.type === t || p.name.toLowerCase().includes(t))
+                    targets.some(t => p.type === t || p.name.toLowerCase().includes(t)) &&
+                    p.id !== currentAgent.id
                   );
                   
                   if (targetParticipants.length > 0) {

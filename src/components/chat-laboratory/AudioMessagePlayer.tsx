@@ -45,7 +45,7 @@ export const AudioMessagePlayer = ({
       setIsPlaying(false);
       onPlayingChange?.(false);
       onError?.(new Error('Audio playback failed'));
-      onPlayEnd?.();
+      // ✅ FIX 2: onPlayEnd viene chiamato da onError in MultiAgentMessage, evitiamo doppia chiamata
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -83,7 +83,7 @@ export const AudioMessagePlayer = ({
       audio.pause();
       setIsPlaying(false);
       onPlayingChange?.(false);
-      onPlayEnd?.();
+      // ✅ FIX 1: NON chiamare onPlayEnd su pausa manuale (solo su ended naturale)
     } else {
       audio.play().then(() => {
         setIsPlaying(true);

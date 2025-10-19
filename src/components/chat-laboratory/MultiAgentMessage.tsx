@@ -380,9 +380,6 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange }: M
                 onAudioStateChange?.(false);
                 onAudioEnd?.();
               }}
-              onPlayingChange={(playing) => {
-                console.log(`🎵 [MultiAgentMessage] Audio ${playing ? 'PLAYING' : 'PAUSED'}: ${message.sender_name}`);
-              }}
             />
           </div>
         )}

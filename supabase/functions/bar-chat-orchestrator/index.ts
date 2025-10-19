@@ -311,13 +311,9 @@ Ogni parola deve essere essenziale e impattante.
         // ============ TELEMETRY ============
         const debugInfo = {
           provider: currentAgent.type,
-          model: (currentAgent.type === 'anthropic' || currentAgent.type === 'claude') 
-               ? 'claude-sonnet-4-5' 
-               : (currentAgent.type === 'openai' || currentAgent.type === 'chatgpt')
-               ? (openaiConfig?.modello || 'gpt-5-mini-2025-08-07')
-               : (currentAgent.type === 'gemini' || currentAgent.type === 'lovable_ai')
-               ? 'gemini-2.5-flash'
-               : 'unknown',
+          model: currentAgent.type === 'anthropic' ? 'claude-sonnet-4-5' 
+               : currentAgent.type === 'openai' ? (openaiConfig?.modello || 'gpt-5-2025-08-07')
+               : 'gemini-2.5-flash',
           timeout: 43000,
           tokens_estimated: estimatedTokens,
           agent_index_in_turn: i + 1,

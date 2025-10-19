@@ -95,6 +95,7 @@ export async function callChatGPT(
     const requestPayload = {
       model: 'openai/gpt-5-mini',
       max_completion_tokens: 1200,
+      reasoning_effort: 'low',  // 🔥 Riduce reasoning tokens da ~768 a ~200
       messages: conversationHistory
     };
 

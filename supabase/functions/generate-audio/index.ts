@@ -141,10 +141,8 @@ serve(async (req) => {
 
     console.log(`🎤 [GENERATE-AUDIO] TTS con agente "${matchedAgent}" (voice: ${voiceId})`);
 
-    // Limita testo per TTS (500 char per quick win)
-    const textForTTS = message.content.length > 500 
-      ? message.content.substring(0, 500) + '...'
-      : message.content;
+    // ✅ Rimosso limite 500 caratteri - invia testo completo a ElevenLabs
+    const textForTTS = message.content;
     
     console.log(`📝 [GENERATE-AUDIO] Testo da sintetizzare (${textForTTS.length} chars)`);
 

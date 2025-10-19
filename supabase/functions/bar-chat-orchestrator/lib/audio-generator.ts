@@ -31,9 +31,8 @@ export async function generateAudioForSingleResponse(params: {
   const { supabaseClient, conversationId, messageId, content, voiceId, elevenLabsApiKey } = params;
   
   try {
-    const ttsText = content.length > 500 
-      ? content.substring(0, 500) + '...' 
-      : content;
+    // ✅ Rimosso limite 500 caratteri - invia testo completo a ElevenLabs
+    const ttsText = content;
     
     // Call ElevenLabs API
     const ttsResponse = await fetchWithTimeout(
@@ -103,9 +102,8 @@ export async function generateAudioForResponses(params: AudioGenerationParams): 
       ) || activeVoiceAgents[0];
       
       const voiceId = agentVoice.voice_id;
-      const ttsText = response.content.length > 500 
-        ? response.content.substring(0, 500) + '...' 
-        : response.content;
+      // ✅ Rimosso limite 500 caratteri - invia testo completo a ElevenLabs
+      const ttsText = response.content;
       
       // Call ElevenLabs API
       const ttsResponse = await fetchWithTimeout(

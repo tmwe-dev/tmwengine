@@ -2,12 +2,21 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Clock, Zap, Copy, Download, Link, FileText, FileCheck, Sparkles } from 'lucide-react';
+import { Bot, User, Clock, Zap, Copy, Download, Link, FileText, FileCheck, Sparkles, ChevronDown } from 'lucide-react';
 import { UploadedFile } from '@/components/chat/FileUploader';
 import { toast } from '@/hooks/use-toast';
 import { AudioMessagePlayer } from '@/components/chat-laboratory/AudioMessagePlayer';
 import { DeliverableCard } from './DeliverableCard';
 import { MessageCostBadge } from './MessageCostBadge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import ReactMarkdown from 'react-markdown';
+
+interface StructuredAttachments {
+  appendix?: string;
+  report?: string;
+  structured_prompt?: any;
+  debug_info?: any;
+}
 
 interface Message {
   id: string;
@@ -17,7 +26,7 @@ interface Message {
   content_user_friendly?: string;
   content_summary?: string;
   is_summary_available?: boolean;
-  attachments?: UploadedFile[];
+  attachments?: StructuredAttachments | UploadedFile[];
   images?: string[];
   generated_images?: string[];
   token_input?: number;
@@ -74,9 +83,14 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
   const config = SENDER_CONFIG[message.sender_type];
   const Icon = config.icon;
 
+  // Type guard per structured attachments
+  const isStructuredAttachments = (attachments: any): attachments is StructuredAttachments => {
+    return attachments && typeof attachments === 'object' && !Array.isArray(attachments);
+  };
+
   // Determine which content to display based on viewMode
   const displayContent = (() => {
-    if (message.sender_type === 'human') return message.content; // Always show full for users
+    if (message.sender_type === 'human') return message.content;
     
     if (viewMode === 'summary' && message.content_summary) {
       return message.content_summary;
@@ -89,7 +103,7 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
 
   // Calculate token savings if using summary
   const tokenSavings = viewMode === 'summary' && message.token_output 
-    ? Math.round(message.token_output * 0.8) // ~80% saving
+    ? Math.round(message.token_output * 0.8)
     : 0;
 
   const formatTime = (ms?: number) => {
@@ -100,12 +114,10 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
 
   const copyMessageText = () => {
     navigator.clipboard.writeText(message.content);
-    // toast({ title: "✓ Messaggio copiato negli appunti!" });
   };
 
   const copyImageUrl = (url: string) => {
     navigator.clipboard.writeText(url);
-    // toast({ title: "✓ URL copiato negli appunti!" });
   };
 
   const downloadImage = async (url: string, index: number) => {
@@ -120,9 +132,8 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-      // toast({ title: "✓ Immagine scaricata!" });
     } catch (error) {
-      // toast({ title: "Errore durante il download", variant: "destructive" });
+      // Silent error
     }
   };
 
@@ -213,6 +224,44 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
           )}
           <p className="whitespace-pre-wrap">{displayContent}</p>
         </div>
+
+        {/* ✅ NUOVO: Appendice Tecnica (Collapsible) */}
+        {isStructuredAttachments(message.attachments) && message.attachments.appendix && message.sender_type !== 'human' && (
+          <Collapsible className="mt-3">
+            <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-sm font-medium group">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span className="text-foreground">📎 Appendice Tecnica</span>
+              <Badge variant="outline" className="ml-auto text-xs">
+                {message.attachments.appendix.length} chars
+              </Badge>
+              <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 p-4 bg-muted/30 rounded-lg border border-border/40">
+              <div className="prose dark:prose-invert max-w-none text-sm">
+                <ReactMarkdown>{message.attachments.appendix}</ReactMarkdown>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* ✅ NUOVO: Report Completo (Collapsible) */}
+        {isStructuredAttachments(message.attachments) && message.attachments.report && message.sender_type !== 'human' && (
+          <Collapsible className="mt-3">
+            <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors text-sm font-medium group">
+              <FileText className="h-4 w-4 text-primary" />
+              <span className="text-foreground">📊 Report Completo</span>
+              <Badge variant="outline" className="ml-auto text-xs bg-primary/10 border-primary/30">
+                {message.attachments.report.length} chars
+              </Badge>
+              <ChevronDown className="h-4 w-4 ml-2 text-primary transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 p-4 bg-primary/5 rounded-lg border border-primary/20">
+              <div className="prose dark:prose-invert max-w-none text-sm">
+                <ReactMarkdown>{message.attachments.report}</ReactMarkdown>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
 
         {/* Images */}
         {message.images && message.images.length > 0 && (
@@ -307,8 +356,8 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
         {/* Deliverable Card */}
         <DeliverableCard messageId={message.id} />
 
-        {/* Attachments */}
-        {message.attachments && message.attachments.length > 0 && (
+        {/* Attachments - Solo file caricati dall'utente (legacy UploadedFile[]) */}
+        {message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {message.attachments.map((file, idx) => (
               <Badge key={idx} variant="outline">

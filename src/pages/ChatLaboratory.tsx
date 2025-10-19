@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, Phone, Columns, MessagesSquare, Settings2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
 import { MultiAgentMessage } from '@/components/chat-laboratory/MultiAgentMessage';
 import { LaboratoryPromptManager } from '@/components/chat-laboratory/LaboratoryPromptManager';
@@ -112,6 +114,7 @@ const ChatLaboratory = () => {
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [conversationMode, setConversationMode] = useState<'ptt' | 'continuous'>('ptt');
   const [isAutoFollowEnabled, setIsAutoFollowEnabled] = useState(true);
+  const [globalMaxWords, setGlobalMaxWords] = useState(60); // ✅ NUOVO: Limite parole globale
 
   // Forza vista tabs quando Bar Mode è attivo
   useEffect(() => {
@@ -390,6 +393,18 @@ const ChatLaboratory = () => {
       if (data) {
         setIsBarMode(data.mode === 'bar');
         setActiveKnowledgeBase(data.active_kb_id);
+      }
+
+      // ✅ NUOVO: Carica max_words dal primo voice agent attivo
+      const { data: voiceAgent } = await supabase
+        .from('elevenlabs_agents')
+        .select('max_words_per_response')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      
+      if (voiceAgent?.max_words_per_response) {
+        setGlobalMaxWords(voiceAgent.max_words_per_response);
       }
     } catch (error) {
       console.error('Errore caricamento impostazioni Bar Mode:', error);
@@ -1293,8 +1308,58 @@ const ChatLaboratory = () => {
                   </CardContent>
                 </Card>
                 
-                {/* Bar Chat Settings - QUARTA (Stile Conversazione + VAD) */}
-        {/* 🗑️ BarChatSettings rimosso - ora integrato in BarModeControls */}
+                {/* Slider Lunghezza Risposte - Visibile solo in Bar Mode */}
+                {isBarMode && currentConversationId && (
+                  <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-white text-sm">Lunghezza Risposte AI</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-4">
+                        <Label className="text-white/80 text-sm whitespace-nowrap">
+                          Parole:
+                        </Label>
+                        <Slider
+                          min={20}
+                          max={150}
+                          step={10}
+                          value={[globalMaxWords]}
+                          onValueChange={([value]) => setGlobalMaxWords(value)}
+                          onValueCommit={async ([value]) => {
+                            // Salva su tutti gli agenti attivi
+                            const { data: agents } = await supabase
+                              .from('elevenlabs_agents')
+                              .select('id')
+                              .eq('is_active', true);
+                            
+                            if (agents) {
+                              await Promise.all(
+                                agents.map(agent =>
+                                  supabase
+                                    .from('elevenlabs_agents')
+                                    .update({ max_words_per_response: value })
+                                    .eq('id', agent.id)
+                                )
+                              );
+                              
+                              toast({
+                                title: "Lunghezza aggiornata",
+                                description: `Limite impostato a ${value} parole per tutti gli agenti`,
+                              });
+                            }
+                          }}
+                          className="flex-1"
+                        />
+                        <Badge variant="outline" className="font-mono text-sm border-white/20 text-white">
+                          {globalMaxWords}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-white/50">
+                        Controlla la lunghezza massima delle risposte degli agenti AI
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
                 
                 {/* Stats - QUARTA (in fondo, con placeholder se no conversazione) */}
                 <Card className="bg-white/5 border-white/10">

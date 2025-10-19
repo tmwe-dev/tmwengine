@@ -13,6 +13,7 @@ export interface PromptParams {
   wasCalledDirectly: boolean;
   lastResponse?: any;
   styleSections?: Map<string, string>;
+  dynamicWordLimit?: string; // ✅ NUOVO: Limite parole dinamico dall'orchestrator
 }
 
 /**
@@ -31,8 +32,13 @@ export function buildSystemPrompt(params: PromptParams): string {
     styleSections
   } = params;
 
-  // Inizializza prompt vuoto - il vincolo di brevità viene dallo stile DB
+  // Inizializza prompt vuoto
   let composedPrompt = '';
+  
+  // ✅ PRIORITÀ MASSIMA: Limite dinamico dall'orchestrator
+  if (params.dynamicWordLimit) {
+    composedPrompt += params.dynamicWordLimit + '\n\n';
+  }
   
   // Add BASE sections
   composedPrompt += '=== CONTESTO BASE ===\n';

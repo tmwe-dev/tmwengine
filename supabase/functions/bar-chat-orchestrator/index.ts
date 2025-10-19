@@ -182,6 +182,40 @@ serve(async (req) => {
         
         console.log(`👤 Personalità ${currentAgent.name}: ${agentPersonality.length} chars ${currentAgent.effective_prompt ? '(DB modulare)' : '(cache legacy)'}`);
 
+        // ============ LEGGI MAX_WORDS DAL VOICE AGENT ============
+        let maxWordsLimit = 60; // Default fallback
+
+        // Cerca voice agent associato al current agent
+        const agentKeywords: Record<string, string[]> = {
+          'chatgpt': ['gpt', 'openai', 'renny'],
+          'claude': ['anthropic', 'claude', 'tonino'],
+          'gemini': ['gemini', 'google', 'vittorio']
+        };
+
+        const agentKey = currentAgent.name.toLowerCase();
+        const searchKeywords = agentKeywords[agentKey] || [agentKey];
+
+        const associatedVoiceAgent = activeVoiceAgents.find((v: any) => {
+          const voiceName = v.name.toLowerCase();
+          return searchKeywords.some(keyword => voiceName.includes(keyword));
+        });
+
+        if (associatedVoiceAgent && associatedVoiceAgent.max_words_per_response) {
+          maxWordsLimit = associatedVoiceAgent.max_words_per_response;
+          console.log(`📏 Limite parole per ${currentAgent.name}: ${maxWordsLimit} (da voice agent ${associatedVoiceAgent.name})`);
+        } else {
+          console.log(`⚠️ Nessun voice agent trovato per ${currentAgent.name}, uso default: ${maxWordsLimit} parole`);
+        }
+
+        // Inietta istruzione dinamica nel prompt
+        const wordLimitInstruction = `
+🎯 LIMITE LUNGHEZZA RISPOSTA
+Mantieni la tua risposta MASSIMO ${maxWordsLimit} parole.
+Questo limite è PRIORITARIO rispetto a qualsiasi altra istruzione.
+Ogni parola deve essere essenziale e impattante.
+
+`;
+
         // ============ BUILD PROMPT ============
         const composedPrompt = buildSystemPrompt({
           globalPrompt: globalSystemPrompt,
@@ -191,7 +225,8 @@ serve(async (req) => {
           agentMode,
           previousResponses: allResponses,
           wasCalledDirectly: wasCalledByAgent,
-          lastResponse
+          lastResponse,
+          dynamicWordLimit: wordLimitInstruction // ✅ NUOVO parametro
         });
 
         console.log('📝 Prompt finale composto:', composedPrompt ? composedPrompt.substring(0, 200) + '...' : 'Vuoto');

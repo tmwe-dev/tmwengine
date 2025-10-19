@@ -116,10 +116,9 @@ export const LaboratoryPromptManager = ({ isProcessing = false }: LaboratoryProm
 
       // 5. Costruisci 3 prompt finali
       const previews = styles.map(style => {
-        const brevity = `🚨 VINCOLO ASSOLUTO DI BREVITÀ 🚨
-MASSIMO 60-70 PAROLE (450-500 caratteri).
-Se superi questo limite, la tua risposta sarà TRONCATA e considerata NON VALIDA.
-Scrivi risposte brevi, dirette e impattanti. Ogni parola deve contare.
+        const brevity = `🎯 GESTIONE LUNGHEZZA
+Il limite di parole ti verrà comunicato dinamicamente dall'orchestrator.
+Rispetta il limite indicato con precisione.
 
 `;
         const globalSection = `=== PROMPT GLOBALE ===
@@ -475,7 +474,7 @@ ESEMPI:
                         onClick={() => copyTemplateToClipboard(`Stai partecipando a una discussione informale al bar con altri esperti. Il tono è colloquiale ma competente.
 
 🎯 REGOLE:
-- Intervieni con contributi brevi (max 50-60 parole)
+- Intervieni con contributi brevi (il limite ti verrà comunicato dall'orchestrator)
 - Puoi confermare, aggiungere dettagli, o proporre alternative
 - Usa un linguaggio diretto e informale
 - Evita ripetizioni inutili delle opinioni altrui

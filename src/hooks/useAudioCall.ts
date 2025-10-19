@@ -418,6 +418,11 @@ export const useAudioCall = (roomId: string, userId: string) => {
 
   const answerCall = useCallback(async () => {
     console.log('[answerCall] 🟢 STARTING');
+    console.log('[answerCall] 📊 Current state:', { 
+      incomingCallFrom, 
+      isInCall, 
+      hasPendingOffer: !!pendingOfferRef.current 
+    });
     
     // FIX #1: NON controllare pendingOfferRef qui - l'offer arriverà DOPO il ready
     if (!incomingCallFrom) {
@@ -431,7 +436,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
     }
 
     const from = incomingCallFrom;
-    console.log('[answerCall] Answering call from:', from);
+    console.log('[answerCall] ✅ Answering call from:', from);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({

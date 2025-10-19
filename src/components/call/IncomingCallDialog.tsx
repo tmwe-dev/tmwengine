@@ -16,6 +16,22 @@ export const IncomingCallDialog = ({
   onAccept,
   onReject
 }: IncomingCallDialogProps) => {
+  // FIX #6: Timeout automatico dopo 30 secondi
+  useEffect(() => {
+    if (!isOpen) return;
+
+    console.log('[IncomingCallDialog] ⏱️ Starting 30s timeout');
+    const timeout = setTimeout(() => {
+      console.log('[IncomingCallDialog] ⏱️ Timeout reached - auto-rejecting');
+      onReject();
+    }, 30000);
+
+    return () => {
+      clearTimeout(timeout);
+      console.log('[IncomingCallDialog] ⏱️ Timeout cleared');
+    };
+  }, [isOpen, onReject]);
+
   const [ringAudio] = useState(() => {
     const audioContext = new AudioContext();
     let intervalId: NodeJS.Timeout | null = null;
@@ -69,8 +85,10 @@ export const IncomingCallDialog = ({
 
   useEffect(() => {
     if (isOpen) {
+      console.log('[IncomingCallDialog] 🔔 Dialog opened, playing ring');
       ringAudio.play();
     } else {
+      console.log('[IncomingCallDialog] 🔕 Dialog closed, stopping ring');
       ringAudio.pause();
     }
   }, [isOpen, ringAudio]);

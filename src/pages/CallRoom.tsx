@@ -14,6 +14,7 @@ const CallRoom = () => {
   const [userId, setUserId] = useState<string>('');
   const hasStartedCallRef = useRef(false);
   const acceptedCall = searchParams.get('acceptedCall') === 'true';
+  const incomingFromParam = searchParams.get('incomingFrom');
   
   const targetUserId = searchParams.get('targetUserId');
   const roomId = 'global-call-room';
@@ -55,13 +56,38 @@ const CallRoom = () => {
     }
   }, [targetUserId, isInCall, userId, startCall]);
 
-  // FIX #8: Auto-answer if Bob accepted from global dialog
+  // FIX #7: Auto-answer con sincronizzazione da sessionStorage se necessario
   useEffect(() => {
-    if (acceptedCall && incomingCallFrom && !isInCall) {
-      console.log('[CallRoom] 🟢 Auto-answering call from:', incomingCallFrom);
-      answerCall();
+    console.log('[CallRoom] 🔍 Checking auto-answer conditions:', {
+      acceptedCall,
+      incomingCallFrom,
+      incomingFromParam,
+      isInCall,
+      targetUserId
+    });
+
+    if (acceptedCall && !isInCall) {
+      let from = incomingCallFrom || incomingFromParam;
+      
+      // FIX #1: Se non abbiamo ancora lo stato, prova a recuperare da sessionStorage
+      if (!from) {
+        const stored = sessionStorage.getItem('pendingIncomingCall');
+        if (stored) {
+          const callData = JSON.parse(stored);
+          from = callData.from;
+          console.log('[CallRoom] 📦 Recovered from sessionStorage:', from);
+        }
+      }
+
+      if (from) {
+        console.log('[CallRoom] 🟢 Auto-answering call from:', from);
+        sessionStorage.removeItem('pendingIncomingCall'); // Cleanup
+        answerCall();
+      } else {
+        console.warn('[CallRoom] ⚠️ Cannot auto-answer: no caller info available');
+      }
     }
-  }, [acceptedCall, incomingCallFrom, isInCall, answerCall]);
+  }, [acceptedCall, incomingCallFrom, incomingFromParam, targetUserId, isInCall, answerCall]);
 
   const qualityColors = {
     good: 'bg-green-500',
@@ -136,38 +162,8 @@ const CallRoom = () => {
               <p className="text-muted-foreground">Sistema chiamate audio WebRTC</p>
             </div>
 
-            {incomingCallFrom ? (
-              <div className="flex flex-col items-center gap-6">
-                <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
-                  <Phone className="h-16 w-16 text-primary" />
-                </div>
-                
-                <div className="text-center">
-                  <h2 className="text-2xl font-bold mb-2">Chiamata in arrivo</h2>
-                  <p className="text-muted-foreground">
-                    Da utente {incomingCallFrom.substring(0, 8)}...
-                  </p>
-                </div>
-              
-                <div className="flex gap-4">
-                  <Button
-                    variant="destructive"
-                    size="lg"
-                    onClick={rejectCall}
-                    className="rounded-full w-16 h-16"
-                  >
-                    <PhoneOff className="h-6 w-6" />
-                  </Button>
-                  <Button
-                    size="lg"
-                    onClick={answerCall}
-                    className="rounded-full w-16 h-16 bg-green-500 hover:bg-green-600"
-                  >
-                    <Phone className="h-6 w-6" />
-                  </Button>
-                </div>
-              </div>
-            ) : !isInCall ? (
+            {/* FIX #3: Rimossa interfaccia duplicata - tutto gestito da GlobalCallHandler */}
+            {!isInCall ? (
               <div className="flex flex-col items-center gap-6">
                 <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center">
                   <User className="h-16 w-16 text-muted-foreground" />

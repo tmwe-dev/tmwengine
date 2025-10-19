@@ -24,7 +24,7 @@ export const useGlobalCallHandler = (currentUserId: string) => {
 
     channel
       .on('broadcast', { event: 'incoming-call' }, async ({ payload }) => {
-        console.log('[GlobalCallHandler] Incoming call:', payload);
+        console.log('[GlobalCallHandler] 🔔 Incoming call received:', payload);
 
         if (payload.to !== currentUserId || payload.from === currentUserId) {
           console.log('[GlobalCallHandler] ❌ Ignored: self-call or wrong recipient');
@@ -38,13 +38,19 @@ export const useGlobalCallHandler = (currentUserId: string) => {
           .eq('user_id', payload.from)
           .single();
 
-        // FIX 3 CRITICO: Setta incomingCall invece di navigare subito - ripristina dialog flow
-        console.log('[GlobalCallHandler] 🔔 Setting incoming call');
-        setIncomingCall({
+        const callData = {
           from: payload.from,
           callerName: callerProfile?.display_name || 'Utente sconosciuto',
           roomId: payload.roomId
-        });
+        };
+
+        // FIX #1: Salva in sessionStorage per sincronizzazione cross-component
+        sessionStorage.setItem('pendingIncomingCall', JSON.stringify(callData));
+        console.log('[GlobalCallHandler] ✅ Saved to sessionStorage:', callData);
+
+        // Setta incomingCall per mostrare dialog
+        console.log('[GlobalCallHandler] 🔔 Setting incoming call state');
+        setIncomingCall(callData);
 
         toast({
           title: '📞 Chiamata in arrivo',
@@ -61,8 +67,16 @@ export const useGlobalCallHandler = (currentUserId: string) => {
   const acceptCall = () => {
     if (!incomingCall) return;
     
+    // FIX #2 & #4: Navigazione ritardata solo al click, con parametro incomingFrom
     console.log('[GlobalCallHandler] ✅ Call accepted, navigating to CallRoom...');
-    navigate(`/call-room?targetUserId=${incomingCall.from}&roomId=${incomingCall.roomId}&acceptedCall=true`);
+    console.log('[GlobalCallHandler] 📍 Navigation params:', {
+      targetUserId: incomingCall.from,
+      roomId: incomingCall.roomId,
+      acceptedCall: true,
+      incomingFrom: incomingCall.from
+    });
+    
+    navigate(`/call-room?targetUserId=${incomingCall.from}&roomId=${incomingCall.roomId}&acceptedCall=true&incomingFrom=${incomingCall.from}`);
     
     setIncomingCall(null);
   };
@@ -70,6 +84,8 @@ export const useGlobalCallHandler = (currentUserId: string) => {
   const rejectCall = async () => {
     if (!incomingCall) return;
 
+    console.log('[GlobalCallHandler] ❌ Call rejected by user');
+    
     // Notifica al chiamante che la chiamata è stata rifiutata
     const channel = supabase.channel(`user-calls-${incomingCall.from}`);
     await channel.send({
@@ -78,6 +94,10 @@ export const useGlobalCallHandler = (currentUserId: string) => {
       payload: { from: currentUserId, to: incomingCall.from }
     });
     await channel.unsubscribe();
+
+    // FIX #1: Pulisci anche sessionStorage
+    sessionStorage.removeItem('pendingIncomingCall');
+    console.log('[GlobalCallHandler] 🗑️ Cleared sessionStorage');
 
     setIncomingCall(null);
   };

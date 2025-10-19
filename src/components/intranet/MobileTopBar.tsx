@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { SettingsButton } from './SettingsButton';
+import { VideoCallButton } from './VideoCallButton';
 
 interface MobileTopBarProps {
   selectedRoomName: string;
@@ -62,8 +63,12 @@ export const MobileTopBar = ({
         )}
       </div>
 
-      {/* Right - Settings + Layout toggle button */}
+      {/* Right - Video Call + Settings + Layout toggle button */}
       <div className="flex items-center gap-1 flex-shrink-0">
+        <VideoCallButton 
+          roomId={selectedRoomId} 
+          roomName={selectedRoomName}
+        />
         <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
         <Button
           size="icon"

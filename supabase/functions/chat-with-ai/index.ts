@@ -199,11 +199,18 @@ serve(async (req) => {
       const { data, error } = await supabase
         .from('config_ai')
         .select('*')
-        .eq('provider', 'openai')
+        .eq('attivo', true)
         .maybeSingle();
       
-      if (error) throw new Error('Nessuna configurazione AI attiva');
+      if (error || !data) {
+        throw new Error('Nessuna configurazione AI attiva trovata. Vai su /impostazioni e attiva una configurazione AI.');
+      }
       aiConfig = data;
+    }
+
+    // ✅ Validazione configurazione AI
+    if (!aiConfig || !aiConfig.provider || !aiConfig.modello) {
+      throw new Error('Configurazione AI incompleta o non valida');
     }
 
     console.log(`[AI CONFIG] Using ${aiConfig.provider} - ${aiConfig.modello}`);

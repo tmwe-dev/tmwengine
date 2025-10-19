@@ -79,6 +79,10 @@ export class WebRTCPeerConnection {
     await this.pc.setRemoteDescription(new RTCSessionDescription(sdp));
   }
 
+  async setLocalDescription(sdp: RTCSessionDescriptionInit) {
+    await this.pc.setLocalDescription(new RTCSessionDescription(sdp));
+  }
+
   async addIceCandidate(candidate: RTCIceCandidateInit) {
     try {
       await this.pc.addIceCandidate(new RTCIceCandidate(candidate));

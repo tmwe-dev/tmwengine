@@ -236,11 +236,43 @@ export const useAudioCall = (roomId: string, userId: string) => {
           console.log('[useAudioCall] Received remote stream');
           remoteStreamRef.current = stream;
           
+          // STEP 2: Verifica tracce audio attive
+          const audioTracks = stream.getAudioTracks();
+          console.log('[useAudioCall] Remote audio tracks:', audioTracks.length);
+          
+          if (audioTracks.length === 0) {
+            console.error('[useAudioCall] ❌ No audio tracks in remote stream!');
+            toast({
+              title: 'Errore Audio',
+              description: 'Lo stream remoto non contiene audio',
+              variant: 'destructive'
+            });
+            return;
+          }
+          
+          audioTracks.forEach((track, index) => {
+            console.log(`[useAudioCall] Track ${index}:`, {
+              id: track.id,
+              kind: track.kind,
+              enabled: track.enabled,
+              muted: track.muted,
+              readyState: track.readyState
+            });
+          });
+          
           // Aspetta che il ref sia pronto prima di assegnare lo stream
           if (remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = stream;
+            remoteAudioRef.current.volume = 1.0; // Volume massimo
+            
             remoteAudioRef.current.play().catch(err => {
               console.error('[useAudioCall] Audio play error:', err);
+              
+              // Su mobile, potrebbe essere necessaria interazione utente
+              toast({
+                title: 'Clicca per attivare audio',
+                description: 'Il browser richiede interazione utente'
+              });
             });
           } else {
             console.warn('[useAudioCall] remoteAudioRef not ready yet');
@@ -256,7 +288,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
 
       peerConnectionRef.current = pc;
       if (targetUserId) setRemotePeerId(targetUserId);
-      setIsInCall(true);
+      // STEP 3: Rimosso setIsInCall(true) - verrà chiamato in onRemoteStream
 
       // Salva i dati della chiamata e aspetta il segnale "ready" da Bob
       console.log('[useAudioCall] Waiting for recipient to be ready...');
@@ -326,10 +358,36 @@ export const useAudioCall = (roomId: string, userId: string) => {
         },
         onRemoteStream: (stream) => {
           remoteStreamRef.current = stream;
+          
+          // STEP 2: Verifica tracce audio attive
+          const audioTracks = stream.getAudioTracks();
+          console.log('[answerCall] Remote audio tracks:', audioTracks.length);
+          
+          if (audioTracks.length === 0) {
+            console.error('[answerCall] ❌ No audio tracks in remote stream!');
+            return;
+          }
+          
+          audioTracks.forEach((track, index) => {
+            console.log(`[answerCall] Track ${index}:`, {
+              id: track.id,
+              enabled: track.enabled,
+              muted: track.muted,
+              readyState: track.readyState
+            });
+          });
+          
           if (remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = stream;
+            remoteAudioRef.current.volume = 1.0; // Volume massimo
+            
             remoteAudioRef.current.play().catch(err => {
               console.error('[answerCall] Audio play error:', err);
+              
+              toast({
+                title: 'Clicca per attivare audio',
+                description: 'Il browser richiede interazione utente'
+              });
             });
           }
         },
@@ -339,6 +397,9 @@ export const useAudioCall = (roomId: string, userId: string) => {
       await pc.addLocalStream(stream);
       await pc.setRemoteDescription(offer);
       const answer = await pc.createAnswer();
+      
+      // STEP 1: CRITICO - Set local description PRIMA di inviare answer
+      await pc.setLocalDescription(answer);
       
       // STEP 1B: Aspetta 500ms per ricevere ICE candidates di Alice
       console.log('[answerCall] Waiting 500ms for ICE candidates...');

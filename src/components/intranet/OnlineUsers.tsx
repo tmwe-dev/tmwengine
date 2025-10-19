@@ -3,7 +3,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Users, Phone, MessageSquare } from 'lucide-react';
+import { Users, Phone, MessageSquare, Video } from 'lucide-react';
+import { DirectVideoCallButton } from './DirectVideoCallButton';
 import { UserAvailabilityBadge } from './UserAvailabilityBadge';
 import { UserAvailabilitySelector } from './UserAvailabilitySelector';
 import { supabase } from '@/integrations/supabase/client';
@@ -198,6 +199,10 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                             size="sm"
                           />
                         )}
+                        <DirectVideoCallButton
+                          targetUserId={user.user_id}
+                          targetUserName={profile?.display_name || `Utente ${getUserInitials(user.user_id)}`}
+                        />
                       </div>
                     </div>
                   );

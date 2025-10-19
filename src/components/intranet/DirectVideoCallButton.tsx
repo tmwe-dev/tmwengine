@@ -37,7 +37,7 @@ export const DirectVideoCallButton = ({
   };
 
   const sortedIds = [currentUserId, targetUserId].sort();
-  const jitsiRoomId = `tmwengine-direct-${sortedIds[0]}-${sortedIds[1]}`;
+  const uniqueRoomId = `direct-${sortedIds[0]}-${sortedIds[1]}`;
 
   return (
     <>
@@ -57,12 +57,13 @@ export const DirectVideoCallButton = ({
           targetUserId={targetUserId}
           targetUserName={targetUserName}
           currentUserId={currentUserId}
+          roomId={uniqueRoomId}
         />
       ) : (
         <VideoCallDialog
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
-          roomId={jitsiRoomId}
+          roomId={uniqueRoomId}
           roomName={`Chiamata con ${targetUserName}`}
           userDisplayName={currentUserId}
         />

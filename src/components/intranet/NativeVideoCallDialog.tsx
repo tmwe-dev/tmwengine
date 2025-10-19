@@ -10,6 +10,7 @@ interface NativeVideoCallDialogProps {
   targetUserId: string;
   targetUserName: string;
   currentUserId: string;
+  roomId: string;
 }
 
 export const NativeVideoCallDialog = ({
@@ -17,7 +18,8 @@ export const NativeVideoCallDialog = ({
   onClose,
   targetUserId,
   targetUserName,
-  currentUserId
+  currentUserId,
+  roomId
 }: NativeVideoCallDialogProps) => {
   const {
     isInCall,
@@ -29,7 +31,7 @@ export const NativeVideoCallDialog = ({
     endCall,
     toggleMute,
     toggleVideo
-  } = useVideoCall('direct-call', currentUserId);
+  } = useVideoCall(roomId, currentUserId);
 
   useEffect(() => {
     if (isOpen && !isInCall) {

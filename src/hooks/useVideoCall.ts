@@ -45,7 +45,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
         endCall();
       }
     });
-  }, []);
+  }, [setHandlers]);
 
   const startCall = useCallback(async (targetUserId: string) => {
     try {
@@ -123,8 +123,8 @@ export const useVideoCall = (roomId: string, userId: string) => {
       await channel.subscribe();
       await channel.send({
         type: 'broadcast',
-        event: 'incoming-video-call',
-        payload: { from: userId, to: targetUserId, roomId }
+        event: 'incoming-call',
+        payload: { from: userId, to: targetUserId, roomId, callType: 'video' }
       });
       setTimeout(() => channel.unsubscribe(), 2000);
 

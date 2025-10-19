@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 interface IncomingCallDialogProps {
   isOpen: boolean;
   callerName: string;
+  callType?: 'audio' | 'video';
   onAccept: () => void;
   onReject: () => void;
 }
@@ -13,6 +14,7 @@ interface IncomingCallDialogProps {
 export const IncomingCallDialog = ({
   isOpen,
   callerName,
+  callType = 'audio',
   onAccept,
   onReject
 }: IncomingCallDialogProps) => {
@@ -102,7 +104,9 @@ export const IncomingCallDialog = ({
           </div>
           
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-2">Chiamata in arrivo</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              {callType === 'video' ? '📹 Videochiamata in arrivo' : '📞 Chiamata in arrivo'}
+            </h2>
             <p className="text-muted-foreground">{callerName}</p>
           </div>
 

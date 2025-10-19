@@ -7,6 +7,7 @@ interface IncomingCall {
   from: string;
   callerName: string;
   roomId: string;
+  callType?: 'audio' | 'video';
 }
 
 export const useGlobalCallHandler = (currentUserId: string) => {
@@ -41,7 +42,8 @@ export const useGlobalCallHandler = (currentUserId: string) => {
         const callData = {
           from: payload.from,
           callerName: callerProfile?.display_name || 'Utente sconosciuto',
-          roomId: payload.roomId
+          roomId: payload.roomId,
+          callType: payload.callType || 'audio'
         };
 
         // FIX #1: Salva in sessionStorage per sincronizzazione cross-component
@@ -53,7 +55,7 @@ export const useGlobalCallHandler = (currentUserId: string) => {
         setIncomingCall(callData);
 
         toast({
-          title: '📞 Chiamata in arrivo',
+          title: payload.callType === 'video' ? '📹 Videochiamata in arrivo' : '📞 Chiamata in arrivo',
           description: `Da ${callerProfile?.display_name || 'Utente sconosciuto'}`
         });
       })

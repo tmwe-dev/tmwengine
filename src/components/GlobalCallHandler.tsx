@@ -25,6 +25,7 @@ export const GlobalCallHandler = ({ children }: { children: React.ReactNode }) =
       <IncomingCallDialog
         isOpen={!!incomingCall}
         callerName={incomingCall?.callerName || ''}
+        callType={incomingCall?.callType}
         onAccept={acceptCall}
         onReject={rejectCall}
       />

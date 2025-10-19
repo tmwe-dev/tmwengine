@@ -456,10 +456,7 @@ serve(async (req) => {
                 if (aiTurnsCount >= MAX_AI_TURNS_BEFORE_USER) {
                   console.log(`⏸️ Limite turni AI raggiunto (${aiTurnsCount}/${MAX_AI_TURNS_BEFORE_USER}) → Attendo user`);
                 } else {
-                  console.log(`🔄 Orchestrator: richiesto nuovo turno dopo ${currentAgent.name}`);
-                  // Reset: tutti gli agenti rispondono di nuovo
-                  i = -1; // Reset loop (verrà incrementato a 0 al prossimo ciclo)
-                  allResponses.length = 0;
+                  console.log(`✅ Orchestrator: turno completato, attendo prossimo messaggio utente`);
                 }
               }
             }

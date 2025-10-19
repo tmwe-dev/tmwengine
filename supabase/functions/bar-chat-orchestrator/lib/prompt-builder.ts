@@ -31,15 +31,8 @@ export function buildSystemPrompt(params: PromptParams): string {
     styleSections
   } = params;
 
-  // 🎯 VINCOLO CRITICO DI BREVITÀ ALL'INIZIO
-  let composedPrompt = `🚨 VINCOLO ASSOLUTO DI BREVITÀ 🚨
-MASSIMO 60-70 PAROLE (450-500 caratteri).
-Se superi questo limite, la tua risposta sarà TRONCATA e considerata NON VALIDA.
-Scrivi risposte brevi, dirette e impattanti. Ogni parola deve contare.
-
-`;
-  
-  composedPrompt += globalPrompt + '\n\n';
+  // Inizializza prompt vuoto - il vincolo di brevità viene dallo stile DB
+  let composedPrompt = '';
   
   // Add BASE sections
   composedPrompt += '=== CONTESTO BASE ===\n';

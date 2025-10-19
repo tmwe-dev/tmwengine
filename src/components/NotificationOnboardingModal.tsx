@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Bell, BellOff, CheckCircle2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { VAPID_CONFIG } from '@/config/vapid';
 
 // Helper per convertire VAPID key
 function urlBase64ToUint8Array(base64String: string) {
@@ -64,9 +65,7 @@ export function NotificationOnboardingModal({ open, onClose }: NotificationOnboa
           // 3. Ottieni subscription (Web Push API)
           const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(
-              import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BNuV8KBQVvqT6z4yJX0R9kYv8F3Xr2HzL6mN9pQ1sT2uV3wX4yZ5A6bC7dE8fG9hH0iJ1kL2mN3oP4qR5sT6uV7wX8yZ9'
-            )
+            applicationServerKey: urlBase64ToUint8Array(VAPID_CONFIG.publicKey)
           });
           
           pushToken = JSON.stringify(subscription);

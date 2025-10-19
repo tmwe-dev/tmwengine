@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Bell, BellOff, TestTube } from 'lucide-react';
+import { VAPID_CONFIG } from '@/config/vapid';
 
 export default function NotificationSettings() {
   const { toast } = useToast();
@@ -93,15 +94,9 @@ export default function NotificationSettings() {
         await navigator.serviceWorker.ready;
 
         // Ottieni subscription
-        const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-        if (!vapidPublicKey) {
-          throw new Error('VAPID_PUBLIC_KEY non configurata');
-        }
-
-        const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: convertedKey as BufferSource
+          applicationServerKey: urlBase64ToUint8Array(VAPID_CONFIG.publicKey) as BufferSource
         });
 
         // Salva nel database

@@ -29,86 +29,31 @@ export const AudioMessagePlayer = ({
     const audio = audioRef.current;
     if (!audio) return;
 
-    console.log(`🔊 [AudioPlayer] Setup audio: ${audioUrl}, autoPlay: ${autoPlay}`);
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-      // Log ogni 10 secondi per debug
-      if (Math.floor(audio.currentTime) % 10 === 0 && audio.currentTime > 0) {
-        console.log(`⏱️ [AudioPlayer] Playback at ${Math.floor(audio.currentTime)}s / ${Math.floor(audio.duration)}s`);
-      }
-    };
-    
-    const handleLoadedMetadata = () => {
-      setDuration(audio.duration);
-      console.log(`📊 [AudioPlayer] Durata totale: ${Math.floor(audio.duration)}s`);
-    };
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleLoadedMetadata = () => setDuration(audio.duration);
     
     const handleEnded = () => {
-      console.log(`✅ [AudioPlayer] Playback completato naturalmente`);
       setIsPlaying(false);
       onPlayingChange?.(false);
       onPlayEnd?.();
     };
 
-    const handlePause = () => {
-      // ⚠️ Se audio è terminato, ignora la pausa (già gestita da "ended")
-      if (audio.ended) {
-        console.log(`ℹ️ [AudioPlayer] Pausa ignorata (audio terminato naturalmente)`);
-        return;
-      }
-      
-      console.warn(`⏸️ [AudioPlayer] PAUSA manuale a ${Math.floor(audio.currentTime)}s`);
-      setIsPlaying(false);
-      onPlayingChange?.(false);
-    };
-
-    const handleError = (e: Event) => {
-      console.error(`❌ [AudioPlayer] Errore riproduzione:`, e);
-    };
-
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('pause', handlePause);
-    audio.addEventListener('error', handleError);
-
-    const playWithRetry = async (maxRetries = 3) => {
-      for (let i = 0; i < maxRetries; i++) {
-        try {
-          await audio.play();
-          console.log(`✅ [AudioPlayer] Play riuscito (tentativo ${i + 1})`);
-          setIsPlaying(true);
-          onPlayingChange?.(true);
-          onPlayStart?.();
-          return true;
-        } catch (err) {
-          console.warn(`⚠️ [AudioPlayer] Play fallito (tentativo ${i + 1}):`, err);
-          if (i < maxRetries - 1) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
-      }
-      console.error(`❌ [AudioPlayer] Impossibile avviare autoplay dopo ${maxRetries} tentativi`);
-      return false;
-    };
 
     if (autoPlay) {
-      playWithRetry();
+      audio.play().then(() => {
+        setIsPlaying(true);
+        onPlayingChange?.(true);
+        onPlayStart?.();
+      }).catch(console.error);
     }
 
     return () => {
-      // ⚠️ NON fare cleanup se audio sta ancora suonando!
-      if (audio.paused || audio.ended) {
-        console.log(`🧹 [AudioPlayer] Cleanup (audio già terminato)`);
-        audio.removeEventListener('timeupdate', handleTimeUpdate);
-        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-        audio.removeEventListener('ended', handleEnded);
-        audio.removeEventListener('pause', handlePause);
-        audio.removeEventListener('error', handleError);
-      } else {
-        console.warn(`⚠️ [AudioPlayer] Cleanup saltato: audio ancora in riproduzione!`);
-      }
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
     };
   }, [audioUrl, autoPlay]);
 
@@ -126,6 +71,7 @@ export const AudioMessagePlayer = ({
       audio.pause();
       setIsPlaying(false);
       onPlayingChange?.(false);
+      onPlayEnd?.();
     } else {
       audio.play().then(() => {
         setIsPlaying(true);

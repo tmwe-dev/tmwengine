@@ -80,11 +80,14 @@ async function collectSystemSnapshot(supabaseClient: any) {
       total_policies: 0
     };
     
-    // 3. Edge Functions (placeholder - table might not exist)
+    // 3. Edge Functions
+    const { data: edgeFunctions } = await supabaseClient
+      .from('edge_function_versions')
+      .select('function_name, is_active, version_number, created_at')
+      .eq('is_active', true);
     snapshot.edge_functions = {
-      note: "Edge function metadata would be queried here if table exists",
-      total_functions: 0,
-      functions: []
+      total_functions: edgeFunctions?.length || 0,
+      functions: edgeFunctions || []
     };
     
     // 4. AI Configurations
@@ -172,10 +175,10 @@ serve(async (req) => {
       const { data, error } = await supabase
         .from('config_ai')
         .select('*')
-        .eq('attivo', true)
+        .eq('provider', 'openai')
         .maybeSingle();
       
-      if (error || !data) throw new Error('Nessuna configurazione AI attiva trovata');
+      if (error) throw new Error('Nessuna configurazione AI attiva');
       aiConfig = data;
     }
 
@@ -722,8 +725,8 @@ ${prompt}`;
                   })),
                 current_user_message: prompt,
                 metadata: {
-                  provider: aiConfig?.provider || 'unknown',
-                  model: aiConfig?.modello || 'unknown',
+                  provider: aiConfig.provider,
+                  model: aiConfig.modello,
                   economy_mode: useEconomyMode,
                   memoria_completa: useFullMemory
                 }
@@ -747,8 +750,8 @@ ${prompt}`;
         .from('chat_usage_stats')
         .insert({
           conversation_id: conversationId,
-          model_used: aiConfig?.modello || 'unknown',
-          provider_used: aiConfig?.provider || 'unknown',
+          model_used: aiConfig.modello,
+          provider_used: aiConfig.provider,
           tokens_input: tokensInput,
           tokens_output: tokensOutput,
           tokens_total: tokensUsed,

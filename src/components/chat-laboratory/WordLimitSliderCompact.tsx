@@ -22,25 +22,36 @@ export const WordLimitSliderCompact = ({
   const handleValueCommit = async (newValue: number) => {
     if (!conversationId) return;
 
-    // Salva su tutti gli agenti attivi
-    const { data: agents } = await supabase
+    console.log(`🎯 Aggiornamento limite parole a ${newValue} per tutti gli agenti`);
+
+    // Aggiorna TUTTI gli agenti (non solo is_active)
+    const { data: agents, error: fetchError } = await supabase
       .from('elevenlabs_agents')
-      .select('id')
-      .eq('is_active', true);
+      .select('id, name, max_words_per_response');
     
-    if (agents) {
-      await Promise.all(
+    if (fetchError) {
+      console.error('❌ Errore fetch agenti:', fetchError);
+      return;
+    }
+
+    console.log(`📊 Agenti trovati:`, agents);
+
+    if (agents && agents.length > 0) {
+      const results = await Promise.all(
         agents.map(agent =>
           supabase
             .from('elevenlabs_agents')
             .update({ max_words_per_response: newValue })
             .eq('id', agent.id)
+            .select()
         )
       );
       
+      console.log(`✅ Aggiornati ${results.length} agenti:`, results);
+      
       toast({
         title: "Lunghezza aggiornata",
-        description: `Limite impostato a ${newValue} parole per tutti gli agenti`,
+        description: `Limite impostato a ${newValue} parole per ${agents.length} agenti`,
       });
     }
   };

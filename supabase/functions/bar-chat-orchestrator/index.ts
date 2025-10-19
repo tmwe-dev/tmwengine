@@ -202,17 +202,27 @@ serve(async (req) => {
 
         if (associatedVoiceAgent && associatedVoiceAgent.max_words_per_response) {
           maxWordsLimit = associatedVoiceAgent.max_words_per_response;
-          console.log(`📏 Limite parole per ${currentAgent.name}: ${maxWordsLimit} (da voice agent ${associatedVoiceAgent.name})`);
+          console.log(`📏 ✅ LIMITE TROVATO per ${currentAgent.name}:`);
+          console.log(`   Voice Agent: ${associatedVoiceAgent.name}`);
+          console.log(`   Limite parole: ${maxWordsLimit}`);
+          console.log(`   Voice Agent ID: ${associatedVoiceAgent.id}`);
         } else {
-          console.log(`⚠️ Nessun voice agent trovato per ${currentAgent.name}, uso default: ${maxWordsLimit} parole`);
+          console.error(`❌ NESSUN VOICE AGENT trovato per ${currentAgent.name}`);
+          console.error(`   Search keywords usate:`, searchKeywords);
+          console.error(`   Voice agents disponibili:`, activeVoiceAgents.map((v: any) => v.name));
+          console.log(`   Uso default: ${maxWordsLimit} parole`);
         }
 
         // Inietta istruzione dinamica nel prompt
         const wordLimitInstruction = `
-🎯 LIMITE LUNGHEZZA RISPOSTA
-Mantieni la tua risposta MASSIMO ${maxWordsLimit} parole.
-Questo limite è PRIORITARIO rispetto a qualsiasi altra istruzione.
-Ogni parola deve essere essenziale e impattante.
+🚨 LIMITE CRITICO LUNGHEZZA RISPOSTA 🚨
+La tua risposta DEVE essere MASSIMO ${maxWordsLimit} parole.
+Questo è un limite ASSOLUTO e NON NEGOZIABILE.
+Conta ogni parola prima di rispondere.
+Se superi ${maxWordsLimit} parole, la tua risposta verrà TRONCATA.
+
+IMPORTANTE: ${maxWordsLimit} parole è il MASSIMO, non un target.
+Risposte più brevi sono preferibili se trasmettono il messaggio completo.
 
 `;
 

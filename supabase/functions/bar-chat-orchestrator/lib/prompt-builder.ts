@@ -184,7 +184,7 @@ export function formatHistoryMessages(messages: any[]): any[] {
     
     return {
       role: msg.sender_type === 'human' ? 'user' : 'assistant',
-      content: `[${msg.sender_name}]: ${messageContent}`
+      content: messageContent
     };
   });
 }

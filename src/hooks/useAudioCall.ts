@@ -83,6 +83,10 @@ export const useAudioCall = (roomId: string, userId: string) => {
     pendingOfferRef.current = null;
     pendingCallDataRef.current = null;
     setWaitingForRecipient(null);
+    
+    // FIX 5 CRITICO: Reset refs chiamata
+    offerSentRef.current = false;
+    pendingIceCandidatesRef.current = [];
   }, [remotePeerId, sendSignal]);
 
   useEffect(() => {
@@ -195,6 +199,10 @@ export const useAudioCall = (roomId: string, userId: string) => {
         currentUserId: userId, 
         isSelfCall: targetUserId === userId 
       });
+      
+      // FIX 6 CRITICO: Reset stato chiamata precedente
+      offerSentRef.current = false;
+      pendingIceCandidatesRef.current = [];
       
       // 🆕 Blocca auto-chiamate
       if (targetUserId === userId) {
@@ -420,13 +428,16 @@ export const useAudioCall = (roomId: string, userId: string) => {
       await pc.addLocalStream(stream);
       await pc.setRemoteDescription(offer);
       
-      // FIX 2 CRITICO: Aspetta 1000ms per ricevere i candidates di Alice PRIMA di creare answer
+      // FIX 1 CRITICO: Bob invia segnale READY ad Alice
+      console.log('[answerCall] 🟢 Sending READY signal to Alice');
+      await sendSignal({ type: 'ready', to: from, payload: {} });
+      
+      // FIX 2 CRITICO: Aspetta 1000ms per ricevere i candidates di Alice
       console.log('[answerCall] Waiting 1000ms for Alice\'s ICE candidates...');
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // ORA crea l'answer
+      // ORA crea l'answer (FIX 4: createAnswer già chiama setLocalDescription internamente)
       const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
       
       await sendSignal({ type: 'answer', to: from, payload: answer });
 

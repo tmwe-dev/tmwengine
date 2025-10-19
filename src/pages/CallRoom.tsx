@@ -13,7 +13,6 @@ const CallRoom = () => {
   const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState<string>('');
   const hasStartedCallRef = useRef(false);
-  const readySentRef = useRef(false);
   
   const targetUserId = searchParams.get('targetUserId');
   const roomId = 'global-call-room';
@@ -46,21 +45,14 @@ const CallRoom = () => {
 
   // Auto-avvia chiamata se c'è un targetUserId nei query params
   useEffect(() => {
-    const acceptedCall = searchParams.get('acceptedCall') === 'true';
-    
-    if (acceptedCall && targetUserId && userId && isReady && !readySentRef.current) {
-      // Chi riceve la chiamata: invia segnale "ready" per dire ad Alice di inviare l'offer
-      // ASPETTA che il canale sia pronto prima di inviare
-      console.log('[CallRoom] 🟢 Channel ready - sending READY signal to:', targetUserId);
-      sendSignal({ type: 'ready', to: targetUserId, payload: {} });
-      readySentRef.current = true;
-    } else if (targetUserId && !isInCall && userId && !hasStartedCallRef.current) {
+    // FIX 2: Rimosso readySentRef logic - il ready viene inviato da answerCall()
+    if (targetUserId && !isInCall && userId && !hasStartedCallRef.current) {
       // Chi INIZIA la chiamata
       console.log('[CallRoom] Auto-starting outgoing call to:', targetUserId);
       hasStartedCallRef.current = true;
       startCall(targetUserId);
     }
-  }, [targetUserId, isInCall, userId, startCall, searchParams, sendSignal, isReady]);
+  }, [targetUserId, isInCall, userId, startCall]);
 
   const qualityColors = {
     good: 'bg-green-500',

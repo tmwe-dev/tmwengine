@@ -38,9 +38,13 @@ export const useGlobalCallHandler = (currentUserId: string) => {
           .eq('user_id', payload.from)
           .single();
 
-        // Naviga direttamente a CallRoom invece di mostrare il dialog
-        console.log('[GlobalCallHandler] Navigating to call room...');
-        navigate(`/call-room?targetUserId=${payload.from}&roomId=${payload.roomId}&acceptedCall=true`);
+        // FIX 3 CRITICO: Setta incomingCall invece di navigare subito - ripristina dialog flow
+        console.log('[GlobalCallHandler] 🔔 Setting incoming call');
+        setIncomingCall({
+          from: payload.from,
+          callerName: callerProfile?.display_name || 'Utente sconosciuto',
+          roomId: payload.roomId
+        });
 
         toast({
           title: '📞 Chiamata in arrivo',
@@ -55,9 +59,11 @@ export const useGlobalCallHandler = (currentUserId: string) => {
   }, [currentUserId, toast]);
 
   const acceptCall = () => {
-    // Non più necessario - la navigazione avviene direttamente nell'handler
     if (!incomingCall) return;
+    
+    console.log('[GlobalCallHandler] ✅ Call accepted, navigating to CallRoom...');
     navigate(`/call-room?targetUserId=${incomingCall.from}&roomId=${incomingCall.roomId}&acceptedCall=true`);
+    
     setIncomingCall(null);
   };
 

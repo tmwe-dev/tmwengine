@@ -426,9 +426,28 @@ serve(async (req) => {
         
         console.log(`✅ ${currentAgent.name} processato in ${responseTime}ms`);
 
-        // ============ ORCHESTRATOR AUTONOMO ============
-        if (LOVABLE_API_KEY && cachedPrompts.orchestratorRules) {
+        // ============ AUTONOMOUS ORCHESTRATOR (GEMINI-LITE) ============
+        if (LOVABLE_API_KEY && cachedPrompts.orchestratorRules && currentAgent.type === 'gemini') {
           try {
+            console.log(`🧠 Chiamata orchestrator autonomo (Gemini-Flash-Lite)...`);
+            
+            const orchestratorPrompt = `${cachedPrompts.orchestratorRules}
+
+CONTESTO CORRENTE:
+- Agente che ha appena parlato: ${currentAgent.name}
+- Interventi totali di ${currentAgent.name} in questo turno: ${allResponses.filter(r => r.agentName === currentAgent.name).length}
+- Altri agenti nel turno: ${allResponses.filter(r => r.agentName !== currentAgent.name).map(r => r.agentName).join(', ') || 'nessuno'}
+
+MESSAGGIO DA ANALIZZARE:
+${aiResponse}
+
+Analizza se ci sono menzioni esplicite (@ChatGPT, @Claude, @Gemini) o implicite ("ragazzi", "cosa ne pensate", "qualcuno").
+Rispondi con JSON:
+{
+  "continue": true/false,
+  "targets": ["chatgpt"] // solo se continue=true; lista agenti menzionati, o [] per tutti
+}`;
+
             const orchestratorResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -437,27 +456,44 @@ serve(async (req) => {
               },
               body: JSON.stringify({
                 model: 'google/gemini-2.5-flash-lite',
-                messages: [{
-                  role: 'user',
-                  content: `${cachedPrompts.orchestratorRules}\n\nMessaggio da analizzare:\n${aiResponse}`
-                }],
-                max_completion_tokens: 50
+                messages: [{ role: 'user', content: orchestratorPrompt }],
+                max_completion_tokens: 100
               })
             });
 
             if (orchestratorResponse.ok) {
               const data = await orchestratorResponse.json();
-              const decision = data.choices?.[0]?.message?.content || '';
+              const rawDecision = data.choices?.[0]?.message?.content || '';
               
-              console.log(`🧠 Orchestrator decisione:`, decision);
+              console.log(`🧠 Orchestrator decisione RAW:`, rawDecision);
               
-              if (decision.toLowerCase().includes('true') || decision.includes('"continue": true')) {
-                // ✅ Verifica limite turni
-                if (aiTurnsCount >= MAX_AI_TURNS_BEFORE_USER) {
-                  console.log(`⏸️ Limite turni AI raggiunto (${aiTurnsCount}/${MAX_AI_TURNS_BEFORE_USER}) → Attendo user`);
+              const decision = JSON.parse(rawDecision.replace(/```json|```/g, '').trim());
+              
+              if (decision.continue === true && aiTurnsCount < MAX_AI_TURNS_BEFORE_USER) {
+                const targets: string[] = decision.targets || [];
+                
+                if (targets.length === 0) {
+                  // Menzione implicita → riattivo TUTTI gli agenti
+                  console.log(`🔄 Orchestrator: menzione implicita → reset loop per TUTTI`);
+                  i = -1; // Reset loop (tornerà a 0 al prossimo ciclo)
+                  allResponses.length = 0;
                 } else {
-                  console.log(`✅ Orchestrator: turno completato, attendo prossimo messaggio utente`);
+                  // Menzione esplicita → solo agenti specifici
+                  console.log(`🔄 Orchestrator: menzione esplicita → solo ${targets.join(', ')}`);
+                  const targetParticipants = activeParticipants.filter(p => 
+                    targets.some(t => p.type === t || p.name.toLowerCase().includes(t))
+                  );
+                  
+                  if (targetParticipants.length > 0) {
+                    allResponses.length = 0;
+                    // Aggiungi solo target alla coda
+                    for (let j = 0; j < targetParticipants.length; j++) {
+                      activeParticipants.splice(i + 1 + j, 0, targetParticipants[j]);
+                    }
+                  }
                 }
+              } else {
+                console.log(`✅ Orchestrator: nessuna menzione o limite raggiunto`);
               }
             }
           } catch (orchError) {

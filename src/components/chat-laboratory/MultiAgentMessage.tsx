@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Clock, Zap, Copy, Download, Link, FileText, FileCheck, Sparkles, ChevronDown } from 'lucide-react';
+import { Bot, User, Clock, Zap, Copy, Download, Link, FileText, FileCheck, Sparkles, ChevronDown, Users } from 'lucide-react';
 import { UploadedFile } from '@/components/chat/FileUploader';
 import { toast } from '@/hooks/use-toast';
 import { AudioMessagePlayer } from '@/components/chat-laboratory/AudioMessagePlayer';
@@ -10,6 +10,7 @@ import { DeliverableCard } from './DeliverableCard';
 import { MessageCostBadge } from './MessageCostBadge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import ReactMarkdown from 'react-markdown';
+import { supabase } from '@/integrations/supabase/client';
 
 interface StructuredAttachments {
   appendix?: string;
@@ -137,6 +138,45 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
     }
   };
 
+  // 🎯 Ottieni gli altri 2 agenti (escluso sender corrente)
+  const getOtherAgents = (): string[] => {
+    const allAgents = ['chatgpt', 'gemini', 'claude'];
+    const currentSender = message.sender_type.toLowerCase();
+    return allAgents.filter(agent => agent !== currentSender);
+  };
+
+  // 🎯 Gestisci richiesta commento manuale
+  const handleRequestComment = async (target: 'all' | string) => {
+    try {
+      const conversationId = (message as any).conversation_id;
+      if (!conversationId) {
+        toast({ title: "Errore", description: "Conversation ID non trovato", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke('bar-request-comment', {
+        body: {
+          conversationId,
+          messageId: message.id,
+          targetAgent: target,
+          requestingUser: true
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Richiesta inviata",
+        description: target === 'all' 
+          ? "Tutti gli agenti sono stati chiamati a commentare" 
+          : `${target.toUpperCase()} è stato chiamato a commentare`
+      });
+    } catch (error) {
+      console.error('Error requesting comment:', error);
+      toast({ title: "Errore", description: "Impossibile inviare la richiesta", variant: "destructive" });
+    }
+  };
+
   return (
     <Card className={`bg-gradient-to-br ${config.bg} border ${config.border}`}>
       <div className="p-4 space-y-3">
@@ -225,39 +265,43 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
           <p className="whitespace-pre-wrap">{displayContent}</p>
         </div>
 
-        {/* ✅ NUOVO: Appendice Tecnica (Collapsible) */}
-        {isStructuredAttachments(message.attachments) && message.attachments.appendix && message.sender_type !== 'human' && (
+        {/* ✅ APPENDICE: Supporto sia structured che legacy format */}
+        {((isStructuredAttachments(message.attachments) && message.attachments.appendix) || (message.attachments as any)?.appendix) && message.sender_type !== 'human' && (
           <Collapsible className="mt-3">
             <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-sm font-medium group">
               <FileText className="h-4 w-4 text-muted-foreground" />
               <span className="text-foreground">📎 Appendice Tecnica</span>
               <Badge variant="outline" className="ml-auto text-xs">
-                {message.attachments.appendix.length} chars
+                {(isStructuredAttachments(message.attachments) ? message.attachments.appendix?.length : (message.attachments as any)?.appendix?.length) || 0} chars
               </Badge>
               <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2 p-4 bg-muted/30 rounded-lg border border-border/40">
               <div className="prose dark:prose-invert max-w-none text-sm">
-                <ReactMarkdown>{message.attachments.appendix}</ReactMarkdown>
+                <ReactMarkdown>
+                  {isStructuredAttachments(message.attachments) ? message.attachments.appendix : (message.attachments as any)?.appendix}
+                </ReactMarkdown>
               </div>
             </CollapsibleContent>
           </Collapsible>
         )}
 
-        {/* ✅ NUOVO: Report Completo (Collapsible) */}
-        {isStructuredAttachments(message.attachments) && message.attachments.report && message.sender_type !== 'human' && (
+        {/* ✅ REPORT: Supporto sia structured che legacy format */}
+        {((isStructuredAttachments(message.attachments) && message.attachments.report) || (message.attachments as any)?.report) && message.sender_type !== 'human' && (
           <Collapsible className="mt-3">
             <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors text-sm font-medium group">
               <FileText className="h-4 w-4 text-primary" />
               <span className="text-foreground">📊 Report Completo</span>
               <Badge variant="outline" className="ml-auto text-xs bg-primary/10 border-primary/30">
-                {message.attachments.report.length} chars
+                {(isStructuredAttachments(message.attachments) ? message.attachments.report?.length : (message.attachments as any)?.report?.length) || 0} chars
               </Badge>
               <ChevronDown className="h-4 w-4 ml-2 text-primary transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2 p-4 bg-primary/5 rounded-lg border border-primary/20">
               <div className="prose dark:prose-invert max-w-none text-sm">
-                <ReactMarkdown>{message.attachments.report}</ReactMarkdown>
+                <ReactMarkdown>
+                  {isStructuredAttachments(message.attachments) ? message.attachments.report : (message.attachments as any)?.report}
+                </ReactMarkdown>
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -367,29 +411,64 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
           </div>
         )}
 
-        {/* Stats */}
-        {(message.token_input || message.token_output || message.tempo_risposta_ms) && (
-          <div className="flex flex-wrap gap-2 text-xs">
-            {message.token_input && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Zap className="h-3 w-3" />
-                {message.token_input} token in
-              </Badge>
-            )}
-            {message.token_output && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Zap className="h-3 w-3" />
-                {message.token_output} token out
-              </Badge>
-            )}
-            {message.tempo_risposta_ms && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatTime(message.tempo_risposta_ms)}
-              </Badge>
-            )}
-          </div>
-        )}
+        {/* Stats + Bottoni Richiesta Commento */}
+        <div className="flex items-center justify-between gap-2">
+          {(message.token_input || message.token_output || message.tempo_risposta_ms) && (
+            <div className="flex flex-wrap gap-2 text-xs">
+              {message.token_input && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Zap className="h-3 w-3" />
+                  {message.token_input} token in
+                </Badge>
+              )}
+              {message.token_output && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Zap className="h-3 w-3" />
+                  {message.token_output} token out
+                </Badge>
+              )}
+              {message.tempo_risposta_ms && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {formatTime(message.tempo_risposta_ms)}
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* 🎯 Bottoni Richiesta Commento (solo AI messages) */}
+          {message.sender_type !== 'human' && (
+            <div className="flex items-center gap-1 ml-auto">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleRequestComment('all')}
+                className="h-7 px-2 text-xs hover:bg-primary/10"
+                title="Chiedi commento a tutti gli altri agenti"
+              >
+                <Users className="h-3 w-3 mr-1" />
+                Tutti
+              </Button>
+              {getOtherAgents().map((agentType) => {
+                const agentConfig = SENDER_CONFIG[agentType as keyof typeof SENDER_CONFIG];
+                const AgentIcon = agentConfig?.icon;
+                return (
+                  <Button
+                    key={agentType}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRequestComment(agentType)}
+                    className="h-7 px-2 text-xs hover:bg-primary/10"
+                    title={`Chiedi commento a ${agentType}`}
+                  >
+                    {AgentIcon && <AgentIcon className="h-3 w-3 mr-1" />}
+                    <span className="capitalize">{agentType === 'chatgpt' ? 'GPT' : agentType}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </Card>
   );

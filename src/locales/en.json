@@ -19,6 +19,7 @@
     "adminPrompts": "Admin Prompts",
     "import": "Import",
     "importTemplates": "Files & Templates",
+    "importManagement": "Files",
     "manageImport": "Manage Import",
     "importedRecords": "Imported Records",
     "importErrors": "Import Errors",

@@ -283,6 +283,16 @@ Ogni parola deve essere essenziale e impattante.
           aiResponse = result.content;
           tokenInput = result.tokensIn;
           tokenOutput = result.tokensOut;
+          
+          // 🔥 DEBUG: Verifica content ChatGPT
+          console.log(`🔍 DEBUG ChatGPT: aiResponse = "${aiResponse}"`);
+          console.log(`🔍 DEBUG ChatGPT: aiResponse.length = ${aiResponse?.length || 0}`);
+          
+          // ============ SAFETY: CHECK FOR EMPTY RESPONSE ============
+          if (!aiResponse || aiResponse.trim().length === 0) {
+            console.error(`❌ ChatGPT ha ritornato una risposta VUOTA! Token output: ${tokenOutput}`);
+            aiResponse = `[Errore Tecnico: ChatGPT ha generato ${tokenOutput} token ma il content è vuoto. Probabilmente un problema di parsing della risposta API.]`;
+          }
         }
         else if (currentAgent.type === 'gemini' && LOVABLE_API_KEY) {
           const result = await callGemini({

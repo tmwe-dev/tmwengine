@@ -117,8 +117,20 @@ export async function callChatGPT(
       }
       
       const data = await response.json();
+      
+      // 🔥 DEBUG: Log dettagliato della risposta GPT-5
+      console.log('📦 GPT-5 Response Debug:', {
+        has_choices: !!data.choices,
+        has_message: !!data.choices?.[0]?.message,
+        has_content: !!data.choices?.[0]?.message?.content,
+        content_length: data.choices?.[0]?.message?.content?.length || 0,
+        content_preview: data.choices?.[0]?.message?.content?.substring(0, 100),
+        tokens_in: data.usage?.prompt_tokens,
+        tokens_out: data.usage?.completion_tokens
+      });
+      
       return {
-        content: data.choices[0].message.content,
+        content: data.choices?.[0]?.message?.content || '[ERRORE: GPT-5 ha ritornato content vuoto]',
         tokensIn: data.usage?.prompt_tokens || 0,
         tokensOut: data.usage?.completion_tokens || 0,
         duration: Date.now() - startTime

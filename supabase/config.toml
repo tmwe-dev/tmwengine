@@ -275,3 +275,6 @@ verify_jwt = true
 [functions.code-assistant-tools]
 verify_jwt = true
 
+[functions.index-codebase]
+verify_jwt = true
+

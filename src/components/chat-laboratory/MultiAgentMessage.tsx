@@ -265,7 +265,9 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange }: M
               ⚡ Economy Mode: -{tokenSavings} token
             </Badge>
           )}
-          <p className="whitespace-pre-wrap text-base leading-relaxed">{displayContent}</p>
+          <div className="prose dark:prose-invert max-w-none text-base">
+            <ReactMarkdown>{displayContent}</ReactMarkdown>
+          </div>
         </div>
 
 

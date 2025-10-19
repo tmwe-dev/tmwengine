@@ -91,7 +91,7 @@ export const useTabSwitching = ({
       const currentIndex = messages.findIndex((m) => m.id === activeTab);
       const nextMessage = messages[currentIndex + 1];
 
-      if (nextMessage && !seenMessagesRef.current.has(nextMessage.id)) {
+      if (nextMessage) {
         console.log(`✅ Prossimo messaggio sequenziale: ${nextMessage.sender_name}`);
         setActiveTab(nextMessage.id);
         seenMessagesRef.current.add(nextMessage.id);

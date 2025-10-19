@@ -753,6 +753,17 @@ const ChatLaboratory = () => {
 
       if (insertError) throw insertError;
 
+      // ⚡ FIX #1: OTTIMISTIC UPDATE - Aggiungi immediatamente il messaggio allo state React
+      if (savedUserMessage) {
+        console.log('⚡ [FIX #1] Ottimistic update: aggiungo messaggio HUMAN allo state locale');
+        setMessages(prev => [...prev, {
+          ...savedUserMessage,
+          attachments: uploadedFiles,
+          images: uploadedFiles.filter(f => f.isImage).map(f => f.url),
+          generated_images: generatedImage ? [generatedImage] : []
+        } as Message]);
+      }
+
       // ⚡ NUOVO: Se è placeholder, salva ID per update successivo
       if (isPlaceholder && savedUserMessage) {
         lastPlaceholderMessageIdRef.current = savedUserMessage.id;
@@ -771,8 +782,9 @@ const ChatLaboratory = () => {
           
           // ✅ Forza apertura tab se in modalità tabs
           if (viewMode === 'tabs') {
-            console.log('✅ Attivazione immediata tab dopo invio messaggio user');
+            console.log('✅ Attivazione immediata tab dopo invio messaggio user (FIX #1 applicato)');
             // Il tab verrà attivato automaticamente da MessageTabsView grazie al refresh dei messaggi
+            // E soprattutto grazie all'ottimistic update che ha già incrementato messages.length!
           }
         }
       }

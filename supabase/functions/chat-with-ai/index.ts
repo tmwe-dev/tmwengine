@@ -155,6 +155,30 @@ function isCRMRelatedQuery(prompt: string, systemPrompt?: string): boolean {
   return crmKeywords.some(keyword => lowerPrompt.includes(keyword));
 }
 
+/**
+ * Normalizza i tool calls da qualsiasi provider in formato unificato (OpenAI-like)
+ * @param data - Risposta API del provider
+ * @param provider - Nome del provider (anthropic, openai, google)
+ * @returns Array di tool calls in formato standardizzato
+ */
+function normalizeToolCalls(data: any, provider: string): any[] {
+  if (provider === 'anthropic' || provider === 'claude') {
+    // Anthropic format: array content con oggetti type='tool_use'
+    const toolUses = data.content?.filter((c: any) => c.type === 'tool_use') || [];
+    return toolUses.map((tu: any) => ({
+      id: tu.id,
+      type: 'function',
+      function: {
+        name: tu.name,
+        arguments: JSON.stringify(tu.input)
+      }
+    }));
+  } else {
+    // OpenAI/Gemini format: già nel formato corretto
+    return data.choices?.[0]?.message?.tool_calls || [];
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -601,10 +625,21 @@ ${prompt}`;
     // Handle response based on provider
     let aiResponse: string;
     let choice: any;
+    let normalizedToolCalls: any[] = [];
     
     if (aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude') {
       aiResponse = data.content?.[0]?.text || '';
-      choice = { message: { tool_calls: data.content?.filter((c: any) => c.type === 'tool_use') } };
+      
+      // ✅ Normalizza tool calls Anthropic → formato OpenAI
+      normalizedToolCalls = normalizeToolCalls(data, aiConfig.provider);
+      
+      choice = {
+        message: {
+          tool_calls: normalizedToolCalls.length > 0 ? normalizedToolCalls : undefined,
+          content: aiResponse
+        },
+        content: data.content // Mantieni content originale per follow-up
+      };
     } else {
       choice = data.choices?.[0];
       if (!choice) {
@@ -613,13 +648,12 @@ ${prompt}`;
       }
       
       aiResponse = choice.message?.content || '';
+      
+      // ✅ Normalizza tool calls OpenAI/Gemini (già nel formato corretto ma per uniformità)
+      normalizedToolCalls = normalizeToolCalls(data, aiConfig.provider);
+      
       console.log('[DEBUG] AI Response extracted:', aiResponse);
       console.log('[DEBUG] Finish reason:', choice.finish_reason);
-      
-      // Se la risposta è vuota, logga il motivo
-      if (!aiResponse && choice.finish_reason) {
-        console.log('[WARNING] Empty response, finish_reason:', choice.finish_reason);
-      }
       
       // Gestione refusal per GPT-5 e modelli più recenti
       if (!aiResponse && choice.message?.refusal) {
@@ -628,19 +662,21 @@ ${prompt}`;
       }
     }
     
+    console.log(`[DEBUG] Normalized tool calls: ${normalizedToolCalls.length}`);
+    
     // Validazione finale
     if (!aiResponse || aiResponse.trim() === '') {
       console.error('[ERROR] Empty AI response after extraction');
       aiResponse = 'Mi dispiace, si è verificato un errore nel generare la risposta. Per favore riprova o riformula la domanda.';
     }
     
-    // Handle tool calls
-    if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
+    // Handle tool calls - usa i tool calls già normalizzati
+    if (normalizedToolCalls.length > 0) {
       const toolResults = [];
       
-      for (const toolCall of choice.message.tool_calls) {
+      for (const toolCall of normalizedToolCalls) {
         try {
-          console.log(`Calling tool: ${toolCall.function.name}`);
+          console.log(`[TOOL CALL] Executing: ${toolCall.function.name} with args: ${toolCall.function.arguments}`);
           
           const toolResponse = await fetch(`${supabaseUrl}/functions/v1/crm-tools`, {
             method: 'POST',
@@ -662,7 +698,7 @@ ${prompt}`;
             content: JSON.stringify(toolData.data)
           });
         } catch (error) {
-          console.error(`Tool error ${toolCall.function.name}:`, error);
+          console.error(`[TOOL ERROR] ${toolCall.function.name}:`, error);
           toolResults.push({
             tool_call_id: toolCall.id,
             role: "tool", 
@@ -673,39 +709,73 @@ ${prompt}`;
       }
       
       // Second call with tool results
-      const followUpMessages = [...messages, choice.message, ...toolResults];
-      
-      // Usa gli stessi parametri del primo call per compatibilità
-      const isGPT5OrNewer = aiConfig.modello.includes('gpt-5') || 
-                            aiConfig.modello.includes('o3') || 
-                            aiConfig.modello.includes('o4') ||
-                            aiConfig.modello.includes('gpt-4.1');
-      
-      const followUpResponse = await fetch(apiUrl, {
-        method: 'POST',
-        headers: requestHeaders,
-        body: JSON.stringify({
-          model: aiConfig.modello,
-          messages: followUpMessages,
-          ...(isGPT5OrNewer ? { max_completion_tokens: 2000 } : { max_tokens: 2000 }),
-        }),
-      });
-      
-      if (followUpResponse.ok) {
-        const followUpData = await followUpResponse.json();
-        console.log('[DEBUG] Follow-up response:', JSON.stringify(followUpData, null, 2));
+      let followUpMessages: any[];
+
+      if (aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude') {
+        // ✅ Anthropic richiede formato specifico per tool results
+        const assistantMessage = {
+          role: 'assistant',
+          content: choice.content // Usa content originale (contiene text + tool_use)
+        };
         
-        if (aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude') {
+        // Formatta tool results in formato Anthropic
+        const anthropicToolResults = toolResults.map(tr => ({
+          role: 'user',
+          content: [{
+            type: 'tool_result',
+            tool_use_id: tr.tool_call_id,
+            content: tr.content
+          }]
+        }));
+        
+        followUpMessages = [...messages, assistantMessage, ...anthropicToolResults];
+        
+        const followUpResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: requestHeaders,
+          body: JSON.stringify({
+            model: aiConfig.modello,
+            max_tokens: 2000,
+            messages: followUpMessages.filter(m => m.role !== 'system'),
+            system: systemPrompt || 'Sei un assistente AI utile e amichevole che risponde in italiano.'
+          }),
+        });
+        
+        if (followUpResponse.ok) {
+          const followUpData = await followUpResponse.json();
+          console.log('[DEBUG] Anthropic follow-up response:', JSON.stringify(followUpData, null, 2));
           aiResponse = followUpData.content?.[0]?.text || '';
-        } else {
+        }
+      } else {
+        // OpenAI/Gemini format (già gestito correttamente)
+        followUpMessages = [...messages, choice.message, ...toolResults];
+        
+        const isGPT5OrNewer = aiConfig.modello.includes('gpt-5') || 
+                              aiConfig.modello.includes('o3') || 
+                              aiConfig.modello.includes('o4') ||
+                              aiConfig.modello.includes('gpt-4.1');
+        
+        const followUpResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: requestHeaders,
+          body: JSON.stringify({
+            model: aiConfig.modello,
+            messages: followUpMessages,
+            ...(isGPT5OrNewer ? { max_completion_tokens: 2000 } : { max_tokens: 2000 }),
+          }),
+        });
+        
+        if (followUpResponse.ok) {
+          const followUpData = await followUpResponse.json();
+          console.log('[DEBUG] Follow-up response:', JSON.stringify(followUpData, null, 2));
           aiResponse = followUpData.choices?.[0]?.message?.content || '';
         }
-        
-        // Validazione risposta follow-up
-        if (!aiResponse || aiResponse.trim() === '') {
-          console.error('[ERROR] Empty follow-up response');
-          aiResponse = 'Errore durante l\'elaborazione della risposta con gli strumenti CRM. Riprova.';
-        }
+      }
+      
+      // Validazione risposta follow-up
+      if (!aiResponse || aiResponse.trim() === '') {
+        console.error('[ERROR] Empty follow-up response');
+        aiResponse = 'Errore durante l\'elaborazione della risposta con gli strumenti CRM. Riprova.';
       }
     }
     

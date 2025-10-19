@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { TMWEProfileSync } from '@/components/settings/TMWEProfileSync';
 import { BarChatAgentsSection } from '@/components/settings/BarChatAgentsSection';
 import { AI_PROVIDERS } from '@/lib/ai-models';
+import { VAPID_CONFIG } from '@/config/vapid';
 import { 
   Key, 
   Mail, 
@@ -34,11 +35,24 @@ import {
   Loader2,
   AlertCircle,
   GripVertical,
-  TestTube
+  TestTube,
+  Bell
 } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+
+// Helper per convertire VAPID key
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 const Settings = () => {
   const { toast } = useToast();
@@ -77,8 +91,12 @@ const Settings = () => {
     whatsAppBusiness: false,
     phoneFormat: 'international',
     autoDetectCountry: true,
-    enableChatCallsMessages: false
+    enableChatCallsMessages: false,
+    enablePushNotifications: false
   });
+
+  const [browserSupported, setBrowserSupported] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState('default');
 
   const [voiceAgentConfig, setVoiceAgentConfig] = useState({
     elevenLabsApiKey: '',
@@ -149,6 +167,16 @@ const Settings = () => {
     loadConfigurations();
     loadBarChatAgents();
     loadUsageStats();
+  }, []);
+
+  // Check supporto notifiche push
+  useEffect(() => {
+    const supported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+    setBrowserSupported(supported);
+    
+    if (supported) {
+      setPermissionStatus(Notification.permission);
+    }
   }, []);
 
   const loadConfigurations = async () => {
@@ -868,6 +896,123 @@ const Settings = () => {
     }
   };
 
+  const handleTogglePushNotifications = async (checked) => {
+    if (!checked) {
+      // Disabilita notifiche
+      setPhoneConfig(prev => ({ ...prev, enablePushNotifications: false }));
+      localStorage.setItem('phone_config', JSON.stringify({ ...phoneConfig, enablePushNotifications: false }));
+      
+      // Rimuovi subscription dal DB
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from('user_notification_preferences')
+            .update({ 
+              push_notifications_enabled: false,
+              push_token: null 
+            })
+            .eq('user_id', user.id);
+        }
+      } catch (error) {
+        console.error('Errore rimozione subscription:', error);
+      }
+      
+      toast({
+        title: "Notifiche disabilitate",
+        description: "Non riceverai più notifiche push"
+      });
+      return;
+    }
+    
+    try {
+      // Richiedi permesso
+      const permission = await Notification.requestPermission();
+      setPermissionStatus(permission);
+      
+      if (permission !== 'granted') {
+        toast({
+          title: "Permesso negato",
+          description: "Devi consentire le notifiche dalle impostazioni del browser",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Registra service worker
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+      
+      // Ottieni subscription
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_CONFIG.publicKey)
+      });
+      
+      // Salva nel database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Utente non autenticato');
+      
+      await supabase
+        .from('user_notification_preferences')
+        .upsert({
+          user_id: user.id,
+          push_notifications_enabled: true,
+          push_token: JSON.stringify(subscription)
+        }, {
+          onConflict: 'user_id'
+        });
+      
+      // Aggiorna state
+      const newConfig = { ...phoneConfig, enablePushNotifications: true };
+      setPhoneConfig(newConfig);
+      localStorage.setItem('phone_config', JSON.stringify(newConfig));
+      
+      toast({
+        title: "✅ Notifiche attivate!",
+        description: "Riceverai notifiche anche quando l'app è chiusa"
+      });
+      
+    } catch (error) {
+      console.error('Errore abilitazione push:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile abilitare le notifiche: " + error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleTestNotification = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Utente non autenticato');
+      
+      const { error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userId: user.id,
+          title: '🔔 Test Notifica',
+          body: 'Le notifiche push funzionano correttamente!',
+          url: window.location.origin
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Test inviato!",
+        description: "Controlla le notifiche del sistema"
+      });
+    } catch (error) {
+      console.error('Errore test:', error);
+      toast({
+        title: "Errore test",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   const renderSecretField = (label, value, field, onChange, placeholder) => (
     <div className="space-y-1">
       <Label htmlFor={field} className="text-sm">{label}</Label>
@@ -1326,6 +1471,68 @@ const Settings = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Card Notifiche Push */}
+              <Card className="bg-card-transparent border-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Bell className="h-5 w-5 text-primary" />
+                    🔔 Notifiche Push
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Ricevi notifiche anche quando l'app è chiusa o il telefono è in standby
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Controllo supporto browser */}
+                  {!browserSupported && (
+                    <Alert variant="destructive" className="bg-yellow-500/10 border-yellow-500/20">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-600">
+                        ⚠️ Il tuo browser non supporta le notifiche push
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* Controllo permessi */}
+                  {permissionStatus === 'denied' && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        🚫 Notifiche bloccate. Sblocca dalle impostazioni del browser.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* Toggle principale */}
+                  <div className="space-y-3">
+                    <div className="space-y-0.5">
+                      <Label>Abilita Notifiche Push</Label>
+                      <div className="text-sm text-muted-foreground">
+                        Ricevi notifiche di messaggi e chiamate anche quando l'app è chiusa
+                      </div>
+                    </div>
+                    <Switch
+                      checked={phoneConfig.enablePushNotifications}
+                      onCheckedChange={handleTogglePushNotifications}
+                      disabled={!browserSupported || permissionStatus === 'denied'}
+                    />
+                  </div>
+                  
+                  {/* Test button */}
+                  {phoneConfig.enablePushNotifications && permissionStatus === 'granted' && (
+                    <Button 
+                      onClick={handleTestNotification} 
+                      variant="outline" 
+                      size="sm"
+                      className="w-full sm:w-auto"
+                    >
+                      <TestTube className="h-4 w-4 mr-2" />
+                      Testa Notifica
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
 
               <div className="bg-muted/20 p-4 rounded-lg">
                 <div className="flex items-start gap-3">

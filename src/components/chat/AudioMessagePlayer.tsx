@@ -53,7 +53,6 @@ export const AudioMessagePlayer = ({
     audio.addEventListener('pause', () => {
       setIsPlaying(false);
       onPlayingChange?.(false);
-      onPlayEnd?.();
     });
 
     if (autoPlay) {

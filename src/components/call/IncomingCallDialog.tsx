@@ -1,6 +1,6 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Phone, PhoneOff, User } from 'lucide-react';
+import { Phone, PhoneOff, User, Video } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface IncomingCallDialogProps {
@@ -125,7 +125,11 @@ export const IncomingCallDialog = ({
               onClick={onAccept}
               className="rounded-full w-16 h-16 bg-green-500 hover:bg-green-600"
             >
-              <Phone className="h-6 w-6" />
+              {callType === 'video' ? (
+                <Video className="h-6 w-6" />
+              ) : (
+                <Phone className="h-6 w-6" />
+              )}
             </Button>
           </div>
         </div>

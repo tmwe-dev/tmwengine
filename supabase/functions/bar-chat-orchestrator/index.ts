@@ -262,31 +262,10 @@ serve(async (req) => {
           throw new Error(`No API key available for ${currentAgent.type}`);
         }
 
-        // ============ PARSE APPENDICI E REPORT ============
-        let mainMessage = aiResponse;
-        let appendixContent: string | null = null;
-        let reportContent: string | null = null;
-        
-        // Parse APPENDICE
-        const appendixMatch = aiResponse.match(/\[APPENDICE\](.*?)\[\/APPENDICE\]/s);
-        if (appendixMatch) {
-          appendixContent = appendixMatch[1].trim();
-          mainMessage = aiResponse.replace(/\[APPENDICE\].*?\[\/APPENDICE\]/s, '').trim();
-          console.log(`📎 ${currentAgent.name} ha aggiunto appendice (${appendixContent.length} chars)`);
-        }
-        
-        // Parse REPORT
-        const reportMatch = aiResponse.match(/\[REPORT\](.*?)\[\/REPORT\]/s);
-        if (reportMatch) {
-          reportContent = reportMatch[1].trim();
-          mainMessage = aiResponse.replace(/\[REPORT\].*?\[\/REPORT\]/s, '').trim();
-          console.log(`📊 ${currentAgent.name} ha aggiunto report (${reportContent.length} chars)`);
-        }
-        
         // ============ SAFETY: TRUNCATE LONG RESPONSES ============
-        if (mainMessage && mainMessage.length > 15000) {
-          console.warn(`⚠️ Risposta troppo lunga (${mainMessage.length} chars), troncamento a 15k...`);
-          mainMessage = mainMessage.substring(0, 15000) + '\n\n[... risposta troncata per lunghezza]';
+        if (aiResponse && aiResponse.length > 15000) {
+          console.warn(`⚠️ Risposta troppo lunga (${aiResponse.length} chars), troncamento a 15k...`);
+          aiResponse = aiResponse.substring(0, 15000) + '\n\n[... risposta troncata per lunghezza]';
         }
         
         const responseTime = Date.now() - startTime;
@@ -304,10 +283,6 @@ serve(async (req) => {
           total_agents_in_turn: activeParticipants.length,
           turn_context_messages: turnContext.length
         };
-        
-        // ✅ Incrementa contatore turni AI
-        aiTurnsCount++;
-        console.log(`📊 Turni AI completati: ${aiTurnsCount}/${MAX_AI_TURNS_BEFORE_USER}`);
         
         const telemetry = {
           conversation_id: conversationId,
@@ -332,46 +307,6 @@ serve(async (req) => {
         
         const nextSequence = (maxSeq?.message_sequence || 0) + 1;
 
-        // ✅ Prepara attachments con appendice/report
-        const messageAttachments: any = {
-          structured_prompt: {
-            message_id: null,
-            timestamp: new Date().toISOString(),
-            global_system_prompt: globalSystemPrompt,
-            base_sections: baseContent ? [{ type: 'BASE', content: baseContent }] : [],
-            agent_personality: agentPersonality ? [{ agent_name: currentAgent.name, content: agentPersonality }] : [],
-            topic_sections: [],
-            kb_context_sections: [],
-            kb_documents: [],
-            cumulative_summary: cumulativeSummary || null,
-            message_history: historyMessages.map(msg => ({
-              role: msg.role,
-              content: msg.content
-            })),
-            turn_context: turnContext.map(msg => ({
-              role: msg.role,
-              content: msg.content
-            })),
-            current_user_message: userMessage,
-            metadata: {
-              agent_index: i + 1,
-              total_agents: activeParticipants.length,
-              history_count: historyMessages.length,
-              turn_context_count: turnContext.length,
-              economy_mode: false
-            }
-          },
-          debug_info: debugInfo
-        };
-        
-        // ✅ Aggiungi appendice/report agli attachments
-        if (appendixContent) {
-          messageAttachments.appendix = appendixContent;
-        }
-        if (reportContent) {
-          messageAttachments.report = reportContent;
-        }
-
         const { data: savedMessage, error: saveError } = await supabaseClient
           .from('chat_laboratory_messages')
           .insert({
@@ -379,11 +314,40 @@ serve(async (req) => {
             message_sequence: nextSequence,
             sender_type: currentAgent.type,
             sender_name: currentAgent.name,
-            content: mainMessage, // ✅ Solo messaggio principale senza tag
+            content: aiResponse,
             token_input: tokenInput,
             token_output: tokenOutput,
             tempo_risposta_ms: responseTime,
-            attachments: messageAttachments
+            attachments: {
+              structured_prompt: {
+                message_id: null,
+                timestamp: new Date().toISOString(),
+                global_system_prompt: globalSystemPrompt,
+                base_sections: baseContent ? [{ type: 'BASE', content: baseContent }] : [],
+                agent_personality: agentPersonality ? [{ agent_name: currentAgent.name, content: agentPersonality }] : [],
+                topic_sections: [],
+                kb_context_sections: [],
+                kb_documents: [],
+                cumulative_summary: cumulativeSummary || null,
+                message_history: historyMessages.map(msg => ({
+                  role: msg.role,
+                  content: msg.content
+                })),
+                turn_context: turnContext.map(msg => ({
+                  role: msg.role,
+                  content: msg.content
+                })),
+                current_user_message: userMessage,
+                metadata: {
+                  agent_index: i + 1,
+                  total_agents: activeParticipants.length,
+                  history_count: historyMessages.length,
+                  turn_context_count: turnContext.length,
+                  economy_mode: false
+                }
+              },
+              debug_info: debugInfo
+            }
           })
           .select()
           .single();

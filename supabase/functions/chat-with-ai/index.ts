@@ -59,73 +59,92 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Helper: Raccoglie snapshot completo del sistema
+// Helper: Raccoglie snapshot completo del sistema (SAFE VERSION)
 async function collectSystemSnapshot(supabaseClient: any) {
   const snapshot: any = {
     timestamp: new Date().toISOString(),
     version: '1.0'
   };
   
+  // ✅ Try-catch per OGNI query - non crasha se una fallisce
+  
+  // 1. Database Tables + Row Counts
   try {
-    // 1. Database Tables + Row Counts
-    const { data: tables } = await supabaseClient.rpc('get_tables_with_counts');
-    snapshot.database = {
-      total_tables: tables?.length || 0,
-      tables: tables || []
-    };
-    
-    // 2. RLS Policies (simulato - in produzione query pg_policies)
-    snapshot.rls_policies = {
-      note: "RLS policies would be queried from pg_policies here",
-      total_policies: 0
-    };
-    
-    // 3. Edge Functions
-    const { data: edgeFunctions } = await supabaseClient
+    const { data: tables, error } = await supabaseClient.rpc('get_tables_with_counts');
+    if (!error && tables) {
+      snapshot.database = {
+        total_tables: tables.length,
+        tables: tables.map((t: any) => ({ name: t.table_name, rows: t.row_count }))
+      };
+    }
+  } catch (e) {
+    console.error('[SNAPSHOT] Failed to load tables:', e);
+    snapshot.database = { error: 'Failed to load tables' };
+  }
+  
+  // 2. Edge Functions (✅ ora la tabella esiste)
+  try {
+    const { data: edgeFunctions, error } = await supabaseClient
       .from('edge_function_versions')
-      .select('function_name, is_active, version_number, created_at')
+      .select('function_name, is_active, version_number, description')
       .eq('is_active', true);
-    snapshot.edge_functions = {
-      total_functions: edgeFunctions?.length || 0,
-      functions: edgeFunctions || []
-    };
-    
-    // 4. AI Configurations
-    const { data: aiConfigs } = await supabaseClient
+    if (!error && edgeFunctions) {
+      snapshot.edge_functions = {
+        total_functions: edgeFunctions.length,
+        functions: edgeFunctions
+      };
+    }
+  } catch (e) {
+    console.error('[SNAPSHOT] Failed to load edge functions:', e);
+    snapshot.edge_functions = { error: 'Failed to load edge functions' };
+  }
+  
+  // 3. AI Configurations (✅ NO api_key!)
+  try {
+    const { data: aiConfigs, error } = await supabaseClient
       .from('config_ai')
-      .select('id, provider, modello, attivo')
+      .select('provider, modello, attivo')
       .eq('attivo', true);
-    snapshot.ai_configurations = {
-      total_configs: aiConfigs?.length || 0,
-      configs: aiConfigs?.map(c => ({
-        provider: c.provider,
-        model: c.modello
-      })) || []
-    };
-    
-    // 5. System Prompts
-    const { data: prompts } = await supabaseClient
+    if (!error && aiConfigs) {
+      snapshot.ai_configurations = {
+        total_configs: aiConfigs.length,
+        configs: aiConfigs
+      };
+    }
+  } catch (e) {
+    console.error('[SNAPSHOT] Failed to load AI configs:', e);
+    snapshot.ai_configurations = { error: 'Failed to load AI configs' };
+  }
+  
+  // 4. System Prompts
+  try {
+    const { data: prompts, error } = await supabaseClient
       .from('page_system_prompts')
       .select('page_route, page_name, attivo');
-    snapshot.system_prompts = {
-      total_prompts: prompts?.length || 0,
-      prompts: prompts || []
-    };
-    
-    // 6. Recent Errors (simulato)
-    snapshot.recent_errors = {
-      note: "PostgreSQL logs would be analyzed here",
-      placeholder: "No critical errors in last 7 days"
-    };
-    
-    return snapshot;
-  } catch (error) {
-    console.error('[SYSTEM SNAPSHOT ERROR]:', error);
-    return {
-      error: 'Failed to collect system snapshot',
-      partial_data: snapshot
-    };
+    if (!error && prompts) {
+      snapshot.system_prompts = {
+        total_prompts: prompts.length,
+        prompts: prompts
+      };
+    }
+  } catch (e) {
+    console.error('[SNAPSHOT] Failed to load system prompts:', e);
+    snapshot.system_prompts = { error: 'Failed to load prompts' };
   }
+  
+  // 5. RLS Policies (placeholder - richiede pg_policies access)
+  snapshot.rls_policies = {
+    note: "RLS policies would require pg_policies query",
+    total_policies: 0
+  };
+  
+  // 6. Recent Errors (placeholder)
+  snapshot.recent_errors = {
+    note: "PostgreSQL logs would be analyzed here",
+    placeholder: "No critical errors in last 7 days"
+  };
+  
+  return snapshot;
 }
 
 // Helper to check if query is CRM-related
@@ -149,15 +168,20 @@ serve(async (req) => {
       throw new Error('Prompt o immagini richiesti');
     }
 
-    // Rileva se siamo in modalità System Analyst
+    // ✅ Rileva se siamo in modalità System Analyst
     const isSystemAnalyst = systemPrompt?.includes('CLAUDE - SYSTEM ANALYST');
     let systemSnapshot = null;
 
-    // Se è System Analyst, raccogli snapshot sistema (solo primo messaggio)
+    // ✅ Se System Analyst, raccogli snapshot (solo primo messaggio + try-catch)
     if (isSystemAnalyst && !conversationId) {
-      console.log('[SYSTEM ANALYST] Collecting system snapshot...');
-      systemSnapshot = await collectSystemSnapshot(supabase);
-      console.log('[SYSTEM ANALYST] Snapshot collected:', Object.keys(systemSnapshot));
+      try {
+        console.log('[SYSTEM ANALYST] Collecting system snapshot...');
+        systemSnapshot = await collectSystemSnapshot(supabase);
+        console.log('[SYSTEM ANALYST] Snapshot collected successfully');
+      } catch (error) {
+        console.error('[SYSTEM ANALYST] Failed to collect snapshot:', error);
+        // ✅ Continua anche se snapshot fallisce
+      }
     }
 
     // Get AI configuration - either specific config or active one
@@ -294,10 +318,11 @@ LIMITE RISPOSTA: La tua risposta non deve superare i ${config.max_token_conversa
         }))
       ];
     } else {
-      // Se System Analyst + snapshot disponibile, prepend al prompt
-      if (systemSnapshot) {
+      // ✅ Se System Analyst + snapshot disponibile, prepend al prompt (safe)
+      if (systemSnapshot && Object.keys(systemSnapshot).length > 0) {
+        const snapshotText = JSON.stringify(systemSnapshot, null, 2);
         userMessage.content = `[SYSTEM CONTEXT SNAPSHOT]
-${JSON.stringify(systemSnapshot, null, 2)}
+${snapshotText}
 
 ---
 

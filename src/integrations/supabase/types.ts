@@ -1256,7 +1256,7 @@ export type Database = {
       }
       edge_function_versions: {
         Row: {
-          content: string
+          content: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
@@ -1266,7 +1266,7 @@ export type Database = {
           version_number: number
         }
         Insert: {
-          content: string
+          content?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -1276,7 +1276,7 @@ export type Database = {
           version_number: number
         }
         Update: {
-          content?: string
+          content?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null

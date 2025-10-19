@@ -427,6 +427,8 @@ export const MessageInputWithAttachments = ({
             onVoiceChange={onVoiceChange}
             elevenLabsVoices={elevenLabsVoices}
             isLoadingVoices={isLoadingVoices}
+            roomId={roomId}
+            roomName={roomName}
           />
         </div>
       </div>

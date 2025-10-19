@@ -179,6 +179,104 @@ function normalizeToolCalls(data: any, provider: string): any[] {
   }
 }
 
+// Helper: Messaggi user-friendly per i tool
+const toolMessages: Record<string, { icon: string; start: string; complete: (result: any) => string }> = {
+  get_statistics: {
+    icon: '📊',
+    start: 'Raccolta statistiche generali sistema...',
+    complete: (r) => `✅ Statistiche raccolte: ${r.contacts || 0} contatti, ${r.campaigns || 0} campagne, ${r.activities || 0} attività`
+  },
+  count_records: {
+    icon: '🔢',
+    start: 'Conteggio record in corso...',
+    complete: (r) => `✅ Trovati ${r.count || 0} record nella tabella ${r.table || 'specificata'}`
+  },
+  get_table_data: {
+    icon: '📋',
+    start: 'Lettura dati da tabella...',
+    complete: (r) => `✅ Recuperati ${Array.isArray(r.data) ? r.data.length : 0} record`
+  },
+  search_contacts: {
+    icon: '🔍',
+    start: 'Ricerca contatti in corso...',
+    complete: (r) => `✅ Trovati ${Array.isArray(r.results) ? r.results.length : 0} contatti`
+  },
+  get_campaign_status: {
+    icon: '📧',
+    start: 'Analisi campagne in corso...',
+    complete: (r) => `✅ Analisi completata per ${Array.isArray(r.campaigns) ? r.campaigns.length : 0} campagne`
+  },
+  get_activities: {
+    icon: '✅',
+    start: 'Recupero attività in corso...',
+    complete: (r) => `✅ Trovate ${Array.isArray(r.activities) ? r.activities.length : 0} attività`
+  },
+  insert_contact: {
+    icon: '➕',
+    start: 'Creazione nuovo contatto...',
+    complete: (r) => `✅ Contatto creato con successo: ${r.nome || 'N/A'}`
+  },
+  insert_activity: {
+    icon: '➕',
+    start: 'Creazione nuova attività...',
+    complete: (r) => `✅ Attività creata: ${r.titolo || 'N/A'}`
+  },
+  update_record: {
+    icon: '✏️',
+    start: 'Aggiornamento record in corso...',
+    complete: (r) => `✅ Record aggiornato con successo`
+  },
+  list_project_files: {
+    icon: '📂',
+    start: 'Scansione file del progetto...',
+    complete: (r) => `✅ Trovati ${r.files?.length || 0} file`
+  },
+  read_source_code: {
+    icon: '📄',
+    start: 'Lettura codice sorgente...',
+    complete: (r) => `✅ Letto file: ${r.file_path || 'N/A'} (${r.content?.length || 0} caratteri)`
+  },
+  analyze_component: {
+    icon: '🔬',
+    start: 'Analisi componente in corso...',
+    complete: (r) => `✅ Analizzato: ${r.imports?.length || 0} import, ${r.exports?.length || 0} export, ${r.hooks?.length || 0} hook`
+  },
+  search_code: {
+    icon: '🔎',
+    start: 'Ricerca nel codice...',
+    complete: (r) => `✅ Trovate ${r.results?.length || 0} occorrenze`
+  },
+  get_dependencies: {
+    icon: '🔗',
+    start: 'Analisi dipendenze...',
+    complete: (r) => `✅ Trovate ${r.dependencies?.length || 0} dipendenze`
+  },
+  propose_code_change: {
+    icon: '💡',
+    start: 'Proposta modifica codice...',
+    complete: (r) => `✅ Proposta creata: ${r.description || 'N/A'}`
+  }
+};
+
+// Helper: Crea stream SSE
+function createSSEStream() {
+  const encoder = new TextEncoder();
+  let controller: ReadableStreamDefaultController;
+
+  const stream = new ReadableStream({
+    start(c) {
+      controller = c;
+    }
+  });
+
+  const sendUpdate = (type: string, data: any) => {
+    const message = `data: ${JSON.stringify({ type, ...data })}\n\n`;
+    controller.enqueue(encoder.encode(message));
+  };
+
+  return { stream, sendUpdate, controller };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -187,6 +285,12 @@ serve(async (req) => {
   try {
     const { prompt, systemPrompt, conversationId, images, configId } = await req.json();
     const startTime = Date.now();
+    
+    // Check if client wants SSE streaming
+    const acceptsSSE = req.headers.get('Accept')?.includes('text/event-stream');
+    
+    // Initialize SSE stream if requested
+    const sse = acceptsSSE ? createSSEStream() : null;
 
     if (!prompt && (!images || images.length === 0)) {
       throw new Error('Prompt o immagini richiesti');
@@ -938,16 +1042,32 @@ ${prompt}`;
     // Handle tool calls - usa i tool calls già normalizzati
     if (normalizedToolCalls.length > 0) {
       const toolResults = [];
+      let toolIndex = 0;
       
       for (const toolCall of normalizedToolCalls) {
+        toolIndex++;
+        const toolName = toolCall.function.name;
+        const toolInfo = toolMessages[toolName] || { icon: '🔧', start: `Esecuzione ${toolName}...`, complete: () => '✅ Completato' };
+        
         try {
-          console.log(`[TOOL CALL] Executing: ${toolCall.function.name} with args: ${toolCall.function.arguments}`);
+          // Send SSE update: tool started
+          if (sse) {
+            sse.sendUpdate('tool_start', {
+              index: toolIndex,
+              total: normalizedToolCalls.length,
+              name: toolName,
+              icon: toolInfo.icon,
+              message: `${toolInfo.icon} ${toolInfo.start}`
+            });
+          }
+          
+          console.log(`[TOOL CALL ${toolIndex}/${normalizedToolCalls.length}] Executing: ${toolName}`);
           
           // Code Assistant tools
           const codeAssistantTools = ['list_project_files', 'read_source_code', 'analyze_component', 'search_code', 'get_dependencies', 'propose_code_change'];
           
           let toolResponse;
-          if (codeAssistantTools.includes(toolCall.function.name)) {
+          if (codeAssistantTools.includes(toolName)) {
             toolResponse = await fetch(`${supabaseUrl}/functions/v1/code-assistant-tools`, {
               method: 'POST',
               headers: {
@@ -955,7 +1075,7 @@ ${prompt}`;
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                tool_name: toolCall.function.name,
+                tool_name: toolName,
                 parameters: JSON.parse(toolCall.function.arguments)
               })
             });
@@ -967,26 +1087,54 @@ ${prompt}`;
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                tool_name: toolCall.function.name,
+                tool_name: toolName,
                 parameters: JSON.parse(toolCall.function.arguments)
               })
             });
           }
           
           const toolData = await toolResponse.json();
+          
+          // Send SSE update: tool completed
+          if (sse) {
+            sse.sendUpdate('tool_complete', {
+              index: toolIndex,
+              total: normalizedToolCalls.length,
+              name: toolName,
+              icon: toolInfo.icon,
+              message: toolInfo.complete(toolData.data || {}),
+              success: true
+            });
+          }
+          
           toolResults.push({
             tool_call_id: toolCall.id,
             role: "tool",
-            name: toolCall.function.name,
+            name: toolName,
             content: JSON.stringify(toolData.data)
           });
         } catch (error) {
-          console.error(`[TOOL ERROR] ${toolCall.function.name}:`, error);
+          console.error(`[TOOL ERROR] ${toolName}:`, error);
+          
+          // Send SSE update: tool error (but continue with other tools)
+          if (sse) {
+            sse.sendUpdate('tool_error', {
+              index: toolIndex,
+              total: normalizedToolCalls.length,
+              name: toolName,
+              icon: '❌',
+              message: `❌ Errore durante ${toolName}: ${error.message}`,
+              error: error.message,
+              success: false
+            });
+          }
+          
+          // Continue execution - add error result for AI context
           toolResults.push({
             tool_call_id: toolCall.id,
             role: "tool", 
-            name: toolCall.function.name,
-            content: JSON.stringify({ error: "Errore esecuzione strumento" })
+            name: toolName,
+            content: JSON.stringify({ error: `Errore esecuzione strumento: ${error.message}` })
           });
         }
       }
@@ -1066,6 +1214,13 @@ ${prompt}`;
     const tokensInput = data.usage?.prompt_tokens || 0;
     const tokensOutput = data.usage?.completion_tokens || 0;
     const responseTime = Date.now() - startTime;
+
+    // Send SSE update: AI response generation started
+    if (sse) {
+      sse.sendUpdate('ai_response_start', {
+        message: '🤖 Generazione risposta AI...'
+      });
+    }
 
     // Generate summaries for AI response
     console.log('Generating message summaries...');
@@ -1149,8 +1304,10 @@ ${prompt}`;
       console.error('Error saving usage stats:', error);
     }
 
-    return new Response(
-      JSON.stringify({
+    // Return response based on client capabilities
+    if (sse) {
+      // Send final complete event with full response
+      sse.sendUpdate('complete', {
         response: aiResponse,
         usage: {
           total_tokens: tokensUsed,
@@ -1158,11 +1315,36 @@ ${prompt}`;
           completion_tokens: tokensOutput
         },
         responseTime
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
-    );
+      });
+      
+      // Close the stream
+      sse.controller.close();
+      
+      return new Response(sse.stream, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        }
+      });
+    } else {
+      // Fallback: standard JSON response
+      return new Response(
+        JSON.stringify({
+          response: aiResponse,
+          usage: {
+            total_tokens: tokensUsed,
+            prompt_tokens: tokensInput,
+            completion_tokens: tokensOutput
+          },
+          responseTime
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
   } catch (error) {
     console.error('Error in chat-with-ai function:', error);
     return new Response(

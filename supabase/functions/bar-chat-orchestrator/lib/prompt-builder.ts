@@ -31,7 +31,15 @@ export function buildSystemPrompt(params: PromptParams): string {
     styleSections
   } = params;
 
-  let composedPrompt = globalPrompt + '\n\n';
+  // 🎯 VINCOLO CRITICO DI BREVITÀ ALL'INIZIO
+  let composedPrompt = `🚨 VINCOLO ASSOLUTO DI BREVITÀ 🚨
+MASSIMO 60-70 PAROLE (450-500 caratteri).
+Se superi questo limite, la tua risposta sarà TRONCATA e considerata NON VALIDA.
+Scrivi risposte brevi, dirette e impattanti. Ogni parola deve contare.
+
+`;
+  
+  composedPrompt += globalPrompt + '\n\n';
   
   // Add BASE sections
   composedPrompt += '=== CONTESTO BASE ===\n';
@@ -66,11 +74,12 @@ export function buildSystemPrompt(params: PromptParams): string {
     } else if (conversationStyle === 'colleagues') {
       styleInstructions = `
 🤝 STILE: Colleghi (Professionale ma Amichevole)
-- MAX 60-70 parole (~5 frasi)
-- Bilanciato tra tecnico e accessibile
-- Coinvolgi gli altri: "Come vedi tu [nome], sarebbe fattibile con i nostri constraint?"
-- Puoi usare metafore o esempi pratici
-- Tono collaborativo ma non eccessivamente formale
+- LIMITE RIGIDO: 60-70 parole MAX (~5 frasi brevi)
+- Usa frasi dirette e concrete
+- Coinvolgi gli altri: "Come vedi tu [nome], è fattibile?"
+- NO introduzioni lunghe, NO ripetizioni, NO conclusioni prolisse
+- Tono collaborativo ma estremamente conciso
+- Se non riesci a dire qualcosa in 60-70 parole, scrivi [SKIP]
 `;
     } else if (conversationStyle === 'bar_chat') {
       styleInstructions = `

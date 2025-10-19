@@ -48,7 +48,7 @@ export async function callClaude(
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 2500,
+        max_tokens: 200,  // 🎯 ~60-70 parole (100-150 tokens)
         temperature: 0.7,
         messages: userMessages,
         system: fullSystemPrompt
@@ -101,7 +101,7 @@ export async function callChatGPT(
         },
         body: JSON.stringify({
           model: 'openai/gpt-5-mini',
-          max_completion_tokens: 2500,
+          max_completion_tokens: 200,  // 🎯 ~60-70 parole
           messages: conversationHistory
         })
       }, 60000);
@@ -162,9 +162,9 @@ export async function callChatGPT(
       };
       
       if (isNewerModel) {
-        body.max_completion_tokens = 2500;
+        body.max_completion_tokens = 200;  // 🎯 ~60-70 parole
       } else {
-        body.max_tokens = 2500;
+        body.max_tokens = 200;  // 🎯 ~60-70 parole
         body.temperature = 0.7;
       }
       
@@ -221,7 +221,7 @@ export async function callGemini(
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        max_tokens: 2500,
+        max_tokens: 200,  // 🎯 ~60-70 parole
         temperature: 0.7,
         messages: conversationHistory
       })

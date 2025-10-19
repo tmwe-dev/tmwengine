@@ -48,7 +48,7 @@ export async function callClaude(
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 200,  // 🎯 ~60-70 parole (100-150 tokens)
+        max_tokens: 400,  // ✅ STEP 2: Aumentato da 200 a 400 per risposte complete
         temperature: 0.7,
         messages: userMessages,
         system: fullSystemPrompt
@@ -94,7 +94,7 @@ export async function callChatGPT(
     
     const requestPayload = {
       model: 'openai/gpt-5-mini',
-      max_completion_tokens: 200,
+      max_completion_tokens: 400,  // ✅ STEP 2: Aumentato da 200 a 400 per reasoning tokens
       messages: conversationHistory
     };
 
@@ -127,6 +127,23 @@ export async function callChatGPT(
       }
       
       const data = await response.json();
+      
+      // ✅ STEP 2: Check reasoning tokens (GPT-5)
+      if (data.usage?.completion_tokens_details?.reasoning_tokens > 0) {
+        console.log(`🧠 GPT-5 ha usato ${data.usage.completion_tokens_details.reasoning_tokens} reasoning tokens`);
+        
+        const rawContent = data.choices?.[0]?.message?.content || '';
+        if (!rawContent || rawContent.trim().length === 0) {
+          console.error('❌ GPT-5 ha usato solo reasoning tokens senza emettere content finale!');
+          console.error('❌ Usage info:', data.usage);
+          return {
+            content: '[ERRORE: GPT-5 ha esaurito i token durante il ragionamento. Riprova o aumenta max_completion_tokens.]',
+            tokensIn: data.usage?.prompt_tokens || 0,
+            tokensOut: data.usage?.completion_tokens || 0,
+            duration: Date.now() - startTime
+          };
+        }
+      }
       
       // 🔥 Deep logging della risposta raw completa
       console.log('🔥 RAW GPT-5 Response:', JSON.stringify(data, null, 2));
@@ -289,7 +306,7 @@ export async function callGemini(
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        max_tokens: 200,  // 🎯 ~60-70 parole
+        max_tokens: 400,  // ✅ STEP 2: Aumentato da 200 a 400 per risposte complete
         temperature: 0.7,
         messages: conversationHistory
       })

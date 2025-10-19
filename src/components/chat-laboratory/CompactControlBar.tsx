@@ -90,13 +90,38 @@ export const CompactControlBar = ({
   const loadDynamicTurnSettings = async () => {
     if (!conversationId) return;
     try {
+      // ✅ STEP 3: Usa .maybeSingle() invece di .single() per evitare crash
       const { data, error } = await supabase
         .from('chat_laboratory_bar_mode')
         .select('turn_strategy, pause_between_turns_ms, enable_direct_call_detection')
         .eq('conversation_id', conversationId)
-        .single();
+        .maybeSingle();
+      
       if (error) throw error;
-      if (data) {
+      
+      // ✅ Se non esiste, crea record di default
+      if (!data) {
+        const { data: user } = await supabase.auth.getUser();
+        if (user?.user?.id) {
+          await supabase
+            .from('chat_laboratory_bar_mode')
+            .insert({
+              conversation_id: conversationId,
+              user_id: user.user.id,
+              mode: 'laboratory',
+              voice_enabled: false,
+              audio_mode: 'stable',
+              turn_strategy: 'RANDOM_30',
+              pause_between_turns_ms: 50,
+              enable_direct_call_detection: true
+            });
+          console.log('✅ Created default bar_mode record');
+        }
+        // Usa valori di default
+        setTurnStrategy('RANDOM_30');
+        setPauseBetweenTurns(50);
+        setEnableDirectCall(true);
+      } else {
         setTurnStrategy(data.turn_strategy || 'RANDOM_30');
         setPauseBetweenTurns(data.pause_between_turns_ms || 50);
         setEnableDirectCall(data.enable_direct_call_detection ?? true);

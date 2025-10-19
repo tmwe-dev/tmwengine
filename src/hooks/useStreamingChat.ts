@@ -109,6 +109,12 @@ export const useStreamingChat = (): UseStreamingChatReturn => {
 
             switch (event.type) {
               case 'tool_start':
+                // Safety check: ensure event.data exists and has required properties
+                if (!event.data || typeof event.data.total !== 'number' || typeof event.data.index !== 'number') {
+                  console.warn('Invalid tool_start event data:', event);
+                  break;
+                }
+                
                 setToolProgress(prev => {
                   const newProgress = [...prev];
                   const existingIndex = newProgress.findIndex(t => t.index === event.data.index);
@@ -116,9 +122,9 @@ export const useStreamingChat = (): UseStreamingChatReturn => {
                   if (existingIndex >= 0) {
                     newProgress[existingIndex] = {
                       ...newProgress[existingIndex],
-                      total: event.data.total, // Ensure total is always set
+                      total: event.data.total,
                       status: 'running',
-                      startMessage: event.data.message
+                      startMessage: event.data.message || ''
                     };
                   } else {
                     // Create all pending tools if not exists
@@ -136,10 +142,10 @@ export const useStreamingChat = (): UseStreamingChatReturn => {
                     newProgress[event.data.index] = {
                       index: event.data.index,
                       total: event.data.total,
-                      name: event.data.name,
-                      icon: event.data.icon,
+                      name: event.data.name || '',
+                      icon: event.data.icon || '⏺️',
                       status: 'running',
-                      startMessage: event.data.message
+                      startMessage: event.data.message || ''
                     };
                   }
                   

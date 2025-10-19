@@ -168,21 +168,21 @@ serve(async (req) => {
       throw new Error('Prompt o immagini richiesti');
     }
 
-    // ❌ STEP 1: System Analyst DISABILITATO - contamina il prompt con keywords CRM
-    // const isSystemAnalyst = systemPrompt?.includes('CLAUDE - SYSTEM ANALYST');
-    // let systemSnapshot = null;
+    // ✅ FIX #1: System Analyst RIABILITATO
+    const isSystemAnalyst = systemPrompt?.includes('CLAUDE - SYSTEM ANALYST');
+    let systemSnapshot = null;
 
-    // ❌ Se System Analyst, raccogli snapshot (solo primo messaggio + try-catch)
-    // if (isSystemAnalyst && !conversationId) {
-    //   try {
-    //     console.log('[SYSTEM ANALYST] Collecting system snapshot...');
-    //     systemSnapshot = await collectSystemSnapshot(supabase);
-    //     console.log('[SYSTEM ANALYST] Snapshot collected successfully');
-    //   } catch (error) {
-    //     console.error('[SYSTEM ANALYST] Failed to collect snapshot:', error);
-    //     // ✅ Continua anche se snapshot fallisce
-    //   }
-    // }
+    // ✅ Se System Analyst, raccogli snapshot (solo primo messaggio + try-catch)
+    if (isSystemAnalyst && !conversationId) {
+      try {
+        console.log('[SYSTEM ANALYST] Collecting system snapshot...');
+        systemSnapshot = await collectSystemSnapshot(supabase);
+        console.log('[SYSTEM ANALYST] Snapshot collected successfully');
+      } catch (error) {
+        console.error('[SYSTEM ANALYST] Failed to collect snapshot:', error);
+        // ✅ Continua anche se snapshot fallisce
+      }
+    }
 
     // Get AI configuration - either specific config or active one
     let aiConfig;
@@ -318,27 +318,30 @@ LIMITE RISPOSTA: La tua risposta non deve superare i ${config.max_token_conversa
         }))
       ];
     } else {
-      // ❌ STEP 1: System Analyst snapshot DISABILITATO - contamina il prompt
-      // if (systemSnapshot && Object.keys(systemSnapshot).length > 0) {
-      //   const snapshotText = JSON.stringify(systemSnapshot, null, 2);
-      //   userMessage.content = `[SYSTEM CONTEXT SNAPSHOT]
-      // ${snapshotText}
-      // 
-      // ---
-      // 
-      // [USER REQUEST]
-      // ${prompt}`;
-      // } else {
+      // ✅ FIX #2: System Analyst snapshot RIABILITATO - inietta snapshot nel prompt
+      if (systemSnapshot && Object.keys(systemSnapshot).length > 0) {
+        const snapshotText = JSON.stringify(systemSnapshot, null, 2);
+        userMessage.content = `[SYSTEM CONTEXT SNAPSHOT]
+${snapshotText}
+
+---
+
+[USER REQUEST]
+${prompt}`;
+      } else {
         userMessage.content = prompt;
-      // }
+      }
     }
 
     messages.push(userMessage);
 
     console.log(`[MEMORY] Using ${useFullMemory ? 'FULL' : 'LIMITED'} memory. Total messages: ${messages.length}`);
 
-    // CRM Tools definition
-    const requiresCRMTools = isCRMRelatedQuery(prompt, systemPrompt);
+    // ✅ FIX #3: Forza tool availability per System Analyst
+    const requiresCRMTools = isSystemAnalyst || isCRMRelatedQuery(prompt, systemPrompt);
+    
+    // ✅ FIX #4: Debug logging
+    console.log(`[TOOLS] isSystemAnalyst: ${isSystemAnalyst}, requiresCRMTools: ${requiresCRMTools}`);
     const tools = [
       {
         type: "function",

@@ -91,7 +91,6 @@ const Settings = () => {
     whatsAppBusiness: false,
     phoneFormat: 'international',
     autoDetectCountry: true,
-    enableChatCallsMessages: false,
     enablePushNotifications: false,
     useNativeWebRTC: false
   });
@@ -1458,18 +1457,6 @@ const Settings = () => {
                     />
                   </div>
 
-                  <div className="space-y-3 pt-2">
-                    <div className="space-y-0.5">
-                      <Label>Ricezione Chiamate e Messaggi dalla Chat</Label>
-                      <div className="text-sm text-muted-foreground">
-                        Abilita la ricezione di chiamate e messaggi diretti dalla chat
-                      </div>
-                    </div>
-                    <Switch
-                      checked={phoneConfig.enableChatCallsMessages}
-                      onCheckedChange={(checked) => setPhoneConfig(prev => ({ ...prev, enableChatCallsMessages: checked }))}
-                    />
-                  </div>
                 </div>
               </div>
 

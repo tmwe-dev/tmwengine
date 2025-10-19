@@ -18,6 +18,7 @@ import { VideoCallButton } from '@/components/intranet/VideoCallButton';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useGlobalIntranetPresence } from '@/hooks/useGlobalIntranetPresence';
 import { useIntranetNotifications } from '@/hooks/useIntranetNotifications';
+import { useVideoCallNotifications } from '@/hooks/useVideoCallNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
@@ -53,6 +54,9 @@ const Intranet = () => {
       soundVolume: 0.5
     }
   );
+
+  // Hook per notifiche video call
+  useVideoCallNotifications(selectedRoomId, currentUserId);
 
   useEffect(() => {
     loadCurrentUser();

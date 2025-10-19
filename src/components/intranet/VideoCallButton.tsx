@@ -33,12 +33,33 @@ export const VideoCallButton = ({ roomId, roomName, disabled }: VideoCallButtonP
     loadUserProfile();
   }, []);
 
+  const handleStartCall = async () => {
+    setVideoCallOpen(true);
+    
+    // Broadcast notifica agli altri utenti della stanza
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const channel = supabase.channel(`room-${roomId}`);
+      await channel.send({
+        type: 'broadcast',
+        event: 'video-call-started',
+        payload: {
+          roomId,
+          roomName,
+          startedBy: user.id,
+          startedByName: userDisplayName,
+          jitsiRoomName: `tmwengine-intranet-${roomId}`
+        }
+      });
+    }
+  };
+
   return (
     <>
       <Button
         variant="outline"
         size="icon"
-        onClick={() => setVideoCallOpen(true)}
+        onClick={handleStartCall}
         disabled={disabled}
       >
         <Video className="h-4 w-4" />

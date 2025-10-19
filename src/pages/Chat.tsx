@@ -23,6 +23,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { FileUploader, UploadedFile } from '@/components/chat/FileUploader';
 import { ImageGenerator } from '@/components/chat/ImageGenerator';
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder';
+import { useStreamingChat } from '@/hooks/useStreamingChat';
+import { StreamingProgress } from '@/components/chat/StreamingProgress';
 
 interface Message {
   id: string;
@@ -94,6 +96,15 @@ const Chat = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Streaming chat hook
+  const { 
+    isLoading: streamLoading, 
+    toolProgress, 
+    finalResponse, 
+    cancelStream,
+    startStream 
+  } = useStreamingChat();
 
   // Auto-scroll verso il basso quando cambiano i messaggi (solo se layout non invertito)
   useEffect(() => {
@@ -454,35 +465,18 @@ const Chat = () => {
         ...(generatedImage ? [generatedImage] : [])
       ];
 
-      const { data, error } = await supabase.functions.invoke('chat-with-ai', {
-        body: { 
-          prompt: currentPrompt, 
-          systemPrompt: systemPromptContent,
-          conversationId: conversationId,
-          configId: selectedConfigId,
-          images: imageUrls.length > 0 ? imageUrls : undefined
-        }
+      // Use streaming chat
+      await startStream({
+        prompt: currentPrompt,
+        systemPrompt: systemPromptContent,
+        conversationId: conversationId,
+        configId: selectedConfigId,
+        images: imageUrls.length > 0 ? imageUrls : undefined
       });
-
-      if (error) throw error;
 
       // Clear uploaded files after sending
       setUploadedFiles([]);
       setGeneratedImage(null);
-
-      // Aggiorna statistiche ultima risposta
-      setLastResponseStats({
-        tokens: data.tokens_used || 0,
-        responseTime: data.response_time_ms || 0,
-        model: data.model || 'unknown',
-        memoryMode: data.memory_mode || 'limited',
-        messagesInContext: data.messages_in_context || 0
-      });
-
-      console.log(`Response received with ${data.messages_in_context} messages in context (${data.memory_mode} memory mode)`);
-
-      // Ricarica i messaggi per mostrare la conversazione aggiornata
-      await loadMessages(conversationId);
 
     } catch (error) {
       console.error('Errore invio prompt:', error);
@@ -491,10 +485,37 @@ const Chat = () => {
         description: "Impossibile inviare il messaggio. Riprova.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
+  
+  // Handle finalResponse from streaming
+  useEffect(() => {
+    if (finalResponse && currentConversationId) {
+      if (finalResponse.data) {
+        // Aggiorna statistiche ultima risposta
+        setLastResponseStats({
+          tokens: finalResponse.data.tokens_used || 0,
+          responseTime: finalResponse.data.response_time_ms || 0,
+          model: finalResponse.data.model || 'unknown',
+          memoryMode: finalResponse.data.memory_mode || 'limited',
+          messagesInContext: finalResponse.data.messages_in_context || 0
+        });
+
+        console.log(`Response received with ${finalResponse.data.messages_in_context} messages in context (${finalResponse.data.memory_mode} memory mode)`);
+
+        // Ricarica i messaggi per mostrare la conversazione aggiornata
+        loadMessages(currentConversationId);
+      } else if (finalResponse.error) {
+        toast({
+          title: "Errore",
+          description: "Impossibile inviare il messaggio. Riprova.",
+          variant: "destructive",
+        });
+      }
+      setIsLoading(false);
+    }
+  }, [finalResponse, currentConversationId]);
 
   // Auto-invia il prompt se una conversazione viene appena creata
   useEffect(() => {
@@ -842,6 +863,13 @@ const Chat = () => {
               )}
               <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 max-h-[600px]'}`}>
                 <div className={shouldHideHeader ? 'space-y-3' : ''}>
+                  {/* Streaming Progress - shown in message flow */}
+                  <StreamingProgress
+                    toolProgress={toolProgress}
+                    isVisible={streamLoading}
+                    onCancel={cancelStream}
+                  />
+                  
                   {(isLayoutInverted && shouldHideHeader ? [...messages].reverse() : messages).map((message) => (
                     <div
                       key={message.id}

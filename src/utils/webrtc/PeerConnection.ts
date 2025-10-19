@@ -3,6 +3,7 @@ export class WebRTCPeerConnection {
   private localStream?: MediaStream;
   private onRemoteStream?: (stream: MediaStream) => void;
   private onConnectionStateChange?: (state: RTCPeerConnectionState) => void;
+  private pendingCandidates: RTCIceCandidateInit[] = [];
 
   constructor(config: {
     iceServers?: RTCIceServer[];
@@ -76,7 +77,15 @@ export class WebRTCPeerConnection {
   }
 
   async setRemoteDescription(sdp: RTCSessionDescriptionInit) {
+    console.log('[PeerConnection] Setting remote description, type:', sdp.type);
     await this.pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    
+    // Add buffered candidates after remote description is set
+    console.log('[PeerConnection] Adding', this.pendingCandidates.length, 'buffered candidates');
+    for (const candidate of this.pendingCandidates) {
+      await this.addIceCandidate(candidate);
+    }
+    this.pendingCandidates = [];
   }
 
   async setLocalDescription(sdp: RTCSessionDescriptionInit) {
@@ -85,9 +94,16 @@ export class WebRTCPeerConnection {
 
   async addIceCandidate(candidate: RTCIceCandidateInit) {
     try {
+      if (!this.pc.remoteDescription) {
+        console.warn('[PeerConnection] Buffering candidate - no remote description yet');
+        this.pendingCandidates.push(candidate);
+        return;
+      }
+      
       await this.pc.addIceCandidate(new RTCIceCandidate(candidate));
+      console.log('[PeerConnection] ✅ ICE candidate added');
     } catch (error) {
-      console.error('Error adding ICE candidate:', error);
+      console.error('[PeerConnection] ❌ Error adding ICE candidate:', error);
     }
   }
 
@@ -101,6 +117,10 @@ export class WebRTCPeerConnection {
 
   getIceConnectionState(): RTCIceConnectionState {
     return this.pc.iceConnectionState;
+  }
+
+  getSignalingState(): RTCSignalingState {
+    return this.pc.signalingState;
   }
 
   close() {

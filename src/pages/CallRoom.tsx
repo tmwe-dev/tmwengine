@@ -13,6 +13,7 @@ const CallRoom = () => {
   const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState<string>('');
   const hasStartedCallRef = useRef(false);
+  const acceptedCall = searchParams.get('acceptedCall') === 'true';
   
   const targetUserId = searchParams.get('targetUserId');
   const roomId = 'global-call-room';
@@ -53,6 +54,14 @@ const CallRoom = () => {
       startCall(targetUserId);
     }
   }, [targetUserId, isInCall, userId, startCall]);
+
+  // FIX #8: Auto-answer if Bob accepted from global dialog
+  useEffect(() => {
+    if (acceptedCall && incomingCallFrom && !isInCall) {
+      console.log('[CallRoom] 🟢 Auto-answering call from:', incomingCallFrom);
+      answerCall();
+    }
+  }, [acceptedCall, incomingCallFrom, isInCall, answerCall]);
 
   const qualityColors = {
     good: 'bg-green-500',

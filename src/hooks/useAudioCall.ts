@@ -93,48 +93,66 @@ export const useAudioCall = (roomId: string, userId: string) => {
     setHandlers({
       onOffer: async (offer, from) => {
         console.log('[useAudioCall] Received offer from:', from);
-        // Salva l'offer per rispondere manualmente
         pendingOfferRef.current = { from, offer };
-        setIncomingCallFrom(from);
-        setRemotePeerId(from);
         
-        toast({
-          title: 'Chiamata in arrivo',
-          description: 'Premi Rispondi per accettare'
-        });
+        // Only set incomingCallFrom if not already in a call
+        if (!isInCall && !incomingCallFrom) {
+          setIncomingCallFrom(from);
+          setRemotePeerId(from);
+          
+          toast({
+            title: 'Chiamata in arrivo',
+            description: 'Premi Rispondi per accettare'
+          });
+        } else {
+          console.log('[useAudioCall] Ignoring duplicate offer - already in call or pending');
+        }
       },
       onAnswer: async (answer) => {
         console.log('[useAudioCall] Received answer');
         
-        // FIX #4: Aspetta ICE gathering completo prima di setRemoteDescription
         const pc = peerConnectionRef.current;
-        if (pc) {
-          await new Promise<void>((resolve) => {
-            if (pc.getIceGatheringState() === 'complete') {
-              console.log('[useAudioCall] ICE already complete');
-              resolve();
-              return;
-            }
-            
-            console.log('[useAudioCall] Waiting for ICE gathering to complete...');
-            const checkGathering = setInterval(() => {
-              const state = pc.getIceGatheringState();
-              console.log('[useAudioCall] ICE gathering state:', state);
-              if (state === 'complete') {
-                clearInterval(checkGathering);
-                resolve();
-              }
-            }, 100);
-            
-            // Timeout dopo 3 secondi
-            setTimeout(() => {
-              console.warn('[useAudioCall] ICE gathering timeout after 3s');
-              clearInterval(checkGathering);
-              resolve();
-            }, 3000);
-          });
+        if (!pc) {
+          console.error('[useAudioCall] ❌ No peer connection!');
+          return;
         }
         
+        // Check signaling state
+        const signalingState = pc.getSignalingState();
+        console.log('[useAudioCall] Signaling state:', signalingState);
+        
+        if (signalingState !== 'have-local-offer') {
+          console.error('[useAudioCall] ❌ Cannot set remote description, wrong state:', signalingState);
+          return;
+        }
+        
+        // Wait for ICE gathering to complete
+        await new Promise<void>((resolve) => {
+          if (pc.getIceGatheringState() === 'complete') {
+            console.log('[useAudioCall] ICE already complete');
+            resolve();
+            return;
+          }
+          
+          console.log('[useAudioCall] Waiting for ICE gathering to complete...');
+          const checkGathering = setInterval(() => {
+            const state = pc.getIceGatheringState();
+            console.log('[useAudioCall] ICE gathering state:', state);
+            if (state === 'complete') {
+              clearInterval(checkGathering);
+              resolve();
+            }
+          }, 100);
+          
+          // Timeout after 3s
+          setTimeout(() => {
+            console.warn('[useAudioCall] ICE gathering timeout after 3s');
+            clearInterval(checkGathering);
+            resolve();
+          }, 3000);
+        });
+        
+        console.log('[useAudioCall] Setting remote description with answer');
         await pc?.setRemoteDescription(answer);
       },
       onIceCandidate: async (candidate) => {
@@ -163,7 +181,19 @@ export const useAudioCall = (roomId: string, userId: string) => {
       },
       onReady: async (from) => {
         console.log('[useAudioCall] 🟢 Recipient is READY:', from);
-        // Bob è pronto - Alice può inviare l'offer ora
+        
+        // Verify state
+        if (!pendingCallDataRef.current) {
+          console.warn('[useAudioCall] ⚠️ Received ready but pendingCallDataRef is null');
+          return;
+        }
+        
+        if (pendingCallDataRef.current.targetUserId !== from) {
+          console.warn('[useAudioCall] ⚠️ Ready from wrong user:', from, 'expected:', pendingCallDataRef.current.targetUserId);
+          return;
+        }
+        
+        // Bob is ready - Alice can send the offer now
         if (pendingCallDataRef.current && pendingCallDataRef.current.targetUserId === from) {
           const { targetUserId, stream, pc } = pendingCallDataRef.current;
           console.log('[useAudioCall] Sending offer to ready recipient:', targetUserId);
@@ -284,11 +314,12 @@ export const useAudioCall = (roomId: string, userId: string) => {
 
       const pc = new WebRTCPeerConnection({
       onIceCandidate: (candidate) => {
-        // FIX #2: Controlla SOLO offerSentRef, non remotePeerId
-        if (offerSentRef.current && pendingCallDataRef.current) {
-          const targetUserId = pendingCallDataRef.current.targetUserId;
-          console.log('[useAudioCall] Sending ICE candidate immediately to:', targetUserId);
-          sendSignal({ type: 'ice-candidate', to: targetUserId, payload: candidate });
+        // Use remotePeerId as fallback after pendingCallDataRef is cleared
+        const targetUser = pendingCallDataRef.current?.targetUserId || remotePeerId;
+        
+        if (offerSentRef.current && targetUser) {
+          console.log('[useAudioCall] Sending ICE candidate to:', targetUser);
+          sendSignal({ type: 'ice-candidate', to: targetUser, payload: candidate });
         } else {
           pendingIceCandidatesRef.current.push(candidate);
           console.log('[useAudioCall] Buffered ICE candidate, total:', pendingIceCandidatesRef.current.length);
@@ -482,16 +513,19 @@ export const useAudioCall = (roomId: string, userId: string) => {
         }, 100);
       });
       
-      const offer = pendingOfferRef.current!.offer;
-      console.log('[answerCall] ✅ Offer received, setting remote description');
-      await pc.setRemoteDescription(offer);
-      
-      // Aspetta i candidates di Alice (aumentato a 3s)
-      console.log('[answerCall] Waiting 3000ms for Alice\'s ICE candidates...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Crea answer
-      const answer = await pc.createAnswer();
+    const offer = pendingOfferRef.current!.offer;
+    
+    // Wait for Alice's candidates BEFORE setRemoteDescription
+    console.log('[answerCall] Waiting 2000ms for Alice\'s ICE candidates...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    console.log('[answerCall] ✅ Setting remote description with offer');
+    await pc.setRemoteDescription(offer);
+    
+    // Create answer
+    const answer = await pc.createAnswer();
+    console.log('[answerCall] Answer created, SDP length:', answer.sdp?.length || 0);
+    console.log('[answerCall] Answer SDP preview:', answer.sdp?.substring(0, 150));
       
       await sendSignal({ type: 'answer', to: from, payload: answer });
 

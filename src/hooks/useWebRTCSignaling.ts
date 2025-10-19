@@ -97,17 +97,28 @@ export const useWebRTCSignaling = (roomId: string, userId: string) => {
 
   const sendSignal = useCallback(async (message: Omit<SignalingMessage, 'from'>) => {
     if (!channelRef.current) {
-      console.error('[WebRTCSignaling] ❌ Cannot send signal - channel not ready');
-      return;
+      console.error('[WebRTCSignaling] ❌ Channel not initialized');
+      throw new Error('Channel not ready');
     }
     
-    console.log('[WebRTCSignaling] Sending signal:', message.type, 'to:', message.to || 'broadcast');
+    if (!isReady) {
+      console.warn('[WebRTCSignaling] ⚠️ Channel not ready, waiting...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (!isReady) {
+        console.error('[WebRTCSignaling] ❌ Channel still not ready after wait');
+        throw new Error('Channel timeout');
+      }
+    }
+    
+    const fullMessage: SignalingMessage = { ...message, from: userId };
+    console.log('[WebRTCSignaling] Sending signal:', fullMessage.type, 'to:', fullMessage.to);
+    
     return await channelRef.current.send({
       type: 'broadcast',
       event: 'webrtc-signal',
-      payload: { ...message, from: userId }
+      payload: fullMessage
     });
-  }, [userId]);
+  }, [userId, isReady]);
 
   const setHandlers = useCallback((handlers: typeof handlersRef.current) => {
     handlersRef.current = { ...handlersRef.current, ...handlers };

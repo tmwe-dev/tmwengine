@@ -101,11 +101,14 @@ export const useGlobalCallHandler = (currentUserId: string) => {
     
     // Notifica al chiamante che la chiamata è stata rifiutata
     const channel = supabase.channel(`user-calls-${incomingCall.from}`);
+    await channel.subscribe();
+    await new Promise(resolve => setTimeout(resolve, 200));
     await channel.send({
       type: 'broadcast',
       event: 'call-rejected',
       payload: { from: currentUserId, to: incomingCall.from }
     });
+    await new Promise(resolve => setTimeout(resolve, 200));
     await channel.unsubscribe();
 
     // FIX #1: Pulisci anche sessionStorage

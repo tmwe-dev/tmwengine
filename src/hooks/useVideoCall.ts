@@ -20,7 +20,9 @@ export const useVideoCall = (roomId: string, userId: string) => {
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const pendingOfferRef = useRef<{ from: string; offer: RTCSessionDescriptionInit } | null>(null);
   const offerSentRef = useRef(false);
+  const answerSentRef = useRef(false);
   const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const broadcastChannelRef = useRef<any>(null);
 
   const { toast } = useToast();
   const { sendSignal, setHandlers, isReady } = useWebRTCSignaling(`${roomId}-video`, userId);
@@ -29,6 +31,10 @@ export const useVideoCall = (roomId: string, userId: string) => {
     setHandlers({
       onOffer: async (offer, from) => {
         console.log('[useVideoCall] Received offer from:', from);
+        if (callStatus !== 'idle') {
+          console.warn('[useVideoCall] ⚠️ Already in call state:', callStatus);
+        }
+        setCallStatus('idle');
         pendingOfferRef.current = { from, offer };
         setIncomingCallFrom(from);
         setRemotePeerId(from);
@@ -66,7 +72,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
         endCall();
       }
     });
-  }, [setHandlers, toast]);
+  }, [setHandlers, toast, callStatus]);
 
   const startCall = useCallback(async (targetUserId: string) => {
     try {
@@ -109,8 +115,8 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
       const pc = new WebRTCPeerConnection({
         onIceCandidate: (candidate) => {
-          if (offerSentRef.current && remotePeerId) {
-            sendSignal({ type: 'ice-candidate', to: remotePeerId, payload: candidate });
+          if (offerSentRef.current) {
+            sendSignal({ type: 'ice-candidate', to: targetUserId, payload: candidate });
           } else {
             pendingIceCandidatesRef.current.push(candidate);
           }
@@ -161,9 +167,9 @@ export const useVideoCall = (roomId: string, userId: string) => {
         };
         check();
         setTimeout(() => {
-          console.log('[useVideoCall] ⏱️ ICE gathering timeout');
+          console.log('[useVideoCall] ⏱️ ICE gathering timeout (8s)');
           resolve();
-        }, 5000);
+        }, 8000);
       });
 
       const offer = await pc.createOffer();
@@ -186,9 +192,9 @@ export const useVideoCall = (roomId: string, userId: string) => {
       }
       pendingIceCandidatesRef.current = [];
 
-      const channel = supabase.channel(`user-calls-${targetUserId}`);
-      await channel.subscribe();
-      await channel.send({
+      broadcastChannelRef.current = supabase.channel(`user-calls-${targetUserId}`);
+      await broadcastChannelRef.current.subscribe();
+      await broadcastChannelRef.current.send({
         type: 'broadcast',
         event: 'incoming-call',
         payload: { from: userId, to: targetUserId, roomId, callType: 'video' }
@@ -210,10 +216,23 @@ export const useVideoCall = (roomId: string, userId: string) => {
       
       toast({ title: 'Errore', description, variant: 'destructive' });
     }
-  }, [userId, sendSignal, toast, remotePeerId]);
+  }, [userId, sendSignal, toast, roomId]);
 
   const answerCall = useCallback(async (callerId: string) => {
     try {
+      console.log('[useVideoCall] ⏳ Waiting for pendingOffer...');
+      let retries = 0;
+      while (!pendingOfferRef.current && retries < 30) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+      }
+      
+      if (!pendingOfferRef.current) {
+        console.error('[useVideoCall] ❌ No pending offer after 3s');
+        toast({ title: 'Errore', description: 'Offerta non ricevuta', variant: 'destructive' });
+        return;
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: {
@@ -243,10 +262,14 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
       const pc = new WebRTCPeerConnection({
         onIceCandidate: (candidate) => {
-          try {
-            sendSignal({ type: 'ice-candidate', to: callerId, payload: candidate });
-          } catch (error) {
-            console.error('[useVideoCall] ❌ Error sending ICE candidate:', error);
+          if (answerSentRef.current) {
+            try {
+              sendSignal({ type: 'ice-candidate', to: callerId, payload: candidate });
+            } catch (error) {
+              console.error('[useVideoCall] ❌ Error sending ICE candidate:', error);
+            }
+          } else {
+            pendingIceCandidatesRef.current.push(candidate);
           }
         },
         onRemoteStream: (remoteStream) => {
@@ -296,16 +319,27 @@ export const useVideoCall = (roomId: string, userId: string) => {
         };
         check();
         setTimeout(() => {
-          console.log('[useVideoCall] ⏱️ ICE gathering timeout');
+          console.log('[useVideoCall] ⏱️ ICE gathering timeout (8s)');
           resolve();
-        }, 3000);
+        }, 8000);
       });
 
       const answer = await pc.createAnswer();
+      answerSentRef.current = true;
       
       try {
         await sendSignal({ type: 'answer', to: callerId, payload: answer });
         console.log('[useVideoCall] ✅ Answer sent');
+        
+        console.log('[useVideoCall] Sending', pendingIceCandidatesRef.current.length, 'buffered ICE candidates');
+        for (const candidate of pendingIceCandidatesRef.current) {
+          try {
+            await sendSignal({ type: 'ice-candidate', to: callerId, payload: candidate });
+          } catch (error) {
+            console.error('[useVideoCall] ❌ Error sending buffered ICE candidate:', error);
+          }
+        }
+        pendingIceCandidatesRef.current = [];
         
         await sendSignal({ type: 'call-start', to: callerId, payload: {} });
         console.log('[useVideoCall] ✅ Sent call-accepted signal to caller');
@@ -355,11 +389,18 @@ export const useVideoCall = (roomId: string, userId: string) => {
     if (remotePeerId) {
       try {
         await sendSignal({ type: 'call-end', to: remotePeerId, payload: {} });
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 500));
         console.log('[useVideoCall] ✅ Call-end signal sent');
       } catch (error) {
         console.error('[useVideoCall] ❌ Error sending call-end:', error);
       }
+    }
+    
+    if (broadcastChannelRef.current) {
+      await broadcastChannelRef.current.unsubscribe();
+      await supabase.removeChannel(broadcastChannelRef.current);
+      broadcastChannelRef.current = null;
+      console.log('[useVideoCall] 🗑️ Broadcast channel cleaned up');
     }
 
     peerConnectionRef.current?.close();
@@ -380,10 +421,11 @@ export const useVideoCall = (roomId: string, userId: string) => {
     setCallStatus('idle');
     pendingOfferRef.current = null;
     offerSentRef.current = false;
+    answerSentRef.current = false;
     pendingIceCandidatesRef.current = [];
     
     console.log('[useVideoCall] ✅ Call cleanup complete');
-  }, [remotePeerId, sendSignal]);
+  }, [remotePeerId, sendSignal, supabase]);
 
   return {
     isInCall,

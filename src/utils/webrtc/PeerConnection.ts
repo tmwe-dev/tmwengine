@@ -132,6 +132,13 @@ export class WebRTCPeerConnection {
   close() {
     if (this.pc.connectionState !== 'closed') {
       console.log('[PeerConnection] Closing connection');
+      
+      this.pc.onicecandidate = null;
+      this.pc.ontrack = null;
+      this.pc.onconnectionstatechange = null;
+      this.pc.oniceconnectionstatechange = null;
+      this.pc.onicegatheringstatechange = null;
+      
       this.localStream?.getTracks().forEach(track => track.stop());
       this.pc.close();
     } else {

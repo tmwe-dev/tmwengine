@@ -18,12 +18,21 @@ export const GlobalVideoCallHandler = () => {
       setCurrentUserId(data.user?.id || '');
     });
 
-    const handleOpenVideoCall = (event: Event) => {
+    const handleOpenVideoCall = async (event: Event) => {
       const customEvent = event as CustomEvent<VideoCallState>;
       console.log('[GlobalVideoCallHandler] 📹 Opening video call dialog:', customEvent.detail);
       
       if (videoCallState) {
-        console.warn('[GlobalVideoCallHandler] ⚠️ Already in a call, ignoring');
+        console.warn('[GlobalVideoCallHandler] ⚠️ Already in a call, rejecting');
+        
+        const channel = supabase.channel(`user-calls-${customEvent.detail.targetUserId}`);
+        await channel.subscribe();
+        await channel.send({
+          type: 'broadcast',
+          event: 'call-rejected',
+          payload: { from: currentUserId, to: customEvent.detail.targetUserId, reason: 'busy' }
+        });
+        await channel.unsubscribe();
         return;
       }
       
@@ -46,6 +55,8 @@ export const GlobalVideoCallHandler = () => {
         console.log('[GlobalVideoCallHandler] Closing video call dialog');
         setVideoCallState(null);
         sessionStorage.removeItem('acceptedVideoCall');
+        sessionStorage.removeItem('pendingIncomingCall');
+        sessionStorage.removeItem('callAccepted');
       }}
       targetUserId={videoCallState.targetUserId}
       targetUserName={videoCallState.targetUserName}

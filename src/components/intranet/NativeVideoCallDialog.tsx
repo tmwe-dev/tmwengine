@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Video, VideoOff, Mic, MicOff, PhoneOff } from 'lucide-react';
 import { useVideoCall } from '@/hooks/useVideoCall';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface NativeVideoCallDialogProps {
   isOpen: boolean;
@@ -35,9 +35,12 @@ export const NativeVideoCallDialog = ({
     toggleMute,
     toggleVideo
   } = useVideoCall(roomId, currentUserId);
+  
+  const hasInitiatedRef = useRef(false);
 
   useEffect(() => {
-    if (isOpen && !isInCall) {
+    if (isOpen && !hasInitiatedRef.current) {
+      hasInitiatedRef.current = true;
       if (isIncoming) {
         console.log('[NativeVideoCallDialog] 📞 Answering incoming call from:', targetUserId);
         answerCall(targetUserId);
@@ -46,7 +49,11 @@ export const NativeVideoCallDialog = ({
         startCall(targetUserId);
       }
     }
-  }, [isOpen, targetUserId, isIncoming, isInCall, answerCall, startCall]);
+    
+    if (!isOpen) {
+      hasInitiatedRef.current = false;
+    }
+  }, [isOpen, targetUserId, isIncoming, answerCall, startCall]);
 
   useEffect(() => {
     if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {

@@ -48,7 +48,7 @@ export async function callClaude(
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 400,  // ✅ STEP 2: Aumentato da 200 a 400 per risposte complete
+        max_tokens: 200,
         temperature: 0.7,
         messages: userMessages,
         system: fullSystemPrompt
@@ -94,7 +94,7 @@ export async function callChatGPT(
     
     const requestPayload = {
       model: 'openai/gpt-5-mini',
-      max_completion_tokens: 400,  // ✅ STEP 2: Aumentato da 200 a 400 per reasoning tokens
+      max_completion_tokens: 1200,
       messages: conversationHistory
     };
 
@@ -128,7 +128,7 @@ export async function callChatGPT(
       
       const data = await response.json();
       
-      // ✅ STEP 2: Check reasoning tokens (GPT-5)
+      // 🔥 CHECK REASONING TOKENS (GPT-5)
       if (data.usage?.completion_tokens_details?.reasoning_tokens > 0) {
         console.log(`🧠 GPT-5 ha usato ${data.usage.completion_tokens_details.reasoning_tokens} reasoning tokens`);
         
@@ -306,7 +306,7 @@ export async function callGemini(
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        max_tokens: 400,  // ✅ STEP 2: Aumentato da 200 a 400 per risposte complete
+        max_tokens: 200,
         temperature: 0.7,
         messages: conversationHistory
       })
@@ -329,7 +329,7 @@ export async function callGemini(
       tokensOut: data.usage?.completion_tokens || 0,
       duration: Date.now() - startTime
     };
-  }, { retries: 2, baseDelayMs: 300 });
+  }, { retries: 3, baseDelayMs: 500 });
   
   console.log(`✅ Gemini: ${result.tokensOut} token out (${result.tokensIn} in) in ${result.duration}ms`);
   return result;

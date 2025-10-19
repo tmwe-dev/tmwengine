@@ -9,6 +9,7 @@ interface AudioMessagePlayerProps {
   onPlayingChange?: (isPlaying: boolean) => void;
   onPlayStart?: () => void;
   onPlayEnd?: () => void;
+  onError?: (error: Error) => void;
 }
 
 export const AudioMessagePlayer = ({ 
@@ -16,7 +17,8 @@ export const AudioMessagePlayer = ({
   autoPlay = false,
   onPlayingChange,
   onPlayStart,
-  onPlayEnd
+  onPlayEnd,
+  onError
 }: AudioMessagePlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -38,9 +40,18 @@ export const AudioMessagePlayer = ({
       onPlayEnd?.();
     };
 
+    const handleError = () => {
+      console.error('❌ Audio playback error');
+      setIsPlaying(false);
+      onPlayingChange?.(false);
+      onError?.(new Error('Audio playback failed'));
+      onPlayEnd?.();
+    };
+
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
 
     if (autoPlay) {
       audio.play().then(() => {
@@ -54,6 +65,7 @@ export const AudioMessagePlayer = ({
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
     };
   }, [audioUrl, autoPlay]);
 

@@ -372,6 +372,10 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
                 console.log(`⏸️ [MultiAgentMessage] Audio END: ${message.sender_name}`);
                 onAudioEnd?.();
               }}
+              onError={(error) => {
+                console.error(`❌ [MultiAgentMessage] Audio ERROR: ${message.sender_name}`, error);
+                onAudioEnd?.();
+              }}
               onPlayingChange={(playing) => {
                 console.log(`🎵 [MultiAgentMessage] Audio ${playing ? 'PLAYING' : 'PAUSED'}: ${message.sender_name}`);
               }}

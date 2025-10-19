@@ -73,6 +73,14 @@ export const MessageTabsView = ({
     const currentMessage = messages.find(m => m.id === activeTab);
     if (currentMessage?.sender_type !== 'human') {
       console.log(`🔊 Tab attivo: ${currentMessage?.sender_name} - Audio pronto per partire`);
+      
+      // 🔥 Fallback: Se audio non parte entro 8s, passa al prossimo
+      const fallbackTimer = setTimeout(() => {
+        console.warn(`⏰ Audio fallback: ${currentMessage?.sender_name} timeout → passo al prossimo`);
+        handleAudioEnd();
+      }, 8000);
+      
+      return () => clearTimeout(fallbackTimer);
     }
   }, [activeTab, messages]);
 

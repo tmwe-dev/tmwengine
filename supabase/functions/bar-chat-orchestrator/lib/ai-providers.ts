@@ -92,6 +92,20 @@ export async function callChatGPT(
   if (lovableApiKey) {
     console.log('🤖 Calling OpenAI GPT-5 via Lovable AI Gateway...');
     
+    const requestPayload = {
+      model: 'openai/gpt-5-mini',
+      max_completion_tokens: 200,
+      messages: conversationHistory
+    };
+
+    console.log('📤 Request to Lovable AI:', {
+      url: 'https://ai.gateway.lovable.dev/v1/chat/completions',
+      model: requestPayload.model,
+      max_completion_tokens: requestPayload.max_completion_tokens,
+      messages_count: conversationHistory.length,
+      has_auth: !!lovableApiKey
+    });
+    
     const result = await withRetry(async () => {
       const response = await fetchWithTimeout('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
@@ -99,11 +113,7 @@ export async function callChatGPT(
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${lovableApiKey}`
         },
-        body: JSON.stringify({
-          model: 'openai/gpt-5-mini',
-          max_completion_tokens: 200,  // 🎯 ~60-70 parole
-          messages: conversationHistory
-        })
+        body: JSON.stringify(requestPayload)
       }, 60000);
       
       if (!response.ok) {
@@ -118,19 +128,65 @@ export async function callChatGPT(
       
       const data = await response.json();
       
-      // 🔥 DEBUG: Log dettagliato della risposta GPT-5
-      console.log('📦 GPT-5 Response Debug:', {
-        has_choices: !!data.choices,
-        has_message: !!data.choices?.[0]?.message,
-        has_content: !!data.choices?.[0]?.message?.content,
-        content_length: data.choices?.[0]?.message?.content?.length || 0,
-        content_preview: data.choices?.[0]?.message?.content?.substring(0, 100),
+      // 🔥 Deep logging della risposta raw completa
+      console.log('🔥 RAW GPT-5 Response:', JSON.stringify(data, null, 2));
+      console.log('🔥 Response Top-Level Keys:', Object.keys(data));
+      if (data.choices?.[0]) {
+        console.log('🔥 Choices[0] Keys:', Object.keys(data.choices[0]));
+        if (data.choices[0].message) {
+          console.log('🔥 Message Keys:', Object.keys(data.choices[0].message));
+        }
+      }
+
+      // 🔥 Multi-path content extraction - prova tutti i possibili formati
+      const contentPaths = {
+        standard: data.choices?.[0]?.message?.content,
+        delta: data.choices?.[0]?.delta?.content,
+        text: data.choices?.[0]?.text,
+        flat: data.content,
+        message_text: data.choices?.[0]?.message?.text,
+        output: data.output
+      };
+
+      console.log('🔍 Content Paths Analysis:', {
+        standard: !!contentPaths.standard,
+        delta: !!contentPaths.delta,
+        text: !!contentPaths.text,
+        flat: !!contentPaths.flat,
+        message_text: !!contentPaths.message_text,
+        output: !!contentPaths.output,
+        values_preview: Object.entries(contentPaths).map(([key, val]) => [key, typeof val, val?.substring?.(0, 50)])
+      });
+
+      // Trova il primo path non-vuoto
+      const content = Object.values(contentPaths).find(v => v && typeof v === 'string' && v.trim().length > 0) || '';
+
+      // 🔥 Character analysis se content esiste ma sembra vuoto
+      if (content && content.trim().length === 0) {
+        console.warn('⚠️ Content contiene solo whitespace:', {
+          length: content.length,
+          bytes: new TextEncoder().encode(content).length,
+          charCodes: [...content].slice(0, 20).map(c => c.charCodeAt(0))
+        });
+      }
+
+      // 🔥 Error completo se nessun content trovato
+      if (!content) {
+        console.error('❌ NESSUN CONTENT TROVATO! Struttura completa data:', JSON.stringify(data, null, 2));
+        console.error('❌ Usage info:', data.usage);
+      }
+
+      console.log('📦 GPT-5 Final Content Debug:', {
+        has_content: !!content,
+        content_length: content?.length || 0,
+        trimmed_length: content?.trim().length || 0,
+        content_preview: content?.substring(0, 150),
         tokens_in: data.usage?.prompt_tokens,
         tokens_out: data.usage?.completion_tokens
       });
       
       return {
-        content: data.choices?.[0]?.message?.content?.trim() || '[ERRORE: GPT-5 ha ritornato content vuoto]',
+        content: content.trim() || '[ERRORE: GPT-5 ha ritornato content vuoto]',
         tokensIn: data.usage?.prompt_tokens || 0,
         tokensOut: data.usage?.completion_tokens || 0,
         duration: Date.now() - startTime

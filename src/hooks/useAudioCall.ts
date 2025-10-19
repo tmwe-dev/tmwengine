@@ -105,7 +105,37 @@ export const useAudioCall = (roomId: string, userId: string) => {
       },
       onAnswer: async (answer) => {
         console.log('[useAudioCall] Received answer');
-        await peerConnectionRef.current?.setRemoteDescription(answer);
+        
+        // FIX #4: Aspetta ICE gathering completo prima di setRemoteDescription
+        const pc = peerConnectionRef.current;
+        if (pc) {
+          await new Promise<void>((resolve) => {
+            if (pc.getIceGatheringState() === 'complete') {
+              console.log('[useAudioCall] ICE already complete');
+              resolve();
+              return;
+            }
+            
+            console.log('[useAudioCall] Waiting for ICE gathering to complete...');
+            const checkGathering = setInterval(() => {
+              const state = pc.getIceGatheringState();
+              console.log('[useAudioCall] ICE gathering state:', state);
+              if (state === 'complete') {
+                clearInterval(checkGathering);
+                resolve();
+              }
+            }, 100);
+            
+            // Timeout dopo 3 secondi
+            setTimeout(() => {
+              console.warn('[useAudioCall] ICE gathering timeout after 3s');
+              clearInterval(checkGathering);
+              resolve();
+            }, 3000);
+          });
+        }
+        
+        await pc?.setRemoteDescription(answer);
       },
       onIceCandidate: async (candidate) => {
         console.log('[useAudioCall] Received ICE candidate');
@@ -253,16 +283,17 @@ export const useAudioCall = (roomId: string, userId: string) => {
       localStreamRef.current = stream;
 
       const pc = new WebRTCPeerConnection({
-        onIceCandidate: (candidate) => {
-          // STEP 1A: Invia candidate subito se l'offer è già stata inviata, altrimenti bufferizza
-          if (offerSentRef.current && remotePeerId) {
-            console.log('[useAudioCall] Sending ICE candidate immediately (offer already sent)');
-            sendSignal({ type: 'ice-candidate', to: remotePeerId, payload: candidate });
-          } else {
-            pendingIceCandidatesRef.current.push(candidate);
-            console.log('[useAudioCall] Buffered ICE candidate, total:', pendingIceCandidatesRef.current.length);
-          }
-        },
+      onIceCandidate: (candidate) => {
+        // FIX #2: Controlla SOLO offerSentRef, non remotePeerId
+        if (offerSentRef.current && pendingCallDataRef.current) {
+          const targetUserId = pendingCallDataRef.current.targetUserId;
+          console.log('[useAudioCall] Sending ICE candidate immediately to:', targetUserId);
+          sendSignal({ type: 'ice-candidate', to: targetUserId, payload: candidate });
+        } else {
+          pendingIceCandidatesRef.current.push(candidate);
+          console.log('[useAudioCall] Buffered ICE candidate, total:', pendingIceCandidatesRef.current.length);
+        }
+      },
         onRemoteStream: (stream) => {
           console.log('[useAudioCall] Received remote stream');
           remoteStreamRef.current = stream;
@@ -319,7 +350,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
 
       peerConnectionRef.current = pc;
       if (targetUserId) setRemotePeerId(targetUserId);
-      // STEP 3: Rimosso setIsInCall(true) - verrà chiamato in onRemoteStream
+      // FIX #3: Non chiamare setIsInCall(true) qui - viene chiamato solo in onRemoteStream
 
       // Salva i dati della chiamata e aspetta il segnale "ready" da Bob
       console.log('[useAudioCall] Waiting for recipient to be ready...');
@@ -356,10 +387,10 @@ export const useAudioCall = (roomId: string, userId: string) => {
 
   const answerCall = useCallback(async () => {
     console.log('[answerCall] 🟢 STARTING');
-    console.log('[answerCall] pendingOffer:', pendingOfferRef.current);
     
-    if (!pendingOfferRef.current) {
-      console.error('[answerCall] ❌ No pending offer!');
+    // FIX #1: NON controllare pendingOfferRef qui - l'offer arriverà DOPO il ready
+    if (!incomingCallFrom) {
+      console.error('[answerCall] ❌ No incoming call!');
       toast({
         title: 'Errore',
         description: 'Nessuna chiamata in attesa',
@@ -368,7 +399,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
       return;
     }
 
-    const { from, offer } = pendingOfferRef.current;
+    const from = incomingCallFrom;
     console.log('[answerCall] Answering call from:', from);
 
     try {
@@ -390,7 +421,6 @@ export const useAudioCall = (roomId: string, userId: string) => {
         onRemoteStream: (stream) => {
           remoteStreamRef.current = stream;
           
-          // STEP 2: Verifica tracce audio attive
           const audioTracks = stream.getAudioTracks();
           console.log('[answerCall] Remote audio tracks:', audioTracks.length);
           
@@ -410,45 +440,67 @@ export const useAudioCall = (roomId: string, userId: string) => {
           
           if (remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = stream;
-            remoteAudioRef.current.volume = 1.0; // Volume massimo
+            remoteAudioRef.current.volume = 1.0;
             
             remoteAudioRef.current.play().catch(err => {
               console.error('[answerCall] Audio play error:', err);
-              
               toast({
                 title: 'Clicca per attivare audio',
                 description: 'Il browser richiede interazione utente'
               });
             });
           }
+          
+          // FIX #1 & #3: Setta isInCall SOLO qui quando arriva lo stream remoto
+          setIsInCall(true);
         },
         onConnectionStateChange: setConnectionState
       });
 
-      await pc.addLocalStream(stream);
-      await pc.setRemoteDescription(offer);
+      peerConnectionRef.current = pc;
+      setRemotePeerId(from);  // FIX #1: Setta remotePeerId per permettere signaling futuro
       
-      // FIX 1 CRITICO: Bob invia segnale READY ad Alice
+      await pc.addLocalStream(stream);
+      
+      // FIX #1 CRITICO: Invia READY ad Alice SUBITO (prima di setRemoteDescription)
       console.log('[answerCall] 🟢 Sending READY signal to Alice');
       await sendSignal({ type: 'ready', to: from, payload: {} });
       
-      // FIX 2 CRITICO: Aspetta 1000ms per ricevere i candidates di Alice
-      console.log('[answerCall] Waiting 1000ms for Alice\'s ICE candidates...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // FIX #1 CRITICO: ASPETTA l'offer da Alice
+      console.log('[answerCall] ⏳ Waiting for offer from Alice...');
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Timeout waiting for offer'));
+        }, 10000);  // 10 secondi timeout
+        
+        const checkOffer = setInterval(() => {
+          if (pendingOfferRef.current && pendingOfferRef.current.from === from) {
+            clearInterval(checkOffer);
+            clearTimeout(timeout);
+            resolve();
+          }
+        }, 100);
+      });
       
-      // ORA crea l'answer (FIX 4: createAnswer già chiama setLocalDescription internamente)
+      const offer = pendingOfferRef.current!.offer;
+      console.log('[answerCall] ✅ Offer received, setting remote description');
+      await pc.setRemoteDescription(offer);
+      
+      // Aspetta i candidates di Alice (aumentato a 3s)
+      console.log('[answerCall] Waiting 3000ms for Alice\'s ICE candidates...');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Crea answer
       const answer = await pc.createAnswer();
       
       await sendSignal({ type: 'answer', to: from, payload: answer });
 
-      peerConnectionRef.current = pc;
-      setIsInCall(true);
       setIncomingCallFrom(null);
       pendingOfferRef.current = null;
 
       statsIntervalRef.current = setInterval(monitorNetworkQuality, 5000);
 
-      // Su mobile, richiedi esplicitamente di riprodurre
+      // Riprova autoplay
       if (remoteAudioRef.current && remoteStreamRef.current) {
         try {
           await remoteAudioRef.current.play();
@@ -458,7 +510,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
         }
       }
 
-      console.log('[answerCall] ✅ COMPLETED - WebRTC connection established, isInCall=true');
+      console.log('[answerCall] ✅ COMPLETED - WebRTC connection established');
       
       toast({
         title: 'Chiamata accettata',
@@ -476,7 +528,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
       setIncomingCallFrom(null);
       pendingOfferRef.current = null;
     }
-  }, [sendSignal, toast, monitorNetworkQuality]);
+  }, [sendSignal, toast, monitorNetworkQuality, incomingCallFrom]);
 
   const rejectCall = useCallback(() => {
     if (incomingCallFrom) {

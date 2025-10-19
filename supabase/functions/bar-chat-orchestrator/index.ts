@@ -475,10 +475,23 @@ Rispondi con JSON:
                 const targets: string[] = decision.targets || [];
                 
                 if (targets.length === 0) {
-                  // Menzione implicita → riattivo TUTTI gli agenti
-                  console.log(`🔄 Orchestrator: menzione implicita → reset loop per TUTTI`);
-                  i = -1; // Reset loop (tornerà a 0 al prossimo ciclo)
-                  allResponses.length = 0;
+                  // Menzione implicita → aggiungo SOLO agenti NON ancora intervenuti (ESCLUSO currentAgent)
+                  console.log(`🔄 Orchestrator: menzione implicita → aggiungo agenti mancanti (escluso ${currentAgent.name})`);
+                  
+                  const respondedAgents = new Set(allResponses.map(r => r.agentName));
+                  const remainingAgents = activeParticipants.filter(p => 
+                    !respondedAgents.has(p.name) && 
+                    p.id !== currentAgent.id
+                  );
+                  
+                  if (remainingAgents.length > 0) {
+                    console.log(`🔄 Aggiungo alla coda: ${remainingAgents.map(a => a.name).join(', ')}`);
+                    for (let j = 0; j < remainingAgents.length; j++) {
+                      activeParticipants.splice(i + 1 + j, 0, remainingAgents[j]);
+                    }
+                  } else {
+                    console.log(`✅ Tutti gli agenti hanno già risposto, fine turno`);
+                  }
                 } else {
                   // Menzione esplicita → solo agenti specifici
                   console.log(`🔄 Orchestrator: menzione esplicita → solo ${targets.join(', ')}`);

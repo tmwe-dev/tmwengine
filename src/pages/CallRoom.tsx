@@ -85,7 +85,7 @@ const CallRoom = () => {
       if (from) {
         console.log('[CallRoom] 🟢 Auto-answering call from:', from);
         sessionStorage.removeItem('pendingIncomingCall'); // Cleanup
-        answerCall();
+        answerCall(from); // ✅ Passa esplicitamente chi sta chiamando
       } else {
         console.warn('[CallRoom] ⚠️ Cannot auto-answer: no caller info available');
       }

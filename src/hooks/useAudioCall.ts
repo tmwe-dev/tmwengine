@@ -416,17 +416,23 @@ export const useAudioCall = (roomId: string, userId: string) => {
     }
   }, []);
 
-  const answerCall = useCallback(async () => {
+  const answerCall = useCallback(async (forcedCallerId?: string) => {
     console.log('[answerCall] 🟢 STARTING');
+    
+    // ✅ Usa il callerId forzato se fornito, altrimenti usa lo stato
+    const callerId = forcedCallerId || incomingCallFrom;
+    
     console.log('[answerCall] 📊 Current state:', { 
       incomingCallFrom, 
+      forcedCallerId,
+      finalCallerId: callerId,
       isInCall, 
       hasPendingOffer: !!pendingOfferRef.current 
     });
     
     // FIX #1: NON controllare pendingOfferRef qui - l'offer arriverà DOPO il ready
-    if (!incomingCallFrom) {
-      console.error('[answerCall] ❌ No incoming call!');
+    if (!callerId) {
+      console.error('[answerCall] ❌ No incoming call and no forced caller ID!');
       toast({
         title: 'Errore',
         description: 'Nessuna chiamata in attesa',
@@ -435,7 +441,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
       return;
     }
 
-    const from = incomingCallFrom;
+    const from = callerId;
     console.log('[answerCall] ✅ Answering call from:', from);
 
     try {

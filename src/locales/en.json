@@ -1,6 +1,7 @@
 {
   "nav": {
     "commercial": "Commercial",
+    "addressBook": "Clients",
     "clients": "Clients",
     "activities": "Activities",
     "campaigns": "Campaigns",

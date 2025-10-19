@@ -10,6 +10,7 @@ import { AutoFollowIndicator } from './AutoFollowIndicator';
 import { LaboratoryPromptManager } from './LaboratoryPromptManager';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
+import { WordLimitSliderCompact } from './WordLimitSliderCompact';
 import { Pause, Play, Brain, Zap, Mic, Beaker, Phone, StopCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,8 @@ interface CompactControlBarProps {
   position?: 'top' | 'bottom';
   isAutoFollowEnabled?: boolean;
   onAutoFollowChange?: (enabled: boolean) => void;
+  globalMaxWords?: number;
+  onMaxWordsChange?: (value: number) => void;
 }
 
 export const CompactControlBar = ({
@@ -42,7 +45,9 @@ export const CompactControlBar = ({
   className,
   position = 'bottom',
   isAutoFollowEnabled = true,
-  onAutoFollowChange
+  onAutoFollowChange,
+  globalMaxWords = 50,
+  onMaxWordsChange
 }: CompactControlBarProps) => {
   const [isPaused, setIsPaused] = useState(false);
   const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
@@ -334,6 +339,15 @@ export const CompactControlBar = ({
             <AutoFollowIndicator
               isEnabled={isAutoFollowEnabled}
               onChange={onAutoFollowChange}
+            />
+            
+            <Separator />
+            
+            {/* Word Limit Slider */}
+            <WordLimitSliderCompact
+              conversationId={conversationId}
+              value={globalMaxWords}
+              onChange={onMaxWordsChange || (() => {})}
             />
           </>
         )}

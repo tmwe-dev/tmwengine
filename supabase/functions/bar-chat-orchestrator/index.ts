@@ -184,13 +184,12 @@ serve(async (req) => {
         const composedPrompt = buildSystemPrompt({
           globalPrompt: globalSystemPrompt,
           baseContent,
-          agentPersonality: currentAgent.effective_prompt || agentPersonality,
+          agentPersonality,
           conversationStyle,
           agentMode,
           previousResponses: allResponses,
           wasCalledDirectly: wasCalledByAgent,
-          lastResponse,
-          styleSections: cachedPrompts.conversationStyles
+          lastResponse
         });
 
         console.log('📝 Prompt finale composto:', composedPrompt ? composedPrompt.substring(0, 200) + '...' : 'Vuoto');

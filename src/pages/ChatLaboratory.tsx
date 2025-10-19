@@ -45,6 +45,7 @@ import { TokenUsageChart } from '@/components/chat-laboratory/TokenUsageChart';
 import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
 import { AudioModeSelector } from '@/components/chat-laboratory/AudioModeSelector';
 import { CompactControlBar } from '@/components/chat-laboratory/CompactControlBar';
+import { WordLimitSliderCompact } from '@/components/chat-laboratory/WordLimitSliderCompact';
 
 interface Message {
   id: string;
@@ -1201,6 +1202,15 @@ const ChatLaboratory = () => {
                   {viewMode === 'classic' ? <Columns className="h-4 w-4" /> : <MessagesSquare className="h-4 w-4" />}
                 </Button>
                 
+                {/* Word Limit Slider - visibile solo in Bar Mode */}
+                {isBarMode && currentConversationId && (
+                  <WordLimitSliderCompact
+                    conversationId={currentConversationId}
+                    value={globalMaxWords}
+                    onChange={setGlobalMaxWords}
+                  />
+                )}
+                
                 {/* Maximize Button - sempre visibile */}
                 <MessageNavigationBar
                   currentIndex={0}
@@ -1307,60 +1317,6 @@ const ChatLaboratory = () => {
                     />
                   </CardContent>
                 </Card>
-                
-                {/* Slider Lunghezza Risposte - Visibile solo in Bar Mode */}
-                {isBarMode && currentConversationId && (
-                  <Card className="bg-white/5 border-white/10">
-                    <CardHeader>
-                      <CardTitle className="text-white text-sm">Lunghezza Risposte AI</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center gap-4">
-                        <Label className="text-white/80 text-sm whitespace-nowrap">
-                          Parole:
-                        </Label>
-                        <Slider
-                          min={20}
-                          max={150}
-                          step={10}
-                          value={[globalMaxWords]}
-                          onValueChange={([value]) => setGlobalMaxWords(value)}
-                          onValueCommit={async ([value]) => {
-                            // Salva su tutti gli agenti attivi
-                            const { data: agents } = await supabase
-                              .from('elevenlabs_agents')
-                              .select('id')
-                              .eq('is_active', true);
-                            
-                            if (agents) {
-                              await Promise.all(
-                                agents.map(agent =>
-                                  supabase
-                                    .from('elevenlabs_agents')
-                                    .update({ max_words_per_response: value })
-                                    .eq('id', agent.id)
-                                )
-                              );
-                              
-                              toast({
-                                title: "Lunghezza aggiornata",
-                                description: `Limite impostato a ${value} parole per tutti gli agenti`,
-                              });
-                            }
-                          }}
-                          className="flex-1"
-                        />
-                        <Badge variant="outline" className="font-mono text-sm border-white/20 text-white">
-                          {globalMaxWords}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-white/50">
-                        Controlla la lunghezza massima delle risposte degli agenti AI
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-                
                 {/* Stats - QUARTA (in fondo, con placeholder se no conversazione) */}
                 <Card className="bg-white/5 border-white/10">
                   <CardHeader>
@@ -1432,7 +1388,7 @@ const ChatLaboratory = () => {
             onScroll={handleScroll}
             className="h-full overflow-y-auto p-1 md:p-1.5 space-y-1 md:space-y-1.5"
           >
-            <div className="container mx-auto max-w-full">
+            <div className="container mx-auto max-w-5xl">
               {/* Summary Panel */}
               {conversationData && conversationData.riassunto_contesto && (
                 <ConversationSummaryPanel
@@ -1594,7 +1550,7 @@ const ChatLaboratory = () => {
       {/* Input Area - nascosta in full screen */}
       {!isFullScreenMode && (
       <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-1 min-h-fit">
-        <div className="container mx-auto px-2 md:px-3">
+        <div className="container mx-auto max-w-5xl px-2 md:px-3">
 
           {/* Compact Control Bar TOP - Solo elementi selezionati */}
           {!isMobile && (

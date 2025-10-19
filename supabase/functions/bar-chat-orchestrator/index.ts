@@ -147,7 +147,7 @@ serve(async (req) => {
           { role: 'user', content: userMessage },
           ...allResponses.map(r => ({
             role: 'assistant',
-            content: `[${r.agentName}]: ${r.content}`
+            content: r.content
           }))
         ];
         

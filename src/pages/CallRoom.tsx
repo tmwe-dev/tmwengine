@@ -165,27 +165,39 @@ const CallRoom = () => {
               <p className="text-muted-foreground">Sistema chiamate audio WebRTC</p>
             </div>
 
-            {/* FIX #3: Rimossa interfaccia duplicata - tutto gestito da GlobalCallHandler */}
+            {/* UI dinamica: INCOMING vs OUTGOING vs IN_CALL */}
             {!isInCall ? (
-              <div className="flex flex-col items-center gap-6">
-                <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center">
-                  <User className="h-16 w-16 text-muted-foreground" />
+              acceptedCall ? (
+                // Bob sta rispondendo - mostra solo loading
+                <div className="flex flex-col items-center gap-6">
+                  <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+                    <Phone className="h-16 w-16 text-primary" />
+                  </div>
+                  <p className="text-xl font-semibold">Connessione in corso...</p>
+                  <p className="text-sm text-muted-foreground">Risposta alla chiamata</p>
                 </div>
-                
-                <Button
-                  onClick={() => startCall()}
-                  size="lg"
-                  className="rounded-full px-8"
-                >
-                  Avvia Chiamata Audio
-                </Button>
+              ) : (
+                // Alice sta avviando chiamata - mostra pulsante
+                <div className="flex flex-col items-center gap-6">
+                  <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center">
+                    <User className="h-16 w-16 text-muted-foreground" />
+                  </div>
+                  
+                  <Button
+                    onClick={() => startCall()}
+                    size="lg"
+                    className="rounded-full px-8"
+                  >
+                    Avvia Chiamata Audio
+                  </Button>
 
-                <div className="text-sm text-muted-foreground">
-                  <p>• Chiamata solo audio (no video)</p>
-                  <p>• Qualità adattiva automatica</p>
-                  <p>• Nessun costo aggiuntivo (usa Internet)</p>
+                  <div className="text-sm text-muted-foreground">
+                    <p>• Chiamata solo audio (no video)</p>
+                    <p>• Qualità adattiva automatica</p>
+                    <p>• Nessun costo aggiuntivo (usa Internet)</p>
+                  </div>
                 </div>
-              </div>
+              )
             ) : (
               <div className="flex flex-col items-center gap-8">
                 {/* Stato connessione */}

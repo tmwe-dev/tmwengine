@@ -50,11 +50,6 @@ export const AudioMessagePlayer = ({
       onPlayStart?.();
     });
 
-    audio.addEventListener('pause', () => {
-      setIsPlaying(false);
-      onPlayingChange?.(false);
-      onPlayEnd?.();
-    });
 
     if (autoPlay) {
       audio.play().catch(err => console.error('Autoplay failed:', err));

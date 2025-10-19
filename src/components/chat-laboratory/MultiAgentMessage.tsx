@@ -267,57 +267,6 @@ export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProp
           <p className="whitespace-pre-wrap text-base leading-relaxed">{displayContent}</p>
         </div>
 
-        {/* ✅ APPUNTI: Supporto sia structured che legacy format + Audio on-expand */}
-        {((isStructuredAttachments(message.attachments) && message.attachments.appendix) || (message.attachments as any)?.appendix) && message.sender_type !== 'human' && (
-          <Collapsible 
-            className="mt-3" 
-            open={appendixOpen}
-            onOpenChange={(open) => {
-              setAppendixOpen(open);
-              if (open && !appendixAudioPlaying) {
-                setAppendixAudioPlaying(true);
-              }
-            }}
-          >
-            <CollapsibleTrigger className={`flex items-center gap-2 w-full p-3 rounded-lg transition-colors text-sm font-medium group ${config.bg} border ${config.border}`}>
-              <FileText className="h-4 w-4" />
-              <span className={config.textColor}>📋 Appunti</span>
-              <Badge variant="outline" className="ml-auto text-xs">
-                {(isStructuredAttachments(message.attachments) ? message.attachments.appendix?.length : (message.attachments as any)?.appendix?.length) || 0} chars
-              </Badge>
-              <ChevronDown className="h-4 w-4 ml-2 transition-transform group-data-[state=open]:rotate-180" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className={`mt-2 p-4 rounded-lg border ${config.border} ${config.bg}`}>
-              <div className="prose dark:prose-invert max-w-none text-sm">
-                <ReactMarkdown
-                  components={{
-                    h2: ({ children }) => <h2 className={`text-lg font-semibold ${config.textColor} mb-3 mt-0`}>{children}</h2>,
-                    ul: ({ children }) => <ul className="list-disc pl-5 space-y-1">{children}</ul>,
-                    li: ({ children }) => <li className="text-sm">{children}</li>
-                  }}
-                >
-                  {isStructuredAttachments(message.attachments) ? message.attachments.appendix : (message.attachments as any)?.appendix}
-                </ReactMarkdown>
-              </div>
-              
-              {/* Audio Appunti - Auto-play quando si apre */}
-              {appendixAudioPlaying && (
-                <div className="mt-3">
-                  <AudioMessagePlayer 
-                    audioUrl={message.audio_url || ''} 
-                    autoPlay={false}
-                    onPlayStart={() => console.log('🔊 Audio Appunti START')}
-                    onPlayEnd={() => {
-                      console.log('⏸️ Audio Appunti END');
-                      setAppendixAudioPlaying(false);
-                    }}
-                    onPlayingChange={(playing) => console.log(`🎵 Audio Appunti ${playing ? 'PLAYING' : 'PAUSED'}`)}
-                  />
-                </div>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
-        )}
 
         {/* ✅ REPORT: Supporto sia structured che legacy format */}
         {((isStructuredAttachments(message.attachments) && message.attachments.report) || (message.attachments as any)?.report) && message.sender_type !== 'human' && (

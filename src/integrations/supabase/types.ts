@@ -409,7 +409,6 @@ export type Database = {
           audio_mode: string
           auto_advance_tabs: boolean | null
           auto_play_audio: boolean
-          cognitive_buffers: Json | null
           continuous_mic_enabled: boolean | null
           conversation_id: string
           conversation_pace: string
@@ -436,7 +435,6 @@ export type Database = {
           audio_mode?: string
           auto_advance_tabs?: boolean | null
           auto_play_audio?: boolean
-          cognitive_buffers?: Json | null
           continuous_mic_enabled?: boolean | null
           conversation_id: string
           conversation_pace?: string
@@ -463,7 +461,6 @@ export type Database = {
           audio_mode?: string
           auto_advance_tabs?: boolean | null
           auto_play_audio?: boolean
-          cognitive_buffers?: Json | null
           continuous_mic_enabled?: boolean | null
           conversation_id?: string
           conversation_pace?: string

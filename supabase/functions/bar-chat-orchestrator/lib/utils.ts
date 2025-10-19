@@ -81,21 +81,21 @@ export function collapseConsecutiveMessages(messages: any[]): any[] {
   for (const msg of messages) {
     if (msg.role === lastRole) {
       // Accumula messaggi dello stesso tipo
-      buffer += '\n\n' + msg.content;
+      buffer += '\n\n' + msg.content.trim();
     } else {
       // Salva il buffer precedente
       if (buffer && lastRole) {
-        collapsed.push({ role: lastRole, content: buffer });
+        collapsed.push({ role: lastRole, content: buffer.trim() });
       }
       // Inizia nuovo buffer
       lastRole = msg.role;
-      buffer = msg.content;
+      buffer = msg.content.trim();
     }
   }
   
   // Aggiungi l'ultimo buffer
   if (buffer && lastRole) {
-    collapsed.push({ role: lastRole, content: buffer });
+    collapsed.push({ role: lastRole, content: buffer.trim() });
   }
 
   return collapsed;

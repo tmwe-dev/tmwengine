@@ -419,14 +419,8 @@ export const MessageInputWithAttachments = ({
             </Button>
           </div>
 
-          {/* Controlli TTS */}
+          {/* Video Call Control */}
           <TtsControls 
-            ttsEngine={ttsEngine}
-            selectedVoice={selectedVoice}
-            onEngineChange={onEngineChange}
-            onVoiceChange={onVoiceChange}
-            elevenLabsVoices={elevenLabsVoices}
-            isLoadingVoices={isLoadingVoices}
             roomId={roomId}
             roomName={roomName}
           />

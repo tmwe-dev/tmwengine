@@ -35,17 +35,16 @@ export const IncomingCallDialog = ({
   }, [isOpen, onReject]);
 
   const [ringAudio] = useState(() => {
-    const audioContext = new AudioContext();
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const audioContext = new AudioContextClass();
     let intervalId: NodeJS.Timeout | null = null;
     let isPlaying = false;
     
     const playRingPattern = () => {
-      // Pattern: 2 "beep" da 400ms ciascuno, poi 4 secondi di pausa
       const oscillator1 = audioContext.createOscillator();
       const oscillator2 = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
-      // Frequenza tipica di una telefonata europea
       oscillator1.frequency.value = 425;
       oscillator2.frequency.value = 425;
       
@@ -56,11 +55,9 @@ export const IncomingCallDialog = ({
       
       const now = audioContext.currentTime;
       
-      // Primo "ring"
       oscillator1.start(now);
       oscillator1.stop(now + 0.4);
       
-      // Secondo "ring" dopo una breve pausa
       oscillator2.start(now + 0.6);
       oscillator2.stop(now + 1.0);
     };
@@ -69,8 +66,8 @@ export const IncomingCallDialog = ({
       play: () => {
         if (!isPlaying) {
           isPlaying = true;
-          playRingPattern(); // Suona subito
-          intervalId = setInterval(playRingPattern, 5000); // Poi ogni 5 secondi
+          playRingPattern();
+          intervalId = setInterval(playRingPattern, 5000);
         }
       },
       pause: () => {
@@ -81,17 +78,36 @@ export const IncomingCallDialog = ({
             intervalId = null;
           }
         }
+      },
+      cleanup: () => {
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+        if (audioContext.state !== 'closed') {
+          audioContext.close();
+        }
       }
     };
   });
 
   useEffect(() => {
-    if (isOpen) {
+    return () => {
+      ringAudio.cleanup();
+    };
+  }, [ringAudio]);
+
+  useEffect(() => {
+    const wasAccepted = sessionStorage.getItem('callAccepted') === 'true';
+    
+    if (isOpen && !wasAccepted) {
       console.log('[IncomingCallDialog] 🔔 Dialog opened, playing ring');
       ringAudio.play();
     } else {
-      console.log('[IncomingCallDialog] 🔕 Dialog closed, stopping ring');
+      console.log('[IncomingCallDialog] 🔕 Dialog closed or accepted, stopping ring');
       ringAudio.pause();
+      if (wasAccepted) {
+        sessionStorage.removeItem('callAccepted');
+      }
     }
   }, [isOpen, ringAudio]);
 

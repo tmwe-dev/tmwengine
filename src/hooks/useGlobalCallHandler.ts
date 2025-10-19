@@ -71,11 +71,11 @@ export const useGlobalCallHandler = (currentUserId: string) => {
     
     console.log('[GlobalCallHandler] ✅ Call accepted');
     
-    // ✅ FIX: Differenzia comportamento per tipo chiamata
+    sessionStorage.setItem('callAccepted', 'true');
+    
     if (incomingCall.callType === 'video') {
       console.log('[GlobalCallHandler] 📹 Video call - dispatching event');
       
-      // Dispatch evento custom per aprire NativeVideoCallDialog
       window.dispatchEvent(new CustomEvent('open-video-call-dialog', {
         detail: {
           targetUserId: incomingCall.from,
@@ -86,11 +86,11 @@ export const useGlobalCallHandler = (currentUserId: string) => {
       }));
       
     } else {
-      // Audio call - naviga a CallRoom (comportamento esistente)
       console.log('[GlobalCallHandler] 📞 Audio call - navigating to CallRoom');
       navigate(`/call-room?targetUserId=${incomingCall.from}&roomId=${incomingCall.roomId}&acceptedCall=true&incomingFrom=${incomingCall.from}`);
     }
     
+    sessionStorage.removeItem('pendingIncomingCall');
     setIncomingCall(null);
   };
 

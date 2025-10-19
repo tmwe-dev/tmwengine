@@ -14,15 +14,19 @@ export const GlobalVideoCallHandler = () => {
   const [videoCallState, setVideoCallState] = useState<VideoCallState | null>(null);
 
   useEffect(() => {
-    // Ottieni currentUserId
     supabase.auth.getUser().then(({ data }) => {
       setCurrentUserId(data.user?.id || '');
     });
 
-    // Listener per evento custom
     const handleOpenVideoCall = (event: Event) => {
       const customEvent = event as CustomEvent<VideoCallState>;
       console.log('[GlobalVideoCallHandler] 📹 Opening video call dialog:', customEvent.detail);
+      
+      if (videoCallState) {
+        console.warn('[GlobalVideoCallHandler] ⚠️ Already in a call, ignoring');
+        return;
+      }
+      
       setVideoCallState(customEvent.detail);
     };
 
@@ -31,7 +35,7 @@ export const GlobalVideoCallHandler = () => {
     return () => {
       window.removeEventListener('open-video-call-dialog', handleOpenVideoCall);
     };
-  }, []);
+  }, [videoCallState]);
 
   if (!videoCallState || !currentUserId) return null;
 

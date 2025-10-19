@@ -95,11 +95,14 @@ export const useWebRTCSignaling = (roomId: string, userId: string) => {
     };
   }, [roomId, userId]);
 
-  const sendSignal = useCallback((message: Omit<SignalingMessage, 'from'>) => {
-    if (!channelRef.current) return;
+  const sendSignal = useCallback(async (message: Omit<SignalingMessage, 'from'>) => {
+    if (!channelRef.current) {
+      console.error('[WebRTCSignaling] ❌ Cannot send signal - channel not ready');
+      return;
+    }
     
     console.log('[WebRTCSignaling] Sending signal:', message.type, 'to:', message.to || 'broadcast');
-    channelRef.current.send({
+    return await channelRef.current.send({
       type: 'broadcast',
       event: 'webrtc-signal',
       payload: { ...message, from: userId }

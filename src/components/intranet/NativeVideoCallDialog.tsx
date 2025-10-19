@@ -48,6 +48,14 @@ export const NativeVideoCallDialog = ({
     }
   }, [isOpen, targetUserId, isIncoming, isInCall, answerCall, startCall]);
 
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
+      remoteVideoRef.current.play().catch(err => {
+        console.error('[NativeVideoCallDialog] ❌ Autoplay blocked:', err);
+      });
+    }
+  }, [remoteVideoRef.current?.srcObject]);
+
   const handleClose = () => {
     endCall();
     onClose();

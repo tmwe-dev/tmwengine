@@ -37,6 +37,12 @@ export class WebRTCPeerConnection {
 
     this.pc.onconnectionstatechange = () => {
       console.log('[PeerConnection] Connection state:', this.pc.connectionState);
+      
+      if (this.pc.connectionState === 'failed') {
+        console.error('[PeerConnection] ❌ Connection failed - attempting restart');
+        this.pc.restartIce();
+      }
+      
       if (this.onConnectionStateChange) {
         this.onConnectionStateChange(this.pc.connectionState);
       }
@@ -124,7 +130,12 @@ export class WebRTCPeerConnection {
   }
 
   close() {
-    this.localStream?.getTracks().forEach(track => track.stop());
-    this.pc.close();
+    if (this.pc.connectionState !== 'closed') {
+      console.log('[PeerConnection] Closing connection');
+      this.localStream?.getTracks().forEach(track => track.stop());
+      this.pc.close();
+    } else {
+      console.log('[PeerConnection] Connection already closed');
+    }
   }
 }

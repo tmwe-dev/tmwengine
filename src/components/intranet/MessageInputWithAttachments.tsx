@@ -404,7 +404,7 @@ export const MessageInputWithAttachments = ({
                 }
               }}
               placeholder="Scrivi un messaggio..."
-              className="flex-1 resize-none rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[80px]"
+              className="w-full sm:flex-1 resize-none rounded-lg border bg-background px-2 sm:px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[80px]"
               disabled={isSending}
               rows={1}
             />

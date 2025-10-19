@@ -275,7 +275,7 @@ export const BarVoiceRecorder = ({
         }
         
         console.log('📝 Trascrizione valida:', transcribedText);
-        onTranscriptionComplete(transcribedText);
+        onTranscriptionComplete(transcribedText + '|||UPDATE|||');
         // toast({ title: "✓ Audio trascritto" });
       };
 

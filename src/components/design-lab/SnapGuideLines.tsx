@@ -18,25 +18,29 @@ export const SnapGuideLines = ({
           return (
             <div
               key={`guide-v-${index}`}
-              className="absolute top-0 w-[2px] bg-destructive pointer-events-none animate-in fade-in duration-100 z-50"
+              className="absolute w-[1px] pointer-events-none z-50 overflow-hidden"
               style={{
                 left: `${guide.position}px`,
-                height: '100%',
-                boxShadow: '0 0 4px hsl(var(--destructive))',
+                top: '35%',
+                height: '30%',
               }}
-            />
+            >
+              <div className="absolute w-full h-full bg-gradient-to-b from-transparent via-destructive via-40% to-transparent animate-line-bounce" />
+            </div>
           );
         } else {
           return (
             <div
               key={`guide-h-${index}`}
-              className="absolute left-0 h-[2px] bg-destructive pointer-events-none animate-in fade-in duration-100 z-50"
+              className="absolute h-[1px] pointer-events-none z-50 overflow-hidden"
               style={{
                 top: `${guide.position}px`,
-                width: '100%',
-                boxShadow: '0 0 4px hsl(var(--destructive))',
+                left: '35%',
+                width: '30%',
               }}
-            />
+            >
+              <div className="absolute w-full h-full bg-gradient-to-r from-transparent via-destructive via-40% to-transparent animate-line-bounce" />
+            </div>
           );
         }
       })}

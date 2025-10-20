@@ -12,7 +12,7 @@ interface CanvasElementProps {
   component: DesignLabComponent;
   isSelected: boolean;
   onSelect: () => void;
-  onUpdatePosition: (position: any) => void;
+  onUpdatePosition: (position: { x: number; y: number; width: number; height: number }) => void;
   canvasRef: RefObject<HTMLDivElement>;
   components: DesignLabComponent[];
   onGuidesChange: (guides: GuideLine[]) => void;

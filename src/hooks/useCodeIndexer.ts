@@ -47,9 +47,35 @@ export const useCodeIndexer = () => {
     mutationFn: async (forceReindex: boolean = false) => {
       setIsIndexing(true);
       
+      // Step 1: Read all files from project using Vite's import.meta.glob
+      const modules = import.meta.glob('/src/**/*.{ts,tsx,js,jsx}', { 
+        eager: false,
+        query: '?raw',
+        import: 'default'
+      });
+
+      // Step 2: Load all file contents
+      const files = await Promise.all(
+        Object.entries(modules).map(async ([path, loader]) => {
+          try {
+            const content = await loader() as string;
+            return {
+              file_path: path.replace(/^\//, ''), // Remove leading slash: /src/App.tsx -> src/App.tsx
+              content
+            };
+          } catch (err) {
+            console.error(`Error loading file ${path}:`, err);
+            return null;
+          }
+        })
+      );
+
+      const validFiles = files.filter((f): f is { file_path: string; content: string } => f !== null);
+
+      // Step 3: Send files to Edge Function for processing
       const { data, error } = await supabase.functions.invoke('index-codebase', {
         body: {
-          directories: ['src/'],
+          files: validFiles,
           forceReindex,
         },
       });

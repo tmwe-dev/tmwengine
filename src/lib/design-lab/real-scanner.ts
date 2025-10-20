@@ -72,7 +72,7 @@ export class RealDesignLabScanner {
     const { data: files, error } = await supabase
       .from('code_index')
       .select('file_path, content')
-      .like('file_path', 'src/%')
+      .or('file_path.like.src/%,file_path.like./src/%')
       .not('file_path', 'like', '%/integrations/supabase/types.ts')
       .not('file_path', 'like', '%.test.ts')
       .not('file_path', 'like', '%.test.tsx');

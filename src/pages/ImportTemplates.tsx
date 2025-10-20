@@ -2806,7 +2806,7 @@ export default function ImportTemplates() {
                           {filteredRecords.length}
                         </span>
                       )}
-                      <DialogTitle>Record Importati</DialogTitle>
+                      <DialogTitle></DialogTitle>
                       <span className="text-lg text-muted-foreground ml-2">
                         <span className="text-primary font-medium">{totalRecords}</span>
                       </span>

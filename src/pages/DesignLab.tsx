@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Save, Undo2, Redo2, Eye } from "lucide-react";
 import { useDesignLabPages } from "@/hooks/useDesignLabPages";
@@ -14,12 +15,15 @@ import { PropertiesPanel } from "@/components/design-lab/PropertiesPanel";
 import { RuntimePreview } from "@/components/design-lab/RuntimePreview";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DesignLabScanner } from "@/lib/design-lab/scanner";
 
 const DesignLabEditor = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
+  const [isScanning, setIsScanning] = useState(false);
 
   const { pages } = useDesignLabPages();
   const { 
@@ -152,6 +156,40 @@ const DesignLabEditor = () => {
     toast({ title: 'Pagina salvata manualmente' });
   };
 
+  const handleRunScanner = async () => {
+    setIsScanning(true);
+    try {
+      const scanner = new DesignLabScanner({
+        targetPages: [],
+        scanDepth: 'shallow',
+        generateThumbnails: false,
+        extractFunctions: true,
+        createPlugins: true,
+        exportFiles: false
+      });
+      
+      await scanner.scanAllPages();
+      
+      toast({
+        title: "Scansione completata",
+        description: "Componenti, funzioni e plugin estratti con successo"
+      });
+      
+      // Refresh queries
+      queryClient.invalidateQueries({ queryKey: ['extracted-components'] });
+      queryClient.invalidateQueries({ queryKey: ['extracted-functions'] });
+      queryClient.invalidateQueries({ queryKey: ['plugins'] });
+    } catch (error: any) {
+      toast({
+        title: "Errore scansione",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   if (!pageId) {
     return (
       <div className="container mx-auto p-6">
@@ -202,6 +240,15 @@ const DesignLabEditor = () => {
             <Button size="sm" onClick={handleSaveNow}>
               <Save className="h-4 w-4 mr-2" />
               Salva
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={handleRunScanner}
+              disabled={isScanning}
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              {isScanning ? 'Scansione...' : 'Scansiona Componenti'}
             </Button>
             <Button
               variant="outline"

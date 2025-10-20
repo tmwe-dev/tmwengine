@@ -1418,6 +1418,170 @@ export type Database = {
           },
         ]
       }
+      design_lab_extracted_components: {
+        Row: {
+          component_name: string
+          component_type: string
+          created_at: string
+          dependencies: Json | null
+          id: string
+          is_reusable: boolean | null
+          jsx_code: string
+          position_in_source: Json | null
+          preview_html: string | null
+          props_schema: Json | null
+          source_page_id: string | null
+          thumbnail_url: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          component_name: string
+          component_type: string
+          created_at?: string
+          dependencies?: Json | null
+          id?: string
+          is_reusable?: boolean | null
+          jsx_code: string
+          position_in_source?: Json | null
+          preview_html?: string | null
+          props_schema?: Json | null
+          source_page_id?: string | null
+          thumbnail_url?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          component_name?: string
+          component_type?: string
+          created_at?: string
+          dependencies?: Json | null
+          id?: string
+          is_reusable?: boolean | null
+          jsx_code?: string
+          position_in_source?: Json | null
+          preview_html?: string | null
+          props_schema?: Json | null
+          source_page_id?: string | null
+          thumbnail_url?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_lab_extracted_components_source_page_id_fkey"
+            columns: ["source_page_id"]
+            isOneToOne: false
+            referencedRelation: "design_lab_source_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_lab_extracted_functions: {
+        Row: {
+          code_generic: string
+          code_original: string
+          complexity_score: number | null
+          component_id: string | null
+          created_at: string
+          dependencies: Json | null
+          description: string | null
+          event_handlers: Json | null
+          function_name: string
+          function_type: string
+          id: string
+          is_async: boolean | null
+          parameters: Json | null
+          return_type: string | null
+          source_page_id: string | null
+        }
+        Insert: {
+          code_generic: string
+          code_original: string
+          complexity_score?: number | null
+          component_id?: string | null
+          created_at?: string
+          dependencies?: Json | null
+          description?: string | null
+          event_handlers?: Json | null
+          function_name: string
+          function_type: string
+          id?: string
+          is_async?: boolean | null
+          parameters?: Json | null
+          return_type?: string | null
+          source_page_id?: string | null
+        }
+        Update: {
+          code_generic?: string
+          code_original?: string
+          complexity_score?: number | null
+          component_id?: string | null
+          created_at?: string
+          dependencies?: Json | null
+          description?: string | null
+          event_handlers?: Json | null
+          function_name?: string
+          function_type?: string
+          id?: string
+          is_async?: boolean | null
+          parameters?: Json | null
+          return_type?: string | null
+          source_page_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_lab_extracted_functions_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "design_lab_extracted_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_lab_extracted_functions_source_page_id_fkey"
+            columns: ["source_page_id"]
+            isOneToOne: false
+            referencedRelation: "design_lab_source_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_lab_hooks_library: {
+        Row: {
+          code_customizable: string
+          code_original: string
+          created_at: string
+          dependencies: Json | null
+          description: string | null
+          hook_name: string
+          hook_path: string
+          id: string
+          is_system_hook: boolean | null
+          usage_example: string | null
+        }
+        Insert: {
+          code_customizable: string
+          code_original: string
+          created_at?: string
+          dependencies?: Json | null
+          description?: string | null
+          hook_name: string
+          hook_path: string
+          id?: string
+          is_system_hook?: boolean | null
+          usage_example?: string | null
+        }
+        Update: {
+          code_customizable?: string
+          code_original?: string
+          created_at?: string
+          dependencies?: Json | null
+          description?: string | null
+          hook_name?: string
+          hook_path?: string
+          id?: string
+          is_system_hook?: boolean | null
+          usage_example?: string | null
+        }
+        Relationships: []
+      }
       design_lab_logic: {
         Row: {
           action_config: Json | null
@@ -1495,6 +1659,126 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           version?: number | null
+        }
+        Relationships: []
+      }
+      design_lab_plugins: {
+        Row: {
+          category: string | null
+          components_included: Json | null
+          config_schema: Json | null
+          created_at: string
+          description: string | null
+          export_path: string | null
+          functions_included: Json | null
+          generic_version: string
+          hooks_included: Json | null
+          id: string
+          is_exported: boolean | null
+          plugin_name: string
+          plugin_type: string
+          rating: number | null
+          required_tables: Json | null
+          supabase_version: string
+          tags: string[] | null
+          thumbnail_url: string | null
+          updated_at: string
+          usage_count: number | null
+          user_id: string | null
+          version: string | null
+        }
+        Insert: {
+          category?: string | null
+          components_included?: Json | null
+          config_schema?: Json | null
+          created_at?: string
+          description?: string | null
+          export_path?: string | null
+          functions_included?: Json | null
+          generic_version: string
+          hooks_included?: Json | null
+          id?: string
+          is_exported?: boolean | null
+          plugin_name: string
+          plugin_type: string
+          rating?: number | null
+          required_tables?: Json | null
+          supabase_version: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          user_id?: string | null
+          version?: string | null
+        }
+        Update: {
+          category?: string | null
+          components_included?: Json | null
+          config_schema?: Json | null
+          created_at?: string
+          description?: string | null
+          export_path?: string | null
+          functions_included?: Json | null
+          generic_version?: string
+          hooks_included?: Json | null
+          id?: string
+          is_exported?: boolean | null
+          plugin_name?: string
+          plugin_type?: string
+          rating?: number | null
+          required_tables?: Json | null
+          supabase_version?: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          user_id?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
+      design_lab_source_pages: {
+        Row: {
+          category: string | null
+          complexity_score: number | null
+          created_at: string
+          description: string | null
+          id: string
+          page_name: string
+          page_path: string
+          scanned_at: string | null
+          thumbnail_url: string | null
+          total_components: number | null
+          total_functions: number | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          complexity_score?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          page_name: string
+          page_path: string
+          scanned_at?: string | null
+          thumbnail_url?: string | null
+          total_components?: number | null
+          total_functions?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          complexity_score?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          page_name?: string
+          page_path?: string
+          scanned_at?: string | null
+          thumbnail_url?: string | null
+          total_components?: number | null
+          total_functions?: number | null
+          updated_at?: string
         }
         Relationships: []
       }

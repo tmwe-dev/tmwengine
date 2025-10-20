@@ -33,7 +33,7 @@ export const useCodeIndexer = () => {
         .select('last_updated')
         .order('last_updated', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       return {
         fileCount: count || 0,

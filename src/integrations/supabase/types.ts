@@ -1420,48 +1420,66 @@ export type Database = {
       }
       design_lab_extracted_components: {
         Row: {
+          compatibility_context: Json | null
+          complexity_level: string | null
           component_name: string
           component_type: string
           created_at: string
           dependencies: Json | null
+          fields_schema: Json | null
           id: string
           is_reusable: boolean | null
           jsx_code: string
           position_in_source: Json | null
           preview_html: string | null
           props_schema: Json | null
+          section: string | null
           source_page_id: string | null
+          tags: string[] | null
           thumbnail_url: string | null
+          ui_category: string | null
           usage_count: number | null
         }
         Insert: {
+          compatibility_context?: Json | null
+          complexity_level?: string | null
           component_name: string
           component_type: string
           created_at?: string
           dependencies?: Json | null
+          fields_schema?: Json | null
           id?: string
           is_reusable?: boolean | null
           jsx_code: string
           position_in_source?: Json | null
           preview_html?: string | null
           props_schema?: Json | null
+          section?: string | null
           source_page_id?: string | null
+          tags?: string[] | null
           thumbnail_url?: string | null
+          ui_category?: string | null
           usage_count?: number | null
         }
         Update: {
+          compatibility_context?: Json | null
+          complexity_level?: string | null
           component_name?: string
           component_type?: string
           created_at?: string
           dependencies?: Json | null
+          fields_schema?: Json | null
           id?: string
           is_reusable?: boolean | null
           jsx_code?: string
           position_in_source?: Json | null
           preview_html?: string | null
           props_schema?: Json | null
+          section?: string | null
           source_page_id?: string | null
+          tags?: string[] | null
           thumbnail_url?: string | null
+          ui_category?: string | null
           usage_count?: number | null
         }
         Relationships: [
@@ -1476,8 +1494,10 @@ export type Database = {
       }
       design_lab_extracted_functions: {
         Row: {
+          applicable_to: string[] | null
           code_generic: string
           code_original: string
+          compatible_contexts: string[] | null
           complexity_score: number | null
           component_id: string | null
           created_at: string
@@ -1491,10 +1511,13 @@ export type Database = {
           parameters: Json | null
           return_type: string | null
           source_page_id: string | null
+          tags: string[] | null
         }
         Insert: {
+          applicable_to?: string[] | null
           code_generic: string
           code_original: string
+          compatible_contexts?: string[] | null
           complexity_score?: number | null
           component_id?: string | null
           created_at?: string
@@ -1508,10 +1531,13 @@ export type Database = {
           parameters?: Json | null
           return_type?: string | null
           source_page_id?: string | null
+          tags?: string[] | null
         }
         Update: {
+          applicable_to?: string[] | null
           code_generic?: string
           code_original?: string
+          compatible_contexts?: string[] | null
           complexity_score?: number | null
           component_id?: string | null
           created_at?: string
@@ -1525,6 +1551,7 @@ export type Database = {
           parameters?: Json | null
           return_type?: string | null
           source_page_id?: string | null
+          tags?: string[] | null
         }
         Relationships: [
           {
@@ -1613,6 +1640,57 @@ export type Database = {
             columns: ["component_id"]
             isOneToOne: false
             referencedRelation: "design_lab_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_lab_page_configurations: {
+        Row: {
+          component_mappings: Json | null
+          created_at: string | null
+          function_bindings: Json | null
+          id: string
+          metadata: Json | null
+          page_id: string
+          source_page_id: string | null
+          updated_at: string | null
+          validation_rules: Json | null
+        }
+        Insert: {
+          component_mappings?: Json | null
+          created_at?: string | null
+          function_bindings?: Json | null
+          id?: string
+          metadata?: Json | null
+          page_id: string
+          source_page_id?: string | null
+          updated_at?: string | null
+          validation_rules?: Json | null
+        }
+        Update: {
+          component_mappings?: Json | null
+          created_at?: string | null
+          function_bindings?: Json | null
+          id?: string
+          metadata?: Json | null
+          page_id?: string
+          source_page_id?: string | null
+          updated_at?: string | null
+          validation_rules?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_lab_page_configurations_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: true
+            referencedRelation: "design_lab_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_lab_page_configurations_source_page_id_fkey"
+            columns: ["source_page_id"]
+            isOneToOne: false
+            referencedRelation: "design_lab_source_pages"
             referencedColumns: ["id"]
           },
         ]

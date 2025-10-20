@@ -7,7 +7,8 @@ import { useDesignLabComponents } from "@/hooks/useDesignLabComponents";
 import { useDesignLabLogic } from "@/hooks/useDesignLabLogic";
 import { useCommandHistory, MoveComponentCommand, UpdatePropsCommand } from "@/hooks/useCommandHistory";
 import { useAutoSave } from "@/hooks/useAutoSave";
-import { ComponentPalette } from "@/components/design-lab/ComponentPalette";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ComponentLibrary } from "@/components/design-lab/ComponentLibrary";
 import { Canvas } from "@/components/design-lab/Canvas";
 import { PropertiesPanel } from "@/components/design-lab/PropertiesPanel";
 import { RuntimePreview } from "@/components/design-lab/RuntimePreview";
@@ -62,7 +63,47 @@ const DesignLabEditor = () => {
       order_index: (components?.length || 0) + 1,
     });
 
-    toast({ title: `${componentData.label} aggiunto al canvas` });
+    toast({ title: `${componentData.label || componentData.type} aggiunto al canvas` });
+  };
+
+  const handleDropFromLibrary = async (dropData: any, position: { x: number; y: number }) => {
+    if (!pageId) return;
+
+    // Convert ExtractedComponent/Function/Plugin → DesignLabComponent
+    let componentData;
+    
+    if (dropData.type === 'extracted-component') {
+      componentData = {
+        type: dropData.component.component_type,
+        label: dropData.component.component_name,
+        defaultProps: dropData.component.props_schema || {},
+        defaultSize: {
+          width: dropData.component.position_in_source?.width || 300,
+          height: dropData.component.position_in_source?.height || 200
+        }
+      };
+    } else if (dropData.type === 'extracted-function') {
+      componentData = {
+        type: 'custom-function',
+        label: dropData.functionItem.function_name,
+        defaultProps: {
+          functionName: dropData.functionItem.function_name,
+          code: dropData.functionItem.code_generic
+        },
+        defaultSize: { width: 200, height: 100 }
+      };
+    } else if (dropData.type === 'plugin') {
+      componentData = {
+        type: 'plugin',
+        label: dropData.plugin.plugin_name,
+        defaultProps: { pluginId: dropData.plugin.id },
+        defaultSize: { width: 400, height: 300 }
+      };
+    }
+
+    if (componentData) {
+      await handleDropComponent(componentData, position);
+    }
   };
 
   const handleUpdatePosition = async (id: string, newPosition: any) => {
@@ -125,12 +166,14 @@ const DesignLabEditor = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Top Toolbar */}
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Sparkles className="h-5 w-5 text-primary" />
+    <SidebarProvider>
+      <div className="h-screen flex flex-col bg-background w-full">
+        {/* Top Toolbar */}
+        <div className="border-b bg-card">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger />
+              <Sparkles className="h-5 w-5 text-primary" />
             <div>
               <h1 className="font-semibold">{currentPage?.page_name || 'Design Lab'}</h1>
               <p className="text-xs text-muted-foreground">
@@ -172,25 +215,23 @@ const DesignLabEditor = () => {
         </div>
       </div>
 
-      {/* Main Layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {activeTab === 'editor' ? (
-          <>
-            {/* Left: Component Palette */}
-            <div className="w-64 border-r bg-card p-4 overflow-auto animate-fade-in">
-              <ComponentPalette />
-            </div>
+        {/* Main Layout */}
+        <div className="flex-1 flex overflow-hidden">
+          {activeTab === 'editor' ? (
+            <>
+              {/* Left: Component Library Sidebar */}
+              <ComponentLibrary />
 
-            {/* Center: Canvas */}
-            <div className="flex-1 p-4 overflow-auto animate-fade-in">
-              <Canvas
-                components={components || []}
-                selectedComponentId={selectedComponentId}
-                onSelectComponent={setSelectedComponentId}
-                onDropComponent={handleDropComponent}
-                onUpdatePosition={handleUpdatePosition}
-              />
-            </div>
+              {/* Center: Canvas */}
+              <div className="flex-1 p-4 overflow-auto animate-fade-in">
+                <Canvas
+                  components={components || []}
+                  selectedComponentId={selectedComponentId}
+                  onSelectComponent={setSelectedComponentId}
+                  onDropComponent={handleDropFromLibrary}
+                  onUpdatePosition={handleUpdatePosition}
+                />
+              </div>
 
             {/* Right: Properties Panel */}
             <div className="w-80 border-l bg-card p-4 overflow-auto animate-fade-in">
@@ -213,9 +254,10 @@ const DesignLabEditor = () => {
               logicRules={logicRules || []}
             />
           </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 

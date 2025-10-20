@@ -18,12 +18,13 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
   const { toast } = useToast();
 
   const handleDragStart = (e: React.DragEvent) => {
+    const dragData = {
+      type: "extracted-component",
+      component: component,
+    };
     e.dataTransfer.setData(
       "application/json",
-      JSON.stringify({
-        type: "extracted-component",
-        component: component,
-      })
+      JSON.stringify({ data: dragData })
     );
     e.dataTransfer.effectAllowed = "copy";
   };

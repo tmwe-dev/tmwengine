@@ -50,8 +50,23 @@ export const Canvas = ({
     const y = e.clientY - rect.top;
 
     try {
-      const componentData = JSON.parse(e.dataTransfer.getData('application/json'));
-      onDropComponent(componentData, { x, y });
+      const dragData = e.dataTransfer.getData('application/json');
+      if (!dragData) return;
+      
+      const parsedData = JSON.parse(dragData);
+      
+      // Handle drop from ComponentPalette (old format)
+      if (parsedData.type && parsedData.defaultProps && !parsedData.data) {
+        onDropComponent(parsedData, { x, y });
+      }
+      // Handle drop from ComponentLibrary (new format)
+      else if (parsedData.data) {
+        onDropComponent(parsedData.data, { x, y });
+      }
+      // Fallback to old format
+      else {
+        onDropComponent(parsedData, { x, y });
+      }
     } catch (error) {
       console.error('Error parsing dropped component:', error);
     }

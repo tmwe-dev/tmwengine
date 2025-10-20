@@ -3818,6 +3818,39 @@ export type Database = {
         }
         Relationships: []
       }
+      project_history: {
+        Row: {
+          created_at: string | null
+          file_modified: string | null
+          id: string
+          metadata: Json | null
+          operation: string
+          tables_modified: string[] | null
+          timestamp: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_modified?: string | null
+          id?: string
+          metadata?: Json | null
+          operation: string
+          tables_modified?: string[] | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_modified?: string | null
+          id?: string
+          metadata?: Json | null
+          operation?: string
+          tables_modified?: string[] | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       rubrica: {
         Row: {
           alias: string | null

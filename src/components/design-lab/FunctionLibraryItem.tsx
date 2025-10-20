@@ -27,12 +27,13 @@ export function FunctionLibraryItem({ functionItem, collapsed }: FunctionLibrary
   };
 
   const handleDragStart = (e: React.DragEvent) => {
+    const dragData = {
+      type: "extracted-function",
+      functionItem: functionItem,
+    };
     e.dataTransfer.setData(
       "application/json",
-      JSON.stringify({
-        type: "extracted-function",
-        function: functionItem,
-      })
+      JSON.stringify({ data: dragData })
     );
     e.dataTransfer.effectAllowed = "copy";
   };

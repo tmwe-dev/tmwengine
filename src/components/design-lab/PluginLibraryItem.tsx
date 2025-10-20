@@ -26,12 +26,13 @@ export function PluginLibraryItem({ plugin, collapsed }: PluginLibraryItemProps)
   };
 
   const handleDragStart = (e: React.DragEvent) => {
+    const dragData = {
+      type: "plugin",
+      plugin: plugin,
+    };
     e.dataTransfer.setData(
       "application/json",
-      JSON.stringify({
-        type: "plugin",
-        plugin: plugin,
-      })
+      JSON.stringify({ data: dragData })
     );
     e.dataTransfer.effectAllowed = "copy";
   };

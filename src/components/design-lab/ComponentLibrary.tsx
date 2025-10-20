@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Package, Code2, Puzzle, FileCode } from "lucide-react";
+import { Search, Package, Code2, Puzzle, MousePointer, Type, CheckSquare, FileText } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +21,41 @@ import { useSourcePages } from "@/hooks/useSourcePages";
 import { ComponentLibraryItem } from "./ComponentLibraryItem";
 import { FunctionLibraryItem } from "./FunctionLibraryItem";
 import { PluginLibraryItem } from "./PluginLibraryItem";
+
+const UI_BASE_COMPONENTS = [
+  {
+    id: 'button',
+    type: 'button',
+    label: 'Pulsante',
+    icon: MousePointer,
+    defaultProps: { children: 'Click me', variant: 'default' },
+    defaultSize: { width: 120, height: 40 },
+  },
+  {
+    id: 'input',
+    type: 'input',
+    label: 'Input',
+    icon: Type,
+    defaultProps: { placeholder: 'Inserisci testo...', type: 'text' },
+    defaultSize: { width: 200, height: 40 },
+  },
+  {
+    id: 'checkbox',
+    type: 'checkbox',
+    label: 'Checkbox',
+    icon: CheckSquare,
+    defaultProps: { label: 'Opzione' },
+    defaultSize: { width: 100, height: 24 },
+  },
+  {
+    id: 'textarea',
+    type: 'textarea',
+    label: 'Area Testo',
+    icon: FileText,
+    defaultProps: { placeholder: 'Inserisci testo multilinea...', rows: 4 },
+    defaultSize: { width: 300, height: 100 },
+  },
+];
 
 export function ComponentLibrary() {
   const { state } = useSidebar();
@@ -70,9 +105,13 @@ export function ComponentLibrary() {
           </div>
         )}
 
-        <Tabs defaultValue="components" className="flex-1">
+        <Tabs defaultValue="ui-base" className="flex-1">
           {!collapsed && (
-            <TabsList className="grid w-full grid-cols-3 mx-4">
+            <TabsList className="grid w-full grid-cols-4 mx-4">
+              <TabsTrigger value="ui-base" className="text-xs">
+                <FileText className="h-3 w-3 mr-1" />
+                UI Base
+              </TabsTrigger>
               <TabsTrigger value="components" className="text-xs">
                 <Package className="h-3 w-3 mr-1" />
                 Componenti
@@ -87,6 +126,49 @@ export function ComponentLibrary() {
               </TabsTrigger>
             </TabsList>
           )}
+
+          <TabsContent value="ui-base" className="mt-0">
+            <ScrollArea className="h-[calc(100vh-240px)]">
+              <SidebarGroup>
+                {!collapsed && (
+                  <SidebarGroupLabel className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Componenti UI Base ({UI_BASE_COMPONENTS.length})
+                  </SidebarGroupLabel>
+                )}
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {UI_BASE_COMPONENTS.map((component) => (
+                      <SidebarMenuItem key={component.id}>
+                        <div
+                          draggable
+                          onDragStart={(e) => {
+                            const dragData = {
+                              type: 'ui-base',
+                              component: component,
+                            };
+                            e.dataTransfer.setData('application/json', JSON.stringify({ data: dragData }));
+                            e.dataTransfer.effectAllowed = 'copy';
+                          }}
+                          className="group p-3 border rounded-lg hover:border-primary transition-all cursor-move bg-card m-2"
+                        >
+                          <div className="flex items-center gap-3">
+                            <component.icon className="h-5 w-5 text-muted-foreground" />
+                            {!collapsed && (
+                              <div className="flex-1">
+                                <h4 className="font-medium text-sm">{component.label}</h4>
+                                <p className="text-xs text-muted-foreground">{component.type}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </ScrollArea>
+          </TabsContent>
 
           <TabsContent value="components" className="mt-0">
             <ScrollArea className="h-[calc(100vh-240px)]">

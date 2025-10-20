@@ -12,6 +12,7 @@ import { usePageConfiguration } from "@/hooks/usePageConfiguration";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ComponentLibrary } from "@/components/design-lab/ComponentLibrary";
 import { Canvas } from "@/components/design-lab/Canvas";
+import { AISuggestionsPanel } from "@/components/design-lab/AISuggestionsPanel";
 import { PropertiesPanel } from "@/components/design-lab/PropertiesPanel";
 import { RuntimePreview } from "@/components/design-lab/RuntimePreview";
 import { useToast } from "@/hooks/use-toast";
@@ -299,18 +300,47 @@ const DesignLabEditor = () => {
                 />
               </div>
 
-            {/* Right: Properties Panel */}
-            <div className="w-80 border-l bg-card p-4 overflow-auto animate-fade-in">
-              <PropertiesPanel
-                component={selectedComponent}
-                onUpdateProps={handleUpdateProps}
-                onUpdatePosition={(position) => {
-                  if (selectedComponent) {
-                    handleUpdatePosition(selectedComponent.id, position);
-                  }
-                }}
-                onDelete={handleDeleteComponent}
-              />
+            {/* Right: AI Suggestions + Properties Panel */}
+            <div className="w-80 border-l bg-card overflow-auto animate-fade-in">
+              <div className="p-4 space-y-4">
+                {/* AI Suggestions */}
+                {currentPage && (
+                  <AISuggestionsPanel
+                    currentComponents={components || []}
+                    pageName={currentPage.page_name}
+                    pageDescription={currentPage.description}
+                    onAddSuggestion={async (suggestion) => {
+                      // Add suggested component to canvas
+                      await handleDropFromLibrary(
+                        {
+                          type: 'extracted-component',
+                          component: {
+                            component_name: suggestion.component_name,
+                            component_type: suggestion.component_type,
+                            ui_category: suggestion.ui_category,
+                            tags: suggestion.tags,
+                            complexity_level: suggestion.estimated_complexity,
+                            props_schema: {},
+                          }
+                        },
+                        { x: 50, y: 50 + (components?.length || 0) * 100 }
+                      );
+                    }}
+                  />
+                )}
+
+                {/* Properties Panel */}
+                <PropertiesPanel
+                  component={selectedComponent}
+                  onUpdateProps={handleUpdateProps}
+                  onUpdatePosition={(position) => {
+                    if (selectedComponent) {
+                      handleUpdatePosition(selectedComponent.id, position);
+                    }
+                  }}
+                  onDelete={handleDeleteComponent}
+                />
+              </div>
             </div>
           </>
         ) : (

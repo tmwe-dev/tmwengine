@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { useDesignLabComponents } from "@/hooks/useDesignLabComponents";
 import { useDesignLabLogic } from "@/hooks/useDesignLabLogic";
 import { useCommandHistory, MoveComponentCommand, UpdatePropsCommand } from "@/hooks/useCommandHistory";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { usePageConfiguration } from "@/hooks/usePageConfiguration";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ComponentLibrary } from "@/components/design-lab/ComponentLibrary";
 import { Canvas } from "@/components/design-lab/Canvas";
@@ -37,19 +38,40 @@ const DesignLabEditor = () => {
 
   const { executeCommand, undo, redo, canUndo, canRedo } = useCommandHistory();
 
+  // TICKET 6: Page configuration persistence
+  const { configuration, saveConfiguration, autoSave, isSaving } = usePageConfiguration(pageId);
+
   const currentPage = pages?.find(p => p.id === pageId);
   const selectedComponent = components?.find(c => c.id === selectedComponentId) || null;
 
-  // Auto-save components data
-  useAutoSave(components, {
-    delay: 2000,
-    onSave: async () => {
-      console.log('Auto-saving components...');
-    },
-    onSuccess: () => {
-      console.log('Components auto-saved');
-    },
-  });
+  // Auto-save configuration when components change
+  useEffect(() => {
+    if (components && components.length > 0 && pageId) {
+      const timer = setTimeout(() => {
+        autoSave(components);
+      }, 3000); // Debounce 3 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [components, pageId]);
+
+  // Manual save handler
+  const handleSaveNow = async () => {
+    if (!pageId || !components) return;
+    
+    try {
+      await saveConfiguration({
+        pageId,
+        components,
+        metadata: {
+          manual_save: true,
+          saved_at: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('Save failed:', error);
+    }
+  };
 
   const handleDropComponent = async (componentData: any, position: { x: number; y: number }) => {
     if (!pageId) return;
@@ -152,9 +174,6 @@ const DesignLabEditor = () => {
     setSelectedComponentId(null);
   };
 
-  const handleSaveNow = () => {
-    toast({ title: 'Pagina salvata manualmente' });
-  };
 
   const handleRunScanner = async () => {
     setIsScanning(true);

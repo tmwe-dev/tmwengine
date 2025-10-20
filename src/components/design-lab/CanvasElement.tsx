@@ -1,10 +1,7 @@
 import { useState, useRef, useEffect, RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { DesignLabComponent } from "@/types/design-lab";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
+import { ComponentRenderer } from "./ComponentRenderer";
 import { GripVertical } from "lucide-react";
 import { GuideLine, DistanceInfo, getGuideLines, snapToGuides, calculateNearestDistances } from "@/lib/design-lab/snap-guides";
 
@@ -19,27 +16,8 @@ interface CanvasElementProps {
   onDistancesChange: (distances: DistanceInfo[]) => void;
 }
 
-const ComponentRenderer = ({ type, props }: { type: string; props: any }) => {
-  switch (type) {
-    case 'input':
-      return <Input {...props} />;
-    case 'button':
-      return <Button {...props}>{props.children || 'Button'}</Button>;
-    case 'checkbox':
-      return (
-        <div className="flex items-center space-x-2">
-          <Checkbox {...props} />
-          <label className="text-sm">{props.label || 'Checkbox'}</label>
-        </div>
-      );
-    case 'textarea':
-      return <Textarea {...props} />;
-    default:
-      return <div className="p-2 border rounded">Unknown: {type}</div>;
-  }
-};
 
-export const CanvasElement = ({ 
+export const CanvasElement = ({
   component, 
   isSelected, 
   onSelect, 
@@ -211,9 +189,18 @@ export const CanvasElement = ({
           </div>
         )}
 
-        {/* Component content */}
-        <div className="w-full h-full pointer-events-none">
-          <ComponentRenderer type={component.component_type} props={component.props} />
+        {/* Component content - TICKET 5: Real component rendering */}
+        <div className="w-full h-full pointer-events-none overflow-hidden">
+          {component.extracted_component ? (
+            <ComponentRenderer 
+              component={component.extracted_component} 
+              props={component.props || {}} 
+            />
+          ) : (
+            <div className="p-2 border rounded text-xs text-muted-foreground">
+              {component.component_type}
+            </div>
+          )}
         </div>
 
         {/* Resize handles (for future implementation) */}

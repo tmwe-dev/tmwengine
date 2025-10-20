@@ -145,8 +145,13 @@ const OAuthCallback = () => {
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">Supabase Token:</p>
             {extractedToken ? (
-              <p className="text-sm font-mono text-green-600 break-all">
-                {extractedToken.substring(0, 60)}...
+              <p className="text-xs px-3">
+                <span className="inline-flex items-center gap-1.5">
+                  <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                  </svg>
+                  <span className="text-green-600 font-medium">Connesso</span>
+                </span>
               </p>
             ) : (
               <p className="text-sm font-semibold text-red-600">
@@ -159,8 +164,13 @@ const OAuthCallback = () => {
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">TMWE Access Token:</p>
             {tmweToken ? (
-              <p className="text-sm font-mono text-green-600 break-all">
-                {tmweToken.substring(0, 60)}...
+              <p className="text-xs px-3">
+                <span className="inline-flex items-center gap-1.5">
+                  <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                  </svg>
+                  <span className="text-green-600 font-medium">Connesso</span>
+                </span>
               </p>
             ) : (
               <p className="text-sm font-semibold text-red-600">

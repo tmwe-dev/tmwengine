@@ -63,12 +63,29 @@ export const CanvasElement = memo(
   // Bug fix: sincronizza localPosition dopo aggiornamento del parent
   useEffect(() => {
     if (!isDragging && localPosition) {
-      // Se position è stato aggiornato dal parent, resetta localPosition
-      if (position.x === localPosition.x && position.y === localPosition.y) {
+      // Aspetta che position sia sincronizzato (con tolleranza di 1px per arrotondamenti)
+      const isPositionSynced = 
+        Math.abs(position.x - localPosition.x) < 1 && 
+        Math.abs(position.y - localPosition.y) < 1;
+      
+      if (isPositionSynced) {
+        console.log('✅ Position synced, resetting localPosition');
         setLocalPosition(null);
       }
     }
   }, [position.x, position.y, localPosition, isDragging]);
+
+  // Timeout di sicurezza per resettare localPosition dopo 2s se sync fallisce
+  useEffect(() => {
+    if (localPosition && !isDragging) {
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ Position sync timeout, forcing reset');
+        setLocalPosition(null);
+      }, 2000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [localPosition, isDragging]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.resize-handle')) return;
@@ -143,14 +160,14 @@ export const CanvasElement = memo(
       });
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = async () => {
       setIsDragging(false);
       onGuidesChange([]);
       onDistancesChange([]);
       
-      // Salva la posizione finale nel database
+      // Salva la posizione finale nel database e aspetta il completamento
       if (localPosition) {
-        onUpdatePosition({
+        await onUpdatePosition({
           x: localPosition.x,
           y: localPosition.y,
           width: position.width,

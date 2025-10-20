@@ -13,11 +13,14 @@ export const SnapGuideLines = ({
 }: SnapGuideLinesProps) => {
   return (
     <>
-      {guides.map((guide, index) => {
+      {guides.map((guide) => {
+        // Crea una key univoca basata su tipo + posizione + source
+        const uniqueKey = `${guide.type}-${guide.position}-${guide.source}`;
+        
         if (guide.type === 'vertical') {
           return (
             <div
-              key={`guide-v-${index}`}
+              key={uniqueKey}
               className="absolute w-[1px] pointer-events-none z-50 overflow-hidden"
               style={{
                 left: `${guide.position}px`,
@@ -31,7 +34,7 @@ export const SnapGuideLines = ({
         } else {
           return (
             <div
-              key={`guide-h-${index}`}
+              key={uniqueKey}
               className="absolute h-[1px] pointer-events-none z-50 overflow-hidden"
               style={{
                 top: `${guide.position}px`,

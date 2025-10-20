@@ -74,8 +74,8 @@ export const useDesignLabComponents = (pageId: string | null) => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['design-lab-components', pageId] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['design-lab-components', pageId] });
     },
     onError: (error) => {
       toast({ 

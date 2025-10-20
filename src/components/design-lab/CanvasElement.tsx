@@ -160,14 +160,14 @@ export const CanvasElement = memo(
       });
     };
 
-    const handleMouseUp = async () => {
+    const handleMouseUp = () => {
       setIsDragging(false);
       onGuidesChange([]);
       onDistancesChange([]);
       
-      // Salva la posizione finale nel database e aspetta il completamento
+      // Salva la posizione finale nel database
       if (localPosition) {
-        await onUpdatePosition({
+        onUpdatePosition({
           x: localPosition.x,
           y: localPosition.y,
           width: position.width,

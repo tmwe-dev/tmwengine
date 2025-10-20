@@ -1329,6 +1329,175 @@ export type Database = {
         }
         Relationships: []
       }
+      design_lab_audit_log: {
+        Row: {
+          action: string
+          from_version: number | null
+          id: string
+          metadata: Json | null
+          page_id: string
+          performed_at: string | null
+          performed_by: string
+          to_version: number | null
+        }
+        Insert: {
+          action: string
+          from_version?: number | null
+          id?: string
+          metadata?: Json | null
+          page_id: string
+          performed_at?: string | null
+          performed_by: string
+          to_version?: number | null
+        }
+        Update: {
+          action?: string
+          from_version?: number | null
+          id?: string
+          metadata?: Json | null
+          page_id?: string
+          performed_at?: string | null
+          performed_by?: string
+          to_version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_lab_audit_log_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "design_lab_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_lab_components: {
+        Row: {
+          component_type: string
+          created_at: string | null
+          id: string
+          order_index: number | null
+          page_id: string
+          parent_id: string | null
+          position: Json
+          props: Json | null
+        }
+        Insert: {
+          component_type: string
+          created_at?: string | null
+          id?: string
+          order_index?: number | null
+          page_id: string
+          parent_id?: string | null
+          position: Json
+          props?: Json | null
+        }
+        Update: {
+          component_type?: string
+          created_at?: string | null
+          id?: string
+          order_index?: number | null
+          page_id?: string
+          parent_id?: string | null
+          position?: Json
+          props?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_lab_components_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "design_lab_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_lab_components_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "design_lab_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_lab_logic: {
+        Row: {
+          action_config: Json | null
+          action_type: string
+          component_id: string
+          created_at: string | null
+          event_type: string
+          id: string
+        }
+        Insert: {
+          action_config?: Json | null
+          action_type: string
+          component_id: string
+          created_at?: string | null
+          event_type: string
+          id?: string
+        }
+        Update: {
+          action_config?: Json | null
+          action_type?: string
+          component_id?: string
+          created_at?: string | null
+          event_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_lab_logic_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "design_lab_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_lab_pages: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_published: boolean | null
+          is_template: boolean | null
+          page_name: string
+          published_at: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          version: number | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          is_template?: boolean | null
+          page_name: string
+          published_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          version?: number | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          is_template?: boolean | null
+          page_name?: string
+          published_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
       document_chunks: {
         Row: {
           chunk_index: number
@@ -3723,6 +3892,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_actions: {
+        Row: {
+          action_id: string
+          category: string | null
+          created_at: string | null
+          description: string | null
+          example_config: Json | null
+          icon: string | null
+          id: string
+          is_functional: boolean | null
+          name: string
+          required_config_schema: Json | null
+          requires_auth: boolean | null
+        }
+        Insert: {
+          action_id: string
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          example_config?: Json | null
+          icon?: string | null
+          id?: string
+          is_functional?: boolean | null
+          name: string
+          required_config_schema?: Json | null
+          requires_auth?: boolean | null
+        }
+        Update: {
+          action_id?: string
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          example_config?: Json | null
+          icon?: string | null
+          id?: string
+          is_functional?: boolean | null
+          name?: string
+          required_config_schema?: Json | null
+          requires_auth?: boolean | null
+        }
+        Relationships: []
       }
       system_languages: {
         Row: {

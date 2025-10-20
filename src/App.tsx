@@ -56,6 +56,7 @@ import NotificationSettings from "./pages/NotificationSettings";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import DesignLab from "./pages/DesignLab";
 import DesignLabDashboard from "./pages/DesignLabDashboard";
+import DesignLabScanner from "./pages/DesignLabScanner";
 
 const queryClient = new QueryClient();
 
@@ -356,6 +357,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <DesignLab />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/design-lab-scanner" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <DesignLabScanner />
                 </CRMLayout>
               </ProtectedRoute>
             } />

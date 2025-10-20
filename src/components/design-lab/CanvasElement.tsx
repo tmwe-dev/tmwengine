@@ -48,83 +48,93 @@ export const CanvasElement = memo(
     components,
     onGuidesChange 
   }: CanvasElementProps) => {
-    const elementRef = useRef<HTMLDivElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const elementRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [localPosition, setLocalPosition] = useState<{ x: number; y: number } | null>(null);
 
-    const position = component.position as { x: number; y: number; width: number; height: number };
+  const position = component.position as { x: number; y: number; width: number; height: number };
+  
+  // Durante il drag usa localPosition, altrimenti usa position dal componente
+  const displayPosition = localPosition || { x: position.x, y: position.y };
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-      if ((e.target as HTMLElement).closest('.resize-handle')) return;
-      
-      e.stopPropagation();
-      onSelect();
-      
-      const canvasRect = canvasRef.current?.getBoundingClientRect();
-      if (!canvasRect) return;
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.resize-handle')) return;
+    
+    e.stopPropagation();
+    onSelect();
+    
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (!canvasRect) return;
 
-      setIsDragging(true);
-      setDragStart({
-        x: e.clientX - canvasRect.left - position.x,
-        y: e.clientY - canvasRect.top - position.y,
-      });
-    };
+    // Inizializza localPosition con la posizione corrente
+    setLocalPosition({ x: position.x, y: position.y });
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - canvasRect.left - position.x,
+      y: e.clientY - canvasRect.top - position.y,
+    });
+  };
 
     useEffect(() => {
       if (!isDragging) return;
 
-      const handleMouseMove = (e: MouseEvent) => {
-        const canvasRect = canvasRef.current?.getBoundingClientRect();
-        if (!canvasRect) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const canvasRect = canvasRef.current?.getBoundingClientRect();
+      if (!canvasRect) return;
 
-        // Calcola posizione relativa al canvas (considerando scroll)
-        const scrollLeft = canvasRef.current?.scrollLeft || 0;
-        const scrollTop = canvasRef.current?.scrollTop || 0;
-        
-        let newX = e.clientX - canvasRect.left - dragStart.x + scrollLeft;
-        let newY = e.clientY - canvasRect.top - dragStart.y + scrollTop;
+      // Calcola posizione relativa al canvas (considerando scroll)
+      const scrollLeft = canvasRef.current?.scrollLeft || 0;
+      const scrollTop = canvasRef.current?.scrollTop || 0;
+      
+      let newX = e.clientX - canvasRect.left - dragStart.x + scrollLeft;
+      let newY = e.clientY - canvasRect.top - dragStart.y + scrollTop;
 
-        // Ottieni le guide per snap magnetico
-        const guides = getGuideLines(
-          canvasRect.width,
-          canvasRect.height,
-          components,
-          component.id
-        );
+      // Ottieni le guide per snap magnetico
+      const guides = getGuideLines(
+        canvasRect.width,
+        canvasRect.height,
+        components,
+        component.id
+      );
 
-        // Applica snap magnetico
-        const snapResult = snapToGuides(
-          newX,
-          newY,
-          position.width,
-          position.height,
-          guides,
-          8 // snap threshold in pixels
-        );
+      // Applica snap magnetico
+      const snapResult = snapToGuides(
+        newX,
+        newY,
+        position.width,
+        position.height,
+        guides,
+        8 // snap threshold in pixels
+      );
 
-        // Aggiorna guide attive per visualizzazione
-        onGuidesChange(snapResult.activeGuides);
+      // Aggiorna guide attive per visualizzazione
+      onGuidesChange(snapResult.activeGuides);
 
-        // Snap to grid (20px) come fallback se non c'è snap alle guide
-        const finalX = snapResult.activeGuides.length > 0 
-          ? snapResult.x 
-          : Math.round(snapResult.x / 20) * 20;
-        const finalY = snapResult.activeGuides.length > 0 
-          ? snapResult.y 
-          : Math.round(snapResult.y / 20) * 20;
+      // Aggiorna SOLO localPosition (niente snap griglia, solo snap magnetico guide)
+      setLocalPosition({
+        x: Math.max(0, snapResult.x),
+        y: Math.max(0, snapResult.y),
+      });
+    };
 
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      onGuidesChange([]); // Pulisci le guide quando termina il drag
+      
+      // Salva la posizione finale nel database
+      if (localPosition) {
         onUpdatePosition({
-          x: Math.max(0, finalX),
-          y: Math.max(0, finalY),
+          x: localPosition.x,
+          y: localPosition.y,
           width: position.width,
           height: position.height,
         });
-      };
-
-      const handleMouseUp = () => {
-        setIsDragging(false);
-        onGuidesChange([]); // Pulisci le guide quando termina il drag
-      };
+      }
+      
+      // Reset localPosition
+      setLocalPosition(null);
+    };
 
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
@@ -144,10 +154,12 @@ export const CanvasElement = memo(
           isDragging && "opacity-70 cursor-grabbing"
         )}
         style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
+          left: isDragging ? 0 : `${position.x}px`,
+          top: isDragging ? 0 : `${position.y}px`,
+          transform: isDragging ? `translate(${displayPosition.x}px, ${displayPosition.y}px)` : 'none',
           width: `${position.width}px`,
           height: `${position.height}px`,
+          willChange: isDragging ? 'transform' : 'auto',
         }}
         onMouseDown={handleMouseDown}
       >

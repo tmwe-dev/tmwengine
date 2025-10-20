@@ -21,15 +21,19 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
   const { toast } = useToast();
 
   const handleDragStart = (e: React.DragEvent) => {
-    const dragData = {
-      type: "extracted-component",
+    // Store component data in drag event
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      type: 'design-lab-component',
       component: component,
-    };
-    e.dataTransfer.setData(
-      "application/json",
-      JSON.stringify({ data: dragData })
-    );
-    e.dataTransfer.effectAllowed = "copy";
+    }));
+    
+    // Create custom drag image if thumbnail exists
+    if (component.thumbnail_url) {
+      const img = new Image();
+      img.src = component.thumbnail_url;
+      e.dataTransfer.setDragImage(img, 0, 0);
+    }
   };
 
   const handleCopyCode = () => {

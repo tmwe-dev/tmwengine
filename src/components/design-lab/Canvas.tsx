@@ -3,8 +3,9 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { CanvasElement } from "./CanvasElement";
 import { SnapGuideLines } from "./SnapGuideLines";
+import { DistanceLabels } from "./DistanceLabels";
 import { DesignLabComponent } from "@/types/design-lab";
-import { GuideLine, getGuideLines } from "@/lib/design-lab/snap-guides";
+import { GuideLine, DistanceInfo } from "@/lib/design-lab/snap-guides";
 
 interface CanvasProps {
   components: DesignLabComponent[];
@@ -26,6 +27,7 @@ export const Canvas = ({
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [activeGuides, setActiveGuides] = useState<GuideLine[]>([]);
+  const [activeDistances, setActiveDistances] = useState<DistanceInfo[]>([]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -91,6 +93,9 @@ export const Canvas = ({
       {/* Snap Guide Lines */}
       <SnapGuideLines guides={activeGuides} />
 
+      {/* Distance Labels */}
+      <DistanceLabels distances={activeDistances} />
+
       {/* Components */}
       {components.map((component) => (
         <CanvasElement
@@ -102,6 +107,7 @@ export const Canvas = ({
           canvasRef={canvasRef}
           components={components}
           onGuidesChange={setActiveGuides}
+          onDistancesChange={setActiveDistances}
         />
       ))}
 

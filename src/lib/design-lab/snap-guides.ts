@@ -3,7 +3,15 @@ import { DesignLabComponent } from "@/types/design-lab";
 export interface GuideLine {
   type: 'vertical' | 'horizontal';
   position: number;
-  source: 'canvas-start' | 'canvas-end' | 'component-start' | 'component-end' | 'component-center';
+  source: 'canvas-start' | 'canvas-end' | 'component-start' | 'component-end' | 'component-center' | 'grid';
+}
+
+export interface DistanceInfo {
+  direction: 'top' | 'bottom' | 'left' | 'right';
+  distance: number;
+  fromComponentId: string;
+  x: number;
+  y: number;
 }
 
 export interface SnapResult {
@@ -13,13 +21,36 @@ export interface SnapResult {
 }
 
 /**
+ * Genera guide griglia ogni 10 pixel
+ */
+export function generateGridGuides(
+  canvasWidth: number,
+  canvasHeight: number
+): GuideLine[] {
+  const guides: GuideLine[] = [];
+
+  // Guide verticali ogni 10px
+  for (let x = 0; x <= canvasWidth; x += 10) {
+    guides.push({ type: 'vertical', position: x, source: 'grid' });
+  }
+
+  // Guide orizzontali ogni 10px
+  for (let y = 0; y <= canvasHeight; y += 10) {
+    guides.push({ type: 'horizontal', position: y, source: 'grid' });
+  }
+
+  return guides;
+}
+
+/**
  * Calcola tutte le guide possibili basandosi su canvas e componenti esistenti
  */
 export function getGuideLines(
   canvasWidth: number,
   canvasHeight: number,
   components: DesignLabComponent[],
-  excludeComponentId?: string
+  excludeComponentId?: string,
+  includeGrid: boolean = false
 ): GuideLine[] {
   const guides: GuideLine[] = [];
 
@@ -51,6 +82,12 @@ export function getGuideLines(
         { type: 'horizontal', position: pos.y + pos.height, source: 'component-end' }
       );
     });
+
+  // Aggiungi guide griglia se richiesto
+  if (includeGrid) {
+    const gridGuides = generateGridGuides(canvasWidth, canvasHeight);
+    guides.push(...gridGuides);
+  }
 
   return guides;
 }
@@ -161,4 +198,124 @@ export function snapToGuides(
     y: snappedY,
     activeGuides,
   };
+}
+
+/**
+ * Calcola distanze dall'elemento più vicino in ogni direzione
+ */
+export function calculateNearestDistances(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  components: DesignLabComponent[],
+  excludeComponentId: string,
+  threshold: number = 60
+): DistanceInfo[] {
+  const distances: DistanceInfo[] = [];
+  const currentBounds = {
+    left: x,
+    right: x + width,
+    top: y,
+    bottom: y + height,
+    centerX: x + width / 2,
+    centerY: y + height / 2,
+  };
+
+  let nearestTop: { distance: number; component: DesignLabComponent } | null = null;
+  let nearestBottom: { distance: number; component: DesignLabComponent } | null = null;
+  let nearestLeft: { distance: number; component: DesignLabComponent } | null = null;
+  let nearestRight: { distance: number; component: DesignLabComponent } | null = null;
+
+  // Trova il componente più vicino per ogni direzione
+  components
+    .filter(c => c.id !== excludeComponentId)
+    .forEach(component => {
+      const pos = component.position as { x: number; y: number; width: number; height: number };
+      const compBounds = {
+        left: pos.x,
+        right: pos.x + pos.width,
+        top: pos.y,
+        bottom: pos.y + pos.height,
+      };
+
+      // Distanza TOP (componente sopra)
+      if (compBounds.bottom <= currentBounds.top) {
+        const distance = currentBounds.top - compBounds.bottom;
+        if (distance < threshold && (!nearestTop || distance < nearestTop.distance)) {
+          nearestTop = { distance, component };
+        }
+      }
+
+      // Distanza BOTTOM (componente sotto)
+      if (compBounds.top >= currentBounds.bottom) {
+        const distance = compBounds.top - currentBounds.bottom;
+        if (distance < threshold && (!nearestBottom || distance < nearestBottom.distance)) {
+          nearestBottom = { distance, component };
+        }
+      }
+
+      // Distanza LEFT (componente a sinistra)
+      if (compBounds.right <= currentBounds.left) {
+        const distance = currentBounds.left - compBounds.right;
+        if (distance < threshold && (!nearestLeft || distance < nearestLeft.distance)) {
+          nearestLeft = { distance, component };
+        }
+      }
+
+      // Distanza RIGHT (componente a destra)
+      if (compBounds.left >= currentBounds.right) {
+        const distance = compBounds.left - currentBounds.right;
+        if (distance < threshold && (!nearestRight || distance < nearestRight.distance)) {
+          nearestRight = { distance, component };
+        }
+      }
+    });
+
+  // Crea DistanceInfo per ogni direzione trovata
+  if (nearestTop) {
+    const compPos = nearestTop.component.position as { x: number; y: number; width: number; height: number };
+    distances.push({
+      direction: 'top',
+      distance: Math.round(nearestTop.distance),
+      fromComponentId: nearestTop.component.id,
+      x: currentBounds.centerX,
+      y: (compPos.y + compPos.height + currentBounds.top) / 2,
+    });
+  }
+
+  if (nearestBottom) {
+    const compPos = nearestBottom.component.position as { x: number; y: number; width: number; height: number };
+    distances.push({
+      direction: 'bottom',
+      distance: Math.round(nearestBottom.distance),
+      fromComponentId: nearestBottom.component.id,
+      x: currentBounds.centerX,
+      y: (currentBounds.bottom + compPos.y) / 2,
+    });
+  }
+
+  if (nearestLeft) {
+    const compPos = nearestLeft.component.position as { x: number; y: number; width: number; height: number };
+    distances.push({
+      direction: 'left',
+      distance: Math.round(nearestLeft.distance),
+      fromComponentId: nearestLeft.component.id,
+      x: (compPos.x + compPos.width + currentBounds.left) / 2,
+      y: currentBounds.centerY,
+    });
+  }
+
+  if (nearestRight) {
+    const compPos = nearestRight.component.position as { x: number; y: number; width: number; height: number };
+    distances.push({
+      direction: 'right',
+      distance: Math.round(nearestRight.distance),
+      fromComponentId: nearestRight.component.id,
+      x: (currentBounds.right + compPos.x) / 2,
+      y: currentBounds.centerY,
+    });
+  }
+
+  return distances;
 }

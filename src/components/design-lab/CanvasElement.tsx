@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { GripVertical } from "lucide-react";
-import { GuideLine, getGuideLines, snapToGuides } from "@/lib/design-lab/snap-guides";
+import { GuideLine, DistanceInfo, getGuideLines, snapToGuides, calculateNearestDistances } from "@/lib/design-lab/snap-guides";
 
 interface CanvasElementProps {
   component: DesignLabComponent;
@@ -16,6 +16,7 @@ interface CanvasElementProps {
   canvasRef: RefObject<HTMLDivElement>;
   components: DesignLabComponent[];
   onGuidesChange: (guides: GuideLine[]) => void;
+  onDistancesChange: (distances: DistanceInfo[]) => void;
 }
 
 const ComponentRenderer = ({ type, props }: { type: string; props: any }) => {
@@ -46,7 +47,8 @@ export const CanvasElement = memo(
     onUpdatePosition, 
     canvasRef, 
     components,
-    onGuidesChange 
+    onGuidesChange,
+    onDistancesChange
   }: CanvasElementProps) => {
   const elementRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -57,6 +59,16 @@ export const CanvasElement = memo(
   
   // Durante il drag usa localPosition, altrimenti usa position dal componente
   const displayPosition = localPosition || { x: position.x, y: position.y };
+
+  // Bug fix: sincronizza localPosition dopo aggiornamento del parent
+  useEffect(() => {
+    if (!isDragging && localPosition) {
+      // Se position è stato aggiornato dal parent, resetta localPosition
+      if (position.x === localPosition.x && position.y === localPosition.y) {
+        setLocalPosition(null);
+      }
+    }
+  }, [position.x, position.y, localPosition, isDragging]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.resize-handle')) return;
@@ -90,12 +102,13 @@ export const CanvasElement = memo(
       let newX = e.clientX - canvasRect.left - dragStart.x + scrollLeft;
       let newY = e.clientY - canvasRect.top - dragStart.y + scrollTop;
 
-      // Ottieni le guide per snap magnetico
+      // Ottieni le guide per snap magnetico (inclusa griglia 10x10)
       const guides = getGuideLines(
         canvasRect.width,
         canvasRect.height,
         components,
-        component.id
+        component.id,
+        true // includeGrid
       );
 
       // Applica snap magnetico
@@ -108,8 +121,20 @@ export const CanvasElement = memo(
         8 // snap threshold in pixels
       );
 
-      // Aggiorna guide attive per visualizzazione
+      // Calcola distanze con elementi vicini
+      const distances = calculateNearestDistances(
+        snapResult.x,
+        snapResult.y,
+        position.width,
+        position.height,
+        components,
+        component.id,
+        60 // threshold in pixels
+      );
+
+      // Aggiorna guide e distanze attive per visualizzazione
       onGuidesChange(snapResult.activeGuides);
+      onDistancesChange(distances);
 
       // Aggiorna SOLO localPosition (niente snap griglia, solo snap magnetico guide)
       setLocalPosition({
@@ -120,7 +145,8 @@ export const CanvasElement = memo(
 
     const handleMouseUp = () => {
       setIsDragging(false);
-      onGuidesChange([]); // Pulisci le guide quando termina il drag
+      onGuidesChange([]);
+      onDistancesChange([]);
       
       // Salva la posizione finale nel database
       if (localPosition) {
@@ -130,10 +156,8 @@ export const CanvasElement = memo(
           width: position.width,
           height: position.height,
         });
+        // NON resettare localPosition qui - verrà resettato nell'useEffect dopo sync
       }
-      
-      // Reset localPosition
-      setLocalPosition(null);
     };
 
       document.addEventListener('mousemove', handleMouseMove);

@@ -40,76 +40,94 @@ export class DesignLabScanner {
    * Crea dati di esempio per dimostrare il sistema
    */
   private async createSampleData() {
-    // Crea una pagina sorgente di esempio
-    const { data: sourcePage } = await supabase
-      .from('design_lab_source_pages')
-      .insert({
-        page_name: 'Rubrica',
-        page_path: 'src/pages/Rubrica.tsx',
+    const PAGE_COMPONENTS_MAP: Record<string, any> = {
+      'Rubrica': {
         category: 'Commercial',
         description: 'Gestione contatti e rubrica aziendale',
-        total_components: 5,
-        total_functions: 8,
-        complexity_score: 7,
-      })
-      .select()
-      .single();
+        components: [
+          { name: 'ContactForm', type: 'Form', jsx: '<form>...</form>', props: { onSubmit: 'function', contact: 'object' } },
+          { name: 'ContactCard', type: 'Card', jsx: '<div className="card">...</div>', props: { contact: 'object', onClick: 'function' } },
+        ],
+        functions: [
+          { name: 'loadContacts', type: 'load', description: 'Carica elenco contatti', code: 'const loadContacts = async () => {}' },
+          { name: 'deleteContact', type: 'delete', description: 'Elimina contatto', code: 'const deleteContact = async (id) => {}' },
+        ],
+      },
+      'Attivita': {
+        category: 'Productivity',
+        description: 'Gestione attività e task',
+        components: [
+          { name: 'ActivityTimeline', type: 'Timeline', jsx: '<div className="timeline">...</div>', props: { activities: 'array' } },
+          { name: 'TaskCard', type: 'Card', jsx: '<div className="task-card">...</div>', props: { task: 'object' } },
+        ],
+        functions: [
+          { name: 'loadActivities', type: 'load', description: 'Carica attività', code: 'const loadActivities = async () => {}' },
+        ],
+      },
+      'Campagne': {
+        category: 'Marketing',
+        description: 'Gestione campagne marketing',
+        components: [
+          { name: 'CampaignStats', type: 'Stats', jsx: '<div className="stats">...</div>', props: { campaign: 'object' } },
+          { name: 'CampaignForm', type: 'Form', jsx: '<form>...</form>', props: { onSubmit: 'function' } },
+        ],
+        functions: [
+          { name: 'loadCampaigns', type: 'load', description: 'Carica campagne', code: 'const loadCampaigns = async () => {}' },
+        ],
+      },
+    };
 
-    if (!sourcePage) return;
+    for (const pageName of this.config.targetPages) {
+      const pageData = PAGE_COMPONENTS_MAP[pageName];
+      if (!pageData) continue;
 
-    // Crea componenti estratti di esempio
-    await supabase.from('design_lab_extracted_components').insert([
-      {
-        source_page_id: sourcePage.id,
-        component_name: 'ContactForm',
-        component_type: 'Form',
-        jsx_code: '<form>...</form>',
-        dependencies: ['@/hooks/use-toast', 'react-hook-form'],
-        props_schema: { onSubmit: 'function', contact: 'object' },
-        position_in_source: { line_start: 100, line_end: 200 },
-        is_reusable: true,
-      },
-      {
-        source_page_id: sourcePage.id,
-        component_name: 'ContactCard',
-        component_type: 'Card',
-        jsx_code: '<div className="card">...</div>',
-        dependencies: ['@/components/ui/card'],
-        props_schema: { contact: 'object', onClick: 'function' },
-        position_in_source: { line_start: 50, line_end: 80 },
-        is_reusable: true,
-      },
-    ]);
+      const { data: sourcePage } = await supabase
+        .from('design_lab_source_pages')
+        .insert({
+          page_name: pageName,
+          page_path: `src/pages/${pageName}.tsx`,
+          category: pageData.category,
+          description: pageData.description,
+          total_components: pageData.components.length,
+          total_functions: pageData.functions.length,
+          complexity_score: 7,
+        })
+        .select()
+        .single();
 
-    // Crea funzioni estratte di esempio
-    await supabase.from('design_lab_extracted_functions').insert([
-      {
-        source_page_id: sourcePage.id,
-        function_name: 'loadContacts',
-        function_type: 'load',
-        description: 'Carica l\'elenco dei contatti dal database',
-        code_original: 'const loadContacts = async () => { const { data } = await supabase.from("rubrica").select("*"); }',
-        code_generic: 'const loadContacts = async (dbClient, tableName) => { const data = await dbClient.query(tableName); }',
-        dependencies: ['@/integrations/supabase/client'],
-        parameters: {},
-        is_async: true,
-        event_handlers: ['onLoad'],
-        complexity_score: 3,
-      },
-      {
-        source_page_id: sourcePage.id,
-        function_name: 'deleteContact',
-        function_type: 'delete',
-        description: 'Elimina un contatto dal database',
-        code_original: 'const deleteContact = async (id) => { await supabase.from("rubrica").delete().eq("id", id); }',
-        code_generic: 'const deleteContact = async (dbClient, tableName, id) => { await dbClient.delete(tableName, { id }); }',
-        dependencies: ['@/integrations/supabase/client', '@/hooks/use-toast'],
-        parameters: { id: 'string' },
-        is_async: true,
-        event_handlers: ['onClick'],
-        complexity_score: 4,
-      },
-    ]);
+      if (!sourcePage) continue;
+
+      // Crea componenti estratti
+      await supabase.from('design_lab_extracted_components').insert(
+        pageData.components.map((comp: any, idx: number) => ({
+          source_page_id: sourcePage.id,
+          component_name: comp.name,
+          component_type: comp.type,
+          jsx_code: comp.jsx,
+          dependencies: ['@/hooks/use-toast'],
+          props_schema: comp.props,
+          position_in_source: { line_start: idx * 50, line_end: (idx + 1) * 50 },
+          is_reusable: true,
+        }))
+      );
+
+      // Crea funzioni estratte
+      await supabase.from('design_lab_extracted_functions').insert(
+        pageData.functions.map((func: any) => ({
+          source_page_id: sourcePage.id,
+          function_name: func.name,
+          function_type: func.type,
+          description: func.description,
+          code_original: func.code,
+          code_generic: func.code,
+          dependencies: ['@/integrations/supabase/client'],
+          parameters: {},
+          is_async: true,
+          event_handlers: ['onLoad'],
+          complexity_score: 3,
+        }))
+      );
+    }
 
     // Crea un plugin di esempio
     await supabase.from('design_lab_plugins').insert({

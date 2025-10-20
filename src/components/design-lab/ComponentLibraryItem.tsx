@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { GripVertical, Copy, Eye, Download } from "lucide-react";
 import { ExtractedComponent } from "@/types/design-lab-scanner";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { ComponentPreviewDialog } from "./ComponentPreviewDialog";
 
 interface ComponentLibraryItemProps {
   component: ExtractedComponent;
@@ -16,6 +18,7 @@ interface ComponentLibraryItemProps {
 
 export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryItemProps) {
   const { toast } = useToast();
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const handleDragStart = (e: React.DragEvent) => {
     const dragData = {
@@ -38,10 +41,7 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
   };
 
   const handlePreview = () => {
-    toast({
-      title: "Preview",
-      description: "Funzione preview in sviluppo",
-    });
+    setPreviewOpen(true);
   };
 
   if (collapsed) {
@@ -140,6 +140,12 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
           )}
         </div>
       </div>
+
+      <ComponentPreviewDialog
+        component={component}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      />
     </div>
   );
 }

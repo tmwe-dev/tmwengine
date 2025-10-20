@@ -6,11 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useCodeIndexer } from '@/hooks/useCodeIndexer';
 import { DesignLabScanner as Scanner } from '@/lib/design-lab/scanner';
 import { ScanConfig, ScanResult } from '@/types/design-lab-scanner';
-import { Play, Loader2, CheckCircle } from 'lucide-react';
+import { Play, Loader2, CheckCircle, Database, AlertCircle, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
+import { it } from 'date-fns/locale';
 
 const AVAILABLE_PAGES = [
   { name: 'Rubrica', path: 'src/pages/Rubrica.tsx', category: 'Commercial' },
@@ -23,6 +27,7 @@ const AVAILABLE_PAGES = [
 export default function DesignLabScanner() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { indexStatus, isCheckingIndex, isIndexing, runIndexing } = useCodeIndexer();
   
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
   const [scanDepth, setScanDepth] = useState<'shallow' | 'deep'>('deep');
@@ -34,6 +39,9 @@ export default function DesignLabScanner() {
   const [progress, setProgress] = useState(0);
   const [currentTask, setCurrentTask] = useState('');
   const [scanResults, setScanResults] = useState<ScanResult | null>(null);
+
+  const isIndexed = (indexStatus?.fileCount ?? 0) > 0;
+  const canScan = isIndexed && !isScanning && !isIndexing;
 
   const togglePage = (pageName: string) => {
     setSelectedPages(prev =>
@@ -112,6 +120,90 @@ export default function DesignLabScanner() {
           Scansiona le tue pagine esistenti per estrarre componenti, funzioni e creare plugin riutilizzabili
         </p>
       </div>
+
+      {/* Stato Indicizzazione Codebase */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Stato Indicizzazione Codebase
+          </CardTitle>
+          <CardDescription>
+            Prima di scansionare, è necessario indicizzare il codebase
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isCheckingIndex ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Verifica stato indicizzazione...</span>
+            </div>
+          ) : !isIndexed ? (
+            <>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Indicizzazione necessaria</AlertTitle>
+                <AlertDescription>
+                  Nessun file trovato in code_index. Esegui l'indicizzazione del codebase prima di scansionare.
+                </AlertDescription>
+              </Alert>
+              <Button
+                onClick={() => runIndexing(false)}
+                disabled={isIndexing}
+                size="lg"
+                className="w-full"
+              >
+                {isIndexing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Indicizzazione in corso...
+                  </>
+                ) : (
+                  <>
+                    <Database className="mr-2 h-4 w-4" />
+                    Indicizza Codebase
+                  </>
+                )}
+              </Button>
+            </>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                    <CheckCircle className="mr-1 h-3 w-3" />
+                    {indexStatus?.fileCount} file indicizzati
+                  </Badge>
+                </div>
+                {indexStatus?.lastIndexed && (
+                  <p className="text-xs text-muted-foreground">
+                    Ultima indicizzazione:{' '}
+                    {formatDistanceToNow(new Date(indexStatus.lastIndexed), {
+                      addSuffix: true,
+                      locale: it,
+                    })}
+                  </p>
+                )}
+              </div>
+              <Button
+                onClick={() => runIndexing(true)}
+                disabled={isIndexing}
+                variant="outline"
+                size="sm"
+              >
+                {isIndexing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Re-Indicizza
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Step 1: Selezione pagine */}
       <Card>
@@ -205,9 +297,19 @@ export default function DesignLabScanner() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {!isIndexed && (
+            <Alert className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Indicizzazione richiesta</AlertTitle>
+              <AlertDescription>
+                Completa l'indicizzazione del codebase prima di avviare la scansione.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Button
             onClick={runScanner}
-            disabled={isScanning || selectedPages.length === 0}
+            disabled={!canScan || selectedPages.length === 0}
             size="lg"
             className="w-full"
           >
@@ -219,7 +321,7 @@ export default function DesignLabScanner() {
             ) : (
               <>
                 <Play className="mr-2 h-4 w-4" />
-                Avvia Scansione
+                Scansiona Componenti
               </>
             )}
           </Button>

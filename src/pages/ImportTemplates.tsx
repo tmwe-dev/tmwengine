@@ -4117,15 +4117,16 @@ export default function ImportTemplates() {
                             </div>
                           )}
                           
-                          {/* Selected Records Badge - Centered */}
-                          {selectedRecords.size > 0 && (
-                            <span 
-                              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600 absolute left-1/2 -translate-x-1/2 -top-[90px]"
-                              onClick={() => setSelectedRecords(new Set())}
-                            >
-                              {selectedRecords.size}
-                            </span>
-                          )}
+          {/* Selected Records Badge - Centered */}
+          {selectedRecords.size > 0 && (
+            <span 
+              key={selectedRecords.size}
+              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600 absolute left-1/2 -translate-x-1/2 -top-[90px] animate-[heartbeat_0.6s_ease-in-out_2]"
+              onClick={() => setSelectedRecords(new Set())}
+            >
+              {selectedRecords.size}
+            </span>
+          )}
                           
                           {/* Centered controls */}
                           <div className="flex items-center gap-[15px]">

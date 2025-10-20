@@ -162,10 +162,17 @@ export class RealDesignLabScanner {
   private async scanPages(routes: Array<{ path: string; component: string; category: string }>): Promise<{ pagesScanned: number }> {
     let pagesScanned = 0;
 
+    console.log(`📄 [SCANNER] Scansione di ${routes.length} pagine...`);
+
     for (const route of routes) {
       try {
+        console.log(`🔍 [SCANNER] Scansione pagina: ${route.component} (${route.path})`);
+        
         const sourceFile = this.findComponentFile(route.component);
-        if (!sourceFile) continue;
+        if (!sourceFile) {
+          console.warn(`⚠️ [SCANNER] File non trovato per: ${route.component}`);
+          continue;
+        }
 
         const pageData = {
           page_name: route.component,
@@ -182,12 +189,22 @@ export class RealDesignLabScanner {
           .from('design_lab_source_pages')
           .insert(pageData);
 
-        if (!error) pagesScanned++;
+        if (!error) {
+          pagesScanned++;
+          console.log(`✅ [SCANNER] Pagina salvata: ${route.component}`);
+          this.reportProgress(
+            25 + Math.floor((pagesScanned / routes.length) * 25),
+            `📄 Pagina ${pagesScanned}/${routes.length}: ${route.component}`
+          );
+        } else {
+          console.error(`❌ [SCANNER] Errore salvataggio pagina ${route.component}:`, error);
+        }
       } catch (err) {
-        console.error(`Error scanning page ${route.component}:`, err);
+        console.error(`❌ [SCANNER] Errore scansione pagina ${route.component}:`, err);
       }
     }
 
+    console.log(`🎯 [SCANNER] Totale pagine scansionate: ${pagesScanned}`);
     return { pagesScanned };
   }
 
@@ -200,11 +217,16 @@ export class RealDesignLabScanner {
     const componentFiles = this.project.getSourceFiles()
       .filter(file => file.getFilePath().includes('src/components/') && file.getFilePath().endsWith('.tsx'));
 
+    console.log(`🔍 [SCANNER] Scansione di ${componentFiles.length} file componenti...`);
+
     for (const file of componentFiles) {
       try {
         const components = this.extractComponentsFromFile(file);
+        console.log(`📦 [SCANNER] Estratti ${components.length} componenti da ${file.getBaseName()}`);
         
         for (const component of components) {
+          console.log(`💾 [SCANNER] Salvando componente: ${component.component_name}...`);
+          
           const { data, error } = await supabase
             .from('design_lab_extracted_components')
             .insert(component)
@@ -213,27 +235,37 @@ export class RealDesignLabScanner {
 
           if (!error && data) {
             componentsExtracted++;
+            console.log(`✅ [SCANNER] Componente ${component.component_name} salvato con ID: ${data.id}`);
             
             // Generate thumbnail if enabled
             if (this.config.generateThumbnails) {
               try {
+                console.log(`📸 [SCANNER] Generazione miniatura per ${component.component_name}...`);
                 await generateComponentThumbnail(data.id, component.jsx_code);
                 thumbnailsGenerated++;
+                console.log(`✅ [SCANNER] Miniatura generata per ${component.component_name}`);
                 this.reportProgress(
                   75 + Math.floor((thumbnailsGenerated / componentsExtracted) * 15),
-                  `Generata miniatura ${thumbnailsGenerated}/${componentsExtracted}`
+                  `📸 Miniatura ${thumbnailsGenerated}/${componentsExtracted}: ${component.component_name}`
                 );
               } catch (thumbError) {
-                console.warn(`Failed to generate thumbnail for ${data.id}:`, thumbError);
+                console.error(`❌ [SCANNER] Errore generazione miniatura per ${component.component_name}:`, thumbError);
+                this.reportProgress(
+                  75 + Math.floor((thumbnailsGenerated / componentsExtracted) * 15),
+                  `⚠️ Miniatura fallita: ${component.component_name}`
+                );
               }
             }
+          } else {
+            console.error(`❌ [SCANNER] Errore salvataggio componente ${component.component_name}:`, error);
           }
         }
       } catch (err) {
-        console.error(`Error scanning components in ${file.getFilePath()}:`, err);
+        console.error(`❌ [SCANNER] Errore scansione file ${file.getFilePath()}:`, err);
       }
     }
 
+    console.log(`🎯 [SCANNER] Totale: ${componentsExtracted} componenti estratti, ${thumbnailsGenerated} miniature generate`);
     return { componentsExtracted, thumbnailsGenerated };
   }
 
@@ -299,22 +331,37 @@ export class RealDesignLabScanner {
     const sourceFiles = this.project.getSourceFiles()
       .filter(file => !file.getFilePath().includes('.test.') && !file.getFilePath().includes('node_modules'));
 
+    console.log(`⚙️ [SCANNER] Scansione funzioni da ${sourceFiles.length} file...`);
+
     for (const file of sourceFiles) {
       try {
         const functions = this.extractFunctionsFromFile(file);
+        
+        if (functions.length > 0) {
+          console.log(`🔧 [SCANNER] Estratte ${functions.length} funzioni da ${file.getBaseName()}`);
+        }
         
         for (const func of functions) {
           const { error } = await supabase
             .from('design_lab_extracted_functions')
             .insert(func);
 
-          if (!error) functionsExtracted++;
+          if (!error) {
+            functionsExtracted++;
+            this.reportProgress(
+              90 + Math.floor((functionsExtracted / (functions.length || 1)) * 10),
+              `⚙️ Funzione ${functionsExtracted}: ${func.function_name}`
+            );
+          } else {
+            console.error(`❌ [SCANNER] Errore salvataggio funzione ${func.function_name}:`, error);
+          }
         }
       } catch (err) {
-        console.error(`Error scanning functions in ${file.getFilePath()}:`, err);
+        console.error(`❌ [SCANNER] Errore scansione funzioni in ${file.getFilePath()}:`, err);
       }
     }
 
+    console.log(`🎯 [SCANNER] Totale funzioni estratte: ${functionsExtracted}`);
     return { functionsExtracted };
   }
 

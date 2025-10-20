@@ -13,10 +13,11 @@ import { useCodeIndexer } from '@/hooks/useCodeIndexer';
 import { useRouteDiscovery } from '@/hooks/useRouteDiscovery';
 import { DesignLabScanner as Scanner } from '@/lib/design-lab/scanner';
 import { ScanConfig, ScanResult } from '@/types/design-lab-scanner';
-import { Play, Loader2, CheckCircle, Database, AlertCircle, RefreshCw, Search } from 'lucide-react';
+import { Play, Loader2, CheckCircle, Database, AlertCircle, RefreshCw, Search, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { regenerateMissingThumbnails } from '@/lib/design-lab/thumbnail-generator';
 
 export default function DesignLabScanner() {
   const { toast } = useToast();
@@ -119,19 +120,16 @@ export default function DesignLabScanner() {
     const scanner = new Scanner(config);
 
     try {
-      setCurrentTask('Inizializzazione scanner...');
-      setProgress(10);
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      setCurrentTask('Scansione pagine...');
-      setProgress(30);
+      // Subscribe to real-time progress updates from scanner
+      scanner.onProgress((progressValue, taskDescription) => {
+        setProgress(progressValue);
+        setCurrentTask(taskDescription);
+      });
 
       const results = await scanner.scanAllPages();
 
       setProgress(100);
       setCurrentTask('Completato!');
-
       setScanResults(results);
 
       toast({
@@ -506,6 +504,52 @@ export default function DesignLabScanner() {
                   <li>{scanResults.plugins_created} plugin creati</li>
                   <li>{scanResults.thumbnails_generated} miniature generate</li>
                 </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {scanResults && scanResults.thumbnails_generated < scanResults.components_extracted && (
+            <Alert className="mt-6" variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Miniature Incomplete</AlertTitle>
+              <AlertDescription>
+                <p className="mb-3">
+                  {scanResults.components_extracted - scanResults.thumbnails_generated} miniature non generate.
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const result = await regenerateMissingThumbnails((current, total) => {
+                        setCurrentTask(`Rigenerazione miniature: ${current}/${total}`);
+                      });
+                      
+                      toast({
+                        title: 'Rigenerazione completata!',
+                        description: `${result.success} miniature generate, ${result.failed} fallite`,
+                        variant: result.failed > 0 ? 'destructive' : 'default',
+                      });
+
+                      // Refresh scan results
+                      if (result.success > 0) {
+                        setScanResults({
+                          ...scanResults,
+                          thumbnails_generated: scanResults.thumbnails_generated + result.success,
+                        });
+                      }
+                    } catch (error) {
+                      toast({
+                        title: 'Errore rigenerazione',
+                        description: error instanceof Error ? error.message : 'Errore sconosciuto',
+                        variant: 'destructive',
+                      });
+                    }
+                  }}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Rigenera Miniature Mancanti
+                </Button>
               </AlertDescription>
             </Alert>
           )}

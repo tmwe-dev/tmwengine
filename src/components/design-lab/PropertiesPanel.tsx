@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DesignLabComponent } from "@/types/design-lab";
 import { Trash2 } from "lucide-react";
+import { LogicEditor } from "./LogicEditor";
 
 interface PropertiesPanelProps {
   component: DesignLabComponent | null;
@@ -168,11 +169,8 @@ export const PropertiesPanel = ({
 
           <TabsContent value="logic" className="mt-0">
             <ScrollArea className="h-[600px]">
-              <div className="p-4 text-center text-muted-foreground">
-                <p className="text-sm">Logica/Azioni</p>
-                <p className="text-xs mt-1">
-                  Configurazione eventi disponibile prossimamente
-                </p>
+              <div className="p-4">
+                <LogicEditor componentId={component.id} />
               </div>
             </ScrollArea>
           </TabsContent>

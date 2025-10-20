@@ -1,20 +1,24 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Save, Undo2, Redo2 } from "lucide-react";
+import { Sparkles, Save, Undo2, Redo2, Eye } from "lucide-react";
 import { useDesignLabPages } from "@/hooks/useDesignLabPages";
 import { useDesignLabComponents } from "@/hooks/useDesignLabComponents";
+import { useDesignLabLogic } from "@/hooks/useDesignLabLogic";
 import { useCommandHistory, MoveComponentCommand, UpdatePropsCommand } from "@/hooks/useCommandHistory";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { ComponentPalette } from "@/components/design-lab/ComponentPalette";
 import { Canvas } from "@/components/design-lab/Canvas";
 import { PropertiesPanel } from "@/components/design-lab/PropertiesPanel";
+import { RuntimePreview } from "@/components/design-lab/RuntimePreview";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const DesignLabEditor = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const { toast } = useToast();
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
 
   const { pages } = useDesignLabPages();
   const { 
@@ -23,6 +27,8 @@ const DesignLabEditor = () => {
     updateComponent, 
     deleteComponent 
   } = useDesignLabComponents(pageId || null);
+
+  const { logicRules } = useDesignLabLogic(null); // Get all logic rules for preview
 
   const { executeCommand, undo, redo, canUndo, canRedo } = useCommandHistory();
 
@@ -154,41 +160,60 @@ const DesignLabEditor = () => {
               <Save className="h-4 w-4 mr-2" />
               Salva
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveTab(activeTab === 'editor' ? 'preview' : 'editor')}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              {activeTab === 'editor' ? 'Preview' : 'Editor'}
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Main Layout: 3 columns */}
+      {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left: Component Palette */}
-        <div className="w-64 border-r bg-card p-4 overflow-auto">
-          <ComponentPalette />
-        </div>
+        {activeTab === 'editor' ? (
+          <>
+            {/* Left: Component Palette */}
+            <div className="w-64 border-r bg-card p-4 overflow-auto animate-fade-in">
+              <ComponentPalette />
+            </div>
 
-        {/* Center: Canvas */}
-        <div className="flex-1 p-4 overflow-auto">
-          <Canvas
-            components={components || []}
-            selectedComponentId={selectedComponentId}
-            onSelectComponent={setSelectedComponentId}
-            onDropComponent={handleDropComponent}
-            onUpdatePosition={handleUpdatePosition}
-          />
-        </div>
+            {/* Center: Canvas */}
+            <div className="flex-1 p-4 overflow-auto animate-fade-in">
+              <Canvas
+                components={components || []}
+                selectedComponentId={selectedComponentId}
+                onSelectComponent={setSelectedComponentId}
+                onDropComponent={handleDropComponent}
+                onUpdatePosition={handleUpdatePosition}
+              />
+            </div>
 
-        {/* Right: Properties Panel */}
-        <div className="w-80 border-l bg-card p-4 overflow-auto">
-          <PropertiesPanel
-            component={selectedComponent}
-            onUpdateProps={handleUpdateProps}
-            onUpdatePosition={(position) => {
-              if (selectedComponent) {
-                handleUpdatePosition(selectedComponent.id, position);
-              }
-            }}
-            onDelete={handleDeleteComponent}
-          />
-        </div>
+            {/* Right: Properties Panel */}
+            <div className="w-80 border-l bg-card p-4 overflow-auto animate-fade-in">
+              <PropertiesPanel
+                component={selectedComponent}
+                onUpdateProps={handleUpdateProps}
+                onUpdatePosition={(position) => {
+                  if (selectedComponent) {
+                    handleUpdatePosition(selectedComponent.id, position);
+                  }
+                }}
+                onDelete={handleDeleteComponent}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 p-4 overflow-auto animate-fade-in">
+            <RuntimePreview
+              components={components || []}
+              logicRules={logicRules || []}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

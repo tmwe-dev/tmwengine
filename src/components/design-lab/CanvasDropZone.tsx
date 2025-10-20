@@ -21,6 +21,7 @@ export function CanvasDropZone({
   const [ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
   const [propsEditorOpen, setPropsEditorOpen] = useState(false);
   const [dropPosition, setDropPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
@@ -39,6 +40,7 @@ export function CanvasDropZone({
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    setIsDraggingOver(true);
     
     try {
       const data = e.dataTransfer.getData('application/json');
@@ -58,6 +60,7 @@ export function CanvasDropZone({
     if (e.currentTarget === e.target) {
       setDraggedComponent(null);
       setGhostPosition(null);
+      setIsDraggingOver(false);
     }
   }, []);
 
@@ -104,6 +107,8 @@ export function CanvasDropZone({
       } catch (error) {
         console.error('Error handling drop:', error);
         toast.error('Errore durante l\'inserimento del componente');
+      } finally {
+        setIsDraggingOver(false);
       }
     },
     [onComponentDrop, snapToGrid, gridSize]
@@ -130,9 +135,29 @@ export function CanvasDropZone({
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className="relative w-full h-full"
+        className={`relative w-full h-full transition-all duration-300 ${
+          isDraggingOver 
+            ? 'bg-primary/5 border-2 border-primary/30 border-dashed rounded-lg' 
+            : 'border-2 border-transparent'
+        }`}
       >
         {children}
+        
+        {/* Drop zone indicator */}
+        {isDraggingOver && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center animate-fade-in">
+            <div className="bg-primary/10 border-2 border-primary border-dashed rounded-lg p-8 backdrop-blur-sm">
+              <p className="text-primary font-semibold text-lg">
+                Rilascia qui per inserire
+              </p>
+              {draggedComponent && (
+                <p className="text-primary/70 text-sm mt-1">
+                  {draggedComponent.component_name}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <DragGhostPreview

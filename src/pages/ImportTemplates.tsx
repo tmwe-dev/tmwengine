@@ -4127,7 +4127,7 @@ export default function ImportTemplates() {
           {selectedRecords.size > 0 && (
             <span 
               key={selectedRecords.size}
-              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600 absolute left-1/2 -translate-x-1/2 -top-[90px] animate-[heartbeat_0.6s_ease-in-out_2]"
+              className="text-xs font-medium text-white bg-gradient-to-l from-purple-500/30 via-purple-500/15 via-35% to-purple-500/10 border border-purple-500/20 px-2 py-1 rounded cursor-pointer hover:from-purple-500/40 hover:via-purple-500/25 hover:to-purple-500/20 absolute left-1/2 -translate-x-1/2 -top-[90px] animate-[heartbeat_0.6s_ease-in-out_2]"
               onClick={() => setSelectedRecords(new Set())}
             >
               {selectedRecords.size}

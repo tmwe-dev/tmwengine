@@ -13,7 +13,8 @@ import {
   Shield,
   Database,
   Radio,
-  Bot
+  Bot,
+  Palette
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -65,6 +66,7 @@ export const useNavigationGroups = () => {
         { name: t('nav.chat'), href: '/chat', icon: MessageSquare },
         { name: 'Claude System Analyst', href: '/chat?page=/system-analyst', icon: Bot },
         { name: t('nav.laboratory'), href: '/chat-laboratory', icon: Sparkles },
+        { name: 'Design Lab', href: '/design-lab', icon: Palette },
         { name: 'Radio Chat', href: '/radio-chat', icon: Radio },
         { name: 'Intranet', href: '/intranet', icon: MessageSquare },
         ...(isAdmin ? [{ name: 'Admin Intranet', href: '/intranet-admin', icon: Shield }] : [])

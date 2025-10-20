@@ -13,11 +13,12 @@ import { useCodeIndexer } from '@/hooks/useCodeIndexer';
 import { useRouteDiscovery } from '@/hooks/useRouteDiscovery';
 import { DesignLabScanner as Scanner } from '@/lib/design-lab/scanner';
 import { ScanConfig, ScanResult } from '@/types/design-lab-scanner';
-import { Play, Loader2, CheckCircle, Database, AlertCircle, RefreshCw, Search, AlertTriangle } from 'lucide-react';
+import { Play, Loader2, CheckCircle, Database, AlertCircle, RefreshCw, Search, AlertTriangle, Pause, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { regenerateMissingThumbnails } from '@/lib/design-lab/thumbnail-generator';
+import { ThumbnailBatchGenerator, ThumbnailPreview, ThumbnailGenerationState } from '@/lib/design-lab/thumbnail-generator';
+import { ThumbnailSidebarPreview } from '@/components/design-lab/ThumbnailSidebarPreview';
 
 export default function DesignLabScanner() {
   const { toast } = useToast();
@@ -37,6 +38,12 @@ export default function DesignLabScanner() {
   const [progress, setProgress] = useState(0);
   const [currentTask, setCurrentTask] = useState('');
   const [scanResults, setScanResults] = useState<ScanResult | null>(null);
+  
+  // Thumbnail generation state
+  const [thumbnailGenerator, setThumbnailGenerator] = useState<ThumbnailBatchGenerator | null>(null);
+  const [thumbnailState, setThumbnailState] = useState<ThumbnailGenerationState | null>(null);
+  const [recentThumbnails, setRecentThumbnails] = useState<ThumbnailPreview[]>([]);
+  const [showThumbnailSidebar, setShowThumbnailSidebar] = useState(false);
 
   const isIndexed = (indexStatus?.fileCount ?? 0) > 0;
   const canScan = isIndexed && !isScanning && !isIndexing;
@@ -148,14 +155,66 @@ export default function DesignLabScanner() {
     }
   };
 
+  const startThumbnailGeneration = async () => {
+    const generator = new ThumbnailBatchGenerator(3); // Batch size = 3
+
+    generator.onProgress((state) => {
+      setThumbnailState(state);
+    });
+
+    generator.onThumbnailCreated((preview) => {
+      setRecentThumbnails((prev) => [preview, ...prev].slice(0, 50)); // Keep last 50
+    });
+
+    setThumbnailGenerator(generator);
+    setShowThumbnailSidebar(true);
+    setRecentThumbnails([]); // Reset thumbnails list
+
+    try {
+      await generator.start();
+      
+      const finalState = generator.getState();
+      toast({
+        title: "Generazione completata!",
+        description: `${finalState.successCount} miniature create, ${finalState.failedCount} fallite`,
+        variant: finalState.failedCount > 0 ? 'destructive' : 'default',
+      });
+
+      // Update scan results
+      if (scanResults && finalState.successCount > 0) {
+        setScanResults({
+          ...scanResults,
+          thumbnails_generated: scanResults.thumbnails_generated + finalState.successCount,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Errore generazione",
+        description: error instanceof Error ? error.message : 'Errore sconosciuto',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Design Lab Scanner</h1>
-        <p className="text-muted-foreground mt-2">
-          Scansiona le tue pagine esistenti per estrarre componenti, funzioni e creare plugin riutilizzabili
-        </p>
-      </div>
+    <div className="flex gap-4">
+      {/* Sidebar Preview (a sinistra) */}
+      {showThumbnailSidebar && thumbnailState && (
+        <ThumbnailSidebarPreview
+          thumbnails={recentThumbnails}
+          currentProgress={thumbnailState.currentIndex}
+          totalComponents={thumbnailState.totalComponents}
+        />
+      )}
+
+      {/* Contenuto principale */}
+      <div className="flex-1 container mx-auto p-6 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Design Lab Scanner</h1>
+          <p className="text-muted-foreground mt-2">
+            Scansiona le tue pagine esistenti per estrarre componenti, funzioni e creare plugin riutilizzabili
+          </p>
+        </div>
 
       {/* Stato Indicizzazione Codebase */}
       <Card>
@@ -508,47 +567,91 @@ export default function DesignLabScanner() {
             </Alert>
           )}
 
-          {scanResults && scanResults.thumbnails_generated < scanResults.components_extracted && (
-            <Alert className="mt-6" variant="destructive">
+          {/* Thumbnail Generation Controls */}
+          {thumbnailState?.isRunning && (
+            <Card className="mt-6 p-4 bg-card">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">Generazione in Corso</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {thumbnailState.currentIndex} / {thumbnailState.totalComponents} componenti
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {thumbnailState.isPaused ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => thumbnailGenerator?.resume()}
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Riprendi
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => thumbnailGenerator?.pause()}
+                      >
+                        <Pause className="w-4 h-4 mr-2" />
+                        Pausa
+                      </Button>
+                    )}
+                    
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        thumbnailGenerator?.stop();
+                        setShowThumbnailSidebar(false);
+                      }}
+                    >
+                      <Square className="w-4 h-4 mr-2" />
+                      Stop
+                    </Button>
+                  </div>
+                </div>
+
+                <Progress value={(thumbnailState.currentIndex / thumbnailState.totalComponents) * 100} />
+                
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Successo</p>
+                    <p className="text-lg font-semibold text-green-500">{thumbnailState.successCount}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Falliti</p>
+                    <p className="text-lg font-semibold text-red-500">{thumbnailState.failedCount}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Rimanenti</p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {thumbnailState.totalComponents - thumbnailState.currentIndex}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {scanResults && scanResults.thumbnails_generated < scanResults.components_extracted && !thumbnailState?.isRunning && (
+            <Alert className="mt-6">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Miniature Incomplete</AlertTitle>
-              <AlertDescription>
-                <p className="mb-3">
+              <AlertDescription className="space-y-3">
+                <p>
                   {scanResults.components_extracted - scanResults.thumbnails_generated} miniature non generate.
                 </p>
+                
                 <Button 
-                  variant="outline" 
+                  variant="default" 
                   size="sm"
-                  onClick={async () => {
-                    try {
-                      const result = await regenerateMissingThumbnails((current, total) => {
-                        setCurrentTask(`Rigenerazione miniature: ${current}/${total}`);
-                      });
-                      
-                      toast({
-                        title: 'Rigenerazione completata!',
-                        description: `${result.success} miniature generate, ${result.failed} fallite`,
-                        variant: result.failed > 0 ? 'destructive' : 'default',
-                      });
-
-                      // Refresh scan results
-                      if (result.success > 0) {
-                        setScanResults({
-                          ...scanResults,
-                          thumbnails_generated: scanResults.thumbnails_generated + result.success,
-                        });
-                      }
-                    } catch (error) {
-                      toast({
-                        title: 'Errore rigenerazione',
-                        description: error instanceof Error ? error.message : 'Errore sconosciuto',
-                        variant: 'destructive',
-                      });
-                    }
-                  }}
+                  onClick={startThumbnailGeneration}
+                  disabled={thumbnailState?.isRunning}
                 >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Rigenera Miniature Mancanti
+                  🚀 Avvia Generazione Miniature
                 </Button>
               </AlertDescription>
             </Alert>
@@ -565,6 +668,7 @@ export default function DesignLabScanner() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

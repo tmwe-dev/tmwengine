@@ -221,13 +221,211 @@ export async function generateBatchThumbnails(
 }
 
 /**
- * Rigenera thumbnails mancanti
- * Recupera componenti senza thumbnail_url e genera le preview
+ * Interfaccia per lo stato della generazione
+ */
+export interface ThumbnailGenerationState {
+  totalComponents: number;
+  currentIndex: number;
+  successCount: number;
+  failedCount: number;
+  isRunning: boolean;
+  isPaused: boolean;
+  shouldStop: boolean;
+  lastProcessedId: string | null;
+}
+
+/**
+ * Interfaccia per il preview
+ */
+export interface ThumbnailPreview {
+  componentId: string;
+  componentName: string;
+  thumbnailUrl: string;
+  timestamp: number;
+  fileSize?: number;
+}
+
+/**
+ * THUMBNAIL BATCH GENERATOR
+ * Genera miniature in batch controllati di 3 per evitare blocchi del browser
+ */
+export class ThumbnailBatchGenerator {
+  private state: ThumbnailGenerationState;
+  private components: Array<{ id: string; jsx_code: string; component_name: string }>;
+  private onProgressCallback?: (state: ThumbnailGenerationState) => void;
+  private onThumbnailCreatedCallback?: (preview: ThumbnailPreview) => void;
+  private batchSize: number;
+
+  constructor(batchSize: number = 3) {
+    this.batchSize = batchSize;
+    this.state = {
+      totalComponents: 0,
+      currentIndex: 0,
+      successCount: 0,
+      failedCount: 0,
+      isRunning: false,
+      isPaused: false,
+      shouldStop: false,
+      lastProcessedId: null,
+    };
+    this.components = [];
+  }
+
+  /**
+   * Carica componenti dal database
+   */
+  async loadComponents(): Promise<void> {
+    const { data, error } = await supabase
+      .from('design_lab_extracted_components')
+      .select('id, jsx_code, component_name')
+      .is('thumbnail_url', null)
+      .order('created_at', { ascending: true });
+
+    if (error) throw new Error(`Failed to load components: ${error.message}`);
+    
+    this.components = data || [];
+    this.state.totalComponents = this.components.length;
+    
+    console.log(`📋 Loaded ${this.state.totalComponents} components without thumbnails`);
+  }
+
+  /**
+   * Processa un singolo batch di componenti
+   */
+  async processBatch(): Promise<void> {
+    const batch = this.components.slice(
+      this.state.currentIndex,
+      this.state.currentIndex + this.batchSize
+    );
+
+    for (const component of batch) {
+      if (this.state.shouldStop) {
+        console.log('⏹️ Batch processing stopped by user');
+        break;
+      }
+
+      try {
+        console.log(`🔄 [${this.state.currentIndex + 1}/${this.state.totalComponents}] Generating: ${component.component_name}`);
+        
+        // Genera thumbnail
+        const thumbnailUrl = await generateComponentThumbnail(component.id, component.jsx_code);
+        
+        this.state.successCount++;
+        this.state.lastProcessedId = component.id;
+
+        // Notifica preview creato
+        if (this.onThumbnailCreatedCallback) {
+          this.onThumbnailCreatedCallback({
+            componentId: component.id,
+            componentName: component.component_name,
+            thumbnailUrl: thumbnailUrl,
+            timestamp: Date.now(),
+          });
+        }
+
+        console.log(`✅ [${this.state.successCount}/${this.state.totalComponents}] Success: ${component.component_name}`);
+      } catch (error) {
+        this.state.failedCount++;
+        console.error(`❌ [${this.state.currentIndex + 1}/${this.state.totalComponents}] Failed: ${component.component_name}`, error);
+      }
+
+      this.state.currentIndex++;
+      
+      // Notifica progresso
+      if (this.onProgressCallback) {
+        this.onProgressCallback({ ...this.state });
+      }
+    }
+
+    // Pausa 500ms tra batch per non bloccare il browser
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  /**
+   * Avvia generazione batch
+   */
+  async start(): Promise<void> {
+    this.state.isRunning = true;
+    this.state.isPaused = false;
+    this.state.shouldStop = false;
+
+    await this.loadComponents();
+
+    if (this.components.length === 0) {
+      console.log('✅ No thumbnails to generate');
+      this.state.isRunning = false;
+      return;
+    }
+
+    console.log(`🚀 Starting batch generation: ${this.state.totalComponents} components (batch size: ${this.batchSize})`);
+
+    while (this.state.currentIndex < this.state.totalComponents && !this.state.shouldStop) {
+      if (this.state.isPaused) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        continue;
+      }
+
+      await this.processBatch();
+    }
+
+    this.state.isRunning = false;
+    console.log(`🏁 Generation completed: ${this.state.successCount} success, ${this.state.failedCount} failed`);
+  }
+
+  /**
+   * Metti in pausa
+   */
+  pause(): void {
+    this.state.isPaused = true;
+    console.log('⏸️ Generation paused');
+  }
+
+  /**
+   * Riprendi
+   */
+  resume(): void {
+    this.state.isPaused = false;
+    console.log('▶️ Generation resumed');
+  }
+
+  /**
+   * Ferma
+   */
+  stop(): void {
+    this.state.shouldStop = true;
+    this.state.isRunning = false;
+    console.log('⏹️ Generation stopped');
+  }
+
+  /**
+   * Callback per progresso
+   */
+  onProgress(callback: (state: ThumbnailGenerationState) => void): void {
+    this.onProgressCallback = callback;
+  }
+
+  /**
+   * Callback per thumbnail creato
+   */
+  onThumbnailCreated(callback: (preview: ThumbnailPreview) => void): void {
+    this.onThumbnailCreatedCallback = callback;
+  }
+
+  /**
+   * Ottieni stato corrente
+   */
+  getState(): ThumbnailGenerationState {
+    return { ...this.state };
+  }
+}
+
+/**
+ * Rigenera thumbnails mancanti (LEGACY - usa ThumbnailBatchGenerator)
+ * @deprecated Use ThumbnailBatchGenerator instead
  */
 export async function regenerateMissingThumbnails(
   onProgress?: (current: number, total: number) => void
 ): Promise<{ success: number; failed: number; errors: string[] }> {
-  // Query componenti senza thumbnail
   const { data: componentsWithoutThumbnails, error } = await supabase
     .from('design_lab_extracted_components')
     .select('id, jsx_code')

@@ -1,4 +1,4 @@
-import { memo, useState, useRef, useEffect } from "react";
+import { memo, useState, useRef, useEffect, RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { DesignLabComponent } from "@/types/design-lab";
 import { Input } from "@/components/ui/input";
@@ -6,12 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { GripVertical } from "lucide-react";
+import { GuideLine, getGuideLines, snapToGuides } from "@/lib/design-lab/snap-guides";
 
 interface CanvasElementProps {
   component: DesignLabComponent;
   isSelected: boolean;
   onSelect: () => void;
   onUpdatePosition: (position: any) => void;
+  canvasRef: RefObject<HTMLDivElement>;
+  components: DesignLabComponent[];
+  onGuidesChange: (guides: GuideLine[]) => void;
 }
 
 const ComponentRenderer = ({ type, props }: { type: string; props: any }) => {
@@ -35,7 +39,15 @@ const ComponentRenderer = ({ type, props }: { type: string; props: any }) => {
 };
 
 export const CanvasElement = memo(
-  ({ component, isSelected, onSelect, onUpdatePosition }: CanvasElementProps) => {
+  ({ 
+    component, 
+    isSelected, 
+    onSelect, 
+    onUpdatePosition, 
+    canvasRef, 
+    components,
+    onGuidesChange 
+  }: CanvasElementProps) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -48,10 +60,13 @@ export const CanvasElement = memo(
       e.stopPropagation();
       onSelect();
       
+      const canvasRect = canvasRef.current?.getBoundingClientRect();
+      if (!canvasRect) return;
+
       setIsDragging(true);
       setDragStart({
-        x: e.clientX - position.x,
-        y: e.clientY - position.y,
+        x: e.clientX - canvasRect.left - position.x,
+        y: e.clientY - canvasRect.top - position.y,
       });
     };
 
@@ -59,16 +74,48 @@ export const CanvasElement = memo(
       if (!isDragging) return;
 
       const handleMouseMove = (e: MouseEvent) => {
-        const newX = e.clientX - dragStart.x;
-        const newY = e.clientY - dragStart.y;
+        const canvasRect = canvasRef.current?.getBoundingClientRect();
+        if (!canvasRect) return;
 
-        // Snap to grid (20px)
-        const snappedX = Math.round(newX / 20) * 20;
-        const snappedY = Math.round(newY / 20) * 20;
+        // Calcola posizione relativa al canvas (considerando scroll)
+        const scrollLeft = canvasRef.current?.scrollLeft || 0;
+        const scrollTop = canvasRef.current?.scrollTop || 0;
+        
+        let newX = e.clientX - canvasRect.left - dragStart.x + scrollLeft;
+        let newY = e.clientY - canvasRect.top - dragStart.y + scrollTop;
+
+        // Ottieni le guide per snap magnetico
+        const guides = getGuideLines(
+          canvasRect.width,
+          canvasRect.height,
+          components,
+          component.id
+        );
+
+        // Applica snap magnetico
+        const snapResult = snapToGuides(
+          newX,
+          newY,
+          position.width,
+          position.height,
+          guides,
+          8 // snap threshold in pixels
+        );
+
+        // Aggiorna guide attive per visualizzazione
+        onGuidesChange(snapResult.activeGuides);
+
+        // Snap to grid (20px) come fallback se non c'è snap alle guide
+        const finalX = snapResult.activeGuides.length > 0 
+          ? snapResult.x 
+          : Math.round(snapResult.x / 20) * 20;
+        const finalY = snapResult.activeGuides.length > 0 
+          ? snapResult.y 
+          : Math.round(snapResult.y / 20) * 20;
 
         onUpdatePosition({
-          x: Math.max(0, snappedX),
-          y: Math.max(0, snappedY),
+          x: Math.max(0, finalX),
+          y: Math.max(0, finalY),
           width: position.width,
           height: position.height,
         });
@@ -76,6 +123,7 @@ export const CanvasElement = memo(
 
       const handleMouseUp = () => {
         setIsDragging(false);
+        onGuidesChange([]); // Pulisci le guide quando termina il drag
       };
 
       document.addEventListener('mousemove', handleMouseMove);
@@ -85,7 +133,7 @@ export const CanvasElement = memo(
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };
-    }, [isDragging, dragStart, position, onUpdatePosition]);
+    }, [isDragging, dragStart, position, onUpdatePosition, canvasRef, components, component.id, onGuidesChange]);
 
     return (
       <div

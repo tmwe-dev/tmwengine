@@ -27,6 +27,13 @@ export interface ExtractedComponent {
   usage_count: number;
   is_reusable: boolean;
   created_at: string;
+  // TICKET 2: Intelligence metadata
+  tags?: string[];
+  fields_schema?: any[];
+  section?: string;
+  compatibility_context?: Record<string, any>;
+  ui_category?: string;
+  complexity_level?: 'low' | 'medium' | 'high';
 }
 
 export interface ExtractedFunction {
@@ -45,6 +52,10 @@ export interface ExtractedFunction {
   complexity_score?: number;
   event_handlers: string[];
   created_at: string;
+  // TICKET 2: Intelligence metadata
+  tags?: string[];
+  applicable_to?: string[];
+  compatible_contexts?: string[];
 }
 
 export interface Plugin {

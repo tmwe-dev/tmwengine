@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, Package, Code2, Puzzle, MousePointer, Type, CheckSquare, FileText } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Package, Code2, Puzzle, MousePointer, Type, CheckSquare, FileText, Image, Loader2 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +14,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { regenerateMissingThumbnails } from "@/lib/design-lab/thumbnail-generator";
 import { useExtractedComponents } from "@/hooks/useExtractedComponents";
 import { useExtractedFunctions } from "@/hooks/useExtractedFunctions";
 import { usePlugins } from "@/hooks/usePlugins";
@@ -61,11 +65,51 @@ export function ComponentLibrary() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const [searchQuery, setSearchQuery] = useState("");
+  const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false);
+  const [missingThumbnailsCount, setMissingThumbnailsCount] = useState(0);
+  const [thumbnailProgress, setThumbnailProgress] = useState({ current: 0, total: 0 });
+  const { toast } = useToast();
 
-  const { components, isLoading: componentsLoading } = useExtractedComponents();
+  const { components, isLoading: componentsLoading, refetch: refetchComponents } = useExtractedComponents();
   const { functions, isLoading: functionsLoading } = useExtractedFunctions();
   const { plugins, isLoading: pluginsLoading } = usePlugins();
   const { pages } = useSourcePages();
+
+  // Count components without thumbnails
+  useEffect(() => {
+    if (components) {
+      const count = components.filter(c => !c.thumbnail_url).length;
+      setMissingThumbnailsCount(count);
+    }
+  }, [components]);
+
+  const handleRegenerateThumbnails = async () => {
+    setIsGeneratingThumbnails(true);
+    setThumbnailProgress({ current: 0, total: missingThumbnailsCount });
+
+    try {
+      const result = await regenerateMissingThumbnails((current, total) => {
+        setThumbnailProgress({ current, total });
+      });
+
+      toast({
+        title: "Miniature generate!",
+        description: `${result.success} miniature generate con successo. ${result.failed} errori.`,
+      });
+
+      // Refresh components list
+      refetchComponents();
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: error instanceof Error ? error.message : "Errore sconosciuto",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingThumbnails(false);
+      setThumbnailProgress({ current: 0, total: 0 });
+    }
+  };
 
   const filteredComponents = components?.filter(c =>
     c.component_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -86,9 +130,42 @@ export function ComponentLibrary() {
       side="left"
     >
       <div className="flex items-center justify-between p-4 border-b">
-        {!collapsed && <h2 className="text-lg font-semibold">Libreria Componenti</h2>}
+        {!collapsed && (
+          <div className="flex items-center gap-2 flex-1">
+            <h2 className="text-lg font-semibold">Libreria Componenti</h2>
+            {missingThumbnailsCount > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {missingThumbnailsCount} senza miniatura
+              </Badge>
+            )}
+          </div>
+        )}
         <SidebarTrigger />
       </div>
+
+      {!collapsed && missingThumbnailsCount > 0 && (
+        <div className="p-4 border-b bg-muted/50">
+          <Button
+            onClick={handleRegenerateThumbnails}
+            disabled={isGeneratingThumbnails}
+            size="sm"
+            className="w-full"
+            variant="outline"
+          >
+            {isGeneratingThumbnails ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generazione {thumbnailProgress.current}/{thumbnailProgress.total}
+              </>
+            ) : (
+              <>
+                <Image className="mr-2 h-4 w-4" />
+                Genera Miniature Mancanti
+              </>
+            )}
+          </Button>
+        </div>
+      )}
 
       <SidebarContent>
         {!collapsed && (

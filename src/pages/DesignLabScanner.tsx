@@ -83,14 +83,6 @@ export default function DesignLabScanner() {
 
       const results = await scanner.scanAllPages();
 
-      setProgress(60);
-      setCurrentTask('Generazione miniature...');
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      setProgress(80);
-      setCurrentTask('Creazione plugin...');
-      await new Promise(resolve => setTimeout(resolve, 600));
-
       setProgress(100);
       setCurrentTask('Completato!');
 
@@ -98,7 +90,7 @@ export default function DesignLabScanner() {
 
       toast({
         title: 'Scansione completata!',
-        description: `${results.pages_scanned} pagine scansionate, ${results.components_extracted} componenti estratti`,
+        description: `${results.pages_scanned} pagine, ${results.components_extracted} componenti, ${results.thumbnails_generated} miniature`,
       });
     } catch (error) {
       console.error('Errore durante la scansione:', error);

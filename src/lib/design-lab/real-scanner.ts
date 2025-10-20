@@ -1,6 +1,7 @@
 import { Project, SyntaxKind, SourceFile, FunctionDeclaration, VariableDeclaration, InterfaceDeclaration, TypeAliasDeclaration } from 'ts-morph';
 import { supabase } from '@/integrations/supabase/client';
 import type { ScanConfig, ScanResult } from '@/types/design-lab-scanner';
+import { generateComponentThumbnail } from './thumbnail-generator';
 
 /**
  * DESIGN LAB SCANNER - FASE 1 COMPLETA
@@ -57,7 +58,7 @@ export class RealDesignLabScanner {
       components_extracted: componentsResult.componentsExtracted,
       functions_extracted: functionsResult.functionsExtracted,
       plugins_created: 0,
-      thumbnails_generated: 0,
+      thumbnails_generated: componentsResult.thumbnailsGenerated,
       hooks_cataloged: 0,
     };
   }
@@ -181,8 +182,9 @@ export class RealDesignLabScanner {
   /**
    * Scan all components from src/components
    */
-  private async scanComponents(): Promise<{ componentsExtracted: number }> {
+  private async scanComponents(): Promise<{ componentsExtracted: number; thumbnailsGenerated: number }> {
     let componentsExtracted = 0;
+    let thumbnailsGenerated = 0;
     const componentFiles = this.project.getSourceFiles()
       .filter(file => file.getFilePath().includes('src/components/') && file.getFilePath().endsWith('.tsx'));
 
@@ -191,18 +193,36 @@ export class RealDesignLabScanner {
         const components = this.extractComponentsFromFile(file);
         
         for (const component of components) {
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('design_lab_extracted_components')
-            .insert(component);
+            .insert(component)
+            .select()
+            .single();
 
-          if (!error) componentsExtracted++;
+          if (!error && data) {
+            componentsExtracted++;
+            
+            // Generate thumbnail if enabled
+            if (this.config.generateThumbnails) {
+              try {
+                await generateComponentThumbnail(data.id, component.jsx_code);
+                thumbnailsGenerated++;
+                this.reportProgress(
+                  75 + Math.floor((thumbnailsGenerated / componentsExtracted) * 15),
+                  `Generata miniatura ${thumbnailsGenerated}/${componentsExtracted}`
+                );
+              } catch (thumbError) {
+                console.warn(`Failed to generate thumbnail for ${data.id}:`, thumbError);
+              }
+            }
+          }
         }
       } catch (err) {
         console.error(`Error scanning components in ${file.getFilePath()}:`, err);
       }
     }
 
-    return { componentsExtracted };
+    return { componentsExtracted, thumbnailsGenerated };
   }
 
   /**

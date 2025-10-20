@@ -208,3 +208,29 @@ export async function generateBatchThumbnails(
 
   return results;
 }
+
+/**
+ * Rigenera thumbnails mancanti
+ * Recupera componenti senza thumbnail_url e genera le preview
+ */
+export async function regenerateMissingThumbnails(
+  onProgress?: (current: number, total: number) => void
+): Promise<{ success: number; failed: number; errors: string[] }> {
+  // Query componenti senza thumbnail
+  const { data: componentsWithoutThumbnails, error } = await supabase
+    .from('design_lab_extracted_components')
+    .select('id, jsx_code')
+    .is('thumbnail_url', null);
+
+  if (error) {
+    throw new Error(`Failed to fetch components: ${error.message}`);
+  }
+
+  if (!componentsWithoutThumbnails || componentsWithoutThumbnails.length === 0) {
+    return { success: 0, failed: 0, errors: [] };
+  }
+
+  console.log(`📸 Generazione di ${componentsWithoutThumbnails.length} miniature mancanti...`);
+
+  return await generateBatchThumbnails(componentsWithoutThumbnails, onProgress);
+}

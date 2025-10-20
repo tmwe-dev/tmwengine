@@ -16,7 +16,7 @@ export class RealDesignLabScanner {
   constructor(config: ScanConfig) {
     this.config = config;
     this.project = new Project({
-      tsConfigFilePath: 'tsconfig.json',
+      useInMemoryFileSystem: true,
       skipAddingFilesFromTsConfig: true,
     });
   }
@@ -27,9 +27,9 @@ export class RealDesignLabScanner {
   async scanAllPages(): Promise<ScanResult> {
     this.reportProgress(5, 'Inizializzazione scanner AST...');
 
-    // Step 1: Load all source files
-    const sourceFiles = this.loadSourceFiles();
-    this.reportProgress(10, `Caricati ${sourceFiles.length} file sorgente`);
+    // Step 1: Load all source files from code_index
+    await this.loadSourceFiles();
+    this.reportProgress(10, `Caricati ${this.project.getSourceFiles().length} file da code_index`);
 
     // Step 2: Extract routes from App.tsx
     const routes = this.extractRoutes();
@@ -64,22 +64,34 @@ export class RealDesignLabScanner {
   }
 
   /**
-   * Load all TypeScript/TSX source files
+   * Load all TypeScript/TSX source files from code_index table
    */
-  private loadSourceFiles(): SourceFile[] {
-    const patterns = [
-      'src/**/*.ts',
-      'src/**/*.tsx',
-      '!src/**/*.test.ts',
-      '!src/**/*.test.tsx',
-      '!src/integrations/supabase/types.ts', // Skip generated types
-    ];
+  private async loadSourceFiles(): Promise<void> {
+    this.reportProgress(5, 'Caricamento file da code_index...');
+    
+    const { data: files, error } = await supabase
+      .from('code_index')
+      .select('file_path, content')
+      .like('file_path', 'src/%')
+      .not('file_path', 'like', '%/integrations/supabase/types.ts')
+      .not('file_path', 'like', '%.test.ts')
+      .not('file_path', 'like', '%.test.tsx');
 
-    patterns.forEach(pattern => {
-      this.project.addSourceFilesAtPaths(pattern);
+    if (error) {
+      console.error('❌ Errore caricamento code_index:', error);
+      throw new Error(`Impossibile caricare i file: ${error.message}`);
+    }
+
+    if (!files || files.length === 0) {
+      throw new Error('Nessun file trovato in code_index. Esegui prima l\'indicizzazione del codebase.');
+    }
+
+    // Crea source files in memoria usando ts-morph
+    files.forEach(file => {
+      this.project.createSourceFile(file.file_path, file.content, { overwrite: true });
     });
 
-    return this.project.getSourceFiles();
+    this.reportProgress(10, `Caricati ${files.length} file da code_index`);
   }
 
   /**

@@ -23,13 +23,13 @@ export const useRouteDiscovery = () => {
         return [];
       }
 
-      // Extract all <Route> declarations
-      const routeRegex = /<Route\s+path="([^"]+)"\s+element={<(\w+)\s*\/?>}/g;
+      // Extract all <Route> declarations with multi-line support
+      const routeBlockRegex = /<Route\s+path="([^"]+)"[^>]*element=\{([\s\S]*?)\}\s*\/>/g;
       const routes: DiscoveredRoute[] = [];
       let match;
 
-      while ((match = routeRegex.exec(appFile.content)) !== null) {
-        const [, path, componentName] = match;
+      while ((match = routeBlockRegex.exec(appFile.content)) !== null) {
+        const [, path, elementContent] = match;
         
         // Skip auth, callback, and wildcard routes
         if (
@@ -41,13 +41,28 @@ export const useRouteDiscovery = () => {
           continue;
         }
 
+        // Extract all component names from element content
+        const componentMatches = [...elementContent.matchAll(/<(\w+)[\s/>]/g)];
+        
+        if (componentMatches.length === 0) continue;
+
+        // Filter out wrapper components and get the actual page component
+        const wrapperComponents = ['ProtectedRoute', 'CRMLayout', 'IntegratedAuthGuard'];
+        const pageComponent = componentMatches
+          .map(m => m[1])
+          .reverse() // Start from innermost component
+          .find(name => !wrapperComponents.includes(name));
+
+        if (!pageComponent) continue;
+
         routes.push({
           path,
-          name: componentName,
-          category: categorizeRoute(path, componentName),
+          name: pageComponent,
+          category: categorizeRoute(path, pageComponent),
         });
       }
 
+      console.log('🔍 [ROUTE DISCOVERY] Found', routes.length, 'routes');
       return routes;
     },
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes

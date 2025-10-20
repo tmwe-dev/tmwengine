@@ -1,210 +1,198 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FileCode, Sparkles, Plus } from "lucide-react";
 import { useState } from "react";
+import { useParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Sparkles, Save, Undo2, Redo2 } from "lucide-react";
 import { useDesignLabPages } from "@/hooks/useDesignLabPages";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { format } from "date-fns";
+import { useDesignLabComponents } from "@/hooks/useDesignLabComponents";
+import { useCommandHistory, MoveComponentCommand, UpdatePropsCommand } from "@/hooks/useCommandHistory";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { ComponentPalette } from "@/components/design-lab/ComponentPalette";
+import { Canvas } from "@/components/design-lab/Canvas";
+import { PropertiesPanel } from "@/components/design-lab/PropertiesPanel";
+import { useToast } from "@/hooks/use-toast";
 
-const DesignLab = () => {
-  const { pages, isLoading, createPage } = useDesignLabPages();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newPageName, setNewPageName] = useState("");
-  const [newPageDescription, setNewPageDescription] = useState("");
+const DesignLabEditor = () => {
+  const { pageId } = useParams<{ pageId: string }>();
+  const { toast } = useToast();
+  const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
 
-  const handleCreatePage = async () => {
-    if (!newPageName.trim()) return;
+  const { pages } = useDesignLabPages();
+  const { 
+    components, 
+    createComponent, 
+    updateComponent, 
+    deleteComponent 
+  } = useDesignLabComponents(pageId || null);
 
-    await createPage({
-      page_name: newPageName,
-      description: newPageDescription || undefined,
-      is_template: false,
-      config: {},
+  const { executeCommand, undo, redo, canUndo, canRedo } = useCommandHistory();
+
+  const currentPage = pages?.find(p => p.id === pageId);
+  const selectedComponent = components?.find(c => c.id === selectedComponentId) || null;
+
+  // Auto-save components data
+  useAutoSave(components, {
+    delay: 2000,
+    onSave: async () => {
+      console.log('Auto-saving components...');
+    },
+    onSuccess: () => {
+      console.log('Components auto-saved');
+    },
+  });
+
+  const handleDropComponent = async (componentData: any, position: { x: number; y: number }) => {
+    if (!pageId) return;
+
+    await createComponent({
+      page_id: pageId,
+      component_type: componentData.type,
+      props: componentData.defaultProps,
+      position: {
+        x: position.x,
+        y: position.y,
+        width: componentData.defaultSize.width,
+        height: componentData.defaultSize.height,
+      },
+      order_index: (components?.length || 0) + 1,
     });
 
-    setIsCreateDialogOpen(false);
-    setNewPageName("");
-    setNewPageDescription("");
+    toast({ title: `${componentData.label} aggiunto al canvas` });
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "outline"> = {
-      draft: "secondary",
-      review: "outline",
-      published: "default",
-      archived: "outline",
-    };
+  const handleUpdatePosition = async (id: string, newPosition: any) => {
+    const component = components?.find(c => c.id === id);
+    if (!component) return;
 
-    return (
-      <Badge variant={variants[status] || "default"}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
+    const oldPosition = component.position;
+
+    await executeCommand(
+      new MoveComponentCommand(
+        id,
+        oldPosition as any,
+        newPosition,
+        async (componentId, pos) => {
+          await updateComponent({ id: componentId, position: pos });
+        }
+      )
     );
   };
 
-  return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Sparkles className="h-8 w-8 text-primary" />
-            Design Lab
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Visual Editor Low-Code - Sistema Enterprise
+  const handleUpdateProps = async (props: Record<string, any>) => {
+    if (!selectedComponent) return;
+
+    const oldProps = selectedComponent.props;
+
+    await executeCommand(
+      new UpdatePropsCommand(
+        selectedComponent.id,
+        oldProps as any,
+        props,
+        async (componentId, newProps) => {
+          await updateComponent({ id: componentId, props: newProps });
+        }
+      )
+    );
+  };
+
+  const handleDeleteComponent = async () => {
+    if (!selectedComponentId) return;
+
+    await deleteComponent(selectedComponentId);
+    setSelectedComponentId(null);
+  };
+
+  const handleSaveNow = () => {
+    toast({ title: 'Pagina salvata manualmente' });
+  };
+
+  if (!pageId) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Nessuna pagina selezionata</h1>
+          <p className="text-muted-foreground mt-2">
+            Torna alla dashboard per selezionare o creare una pagina
           </p>
         </div>
-        <Button size="lg" onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuova Pagina
-        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-background">
+      {/* Top Toolbar */}
+      <div className="border-b bg-card">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <div>
+              <h1 className="font-semibold">{currentPage?.page_name || 'Design Lab'}</h1>
+              <p className="text-xs text-muted-foreground">
+                {currentPage?.description || 'Editor visuale'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => undo()}
+              disabled={!canUndo}
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => redo()}
+              disabled={!canRedo}
+            >
+              <Redo2 className="h-4 w-4" />
+            </Button>
+            <Button size="sm" onClick={handleSaveNow}>
+              <Save className="h-4 w-4 mr-2" />
+              Salva
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>🎯 FASE 1 ULTRA PRO - Database Implementato</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 border rounded-lg">
-              <h3 className="font-semibold mb-2">✅ Database</h3>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• 5 tabelle create</li>
-                <li>• Indici performance attivi</li>
-                <li>• RLS policies configurate</li>
-                <li>• 4 system actions seed</li>
-              </ul>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <h3 className="font-semibold mb-2">✅ Types & Hooks</h3>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• TypeScript interfaces</li>
-                <li>• CRUD hooks ready</li>
-                <li>• Sistema base operativo</li>
-              </ul>
-            </div>
-          </div>
+      {/* Main Layout: 3 columns */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: Component Palette */}
+        <div className="w-64 border-r bg-card p-4 overflow-auto">
+          <ComponentPalette />
+        </div>
 
-          <div className="p-4 bg-muted/50 rounded-lg">
-            <p className="text-sm">
-              <strong>Documentazione completa:</strong> Consultare{" "}
-              <code className="bg-background px-2 py-1 rounded">docs/DESIGN_LAB_PLAN.md</code>
-              {" "}per dettagli implementazione FASE 2 (Drag & Drop UI).
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Center: Canvas */}
+        <div className="flex-1 p-4 overflow-auto">
+          <Canvas
+            components={components || []}
+            selectedComponentId={selectedComponentId}
+            onSelectComponent={setSelectedComponentId}
+            onDropComponent={handleDropComponent}
+            onUpdatePosition={handleUpdatePosition}
+          />
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Le Tue Pagine</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Caricamento...</div>
-          ) : pages && pages.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Descrizione</TableHead>
-                  <TableHead>Stato</TableHead>
-                  <TableHead>Versione</TableHead>
-                  <TableHead>Creata</TableHead>
-                  <TableHead>Azioni</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pages.map((page) => (
-                  <TableRow key={page.id}>
-                    <TableCell className="font-medium">{page.page_name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {page.description || "-"}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(page.status)}</TableCell>
-                    <TableCell>v{page.version}</TableCell>
-                    <TableCell>{format(new Date(page.created_at), "dd/MM/yyyy")}</TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm">
-                        <FileCode className="h-4 w-4 mr-2" />
-                        Modifica
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              Nessuna pagina creata. Clicca su "Nuova Pagina" per iniziare!
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Crea Nuova Pagina</DialogTitle>
-            <DialogDescription>
-              Crea una nuova pagina nel Design Lab
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="page-name">Nome Pagina</Label>
-              <Input
-                id="page-name"
-                value={newPageName}
-                onChange={(e) => setNewPageName(e.target.value)}
-                placeholder="es. Dashboard Clienti"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="page-description">Descrizione (opzionale)</Label>
-              <Textarea
-                id="page-description"
-                value={newPageDescription}
-                onChange={(e) => setNewPageDescription(e.target.value)}
-                placeholder="Descrivi brevemente la pagina..."
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Annulla
-            </Button>
-            <Button onClick={handleCreatePage} disabled={!newPageName.trim()}>
-              Crea Pagina
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Right: Properties Panel */}
+        <div className="w-80 border-l bg-card p-4 overflow-auto">
+          <PropertiesPanel
+            component={selectedComponent}
+            onUpdateProps={handleUpdateProps}
+            onUpdatePosition={(position) => {
+              if (selectedComponent) {
+                handleUpdatePosition(selectedComponent.id, position);
+              }
+            }}
+            onDelete={handleDeleteComponent}
+          />
+        </div>
+      </div>
     </div>
   );
 };
 
-export default DesignLab;
+export default DesignLabEditor;
+

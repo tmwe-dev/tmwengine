@@ -11,6 +11,7 @@ import EmailSyncTest from "./pages/EmailSyncTest";
 import TMWEApiComparison from "./pages/TMWEApiComparison";
 import RadioChat from "./pages/RadioChat";
 import DesignLab from "./pages/DesignLab";
+import DesignLabDashboard from "./pages/DesignLabDashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -29,7 +30,8 @@ const App = () => (
           <Route path="/email-sync-test" element={<ProtectedRoute><EmailSyncTest /></ProtectedRoute>} />
           <Route path="/api-comparison" element={<ProtectedRoute><TMWEApiComparison /></ProtectedRoute>} />
           <Route path="/radio-chat" element={<ProtectedRoute><RadioChat /></ProtectedRoute>} />
-          <Route path="/design-lab" element={<ProtectedRoute><DesignLab /></ProtectedRoute>} />
+          <Route path="/design-lab" element={<ProtectedRoute><DesignLabDashboard /></ProtectedRoute>} />
+          <Route path="/design-lab/:pageId" element={<ProtectedRoute><DesignLab /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

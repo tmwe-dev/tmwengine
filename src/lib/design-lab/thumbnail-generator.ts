@@ -94,6 +94,17 @@ async function uploadThumbnail(
   const fileName = `${componentId}-${Date.now()}.png`;
   const filePath = `thumbnails/${fileName}`;
 
+  // Verify bucket exists
+  const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+  if (bucketError) {
+    console.error('Bucket check error:', bucketError);
+    throw new Error('Failed to check storage buckets');
+  }
+  
+  if (!buckets?.find(b => b.id === 'design-lab-thumbnails')) {
+    throw new Error('Bucket "design-lab-thumbnails" non trovato. Verificare configurazione Supabase Storage.');
+  }
+
   const { data, error } = await supabase.storage
     .from('design-lab-thumbnails')
     .upload(filePath, blob, {

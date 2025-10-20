@@ -1,4 +1,4 @@
-import { memo, useState, useRef, useEffect, RefObject } from "react";
+import { useState, useRef, useEffect, RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { DesignLabComponent } from "@/types/design-lab";
 import { Input } from "@/components/ui/input";
@@ -39,17 +39,16 @@ const ComponentRenderer = ({ type, props }: { type: string; props: any }) => {
   }
 };
 
-export const CanvasElement = memo(
-  ({ 
-    component, 
-    isSelected, 
-    onSelect, 
-    onUpdatePosition, 
-    canvasRef, 
-    components,
-    onGuidesChange,
-    onDistancesChange
-  }: CanvasElementProps) => {
+export const CanvasElement = ({ 
+  component, 
+  isSelected, 
+  onSelect, 
+  onUpdatePosition, 
+  canvasRef, 
+  components,
+  onGuidesChange,
+  onDistancesChange
+}: CanvasElementProps) => {
   const elementRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -225,15 +224,4 @@ export const CanvasElement = memo(
         )}
       </div>
     );
-  },
-  (prev, next) => {
-    return (
-      prev.component.id === next.component.id &&
-      JSON.stringify(prev.component.position) === JSON.stringify(next.component.position) &&
-      JSON.stringify(prev.component.props) === JSON.stringify(next.component.props) &&
-      prev.isSelected === next.isSelected
-    );
-  }
-);
-
-CanvasElement.displayName = 'CanvasElement';
+};

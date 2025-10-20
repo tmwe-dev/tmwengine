@@ -48,7 +48,7 @@ export function ComponentLibrary() {
     <Sidebar
       className={collapsed ? "w-14" : "w-80"}
       collapsible="icon"
-      side="right"
+      side="left"
     >
       <div className="flex items-center justify-between p-4 border-b">
         {!collapsed && <h2 className="text-lg font-semibold">Libreria Componenti</h2>}

@@ -54,6 +54,8 @@ import TMWEApiTester from "./pages/TMWEApiTester";
 import CodeReview from "./pages/CodeReview";
 import NotificationSettings from "./pages/NotificationSettings";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
+import DesignLab from "./pages/DesignLab";
+import DesignLabDashboard from "./pages/DesignLabDashboard";
 
 const queryClient = new QueryClient();
 
@@ -340,6 +342,20 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <NotificationSettings />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/design-lab" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <DesignLabDashboard />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/design-lab/:pageId" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <DesignLab />
                 </CRMLayout>
               </ProtectedRoute>
             } />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Search, Package, Code2, Puzzle, FileCode } from "lucide-react";
 import {
   Sidebar,
@@ -14,6 +14,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Filter } from "lucide-react";
 import { useExtractedComponents } from "@/hooks/useExtractedComponents";
 import { useExtractedFunctions } from "@/hooks/useExtractedFunctions";
 import { usePlugins } from "@/hooks/usePlugins";
@@ -26,15 +32,46 @@ export function ComponentLibrary() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const [searchQuery, setSearchQuery] = useState("");
+  const [onlyReusable, setOnlyReusable] = useState(false);
+  const [componentTypeFilter, setComponentTypeFilter] = useState<string>('all');
 
   const { components, isLoading: componentsLoading } = useExtractedComponents();
   const { functions, isLoading: functionsLoading } = useExtractedFunctions();
   const { plugins, isLoading: pluginsLoading } = usePlugins();
   const { pages } = useSourcePages();
 
-  const filteredComponents = components?.filter(c =>
-    c.component_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter and group components by category
+  const filteredAndGroupedComponents = useMemo(() => {
+    if (!components) return {};
+
+    let filtered = components.filter((c) => {
+      const matchesSearch = c.component_name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesReusable = !onlyReusable || c.is_reusable;
+      const matchesType = componentTypeFilter === 'all' || c.component_type === componentTypeFilter;
+      return matchesSearch && matchesReusable && matchesType;
+    });
+
+    // Group by source page category
+    const grouped = filtered.reduce((acc, component) => {
+      const sourcePage = pages?.find(p => p.id === component.source_page_id);
+      const category = sourcePage?.category || 'Uncategorized';
+      
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(component);
+      return acc;
+    }, {} as Record<string, typeof components>);
+
+    return grouped;
+  }, [components, pages, searchQuery, onlyReusable, componentTypeFilter]);
+
+  // Get unique component types for filter
+  const componentTypes = useMemo(() => {
+    if (!components) return [];
+    const types = new Set(components.map(c => c.component_type));
+    return Array.from(types).sort();
+  }, [components]);
 
   const filteredFunctions = functions?.filter(f =>
     f.function_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -57,7 +94,7 @@ export function ComponentLibrary() {
 
       <SidebarContent>
         {!collapsed && (
-          <div className="p-4">
+          <div className="p-4 space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -66,6 +103,42 @@ export function ComponentLibrary() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
+            </div>
+
+            {/* Filters */}
+            <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <span className="text-sm font-medium">Filtri</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="reusable"
+                  checked={onlyReusable}
+                  onCheckedChange={(checked) => setOnlyReusable(checked as boolean)}
+                />
+                <Label htmlFor="reusable" className="text-sm cursor-pointer">
+                  Solo riutilizzabili
+                </Label>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Tipo componente</Label>
+                <Select value={componentTypeFilter} onValueChange={setComponentTypeFilter}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutti i tipi</SelectItem>
+                    {componentTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         )}
@@ -89,37 +162,42 @@ export function ComponentLibrary() {
           )}
 
           <TabsContent value="components" className="mt-0">
-            <ScrollArea className="h-[calc(100vh-240px)]">
-              <SidebarGroup>
-                {!collapsed && (
-                  <SidebarGroupLabel className="flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    Componenti Estratti ({filteredComponents?.length || 0})
-                  </SidebarGroupLabel>
-                )}
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {componentsLoading ? (
-                      <div className="p-4 text-sm text-muted-foreground">
-                        Caricamento...
-                      </div>
-                    ) : filteredComponents?.length === 0 ? (
-                      <div className="p-4 text-sm text-muted-foreground">
-                        Nessun componente trovato
-                      </div>
-                    ) : (
-                      filteredComponents?.map((component) => (
-                        <SidebarMenuItem key={component.id}>
-                          <ComponentLibraryItem
-                            component={component}
-                            collapsed={collapsed}
-                          />
-                        </SidebarMenuItem>
-                      ))
-                    )}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
+            <ScrollArea className="h-[calc(100vh-340px)]">
+              {componentsLoading ? (
+                <div className="p-4 text-sm text-muted-foreground">
+                  Caricamento...
+                </div>
+              ) : Object.keys(filteredAndGroupedComponents).length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">
+                  Nessun componente trovato
+                </div>
+              ) : (
+                <div className="p-4">
+                  <Accordion type="multiple" className="space-y-2">
+                    {Object.entries(filteredAndGroupedComponents).map(([category, categoryComponents]) => (
+                      <AccordionItem key={category} value={category} className="border rounded-lg">
+                        <AccordionTrigger className="px-3 py-2 hover:no-underline">
+                          <div className="flex items-center justify-between w-full pr-2">
+                            <span className="text-sm font-medium">{category}</span>
+                            <Badge variant="secondary" className="ml-2">
+                              {categoryComponents.length}
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-3 pb-3 space-y-2">
+                          {categoryComponents.map((component) => (
+                            <ComponentLibraryItem
+                              key={component.id}
+                              component={component}
+                              collapsed={false}
+                            />
+                          ))}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
+              )}
             </ScrollArea>
           </TabsContent>
 

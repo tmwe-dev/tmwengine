@@ -93,7 +93,7 @@ export function CompositionCanvas({
       </div>
 
       {/* Drop Zone */}
-      <ScrollArea className="flex-1 h-0 overflow-y-auto">
+      <ScrollArea className="h-[calc(100%-160px)]">
         <div
           ref={setNodeRef}
           className={cn(

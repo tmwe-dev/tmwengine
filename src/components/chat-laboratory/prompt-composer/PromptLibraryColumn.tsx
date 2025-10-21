@@ -49,7 +49,7 @@ export function PromptLibraryColumn({
         </Button>
       </div>
       
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="h-[calc(100%-100px)] p-4">
         <div className="space-y-3">
           {sections.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground text-sm">

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { GripVertical, Copy, Eye } from "lucide-react";
+import { GripVertical, Copy, Eye, ImageOff } from "lucide-react";
 import { ExtractedComponent } from "@/types/design-lab-scanner";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
@@ -101,15 +102,46 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
               )}
             </div>
 
-            {component.thumbnail_url && (
-              <div className="mt-2 rounded overflow-hidden border bg-muted">
+            {/* Thumbnail or Placeholder */}
+            <div className="mt-2 rounded overflow-hidden border bg-muted">
+              {component.thumbnail_url ? (
                 <img
                   src={component.thumbnail_url}
                   alt={component.component_name}
-                  className="w-full h-20 object-cover"
+                  className="w-full h-24 object-cover"
                 />
-              </div>
-            )}
+              ) : (
+                <div className="w-full h-24 flex items-center justify-center bg-muted/50">
+                  <ImageOff className="h-8 w-8 text-muted-foreground/50" />
+                </div>
+              )}
+            </div>
+
+            {/* Badges for metadata */}
+            <div className="mt-2 flex flex-wrap gap-1">
+              {component.ui_category && (
+                <Badge variant="outline" className="text-xs">
+                  {component.ui_category}
+                </Badge>
+              )}
+              {component.complexity_level && (
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs ${
+                    component.complexity_level === 'low' ? 'border-green-500/50 text-green-500' :
+                    component.complexity_level === 'medium' ? 'border-yellow-500/50 text-yellow-500' :
+                    'border-red-500/50 text-red-500'
+                  }`}
+                >
+                  {component.complexity_level}
+                </Badge>
+              )}
+              {component.tags && component.tags.length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  +{component.tags.length} tag
+                </Badge>
+              )}
+            </div>
 
             <div className="mt-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <TooltipProvider>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Package, Code2, Puzzle, MousePointer, Type, CheckSquare, FileText, Image, Loader2 } from "lucide-react";
+import { Search, Package, Code2, Puzzle, MousePointer, Type, CheckSquare, FileText, Image, Loader2, Filter, ArrowUpDown, Grid3x3, List } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -17,7 +17,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { regenerateMissingThumbnails } from "@/lib/design-lab/thumbnail-generator";
+import { ThumbnailBatchGenerator, ThumbnailPreview } from "@/lib/design-lab/thumbnail-generator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ThumbnailSidebarPreview } from "./ThumbnailSidebarPreview";
 import { useExtractedComponents } from "@/hooks/useExtractedComponents";
 import { useExtractedFunctions } from "@/hooks/useExtractedFunctions";
 import { usePlugins } from "@/hooks/usePlugins";
@@ -68,6 +70,15 @@ export function ComponentLibrary() {
   const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false);
   const [missingThumbnailsCount, setMissingThumbnailsCount] = useState(0);
   const [thumbnailProgress, setThumbnailProgress] = useState({ current: 0, total: 0 });
+  const [generatedThumbnails, setGeneratedThumbnails] = useState<ThumbnailPreview[]>([]);
+  const [showThumbnailPreview, setShowThumbnailPreview] = useState(false);
+  
+  // Filters
+  const [uiCategoryFilter, setUiCategoryFilter] = useState<string>("all");
+  const [complexityFilter, setComplexityFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  
   const { toast } = useToast();
 
   const { components, isLoading: componentsLoading, refetch: refetchComponents } = useExtractedComponents();
@@ -85,35 +96,66 @@ export function ComponentLibrary() {
 
   const handleRegenerateThumbnails = async () => {
     setIsGeneratingThumbnails(true);
-    setThumbnailProgress({ current: 0, total: missingThumbnailsCount });
+    setGeneratedThumbnails([]);
+    setShowThumbnailPreview(true);
+
+    const generator = new ThumbnailBatchGenerator(3);
+
+    generator.onProgress((state) => {
+      setThumbnailProgress({ current: state.currentIndex, total: state.totalComponents });
+    });
+
+    generator.onThumbnailCreated((preview) => {
+      setGeneratedThumbnails(prev => [preview, ...prev]);
+    });
 
     try {
-      const result = await regenerateMissingThumbnails((current, total) => {
-        setThumbnailProgress({ current, total });
-      });
+      await generator.start();
+      const finalState = generator.getState();
 
       toast({
         title: "Miniature generate!",
-        description: `${result.success} miniature generate con successo. ${result.failed} errori.`,
+        description: `${finalState.successCount} successo, ${finalState.failedCount} errori`,
       });
 
-      // Refresh components list
       refetchComponents();
     } catch (error) {
       toast({
-        title: "Errore",
+        title: "Errore generazione miniature",
         description: error instanceof Error ? error.message : "Errore sconosciuto",
         variant: "destructive",
       });
     } finally {
       setIsGeneratingThumbnails(false);
-      setThumbnailProgress({ current: 0, total: 0 });
+      setTimeout(() => {
+        setShowThumbnailPreview(false);
+        setGeneratedThumbnails([]);
+      }, 3000);
     }
   };
 
-  const filteredComponents = components?.filter(c =>
-    c.component_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Advanced filtering
+  const filteredComponents = components
+    ?.filter(c => {
+      const matchesSearch = c.component_name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = uiCategoryFilter === "all" || c.ui_category === uiCategoryFilter;
+      const matchesComplexity = complexityFilter === "all" || c.complexity_level === complexityFilter;
+      return matchesSearch && matchesCategory && matchesComplexity;
+    })
+    .sort((a, b) => {
+      if (sortBy === "name") return a.component_name.localeCompare(b.component_name);
+      if (sortBy === "complexity") {
+        const complexityOrder = { low: 1, medium: 2, high: 3 };
+        return (complexityOrder[a.complexity_level as keyof typeof complexityOrder] || 0) - 
+               (complexityOrder[b.complexity_level as keyof typeof complexityOrder] || 0);
+      }
+      if (sortBy === "created") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      return 0;
+    });
+
+  // Extract unique categories
+  const uiCategories = Array.from(new Set(components?.map(c => c.ui_category).filter(Boolean)));
+  const complexityLevels = ["low", "medium", "high"];
 
   const filteredFunctions = functions?.filter(f =>
     f.function_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -124,11 +166,12 @@ export function ComponentLibrary() {
   );
 
   return (
-    <Sidebar
-      className={collapsed ? "w-14" : "w-80"}
-      collapsible="icon"
-      side="left"
-    >
+    <>
+      <Sidebar
+        className={collapsed ? "w-14" : "w-96"}
+        collapsible="icon"
+        side="left"
+      >
       <div className="flex items-center justify-between p-4 border-b">
         {!collapsed && (
           <div className="flex items-center gap-2 flex-1">
@@ -352,7 +395,83 @@ export function ComponentLibrary() {
             </ScrollArea>
           </TabsContent>
         </Tabs>
+        {!collapsed && (
+          <div className="px-4 py-3 border-t space-y-3">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtri</span>
+            </div>
+            
+            <div className="space-y-2">
+              <Select value={uiCategoryFilter} onValueChange={setUiCategoryFilter}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Categoria UI" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutte le categorie</SelectItem>
+                  {uiCategories.map(cat => (
+                    <SelectItem key={cat} value={cat || ""}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={complexityFilter} onValueChange={setComplexityFilter}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Complessità" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutte</SelectItem>
+                  {complexityLevels.map(level => (
+                    <SelectItem key={level} value={level}>{level}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Ordina per" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Nome A-Z</SelectItem>
+                  <SelectItem value="complexity">Complessità</SelectItem>
+                  <SelectItem value="created">Data creazione</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="flex gap-2">
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setViewMode('grid')}
+                >
+                  <Grid3x3 className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </SidebarContent>
     </Sidebar>
+
+    {/* Thumbnail Preview Sidebar */}
+    {showThumbnailPreview && (
+      <div className="fixed right-0 top-0 bottom-0 z-50 animate-slide-in-right">
+        <ThumbnailSidebarPreview
+          thumbnails={generatedThumbnails}
+          currentProgress={thumbnailProgress.current}
+          totalComponents={thumbnailProgress.total}
+        />
+      </div>
+    )}
+    </>
   );
 }

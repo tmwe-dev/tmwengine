@@ -436,7 +436,7 @@ ESEMPI:
           </DialogHeader>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 h-full overflow-hidden flex flex-col">
           {/* Nascondi TabsList nel Compositore */}
           {activeTab !== 'composer' && (
             <TabsList className="grid w-full grid-cols-6">

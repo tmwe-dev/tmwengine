@@ -116,10 +116,10 @@ export function PromptCard({ section, isDragging, onEdit }: PromptCardProps) {
         isDragging && "opacity-50"
       )}
     >
-      <Card className="hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing">
+      <Card className="hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing" {...listeners} {...attributes}>
         <CardHeader className="p-3">
           <div className="flex items-start gap-2">
-            <div {...listeners} {...attributes} className="cursor-grab mt-1">
+            <div className="cursor-grab mt-1">
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">

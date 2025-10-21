@@ -104,11 +104,28 @@ export function ComponentLibrary() {
   const missingCategoryCount = components?.filter(c => !c.ui_category).length || 0;
 
   const handleRegenerateThumbnails = async () => {
+    // PROTEZIONE: Conferma utente se ci sono più di 10 componenti
+    const missingCount = components?.filter(c => !c.thumbnail_url).length || 0;
+    
+    if (missingCount > 10) {
+      const confirmed = window.confirm(
+        `⚠️ ATTENZIONE: Stai per generare ${missingCount} miniature.\n\n` +
+        `Questo processo richiederà circa ${Math.ceil(missingCount * 2 / 60)} minuti (2 secondi per componente).\n\n` +
+        `Il browser potrebbe rallentare durante il processo.\n\n` +
+        `CONSIGLIO: Usa la generazione singola dalle card invece.\n\n` +
+        `Vuoi continuare comunque?`
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+    }
+    
     setIsGeneratingThumbnails(true);
     setGeneratedThumbnails([]);
     setShowThumbnailPreview(true);
 
-    const generator = new ThumbnailBatchGenerator(3);
+    const generator = new ThumbnailBatchGenerator(1); // ✅ PROTEZIONE: 1 per volta
 
     generator.onProgress((state) => {
       setThumbnailProgress({ current: state.currentIndex, total: state.totalComponents });
@@ -221,7 +238,10 @@ export function ComponentLibrary() {
                 ) : (
                   <>
                     <Image className="mr-2 h-4 w-4" />
-                    Genera {missingThumbnailsCount} Miniature
+                    Genera Tutte ({missingThumbnailsCount})
+                    {missingThumbnailsCount > 10 && (
+                      <Badge variant="destructive" className="ml-2">Lento</Badge>
+                    )}
                   </>
                 )}
               </Button>

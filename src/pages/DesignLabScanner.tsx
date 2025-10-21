@@ -144,17 +144,13 @@ export default function DesignLabScanner() {
         description: `${results.pages_scanned} pagine, ${results.components_extracted} componenti estratti`,
       });
 
-      // NUOVO: Avvio automatico miniature se checkbox attiva
+      // ⚠️ DISABILITATO PER PROTEZIONE SISTEMA
       if (generateThumbnails && results.components_extracted > 0) {
         toast({
-          title: 'Avvio generazione miniature...',
-          description: `${results.components_extracted} componenti da processare. Questo potrebbe richiedere alcuni minuti.`,
+          title: '⚠️ Generazione automatica disabilitata',
+          description: `${results.components_extracted} componenti estratti. Usa il pulsante manuale per generare miniature.`,
+          variant: 'default',
         });
-        
-        // Attendi 1.5 secondi per permettere all'utente di vedere il messaggio
-        setTimeout(() => {
-          startThumbnailGeneration();
-        }, 1500);
       }
     } catch (error) {
       console.error('Errore durante la scansione:', error);
@@ -169,7 +165,7 @@ export default function DesignLabScanner() {
   };
 
   const startThumbnailGeneration = async () => {
-    const generator = new ThumbnailBatchGenerator(3); // Batch size = 3
+    const generator = new ThumbnailBatchGenerator(1); // ✅ PROTEZIONE: 1 per volta
 
     generator.onProgress((state) => {
       setThumbnailState(state);
@@ -580,27 +576,19 @@ export default function DesignLabScanner() {
             </Alert>
           )}
 
-          {/* Alert per Miniature Mancanti */}
+          {/* Alert Sicurezza: Generazione Batch Disabilitata */}
           {scanResults && scanResults.components_extracted > 0 && !thumbnailState?.isRunning && (
-            <Alert className="mt-6 border-yellow-500/50 bg-yellow-500/10">
-              <AlertCircle className="h-4 w-4 text-yellow-500" />
-              <AlertTitle className="text-yellow-500">Miniature da Generare</AlertTitle>
-              <AlertDescription className="flex items-center justify-between">
-                <span className="text-sm">
-                  {scanResults.components_extracted} componenti estratti necessitano di miniature.
-                  {generateThumbnails ? ' La generazione automatica è attiva.' : ' Puoi generarle manualmente.'}
-                </span>
-                {!generateThumbnails && (
-                  <Button 
-                    onClick={startThumbnailGeneration} 
-                    size="sm"
-                    variant="outline"
-                    className="ml-4"
-                  >
-                    <ImageIcon className="w-4 h-4 mr-2" />
-                    Genera Ora
-                  </Button>
-                )}
+            <Alert variant="destructive" className="mt-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>⚠️ Generazione Batch Disabilitata</AlertTitle>
+              <AlertDescription>
+                Per proteggere il sistema, la generazione batch automatica è stata disabilitata.
+                <br /><br />
+                <strong>Opzioni sicure:</strong>
+                <ul className="list-disc list-inside mt-2">
+                  <li><strong>Generazione singola</strong>: Usa il pulsante 🖼️ su ogni card componente (hover)</li>
+                  <li><strong>Batch controllato</strong>: Vai in ComponentLibrary (1 alla volta, max 10 componenti consigliati)</li>
+                </ul>
               </AlertDescription>
             </Alert>
           )}
@@ -672,27 +660,6 @@ export default function DesignLabScanner() {
                 </div>
               </div>
             </Card>
-          )}
-
-          {scanResults && scanResults.thumbnails_generated < scanResults.components_extracted && !thumbnailState?.isRunning && (
-            <Alert className="mt-6">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Miniature Incomplete</AlertTitle>
-              <AlertDescription className="space-y-3">
-                <p>
-                  {scanResults.components_extracted - scanResults.thumbnails_generated} miniature non generate.
-                </p>
-                
-                <Button 
-                  variant="default" 
-                  size="sm"
-                  onClick={startThumbnailGeneration}
-                  disabled={thumbnailState?.isRunning}
-                >
-                  🚀 Avvia Generazione Miniature
-                </Button>
-              </AlertDescription>
-            </Alert>
           )}
 
           {scanResults && (

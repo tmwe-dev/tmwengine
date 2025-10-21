@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GripVertical, Copy, Eye, ImageOff } from "lucide-react";
+import { GripVertical, Copy, Eye, ImageOff, Image as ImageIcon, Loader2 } from "lucide-react";
 import { ExtractedComponent } from "@/types/design-lab-scanner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { ComponentPreviewDialog } from './ComponentPreviewDialog';
+import { generateComponentThumbnail } from '@/lib/design-lab/thumbnail-generator';
 
 interface ComponentLibraryItemProps {
   component: ExtractedComponent;
@@ -19,6 +20,7 @@ interface ComponentLibraryItemProps {
 
 export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryItemProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const { toast } = useToast();
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -47,6 +49,46 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
 
   const handlePreview = () => {
     setPreviewOpen(true);
+  };
+
+  // NUOVA FUNZIONE: Genera miniatura singola
+  const handleGenerateThumbnail = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Previeni drag
+    
+    setIsGeneratingThumbnail(true);
+    
+    try {
+      console.log(`🎬 Generating thumbnail for: ${component.component_name}`);
+      
+      const thumbnailUrl = await generateComponentThumbnail(
+        component.id,
+        component.jsx_code,
+        {
+          component_name: component.component_name,
+          ui_category: component.ui_category,
+          complexity_level: component.complexity_level,
+          tags: component.tags,
+        }
+      );
+      
+      toast({
+        title: "✅ Miniatura generata!",
+        description: `Miniatura di ${component.component_name} creata con successo`,
+      });
+      
+      // Aggiorna UI localmente (forza re-render)
+      component.thumbnail_url = thumbnailUrl;
+      
+    } catch (error) {
+      console.error('❌ Thumbnail generation failed:', error);
+      toast({
+        title: "❌ Errore generazione",
+        description: error instanceof Error ? error.message : "Errore sconosciuto",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingThumbnail(false);
+    }
   };
 
   if (collapsed) {
@@ -102,8 +144,8 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
               )}
             </div>
 
-            {/* Thumbnail or Placeholder */}
-            <div className="mt-2 rounded overflow-hidden border bg-muted">
+            {/* Thumbnail or Placeholder con PULSANTE GENERA */}
+            <div className="mt-2 rounded overflow-hidden border bg-muted relative group/thumbnail">
               {component.thumbnail_url ? (
                 <img
                   src={component.thumbnail_url}
@@ -113,6 +155,31 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
               ) : (
                 <div className="w-full h-24 flex items-center justify-center bg-muted/50">
                   <ImageOff className="h-8 w-8 text-muted-foreground/50" />
+                </div>
+              )}
+              
+              {/* NUOVO PULSANTE FLOATING OVERLAY */}
+              {!component.thumbnail_url && (
+                <div className="absolute inset-0 bg-black/0 group-hover/thumbnail:bg-black/50 transition-all flex items-center justify-center">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleGenerateThumbnail}
+                    disabled={isGeneratingThumbnail}
+                    className="opacity-0 group-hover/thumbnail:opacity-100 transition-opacity"
+                  >
+                    {isGeneratingThumbnail ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Generazione...
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Genera Miniatura
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
             </div>

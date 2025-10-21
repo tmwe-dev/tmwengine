@@ -771,71 +771,116 @@ export class ThumbnailBatchGenerator {
   }
 
   /**
-   * Processa un singolo batch di componenti
+   * Processa un singolo componente (serializzazione completa)
    */
   async processBatch(): Promise<void> {
-    const batch = this.components.slice(
-      this.state.currentIndex,
-      this.state.currentIndex + this.batchSize
-    );
-
-    console.log(`🔄 Processing batch of ${batch.length} components...`);
-
-    for (const component of batch) {
+    // CRITICO: Ora processiamo 1 componente alla volta (batch size dovrebbe essere 1)
+    const component = this.components[this.state.currentIndex];
+    
+    if (!component || this.state.shouldStop) {
       if (this.state.shouldStop) {
-        console.log('⏹️ Batch processing stopped by user');
-        break;
+        console.log('⏹️ Processing stopped by user');
       }
-
-      try {
-        console.log(`🔄 [${this.state.currentIndex + 1}/${this.state.totalComponents}] Generating: ${component.component_name}`);
-        
-        // Genera thumbnail con metadata completo (gestione errori avanzata inclusa)
-        const thumbnailUrl = await generateComponentThumbnail(
-          component.id, 
-          component.jsx_code,
-          {
-            component_name: component.component_name,
-            ui_category: component.ui_category,
-            complexity_level: component.complexity_level,
-            tags: component.tags,
-          }
-        );
-        
-        this.state.successCount++;
-        this.state.lastProcessedId = component.id;
-
-        // Notifica preview creato
-        if (this.onThumbnailCreatedCallback) {
-          console.log(`🎨 Thumbnail created callback for: ${component.component_name}`);
-          this.onThumbnailCreatedCallback({
-            componentId: component.id,
-            componentName: component.component_name,
-            thumbnailUrl: thumbnailUrl,
-            timestamp: Date.now(),
-          });
-        } else {
-          console.warn('⚠️ No onThumbnailCreatedCallback registered');
-        }
-
-        console.log(`✅ [${this.state.successCount}/${this.state.totalComponents}] Success: ${component.component_name}`);
-      } catch (error) {
-        this.state.failedCount++;
-        console.error(`❌ [${this.state.currentIndex + 1}/${this.state.totalComponents}] Failed: ${component.component_name}`, error);
-        
-        // Log già gestito in generateComponentThumbnail, qui solo incremento counter
-      }
-
-      this.state.currentIndex++;
-      
-      // Notifica progresso
-      if (this.onProgressCallback) {
-        this.onProgressCallback({ ...this.state });
-      }
+      return;
     }
 
-    // Pausa 500ms tra batch per non bloccare il browser
-    await new Promise(resolve => setTimeout(resolve, 500));
+    console.group(`🔄 [${this.state.currentIndex + 1}/${this.state.totalComponents}] ${component.component_name}`);
+    console.log('├─ Component ID:', component.id);
+    console.log('├─ Code size:', `${component.jsx_code.length} chars`);
+    console.log('├─ Complexity:', component.complexity_level || 'unknown');
+    console.log('├─ UI Category:', component.ui_category || 'unknown');
+
+    const startTime = Date.now();
+
+    try {
+      // 1. Genera miniatura (include già upload + update DB)
+      const thumbnailUrl = await generateComponentThumbnail(
+        component.id, 
+        component.jsx_code,
+        {
+          component_name: component.component_name,
+          ui_category: component.ui_category,
+          complexity_level: component.complexity_level,
+          tags: component.tags,
+        }
+      );
+      
+      const duration = Date.now() - startTime;
+      console.log('├─ Duration:', `${duration}ms`);
+      console.log('├─ Thumbnail URL:', thumbnailUrl);
+      console.log('└─ Status: ✅ SUCCESS');
+      
+      // 2. ATTENDI CONFERMA DATABASE (verifica che record sia stato scritto)
+      console.log('⏳ Waiting for database confirmation...');
+      await this.waitForDatabaseConfirmation(component.id);
+      
+      this.state.successCount++;
+      this.state.lastProcessedId = component.id;
+
+      // Callback preview creato
+      if (this.onThumbnailCreatedCallback) {
+        this.onThumbnailCreatedCallback({
+          componentId: component.id,
+          componentName: component.component_name,
+          thumbnailUrl: thumbnailUrl,
+          timestamp: Date.now(),
+        });
+      }
+
+    } catch (error) {
+      this.state.failedCount++;
+      console.log('└─ Status: ❌ FAILED');
+      console.error('Error:', error);
+    }
+    
+    console.groupEnd();
+
+    this.state.currentIndex++;
+    
+    // 3. PAUSA OBBLIGATORIA 1 SECONDO (invece di 500ms)
+    console.log('⏳ Safety pause (1000ms)...\n');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Notifica progresso
+    if (this.onProgressCallback) {
+      this.onProgressCallback({ ...this.state });
+    }
+  }
+
+  /**
+   * NUOVA FUNZIONE: Verifica che il record sia stato effettivamente salvato
+   */
+  private async waitForDatabaseConfirmation(componentId: string): Promise<void> {
+    const maxRetries = 3;
+    let attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        const { data, error } = await supabase
+          .from('design_lab_extracted_components')
+          .select('thumbnail_url')
+          .eq('id', componentId)
+          .single();
+        
+        if (error) throw error;
+        
+        if (data?.thumbnail_url) {
+          console.log('✅ Database confirmation received');
+          return; // Successo!
+        }
+        
+        // Se non c'è ancora, attendi 200ms e riprova
+        await new Promise(resolve => setTimeout(resolve, 200));
+        attempt++;
+        
+      } catch (error) {
+        console.warn(`⚠️ DB confirmation attempt ${attempt + 1} failed:`, error);
+        attempt++;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+    
+    console.warn('⚠️ Database confirmation timeout (continuing anyway)');
   }
 
   /**

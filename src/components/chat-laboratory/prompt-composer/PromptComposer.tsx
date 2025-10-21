@@ -270,14 +270,13 @@ export function PromptComposer() {
             isRefreshing={isRefreshing}
             generationProgress={generationProgress}
           />
-          <CompositionCanvas
-            globalPrompt={globalPrompt}
-            blocks={composedBlocks}
-            onRemoveBlock={handleRemoveBlock}
-            onUpdateBlock={handleUpdateBlock}
-            onSave={handleSaveComposition}
-            isSaving={isSaving}
-          />
+        <CompositionCanvas
+          blocks={composedBlocks}
+          onRemoveBlock={handleRemoveBlock}
+          onUpdateBlock={handleUpdateBlock}
+          onSave={handleSaveComposition}
+          isSaving={isSaving}
+        />
         </div>
       </div>
     </DndContext>

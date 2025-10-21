@@ -15,7 +15,6 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 interface CompositionCanvasProps {
-  globalPrompt: PromptSection | null;
   blocks: ComposedPromptBlock[];
   onRemoveBlock: (id: string) => void;
   onUpdateBlock: (id: string, content: string) => void;
@@ -24,7 +23,6 @@ interface CompositionCanvasProps {
 }
 
 export function CompositionCanvas({
-  globalPrompt,
   blocks,
   onRemoveBlock,
   onUpdateBlock,
@@ -43,8 +41,7 @@ export function CompositionCanvas({
   const isOver: boolean = droppable.isOver;
 
   // Calcola statistiche
-  const totalChars = blocks.reduce((sum, b) => sum + b.content.length, 0) +
-    (globalPrompt?.content.length || 0);
+  const totalChars = blocks.reduce((sum, b) => sum + b.content.length, 0);
   const estimatedTokens = Math.ceil(totalChars / 4);
 
   const handleSave = async () => {
@@ -104,26 +101,6 @@ export function CompositionCanvas({
             isOver && "bg-primary/5 border-2 border-dashed border-primary"
           )}
         >
-          {/* Blocco Globale (sempre presente, locked) */}
-          {globalPrompt && (
-            <div className="mb-4">
-              <ComposedPromptBlockComponent
-                block={{
-                  id: 'global-locked',
-                  section_id: globalPrompt.id,
-                  section_type: 'global',
-                  section_name: globalPrompt.section_name,
-                  content: globalPrompt.content,
-                  order: 0,
-                  is_editable: false,
-                }}
-                onRemove={() => {}}
-                onUpdate={() => {}}
-                isLocked={true}
-              />
-            </div>
-          )}
-
           {/* Blocchi Draggable */}
           {blocks.length === 0 ? (
             <Card className="p-12 text-center border-dashed">
@@ -156,7 +133,7 @@ export function CompositionCanvas({
         <Separator />
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex gap-4">
-            <span>Blocchi: {blocks.length + (globalPrompt ? 1 : 0)}</span>
+            <span>Blocchi: {blocks.length}</span>
             <span>Caratteri: {totalChars.toLocaleString()}</span>
             <span>Token stimati: ~{estimatedTokens.toLocaleString()}</span>
           </div>

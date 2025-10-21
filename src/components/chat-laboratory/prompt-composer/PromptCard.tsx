@@ -115,31 +115,34 @@ export function PromptCard({ section, isDragging }: PromptCardProps) {
 
       {/* Modal full-screen per preview completa */}
       <Dialog open={fullPreviewOpen} onOpenChange={setFullPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Badge variant="outline">{section.section_type}</Badge>
               {section.section_name}
             </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[70vh]">
-            {/* Immagine full size */}
-            {section.thumbnail_url && !imageError && (
-              <>
-                <img
-                  src={section.thumbnail_url}
-                  alt={section.section_name}
-                  className="w-full h-auto rounded-lg border"
-                />
-                <Separator className="my-4" />
-              </>
-            )}
-            {/* Testo completo */}
-            <div className="space-y-2">
-              <h4 className="font-semibold text-sm text-muted-foreground">Contenuto Completo</h4>
-              <pre className="text-sm whitespace-pre-wrap font-mono bg-muted p-4 rounded-lg">
-                {section.content}
-              </pre>
+          <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]">
+            <div className="space-y-4 pr-4">
+              {/* Immagine full size scrollabile */}
+              {section.thumbnail_url && !imageError && (
+                <>
+                  <img
+                    src={section.thumbnail_url}
+                    alt={section.section_name}
+                    className="w-full h-auto rounded-lg border"
+                    onError={() => setImageError(true)}
+                  />
+                  <Separator />
+                </>
+              )}
+              {/* Testo completo */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-muted-foreground">Contenuto Completo</h4>
+                <pre className="text-sm whitespace-pre-wrap font-mono bg-muted p-4 rounded-lg">
+                  {section.content}
+                </pre>
+              </div>
             </div>
           </ScrollArea>
         </DialogContent>

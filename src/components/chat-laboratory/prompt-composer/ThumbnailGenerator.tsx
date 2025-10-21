@@ -31,16 +31,40 @@ export async function generateThumbnailForSection(
   container.style.left = '-9999px';
   container.style.top = '0';
   
+  // Funzione helper per formattare contenuto con HTML/CSS
+  const formatContentForThumbnail = (text: string): string => {
+    return text
+      .split('\n\n')
+      .filter(p => p.trim())
+      .map(paragraph => {
+        const trimmed = paragraph.trim();
+        // Liste puntate
+        if (trimmed.startsWith('- ')) {
+          return trimmed
+            .split('\n')
+            .filter(line => line.trim().startsWith('- '))
+            .map(line => `<li style="margin-left: 16px; margin-bottom: 4px;">${line.substring(2)}</li>`)
+            .join('');
+        }
+        // Paragrafi normali
+        return `<p style="margin-bottom: 10px;">${trimmed}</p>`;
+      })
+      .join('')
+      // Evidenzia codice inline
+      .replace(/`([^`]+)`/g, '<code style="background: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 13px;">$1</code>');
+  };
+
   // Preview truncato a 500 caratteri
   const preview = content.substring(0, 500) + (content.length > 500 ? '...' : '');
+  const formattedContent = formatContentForThumbnail(preview.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
   
-  // HTML del prompt con escape caratteri speciali
+  // HTML del prompt con escape caratteri speciali e formattazione
   container.innerHTML = `
     <div style="font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #1a1a1a; line-height: 1.3;">
       ${sectionName.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
     </div>
-    <div style="font-size: 14px; line-height: 1.6; color: #444; white-space: pre-wrap; max-height: 400px; overflow: hidden;">
-      ${preview.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+    <div style="font-size: 14px; line-height: 1.6; color: #444; white-space: normal; word-wrap: break-word;">
+      ${formattedContent}
     </div>
   `;
   

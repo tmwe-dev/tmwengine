@@ -24,7 +24,7 @@ export function PromptLibraryColumn({
   const missingThumbnails = sections.filter(s => !s.thumbnail_url).length;
 
   return (
-    <div className="flex-1 border-r bg-background flex flex-col">
+    <div className="flex-1 border-r bg-background flex flex-col min-h-0">
       <div className="p-4 border-b space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-sm">Libreria Prompt</h3>
@@ -83,7 +83,7 @@ export function PromptLibraryColumn({
         )}
       </div>
       
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 min-h-0">
         <div className="space-y-3">
           {sections.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground text-sm">

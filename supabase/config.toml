@@ -278,3 +278,12 @@ verify_jwt = true
 [functions.index-codebase]
 verify_jwt = true
 
+[functions.get-ai-docs]
+verify_jwt = true
+
+[functions.log-error]
+verify_jwt = false
+
+[functions.manage-ai-tasks]
+verify_jwt = false
+

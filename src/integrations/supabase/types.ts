@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_collaboration_tasks: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          file: string | null
+          files_modified: string[] | null
+          id: string
+          implementation_notes: string | null
+          priority: string
+          problem: string
+          proposed_at: string | null
+          proposed_by: string
+          solution: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          file?: string | null
+          files_modified?: string[] | null
+          id?: string
+          implementation_notes?: string | null
+          priority: string
+          problem: string
+          proposed_at?: string | null
+          proposed_by: string
+          solution?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          file?: string | null
+          files_modified?: string[] | null
+          id?: string
+          implementation_notes?: string | null
+          priority?: string
+          problem?: string
+          proposed_at?: string | null
+          proposed_by?: string
+          solution?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ai_cost_tracking: {
         Row: {
           conversation_id: string | null

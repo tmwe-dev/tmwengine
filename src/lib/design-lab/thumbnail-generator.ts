@@ -94,17 +94,7 @@ async function uploadThumbnail(
   const fileName = `${componentId}-${Date.now()}.png`;
   const filePath = `thumbnails/${fileName}`;
 
-  // Verify bucket exists
-  const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-  if (bucketError) {
-    console.error('Bucket check error:', bucketError);
-    throw new Error('Failed to check storage buckets');
-  }
-  
-  if (!buckets?.find(b => b.id === 'design-lab-thumbnails')) {
-    throw new Error('Bucket "design-lab-thumbnails" non trovato. Verificare configurazione Supabase Storage.');
-  }
-
+  // Upload diretto - il bucket deve esistere (rimosso check fallace)
   const { data, error } = await supabase.storage
     .from('design-lab-thumbnails')
     .upload(filePath, blob, {
@@ -114,7 +104,7 @@ async function uploadThumbnail(
     });
 
   if (error) {
-    console.error('Upload error:', error);
+    console.error('❌ Upload error:', error);
     throw new Error(`Failed to upload thumbnail: ${error.message}`);
   }
 
@@ -123,6 +113,7 @@ async function uploadThumbnail(
     .from('design-lab-thumbnails')
     .getPublicUrl(filePath);
 
+  console.log(`✅ Thumbnail uploaded: ${urlData.publicUrl}`);
   return urlData.publicUrl;
 }
 
@@ -298,6 +289,8 @@ export class ThumbnailBatchGenerator {
       this.state.currentIndex + this.batchSize
     );
 
+    console.log(`🔄 Processing batch of ${batch.length} components...`);
+
     for (const component of batch) {
       if (this.state.shouldStop) {
         console.log('⏹️ Batch processing stopped by user');
@@ -315,12 +308,15 @@ export class ThumbnailBatchGenerator {
 
         // Notifica preview creato
         if (this.onThumbnailCreatedCallback) {
+          console.log(`🎨 Thumbnail created callback for: ${component.component_name}`);
           this.onThumbnailCreatedCallback({
             componentId: component.id,
             componentName: component.component_name,
             thumbnailUrl: thumbnailUrl,
             timestamp: Date.now(),
           });
+        } else {
+          console.warn('⚠️ No onThumbnailCreatedCallback registered');
         }
 
         console.log(`✅ [${this.state.successCount}/${this.state.totalComponents}] Success: ${component.component_name}`);

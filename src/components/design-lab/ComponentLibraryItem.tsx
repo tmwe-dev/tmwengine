@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GripVertical, Copy, Eye, ImageOff, Image as ImageIcon, Loader2 } from "lucide-react";
 import { ExtractedComponent } from "@/types/design-lab-scanner";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,35 @@ interface ComponentLibraryItemProps {
 export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryItemProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const [localThumbnailUrl, setLocalThumbnailUrl] = useState<string | null>(
+    component.thumbnail_url || null
+  );
+  const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  
+  // INTERSECTION OBSERVER: genera automaticamente quando visibile
+  useEffect(() => {
+    if (collapsed) return; // Non osservare se collapsed
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !localThumbnailUrl && !isGeneratingThumbnail) {
+          console.log(`👁️ Component visible, auto-generating: ${component.component_name}`);
+          handleGenerateThumbnail();
+        }
+      },
+      { 
+        threshold: 0.1, // Trigge quando almeno 10% è visibile
+        rootMargin: '100px' // Pre-carica 100px prima di entrare nel viewport
+      }
+    );
+    
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+    
+    return () => observer.disconnect();
+  }, [localThumbnailUrl, isGeneratingThumbnail, collapsed]);
 
   const handleDragStart = (e: React.DragEvent) => {
     // Store component data in drag event
@@ -51,9 +79,9 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
     setPreviewOpen(true);
   };
 
-  // NUOVA FUNZIONE: Genera miniatura singola
-  const handleGenerateThumbnail = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // Previeni drag
+  // Genera miniatura singola (chiamata da IntersectionObserver o manualmente)
+  const handleGenerateThumbnail = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation(); // Previeni drag se chiamata da click
     
     setIsGeneratingThumbnail(true);
     
@@ -71,13 +99,13 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
         }
       );
       
+      // ✅ AGGIORNA STATE LOCALE (triggerà re-render immediato!)
+      setLocalThumbnailUrl(thumbnailUrl);
+      
       toast({
         title: "✅ Miniatura generata!",
-        description: `Miniatura di ${component.component_name} creata con successo`,
+        description: `${component.component_name} generata con successo`,
       });
-      
-      // Aggiorna UI localmente (forza re-render)
-      component.thumbnail_url = thumbnailUrl;
       
     } catch (error) {
       console.error('❌ Thumbnail generation failed:', error);
@@ -123,6 +151,7 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
   return (
     <>
       <div
+        ref={cardRef}
         draggable
         onDragStart={handleDragStart}
         className="group p-3 border rounded-lg hover:border-primary transition-all cursor-move bg-card"
@@ -144,42 +173,22 @@ export function ComponentLibraryItem({ component, collapsed }: ComponentLibraryI
               )}
             </div>
 
-            {/* Thumbnail or Placeholder con PULSANTE GENERA */}
-            <div className="mt-2 rounded overflow-hidden border bg-muted relative group/thumbnail">
-              {component.thumbnail_url ? (
+            {/* Thumbnail or Loading State */}
+            <div className="mt-2 rounded overflow-hidden border bg-muted relative">
+              {localThumbnailUrl ? (
                 <img
-                  src={component.thumbnail_url}
+                  src={localThumbnailUrl}
                   alt={component.component_name}
                   className="w-full h-24 object-cover"
                 />
+              ) : isGeneratingThumbnail ? (
+                <div className="w-full h-24 flex flex-col items-center justify-center bg-primary/5">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
+                  <span className="text-xs text-muted-foreground">Generazione automatica...</span>
+                </div>
               ) : (
                 <div className="w-full h-24 flex items-center justify-center bg-muted/50">
                   <ImageOff className="h-8 w-8 text-muted-foreground/50" />
-                </div>
-              )}
-              
-              {/* NUOVO PULSANTE FLOATING OVERLAY */}
-              {!component.thumbnail_url && (
-                <div className="absolute inset-0 bg-black/0 group-hover/thumbnail:bg-black/50 transition-all flex items-center justify-center">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={handleGenerateThumbnail}
-                    disabled={isGeneratingThumbnail}
-                    className="opacity-0 group-hover/thumbnail:opacity-100 transition-opacity"
-                  >
-                    {isGeneratingThumbnail ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Generazione...
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="h-4 w-4 mr-2" />
-                        Genera Miniatura
-                      </>
-                    )}
-                  </Button>
                 </div>
               )}
             </div>

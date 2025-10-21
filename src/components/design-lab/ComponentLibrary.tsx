@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Package, Code2, Puzzle, MousePointer, Type, CheckSquare, FileText, Image, Loader2, Filter, ArrowUpDown, Grid3x3, List } from "lucide-react";
+import { Search, Package, Code2, Puzzle, MousePointer, Type, CheckSquare, FileText, Image, Loader2, Filter, ArrowUpDown, Grid3x3, List, AlertCircle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateComponentMetadata } from "@/hooks/useUpdateComponentMetadata";
 import { ThumbnailBatchGenerator, ThumbnailPreview } from "@/lib/design-lab/thumbnail-generator";
@@ -223,30 +224,20 @@ export function ComponentLibrary() {
         <div className="p-4 border-b bg-muted/50 space-y-2">
           {missingThumbnailsCount > 0 && (
             <>
-              <Button
-                onClick={handleRegenerateThumbnails}
-                disabled={isGeneratingThumbnails}
-                size="sm"
-                className="w-full"
-                variant="default"
-              >
-                {isGeneratingThumbnails ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {thumbnailProgress.current}/{thumbnailProgress.total}
-                  </>
-                ) : (
-                  <>
-                    <Image className="mr-2 h-4 w-4" />
-                    Genera Tutte ({missingThumbnailsCount})
-                    {missingThumbnailsCount > 10 && (
-                      <Badge variant="destructive" className="ml-2">Lento</Badge>
-                    )}
-                  </>
-                )}
-              </Button>
+              {/* BATCH GENERATION DISABILITATA - Usa generazione automatica on-scroll */}
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Generazione batch disabilitata</AlertTitle>
+                <AlertDescription className="text-xs mt-1">
+                  Le miniature vengono generate automaticamente quando scorri la lista.
+                  <br />
+                  <span className="font-medium">
+                    {missingThumbnailsCount} componenti senza miniatura
+                  </span>
+                </AlertDescription>
+              </Alert>
               <p className="text-xs text-muted-foreground text-center">
-                Processo batch controllato
+                Sistema ottimizzato per prevenire blocchi browser
               </p>
             </>
           )}

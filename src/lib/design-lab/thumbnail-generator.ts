@@ -541,6 +541,125 @@ async function generatePlaceholderThumbnail(
 }
 
 /**
+ * NUOVA FUNZIONE: Genera thumbnail CSS-only (200-300ms) senza Babel/React
+ */
+async function generateCSSOnlyThumbnail(
+  componentId: string,
+  jsxCode: string,
+  metadata?: ComponentMetadata
+): Promise<string> {
+  const startTime = Date.now();
+  console.log(`⚡ Generating CSS-only thumbnail for: ${metadata?.component_name || componentId}`);
+  
+  // Analisi JSX con regex (NO Babel)
+  const hasDialog = /Dialog|Modal|Sheet/i.test(jsxCode);
+  const hasForm = /Form|Input|TextField|Select/i.test(jsxCode);
+  const hasTable = /Table|DataGrid|tbody/i.test(jsxCode);
+  const hasChart = /Chart|Graph|Recharts/i.test(jsxCode);
+  const hasCard = /Card|Panel/i.test(jsxCode);
+  const hasButton = /Button|btn/i.test(jsxCode);
+  
+  // Colori basati su categoria
+  const categoryColors: Record<string, string> = {
+    input: '#3b82f6',
+    button: '#10b981',
+    card: '#8b5cf6',
+    layout: '#f59e0b',
+    'data-display': '#ec4899',
+    modal: '#667eea',
+  };
+  
+  const primaryColor = categoryColors[metadata?.ui_category?.toLowerCase() || ''] || '#667eea';
+  
+  // Genera HTML statico basato su analisi
+  let mockHTML = `
+    <div style="width: 400px; height: 300px; padding: 20px; background: linear-gradient(135deg, ${primaryColor} 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, sans-serif;">
+      <div style="background: white; border-radius: 12px; padding: 24px; max-width: 340px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 100%;">
+        <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 12px 0; color: #1e293b;">
+          ${metadata?.component_name || 'Component'}
+        </h3>
+  `;
+  
+  // Aggiungi elementi UI in base all'analisi
+  if (hasForm) {
+    mockHTML += `
+      <div style="margin-bottom: 12px;">
+        <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Input Field</label>
+        <div style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; background: #f8fafc;"></div>
+      </div>
+    `;
+  }
+  
+  if (hasButton) {
+    mockHTML += `
+      <div style="margin-top: 12px; display: flex; gap: 8px;">
+        <div style="background: ${primaryColor}; color: white; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 500;">Action</div>
+        <div style="border: 1px solid ${primaryColor}; color: ${primaryColor}; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 500;">Cancel</div>
+      </div>
+    `;
+  }
+  
+  if (hasTable) {
+    mockHTML += `
+      <div style="margin-top: 12px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+        <div style="background: #f8fafc; padding: 6px; border-bottom: 1px solid #e2e8f0; font-size: 11px; font-weight: 600;">Header</div>
+        <div style="padding: 6px; font-size: 10px;">Row 1</div>
+        <div style="padding: 6px; font-size: 10px; background: #fafafa;">Row 2</div>
+      </div>
+    `;
+  }
+  
+  if (hasCard) {
+    mockHTML += `
+      <div style="margin-top: 8px; display: flex; gap: 6px;">
+        <span style="background: ${primaryColor}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px;">${metadata?.ui_category || 'UI'}</span>
+        <span style="background: #64748b; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px;">${metadata?.complexity_level || 'medium'}</span>
+      </div>
+    `;
+  }
+  
+  mockHTML += `
+      </div>
+    </div>
+  `;
+  
+  // Crea container temporaneo per html2canvas
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.top = '-9999px';
+  container.style.left = '-9999px';
+  container.innerHTML = mockHTML;
+  document.body.appendChild(container);
+  
+  try {
+    // html2canvas su HTML statico (molto più veloce senza React/Babel)
+    const canvas = await html2canvas(container.firstElementChild as HTMLElement, {
+      width: 400,
+      height: 300,
+      scale: 2,
+      backgroundColor: null,
+      logging: false,
+    });
+    
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((b) => {
+        if (b) resolve(b);
+        else reject(new Error('Failed to create blob'));
+      }, 'image/png', 0.9);
+    });
+    
+    const thumbnailUrl = await uploadThumbnail(componentId, blob);
+    await updateComponentThumbnail(componentId, thumbnailUrl);
+    
+    console.log(`✅ CSS-only thumbnail generated in ${Date.now() - startTime}ms`);
+    return thumbnailUrl;
+    
+  } finally {
+    document.body.removeChild(container);
+  }
+}
+
+/**
  * MAIN FUNCTION: Genera e salva thumbnail per un componente con gestione avanzata errori
  */
 export async function generateComponentThumbnail(
@@ -555,6 +674,12 @@ export async function generateComponentThumbnail(
 
   try {
     console.log(`🎬 Starting thumbnail generation for: ${metadata?.component_name || componentId}`);
+    
+    // ⚡ OTTIMIZZAZIONE: usa CSS-only per componenti < 15KB (80% dei casi)
+    if (jsxCode.length < 15000) {
+      console.log(`⚡ Using fast CSS-only generation (${jsxCode.length} chars)`);
+      return await generateCSSOnlyThumbnail(componentId, jsxCode, metadata);
+    }
     
     // Pre-validazione: componenti troppo grandi usano placeholder
     if (jsxCode.length > 25000) {

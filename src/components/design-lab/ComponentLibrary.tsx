@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useUpdateComponentMetadata } from "@/hooks/useUpdateComponentMetadata";
 import { ThumbnailBatchGenerator, ThumbnailPreview } from "@/lib/design-lab/thumbnail-generator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThumbnailSidebarPreview } from "./ThumbnailSidebarPreview";
@@ -80,19 +81,27 @@ export function ComponentLibrary() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   
   const { toast } = useToast();
+  const { updateMetadata, isUpdating: isUpdatingMetadata } = useUpdateComponentMetadata();
 
   const { components, isLoading: componentsLoading, refetch: refetchComponents } = useExtractedComponents();
   const { functions, isLoading: functionsLoading } = useExtractedFunctions();
   const { plugins, isLoading: pluginsLoading } = usePlugins();
   const { pages } = useSourcePages();
 
-  // Count components without thumbnails
+  const handleUpdateMetadata = async () => {
+    await updateMetadata();
+    refetchComponents();
+  };
+
+  // Count components without ui_category
   useEffect(() => {
     if (components) {
       const count = components.filter(c => !c.thumbnail_url).length;
       setMissingThumbnailsCount(count);
     }
   }, [components]);
+
+  const missingCategoryCount = components?.filter(c => !c.ui_category).length || 0;
 
   const handleRegenerateThumbnails = async () => {
     setIsGeneratingThumbnails(true);
@@ -174,39 +183,75 @@ export function ComponentLibrary() {
       >
       <div className="flex items-center justify-between p-4 border-b">
         {!collapsed && (
-          <div className="flex items-center gap-2 flex-1">
+          <div className="flex-1">
             <h2 className="text-lg font-semibold">Libreria Componenti</h2>
-            {missingThumbnailsCount > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {missingThumbnailsCount} senza miniatura
-              </Badge>
-            )}
+            <div className="flex gap-2 mt-1">
+              {missingThumbnailsCount > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {missingThumbnailsCount} miniature
+                </Badge>
+              )}
+              {missingCategoryCount > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {missingCategoryCount} metadata
+                </Badge>
+              )}
+            </div>
           </div>
         )}
         <SidebarTrigger />
       </div>
 
-      {!collapsed && missingThumbnailsCount > 0 && (
-        <div className="p-4 border-b bg-muted/50">
-          <Button
-            onClick={handleRegenerateThumbnails}
-            disabled={isGeneratingThumbnails}
-            size="sm"
-            className="w-full"
-            variant="outline"
-          >
-            {isGeneratingThumbnails ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generazione {thumbnailProgress.current}/{thumbnailProgress.total}
-              </>
-            ) : (
-              <>
-                <Image className="mr-2 h-4 w-4" />
-                Genera Miniature Mancanti
-              </>
-            )}
-          </Button>
+      {!collapsed && (missingThumbnailsCount > 0 || missingCategoryCount > 0) && (
+        <div className="p-4 border-b bg-muted/50 space-y-2">
+          {missingThumbnailsCount > 0 && (
+            <>
+              <Button
+                onClick={handleRegenerateThumbnails}
+                disabled={isGeneratingThumbnails}
+                size="sm"
+                className="w-full"
+                variant="default"
+              >
+                {isGeneratingThumbnails ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {thumbnailProgress.current}/{thumbnailProgress.total}
+                  </>
+                ) : (
+                  <>
+                    <Image className="mr-2 h-4 w-4" />
+                    Genera {missingThumbnailsCount} Miniature
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                Processo batch controllato
+              </p>
+            </>
+          )}
+
+          {missingCategoryCount > 0 && (
+            <Button
+              onClick={handleUpdateMetadata}
+              disabled={isUpdatingMetadata}
+              size="sm"
+              className="w-full"
+              variant="outline"
+            >
+              {isUpdatingMetadata ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Aggiornamento...
+                </>
+              ) : (
+                <>
+                  <Filter className="mr-2 h-4 w-4" />
+                  Aggiorna {missingCategoryCount} Metadata
+                </>
+              )}
+            </Button>
+          )}
         </div>
       )}
 

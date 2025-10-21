@@ -281,3 +281,5 @@ verify_jwt = true
 [functions.design-lab-suggestions]
 verify_jwt = true
 
+[functions.update-component-metadata]
+verify_jwt = true

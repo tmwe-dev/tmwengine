@@ -761,7 +761,7 @@ const ChatLaboratory = () => {
         const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
           body: { 
             conversationId,
-            userMessage: currentPrompt,
+            userMessage: textToSave,
             participants: activeAIParticipants,
             response_mode: actualResponseMode,
             targetParticipantType: targetParticipantType
@@ -807,7 +807,7 @@ const ChatLaboratory = () => {
           const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
             body: { 
               conversationId,
-              userMessage: currentPrompt,
+              userMessage: textToSave,
               participants: [participant], // ✅ Solo questo AI - vede tutte le risposte precedenti
               sequentialMode: true
             }
@@ -1502,8 +1502,6 @@ const ChatLaboratory = () => {
         ) : (
           <MessageTabsView 
             messages={messages}
-            isAutoFollowEnabled={isAutoFollowEnabled}
-            onAutoFollowChange={setIsAutoFollowEnabled}
           />
         )}
 

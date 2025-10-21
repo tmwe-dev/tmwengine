@@ -4,7 +4,6 @@ import { MultiAgentMessage } from './MultiAgentMessage';
 import { Bot, User, Sparkles, Brain } from 'lucide-react';
 import { TabNavigation } from './TabNavigation';
 import { useTabSwitching } from '@/hooks/useTabSwitching';
-import { NewMessagesIndicator } from './NewMessagesIndicator';
 
 interface Message {
   id: string;
@@ -24,17 +23,11 @@ interface Message {
 
 interface MessageTabsViewProps {
   messages: Message[];
-  isAutoFollowEnabled?: boolean;
-  onAutoFollowChange?: (enabled: boolean) => void;
 }
 
 export const MessageTabsView = ({
-  messages,
-  isAutoFollowEnabled: externalAutoFollow,
-  onAutoFollowChange
+  messages
 }: MessageTabsViewProps) => {
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-
   // Tab switching logic
   const { activeTab, setActiveTab } = useTabSwitching({ messages });
 
@@ -57,8 +50,10 @@ export const MessageTabsView = ({
               <MultiAgentMessage
                 message={message}
                 onAudioEnd={() => {
-                  console.log(`🎵 [MessageTabsView] Audio END`);
-                  setIsAudioPlaying(false);
+                  const currentIdx = messages.findIndex(m => m.id === activeTab);
+                  if (currentIdx >= 0 && currentIdx < messages.length - 1) {
+                    setActiveTab(messages[currentIdx + 1].id);
+                  }
                 }}
               />
             </div>

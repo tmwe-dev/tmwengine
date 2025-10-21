@@ -409,15 +409,37 @@ ESEMPI:
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-primary" />
-            Gestione Prompt Sistema
-          </DialogTitle>
-        </DialogHeader>
+        {/* Header condizionale: compatto per Compositore */}
+        {activeTab !== 'composer' ? (
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" />
+              Gestione Prompt Sistema
+            </DialogTitle>
+          </DialogHeader>
+        ) : (
+          <DialogHeader className="py-3">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveTab('global')}
+                className="shrink-0"
+              >
+                ← Torna a Gestione
+              </Button>
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <Brain className="h-4 w-4 text-primary" />
+                Compositore Visivo
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-6">
+          {/* Nascondi TabsList nel Compositore */}
+          {activeTab !== 'composer' && (
+            <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="global">🌐 Globale</TabsTrigger>
             <TabsTrigger value="base">
               📚 Base {baseSections.length > 0 && `(${baseSections.length})`}
@@ -430,7 +452,8 @@ ESEMPI:
             </TabsTrigger>
             <TabsTrigger value="orchestrator">🧠 Orchestrator</TabsTrigger>
             <TabsTrigger value="composer">🧩 Compositore</TabsTrigger>
-          </TabsList>
+            </TabsList>
+          )}
 
           {/* GLOBAL TAB */}
           <TabsContent value="global" className="flex-1 overflow-y-auto">

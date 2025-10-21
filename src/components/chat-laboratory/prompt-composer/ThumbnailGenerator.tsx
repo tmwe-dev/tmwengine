@@ -13,7 +13,7 @@ export async function generateThumbnailForSection(
   options: ThumbnailGenerationOptions = {}
 ): Promise<string> {
   const {
-    width = 400,
+    width = 600,
     scale = 2,
     backgroundColor = '#ffffff'
   } = options;
@@ -23,7 +23,7 @@ export async function generateThumbnailForSection(
   // Crea elemento DOM temporaneo per rendering
   const container = document.createElement('div');
   container.style.width = `${width}px`;
-  container.style.padding = '20px';
+  container.style.padding = '24px';
   container.style.backgroundColor = backgroundColor;
   container.style.borderRadius = '8px';
   container.style.fontFamily = 'system-ui, -apple-system, sans-serif';
@@ -31,15 +31,15 @@ export async function generateThumbnailForSection(
   container.style.left = '-9999px';
   container.style.top = '0';
   
-  // Preview truncato a 300 caratteri
-  const preview = content.substring(0, 300) + (content.length > 300 ? '...' : '');
+  // Preview truncato a 500 caratteri
+  const preview = content.substring(0, 500) + (content.length > 500 ? '...' : '');
   
   // HTML del prompt con escape caratteri speciali
   container.innerHTML = `
-    <div style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a;">
+    <div style="font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #1a1a1a; line-height: 1.3;">
       ${sectionName.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
     </div>
-    <div style="font-size: 12px; line-height: 1.5; color: #666; white-space: pre-wrap;">
+    <div style="font-size: 14px; line-height: 1.6; color: #444; white-space: pre-wrap; max-height: 400px; overflow: hidden;">
       ${preview.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
     </div>
   `;

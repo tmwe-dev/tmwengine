@@ -19,13 +19,7 @@ const GROUPS: { id: SectionGroup; label: string; icon: string; locked?: boolean 
 
 export function ComposerSidebar({ selectedGroup, onSelectGroup, sectionCounts }: ComposerSidebarProps) {
   return (
-    <div className="w-[200px] border-r bg-muted/20 flex flex-col">
-      <div className="p-4 border-b">
-        <h3 className="font-semibold text-sm">Gruppi Prompt</h3>
-        <p className="text-xs text-muted-foreground mt-1">
-          Seleziona per caricare
-        </p>
-      </div>
+    <div className="h-full flex flex-col">
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {GROUPS.map((group) => (

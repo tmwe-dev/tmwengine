@@ -3,7 +3,7 @@ import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ComposerSidebar } from './ComposerSidebar';
+import { CollapsibleComposerSidebar } from './CollapsibleComposerSidebar';
 import { PromptLibraryColumn } from './PromptLibraryColumn';
 import { CompositionCanvas } from './CompositionCanvas';
 import { generateThumbnailsForSections } from './ThumbnailGenerator';
@@ -253,27 +253,32 @@ export function PromptComposer() {
       onDragEnd={handleDragEnd}
     >
       <div className="flex h-full">
-        <ComposerSidebar
+        {/* Sidebar collassabile (20px quando chiusa) */}
+        <CollapsibleComposerSidebar
           selectedGroup={selectedGroup}
           onSelectGroup={setSelectedGroup}
           sectionCounts={sectionCounts}
         />
-        <PromptLibraryColumn
-          sections={filteredSections}
-          onGenerateThumbnails={handleGenerateThumbnails}
-          onRefresh={handleRefresh}
-          isGenerating={isGenerating}
-          isRefreshing={isRefreshing}
-          generationProgress={generationProgress}
-        />
-        <CompositionCanvas
-          globalPrompt={globalPrompt}
-          blocks={composedBlocks}
-          onRemoveBlock={handleRemoveBlock}
-          onUpdateBlock={handleUpdateBlock}
-          onSave={handleSaveComposition}
-          isSaving={isSaving}
-        />
+        
+        {/* Layout 50/50 per Library e Canvas */}
+        <div className="flex-1 flex overflow-hidden">
+          <PromptLibraryColumn
+            sections={filteredSections}
+            onGenerateThumbnails={handleGenerateThumbnails}
+            onRefresh={handleRefresh}
+            isGenerating={isGenerating}
+            isRefreshing={isRefreshing}
+            generationProgress={generationProgress}
+          />
+          <CompositionCanvas
+            globalPrompt={globalPrompt}
+            blocks={composedBlocks}
+            onRemoveBlock={handleRemoveBlock}
+            onUpdateBlock={handleUpdateBlock}
+            onSave={handleSaveComposition}
+            isSaving={isSaving}
+          />
+        </div>
       </div>
     </DndContext>
   );

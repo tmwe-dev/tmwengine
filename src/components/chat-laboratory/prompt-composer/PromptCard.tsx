@@ -2,7 +2,10 @@ import { useDraggable, DraggableAttributes } from '@dnd-kit/core';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { GripVertical, ImageOff, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { GripVertical, ImageOff, Loader2, Maximize2 } from 'lucide-react';
 import { PromptSection } from './types';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -15,6 +18,7 @@ interface PromptCardProps {
 export function PromptCard({ section, isDragging }: PromptCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [fullPreviewOpen, setFullPreviewOpen] = useState(false);
 
   const draggable = useDraggable({
     id: section.id,
@@ -57,8 +61,11 @@ export function PromptCard({ section, isDragging }: PromptCardProps) {
           </div>
         </CardHeader>
         <CardContent className="p-3 pt-0">
-          {/* Thumbnail con spinner loading */}
-          <div className="w-full h-32 bg-muted rounded mb-2 flex items-center justify-center overflow-hidden relative">
+          {/* Thumbnail con spinner loading - INGRANDITA */}
+          <div 
+            className="w-full h-48 bg-muted rounded mb-2 flex items-center justify-center overflow-hidden relative group cursor-pointer"
+            onClick={() => section.thumbnail_url && setFullPreviewOpen(true)}
+          >
             {section.thumbnail_url ? (
               <>
                 {!imageLoaded && !imageError && (
@@ -70,8 +77,9 @@ export function PromptCard({ section, isDragging }: PromptCardProps) {
                   src={section.thumbnail_url} 
                   alt={section.section_name}
                   className={cn(
-                    "w-full h-full object-cover transition-opacity",
-                    imageLoaded ? "opacity-100" : "opacity-0"
+                    "w-full h-full object-cover transition-all duration-200",
+                    imageLoaded ? "opacity-100" : "opacity-0",
+                    "group-hover:scale-105 group-hover:ring-2 group-hover:ring-primary"
                   )}
                   onLoad={() => setImageLoaded(true)}
                   onError={() => {
@@ -82,6 +90,12 @@ export function PromptCard({ section, isDragging }: PromptCardProps) {
                 {imageError && (
                   <div className="absolute inset-0 flex items-center justify-center bg-muted">
                     <ImageOff className="h-6 w-6 text-muted-foreground/50" />
+                  </div>
+                )}
+                {/* Overlay ingrandimento su hover */}
+                {imageLoaded && !imageError && (
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                    <Maximize2 className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 )}
               </>
@@ -98,6 +112,38 @@ export function PromptCard({ section, isDragging }: PromptCardProps) {
           </p>
         </CardContent>
       </Card>
+
+      {/* Modal full-screen per preview completa */}
+      <Dialog open={fullPreviewOpen} onOpenChange={setFullPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Badge variant="outline">{section.section_type}</Badge>
+              {section.section_name}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[70vh]">
+            {/* Immagine full size */}
+            {section.thumbnail_url && !imageError && (
+              <>
+                <img
+                  src={section.thumbnail_url}
+                  alt={section.section_name}
+                  className="w-full h-auto rounded-lg border"
+                />
+                <Separator className="my-4" />
+              </>
+            )}
+            {/* Testo completo */}
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm text-muted-foreground">Contenuto Completo</h4>
+              <pre className="text-sm whitespace-pre-wrap font-mono bg-muted p-4 rounded-lg">
+                {section.content}
+              </pre>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

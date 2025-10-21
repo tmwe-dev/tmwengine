@@ -24,7 +24,7 @@ export function PromptLibraryColumn({
   const missingThumbnails = sections.filter(s => !s.thumbnail_url).length;
 
   return (
-    <div className="w-[400px] border-r bg-background flex flex-col">
+    <div className="flex-1 border-r bg-background flex flex-col">
       <div className="p-4 border-b space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-sm">Libreria Prompt</h3>

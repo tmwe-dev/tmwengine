@@ -34,8 +34,119 @@ interface ComponentMetadata {
 }
 
 /**
- * Wrapper automatico per codice JSX incompleto
- * Trasforma frammenti di codice in componenti React completi
+ * Crea mock components avanzati per shadcn/ui
+ */
+function createMockComponents() {
+  const React = window.React;
+  return {
+    Button: ({ children, ...props }: any) => React.createElement('button', { ...props, className: 'px-4 py-2 bg-blue-500 text-white rounded' }, children),
+    Card: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'border rounded-lg p-4 bg-white shadow' }, children),
+    CardHeader: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'mb-4' }, children),
+    CardTitle: ({ children, ...props }: any) => React.createElement('h3', { ...props, className: 'text-lg font-semibold' }, children),
+    CardDescription: ({ children, ...props }: any) => React.createElement('p', { ...props, className: 'text-sm text-gray-500' }, children),
+    CardContent: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'space-y-2' }, children),
+    CardFooter: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'mt-4 flex gap-2' }, children),
+    Input: (props: any) => React.createElement('input', { ...props, className: 'border rounded px-3 py-2 w-full' }),
+    Label: ({ children, ...props }: any) => React.createElement('label', { ...props, className: 'text-sm font-medium' }, children),
+    Badge: ({ children, ...props }: any) => React.createElement('span', { ...props, className: 'px-2 py-1 text-xs rounded bg-gray-100' }, children),
+    Alert: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'border rounded p-4 bg-blue-50' }, children),
+    AlertTitle: ({ children, ...props }: any) => React.createElement('h5', { ...props, className: 'font-semibold mb-1' }, children),
+    AlertDescription: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'text-sm' }, children),
+    ScrollArea: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'overflow-auto', style: { maxHeight: '400px' } }, children),
+    Progress: ({ value, ...props }: any) => React.createElement('div', { ...props, className: 'w-full bg-gray-200 rounded h-2' }, 
+      React.createElement('div', { className: 'bg-blue-500 h-full rounded', style: { width: `${value || 0}%` } })
+    ),
+    Tabs: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'space-y-2' }, children),
+    TabsList: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'flex gap-1 border-b' }, children),
+    TabsTrigger: ({ children, ...props }: any) => React.createElement('button', { ...props, className: 'px-3 py-2 text-sm' }, children),
+    TabsContent: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'mt-2' }, children),
+    Dialog: ({ children, open, ...props }: any) => open ? React.createElement('div', { ...props, className: 'fixed inset-0 bg-black/50 flex items-center justify-center' }, children) : null,
+    DialogContent: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'bg-white rounded-lg p-6 max-w-md' }, children),
+    DialogHeader: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'mb-4' }, children),
+    DialogTitle: ({ children, ...props }: any) => React.createElement('h2', { ...props, className: 'text-xl font-bold' }, children),
+    Select: ({ children, ...props }: any) => React.createElement('div', { ...props, className: 'relative' }, children),
+    SelectTrigger: ({ children, ...props }: any) => React.createElement('button', { ...props, className: 'border rounded px-3 py-2 w-full text-left' }, children),
+    SelectValue: ({ placeholder, ...props }: any) => React.createElement('span', props, placeholder),
+    Checkbox: (props: any) => React.createElement('input', { ...props, type: 'checkbox', className: 'w-4 h-4' }),
+    Switch: (props: any) => React.createElement('button', { ...props, className: 'w-10 h-6 rounded-full bg-gray-200' }),
+    Separator: (props: any) => React.createElement('hr', { ...props, className: 'my-2 border-gray-200' }),
+    Skeleton: (props: any) => React.createElement('div', { ...props, className: 'bg-gray-200 animate-pulse rounded' }),
+    Table: ({ children, ...props }: any) => React.createElement('table', { ...props, className: 'w-full border-collapse' }, children),
+    TableHeader: ({ children, ...props }: any) => React.createElement('thead', props, children),
+    TableBody: ({ children, ...props }: any) => React.createElement('tbody', props, children),
+    TableRow: ({ children, ...props }: any) => React.createElement('tr', { ...props, className: 'border-b' }, children),
+    TableHead: ({ children, ...props }: any) => React.createElement('th', { ...props, className: 'p-2 text-left font-semibold' }, children),
+    TableCell: ({ children, ...props }: any) => React.createElement('td', { ...props, className: 'p-2' }, children),
+  };
+}
+
+/**
+ * Crea mock icons da lucide-react
+ */
+function createMockIcons() {
+  const React = window.React;
+  const MockIcon = ({ className, ...props }: any) => 
+    React.createElement('svg', { 
+      width: 20, 
+      height: 20, 
+      viewBox: '0 0 24 24', 
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 2,
+      className,
+      ...props
+    }, React.createElement('circle', { cx: 12, cy: 12, r: 10 }));
+  
+  return {
+    CheckCircle: MockIcon,
+    AlertCircle: MockIcon,
+    Loader2: MockIcon,
+    Mail: MockIcon,
+    Send: MockIcon,
+    Trash: MockIcon,
+    Edit: MockIcon,
+    Save: MockIcon,
+    X: MockIcon,
+    Plus: MockIcon,
+    Minus: MockIcon,
+    ChevronDown: MockIcon,
+    ChevronRight: MockIcon,
+    Search: MockIcon,
+    Settings: MockIcon,
+    User: MockIcon,
+    Home: MockIcon,
+    Menu: MockIcon,
+    Calendar: MockIcon,
+    Clock: MockIcon,
+    Download: MockIcon,
+    Upload: MockIcon,
+    File: MockIcon,
+    Folder: MockIcon,
+    Archive: MockIcon,
+    Database: MockIcon,
+    Server: MockIcon,
+    Code: MockIcon,
+    Terminal: MockIcon,
+  };
+}
+
+/**
+ * Crea mock hooks comuni
+ */
+function createMockHooks() {
+  return {
+    useToast: () => ({ toast: () => {}, dismiss: () => {} }),
+    useAuth: () => ({ user: { id: 'mock-user', email: 'user@example.com' }, isLoading: false }),
+    useSupabase: () => ({ supabase: null }),
+    useNavigate: () => () => {},
+    useLocation: () => ({ pathname: '/', search: '', hash: '' }),
+    useParams: () => ({}),
+    useSearchParams: () => [new URLSearchParams(), () => {}],
+  };
+}
+
+/**
+ * Wrapper automatico per codice JSX incompleto con mock avanzati
  */
 function wrapComponentCode(jsxCode: string, componentName: string = 'Component'): string {
   // Se è già un export default valido, usalo così com'è
@@ -43,20 +154,66 @@ function wrapComponentCode(jsxCode: string, componentName: string = 'Component')
     return jsxCode;
   }
   
-  // Altrimenti, wrapper automatico con imports e export
+  const mockComponents = createMockComponents();
+  const mockIcons = createMockIcons();
+  const mockHooks = createMockHooks();
+  
+  // Serializza i mock per iniettarli nel codice
+  const componentsCode = Object.entries(mockComponents)
+    .map(([name, _]) => `const ${name} = mockComponents.${name};`)
+    .join('\n    ');
+  
+  const iconsCode = Object.entries(mockIcons)
+    .map(([name, _]) => `const ${name} = mockIcons.${name};`)
+    .join('\n    ');
+  
+  const hooksCode = Object.entries(mockHooks)
+    .map(([name, fn]) => `const ${name} = () => ${JSON.stringify(fn())};`)
+    .join('\n    ');
+  
+  // Altrimenti, wrapper automatico con imports e mock injection
   return `
     import React, { useState, useEffect } from 'react';
     
-    // Definizione componente
+    // Mock shadcn/ui components
+    const mockComponents = ${JSON.stringify(Object.fromEntries(Object.keys(mockComponents).map(k => [k, 'MOCK'])))};
+    ${componentsCode}
+    
+    // Mock lucide-react icons
+    const mockIcons = ${JSON.stringify(Object.fromEntries(Object.keys(mockIcons).map(k => [k, 'MOCK'])))};
+    ${iconsCode}
+    
+    // Mock hooks comuni
+    ${hooksCode}
+    
+    // Mock supabase client
+    const supabase = {
+      from: () => ({
+        select: () => ({ data: [], error: null }),
+        insert: () => ({ data: null, error: null }),
+        update: () => ({ data: null, error: null }),
+        delete: () => ({ data: null, error: null }),
+      }),
+    };
+    
+    // Definizione componente originale
     const ${componentName} = ${jsxCode.trim()};
     
-    // Export per rendering
+    // Export wrapper per rendering sicuro
     export default function Wrapper(props) {
-      return (
-        <div style={{ padding: '16px', width: '100%', height: '100%' }}>
-          <${componentName} {...props} />
-        </div>
-      );
+      try {
+        return (
+          <div style={{ padding: '16px', width: '100%', height: '100%' }}>
+            <${componentName} {...props} />
+          </div>
+        );
+      } catch (error) {
+        return (
+          <div style={{ padding: '16px', color: 'red', fontSize: '12px' }}>
+            Render Error: {error.message}
+          </div>
+        );
+      }
     }
   `;
 }
@@ -197,8 +354,8 @@ async function createIsolatedContainer(
     const root = ReactDOM.createRoot(renderRoot);
     root.render(React.createElement(Component, mockProps));
 
-    // 6. Aspetta rendering (importante per componenti con immagini/async)
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // 6. Aspetta rendering (aumentato a 3s per componenti complessi)
+    await new Promise(resolve => setTimeout(resolve, 3000));
     console.log('✅ Component rendered');
 
   } catch (error) {
@@ -332,7 +489,59 @@ async function updateComponentThumbnail(
 }
 
 /**
- * MAIN FUNCTION: Genera e salva thumbnail per un componente
+ * Genera placeholder PNG intelligente basato su metadata
+ */
+async function generatePlaceholderThumbnail(
+  componentId: string,
+  metadata?: ComponentMetadata
+): Promise<string> {
+  const canvas = document.createElement('canvas');
+  canvas.width = 400;
+  canvas.height = 300;
+  const ctx = canvas.getContext('2d')!;
+  
+  // Gradient background basato su categoria
+  const categoryColors: Record<string, [string, string]> = {
+    input: ['#3b82f6', '#1e40af'],
+    button: ['#10b981', '#059669'],
+    card: ['#8b5cf6', '#6d28d9'],
+    layout: ['#f59e0b', '#d97706'],
+    'data-display': ['#ec4899', '#be185d'],
+    modal: ['#667eea', '#764ba2'],
+  };
+  
+  const [color1, color2] = categoryColors[metadata?.ui_category?.toLowerCase() || ''] || ['#667eea', '#764ba2'];
+  
+  const gradient = ctx.createLinearGradient(0, 0, 400, 300);
+  gradient.addColorStop(0, color1);
+  gradient.addColorStop(1, color2);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 400, 300);
+  
+  // Testo componente
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 20px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(metadata?.component_name || 'Component', 200, 140);
+  
+  // Badge categoria
+  if (metadata?.ui_category) {
+    ctx.font = '12px Arial';
+    ctx.fillText(metadata.ui_category, 200, 170);
+  }
+  
+  // Converti in blob e upload
+  const blob = await new Promise<Blob>((resolve) => 
+    canvas.toBlob((b) => resolve(b!), 'image/png')
+  );
+  
+  const thumbnailUrl = await uploadThumbnail(componentId, blob);
+  await updateComponentThumbnail(componentId, thumbnailUrl);
+  return thumbnailUrl;
+}
+
+/**
+ * MAIN FUNCTION: Genera e salva thumbnail per un componente con gestione avanzata errori
  */
 export async function generateComponentThumbnail(
   componentId: string,
@@ -341,30 +550,86 @@ export async function generateComponentThumbnail(
   customConfig?: Partial<ThumbnailConfig>
 ): Promise<string> {
   const config = { ...DEFAULT_CONFIG, ...customConfig };
+  const startTime = Date.now();
   let container: HTMLDivElement | null = null;
 
   try {
     console.log(`🎬 Starting thumbnail generation for: ${metadata?.component_name || componentId}`);
     
-    // 1. Crea container isolato e renderizza React component con metadata
-    container = await createIsolatedContainer(jsxCode, config, metadata);
+    // Pre-validazione: componenti troppo grandi usano placeholder
+    if (jsxCode.length > 25000) {
+      console.warn(`⚠️ Component too large (${jsxCode.length} chars), using placeholder`);
+      const thumbnailUrl = await generatePlaceholderThumbnail(componentId, metadata);
+      
+      // Log nel database
+      await supabase.from('thumbnail_generation_logs').insert({
+        component_id: componentId,
+        component_name: metadata?.component_name || 'Unknown',
+        status: 'skipped',
+        error_message: `Component too large (${jsxCode.length} chars)`,
+        duration_ms: Date.now() - startTime,
+      });
+      
+      return thumbnailUrl;
+    }
+    
+    // Timeout con Promise.race (10 secondi max)
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Thumbnail generation timeout (10s)')), 10000)
+    );
+    
+    const generatePromise = (async () => {
+      // 1. Crea container isolato e renderizza React component con metadata
+      container = await createIsolatedContainer(jsxCode, config, metadata);
 
-    // 2. Genera screenshot
-    console.log('📸 Capturing screenshot...');
-    const blob = await captureScreenshot(container, config);
+      // 2. Genera screenshot
+      console.log('📸 Capturing screenshot...');
+      const blob = await captureScreenshot(container, config);
 
-    // 3. Upload su Supabase Storage con retry automatico
-    const thumbnailUrl = await uploadThumbnail(componentId, blob);
+      // 3. Upload su Supabase Storage con retry automatico
+      const thumbnailUrl = await uploadThumbnail(componentId, blob);
 
-    // 4. Aggiorna database
-    console.log('💾 Updating database...');
-    await updateComponentThumbnail(componentId, thumbnailUrl);
+      // 4. Aggiorna database
+      console.log('💾 Updating database...');
+      await updateComponentThumbnail(componentId, thumbnailUrl);
+
+      return thumbnailUrl;
+    })();
+    
+    const thumbnailUrl = await Promise.race([generatePromise, timeoutPromise]);
+    
+    // Log successo nel database
+    await supabase.from('thumbnail_generation_logs').insert({
+      component_id: componentId,
+      component_name: metadata?.component_name || 'Unknown',
+      status: 'success',
+      duration_ms: Date.now() - startTime,
+    });
 
     console.log(`✅ Thumbnail generated successfully for: ${metadata?.component_name || componentId}`);
     return thumbnailUrl;
+    
   } catch (error) {
     console.error(`❌ Failed to generate thumbnail for ${componentId}:`, error);
-    throw error;
+    
+    // Log errore nel database
+    await supabase.from('thumbnail_generation_logs').insert({
+      component_id: componentId,
+      component_name: metadata?.component_name || 'Unknown',
+      status: 'failed',
+      error_message: error instanceof Error ? error.message : 'Unknown error',
+      error_stack: error instanceof Error ? error.stack : null,
+      duration_ms: Date.now() - startTime,
+    });
+    
+    // Fallback a placeholder invece di fallire completamente
+    try {
+      console.log('🔄 Generating placeholder as fallback...');
+      return await generatePlaceholderThumbnail(componentId, metadata);
+    } catch (placeholderError) {
+      console.error('❌ Placeholder generation also failed:', placeholderError);
+      throw error; // Lancia errore originale
+    }
   } finally {
     // 5. Cleanup DOM
     if (container && container.parentNode) {
@@ -525,7 +790,7 @@ export class ThumbnailBatchGenerator {
       try {
         console.log(`🔄 [${this.state.currentIndex + 1}/${this.state.totalComponents}] Generating: ${component.component_name}`);
         
-        // Genera thumbnail con metadata completo
+        // Genera thumbnail con metadata completo (gestione errori avanzata inclusa)
         const thumbnailUrl = await generateComponentThumbnail(
           component.id, 
           component.jsx_code,
@@ -557,6 +822,8 @@ export class ThumbnailBatchGenerator {
       } catch (error) {
         this.state.failedCount++;
         console.error(`❌ [${this.state.currentIndex + 1}/${this.state.totalComponents}] Failed: ${component.component_name}`, error);
+        
+        // Log già gestito in generateComponentThumbnail, qui solo incremento counter
       }
 
       this.state.currentIndex++;

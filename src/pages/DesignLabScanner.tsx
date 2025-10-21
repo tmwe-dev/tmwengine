@@ -13,7 +13,7 @@ import { useCodeIndexer } from '@/hooks/useCodeIndexer';
 import { useRouteDiscovery } from '@/hooks/useRouteDiscovery';
 import { DesignLabScanner as Scanner } from '@/lib/design-lab/scanner';
 import { ScanConfig, ScanResult } from '@/types/design-lab-scanner';
-import { Play, Loader2, CheckCircle, Database, AlertCircle, RefreshCw, Search, AlertTriangle, Pause, Square } from 'lucide-react';
+import { Play, Loader2, CheckCircle, Database, AlertCircle, RefreshCw, Search, AlertTriangle, Pause, Square, ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -141,8 +141,21 @@ export default function DesignLabScanner() {
 
       toast({
         title: 'Scansione completata!',
-        description: `${results.pages_scanned} pagine, ${results.components_extracted} componenti, ${results.thumbnails_generated} miniature`,
+        description: `${results.pages_scanned} pagine, ${results.components_extracted} componenti estratti`,
       });
+
+      // NUOVO: Avvio automatico miniature se checkbox attiva
+      if (generateThumbnails && results.components_extracted > 0) {
+        toast({
+          title: 'Avvio generazione miniature...',
+          description: `${results.components_extracted} componenti da processare. Questo potrebbe richiedere alcuni minuti.`,
+        });
+        
+        // Attendi 1.5 secondi per permettere all'utente di vedere il messaggio
+        setTimeout(() => {
+          startThumbnailGeneration();
+        }, 1500);
+      }
     } catch (error) {
       console.error('Errore durante la scansione:', error);
       toast({
@@ -563,6 +576,31 @@ export default function DesignLabScanner() {
                   <li>{scanResults.plugins_created} plugin creati</li>
                   <li>{scanResults.thumbnails_generated} miniature generate</li>
                 </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Alert per Miniature Mancanti */}
+          {scanResults && scanResults.components_extracted > 0 && !thumbnailState?.isRunning && (
+            <Alert className="mt-6 border-yellow-500/50 bg-yellow-500/10">
+              <AlertCircle className="h-4 w-4 text-yellow-500" />
+              <AlertTitle className="text-yellow-500">Miniature da Generare</AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                <span className="text-sm">
+                  {scanResults.components_extracted} componenti estratti necessitano di miniature.
+                  {generateThumbnails ? ' La generazione automatica è attiva.' : ' Puoi generarle manualmente.'}
+                </span>
+                {!generateThumbnails && (
+                  <Button 
+                    onClick={startThumbnailGeneration} 
+                    size="sm"
+                    variant="outline"
+                    className="ml-4"
+                  >
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Genera Ora
+                  </Button>
+                )}
               </AlertDescription>
             </Alert>
           )}

@@ -4562,6 +4562,50 @@ export type Database = {
         }
         Relationships: []
       }
+      thumbnail_generation_logs: {
+        Row: {
+          attempt_number: number | null
+          component_id: string | null
+          component_name: string
+          created_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          error_stack: string | null
+          id: string
+          status: string
+        }
+        Insert: {
+          attempt_number?: number | null
+          component_id?: string | null
+          component_name: string
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          error_stack?: string | null
+          id?: string
+          status: string
+        }
+        Update: {
+          attempt_number?: number | null
+          component_id?: string | null
+          component_name?: string
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          error_stack?: string | null
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thumbnail_generation_logs_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "design_lab_extracted_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tmwe_api_benchmark_results: {
         Row: {
           avg_response_time_ms: number | null

@@ -1329,6 +1329,96 @@ export type Database = {
         }
         Relationships: []
       }
+      debugging: {
+        Row: {
+          active_functions: number | null
+          complexity_score: number | null
+          components: Json | null
+          created_at: string | null
+          edge_functions_called: Json | null
+          exports_detected: Json | null
+          function_status_map: Json | null
+          functions_detected: Json | null
+          hardcoded_issues: Json | null
+          hooks_detected: Json | null
+          id: string
+          imports_detected: Json | null
+          inactive_functions: number | null
+          linked_pages: Json | null
+          naming_mismatches: Json | null
+          notes: string | null
+          orphan_functions: Json | null
+          page_file_path: string | null
+          page_name: string
+          page_route: string
+          queries_detected: Json | null
+          scan_timestamp: string | null
+          suspect_functions: number | null
+          tables_used: Json | null
+          total_functions: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          active_functions?: number | null
+          complexity_score?: number | null
+          components?: Json | null
+          created_at?: string | null
+          edge_functions_called?: Json | null
+          exports_detected?: Json | null
+          function_status_map?: Json | null
+          functions_detected?: Json | null
+          hardcoded_issues?: Json | null
+          hooks_detected?: Json | null
+          id?: string
+          imports_detected?: Json | null
+          inactive_functions?: number | null
+          linked_pages?: Json | null
+          naming_mismatches?: Json | null
+          notes?: string | null
+          orphan_functions?: Json | null
+          page_file_path?: string | null
+          page_name: string
+          page_route: string
+          queries_detected?: Json | null
+          scan_timestamp?: string | null
+          suspect_functions?: number | null
+          tables_used?: Json | null
+          total_functions?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          active_functions?: number | null
+          complexity_score?: number | null
+          components?: Json | null
+          created_at?: string | null
+          edge_functions_called?: Json | null
+          exports_detected?: Json | null
+          function_status_map?: Json | null
+          functions_detected?: Json | null
+          hardcoded_issues?: Json | null
+          hooks_detected?: Json | null
+          id?: string
+          imports_detected?: Json | null
+          inactive_functions?: number | null
+          linked_pages?: Json | null
+          naming_mismatches?: Json | null
+          notes?: string | null
+          orphan_functions?: Json | null
+          page_file_path?: string | null
+          page_name?: string
+          page_route?: string
+          queries_detected?: Json | null
+          scan_timestamp?: string | null
+          suspect_functions?: number | null
+          tables_used?: Json | null
+          total_functions?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       design_lab_audit_log: {
         Row: {
           action: string

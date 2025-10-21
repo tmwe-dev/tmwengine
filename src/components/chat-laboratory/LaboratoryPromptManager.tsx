@@ -456,7 +456,7 @@ ESEMPI:
           )}
 
           {/* COMPOSER TAB - Fix scroll con h-full */}
-          <TabsContent value="composer" className="flex-1 overflow-hidden p-0 m-0">
+          <TabsContent value="composer" className="flex-1 h-full p-0 m-0">
             <PromptComposer />
           </TabsContent>
 

@@ -1,4 +1,4 @@
-import { useDroppable } from '@dnd-kit/core';
+import { useDroppable, UseDroppableArguments } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -35,9 +35,12 @@ export function CompositionCanvas({
   const [targetAgent, setTargetAgent] = useState<string>('gpt-4');
   const { toast } = useToast();
 
-  const { setNodeRef, isOver } = useDroppable({
+  const droppableArgs: UseDroppableArguments = {
     id: 'composition-canvas',
-  });
+  };
+  const droppable = useDroppable(droppableArgs);
+  const setNodeRef = droppable.setNodeRef;
+  const isOver: boolean = droppable.isOver;
 
   // Calcola statistiche
   const totalChars = blocks.reduce((sum, b) => sum + b.content.length, 0) +

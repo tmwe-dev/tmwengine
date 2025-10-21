@@ -1,5 +1,7 @@
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { useSortable, SortableData } from '@dnd-kit/sortable';
+import { CSS, Transform } from '@dnd-kit/utilities';
+import { DraggableAttributes } from '@dnd-kit/core';
+import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,17 +27,17 @@ export function ComposedPromptBlockComponent({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(block.content);
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ 
+  const sortable = useSortable({ 
     id: block.id,
     disabled: isLocked 
   });
+
+  const attributes: DraggableAttributes = sortable.attributes;
+  const listeners: SyntheticListenerMap | undefined = sortable.listeners;
+  const setNodeRef = sortable.setNodeRef;
+  const transform: Transform | null = sortable.transform;
+  const transition: string | undefined = sortable.transition;
+  const isDragging: boolean = sortable.isDragging;
 
   const style = {
     transform: CSS.Transform.toString(transform),

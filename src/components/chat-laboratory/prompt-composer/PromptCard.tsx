@@ -1,4 +1,5 @@
-import { useDraggable } from '@dnd-kit/core';
+import { useDraggable, DraggableAttributes } from '@dnd-kit/core';
+import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { GripVertical, ImageOff, Loader2 } from 'lucide-react';
@@ -15,10 +16,15 @@ export function PromptCard({ section, isDragging }: PromptCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const draggable = useDraggable({
     id: section.id,
     data: section,
   });
+  
+  const attributes: DraggableAttributes = draggable.attributes;
+  const listeners: SyntheticListenerMap | undefined = draggable.listeners;
+  const setNodeRef = draggable.setNodeRef;
+  const transform = draggable.transform;
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,

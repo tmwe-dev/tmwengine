@@ -301,9 +301,27 @@ export const BarVoiceRecorderV2_Hybrid = ({
     }
   };
 
+  // ✅ FIX P3: Cleanup completo on unmount
   useEffect(() => {
     return () => {
-      stopListening();
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (audioContextRef.current?.state !== 'closed') {
+        audioContextRef.current?.close();
+      }
+      if (analyserRef.current) {
+        analyserRef.current.disconnect();
+      }
     };
   }, []);
 

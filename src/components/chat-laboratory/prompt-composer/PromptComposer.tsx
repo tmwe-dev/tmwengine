@@ -248,13 +248,11 @@ export function PromptComposer() {
         {/* Layout 50/50 per Library e Canvas */}
         <div className="flex-1 flex">
           <PromptLibraryColumn
-            className="flex-1"
             sections={filteredSections}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
           />
           <CompositionCanvas
-            className="flex-1"
             blocks={composedBlocks}
             onRemoveBlock={handleRemoveBlock}
             onUpdateBlock={handleUpdateBlock}
@@ -269,10 +267,29 @@ export function PromptComposer() {
         {activeDragId ? (
           <div className="opacity-80 rotate-3 scale-105">
             {(() => {
+              // Controlla prima se è un blocco canvas
+              const block = composedBlocks.find(b => b.id === activeDragId);
+              if (block) {
+                const blockAsSection: PromptSection = {
+                  id: block.section_id,
+                  section_type: block.section_type,
+                  section_name: block.section_name,
+                  content: block.content,
+                  thumbnail_url: null,
+                  is_active: true,
+                  order_priority: block.order,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                };
+                return <PromptCard section={blockAsSection} isDragging />;
+              }
+              
+              // Altrimenti è una card dalla libreria
               const section = allSections.find(s => s.id === activeDragId);
               if (section) {
                 return <PromptCard section={section} isDragging />;
               }
+              
               return null;
             })()}
           </div>

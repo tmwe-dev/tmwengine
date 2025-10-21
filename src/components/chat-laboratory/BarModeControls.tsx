@@ -13,6 +13,8 @@ import { Volume2 } from 'lucide-react';
 interface BarModeControlsProps {
   conversationId: string | null;
   onSettingsChange?: (settings: BarModeSettings) => void;
+  globalMaxWords?: number;
+  onMaxWordsChange?: (value: number) => void;
 }
 
 interface BarModeSettings {
@@ -27,7 +29,7 @@ interface BarModeSettings {
   pause_between_turns_ms?: number;
 }
 
-export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeControlsProps) => {
+export const BarModeControls = ({ conversationId, onSettingsChange, globalMaxWords, onMaxWordsChange }: BarModeControlsProps) => {
   const { toast } = useToast();
 
   const [settings, setSettings] = useState<BarModeSettings>(() => {
@@ -161,7 +163,8 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
         voice_enabled: true,
         preset: 'fast',
         agent_interaction_mode: 'free_bar' as const,
-        conversation_style: 'colleagues' as const
+        conversation_style: 'colleagues' as const,
+        maxWords: 40
       },
       professional: {
         audio_mode: 'stable',
@@ -169,7 +172,8 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
         voice_enabled: true,
         preset: 'professional',
         agent_interaction_mode: 'consultation' as const,
-        conversation_style: 'colleagues' as const
+        conversation_style: 'colleagues' as const,
+        maxWords: 60
       },
       deep: {
         audio_mode: 'extended',
@@ -177,7 +181,8 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
         voice_enabled: true,
         preset: 'deep',
         agent_interaction_mode: 'consultation' as const,
-        conversation_style: 'boss_talk' as const
+        conversation_style: 'boss_talk' as const,
+        maxWords: 100
       },
     };
 
@@ -188,29 +193,25 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     setPreset(presetName);
 
     localStorage.setItem('barModeSettings', JSON.stringify(newSettings));
+    
+    // Aggiorna anche globalMaxWords
+    onMaxWordsChange?.(config.maxWords);
 
     if (conversationId) {
-      Promise.all([
-        supabase
-          .from('chat_laboratory_bar_mode')
-          .update({
-            audio_mode: config.audio_mode,
-            conversation_pace: config.conversation_pace,
-            voice_enabled: config.voice_enabled,
-            preset: config.preset,
-            agent_interaction_mode: config.agent_interaction_mode,
-            conversation_style: config.conversation_style
-          })
-          .eq('conversation_id', conversationId),
-        
-        supabase
-          .from('chat_laboratory_conversations')
-          .update({ conversation_style: config.conversation_style })
-          .eq('id', conversationId)
-      ]).then(([barModeResult, conversationResult]) => {
-        if (barModeResult.error) console.error('❌ Errore salvataggio bar_mode:', barModeResult.error);
-        if (conversationResult.error) console.error('❌ Errore salvataggio conversation:', conversationResult.error);
-      });
+      supabase
+        .from('chat_laboratory_bar_mode')
+        .update({
+          audio_mode: config.audio_mode,
+          conversation_pace: config.conversation_pace,
+          voice_enabled: config.voice_enabled,
+          preset: config.preset,
+          agent_interaction_mode: config.agent_interaction_mode,
+          conversation_style: config.conversation_style
+        })
+        .eq('conversation_id', conversationId)
+        .then((result) => {
+          if (result.error) console.error('❌ Errore salvataggio bar_mode:', result.error);
+        });
     } else {
       localStorage.setItem('barModePendingSettings', JSON.stringify(newSettings));
     }
@@ -311,13 +312,6 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
           onValueChange={(value: 'boss_talk' | 'colleagues' | 'bar_chat') => {
             updateSetting('conversation_style', value);
             setPreset('custom');
-            
-            if (conversationId) {
-              supabase
-                .from('chat_laboratory_conversations')
-                .update({ conversation_style: value })
-                .eq('id', conversationId);
-            }
           }}
         >
           <SelectTrigger className="h-8 text-xs">

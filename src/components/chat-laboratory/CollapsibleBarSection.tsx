@@ -14,6 +14,8 @@ interface CollapsibleBarSectionProps {
   isAISpeaking: boolean;
   audioMode?: AudioMode;
   onAudioModeChange?: (mode: AudioMode) => void;
+  globalMaxWords?: number;
+  onMaxWordsChange?: (value: number) => void;
 }
 
 export const CollapsibleBarSection = ({
@@ -24,7 +26,9 @@ export const CollapsibleBarSection = ({
   onTranscriptionComplete,
   isAISpeaking,
   audioMode,
-  onAudioModeChange
+  onAudioModeChange,
+  globalMaxWords,
+  onMaxWordsChange
 }: CollapsibleBarSectionProps) => {
 
   return (
@@ -59,7 +63,11 @@ export const CollapsibleBarSection = ({
           />
           
           <div className="flex justify-center">
-            <BarModeControls conversationId={conversationId} />
+            <BarModeControls 
+              conversationId={conversationId}
+              globalMaxWords={globalMaxWords}
+              onMaxWordsChange={onMaxWordsChange}
+            />
           </div>
           
           <div className="flex justify-center">

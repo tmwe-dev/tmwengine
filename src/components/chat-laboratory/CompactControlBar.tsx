@@ -53,17 +53,6 @@ export const CompactControlBar = ({
   const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
   const [pauseBetweenTurns, setPauseBetweenTurns] = useState<number>(800);
   const [enableDirectCall, setEnableDirectCall] = useState<boolean>(true);
-  const [audioMode, setAudioMode] = useState<'stable' | 'v2_hybrid'>(
-    externalAudioMode || 'stable'
-  );
-
-  useEffect(() => {
-    console.log('🔄 CompactControlBar: externalAudioMode changed to:', externalAudioMode);
-    if (externalAudioMode !== undefined) {
-      console.log('✅ CompactControlBar: Updating local audioMode to:', externalAudioMode);
-      setAudioMode(externalAudioMode);
-    }
-  }, [externalAudioMode]);
 
   useEffect(() => {
     if (conversationId && isBarMode) {
@@ -247,7 +236,7 @@ export const CompactControlBar = ({
             
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Modalità Audio:</span>
-              <span className="font-medium uppercase">{audioMode.replace('v2_', '')}</span>
+              <span className="font-medium uppercase">{(externalAudioMode || 'stable').replace('v2_', '')}</span>
             </div>
             
             <div className="flex items-center justify-between text-xs">
@@ -272,13 +261,13 @@ export const CompactControlBar = ({
 
           {/* Caratteristiche Microfono Attivo */}
           <div className="space-y-1">
-            {audioMode === 'stable' && (
+            {(externalAudioMode || 'stable') === 'stable' && (
               <p className="text-xs text-muted-foreground">
                 🎤 <strong>PTT:</strong> Push-to-talk con VAD configurabile | Affidabile e preciso
               </p>
             )}
             
-            {audioMode === 'v2_hybrid' && (
+            {(externalAudioMode || 'stable') === 'v2_hybrid' && (
               <p className="text-xs text-muted-foreground">
                 🎤 <strong>HYBRID:</strong> Ascolto continuo (Coming Soon) | VAD intelligente automatico
               </p>

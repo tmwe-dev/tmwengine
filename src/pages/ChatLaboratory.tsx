@@ -89,7 +89,6 @@ interface Conversation {
 
 const ChatLaboratory = () => {
   const [prompt, setPrompt] = useState('');
-  const [currentPrompt, setCurrentPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -726,7 +725,7 @@ const ChatLaboratory = () => {
         isBarMode,
         conversationId,
         activeAIParticipants: activeAIParticipants.length,
-        currentPrompt,
+        textToSave,
         hasSupabase: !!supabase,
         participantsDetails: activeAIParticipants.map(p => ({ type: p.type, name: p.name }))
       });
@@ -1294,6 +1293,8 @@ const ChatLaboratory = () => {
                         setAudioMode(mode);
                         console.log('✅ ChatLaboratory: audioMode state updated to:', mode);
                       }}
+                      globalMaxWords={globalMaxWords}
+                      onMaxWordsChange={setGlobalMaxWords}
                     />
                   </CardContent>
                 </Card>

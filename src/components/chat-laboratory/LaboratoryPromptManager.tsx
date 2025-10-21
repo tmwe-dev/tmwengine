@@ -456,9 +456,9 @@ ESEMPI:
           )}
 
           {/* COMPOSER TAB - Fix scroll con h-full */}
-        <TabsContent value="composer" className="flex-1 overflow-hidden p-0 m-0">
-          <PromptComposer />
-        </TabsContent>
+          <TabsContent value="composer" className="flex-1 overflow-hidden p-0 m-0">
+            <PromptComposer />
+          </TabsContent>
 
           {/* GLOBAL TAB */}
           <TabsContent value="global" className="flex-1 overflow-y-auto">
@@ -972,12 +972,6 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
             )}
           </TabsContent>
 
-          {/* COMPOSER TAB */}
-          <TabsContent value="composer" className="flex-1 overflow-hidden h-[calc(100vh-120px)]">
-            <div className="h-full">
-              <PromptComposer />
-            </div>
-          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>

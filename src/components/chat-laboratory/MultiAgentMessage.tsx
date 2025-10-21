@@ -42,7 +42,6 @@ type ViewMode = 'summary' | 'friendly' | 'full';
 interface MultiAgentMessageProps {
   message: Message;
   onAudioEnd?: () => void;
-  onAudioStateChange?: (isPlaying: boolean) => void;
 }
 
 const SENDER_CONFIG = {
@@ -80,7 +79,7 @@ const SENDER_CONFIG = {
   }
 };
 
-export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange }: MultiAgentMessageProps) => {
+export const MultiAgentMessage = ({ message, onAudioEnd }: MultiAgentMessageProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('friendly');
   const [appendixAudioPlaying, setAppendixAudioPlaying] = useState(false);
   const [appendixOpen, setAppendixOpen] = useState(false);
@@ -370,16 +369,13 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange }: M
               autoPlay={true}
               onPlayStart={() => {
                 console.log(`🔊 [MultiAgentMessage] Audio START: ${message.sender_name}`);
-                onAudioStateChange?.(true);
               }}
               onPlayEnd={() => {
                 console.log(`⏸️ [MultiAgentMessage] Audio END: ${message.sender_name}`);
-                onAudioStateChange?.(false);
                 onAudioEnd?.();
               }}
               onError={(error) => {
                 console.error(`❌ [MultiAgentMessage] Audio ERROR: ${message.sender_name}`, error);
-                onAudioStateChange?.(false);
                 onAudioEnd?.();
               }}
             />

@@ -156,8 +156,6 @@ const ChatLaboratory = () => {
   // ✅ Lock orchestrator per evitare chiamate parallele
   const isOrchestratorRunning = useRef(false);
   
-  // ⚡ NUOVO: Ref per tracking placeholder message ID
-  const lastPlaceholderMessageIdRef = useRef<string | null>(null);
   
   // Summary States
   const [conversationData, setConversationData] = useState<Conversation | null>(null);
@@ -626,139 +624,14 @@ const ChatLaboratory = () => {
       return;
     }
     
-    // ✅ Previeni invii multipli concorrenti
+    // Previeni invii multipli concorrenti
     if (isSubmitting) {
       console.log('⏸️ Submit già in corso, ignoro richiesta duplicata');
       return;
     }
     
-    // ⚡ FIX #2: Rilevamento PRIMA di qualsiasi altra operazione
-    const textToSave = overrideText || prompt.trim();
-    const isPlaceholder = textToSave === '🎤 Trascrizione in corso...';
-    const isUpdate = textToSave.includes('|||UPDATE|||');
-    const cleanText = isUpdate ? textToSave.replace('|||UPDATE|||', '').trim() : textToSave;
-    
-    console.log('🔍 [ChatLaboratory] handleSubmit chiamato:', { 
-      isPlaceholder, 
-      isUpdate, 
-      textToSave: cleanText.substring(0, 50) 
-    });
-    
-    if (!cleanText) return;
-
-    // ⚡ STEP 1: Se è update, esegui subito e ESCI
-    if (isUpdate && lastPlaceholderMessageIdRef.current) {
-      try {
-        console.log('✅ [ChatLaboratory] UPDATE - Aggiorno messaggio esistente:', lastPlaceholderMessageIdRef.current);
-        
-        await supabase
-          .from('chat_laboratory_messages')
-          .update({ content: cleanText })
-          .eq('id', lastPlaceholderMessageIdRef.current);
-
-        lastPlaceholderMessageIdRef.current = null;
-        await loadMessages(currentConversationId!);
-        
-        console.log('✅ [ChatLaboratory] Messaggio aggiornato con trascrizione reale');
-      } catch (error) {
-        console.error('❌ Errore aggiornamento messaggio:', error);
-      }
-      return; // ⚡ ESCI SUBITO - non eseguire il resto
-    }
-
-    // ⚡ STEP 2: Se è placeholder, inserisci e ESCI (senza far partire orchestrator)
-    if (isPlaceholder) {
-      try {
-        console.log('⚡ [ChatLaboratory] PLACEHOLDER - Inserisco messaggio temporaneo');
-        
-        // Crea conversazione se necessario
-        let conversationId = currentConversationId;
-        if (!conversationId) {
-          const { data: newConv, error: convError } = await supabase
-            .from('chat_laboratory_conversations')
-            .insert({
-              titolo: `Discussione Multi-Agente ${new Date().toLocaleString()}`,
-              active_participants: participants.filter(p => p.is_active).map(p => ({ type: p.type, name: p.name }))
-            })
-            .select()
-            .single();
-
-          if (convError) throw convError;
-          conversationId = newConv.id;
-          setCurrentConversationId(conversationId);
-
-          // ✅ Se Bar Mode attivo, abilita audio automaticamente
-          const { data: { user } } = await supabase.auth.getUser();
-          if (isBarMode && user) {
-            await supabase
-              .from('chat_laboratory_bar_mode')
-              .upsert({
-                conversation_id: conversationId,
-                mode: 'bar',
-                voice_enabled: true,
-                user_id: user.id,
-                updated_at: new Date().toISOString()
-              }, { onConflict: 'conversation_id' });
-          }
-
-          // Salva partecipanti
-          for (const participant of participants.filter(p => p.is_active)) {
-            await supabase
-              .from('chat_laboratory_participants')
-              .insert({
-                conversation_id: conversationId,
-                type: participant.type,
-                name: participant.name,
-                system_prompt: participant.system_prompt,
-                is_active: true
-              });
-          }
-
-          await transferPendingSettings(conversationId);
-        }
-
-        const { data: maxSeq } = await supabase
-          .from('chat_laboratory_messages')
-          .select('message_sequence')
-          .eq('conversation_id', conversationId)
-          .order('message_sequence', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const nextSequence = (maxSeq?.message_sequence || 0) + 1;
-
-        const { data: savedMessage } = await supabase
-          .from('chat_laboratory_messages')
-          .insert([{
-            conversation_id: conversationId,
-            message_sequence: nextSequence,
-            intent_tags: [],
-            sender_type: 'human',
-            sender_name: 'Tu',
-            content: cleanText,
-            is_visible_to_ai: true,
-          }])
-          .select()
-          .single();
-
-        if (savedMessage) {
-          lastPlaceholderMessageIdRef.current = savedMessage.id;
-          console.log('⚡ [ChatLaboratory] Placeholder salvato, ID:', savedMessage.id);
-          
-          // ⚡ Ottimistic update
-          setMessages(prev => [...prev, savedMessage as unknown as Message]);
-          
-          await loadMessages(conversationId);
-        }
-
-        return; // ⚡ ESCI SUBITO - l'update arriverà tra poco
-      } catch (error) {
-        console.error('❌ Errore inserimento placeholder:', error);
-        return;
-      }
-    }
-
-    // ⚡ STEP 3: Messaggio normale - continua con la logica esistente
+    const textToSave = (overrideText || prompt).trim();
+    if (!textToSave) return;
     setIsLoading(true);
     setIsSubmitting(true);
     setPrompt(''); // ✅ Pulisci sempre textarea
@@ -832,7 +705,7 @@ const ChatLaboratory = () => {
           intent_tags: [],
           sender_type: 'human',
           sender_name: 'Tu',
-          content: cleanText,
+          content: textToSave,
           is_visible_to_ai: true,
           attachments: uploadedFiles as any,
           images: uploadedFiles.filter(f => f.isImage).map(f => f.url) as any,
@@ -842,19 +715,6 @@ const ChatLaboratory = () => {
         .single();
 
       if (insertError) throw insertError;
-
-      // ⚡ FIX #1: OTTIMISTIC UPDATE - Aggiungi immediatamente il messaggio allo state React
-      if (savedUserMessage) {
-        console.log('⚡ [FIX #1] Ottimistic update: aggiungo messaggio HUMAN allo state locale');
-        setMessages(prev => [...prev, savedUserMessage as unknown as Message]);
-        
-        await loadMessages(conversationId);
-        
-        // ✅ Forza apertura tab se in modalità tabs
-        if (viewMode === 'tabs') {
-          console.log('✅ Attivazione immediata tab dopo invio messaggio user (FIX #1 applicato)');
-        }
-      }
 
       setUploadedFiles([]);
       setGeneratedImage(null);

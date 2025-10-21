@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { useRef, useState } from 'react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { MultiAgentMessage } from './MultiAgentMessage';
+import { Bot, User, Sparkles, Brain } from 'lucide-react';
 import { TabNavigation } from './TabNavigation';
-import { NewMessagesIndicator } from './NewMessagesIndicator';
 import { useTabSwitching } from '@/hooks/useTabSwitching';
-import { useAudioPlayback } from '@/hooks/useAudioPlayback';
-import { useNewMessagesIndicator } from '@/hooks/useNewMessagesIndicator';
+import { NewMessagesIndicator } from './NewMessagesIndicator';
 
 interface Message {
   id: string;
@@ -34,57 +33,10 @@ export const MessageTabsView = ({
   isAutoFollowEnabled: externalAutoFollow,
   onAutoFollowChange
 }: MessageTabsViewProps) => {
-  const isAutoFollowEnabled = externalAutoFollow ?? true;
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
-  // 🎯 Hook audio playback
-  const { isAudioPlaying, handleAudioStart, handleAudioEnd: audioEnd, handleAudioError } = useAudioPlayback();
-
-  // 🎯 Hook tab switching con coda intelligente
-  const {
-    activeTab,
-    setActiveTab,
-    handleAudioEnd: tabSwitchOnAudioEnd,
-    unseenMessagesQueue
-  } = useTabSwitching({
-    messages,
-    isAutoFollowEnabled,
-    isAudioPlaying
-  });
-
-  // 🎯 Hook indicatore nuovi messaggi
-  const {
-    showNewMessages,
-    newMessagesCount,
-    scrollToBottom,
-    handleScroll,
-    messagesEndRef,
-    tabContentRef
-  } = useNewMessagesIndicator({
-    isAutoFollowEnabled
-  });
-
-  // 🎯 State per sincronizzare tab switch dopo audio end
-  const [shouldSwitchTab, setShouldSwitchTab] = useState(false);
-
-  // 🎯 Callback completo: quando audio finisce, setta flag per tab switch
-  const onAudioEndComplete = () => {
-    console.log(`🎬 [MessageTabsView] onAudioEndComplete chiamato`);
-    audioEnd(); // Setta isAudioPlaying = false (asincrono)
-    
-    // 🔴 Delay per assicurare che isAudioPlaying sia aggiornato
-    setTimeout(() => {
-      setShouldSwitchTab(true);
-    }, 50); // 50ms delay
-  };
-
-  // 🎯 Effetto: cambia tab DOPO che isAudioPlaying è aggiornato
-  useEffect(() => {
-    if (shouldSwitchTab && !isAudioPlaying) {
-      console.log(`🔄 [MessageTabsView] Sincronizzazione completata, cambio tab`);
-      tabSwitchOnAudioEnd();
-      setShouldSwitchTab(false);
-    }
-  }, [shouldSwitchTab, isAudioPlaying, tabSwitchOnAudioEnd]);
+  // Tab switching logic
+  const { activeTab, setActiveTab } = useTabSwitching({ messages });
 
   if (messages.length === 0) {
     return null;
@@ -99,26 +51,19 @@ export const MessageTabsView = ({
           <TabsContent
             key={message.id}
             value={message.id}
-            ref={activeTab === message.id ? tabContentRef : null}
-            onScroll={handleScroll}
             className="absolute inset-0 m-0 overflow-y-auto data-[state=inactive]:hidden focus-visible:outline-none focus-visible:ring-0"
           >
             <div className="container mx-auto max-w-4xl p-4">
               <MultiAgentMessage
                 message={message}
-                onAudioEnd={onAudioEndComplete}
-                onAudioStateChange={(playing) => (playing ? handleAudioStart() : audioEnd())}
+                onAudioEnd={() => {
+                  console.log(`🎵 [MessageTabsView] Audio END`);
+                  setIsAudioPlaying(false);
+                }}
               />
-              <div ref={messagesEndRef} />
             </div>
           </TabsContent>
         ))}
-
-        <NewMessagesIndicator
-          showIndicator={showNewMessages}
-          newMessagesCount={newMessagesCount}
-          onScrollToBottom={scrollToBottom}
-        />
       </div>
     </Tabs>
   );

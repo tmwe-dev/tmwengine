@@ -1,5 +1,4 @@
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { useDraggable } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -30,18 +29,16 @@ export function PromptCard({ section, isDragging, onEdit }: PromptCardProps) {
     listeners,
     setNodeRef,
     transform,
-    transition,
-    isDragging: sortableIsDragging
-  } = useSortable({ 
+    isDragging: isDraggingInternal
+  } = useDraggable({ 
     id: section.id,
     data: section 
   });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: sortableIsDragging ? 0.5 : 1
-  };
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    opacity: isDraggingInternal ? 0.5 : 1
+  } : { opacity: 1 };
 
   // Preview: prime 150 caratteri
   const preview = section.content.substring(0, 150) + (section.content.length > 150 ? '...' : '');

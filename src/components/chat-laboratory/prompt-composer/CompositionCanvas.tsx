@@ -20,6 +20,7 @@ interface CompositionCanvasProps {
   onUpdateBlock: (id: string, content: string) => void;
   onSave: (name: string, targetAgent: string) => Promise<void>;
   isSaving: boolean;
+  className?: string;
 }
 
 export function CompositionCanvas({
@@ -28,6 +29,7 @@ export function CompositionCanvas({
   onUpdateBlock,
   onSave,
   isSaving,
+  className,
 }: CompositionCanvasProps) {
   const [compositionName, setCompositionName] = useState('');
   const [targetAgent, setTargetAgent] = useState<string>('gpt-4');
@@ -57,7 +59,7 @@ export function CompositionCanvas({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-muted/10">
+    <div className={cn("flex flex-col h-full bg-muted/10", className)}>
       {/* Header Canvas */}
       <div className="p-4 border-b bg-background space-y-3">
         <h3 className="font-semibold text-sm flex items-center gap-2">

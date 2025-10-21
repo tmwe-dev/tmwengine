@@ -116,16 +116,38 @@ export function PromptComposer() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    setActiveDragId(null); // Reset drag state
+    setActiveDragId(null);
 
-    if (!over) return;
+    console.log('🎯 Drag End:', { 
+      activeId: active.id, 
+      overId: over?.id,
+      activeData: active.data.current 
+    });
 
-    // Se drag dentro canvas (riordino o nuovo)
-    if (over.id === 'composition-canvas' || composedBlocks.find(b => b.id === over.id)) {
-      const activeBlock = composedBlocks.find(b => b.id === active.id);
-      
-      if (!activeBlock) {
-        // Nuovo blocco dalla libreria
+    if (!over) {
+      console.log('❌ Drop fuori target');
+      return;
+    }
+
+    // Verifica se è un blocco già nel canvas (per riordino)
+    const activeBlock = composedBlocks.find(b => b.id === active.id);
+    
+    if (activeBlock) {
+      // CASO 1: Riordino blocchi esistenti nel canvas
+      const overBlock = composedBlocks.find(b => b.id === over.id);
+      if (overBlock) {
+        const activeIndex = composedBlocks.findIndex(b => b.id === active.id);
+        const overIndex = composedBlocks.findIndex(b => b.id === over.id);
+        
+        if (activeIndex !== overIndex) {
+          const reordered = arrayMove(composedBlocks, activeIndex, overIndex);
+          setComposedBlocks(reordered.map((b, i) => ({ ...b, order: i })));
+          console.log('✅ Blocchi riordinati');
+        }
+      }
+    } else {
+      // CASO 2: Nuova card dalla libreria
+      if (over.id === 'composition-canvas' || composedBlocks.find(b => b.id === over.id)) {
         const section = allSections.find(s => s.id === active.id);
         if (section) {
           const newBlock: ComposedPromptBlock = {
@@ -138,19 +160,11 @@ export function PromptComposer() {
             is_editable: true,
           };
           setComposedBlocks([...composedBlocks, newBlock]);
+          console.log('✅ Blocco aggiunto:', section.section_name);
           toast({
             title: "✅ Blocco Aggiunto",
             description: `"${section.section_name}" aggiunto al canvas`,
           });
-        }
-      } else {
-        // Riordino esistente
-        const activeIndex = composedBlocks.findIndex(b => b.id === active.id);
-        const overIndex = composedBlocks.findIndex(b => b.id === over.id);
-        
-        if (activeIndex !== overIndex && activeIndex !== -1 && overIndex !== -1) {
-          const reordered = arrayMove(composedBlocks, activeIndex, overIndex);
-          setComposedBlocks(reordered.map((b, i) => ({ ...b, order: i })));
         }
       }
     }
@@ -233,22 +247,20 @@ export function PromptComposer() {
         
         {/* Layout 50/50 per Library e Canvas */}
         <div className="flex-1 flex">
-          <div className="flex-1">
-            <PromptLibraryColumn
-              sections={filteredSections}
-              onRefresh={handleRefresh}
-              isRefreshing={isRefreshing}
-            />
-          </div>
-          <div className="flex-1">
-            <CompositionCanvas
-              blocks={composedBlocks}
-              onRemoveBlock={handleRemoveBlock}
-              onUpdateBlock={handleUpdateBlock}
-              onSave={handleSaveComposition}
-              isSaving={isSaving}
-            />
-          </div>
+          <PromptLibraryColumn
+            className="flex-1"
+            sections={filteredSections}
+            onRefresh={handleRefresh}
+            isRefreshing={isRefreshing}
+          />
+          <CompositionCanvas
+            className="flex-1"
+            blocks={composedBlocks}
+            onRemoveBlock={handleRemoveBlock}
+            onUpdateBlock={handleUpdateBlock}
+            onSave={handleSaveComposition}
+            isSaving={isSaving}
+          />
         </div>
       </div>
 

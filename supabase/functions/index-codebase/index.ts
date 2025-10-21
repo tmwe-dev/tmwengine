@@ -99,23 +99,49 @@ function calculateComplexity(content: string): number {
   return score;
 }
 
-function processFile(file: { file_path: string; content: string }): FileMetadata {
-  const lineCount = file.content.split('\n').length;
-  const tokenCount = Math.ceil(file.content.length / 4);
+async function scanDirectory(dirPath: string): Promise<FileMetadata[]> {
+  const files: FileMetadata[] = [];
   
-  return {
-    file_path: file.file_path,
-    file_type: determineFileType(file.file_path),
-    content: file.content,
-    imports: extractImports(file.content),
-    exports: extractExports(file.content),
-    functions: extractFunctions(file.content),
-    components: extractComponents(file.content),
-    line_count: lineCount,
-    token_count: tokenCount,
-    complexity_score: calculateComplexity(file.content),
-    language: file.file_path.endsWith('.tsx') || file.file_path.endsWith('.jsx') ? 'tsx' : 'typescript'
-  };
+  try {
+    for await (const entry of Deno.readDir(dirPath)) {
+      const fullPath = `${dirPath}/${entry.name}`;
+      
+      if (entry.isDirectory) {
+        // Ricorsione nelle sottocartelle
+        const subFiles = await scanDirectory(fullPath);
+        files.push(...subFiles);
+      } else if (entry.isFile) {
+        // Processa solo file TypeScript/JavaScript/React
+        if (/\.(ts|tsx|js|jsx)$/.test(entry.name)) {
+          try {
+            const content = await Deno.readTextFile(fullPath);
+            const lineCount = content.split('\n').length;
+            const tokenCount = Math.ceil(content.length / 4);
+            
+            files.push({
+              file_path: fullPath,
+              file_type: determineFileType(fullPath),
+              content,
+              imports: extractImports(content),
+              exports: extractExports(content),
+              functions: extractFunctions(content),
+              components: extractComponents(content),
+              line_count: lineCount,
+              token_count: tokenCount,
+              complexity_score: calculateComplexity(content),
+              language: entry.name.endsWith('.tsx') || entry.name.endsWith('.jsx') ? 'tsx' : 'typescript'
+            });
+          } catch (error) {
+            console.error(`Error reading file ${fullPath}:`, error);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`Error scanning directory ${dirPath}:`, error);
+  }
+  
+  return files;
 }
 
 serve(async (req) => {
@@ -128,7 +154,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { files = [], forceReindex = false } = await req.json();
+    const { directories = DEFAULT_DIRECTORIES, forceReindex = false } = await req.json();
     
     const startTime = Date.now();
     const stats: IndexStats = {
@@ -139,14 +165,14 @@ serve(async (req) => {
       errorDetails: []
     };
 
-    console.log(`Starting codebase indexing. Received ${files.length} files from frontend`);
+    console.log(`Starting codebase indexing for directories:`, directories);
 
     // Cancella indice esistente se forceReindex è true
     if (forceReindex) {
       const { error: deleteError } = await supabase
         .from('code_index')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000');
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
       
       if (deleteError) {
         console.error('Error clearing index:', deleteError);
@@ -155,46 +181,60 @@ serve(async (req) => {
       }
     }
 
-    // Process all files received from frontend
-    for (const fileInput of files) {
+    // Scansiona tutte le directory
+    for (const dir of directories) {
       try {
-        const fileMetadata = processFile(fileInput);
-        
-        const { error: upsertError } = await supabase
-          .from('code_index')
-          .upsert({
-            file_path: fileMetadata.file_path,
-            file_type: fileMetadata.file_type,
-            content: fileMetadata.content,
-            imports: fileMetadata.imports,
-            exports: fileMetadata.exports,
-            functions: fileMetadata.functions,
-            components: fileMetadata.components,
-            line_count: fileMetadata.line_count,
-            token_count: fileMetadata.token_count,
-            complexity_score: fileMetadata.complexity_score,
-            language: fileMetadata.language,
-            last_updated: new Date().toISOString()
-          }, {
-            onConflict: 'file_path'
-          });
+        console.log(`Scanning directory: ${dir}`);
+        const files = await scanDirectory(dir);
+        console.log(`Found ${files.length} files in ${dir}`);
 
-        if (upsertError) {
-          console.error(`Error indexing ${fileMetadata.file_path}:`, upsertError);
-          stats.errors++;
-          stats.errorDetails.push({
-            file: fileMetadata.file_path,
-            error: upsertError.message
-          });
-        } else {
-          stats.indexed++;
-          stats.files.push(fileMetadata.file_path);
+        // Inserisci/aggiorna file nel database
+        for (const file of files) {
+          try {
+            const { error: upsertError } = await supabase
+              .from('code_index')
+              .upsert({
+                file_path: file.file_path,
+                file_type: file.file_type,
+                content: file.content,
+                imports: file.imports,
+                exports: file.exports,
+                functions: file.functions,
+                components: file.components,
+                line_count: file.line_count,
+                token_count: file.token_count,
+                complexity_score: file.complexity_score,
+                language: file.language,
+                last_updated: new Date().toISOString()
+              }, {
+                onConflict: 'file_path'
+              });
+
+            if (upsertError) {
+              console.error(`Error indexing ${file.file_path}:`, upsertError);
+              stats.errors++;
+              stats.errorDetails.push({
+                file: file.file_path,
+                error: upsertError.message
+              });
+            } else {
+              stats.indexed++;
+              stats.files.push(file.file_path);
+            }
+          } catch (error) {
+            console.error(`Error processing ${file.file_path}:`, error);
+            stats.errors++;
+            stats.errorDetails.push({
+              file: file.file_path,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
         }
       } catch (error) {
-        console.error(`Error processing file:`, error);
+        console.error(`Error scanning directory ${dir}:`, error);
         stats.errors++;
         stats.errorDetails.push({
-          file: fileInput.file_path || 'unknown',
+          file: dir,
           error: error instanceof Error ? error.message : 'Unknown error'
         });
       }

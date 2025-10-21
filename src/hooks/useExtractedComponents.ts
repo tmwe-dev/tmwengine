@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ExtractedComponent } from '@/types/design-lab-scanner';
 
 export const useExtractedComponents = (sourcePageId?: string) => {
-  const { data: components, isLoading, refetch } = useQuery({
+  const { data: components, isLoading } = useQuery({
     queryKey: ['extracted-components', sourcePageId],
     queryFn: async () => {
       let query = supabase
@@ -24,6 +24,5 @@ export const useExtractedComponents = (sourcePageId?: string) => {
   return {
     components,
     isLoading,
-    refetch,
   };
 };

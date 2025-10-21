@@ -63,34 +63,39 @@ export const MessageTabsView = ({
     isAutoFollowEnabled
   });
 
-  // 🎯 Callback completo: quando audio finisce, triggera tab switch
+  // 🎯 State per sincronizzare tab switch dopo audio end
+  const [shouldSwitchTab, setShouldSwitchTab] = useState(false);
+
+  // 🎯 Callback completo: quando audio finisce, setta flag per tab switch
   const onAudioEndComplete = () => {
     console.log(`🎬 [MessageTabsView] onAudioEndComplete chiamato`);
-    audioEnd(); // Setta isAudioPlaying = false
-    tabSwitchOnAudioEnd(); // ✅ FIX P1: Chiamata sincrona, elimina race condition
+    audioEnd(); // Setta isAudioPlaying = false (asincrono)
+    
+    // 🔴 Delay per assicurare che isAudioPlaying sia aggiornato
+    setTimeout(() => {
+      setShouldSwitchTab(true);
+    }, 50); // 50ms delay
   };
+
+  // 🎯 Effetto: cambia tab DOPO che isAudioPlaying è aggiornato
+  useEffect(() => {
+    if (shouldSwitchTab && !isAudioPlaying) {
+      console.log(`🔄 [MessageTabsView] Sincronizzazione completata, cambio tab`);
+      tabSwitchOnAudioEnd();
+      setShouldSwitchTab(false);
+    }
+  }, [shouldSwitchTab, isAudioPlaying, tabSwitchOnAudioEnd]);
 
   if (messages.length === 0) {
     return null;
   }
 
-  // ✅ FIX P12: Lazy rendering - renderizza solo tab attivo + precedente/successivo
-  const activeIndex = messages.findIndex(m => m.id === activeTab);
-  const visibleMessages = messages.filter((_, index) => {
-    return Math.abs(index - activeIndex) <= 1; // Attivo + 1 prima + 1 dopo
-  });
-
-  const handleTabChange = (newTab: string) => {
-    console.log(`🔄 [MessageTabsView] Manual tab change: ${activeTab} -> ${newTab}`);
-    setActiveTab(newTab);
-  };
-
   return (
-    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full flex flex-col">
-      <TabNavigation messages={messages} activeTab={activeTab} onTabChange={handleTabChange} />
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
+      <TabNavigation messages={messages} activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="flex-1 relative">
-        {visibleMessages.map((message) => (
+        {messages.map((message) => (
           <TabsContent
             key={message.id}
             value={message.id}
@@ -102,7 +107,7 @@ export const MessageTabsView = ({
               <MultiAgentMessage
                 message={message}
                 onAudioEnd={onAudioEndComplete}
-                onAudioStateChange={(playing) => (playing ? handleAudioStart() : onAudioEndComplete())}
+                onAudioStateChange={(playing) => (playing ? handleAudioStart() : audioEnd())}
               />
               <div ref={messagesEndRef} />
             </div>

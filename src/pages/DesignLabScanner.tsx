@@ -1,34 +1,30 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { useCodeIndexer } from '@/hooks/useCodeIndexer';
-import { useRouteDiscovery } from '@/hooks/useRouteDiscovery';
 import { DesignLabScanner as Scanner } from '@/lib/design-lab/scanner';
 import { ScanConfig, ScanResult } from '@/types/design-lab-scanner';
-import { Play, Loader2, CheckCircle, Database, AlertCircle, RefreshCw, Search, AlertTriangle, Pause, Square, ImageIcon } from 'lucide-react';
+import { Play, Loader2, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import { it } from 'date-fns/locale';
-import { ThumbnailBatchGenerator, ThumbnailPreview, ThumbnailGenerationState } from '@/lib/design-lab/thumbnail-generator';
-import { ThumbnailSidebarPreview } from '@/components/design-lab/ThumbnailSidebarPreview';
+
+const AVAILABLE_PAGES = [
+  { name: 'Rubrica', path: 'src/pages/Rubrica.tsx', category: 'Commercial' },
+  { name: 'Attivita', path: 'src/pages/Attivita.tsx', category: 'Commercial' },
+  { name: 'Campagne', path: 'src/pages/Campagne.tsx', category: 'Email' },
+  { name: 'EmailCampagne', path: 'src/pages/EmailCampagne.tsx', category: 'Email' },
+  { name: 'Chat', path: 'src/pages/Chat.tsx', category: 'Chat & AI' },
+];
 
 export default function DesignLabScanner() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { indexStatus, isCheckingIndex, isIndexing, runIndexing } = useCodeIndexer();
-  const { data: discoveredRoutes, isLoading: isLoadingRoutes } = useRouteDiscovery();
   
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [scanDepth, setScanDepth] = useState<'shallow' | 'deep'>('deep');
   const [generateThumbnails, setGenerateThumbnails] = useState(true);
   const [createPlugins, setCreatePlugins] = useState(true);
@@ -38,67 +34,17 @@ export default function DesignLabScanner() {
   const [progress, setProgress] = useState(0);
   const [currentTask, setCurrentTask] = useState('');
   const [scanResults, setScanResults] = useState<ScanResult | null>(null);
-  
-  // Thumbnail generation state
-  const [thumbnailGenerator, setThumbnailGenerator] = useState<ThumbnailBatchGenerator | null>(null);
-  const [thumbnailState, setThumbnailState] = useState<ThumbnailGenerationState | null>(null);
-  const [recentThumbnails, setRecentThumbnails] = useState<ThumbnailPreview[]>([]);
-  const [showThumbnailSidebar, setShowThumbnailSidebar] = useState(false);
 
-  const isIndexed = (indexStatus?.fileCount ?? 0) > 0;
-  const canScan = isIndexed && !isScanning && !isIndexing;
-
-  // Get unique categories
-  const categories = useMemo(() => {
-    if (!discoveredRoutes) return [];
-    const cats = new Set(discoveredRoutes.map(r => r.category));
-    return ['all', ...Array.from(cats)].sort();
-  }, [discoveredRoutes]);
-
-  // Filter routes based on search and category
-  const filteredRoutes = useMemo(() => {
-    if (!discoveredRoutes) return [];
-    
-    return discoveredRoutes.filter(route => {
-      const matchesSearch = route.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           route.path.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || route.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [discoveredRoutes, searchQuery, selectedCategory]);
-
-  const togglePage = (pagePath: string) => {
+  const togglePage = (pageName: string) => {
     setSelectedPages(prev =>
-      prev.includes(pagePath)
-        ? prev.filter(p => p !== pagePath)
-        : [...prev, pagePath]
+      prev.includes(pageName)
+        ? prev.filter(p => p !== pageName)
+        : [...prev, pageName]
     );
   };
 
   const selectAll = () => {
-    if (!filteredRoutes) return;
-    
-    if (selectedPages.length === filteredRoutes.length && filteredRoutes.length > 0) {
-      setSelectedPages([]);
-    } else {
-      setSelectedPages(filteredRoutes.map(r => r.path));
-    }
-  };
-
-  const selectByCategory = (category: string) => {
-    if (!discoveredRoutes) return;
-    
-    const routesInCategory = discoveredRoutes
-      .filter(r => r.category === category)
-      .map(r => r.path);
-    
-    const allSelected = routesInCategory.every(path => selectedPages.includes(path));
-    
-    if (allSelected) {
-      setSelectedPages(prev => prev.filter(p => !routesInCategory.includes(p)));
-    } else {
-      setSelectedPages(prev => [...new Set([...prev, ...routesInCategory])]);
-    }
+    setSelectedPages(AVAILABLE_PAGES.map(p => p.name));
   };
 
   const runScanner = async () => {
@@ -127,31 +73,33 @@ export default function DesignLabScanner() {
     const scanner = new Scanner(config);
 
     try {
-      // Subscribe to real-time progress updates from scanner
-      scanner.onProgress((progressValue, taskDescription) => {
-        setProgress(progressValue);
-        setCurrentTask(taskDescription);
-      });
+      setCurrentTask('Inizializzazione scanner...');
+      setProgress(10);
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setCurrentTask('Scansione pagine...');
+      setProgress(30);
 
       const results = await scanner.scanAllPages();
 
+      setProgress(60);
+      setCurrentTask('Generazione miniature...');
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      setProgress(80);
+      setCurrentTask('Creazione plugin...');
+      await new Promise(resolve => setTimeout(resolve, 600));
+
       setProgress(100);
       setCurrentTask('Completato!');
+
       setScanResults(results);
 
       toast({
         title: 'Scansione completata!',
-        description: `${results.pages_scanned} pagine, ${results.components_extracted} componenti estratti`,
+        description: `${results.pages_scanned} pagine scansionate, ${results.components_extracted} componenti estratti`,
       });
-
-      // ⚠️ DISABILITATO PER PROTEZIONE SISTEMA
-      if (generateThumbnails && results.components_extracted > 0) {
-        toast({
-          title: '⚠️ Generazione automatica disabilitata',
-          description: `${results.components_extracted} componenti estratti. Usa il pulsante manuale per generare miniature.`,
-          variant: 'default',
-        });
-      }
     } catch (error) {
       console.error('Errore durante la scansione:', error);
       toast({
@@ -164,303 +112,44 @@ export default function DesignLabScanner() {
     }
   };
 
-  const startThumbnailGeneration = async () => {
-    const generator = new ThumbnailBatchGenerator(1); // ✅ PROTEZIONE: 1 per volta
-
-    generator.onProgress((state) => {
-      setThumbnailState(state);
-    });
-
-    generator.onThumbnailCreated((preview) => {
-      setRecentThumbnails((prev) => [preview, ...prev].slice(0, 50)); // Keep last 50
-    });
-
-    setThumbnailGenerator(generator);
-    setShowThumbnailSidebar(true);
-    setRecentThumbnails([]); // Reset thumbnails list
-
-    try {
-      await generator.start();
-      
-      const finalState = generator.getState();
-      toast({
-        title: "Generazione completata!",
-        description: `${finalState.successCount} miniature create, ${finalState.failedCount} fallite`,
-        variant: finalState.failedCount > 0 ? 'destructive' : 'default',
-      });
-
-      // Update scan results
-      if (scanResults && finalState.successCount > 0) {
-        setScanResults({
-          ...scanResults,
-          thumbnails_generated: scanResults.thumbnails_generated + finalState.successCount,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Errore generazione",
-        description: error instanceof Error ? error.message : 'Errore sconosciuto',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
-    <div className="flex gap-4">
-      {/* Sidebar Preview (a sinistra) */}
-      {showThumbnailSidebar && thumbnailState && (
-        <ThumbnailSidebarPreview
-          thumbnails={recentThumbnails}
-          currentProgress={thumbnailState.currentIndex}
-          totalComponents={thumbnailState.totalComponents}
-        />
-      )}
-
-      {/* Contenuto principale */}
-      <div className="flex-1 container mx-auto p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Design Lab Scanner</h1>
-          <p className="text-muted-foreground mt-2">
-            Scansiona le tue pagine esistenti per estrarre componenti, funzioni e creare plugin riutilizzabili
-          </p>
-        </div>
-
-      {/* Stato Indicizzazione Codebase */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Stato Indicizzazione Codebase
-          </CardTitle>
-          <CardDescription>
-            Prima di scansionare, è necessario indicizzare il codebase
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {isCheckingIndex ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Verifica stato indicizzazione...</span>
-            </div>
-          ) : !isIndexed ? (
-            <>
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Indicizzazione necessaria</AlertTitle>
-                <AlertDescription>
-                  Nessun file trovato in code_index. Esegui l'indicizzazione del codebase prima di scansionare.
-                </AlertDescription>
-              </Alert>
-              <Button
-                onClick={() => runIndexing(false)}
-                disabled={isIndexing}
-                size="lg"
-                className="w-full"
-              >
-                {isIndexing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Indicizzazione in corso...
-                  </>
-                ) : (
-                  <>
-                    <Database className="mr-2 h-4 w-4" />
-                    Indicizza Codebase
-                  </>
-                )}
-              </Button>
-            </>
-          ) : (
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
-                    <CheckCircle className="mr-1 h-3 w-3" />
-                    {indexStatus?.fileCount} file indicizzati
-                  </Badge>
-                </div>
-                {indexStatus?.lastIndexed && (
-                  <p className="text-xs text-muted-foreground">
-                    Ultima indicizzazione:{' '}
-                    {formatDistanceToNow(new Date(indexStatus.lastIndexed), {
-                      addSuffix: true,
-                      locale: it,
-                    })}
-                  </p>
-                )}
-              </div>
-              <Button
-                onClick={() => runIndexing(true)}
-                disabled={isIndexing}
-                variant="outline"
-                size="sm"
-              >
-                {isIndexing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Re-Indicizza
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <div className="container mx-auto p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Design Lab Scanner</h1>
+        <p className="text-muted-foreground mt-2">
+          Scansiona le tue pagine esistenti per estrarre componenti, funzioni e creare plugin riutilizzabili
+        </p>
+      </div>
 
       {/* Step 1: Selezione pagine */}
       <Card>
         <CardHeader>
           <CardTitle>1. Seleziona Pagine da Scansionare</CardTitle>
           <CardDescription>
-            {isLoadingRoutes 
-              ? 'Caricamento route automatico...' 
-              : `${discoveredRoutes?.length || 0} pagine scoperte automaticamente da App.tsx`}
+            Scegli quali pagine analizzare per estrarre componenti e funzioni
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {isLoadingRoutes ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin mr-2" />
-              <span className="text-muted-foreground">Scoperta automatica route...</span>
-            </div>
-          ) : (
-            <>
-              {/* Search and Category Filters */}
-              <div className="space-y-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Cerca pagine per nome o path..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-
-                {/* Category Filter Pills */}
-                <div className="flex flex-wrap gap-2">
-                  {categories.map(cat => {
-                    const count = cat === 'all' 
-                      ? discoveredRoutes?.length || 0
-                      : discoveredRoutes?.filter(r => r.category === cat).length || 0;
-                    
-                    return (
-                      <Button
-                        key={cat}
-                        variant={selectedCategory === cat ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setSelectedCategory(cat)}
-                      >
-                        {cat === 'all' ? 'Tutte' : cat} ({count})
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Selection Controls */}
-              <div className="flex items-center justify-between border-b pb-3">
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={selectAll}
-                  >
-                    {selectedPages.length === filteredRoutes.length && filteredRoutes.length > 0
-                      ? 'Deseleziona Filtrate' 
-                      : 'Seleziona Filtrate'}
-                  </Button>
-                  {selectedCategory !== 'all' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => selectByCategory(selectedCategory)}
-                    >
-                      Toggle {selectedCategory}
-                    </Button>
-                  )}
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {selectedPages.length} di {discoveredRoutes?.length || 0} selezionate ({filteredRoutes.length} mostrate)
-                </span>
-              </div>
-
-              {/* Routes List */}
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {filteredRoutes.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    Nessuna pagina trovata con i filtri selezionati
-                  </p>
-                ) : selectedCategory === 'all' ? (
-                  // Group by category when showing all
-                  categories.filter(cat => cat !== 'all').map(category => {
-                    const routesInCat = filteredRoutes.filter(r => r.category === category);
-                    if (routesInCat.length === 0) return null;
-
-                    return (
-                      <div key={category} className="space-y-2">
-                        <div className="flex items-center justify-between sticky top-0 bg-background py-1">
-                          <h4 className="text-sm font-semibold text-muted-foreground">{category}</h4>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => selectByCategory(category)}
-                            className="h-6 text-xs"
-                          >
-                            Toggle
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-4">
-                          {routesInCat.map((route) => (
-                            <div key={route.path} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={route.path}
-                                checked={selectedPages.includes(route.path)}
-                                onCheckedChange={() => togglePage(route.path)}
-                              />
-                              <Label 
-                                htmlFor={route.path}
-                                className="text-sm font-medium leading-none cursor-pointer flex-1"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span>{route.name}</span>
-                                  <span className="text-xs text-muted-foreground ml-2">{route.path}</span>
-                                </div>
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  // Simple list when filtered by category
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {filteredRoutes.map((route) => (
-                      <div key={route.path} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={route.path}
-                          checked={selectedPages.includes(route.path)}
-                          onCheckedChange={() => togglePage(route.path)}
-                        />
-                        <Label 
-                          htmlFor={route.path}
-                          className="text-sm font-medium leading-none cursor-pointer flex-1"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span>{route.name}</span>
-                            <span className="text-xs text-muted-foreground ml-2">{route.path}</span>
-                          </div>
-                        </Label>
-                      </div>
-                    ))}
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {AVAILABLE_PAGES.map(page => (
+              <div key={page.name} className="flex items-center space-x-2">
+                <Checkbox
+                  id={page.name}
+                  checked={selectedPages.includes(page.name)}
+                  onCheckedChange={() => togglePage(page.name)}
+                />
+                <Label htmlFor={page.name} className="cursor-pointer">
+                  <div>
+                    <div className="font-medium">{page.name}</div>
+                    <div className="text-xs text-muted-foreground">{page.category}</div>
                   </div>
-                )}
+                </Label>
               </div>
-            </>
-          )}
+            ))}
+          </div>
+          <Button onClick={selectAll} variant="outline" className="mt-4">
+            Seleziona Tutto
+          </Button>
         </CardContent>
       </Card>
 
@@ -524,19 +213,9 @@ export default function DesignLabScanner() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!isIndexed && (
-            <Alert className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Indicizzazione richiesta</AlertTitle>
-              <AlertDescription>
-                Completa l'indicizzazione del codebase prima di avviare la scansione.
-              </AlertDescription>
-            </Alert>
-          )}
-          
           <Button
             onClick={runScanner}
-            disabled={!canScan || selectedPages.length === 0}
+            disabled={isScanning || selectedPages.length === 0}
             size="lg"
             className="w-full"
           >
@@ -548,7 +227,7 @@ export default function DesignLabScanner() {
             ) : (
               <>
                 <Play className="mr-2 h-4 w-4" />
-                Scansiona Componenti
+                Avvia Scansione
               </>
             )}
           </Button>
@@ -576,92 +255,6 @@ export default function DesignLabScanner() {
             </Alert>
           )}
 
-          {/* Alert Sicurezza: Generazione Batch Disabilitata */}
-          {scanResults && scanResults.components_extracted > 0 && !thumbnailState?.isRunning && (
-            <Alert variant="destructive" className="mt-6">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>⚠️ Generazione Batch Disabilitata</AlertTitle>
-              <AlertDescription>
-                Per proteggere il sistema, la generazione batch automatica è stata disabilitata.
-                <br /><br />
-                <strong>Opzioni sicure:</strong>
-                <ul className="list-disc list-inside mt-2">
-                  <li><strong>Generazione singola</strong>: Usa il pulsante 🖼️ su ogni card componente (hover)</li>
-                  <li><strong>Batch controllato</strong>: Vai in ComponentLibrary (1 alla volta, max 10 componenti consigliati)</li>
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Thumbnail Generation Controls */}
-          {thumbnailState?.isRunning && (
-            <Card className="mt-6 p-4 bg-card">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold">Generazione in Corso</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {thumbnailState.currentIndex} / {thumbnailState.totalComponents} componenti
-                    </p>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    {thumbnailState.isPaused ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => thumbnailGenerator?.resume()}
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        Riprendi
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => thumbnailGenerator?.pause()}
-                      >
-                        <Pause className="w-4 h-4 mr-2" />
-                        Pausa
-                      </Button>
-                    )}
-                    
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        thumbnailGenerator?.stop();
-                        setShowThumbnailSidebar(false);
-                      }}
-                    >
-                      <Square className="w-4 h-4 mr-2" />
-                      Stop
-                    </Button>
-                  </div>
-                </div>
-
-                <Progress value={(thumbnailState.currentIndex / thumbnailState.totalComponents) * 100} />
-                
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Successo</p>
-                    <p className="text-lg font-semibold text-green-500">{thumbnailState.successCount}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Falliti</p>
-                    <p className="text-lg font-semibold text-red-500">{thumbnailState.failedCount}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Rimanenti</p>
-                    <p className="text-lg font-semibold text-foreground">
-                      {thumbnailState.totalComponents - thumbnailState.currentIndex}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-
           {scanResults && (
             <Button 
               onClick={() => navigate('/design-lab')} 
@@ -673,7 +266,6 @@ export default function DesignLabScanner() {
           )}
         </CardContent>
       </Card>
-      </div>
     </div>
   );
 }

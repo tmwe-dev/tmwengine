@@ -45,7 +45,7 @@ export const AudioMessagePlayer = ({
       setIsPlaying(false);
       onPlayingChange?.(false);
       onError?.(new Error('Audio playback failed'));
-      onPlayEnd?.(); // ✅ FIX P2: Chiamare onPlayEnd anche su errore per triggare tab switch
+      // ✅ FIX 2: onPlayEnd viene chiamato da onError in MultiAgentMessage, evitiamo doppia chiamata
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);

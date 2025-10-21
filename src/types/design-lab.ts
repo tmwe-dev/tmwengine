@@ -22,8 +22,6 @@ export interface DesignLabComponent {
   parent_id?: string;
   order_index: number;
   created_at: string;
-  // TICKET 5: Link to extracted component for real rendering
-  extracted_component?: any; // ExtractedComponent from design-lab-scanner
 }
 
 export interface DesignLabLogic {

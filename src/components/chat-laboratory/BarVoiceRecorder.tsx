@@ -34,26 +34,12 @@ export const BarVoiceRecorder = ({
   const SILENCE_THRESHOLD = 0.05;  // Volume sotto questo = silenzio
   const SILENCE_DURATION = vadTimeout * 1000;    // VAD timeout configurabile in millisecondi
 
-  // ✅ FIX P3: Cleanup completo on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (audioContextRef.current?.state !== 'closed') {
-        audioContextRef.current?.close();
-      }
-      if (analyserRef.current) {
-        analyserRef.current.disconnect();
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (silenceTimerRef.current) {
-        clearInterval(silenceTimerRef.current);
+      stopRecording();
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
       }
     };
   }, []);

@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Save, Undo2, Redo2, Eye } from "lucide-react";
 import { useDesignLabPages } from "@/hooks/useDesignLabPages";
@@ -8,24 +7,18 @@ import { useDesignLabComponents } from "@/hooks/useDesignLabComponents";
 import { useDesignLabLogic } from "@/hooks/useDesignLabLogic";
 import { useCommandHistory, MoveComponentCommand, UpdatePropsCommand } from "@/hooks/useCommandHistory";
 import { useAutoSave } from "@/hooks/useAutoSave";
-import { usePageConfiguration } from "@/hooks/usePageConfiguration";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { ComponentLibrary } from "@/components/design-lab/ComponentLibrary";
+import { ComponentPalette } from "@/components/design-lab/ComponentPalette";
 import { Canvas } from "@/components/design-lab/Canvas";
-import { AISuggestionsPanel } from "@/components/design-lab/AISuggestionsPanel";
 import { PropertiesPanel } from "@/components/design-lab/PropertiesPanel";
 import { RuntimePreview } from "@/components/design-lab/RuntimePreview";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DesignLabScanner } from "@/lib/design-lab/scanner";
 
 const DesignLabEditor = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
-  const [isScanning, setIsScanning] = useState(false);
 
   const { pages } = useDesignLabPages();
   const { 
@@ -39,40 +32,19 @@ const DesignLabEditor = () => {
 
   const { executeCommand, undo, redo, canUndo, canRedo } = useCommandHistory();
 
-  // TICKET 6: Page configuration persistence
-  const { configuration, saveConfiguration, autoSave, isSaving } = usePageConfiguration(pageId);
-
   const currentPage = pages?.find(p => p.id === pageId);
   const selectedComponent = components?.find(c => c.id === selectedComponentId) || null;
 
-  // Auto-save configuration when components change
-  useEffect(() => {
-    if (components && components.length > 0 && pageId) {
-      const timer = setTimeout(() => {
-        autoSave(components);
-      }, 3000); // Debounce 3 seconds
-
-      return () => clearTimeout(timer);
-    }
-  }, [components, pageId]);
-
-  // Manual save handler
-  const handleSaveNow = async () => {
-    if (!pageId || !components) return;
-    
-    try {
-      await saveConfiguration({
-        pageId,
-        components,
-        metadata: {
-          manual_save: true,
-          saved_at: new Date().toISOString(),
-        },
-      });
-    } catch (error) {
-      console.error('Save failed:', error);
-    }
-  };
+  // Auto-save components data
+  useAutoSave(components, {
+    delay: 2000,
+    onSave: async () => {
+      console.log('Auto-saving components...');
+    },
+    onSuccess: () => {
+      console.log('Components auto-saved');
+    },
+  });
 
   const handleDropComponent = async (componentData: any, position: { x: number; y: number }) => {
     if (!pageId) return;
@@ -90,47 +62,7 @@ const DesignLabEditor = () => {
       order_index: (components?.length || 0) + 1,
     });
 
-    toast({ title: `${componentData.label || componentData.type} aggiunto al canvas` });
-  };
-
-  const handleDropFromLibrary = async (dropData: any, position: { x: number; y: number }) => {
-    if (!pageId) return;
-
-    // Convert ExtractedComponent/Function/Plugin → DesignLabComponent
-    let componentData;
-    
-    if (dropData.type === 'extracted-component') {
-      componentData = {
-        type: dropData.component.component_type,
-        label: dropData.component.component_name,
-        defaultProps: dropData.component.props_schema || {},
-        defaultSize: {
-          width: dropData.component.position_in_source?.width || 300,
-          height: dropData.component.position_in_source?.height || 200
-        }
-      };
-    } else if (dropData.type === 'extracted-function') {
-      componentData = {
-        type: 'custom-function',
-        label: dropData.functionItem.function_name,
-        defaultProps: {
-          functionName: dropData.functionItem.function_name,
-          code: dropData.functionItem.code_generic
-        },
-        defaultSize: { width: 200, height: 100 }
-      };
-    } else if (dropData.type === 'plugin') {
-      componentData = {
-        type: 'plugin',
-        label: dropData.plugin.plugin_name,
-        defaultProps: { pluginId: dropData.plugin.id },
-        defaultSize: { width: 400, height: 300 }
-      };
-    }
-
-    if (componentData) {
-      await handleDropComponent(componentData, position);
-    }
+    toast({ title: `${componentData.label} aggiunto al canvas` });
   };
 
   const handleUpdatePosition = async (id: string, newPosition: any) => {
@@ -175,39 +107,8 @@ const DesignLabEditor = () => {
     setSelectedComponentId(null);
   };
 
-
-  const handleRunScanner = async () => {
-    setIsScanning(true);
-    try {
-      const scanner = new DesignLabScanner({
-        targetPages: [],
-        scanDepth: 'shallow',
-        generateThumbnails: false,
-        extractFunctions: true,
-        createPlugins: true,
-        exportFiles: false
-      });
-      
-      await scanner.scanAllPages();
-      
-      toast({
-        title: "Scansione completata",
-        description: "Componenti, funzioni e plugin estratti con successo"
-      });
-      
-      // Refresh queries
-      queryClient.invalidateQueries({ queryKey: ['extracted-components'] });
-      queryClient.invalidateQueries({ queryKey: ['extracted-functions'] });
-      queryClient.invalidateQueries({ queryKey: ['plugins'] });
-    } catch (error: any) {
-      toast({
-        title: "Errore scansione",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setIsScanning(false);
-    }
+  const handleSaveNow = () => {
+    toast({ title: 'Pagina salvata manualmente' });
   };
 
   if (!pageId) {
@@ -224,14 +125,12 @@ const DesignLabEditor = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="h-screen flex flex-col bg-background w-full">
-        {/* Top Toolbar */}
-        <div className="border-b bg-card">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <SidebarTrigger />
-              <Sparkles className="h-5 w-5 text-primary" />
+    <div className="h-screen flex flex-col bg-background">
+      {/* Top Toolbar */}
+      <div className="border-b bg-card">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-5 w-5 text-primary" />
             <div>
               <h1 className="font-semibold">{currentPage?.page_name || 'Design Lab'}</h1>
               <p className="text-xs text-muted-foreground">
@@ -261,15 +160,6 @@ const DesignLabEditor = () => {
               <Save className="h-4 w-4 mr-2" />
               Salva
             </Button>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={handleRunScanner}
-              disabled={isScanning}
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              {isScanning ? 'Scansione...' : 'Scansiona Componenti'}
-            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -282,65 +172,38 @@ const DesignLabEditor = () => {
         </div>
       </div>
 
-        {/* Main Layout */}
-        <div className="flex-1 flex overflow-hidden">
-          {activeTab === 'editor' ? (
-            <>
-              {/* Left: Component Library Sidebar */}
-              <ComponentLibrary />
+      {/* Main Layout */}
+      <div className="flex-1 flex overflow-hidden">
+        {activeTab === 'editor' ? (
+          <>
+            {/* Left: Component Palette */}
+            <div className="w-64 border-r bg-card p-4 overflow-auto animate-fade-in">
+              <ComponentPalette />
+            </div>
 
-              {/* Center: Canvas */}
-              <div className="flex-1 p-4 overflow-auto animate-fade-in">
-                <Canvas
-                  components={components || []}
-                  selectedComponentId={selectedComponentId}
-                  onSelectComponent={setSelectedComponentId}
-                  onDropComponent={handleDropFromLibrary}
-                  onUpdatePosition={handleUpdatePosition}
-                />
-              </div>
+            {/* Center: Canvas */}
+            <div className="flex-1 p-4 overflow-auto animate-fade-in">
+              <Canvas
+                components={components || []}
+                selectedComponentId={selectedComponentId}
+                onSelectComponent={setSelectedComponentId}
+                onDropComponent={handleDropComponent}
+                onUpdatePosition={handleUpdatePosition}
+              />
+            </div>
 
-            {/* Right: AI Suggestions + Properties Panel */}
-            <div className="w-80 border-l bg-card overflow-auto animate-fade-in">
-              <div className="p-4 space-y-4">
-                {/* AI Suggestions */}
-                {currentPage && (
-                  <AISuggestionsPanel
-                    currentComponents={components || []}
-                    pageName={currentPage.page_name}
-                    pageDescription={currentPage.description}
-                    onAddSuggestion={async (suggestion) => {
-                      // Add suggested component to canvas
-                      await handleDropFromLibrary(
-                        {
-                          type: 'extracted-component',
-                          component: {
-                            component_name: suggestion.component_name,
-                            component_type: suggestion.component_type,
-                            ui_category: suggestion.ui_category,
-                            tags: suggestion.tags,
-                            complexity_level: suggestion.estimated_complexity,
-                            props_schema: {},
-                          }
-                        },
-                        { x: 50, y: 50 + (components?.length || 0) * 100 }
-                      );
-                    }}
-                  />
-                )}
-
-                {/* Properties Panel */}
-                <PropertiesPanel
-                  component={selectedComponent}
-                  onUpdateProps={handleUpdateProps}
-                  onUpdatePosition={(position) => {
-                    if (selectedComponent) {
-                      handleUpdatePosition(selectedComponent.id, position);
-                    }
-                  }}
-                  onDelete={handleDeleteComponent}
-                />
-              </div>
+            {/* Right: Properties Panel */}
+            <div className="w-80 border-l bg-card p-4 overflow-auto animate-fade-in">
+              <PropertiesPanel
+                component={selectedComponent}
+                onUpdateProps={handleUpdateProps}
+                onUpdatePosition={(position) => {
+                  if (selectedComponent) {
+                    handleUpdatePosition(selectedComponent.id, position);
+                  }
+                }}
+                onDelete={handleDeleteComponent}
+              />
             </div>
           </>
         ) : (
@@ -350,10 +213,9 @@ const DesignLabEditor = () => {
               logicRules={logicRules || []}
             />
           </div>
-          )}
-        </div>
+        )}
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 

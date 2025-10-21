@@ -1,7 +1,10 @@
-import { useState, useRef, useEffect, RefObject } from "react";
+import { memo, useState, useRef, useEffect, RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { DesignLabComponent } from "@/types/design-lab";
-import { ComponentRenderer } from "./ComponentRenderer";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { GripVertical } from "lucide-react";
 import { GuideLine, DistanceInfo, getGuideLines, snapToGuides, calculateNearestDistances } from "@/lib/design-lab/snap-guides";
 
@@ -16,17 +19,37 @@ interface CanvasElementProps {
   onDistancesChange: (distances: DistanceInfo[]) => void;
 }
 
+const ComponentRenderer = ({ type, props }: { type: string; props: any }) => {
+  switch (type) {
+    case 'input':
+      return <Input {...props} />;
+    case 'button':
+      return <Button {...props}>{props.children || 'Button'}</Button>;
+    case 'checkbox':
+      return (
+        <div className="flex items-center space-x-2">
+          <Checkbox {...props} />
+          <label className="text-sm">{props.label || 'Checkbox'}</label>
+        </div>
+      );
+    case 'textarea':
+      return <Textarea {...props} />;
+    default:
+      return <div className="p-2 border rounded">Unknown: {type}</div>;
+  }
+};
 
-export const CanvasElement = ({
-  component, 
-  isSelected, 
-  onSelect, 
-  onUpdatePosition, 
-  canvasRef, 
-  components,
-  onGuidesChange,
-  onDistancesChange
-}: CanvasElementProps) => {
+export const CanvasElement = memo(
+  ({ 
+    component, 
+    isSelected, 
+    onSelect, 
+    onUpdatePosition, 
+    canvasRef, 
+    components,
+    onGuidesChange,
+    onDistancesChange
+  }: CanvasElementProps) => {
   const elementRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -137,14 +160,14 @@ export const CanvasElement = ({
       });
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = async () => {
       setIsDragging(false);
       onGuidesChange([]);
       onDistancesChange([]);
       
-      // Salva la posizione finale nel database
+      // Salva la posizione finale nel database e aspetta il completamento
       if (localPosition) {
-        onUpdatePosition({
+        await onUpdatePosition({
           x: localPosition.x,
           y: localPosition.y,
           width: position.width,
@@ -189,18 +212,9 @@ export const CanvasElement = ({
           </div>
         )}
 
-        {/* Component content - TICKET 5: Real component rendering */}
-        <div className="w-full h-full pointer-events-none overflow-hidden">
-          {component.extracted_component ? (
-            <ComponentRenderer 
-              component={component.extracted_component} 
-              props={component.props || {}} 
-            />
-          ) : (
-            <div className="p-2 border rounded text-xs text-muted-foreground">
-              {component.component_type}
-            </div>
-          )}
+        {/* Component content */}
+        <div className="w-full h-full pointer-events-none">
+          <ComponentRenderer type={component.component_type} props={component.props} />
         </div>
 
         {/* Resize handles (for future implementation) */}
@@ -211,4 +225,15 @@ export const CanvasElement = ({
         )}
       </div>
     );
-};
+  },
+  (prev, next) => {
+    return (
+      prev.component.id === next.component.id &&
+      JSON.stringify(prev.component.position) === JSON.stringify(next.component.position) &&
+      JSON.stringify(prev.component.props) === JSON.stringify(next.component.props) &&
+      prev.isSelected === next.isSelected
+    );
+  }
+);
+
+CanvasElement.displayName = 'CanvasElement';

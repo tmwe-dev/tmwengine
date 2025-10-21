@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverlay, closestCenter } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CollapsibleComposerSidebar } from './CollapsibleComposerSidebar';
 import { PromptLibraryColumn } from './PromptLibraryColumn';
 import { CompositionCanvas } from './CompositionCanvas';
-import { generateThumbnailsForSections } from './ThumbnailGenerator';
+import { generateThumbnailsForSections, generateThumbnailForSection } from './ThumbnailGenerator';
+import { PromptCard } from './PromptCard';
 import { PromptSection, ComposedPromptBlock, SectionGroup } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -21,6 +22,7 @@ export function PromptComposer() {
   const [isSaving, setIsSaving] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [generationProgress, setGenerationProgress] = useState<{ current: number; total: number; sectionName: string } | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Load all sections on mount
@@ -146,8 +148,55 @@ export function PromptComposer() {
     });
   };
 
+  const handleDuplicate = async (section: PromptSection) => {
+    try {
+      // Crea copia nel DB con nome "- Copia"
+      const newName = `${section.section_name} - Copia`;
+      
+      const { data, error } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .insert({
+          section_type: section.section_type,
+          section_name: newName,
+          content: section.content,
+          is_active: true,
+          order_priority: section.order_priority + 1,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Prompt Duplicato",
+        description: `"${newName}" creato con successo!`,
+      });
+
+      // Rigenera miniatura per la nuova sezione
+      if (data) {
+        await generateThumbnailForSection(data.id, data.section_name, data.content);
+        
+        toast({
+          title: "📸 Miniatura Generata",
+          description: `Miniatura creata per "${newName}"`,
+        });
+      }
+
+      // Ricarica sezioni
+      await loadAllSections();
+    } catch (error) {
+      console.error('Error duplicating section:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile duplicare il prompt.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveDragId(null); // Reset drag state
 
     if (!over) return;
 
@@ -251,6 +300,8 @@ export function PromptComposer() {
     <DndContext
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
+      onDragStart={(event) => setActiveDragId(event.active.id as string)}
+      onDragCancel={() => setActiveDragId(null)}
     >
       <div className="flex h-full">
         {/* Sidebar collassabile (20px quando chiusa) */}
@@ -266,6 +317,7 @@ export function PromptComposer() {
             sections={filteredSections}
             onGenerateThumbnails={handleGenerateThumbnails}
             onRefresh={handleRefresh}
+            onDuplicate={handleDuplicate}
             isGenerating={isGenerating}
             isRefreshing={isRefreshing}
             generationProgress={generationProgress}
@@ -279,6 +331,21 @@ export function PromptComposer() {
         />
         </div>
       </div>
+
+      {/* DragOverlay per mostrare elemento draggato sopra tutto */}
+      <DragOverlay dropAnimation={null}>
+        {activeDragId ? (
+          <div className="opacity-80 rotate-3 scale-105">
+            {(() => {
+              const section = allSections.find(s => s.id === activeDragId);
+              if (section) {
+                return <PromptCard section={section} isDragging />;
+              }
+              return null;
+            })()}
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 }

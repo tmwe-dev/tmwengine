@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { GripVertical, ImageOff, Loader2, Maximize2 } from 'lucide-react';
+import { GripVertical, ImageOff, Loader2, Maximize2, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { PromptSection } from './types';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -13,12 +14,14 @@ import { useState } from 'react';
 interface PromptCardProps {
   section: PromptSection;
   isDragging?: boolean;
+  onDuplicate?: (section: PromptSection) => Promise<void>;
 }
 
-export function PromptCard({ section, isDragging }: PromptCardProps) {
+export function PromptCard({ section, isDragging, onDuplicate }: PromptCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [fullPreviewOpen, setFullPreviewOpen] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   const draggable = useDraggable({
     id: section.id,
@@ -36,6 +39,18 @@ export function PromptCard({ section, isDragging }: PromptCardProps) {
 
   // Preview: prime 100 caratteri
   const preview = section.content.substring(0, 100) + (section.content.length > 100 ? '...' : '');
+
+  const handleDuplicate = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onDuplicate || isDuplicating) return;
+    
+    setIsDuplicating(true);
+    try {
+      await onDuplicate(section);
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
 
   return (
     <div
@@ -58,6 +73,23 @@ export function PromptCard({ section, isDragging }: PromptCardProps) {
                 {section.section_type}
               </Badge>
             </div>
+            {/* Pulsante Duplicate */}
+            {onDuplicate && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={handleDuplicate}
+                disabled={isDuplicating}
+                title="Duplica questo prompt"
+              >
+                {isDuplicating ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-3 pt-0">

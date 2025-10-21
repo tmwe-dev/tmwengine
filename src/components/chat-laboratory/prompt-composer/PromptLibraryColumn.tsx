@@ -8,6 +8,7 @@ interface PromptLibraryColumnProps {
   sections: PromptSection[];
   onGenerateThumbnails: () => Promise<void>;
   onRefresh: () => Promise<void>;
+  onDuplicate: (section: PromptSection) => Promise<void>;
   isGenerating: boolean;
   isRefreshing: boolean;
   generationProgress?: { current: number; total: number; sectionName: string } | null;
@@ -17,6 +18,7 @@ export function PromptLibraryColumn({
   sections, 
   onGenerateThumbnails,
   onRefresh,
+  onDuplicate,
   isGenerating,
   isRefreshing,
   generationProgress
@@ -83,7 +85,7 @@ export function PromptLibraryColumn({
         )}
       </div>
       
-      <ScrollArea className="flex-1 p-4 min-h-0">
+      <ScrollArea className="flex-1 p-4 h-0">
         <div className="space-y-3">
           {sections.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground text-sm">
@@ -91,7 +93,7 @@ export function PromptLibraryColumn({
             </div>
           ) : (
             sections.map(section => (
-              <PromptCard key={section.id} section={section} />
+              <PromptCard key={section.id} section={section} onDuplicate={onDuplicate} />
             ))
           )}
         </div>

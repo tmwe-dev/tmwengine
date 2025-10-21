@@ -57,7 +57,7 @@ export function CompositionCanvas({
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-muted/10">
+    <div className="flex flex-col h-full bg-muted/10">
       {/* Header Canvas */}
       <div className="p-4 border-b bg-background space-y-3">
         <h3 className="font-semibold text-sm flex items-center gap-2">

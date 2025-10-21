@@ -564,6 +564,36 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_laboratory_composed_prompts: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          name: string
+          section_ids: Json
+          target_agent: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          name: string
+          section_ids?: Json
+          target_agent: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          section_ids?: Json
+          target_agent?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chat_laboratory_conversations: {
         Row: {
           active_participants: Json | null
@@ -873,6 +903,7 @@ export type Database = {
           order_priority: number | null
           section_name: string
           section_type: string
+          thumbnail_url: string | null
           topic_tags: string[] | null
           updated_at: string | null
         }
@@ -884,6 +915,7 @@ export type Database = {
           order_priority?: number | null
           section_name: string
           section_type: string
+          thumbnail_url?: string | null
           topic_tags?: string[] | null
           updated_at?: string | null
         }
@@ -895,6 +927,7 @@ export type Database = {
           order_priority?: number | null
           section_name?: string
           section_type?: string
+          thumbnail_url?: string | null
           topic_tags?: string[] | null
           updated_at?: string | null
         }
@@ -1329,6 +1362,96 @@ export type Database = {
         }
         Relationships: []
       }
+      debugging: {
+        Row: {
+          active_functions: number | null
+          complexity_score: number | null
+          components: Json | null
+          created_at: string | null
+          edge_functions_called: Json | null
+          exports_detected: Json | null
+          function_status_map: Json | null
+          functions_detected: Json | null
+          hardcoded_issues: Json | null
+          hooks_detected: Json | null
+          id: string
+          imports_detected: Json | null
+          inactive_functions: number | null
+          linked_pages: Json | null
+          naming_mismatches: Json | null
+          notes: string | null
+          orphan_functions: Json | null
+          page_file_path: string | null
+          page_name: string
+          page_route: string
+          queries_detected: Json | null
+          scan_timestamp: string | null
+          suspect_functions: number | null
+          tables_used: Json | null
+          total_functions: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          active_functions?: number | null
+          complexity_score?: number | null
+          components?: Json | null
+          created_at?: string | null
+          edge_functions_called?: Json | null
+          exports_detected?: Json | null
+          function_status_map?: Json | null
+          functions_detected?: Json | null
+          hardcoded_issues?: Json | null
+          hooks_detected?: Json | null
+          id?: string
+          imports_detected?: Json | null
+          inactive_functions?: number | null
+          linked_pages?: Json | null
+          naming_mismatches?: Json | null
+          notes?: string | null
+          orphan_functions?: Json | null
+          page_file_path?: string | null
+          page_name: string
+          page_route: string
+          queries_detected?: Json | null
+          scan_timestamp?: string | null
+          suspect_functions?: number | null
+          tables_used?: Json | null
+          total_functions?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          active_functions?: number | null
+          complexity_score?: number | null
+          components?: Json | null
+          created_at?: string | null
+          edge_functions_called?: Json | null
+          exports_detected?: Json | null
+          function_status_map?: Json | null
+          functions_detected?: Json | null
+          hardcoded_issues?: Json | null
+          hooks_detected?: Json | null
+          id?: string
+          imports_detected?: Json | null
+          inactive_functions?: number | null
+          linked_pages?: Json | null
+          naming_mismatches?: Json | null
+          notes?: string | null
+          orphan_functions?: Json | null
+          page_file_path?: string | null
+          page_name?: string
+          page_route?: string
+          queries_detected?: Json | null
+          scan_timestamp?: string | null
+          suspect_functions?: number | null
+          tables_used?: Json | null
+          total_functions?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       design_lab_audit_log: {
         Row: {
           action: string
@@ -1420,48 +1543,66 @@ export type Database = {
       }
       design_lab_extracted_components: {
         Row: {
+          compatibility_context: Json | null
+          complexity_level: string | null
           component_name: string
           component_type: string
           created_at: string
           dependencies: Json | null
+          fields_schema: Json | null
           id: string
           is_reusable: boolean | null
           jsx_code: string
           position_in_source: Json | null
           preview_html: string | null
           props_schema: Json | null
+          section: string | null
           source_page_id: string | null
+          tags: string[] | null
           thumbnail_url: string | null
+          ui_category: string | null
           usage_count: number | null
         }
         Insert: {
+          compatibility_context?: Json | null
+          complexity_level?: string | null
           component_name: string
           component_type: string
           created_at?: string
           dependencies?: Json | null
+          fields_schema?: Json | null
           id?: string
           is_reusable?: boolean | null
           jsx_code: string
           position_in_source?: Json | null
           preview_html?: string | null
           props_schema?: Json | null
+          section?: string | null
           source_page_id?: string | null
+          tags?: string[] | null
           thumbnail_url?: string | null
+          ui_category?: string | null
           usage_count?: number | null
         }
         Update: {
+          compatibility_context?: Json | null
+          complexity_level?: string | null
           component_name?: string
           component_type?: string
           created_at?: string
           dependencies?: Json | null
+          fields_schema?: Json | null
           id?: string
           is_reusable?: boolean | null
           jsx_code?: string
           position_in_source?: Json | null
           preview_html?: string | null
           props_schema?: Json | null
+          section?: string | null
           source_page_id?: string | null
+          tags?: string[] | null
           thumbnail_url?: string | null
+          ui_category?: string | null
           usage_count?: number | null
         }
         Relationships: [
@@ -1476,8 +1617,10 @@ export type Database = {
       }
       design_lab_extracted_functions: {
         Row: {
+          applicable_to: string[] | null
           code_generic: string
           code_original: string
+          compatible_contexts: string[] | null
           complexity_score: number | null
           component_id: string | null
           created_at: string
@@ -1491,10 +1634,13 @@ export type Database = {
           parameters: Json | null
           return_type: string | null
           source_page_id: string | null
+          tags: string[] | null
         }
         Insert: {
+          applicable_to?: string[] | null
           code_generic: string
           code_original: string
+          compatible_contexts?: string[] | null
           complexity_score?: number | null
           component_id?: string | null
           created_at?: string
@@ -1508,10 +1654,13 @@ export type Database = {
           parameters?: Json | null
           return_type?: string | null
           source_page_id?: string | null
+          tags?: string[] | null
         }
         Update: {
+          applicable_to?: string[] | null
           code_generic?: string
           code_original?: string
+          compatible_contexts?: string[] | null
           complexity_score?: number | null
           component_id?: string | null
           created_at?: string
@@ -1525,6 +1674,7 @@ export type Database = {
           parameters?: Json | null
           return_type?: string | null
           source_page_id?: string | null
+          tags?: string[] | null
         }
         Relationships: [
           {
@@ -1613,6 +1763,57 @@ export type Database = {
             columns: ["component_id"]
             isOneToOne: false
             referencedRelation: "design_lab_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_lab_page_configurations: {
+        Row: {
+          component_mappings: Json | null
+          created_at: string | null
+          function_bindings: Json | null
+          id: string
+          metadata: Json | null
+          page_id: string
+          source_page_id: string | null
+          updated_at: string | null
+          validation_rules: Json | null
+        }
+        Insert: {
+          component_mappings?: Json | null
+          created_at?: string | null
+          function_bindings?: Json | null
+          id?: string
+          metadata?: Json | null
+          page_id: string
+          source_page_id?: string | null
+          updated_at?: string | null
+          validation_rules?: Json | null
+        }
+        Update: {
+          component_mappings?: Json | null
+          created_at?: string | null
+          function_bindings?: Json | null
+          id?: string
+          metadata?: Json | null
+          page_id?: string
+          source_page_id?: string | null
+          updated_at?: string | null
+          validation_rules?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_lab_page_configurations_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: true
+            referencedRelation: "design_lab_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_lab_page_configurations_source_page_id_fkey"
+            columns: ["source_page_id"]
+            isOneToOne: false
+            referencedRelation: "design_lab_source_pages"
             referencedColumns: ["id"]
           },
         ]
@@ -3818,6 +4019,39 @@ export type Database = {
         }
         Relationships: []
       }
+      project_history: {
+        Row: {
+          created_at: string | null
+          file_modified: string | null
+          id: string
+          metadata: Json | null
+          operation: string
+          tables_modified: string[] | null
+          timestamp: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_modified?: string | null
+          id?: string
+          metadata?: Json | null
+          operation: string
+          tables_modified?: string[] | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_modified?: string | null
+          id?: string
+          metadata?: Json | null
+          operation?: string
+          tables_modified?: string[] | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       rubrica: {
         Row: {
           alias: string | null
@@ -4360,6 +4594,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      thumbnail_generation_logs: {
+        Row: {
+          attempt_number: number | null
+          component_id: string | null
+          component_name: string
+          created_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          error_stack: string | null
+          id: string
+          status: string
+        }
+        Insert: {
+          attempt_number?: number | null
+          component_id?: string | null
+          component_name: string
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          error_stack?: string | null
+          id?: string
+          status: string
+        }
+        Update: {
+          attempt_number?: number | null
+          component_id?: string | null
+          component_name?: string
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          error_stack?: string | null
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thumbnail_generation_logs_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "design_lab_extracted_components"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tmwe_api_benchmark_results: {
         Row: {

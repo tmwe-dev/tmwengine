@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PromptComposer } from './prompt-composer/PromptComposer';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Brain, Loader2, BookOpen, ChevronDown, Copy, Check } from 'lucide-react';
@@ -416,7 +417,7 @@ ESEMPI:
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="global">🌐 Globale</TabsTrigger>
             <TabsTrigger value="base">
               📚 Base {baseSections.length > 0 && `(${baseSections.length})`}
@@ -428,6 +429,7 @@ ESEMPI:
               💬 Stili {styleSections.length > 0 && `(${styleSections.length})`}
             </TabsTrigger>
             <TabsTrigger value="orchestrator">🧠 Orchestrator</TabsTrigger>
+            <TabsTrigger value="composer">🧩 Compositore</TabsTrigger>
           </TabsList>
 
           {/* GLOBAL TAB */}
@@ -940,6 +942,11 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
                 Nessuna sezione orchestrator trovata. Ricaricare la pagina.
               </div>
             )}
+          </TabsContent>
+
+          {/* COMPOSER TAB */}
+          <TabsContent value="composer" className="flex-1 overflow-hidden">
+            <PromptComposer />
           </TabsContent>
         </Tabs>
       </DialogContent>

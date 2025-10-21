@@ -232,7 +232,7 @@ export function PromptComposer() {
         />
         
         {/* Layout 50/50 per Library e Canvas */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex">
           <PromptLibraryColumn
             sections={filteredSections}
             onRefresh={handleRefresh}

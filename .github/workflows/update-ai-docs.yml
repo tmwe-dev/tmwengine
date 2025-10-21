@@ -1,0 +1,54 @@
+name: Update AI Collaboration Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Update change-history.md
+        run: |
+          echo "Updating change-history.md..."
+          
+          echo "# 📝 Change History" > docs/ai-collaboration/change-history.md
+          echo "" >> docs/ai-collaboration/change-history.md
+          echo "> **Formato**: [Data] [Autore] [Tipo] [File] - Descrizione" >> docs/ai-collaboration/change-history.md
+          echo "" >> docs/ai-collaboration/change-history.md
+          echo "---" >> docs/ai-collaboration/change-history.md
+          echo "" >> docs/ai-collaboration/change-history.md
+          
+          git log -20 --pretty=format:"## %ad%n### %h - %s%n- **Autore**: %an%n- **File**: %n%n\`\`\`%n%b%n\`\`\`%n" --date=format:'%Y-%m-%d %H:%M' >> docs/ai-collaboration/change-history.md
+          
+          echo "" >> docs/ai-collaboration/change-history.md
+          echo "---" >> docs/ai-collaboration/change-history.md
+          echo "*Auto-generato da Git log via GitHub Action*" >> docs/ai-collaboration/change-history.md
+
+      - name: Update project-overview.md timestamp
+        run: |
+          sed -i "s/\*Auto-generato:.*\*/\*Auto-generato: $(date -u +"%Y-%m-%dT%H:%M:%SZ")\*/g" docs/ai-collaboration/project-overview.md
+          sed -i "s/\*Ultimo aggiornamento:.*\*/\*Ultimo aggiornamento: $(date -u +"%Y-%m-%dT%H:%M:%SZ")\*/g" docs/ai-collaboration/project-overview.md
+
+      - name: Commit changes
+        run: |
+          git config user.name "AI Docs Bot"
+          git config user.email "ai-docs-bot@github-actions"
+          git add docs/ai-collaboration/
+          git diff --quiet && git diff --staged --quiet || git commit -m "docs: Update AI collaboration docs [skip ci]"
+          git push || echo "No changes to push"

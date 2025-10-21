@@ -57,6 +57,8 @@ import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import DesignLab from "./pages/DesignLab";
 import DesignLabDashboard from "./pages/DesignLabDashboard";
 import DesignLabScanner from "./pages/DesignLabScanner";
+import { ErrorBoundaryWithLogging } from "./components/ErrorBoundaryWithLogging";
+import { AITasksDashboard } from "./components/ai-collaboration/AITasksDashboard";
 
 const queryClient = new QueryClient();
 
@@ -189,7 +191,11 @@ const App = () => {
             } />
             <Route path="/chat-laboratory" element={
               <ProtectedRoute>
-                <CRMLayout><ChatLaboratory /></CRMLayout>
+                <CRMLayout>
+                  <ErrorBoundaryWithLogging>
+                    <ChatLaboratory />
+                  </ErrorBoundaryWithLogging>
+                </CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/radio-chat" element={
@@ -364,6 +370,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <DesignLabScanner />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/ai-tasks" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <AITasksDashboard />
                 </CRMLayout>
               </ProtectedRoute>
             } />

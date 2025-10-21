@@ -111,7 +111,6 @@ export function PromptCard({ section, isDragging, onEdit }: PromptCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
       className={cn(
         "transition-opacity",
         isDragging && "opacity-50"

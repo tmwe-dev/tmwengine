@@ -455,6 +455,13 @@ ESEMPI:
             </TabsList>
           )}
 
+          {/* COMPOSER TAB - Fix scroll con h-full */}
+          <TabsContent value="composer" className="flex-1 h-full overflow-hidden">
+            <div className="h-full">
+              <PromptComposer />
+            </div>
+          </TabsContent>
+
           {/* GLOBAL TAB */}
           <TabsContent value="global" className="flex-1 overflow-y-auto">
             <div className="space-y-4">

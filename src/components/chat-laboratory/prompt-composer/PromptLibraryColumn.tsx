@@ -6,24 +6,15 @@ import { PromptCard } from './PromptCard';
 
 interface PromptLibraryColumnProps {
   sections: PromptSection[];
-  onGenerateThumbnails: () => Promise<void>;
   onRefresh: () => Promise<void>;
-  onDuplicate: (section: PromptSection) => Promise<void>;
-  isGenerating: boolean;
   isRefreshing: boolean;
-  generationProgress?: { current: number; total: number; sectionName: string } | null;
 }
 
 export function PromptLibraryColumn({ 
   sections, 
-  onGenerateThumbnails,
   onRefresh,
-  onDuplicate,
-  isGenerating,
-  isRefreshing,
-  generationProgress
+  isRefreshing
 }: PromptLibraryColumnProps) {
-  const missingThumbnails = sections.filter(s => !s.thumbnail_url).length;
 
   return (
     <div className="flex-1 border-r bg-background flex flex-col min-h-0">
@@ -35,54 +26,27 @@ export function PromptLibraryColumn({
           </span>
         </div>
         
-        <div className="flex gap-2">
-          {/* Pulsante Genera Miniature */}
-          {missingThumbnails > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              onClick={onGenerateThumbnails}
-              disabled={isGenerating || isRefreshing}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {generationProgress 
-                    ? `${generationProgress.current}/${generationProgress.total}` 
-                    : 'Generazione...'}
-                </>
-              ) : (
-                <>
-                  <Camera className="h-4 w-4 mr-2" />
-                  📸 Genera {missingThumbnails}
-                </>
-              )}
-            </Button>
+        {/* Pulsante Refresh */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          title="Ricarica sezioni dal database"
+          className="w-full"
+        >
+          {isRefreshing ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Caricamento...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Ricarica Libreria
+            </>
           )}
-          
-          {/* Pulsante Refresh */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRefresh}
-            disabled={isGenerating || isRefreshing}
-            title="Ricarica sezioni dal database"
-          >
-            {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-
-        {/* Progress durante generazione */}
-        {isGenerating && generationProgress && (
-          <div className="text-xs text-muted-foreground">
-            📸 Generazione: <span className="font-medium">{generationProgress.sectionName}</span>
-          </div>
-        )}
+        </Button>
       </div>
       
       <ScrollArea className="flex-1 p-4 h-0">
@@ -93,7 +57,7 @@ export function PromptLibraryColumn({
             </div>
           ) : (
             sections.map(section => (
-              <PromptCard key={section.id} section={section} onDuplicate={onDuplicate} />
+              <PromptCard key={section.id} section={section} onEdit={onRefresh} />
             ))
           )}
         </div>

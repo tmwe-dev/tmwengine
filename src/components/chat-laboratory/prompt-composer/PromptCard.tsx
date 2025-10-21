@@ -2,26 +2,28 @@ import { useDraggable, DraggableAttributes } from '@dnd-kit/core';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { GripVertical, ImageOff, Loader2, Maximize2, Copy } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { GripVertical, Edit, Loader2, Save, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PromptSection } from './types';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface PromptCardProps {
   section: PromptSection;
   isDragging?: boolean;
-  onDuplicate?: (section: PromptSection) => Promise<void>;
+  onEdit?: () => void;
 }
 
-export function PromptCard({ section, isDragging, onDuplicate }: PromptCardProps) {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  const [fullPreviewOpen, setFullPreviewOpen] = useState(false);
-  const [isDuplicating, setIsDuplicating] = useState(false);
+export function PromptCard({ section, isDragging, onEdit }: PromptCardProps) {
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editedContent, setEditedContent] = useState(section.content);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
   const draggable = useDraggable({
     id: section.id,
@@ -37,18 +39,71 @@ export function PromptCard({ section, isDragging, onDuplicate }: PromptCardProps
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined;
 
-  // Preview: prime 100 caratteri
-  const preview = section.content.substring(0, 100) + (section.content.length > 100 ? '...' : '');
+  // Preview: prime 150 caratteri
+  const preview = section.content.substring(0, 150) + (section.content.length > 150 ? '...' : '');
 
-  const handleDuplicate = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!onDuplicate || isDuplicating) return;
-    
-    setIsDuplicating(true);
+  const handleSave = async () => {
+    setIsSaving(true);
     try {
-      await onDuplicate(section);
+      const { error } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .update({ content: editedContent })
+        .eq('id', section.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Salvato",
+        description: "Modifiche salvate con successo",
+      });
+      
+      setEditModalOpen(false);
+      onEdit?.(); // Trigger refresh
+    } catch (error) {
+      console.error('Error saving:', error);
+      toast({
+        title: "❌ Errore",
+        description: "Impossibile salvare le modifiche",
+        variant: "destructive",
+      });
     } finally {
-      setIsDuplicating(false);
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveAsNew = async () => {
+    setIsSaving(true);
+    try {
+      const newName = `${section.section_name} - Copia`;
+      
+      const { error } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .insert({
+          section_type: section.section_type,
+          section_name: newName,
+          content: editedContent,
+          is_active: true,
+          order_priority: section.order_priority + 1,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Nuovo Prompt Creato",
+        description: `"${newName}" salvato con successo`,
+      });
+      
+      setEditModalOpen(false);
+      onEdit?.(); // Trigger refresh
+    } catch (error) {
+      console.error('Error creating new:', error);
+      toast({
+        title: "❌ Errore",
+        description: "Impossibile creare nuovo prompt",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -73,80 +128,31 @@ export function PromptCard({ section, isDragging, onDuplicate }: PromptCardProps
                 {section.section_type}
               </Badge>
             </div>
-            {/* Pulsante Duplicate */}
-            {onDuplicate && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 shrink-0"
-                onClick={handleDuplicate}
-                disabled={isDuplicating}
-                title="Duplica questo prompt"
-              >
-                {isDuplicating ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Copy className="h-3 w-3" />
-                )}
-              </Button>
-            )}
+            {/* Pulsante Edit */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditModalOpen(true);
+              }}
+              title="Modifica prompt"
+            >
+              <Edit className="h-3 w-3" />
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-3 pt-0">
-          {/* Thumbnail con spinner loading - INGRANDITA E RESPONSIVE */}
-          <div 
-            className="w-full h-48 md:h-56 lg:h-64 xl:h-72 bg-muted rounded mb-2 flex items-center justify-center overflow-hidden relative group cursor-pointer"
-            onClick={() => section.thumbnail_url && setFullPreviewOpen(true)}
-          >
-            {section.thumbnail_url ? (
-              <>
-                {!imageLoaded && !imageError && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                    <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
-                  </div>
-                )}
-                <img 
-                  src={section.thumbnail_url} 
-                  alt={section.section_name}
-                  className={cn(
-                    "w-full h-full object-cover transition-all duration-200",
-                    imageLoaded ? "opacity-100" : "opacity-0",
-                    "group-hover:scale-105 group-hover:ring-2 group-hover:ring-primary"
-                  )}
-                  onLoad={() => setImageLoaded(true)}
-                  onError={() => {
-                    setImageError(true);
-                    console.error(`Failed to load thumbnail: ${section.thumbnail_url}`);
-                  }}
-                />
-                {imageError && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                    <ImageOff className="h-6 w-6 text-muted-foreground/50" />
-                  </div>
-                )}
-                {/* Overlay ingrandimento su hover */}
-                {imageLoaded && !imageError && (
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                    <Maximize2 className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center gap-2 text-muted-foreground/50">
-                <ImageOff className="h-6 w-6" />
-                <span className="text-xs">No thumbnail</span>
-              </div>
-            )}
-          </div>
-          {/* Preview testo */}
-          <p className="text-xs text-muted-foreground line-clamp-2">
+          {/* Testo preview diretto (no thumbnail) */}
+          <pre className="w-full h-32 bg-muted/50 rounded p-2 text-xs overflow-hidden font-mono whitespace-pre-wrap text-foreground/80">
             {preview}
-          </p>
+          </pre>
         </CardContent>
       </Card>
 
-      {/* Modal full-screen per preview completa */}
-      <Dialog open={fullPreviewOpen} onOpenChange={setFullPreviewOpen}>
+      {/* Modal editing */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -154,29 +160,58 @@ export function PromptCard({ section, isDragging, onDuplicate }: PromptCardProps
               {section.section_name}
             </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]">
-            <div className="space-y-4 pr-4">
-              {/* Immagine full size scrollabile */}
-              {section.thumbnail_url && !imageError && (
+          
+          <ScrollArea className="flex-1 max-h-[calc(90vh-180px)]">
+            <Textarea
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              className="min-h-[400px] font-mono text-sm resize-none"
+              placeholder="Contenuto del prompt..."
+            />
+          </ScrollArea>
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditModalOpen(false)}
+              disabled={isSaving}
+            >
+              Annulla
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleSaveAsNew}
+              disabled={isSaving}
+            >
+              {isSaving ? (
                 <>
-                  <img
-                    src={section.thumbnail_url}
-                    alt={section.section_name}
-                    className="w-full h-auto rounded-lg border"
-                    onError={() => setImageError(true)}
-                  />
-                  <Separator />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Salvataggio...
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Salva Come Nuovo
                 </>
               )}
-              {/* Testo completo */}
-              <div className="space-y-2">
-                <h4 className="font-semibold text-sm text-muted-foreground">Contenuto Completo</h4>
-                <pre className="text-sm whitespace-pre-wrap font-mono bg-muted p-4 rounded-lg">
-                  {section.content}
-                </pre>
-              </div>
-            </div>
-          </ScrollArea>
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Salvataggio...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Salva Modifiche
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

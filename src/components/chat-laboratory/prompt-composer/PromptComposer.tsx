@@ -6,7 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 import { CollapsibleComposerSidebar } from './CollapsibleComposerSidebar';
 import { PromptLibraryColumn } from './PromptLibraryColumn';
 import { CompositionCanvas } from './CompositionCanvas';
-import { generateThumbnailsForSections, generateThumbnailForSection } from './ThumbnailGenerator';
 import { PromptCard } from './PromptCard';
 import { PromptSection, ComposedPromptBlock, SectionGroup } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,10 +17,8 @@ export function PromptComposer() {
   const [globalPrompt, setGlobalPrompt] = useState<PromptSection | null>(null);
   const [composedBlocks, setComposedBlocks] = useState<ComposedPromptBlock[]>([]);
   const [isLoadingSections, setIsLoadingSections] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState<{ current: number; total: number; sectionName: string } | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -107,37 +104,6 @@ export function PromptComposer() {
     }
   };
 
-  const handleGenerateThumbnails = async () => {
-    setIsGenerating(true);
-    setGenerationProgress({ current: 0, total: filteredSections.length, sectionName: '' });
-    
-    try {
-      const results = await generateThumbnailsForSections(
-        filteredSections,
-        (current, total, sectionName) => {
-          setGenerationProgress({ current, total, sectionName });
-        }
-      );
-      
-      await loadAllSections(); // Reload per aggiornare thumbnails
-      
-      toast({
-        title: "✅ Miniature Generate",
-        description: `${results.success} thumbnail create con successo${results.failed > 0 ? `, ${results.failed} fallite` : ''}`,
-      });
-    } catch (error) {
-      console.error('Error generating thumbnails:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile generare alcune miniature.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGenerating(false);
-      setGenerationProgress(null);
-    }
-  };
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await loadAllSections();
@@ -146,52 +112,6 @@ export function PromptComposer() {
       title: "✅ Aggiornato",
       description: "Sezioni ricaricate dal database",
     });
-  };
-
-  const handleDuplicate = async (section: PromptSection) => {
-    try {
-      // Crea copia nel DB con nome "- Copia"
-      const newName = `${section.section_name} - Copia`;
-      
-      const { data, error } = await supabase
-        .from('chat_laboratory_prompt_sections')
-        .insert({
-          section_type: section.section_type,
-          section_name: newName,
-          content: section.content,
-          is_active: true,
-          order_priority: section.order_priority + 1,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast({
-        title: "✅ Prompt Duplicato",
-        description: `"${newName}" creato con successo!`,
-      });
-
-      // Rigenera miniatura per la nuova sezione
-      if (data) {
-        await generateThumbnailForSection(data.id, data.section_name, data.content);
-        
-        toast({
-          title: "📸 Miniatura Generata",
-          description: `Miniatura creata per "${newName}"`,
-        });
-      }
-
-      // Ricarica sezioni
-      await loadAllSections();
-    } catch (error) {
-      console.error('Error duplicating section:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile duplicare il prompt.",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -315,12 +235,8 @@ export function PromptComposer() {
         <div className="flex-1 flex overflow-hidden">
           <PromptLibraryColumn
             sections={filteredSections}
-            onGenerateThumbnails={handleGenerateThumbnails}
             onRefresh={handleRefresh}
-            onDuplicate={handleDuplicate}
-            isGenerating={isGenerating}
             isRefreshing={isRefreshing}
-            generationProgress={generationProgress}
           />
         <CompositionCanvas
           blocks={composedBlocks}

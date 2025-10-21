@@ -17,7 +17,7 @@ export function PromptLibraryColumn({
 }: PromptLibraryColumnProps) {
 
   return (
-    <div className="flex flex-col h-full border-r bg-background">
+    <div className="flex-1 flex flex-col h-full border-r bg-background">
       <div className="p-4 border-b space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-sm">Libreria Prompt</h3>
@@ -49,8 +49,8 @@ export function PromptLibraryColumn({
         </Button>
       </div>
       
-      <ScrollArea className="h-[calc(100%-100px)] p-4">
-        <div className="space-y-3">
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-3">
           {sections.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground text-sm">
               Seleziona un gruppo dalla sidebar

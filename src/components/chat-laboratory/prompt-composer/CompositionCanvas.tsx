@@ -57,7 +57,7 @@ export function CompositionCanvas({
   };
 
   return (
-    <div className="flex flex-col h-full bg-muted/10">
+    <div className="flex-1 flex flex-col h-full bg-muted/10">
       {/* Header Canvas */}
       <div className="p-4 border-b bg-background space-y-3">
         <h3 className="font-semibold text-sm flex items-center gap-2">
@@ -93,11 +93,11 @@ export function CompositionCanvas({
       </div>
 
       {/* Drop Zone */}
-      <ScrollArea className="h-[calc(100%-160px)]">
+      <ScrollArea className="flex-1">
         <div
           ref={setNodeRef}
           className={cn(
-            "p-4 min-h-full transition-colors",
+            "p-4 min-h-[600px] transition-colors",
             isOver && "bg-primary/5 border-2 border-dashed border-primary"
           )}
         >

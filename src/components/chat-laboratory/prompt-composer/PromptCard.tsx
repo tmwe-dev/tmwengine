@@ -1,5 +1,5 @@
-import { useDraggable, DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -25,19 +25,23 @@ export function PromptCard({ section, isDragging, onEdit }: PromptCardProps) {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  const draggable = useDraggable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: sortableIsDragging
+  } = useSortable({ 
     id: section.id,
-    data: section,
+    data: section 
   });
-  
-  const attributes: DraggableAttributes = draggable.attributes;
-  const listeners: SyntheticListenerMap | undefined = draggable.listeners;
-  const setNodeRef = draggable.setNodeRef;
-  const transform = draggable.transform;
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: sortableIsDragging ? 0.5 : 1
+  };
 
   // Preview: prime 150 caratteri
   const preview = section.content.substring(0, 150) + (section.content.length > 150 ? '...' : '');
@@ -111,10 +115,7 @@ export function PromptCard({ section, isDragging, onEdit }: PromptCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(
-        "transition-opacity",
-        isDragging && "opacity-50"
-      )}
+      className="transition-all"
     >
       <Card className="hover:shadow-md transition-shadow">
         <CardHeader className="p-3">

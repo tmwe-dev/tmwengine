@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Camera, Loader2, RefreshCw } from 'lucide-react';
 import { PromptSection } from './types';
 import { PromptCard } from './PromptCard';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 interface PromptLibraryColumnProps {
   sections: PromptSection[];
@@ -17,7 +18,7 @@ export function PromptLibraryColumn({
 }: PromptLibraryColumnProps) {
 
   return (
-    <div className="flex-1 flex flex-col h-full border-r bg-background">
+    <div className="flex flex-col h-full border-r bg-background">
       <div className="p-4 border-b space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-sm">Libreria Prompt</h3>
@@ -56,9 +57,14 @@ export function PromptLibraryColumn({
               Seleziona un gruppo dalla sidebar
             </div>
           ) : (
-            sections.map(section => (
-              <PromptCard key={section.id} section={section} onEdit={onRefresh} />
-            ))
+            <SortableContext
+              items={sections.map(s => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {sections.map(section => (
+                <PromptCard key={section.id} section={section} onEdit={onRefresh} />
+              ))}
+            </SortableContext>
           )}
         </div>
       </ScrollArea>

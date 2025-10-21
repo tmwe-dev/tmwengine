@@ -61,9 +61,9 @@ export function PromptCard({ section, isDragging }: PromptCardProps) {
           </div>
         </CardHeader>
         <CardContent className="p-3 pt-0">
-          {/* Thumbnail con spinner loading - INGRANDITA */}
+          {/* Thumbnail con spinner loading - INGRANDITA E RESPONSIVE */}
           <div 
-            className="w-full h-48 bg-muted rounded mb-2 flex items-center justify-center overflow-hidden relative group cursor-pointer"
+            className="w-full h-48 md:h-56 lg:h-64 xl:h-72 bg-muted rounded mb-2 flex items-center justify-center overflow-hidden relative group cursor-pointer"
             onClick={() => section.thumbnail_url && setFullPreviewOpen(true)}
           >
             {section.thumbnail_url ? (

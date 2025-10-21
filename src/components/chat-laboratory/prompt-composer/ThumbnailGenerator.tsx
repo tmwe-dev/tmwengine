@@ -13,7 +13,7 @@ export async function generateThumbnailForSection(
   options: ThumbnailGenerationOptions = {}
 ): Promise<string> {
   const {
-    width = 600,
+    width = 800, // Aumentato da 600 per schermi grandi
     scale = 2,
     backgroundColor = '#ffffff'
   } = options;
@@ -56,7 +56,9 @@ export async function generateThumbnailForSection(
 
   // Preview truncato a 500 caratteri
   const preview = content.substring(0, 500) + (content.length > 500 ? '...' : '');
-  const formattedContent = formatContentForThumbnail(preview.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+  // IMPORTANTE: Escape HTML PRIMA di formattare (altrimenti i tag HTML non vengono renderizzati)
+  const escapedPreview = preview.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const formattedContent = formatContentForThumbnail(escapedPreview);
   
   // HTML del prompt con escape caratteri speciali e formattazione
   container.innerHTML = `

@@ -408,7 +408,7 @@ ESEMPI:
           )} />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-[95vw] lg:max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header condizionale: compatto per Compositore */}
         {activeTab !== 'composer' ? (
           <DialogHeader>
@@ -969,7 +969,9 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
 
           {/* COMPOSER TAB */}
           <TabsContent value="composer" className="flex-1 overflow-hidden h-[calc(100vh-120px)]">
-            <PromptComposer />
+            <div className="h-full">
+              <PromptComposer />
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

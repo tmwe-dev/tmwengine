@@ -1,5 +1,8 @@
 import html2canvas from 'html2canvas';
 import { supabase } from '@/integrations/supabase/client';
+import * as Babel from '@babel/standalone';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 
 /**
  * DESIGN LAB THUMBNAIL GENERATOR
@@ -21,9 +24,9 @@ const DEFAULT_CONFIG: ThumbnailConfig = {
 };
 
 /**
- * Renderizza componente JSX in un container DOM isolato
+ * Renderizza componente JSX REALE in un container DOM isolato usando React + Babel
  */
-function createIsolatedContainer(jsxCode: string, config: ThumbnailConfig): HTMLDivElement {
+async function createIsolatedContainer(jsxCode: string, config: ThumbnailConfig): Promise<HTMLDivElement> {
   const container = document.createElement('div');
   container.style.position = 'fixed';
   container.style.top = '-9999px';
@@ -34,22 +37,60 @@ function createIsolatedContainer(jsxCode: string, config: ThumbnailConfig): HTML
   container.style.overflow = 'hidden';
   container.style.padding = '16px';
   
-  // Inject component preview (simplified HTML render)
-  // In produzione, si potrebbe usare un iframe con React render
-  container.innerHTML = `
-    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-      <div style="text-align: center; color: #64748b;">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="9" y1="9" x2="15" y2="9"></line>
-          <line x1="9" y1="15" x2="15" y2="15"></line>
-        </svg>
-        <p style="margin-top: 8px; font-size: 14px;">Component Preview</p>
-      </div>
-    </div>
-  `;
-  
+  // Crea root per rendering React
+  const renderRoot = document.createElement('div');
+  renderRoot.style.width = '100%';
+  renderRoot.style.height = '100%';
+  container.appendChild(renderRoot);
   document.body.appendChild(container);
+
+  try {
+    // Transpila JSX in JavaScript usando Babel
+    console.log('🔄 Transpiling JSX code...');
+    const transpiled = Babel.transform(jsxCode, {
+      presets: ['react', 'typescript'],
+      filename: 'component.tsx',
+    }).code;
+
+    console.log('✅ JSX transpiled successfully');
+
+    // Crea funzione component dal codice transpilato
+    // eslint-disable-next-line no-new-func
+    const ComponentModule = new Function(
+      'React', 
+      'exports',
+      `${transpiled}\nreturn exports.default || exports;`
+    );
+
+    const Component = ComponentModule(React, {});
+
+    // Renderizza il componente
+    console.log('🎨 Rendering React component...');
+    const root = ReactDOM.createRoot(renderRoot);
+    root.render(React.createElement(Component));
+
+    // Aspetta rendering (importante per componenti con immagini/async)
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log('✅ Component rendered');
+
+  } catch (error) {
+    console.error('❌ Failed to render component:', error);
+    // Fallback a placeholder se il rendering fallisce
+    container.innerHTML = `
+      <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px;">
+        <div style="text-align: center; color: white; padding: 16px;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <p style="margin-top: 8px; font-size: 12px; font-weight: 500;">Render Error</p>
+          <p style="margin-top: 4px; font-size: 10px; opacity: 0.8;">Check console</p>
+        </div>
+      </div>
+    `;
+  }
+  
   return container;
 }
 
@@ -147,8 +188,8 @@ export async function generateComponentThumbnail(
   let container: HTMLDivElement | null = null;
 
   try {
-    // 1. Crea container isolato
-    container = createIsolatedContainer(jsxCode, config);
+    // 1. Crea container isolato e renderizza React component
+    container = await createIsolatedContainer(jsxCode, config);
 
     // 2. Genera screenshot
     const blob = await captureScreenshot(container, config);

@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, Phone, Columns, MessagesSquare, Settings2 } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, Phone, Columns, MessagesSquare, Settings2, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
@@ -1599,6 +1600,26 @@ const ChatLaboratory = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* Alert iframe warning - Sync Files */}
+      {typeof window !== 'undefined' && window.self !== window.top && (
+        <div className="container mx-auto px-3 pt-3">
+          <Alert className="bg-amber-500/10 border-amber-500/30">
+            <Info className="h-4 w-4 text-amber-500" />
+            <AlertTitle className="text-amber-600 dark:text-amber-400">Sync Files richiede finestra standalone</AlertTitle>
+            <AlertDescription className="text-amber-700 dark:text-amber-300">
+              Il browser blocca il file picker negli iframe per motivi di sicurezza.
+              <Button 
+                variant="link" 
+                className="h-auto p-0 ml-1 text-amber-600 dark:text-amber-400 underline"
+                onClick={() => window.open(window.location.href, '_blank')}
+              >
+                Apri in nuova finestra
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
       )}
 
       {/* Messaggi */}

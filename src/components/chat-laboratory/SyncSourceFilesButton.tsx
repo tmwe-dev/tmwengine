@@ -80,6 +80,16 @@ export const SyncSourceFilesButton = () => {
   };
 
   const handleSync = async () => {
+    // Check if in iframe
+    if (typeof window !== 'undefined' && window.self !== window.top) {
+      toast({
+        title: "⚠️ Apri in nuova finestra",
+        description: "Il file picker non funziona negli iframe. Clicca il link sopra per aprire ChatLab in una nuova finestra.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!('showDirectoryPicker' in window)) {
       toast({
         title: "❌ Browser non supportato",

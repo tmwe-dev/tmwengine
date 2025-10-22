@@ -121,7 +121,7 @@ export async function callChatGPT(
     
     const requestPayload: any = {
       model: 'openai/gpt-5-mini',
-      max_completion_tokens: 2000,
+      max_completion_tokens: 4000,
       reasoning_effort: 'low',
       messages: conversationHistory
     };

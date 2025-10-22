@@ -140,12 +140,25 @@ async function handleToolCall(
     const { docType } = toolArgs;
     
     try {
-      const { data, error } = await supabaseClient.functions.invoke('get-ai-docs', {
-        body: { docType }
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/get-ai-docs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceRoleKey}`
+        },
+        body: JSON.stringify({ docType })
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ get-ai-docs HTTP ${response.status}:`, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
 
+      const data = await response.json();
       const resultContent = typeof data.content === 'string' 
         ? data.content 
         : JSON.stringify(data.content, null, 2);

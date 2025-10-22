@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    // AUTH: Verifica JWT
+    // AUTH: Verifica Service Role Key (chiamate interne) o JWT utente
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
@@ -26,23 +26,33 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // ✅ Accetta service role key (chiamate interne da orchestrator)
+    const isServiceRole = token === serviceRoleKey;
+    
+    if (isServiceRole) {
+      console.log(`✅ Service role access (internal call)`);
+    } else {
+      // Verifica JWT utente
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!
+      );
 
-    if (authError || !user) {
-      console.error('❌ Auth error:', authError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+      if (authError || !user) {
+        console.error('❌ Auth error:', authError);
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log(`✅ User ${user.email} requesting AI docs`);
     }
-
-    console.log(`✅ User ${user.email} requesting AI docs`);
 
     // Parse request
     const { docType, format } = await req.json() as RequestBody;

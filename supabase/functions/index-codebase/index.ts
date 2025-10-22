@@ -34,7 +34,8 @@ const DEFAULT_DIRECTORIES = [
   'src/hooks',
   'src/lib',
   'src/integrations',
-  'supabase/functions'
+  'supabase/functions',
+  'docs'
 ];
 
 function extractImports(content: string): string[] {
@@ -84,6 +85,7 @@ function determineFileType(filePath: string): string {
   if (filePath.includes('/lib/')) return 'util';
   if (filePath.includes('/integrations/')) return 'integration';
   if (filePath.includes('supabase/functions/')) return 'edge-function';
+  if (filePath.includes('docs/')) return 'documentation';
   if (filePath.endsWith('.config.ts') || filePath.endsWith('.config.js')) return 'config';
   return 'other';
 }
@@ -111,25 +113,26 @@ async function scanDirectory(dirPath: string): Promise<FileMetadata[]> {
         const subFiles = await scanDirectory(fullPath);
         files.push(...subFiles);
       } else if (entry.isFile) {
-        // Processa solo file TypeScript/JavaScript/React
-        if (/\.(ts|tsx|js|jsx)$/.test(entry.name)) {
+        // Processa file TypeScript/JavaScript/React/Markdown
+        if (/\.(ts|tsx|js|jsx|md)$/.test(entry.name)) {
           try {
             const content = await Deno.readTextFile(fullPath);
             const lineCount = content.split('\n').length;
             const tokenCount = Math.ceil(content.length / 4);
+            const isMarkdown = entry.name.endsWith('.md');
             
             files.push({
               file_path: fullPath,
               file_type: determineFileType(fullPath),
               content,
-              imports: extractImports(content),
-              exports: extractExports(content),
-              functions: extractFunctions(content),
-              components: extractComponents(content),
+              imports: isMarkdown ? [] : extractImports(content),
+              exports: isMarkdown ? [] : extractExports(content),
+              functions: isMarkdown ? [] : extractFunctions(content),
+              components: isMarkdown ? [] : extractComponents(content),
               line_count: lineCount,
               token_count: tokenCount,
-              complexity_score: calculateComplexity(content),
-              language: entry.name.endsWith('.tsx') || entry.name.endsWith('.jsx') ? 'tsx' : 'typescript'
+              complexity_score: isMarkdown ? 0 : calculateComplexity(content),
+              language: isMarkdown ? 'markdown' : (entry.name.endsWith('.tsx') || entry.name.endsWith('.jsx') ? 'tsx' : 'typescript')
             });
           } catch (error) {
             console.error(`Error reading file ${fullPath}:`, error);

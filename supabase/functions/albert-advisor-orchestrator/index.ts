@@ -231,6 +231,98 @@ const AI_TOOLS_OPENAI = [
         properties: {}
       }
     }
+  },
+  // ============ CODE ACCESS TOOLS ============
+  {
+    type: "function",
+    function: {
+      name: "list_project_files",
+      description: "Lista file e cartelle in un percorso del progetto. Usa per esplorare struttura codice.",
+      parameters: {
+        type: "object",
+        properties: {
+          path: {
+            type: "string",
+            description: "Percorso relativo (es: 'src/components', default: root)"
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "read_source_code",
+      description: "Leggi contenuto completo di un file sorgente (.tsx, .ts, .json, .md)",
+      parameters: {
+        type: "object",
+        properties: {
+          filePath: {
+            type: "string",
+            description: "Path completo file (es: 'src/components/ChatLaboratory.tsx')"
+          },
+          lines: {
+            type: "string",
+            description: "Range linee opzionale (es: '10-50')"
+          }
+        },
+        required: ["filePath"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "analyze_component",
+      description: "Analizza struttura componente React: props, hooks, imports, complessità",
+      parameters: {
+        type: "object",
+        properties: {
+          filePath: {
+            type: "string",
+            description: "Path file componente React"
+          }
+        },
+        required: ["filePath"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_code",
+      description: "Cerca pattern regex nel codice sorgente di tutto il progetto",
+      parameters: {
+        type: "object",
+        properties: {
+          pattern: {
+            type: "string",
+            description: "Pattern regex da cercare (es: 'useState|useEffect')"
+          },
+          fileExtensions: {
+            type: "array",
+            items: { type: "string" },
+            description: "Estensioni file da includere (default: ['.tsx', '.ts'])"
+          },
+          maxResults: {
+            type: "number",
+            description: "Numero massimo risultati (default: 20)"
+          }
+        },
+        required: ["pattern"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_dependencies",
+      description: "Leggi package.json e ottieni lista dipendenze installate",
+      parameters: {
+        type: "object",
+        properties: {}
+      }
+    }
   }
 ];
 
@@ -414,6 +506,83 @@ const AI_TOOLS_CLAUDE = [
   {
     name: "list_all_tables",
     description: "Lista tutte le tabelle disponibili nel database con conteggio record",
+    input_schema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  // ============ CODE ACCESS TOOLS ============
+  {
+    name: "list_project_files",
+    description: "Lista file e cartelle in un percorso del progetto. Usa per esplorare struttura codice.",
+    input_schema: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description: "Percorso relativo (es: 'src/components', default: root)"
+        }
+      }
+    }
+  },
+  {
+    name: "read_source_code",
+    description: "Leggi contenuto completo di un file sorgente (.tsx, .ts, .json, .md)",
+    input_schema: {
+      type: "object",
+      properties: {
+        filePath: {
+          type: "string",
+          description: "Path completo file (es: 'src/components/ChatLaboratory.tsx')"
+        },
+        lines: {
+          type: "string",
+          description: "Range linee opzionale (es: '10-50')"
+        }
+      },
+      required: ["filePath"]
+    }
+  },
+  {
+    name: "analyze_component",
+    description: "Analizza struttura componente React: props, hooks, imports, complessità",
+    input_schema: {
+      type: "object",
+      properties: {
+        filePath: {
+          type: "string",
+          description: "Path file componente React"
+        }
+      },
+      required: ["filePath"]
+    }
+  },
+  {
+    name: "search_code",
+    description: "Cerca pattern regex nel codice sorgente di tutto il progetto",
+    input_schema: {
+      type: "object",
+      properties: {
+        pattern: {
+          type: "string",
+          description: "Pattern regex da cercare (es: 'useState|useEffect')"
+        },
+        fileExtensions: {
+          type: "array",
+          items: { type: "string" },
+          description: "Estensioni file da includere (default: ['.tsx', '.ts'])"
+        },
+        maxResults: {
+          type: "number",
+          description: "Numero massimo risultati (default: 20)"
+        }
+      },
+      required: ["pattern"]
+    }
+  },
+  {
+    name: "get_dependencies",
+    description: "Leggi package.json e ottieni lista dipendenze installate",
     input_schema: {
       type: "object",
       properties: {}
@@ -662,6 +831,147 @@ async function handleToolCall(
     }
   }
 
+  // ============ CODE ACCESS TOOLS HANDLERS ============
+  
+  if (toolName === 'list_project_files') {
+    const { path } = toolArgs;
+    const targetPath = path || '.';
+    
+    try {
+      const entries = [];
+      for await (const entry of Deno.readDir(targetPath)) {
+        entries.push({
+          name: entry.name,
+          isDirectory: entry.isDirectory,
+          isFile: entry.isFile
+        });
+      }
+      
+      console.log(`✅ [FILES] ${targetPath} → ${entries.length} items`);
+      return JSON.stringify(entries, null, 2);
+    } catch (err: any) {
+      console.error(`❌ [FILES ERROR] list_project_files(${targetPath}):`, err.message);
+      return `Errore lettura directory ${targetPath}: ${err.message}`;
+    }
+  }
+  
+  if (toolName === 'read_source_code') {
+    const { filePath, lines } = toolArgs;
+    
+    try {
+      const content = await Deno.readTextFile(filePath);
+      
+      // Se richieste linee specifiche (es: "10-50")
+      if (lines) {
+        const [start, end] = lines.split('-').map(Number);
+        const allLines = content.split('\n');
+        const selectedLines = allLines.slice(start - 1, end);
+        return selectedLines.join('\n');
+      }
+      
+      console.log(`✅ [READ] ${filePath} → ${content.length} chars`);
+      return content;
+    } catch (err: any) {
+      console.error(`❌ [READ ERROR] read_source_code(${filePath}):`, err.message);
+      return `Errore lettura file ${filePath}: ${err.message}`;
+    }
+  }
+  
+  if (toolName === 'analyze_component') {
+    const { filePath } = toolArgs;
+    
+    try {
+      const content = await Deno.readTextFile(filePath);
+      
+      // Estrai imports
+      const imports = content.match(/^import .+ from .+$/gm) || [];
+      
+      // Estrai interface/type Props
+      const propsMatch = content.match(/interface \w+Props\s*{([^}]+)}/s);
+      const props = propsMatch ? propsMatch[1].trim() : 'Nessuna interfaccia Props trovata';
+      
+      // Estrai hooks (useState, useEffect, custom hooks)
+      const hooks = content.match(/use[A-Z]\w+/g) || [];
+      
+      // Conta linee
+      const lineCount = content.split('\n').length;
+      
+      const analysis = {
+        file: filePath,
+        lineCount,
+        imports: imports.slice(0, 10), // Prime 10 imports
+        props,
+        hooksUsed: [...new Set(hooks)], // Hooks unici
+        hasUseEffect: content.includes('useEffect'),
+        hasUseState: content.includes('useState'),
+        hasCustomHooks: hooks.some(h => !h.startsWith('useEffect') && !h.startsWith('useState'))
+      };
+      
+      console.log(`✅ [ANALYZE] ${filePath} → ${lineCount} linee`);
+      return JSON.stringify(analysis, null, 2);
+    } catch (err: any) {
+      console.error(`❌ [ANALYZE ERROR] analyze_component(${filePath}):`, err.message);
+      return `Errore analisi componente ${filePath}: ${err.message}`;
+    }
+  }
+  
+  if (toolName === 'search_code') {
+    const { pattern, fileExtensions, maxResults } = toolArgs;
+    const extensions = fileExtensions || ['.tsx', '.ts'];
+    const max = maxResults || 20;
+    
+    const results: any[] = [];
+    
+    async function searchInDir(dir: string) {
+      try {
+        for await (const entry of Deno.readDir(dir)) {
+          const fullPath = `${dir}/${entry.name}`;
+          
+          if (entry.isDirectory && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+            await searchInDir(fullPath);
+          } else if (entry.isFile && extensions.some(ext => entry.name.endsWith(ext))) {
+            const content = await Deno.readTextFile(fullPath);
+            const regex = new RegExp(pattern, 'gi');
+            const matches = content.match(regex);
+            
+            if (matches && matches.length > 0) {
+              results.push({
+                file: fullPath,
+                matchCount: matches.length,
+                preview: matches.slice(0, 3) // Prime 3 occorrenze
+              });
+              
+              if (results.length >= max) return;
+            }
+          }
+        }
+      } catch {}
+    }
+    
+    await searchInDir('src');
+    
+    console.log(`✅ [SEARCH] "${pattern}" → ${results.length} file`);
+    return JSON.stringify(results, null, 2);
+  }
+  
+  if (toolName === 'get_dependencies') {
+    try {
+      const packageJson = await Deno.readTextFile('package.json');
+      const pkg = JSON.parse(packageJson);
+      
+      const deps = {
+        dependencies: pkg.dependencies || {},
+        devDependencies: pkg.devDependencies || {},
+        totalCount: Object.keys(pkg.dependencies || {}).length + Object.keys(pkg.devDependencies || {}).length
+      };
+      
+      console.log(`✅ [DEPS] ${deps.totalCount} pacchetti installati`);
+      return JSON.stringify(deps, null, 2);
+    } catch (err: any) {
+      console.error(`❌ [DEPS ERROR] get_dependencies:`, err.message);
+      return `Errore lettura dipendenze: ${err.message}`;
+    }
+  }
 
   return `Tool sconosciuto: ${toolName}`;
 }

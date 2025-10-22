@@ -1,9 +1,8 @@
 import { Button } from '@/components/ui/button';
-import { Upload, RefreshCw } from 'lucide-react';
+import { RefreshCw, Database } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import JSZip from 'jszip';
 import {
   Tooltip,
   TooltipContent,
@@ -21,134 +20,68 @@ interface FileData {
   exports: string[];
 }
 
+// ============ PROJECT FILES SNAPSHOT ============
+// Questo snapshot viene generato da Lovable AI durante l'implementazione.
+// Per aggiornarlo, chiedi: "Rigenera snapshot files per Albert"
+const PROJECT_FILES_SNAPSHOT: FileData[] = [
+  // 🔄 SNAPSHOT DA POPOLARE 
+  // Lovable AI può leggere i file del progetto e generare questo array.
+  // Esempio entry:
+  // {
+  //   file_path: 'src/components/chat-laboratory/AlbertModeSelector.tsx',
+  //   file_type: 'tsx',
+  //   content: '...contenuto completo...',
+  //   file_size: 5432,
+  //   line_count: 150,
+  //   imports: ['react', '@/components/ui/select'],
+  //   exports: ['AlbertModeSelector']
+  // }
+];
+
 export const SyncSourceFilesButton = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
 
-  const extractMetadata = (content: string, filePath: string) => {
-    const imports: string[] = [];
-    const exports: string[] = [];
-
-    // Estrai imports
-    const importRegex = /import\s+.*?from\s+['"](.+?)['"]/g;
-    let match;
-    while ((match = importRegex.exec(content)) !== null) {
-      imports.push(match[1]);
-    }
-
-    // Estrai exports
-    const exportRegex = /export\s+(?:default\s+)?(?:class|function|const|let|var)\s+(\w+)/g;
-    while ((match = exportRegex.exec(content)) !== null) {
-      exports.push(match[1]);
-    }
-
-    return { imports, exports };
-  };
-
   const handleSync = async () => {
-    // Crea input file nascosto
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.zip';
+    if (PROJECT_FILES_SNAPSHOT.length === 0) {
+      toast({
+        title: "⚠️ Snapshot vuoto",
+        description: "Chiedi a Lovable AI: 'Rigenera snapshot files per Albert'",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+    setIsSyncing(true);
 
-      setIsSyncing(true);
+    try {
+      toast({
+        title: "🔄 Sincronizzazione in corso...",
+        description: `Invio ${PROJECT_FILES_SNAPSHOT.length} file al database`,
+      });
 
-      try {
-        toast({
-          title: "📂 Lettura ZIP...",
-          description: "Estrazione file in corso",
-        });
+      const { data, error } = await supabase.functions.invoke('sync-project-files', {
+        body: { files: PROJECT_FILES_SNAPSHOT }
+      });
 
-        // Leggi ZIP con JSZip
-        const zip = await JSZip.loadAsync(file);
+      if (error) throw error;
 
-        // Filtra solo src/, supabase/functions/, docs/
-        const targetPaths = ['src/', 'supabase/functions/', 'docs/'];
-        const allFiles: FileData[] = [];
+      toast({
+        title: "✅ Sincronizzazione completata",
+        description: `${data.filesProcessed} file caricati nel database per Albert`,
+      });
 
-        for (const [path, zipEntry] of Object.entries(zip.files)) {
-          // Salta directory
-          if (zipEntry.dir) continue;
+    } catch (error: any) {
+      console.error('Errore sincronizzazione:', error);
 
-          // Filtra solo path target
-          const isTarget = targetPaths.some(prefix => path.startsWith(prefix));
-          if (!isTarget) continue;
-
-          try {
-            // Leggi contenuto come testo
-            const content = await zipEntry.async('text');
-
-            // Estrai metadata
-            const { imports, exports } = extractMetadata(content, path);
-
-            // Determina tipo file
-            const ext = path.split('.').pop()?.toLowerCase() || '';
-            const fileType = ['ts', 'tsx', 'js', 'jsx'].includes(ext) ? ext : 'other';
-
-            allFiles.push({
-              file_path: path,
-              file_type: fileType,
-              content,
-              file_size: content.length,
-              line_count: content.split('\n').length,
-              imports,
-              exports
-            });
-          } catch (err) {
-            console.warn(`Impossibile leggere ${path}:`, err);
-          }
-        }
-
-        if (allFiles.length === 0) {
-          toast({
-            title: "⚠️ Nessun file trovato",
-            description: "Lo ZIP non contiene cartelle src/, supabase/functions/ o docs/",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        toast({
-          title: "💾 Salvataggio nel database...",
-          description: `${allFiles.length} file trovati`,
-        });
-
-        // Pulisci tabella esistente
-        await supabase.from('project_source_files').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-
-        // Inserisci batch (max 100 alla volta)
-        const batchSize = 100;
-        for (let i = 0; i < allFiles.length; i += batchSize) {
-          const batch = allFiles.slice(i, i + batchSize);
-          const { error } = await supabase.from('project_source_files').insert(batch);
-
-          if (error) throw error;
-        }
-
-        toast({
-          title: "✅ Sincronizzazione completata",
-          description: `${allFiles.length} file caricati da ZIP nel database`,
-        });
-
-      } catch (error: any) {
-        console.error('Errore sincronizzazione ZIP:', error);
-
-        toast({
-          title: "❌ Errore Sincronizzazione",
-          description: error.message || "Impossibile processare il file ZIP",
-          variant: "destructive"
-        });
-      } finally {
-        setIsSyncing(false);
-      }
-    };
-
-    // Trigger click
-    input.click();
+      toast({
+        title: "❌ Errore Sincronizzazione",
+        description: error.message || "Impossibile sincronizzare i file",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   return (
@@ -165,15 +98,15 @@ export const SyncSourceFilesButton = () => {
             {isSyncing ? (
               <RefreshCw className="h-4 w-4 animate-spin" />
             ) : (
-              <Upload className="h-4 w-4" />
+              <Database className="h-4 w-4" />
             )}
             <span className="hidden md:inline">
-              {isSyncing ? 'Sincronizzando...' : 'Upload ZIP'}
+              {isSyncing ? 'Sincronizzando...' : 'Sync Files'}
             </span>
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Carica file sorgenti da ZIP esportato da Lovable</p>
+          <p>Carica snapshot files del progetto per Albert</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

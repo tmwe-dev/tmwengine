@@ -1553,6 +1553,15 @@ const ChatLaboratory = () => {
                         <ConversationCostBadge labConversationId={currentConversationId} />
                         <SyncPricingButton />
                         <SyncSourceFilesButton />
+                        
+                        <Alert className="mt-3 bg-blue-500/10 border-blue-500/20">
+                          <Info className="h-4 w-4 text-blue-400" />
+                          <AlertTitle className="text-blue-200 text-xs">Sync Files</AlertTitle>
+                          <AlertDescription className="text-blue-300/70 text-xs">
+                            Carica uno <strong>snapshot statico</strong> dei file del progetto nel database.
+                            Per aggiornare, chiedi a Lovable AI: <code className="text-blue-200">"Rigenera snapshot files"</code>
+                          </AlertDescription>
+                        </Alert>
                       </>
                     ) : (
                       <p className="text-white/50 text-sm text-center py-4">

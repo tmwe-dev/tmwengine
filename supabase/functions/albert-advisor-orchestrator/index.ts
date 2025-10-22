@@ -925,9 +925,11 @@ NON usare placeholder tra parentesi quadre.
           tokenInput = result.tokensIn;
           tokenOutput = result.tokensOut;
           
-          // ✅ ALBERT: Handle tool calls
+          // ✅ ALBERT: Handle tool calls with second turn
           if (result.toolCalls && result.toolCalls.length > 0) {
             console.log(`🔧 [CLAUDE TOOLS] ${currentAgent.name} ha chiamato ${result.toolCalls.length} tool(s)`);
+            
+            const toolResults: any[] = [];
             
             for (const toolCall of result.toolCalls) {
               console.log(`   → Tool: ${toolCall.name}`);
@@ -942,16 +944,46 @@ NON usare placeholder tra parentesi quadre.
               
               console.log(`   → Result: ${toolResult.substring(0, 100)}...`);
               
-              aiResponse += `\n\n[TOOL RESULT: ${toolCall.name}]\n${toolResult}\n[/TOOL RESULT]`;
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolCall.name,
+                content: toolResult
+              });
+            }
+            
+            // ✅ SECONDO TURNO: passa tool results e rigenera risposta
+            if ((!aiResponse || aiResponse.trim().length < 10) && toolResults.length > 0) {
+              console.log(`🔄 Secondo turno Claude con ${toolResults.length} tool results`);
+              
+              const secondTurnHistory = [
+                ...conversationHistory.filter(m => m.role !== 'assistant'),
+                { role: 'assistant', content: result.toolCalls },
+                ...toolResults.map(tr => ({
+                  role: 'user',
+                  content: `[TOOL: ${tr.tool_use_id}]\n${tr.content}`
+                }))
+              ];
+              
+              const secondResult = await callClaude({
+                conversationHistory: secondTurnHistory,
+                apiKey: anthropicConfig.api_key,
+                startTime: Date.now(),
+                tools: undefined // No tools nel secondo turno
+              });
+              
+              aiResponse = secondResult.content;
+              tokenInput += secondResult.tokensIn;
+              tokenOutput += secondResult.tokensOut;
+              
+              console.log(`✅ Secondo turno completato: ${aiResponse.length} chars`);
+            } else {
+              // Fallback: appendi tool results come testo
+              for (const tr of toolResults) {
+                aiResponse += `\n\n[TOOL RESULT: ${tr.tool_use_id}]\n${tr.content}\n[/TOOL RESULT]`;
+              }
             }
           } else {
             console.log(`⚠️ [CLAUDE TOOLS] ${currentAgent.name} NON ha chiamato nessun tool`);
-          }
-          
-          // ✅ Fallback per content vuoto con tool calls
-          if ((!aiResponse || aiResponse.trim().length === 0) && result.toolCalls && result.toolCalls.length > 0) {
-            aiResponse = `[Analisi completata via tool calls - ${result.toolCalls.length} operazioni eseguite]`;
-            console.log(`🔧 Claude: content vuoto ma ${result.toolCalls.length} tool calls → uso fallback`);
           }
         }
         else if (currentAgent.type === 'openai' || currentAgent.type === 'chatgpt') {
@@ -967,9 +999,11 @@ NON usare placeholder tra parentesi quadre.
           tokenInput = result.tokensIn;
           tokenOutput = result.tokensOut;
           
-          // ✅ ALBERT: Handle tool calls
+          // ✅ ALBERT: Handle tool calls with second turn
           if (result.toolCalls && result.toolCalls.length > 0) {
             console.log(`🔧 [GPT TOOLS] ${currentAgent.name} ha chiamato ${result.toolCalls.length} tool(s)`);
+            
+            const toolResults: string[] = [];
             
             for (const toolCall of result.toolCalls) {
               console.log(`   → Tool: ${toolCall.name}`);
@@ -984,7 +1018,36 @@ NON usare placeholder tra parentesi quadre.
               
               console.log(`   → Result: ${toolResult.substring(0, 100)}...`);
               
-              aiResponse += `\n\n[TOOL RESULT: ${toolCall.name}]\n${toolResult}\n[/TOOL RESULT]`;
+              toolResults.push(`[TOOL: ${toolCall.name}]\n${toolResult}`);
+            }
+            
+            // ✅ SECONDO TURNO: passa tool results e rigenera risposta
+            if ((!aiResponse || aiResponse.trim().length < 10) && toolResults.length > 0) {
+              console.log(`🔄 Secondo turno GPT con ${toolResults.length} tool results`);
+              
+              const secondTurnHistory = [
+                ...conversationHistory,
+                { role: 'user', content: toolResults.join('\n\n---\n\n') }
+              ];
+              
+              const secondResult = await callChatGPT({
+                conversationHistory: secondTurnHistory,
+                lovableApiKey: LOVABLE_API_KEY,
+                openaiConfig,
+                startTime: Date.now(),
+                tools: undefined // No tools nel secondo turno
+              });
+              
+              aiResponse = secondResult.content;
+              tokenInput += secondResult.tokensIn;
+              tokenOutput += secondResult.tokensOut;
+              
+              console.log(`✅ Secondo turno completato: ${aiResponse.length} chars`);
+            } else {
+              // Fallback: appendi tool results come testo
+              for (const tr of toolResults) {
+                aiResponse += `\n\n${tr}\n`;
+              }
             }
           } else {
             console.log(`⚠️ [GPT TOOLS] ${currentAgent.name} NON ha chiamato nessun tool`);
@@ -1007,9 +1070,11 @@ NON usare placeholder tra parentesi quadre.
           tokenInput = result.tokensIn;
           tokenOutput = result.tokensOut;
           
-          // ✅ ALBERT: Handle tool calls
+          // ✅ ALBERT: Handle tool calls with second turn
           if (result.toolCalls && result.toolCalls.length > 0) {
             console.log(`🔧 [GEMINI TOOLS] ${currentAgent.name} ha chiamato ${result.toolCalls.length} tool(s)`);
+            
+            const toolResults: string[] = [];
             
             for (const toolCall of result.toolCalls) {
               console.log(`   → Tool: ${toolCall.name}`);
@@ -1024,16 +1089,38 @@ NON usare placeholder tra parentesi quadre.
               
               console.log(`   → Result: ${toolResult.substring(0, 100)}...`);
               
-              aiResponse += `\n\n[TOOL RESULT: ${toolCall.name}]\n${toolResult}\n[/TOOL RESULT]`;
+              toolResults.push(`[TOOL: ${toolCall.name}]\n${toolResult}`);
+            }
+            
+            // ✅ SECONDO TURNO: passa tool results e rigenera risposta
+            if ((!aiResponse || aiResponse.trim().length < 10) && toolResults.length > 0) {
+              console.log(`🔄 Secondo turno Gemini con ${toolResults.length} tool results`);
+              
+              const secondTurnHistory = [
+                ...conversationHistory,
+                { role: 'user', content: toolResults.join('\n\n---\n\n') }
+              ];
+              
+              const secondResult = await callGemini({
+                conversationHistory: secondTurnHistory,
+                lovableApiKey: LOVABLE_API_KEY,
+                startTime: Date.now(),
+                tools: undefined // No tools nel secondo turno
+              });
+              
+              aiResponse = secondResult.content;
+              tokenInput += secondResult.tokensIn;
+              tokenOutput += secondResult.tokensOut;
+              
+              console.log(`✅ Secondo turno completato: ${aiResponse.length} chars`);
+            } else {
+              // Fallback: appendi tool results come testo
+              for (const tr of toolResults) {
+                aiResponse += `\n\n${tr}\n`;
+              }
             }
           } else {
             console.log(`⚠️ [GEMINI TOOLS] ${currentAgent.name} NON ha chiamato nessun tool`);
-          }
-          
-          // ✅ Fallback per content vuoto con tool calls
-          if ((!aiResponse || aiResponse.trim().length === 0) && result.toolCalls && result.toolCalls.length > 0) {
-            aiResponse = `[Analisi completata via tool calls - ${result.toolCalls.length} operazioni eseguite]`;
-            console.log(`🔧 Gemini: content vuoto ma ${result.toolCalls.length} tool calls → uso fallback`);
           }
         }
         else {

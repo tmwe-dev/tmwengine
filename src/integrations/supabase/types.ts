@@ -4025,6 +4025,54 @@ export type Database = {
         }
         Relationships: []
       }
+      project_source_files: {
+        Row: {
+          content: string
+          content_search: unknown
+          created_at: string | null
+          exports: Json | null
+          file_path: string
+          file_size: number
+          file_type: string
+          has_hooks: boolean | null
+          has_supabase_queries: boolean | null
+          id: string
+          imports: Json | null
+          last_synced_at: string | null
+          line_count: number
+        }
+        Insert: {
+          content: string
+          content_search?: unknown
+          created_at?: string | null
+          exports?: Json | null
+          file_path: string
+          file_size: number
+          file_type: string
+          has_hooks?: boolean | null
+          has_supabase_queries?: boolean | null
+          id?: string
+          imports?: Json | null
+          last_synced_at?: string | null
+          line_count: number
+        }
+        Update: {
+          content?: string
+          content_search?: unknown
+          created_at?: string | null
+          exports?: Json | null
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          has_hooks?: boolean | null
+          has_supabase_queries?: boolean | null
+          id?: string
+          imports?: Json | null
+          last_synced_at?: string | null
+          line_count?: number
+        }
+        Relationships: []
+      }
       rubrica: {
         Row: {
           alias: string | null

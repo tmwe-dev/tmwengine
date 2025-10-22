@@ -831,27 +831,44 @@ async function handleToolCall(
     }
   }
 
-  // ============ CODE ACCESS TOOLS HANDLERS ============
+  // ============ CODE ACCESS TOOLS HANDLERS (DATABASE-BACKED) ============
   
   if (toolName === 'list_project_files') {
     const { path } = toolArgs;
-    const targetPath = path || '.';
+    const searchPath = path ? `${path}/%` : '%';
     
     try {
-      const entries = [];
-      for await (const entry of Deno.readDir(targetPath)) {
-        entries.push({
-          name: entry.name,
-          isDirectory: entry.isDirectory,
-          isFile: entry.isFile
-        });
+      const { data, error } = await supabaseClient
+        .from('project_source_files')
+        .select('file_path, file_type, line_count, last_synced_at')
+        .like('file_path', searchPath)
+        .order('file_path');
+      
+      if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        return `Nessun file trovato nel database per il percorso "${path || 'root'}". Esegui sync-project-files per popolare il database.`;
       }
       
-      console.log(`✅ [FILES] ${targetPath} → ${entries.length} items`);
-      return JSON.stringify(entries, null, 2);
+      // Raggruppa per cartella
+      const grouped: any = {};
+      data.forEach(file => {
+        const parts = file.file_path.split('/');
+        const folder = parts.slice(0, -1).join('/') || 'root';
+        if (!grouped[folder]) grouped[folder] = [];
+        grouped[folder].push({
+          name: parts[parts.length - 1],
+          type: file.file_type,
+          lines: file.line_count,
+          lastSync: file.last_synced_at
+        });
+      });
+      
+      console.log(`✅ [FILES] ${path || 'root'} → ${data.length} file dal DB`);
+      return JSON.stringify(grouped, null, 2);
     } catch (err: any) {
-      console.error(`❌ [FILES ERROR] list_project_files(${targetPath}):`, err.message);
-      return `Errore lettura directory ${targetPath}: ${err.message}`;
+      console.error(`❌ [FILES ERROR] list_project_files(${path}):`, err.message);
+      return `Errore recupero file dal DB: ${err.message}`;
     }
   }
   
@@ -859,21 +876,31 @@ async function handleToolCall(
     const { filePath, lines } = toolArgs;
     
     try {
-      const content = await Deno.readTextFile(filePath);
+      const { data, error } = await supabaseClient
+        .from('project_source_files')
+        .select('content, line_count, last_synced_at')
+        .eq('file_path', filePath)
+        .single();
       
-      // Se richieste linee specifiche (es: "10-50")
+      if (error || !data) {
+        console.error(`❌ [READ] File non trovato nel DB: ${filePath}`);
+        return `File "${filePath}" non trovato nel database. Possibili cause:\n1. File non ancora sincronizzato (esegui sync-project-files)\n2. Path errato (usa list_project_files per vedere i percorsi disponibili)`;
+      }
+      
+      let content = data.content;
+      
+      // Filtra linee se richiesto
       if (lines) {
         const [start, end] = lines.split('-').map(Number);
         const allLines = content.split('\n');
-        const selectedLines = allLines.slice(start - 1, end);
-        return selectedLines.join('\n');
+        content = allLines.slice(start - 1, end).join('\n');
       }
       
-      console.log(`✅ [READ] ${filePath} → ${content.length} chars`);
+      console.log(`✅ [READ] ${filePath} → ${content.length} chars dal DB`);
       return content;
     } catch (err: any) {
       console.error(`❌ [READ ERROR] read_source_code(${filePath}):`, err.message);
-      return `Errore lettura file ${filePath}: ${err.message}`;
+      return `Errore lettura file dal DB: ${err.message}`;
     }
   }
   
@@ -881,95 +908,139 @@ async function handleToolCall(
     const { filePath } = toolArgs;
     
     try {
-      const content = await Deno.readTextFile(filePath);
+      const { data, error } = await supabaseClient
+        .from('project_source_files')
+        .select('*')
+        .eq('file_path', filePath)
+        .single();
       
-      // Estrai imports
-      const imports = content.match(/^import .+ from .+$/gm) || [];
+      if (error || !data) {
+        return `Componente "${filePath}" non trovato nel database. Esegui sync-project-files.`;
+      }
       
-      // Estrai interface/type Props
+      const content = data.content;
+      
+      // Parsing avanzato real-time
       const propsMatch = content.match(/interface \w+Props\s*{([^}]+)}/s);
-      const props = propsMatch ? propsMatch[1].trim() : 'Nessuna interfaccia Props trovata';
-      
-      // Estrai hooks (useState, useEffect, custom hooks)
-      const hooks = content.match(/use[A-Z]\w+/g) || [];
-      
-      // Conta linee
-      const lineCount = content.split('\n').length;
+      const stateVars = (content.match(/useState</g) || []).length;
+      const effectCount = (content.match(/useEffect\(/g) || []).length;
+      const queryCount = (content.match(/useQuery\(/g) || []).length;
+      const mutationCount = (content.match(/useMutation\(/g) || []).length;
       
       const analysis = {
         file: filePath,
-        lineCount,
-        imports: imports.slice(0, 10), // Prime 10 imports
-        props,
-        hooksUsed: [...new Set(hooks)], // Hooks unici
-        hasUseEffect: content.includes('useEffect'),
-        hasUseState: content.includes('useState'),
-        hasCustomHooks: hooks.some(h => !h.startsWith('useEffect') && !h.startsWith('useState'))
+        lineCount: data.line_count,
+        fileSize: data.file_size,
+        lastSynced: data.last_synced_at,
+        
+        // Metadata pre-estratto dal DB
+        imports: data.imports.slice(0, 10),
+        exports: data.exports,
+        hasHooks: data.has_hooks,
+        hasSupabaseQueries: data.has_supabase_queries,
+        
+        // Parsing real-time avanzato
+        propsInterface: propsMatch ? propsMatch[1].trim() : 'Non trovata',
+        stateVariables: stateVars,
+        effectHooks: effectCount,
+        reactQueryHooks: queryCount + mutationCount,
+        
+        // Valutazione complessità
+        complexityScore: Math.ceil((data.line_count / 100) + stateVars + (effectCount * 2) + (queryCount * 1.5)),
+        recommendation: data.line_count > 400 
+          ? 'ALTA COMPLESSITÀ: Considera refactoring in componenti più piccoli' 
+          : data.line_count > 200
+          ? 'COMPLESSITÀ MEDIA: Monitorare crescita'
+          : 'COMPLESSITÀ BASSA: Struttura accettabile'
       };
       
-      console.log(`✅ [ANALYZE] ${filePath} → ${lineCount} linee`);
+      console.log(`✅ [ANALYZE] ${filePath} → complexity: ${analysis.complexityScore}`);
       return JSON.stringify(analysis, null, 2);
     } catch (err: any) {
       console.error(`❌ [ANALYZE ERROR] analyze_component(${filePath}):`, err.message);
-      return `Errore analisi componente ${filePath}: ${err.message}`;
+      return `Errore analisi componente: ${err.message}`;
     }
   }
   
   if (toolName === 'search_code') {
     const { pattern, fileExtensions, maxResults } = toolArgs;
-    const extensions = fileExtensions || ['.tsx', '.ts'];
+    const extensions = fileExtensions || ['tsx', 'ts'];
     const max = maxResults || 20;
     
-    const results: any[] = [];
-    
-    async function searchInDir(dir: string) {
-      try {
-        for await (const entry of Deno.readDir(dir)) {
-          const fullPath = `${dir}/${entry.name}`;
+    try {
+      // Full-text search PostgreSQL
+      const { data, error } = await supabaseClient
+        .from('project_source_files')
+        .select('file_path, file_type, line_count, content')
+        .in('file_type', extensions)
+        .textSearch('content_search', pattern, { type: 'websearch' })
+        .limit(max * 2); // Prendi più file per poi filtrare con regex precisa
+      
+      if (error) throw error;
+      
+      // Per ogni file, conta occorrenze esatte con regex
+      const results: any[] = [];
+      for (const file of data || []) {
+        const regex = new RegExp(pattern, 'gi');
+        const matches = file.content.match(regex);
+        
+        if (matches && matches.length > 0) {
+          // Estrai contesto (linee attorno al match)
+          const lines = file.content.split('\n');
+          const firstMatchLine = lines.findIndex(line => regex.test(line));
+          const contextStart = Math.max(0, firstMatchLine - 2);
+          const contextEnd = Math.min(lines.length, firstMatchLine + 3);
+          const contextPreview = lines.slice(contextStart, contextEnd).join('\n');
           
-          if (entry.isDirectory && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
-            await searchInDir(fullPath);
-          } else if (entry.isFile && extensions.some(ext => entry.name.endsWith(ext))) {
-            const content = await Deno.readTextFile(fullPath);
-            const regex = new RegExp(pattern, 'gi');
-            const matches = content.match(regex);
-            
-            if (matches && matches.length > 0) {
-              results.push({
-                file: fullPath,
-                matchCount: matches.length,
-                preview: matches.slice(0, 3) // Prime 3 occorrenze
-              });
-              
-              if (results.length >= max) return;
-            }
-          }
+          results.push({
+            file: file.file_path,
+            matchCount: matches.length,
+            preview: matches.slice(0, 3),
+            contextPreview: contextPreview
+          });
+          
+          if (results.length >= max) break;
         }
-      } catch {}
+      }
+      
+      console.log(`✅ [SEARCH] "${pattern}" → ${results.length} file dal DB`);
+      return JSON.stringify(results, null, 2);
+    } catch (err: any) {
+      console.error(`❌ [SEARCH ERROR] search_code("${pattern}"):`, err.message);
+      return `Errore ricerca codice: ${err.message}`;
     }
-    
-    await searchInDir('src');
-    
-    console.log(`✅ [SEARCH] "${pattern}" → ${results.length} file`);
-    return JSON.stringify(results, null, 2);
   }
   
   if (toolName === 'get_dependencies') {
     try {
-      const packageJson = await Deno.readTextFile('package.json');
-      const pkg = JSON.parse(packageJson);
+      const { data, error } = await supabaseClient
+        .from('project_source_files')
+        .select('content')
+        .eq('file_path', 'package.json')
+        .single();
       
+      if (error || !data) {
+        return 'package.json non trovato nel database. Esegui sync-project-files.';
+      }
+      
+      const pkg = JSON.parse(data.content);
       const deps = {
         dependencies: pkg.dependencies || {},
         devDependencies: pkg.devDependencies || {},
-        totalCount: Object.keys(pkg.dependencies || {}).length + Object.keys(pkg.devDependencies || {}).length
+        totalCount: Object.keys(pkg.dependencies || {}).length + Object.keys(pkg.devDependencies || {}).length,
+        
+        // Analisi aggiuntiva
+        hasReact: !!pkg.dependencies?.['react'],
+        hasSupabase: !!pkg.dependencies?.['@supabase/supabase-js'],
+        hasTailwind: !!pkg.devDependencies?.['tailwindcss'],
+        hasTypeScript: !!pkg.devDependencies?.['typescript']
       };
       
-      console.log(`✅ [DEPS] ${deps.totalCount} pacchetti installati`);
+      console.log(`✅ [DEPS] ${deps.totalCount} pacchetti dal DB`);
       return JSON.stringify(deps, null, 2);
     } catch (err: any) {
       console.error(`❌ [DEPS ERROR] get_dependencies:`, err.message);
-      return `Errore lettura dipendenze: ${err.message}`;
+      return `Errore lettura dipendenze dal DB: ${err.message}`;
     }
   }
 

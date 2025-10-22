@@ -290,3 +290,6 @@ verify_jwt = false
 [functions.albert-advisor-orchestrator]
 verify_jwt = true
 
+[functions.sync-project-files]
+verify_jwt = false
+

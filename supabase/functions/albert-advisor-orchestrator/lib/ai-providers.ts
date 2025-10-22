@@ -43,7 +43,7 @@ export async function callClaude(
     
     const body: any = {
       model: 'claude-sonnet-4-5',
-      max_tokens: 6000,
+      max_tokens: 8000,
       temperature: 0.7,
       messages: userMessages,
       system: fullSystemPrompt

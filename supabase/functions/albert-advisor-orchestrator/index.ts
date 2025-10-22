@@ -955,13 +955,13 @@ NON usare placeholder tra parentesi quadre.
             if ((!aiResponse || aiResponse.trim().length < 10) && toolResults.length > 0) {
               console.log(`🔄 Secondo turno Claude con ${toolResults.length} tool results`);
               
+              const toolResultsText = toolResults.map(tr => 
+                `[TOOL: ${tr.tool_use_id}]\n${tr.content}\n[/TOOL]`
+              ).join('\n\n');
+              
               const secondTurnHistory = [
-                ...conversationHistory.filter(m => m.role !== 'assistant'),
-                { role: 'assistant', content: result.toolCalls },
-                ...toolResults.map(tr => ({
-                  role: 'user',
-                  content: `[TOOL: ${tr.tool_use_id}]\n${tr.content}`
-                }))
+                ...conversationHistory,
+                { role: 'user', content: `Ecco i risultati dei tool:\n\n${toolResultsText}\n\nRispondi in modo chiaro e conciso basandoti su questi dati.` }
               ];
               
               const secondResult = await callClaude({

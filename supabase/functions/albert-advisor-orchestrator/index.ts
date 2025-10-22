@@ -73,6 +73,103 @@ const AI_TOOLS_OPENAI = [
         required: ["title", "file", "problem", "priority"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_project_files",
+      description: "Lista file del progetto Lovable. Utile per esplorare la struttura del codebase.",
+      parameters: {
+        type: "object",
+        properties: {
+          file_type: {
+            type: "string",
+            enum: ["component", "page", "hook", "util", "integration", "other"],
+            description: "Filtra per tipo di file (opzionale)"
+          },
+          limit: { 
+            type: "number", 
+            description: "Numero massimo risultati (default: 50)" 
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "read_source_code",
+      description: "FONDAMENTALE: Leggi il contenuto completo di un file specifico per analisi dettagliata del codice",
+      parameters: {
+        type: "object",
+        properties: {
+          file_path: { 
+            type: "string", 
+            description: "Path completo del file (es: src/pages/ChatLaboratory.tsx)" 
+          }
+        },
+        required: ["file_path"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "analyze_component",
+      description: "Analisi profonda di un componente React: imports, exports, hooks usati, props interface, dipendenze",
+      parameters: {
+        type: "object",
+        properties: {
+          file_path: { 
+            type: "string", 
+            description: "Path del componente React da analizzare" 
+          }
+        },
+        required: ["file_path"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_code",
+      description: "Ricerca full-text nel codebase. Utile per trovare pattern specifici, hook, componenti o API calls",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { 
+            type: "string", 
+            description: "Testo o pattern da cercare nel codice" 
+          },
+          file_type: { 
+            type: "string", 
+            description: "Filtra per tipo di file (opzionale)" 
+          },
+          limit: { 
+            type: "number", 
+            description: "Numero massimo risultati (default: 20)" 
+          }
+        },
+        required: ["query"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_dependencies",
+      description: "Recupera l'albero delle dipendenze di un file per analisi impatto modifiche",
+      parameters: {
+        type: "object",
+        properties: {
+          file_path: { 
+            type: "string", 
+            description: "Path del file di cui analizzare le dipendenze" 
+          }
+        },
+        required: ["file_path"]
+      }
+    }
   }
 ];
 
@@ -122,6 +219,88 @@ const AI_TOOLS_CLAUDE = [
         }
       },
       required: ["title", "file", "problem", "priority"]
+    }
+  },
+  {
+    name: "list_project_files",
+    description: "Lista file del progetto Lovable. Utile per esplorare la struttura del codebase.",
+    input_schema: {
+      type: "object",
+      properties: {
+        file_type: {
+          type: "string",
+          enum: ["component", "page", "hook", "util", "integration", "other"],
+          description: "Filtra per tipo di file (opzionale)"
+        },
+        limit: { 
+          type: "number", 
+          description: "Numero massimo risultati (default: 50)" 
+        }
+      }
+    }
+  },
+  {
+    name: "read_source_code",
+    description: "FONDAMENTALE: Leggi il contenuto completo di un file specifico per analisi dettagliata del codice",
+    input_schema: {
+      type: "object",
+      properties: {
+        file_path: { 
+          type: "string", 
+          description: "Path completo del file (es: src/pages/ChatLaboratory.tsx)" 
+        }
+      },
+      required: ["file_path"]
+    }
+  },
+  {
+    name: "analyze_component",
+    description: "Analisi profonda di un componente React: imports, exports, hooks usati, props interface, dipendenze",
+    input_schema: {
+      type: "object",
+      properties: {
+        file_path: { 
+          type: "string", 
+          description: "Path del componente React da analizzare" 
+        }
+      },
+      required: ["file_path"]
+    }
+  },
+  {
+    name: "search_code",
+    description: "Ricerca full-text nel codebase. Utile per trovare pattern specifici, hook, componenti o API calls",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { 
+          type: "string", 
+          description: "Testo o pattern da cercare nel codice" 
+        },
+        file_type: { 
+          type: "string", 
+          description: "Filtra per tipo di file (opzionale)" 
+        },
+        limit: { 
+          type: "number", 
+          description: "Numero massimo risultati (default: 20)" 
+        }
+      },
+      required: ["query"]
+    }
+  },
+  {
+    name: "get_dependencies",
+    description: "Recupera l'albero delle dipendenze di un file per analisi impatto modifiche",
+    input_schema: {
+      type: "object",
+      properties: {
+        file_path: { 
+          type: "string", 
+          description: "Path del file di cui analizzare le dipendenze" 
+        }
+      },
+      required: ["file_path"]
     }
   }
 ];
@@ -201,6 +380,57 @@ async function handleToolCall(
     } catch (err: any) {
       console.error(`❌ [TOOL ERROR] propose_lovable_task:`, err.message);
       return `Errore proposta task: ${err.message}`;
+    }
+  }
+
+  // ✅ CODE ASSISTANT TOOLS - Integrazione completa
+  const codeAssistantTools = [
+    'list_project_files', 
+    'read_source_code', 
+    'analyze_component', 
+    'search_code', 
+    'get_dependencies'
+  ];
+  
+  if (codeAssistantTools.includes(toolName)) {
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      
+      console.log(`🔍 [CODE ASSISTANT] Chiamata a ${toolName} con args:`, JSON.stringify(toolArgs));
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/code-assistant-tools`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          tool_name: toolName,
+          parameters: toolArgs
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Code Assistant HTTP ${response.status}:`, errorText);
+        throw new Error(`Code Assistant error: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        console.error(`❌ Code Assistant failed:`, data.error);
+        throw new Error(data.error || 'Unknown error');
+      }
+      
+      const resultString = JSON.stringify(data.result, null, 2);
+      console.log(`✅ [CODE ASSISTANT RESULT] ${toolName} → ${resultString.length} chars`);
+      
+      return resultString;
+    } catch (err: any) {
+      console.error(`❌ [CODE ASSISTANT ERROR] ${toolName}:`, err.message);
+      return `Errore esecuzione ${toolName}: ${err.message}`;
     }
   }
 

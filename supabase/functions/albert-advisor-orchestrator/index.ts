@@ -44,7 +44,7 @@ const AI_TOOLS_OPENAI = [
     type: "function",
     function: {
       name: "propose_lovable_task",
-      description: "Proponi un task di miglioramento/fix per Lovable basato su analisi codice o errori rilevati",
+      description: "OBBLIGATORIO: Proponi un task di miglioramento/fix che sarà visibile in /ai-tasks. Usa SEMPRE questo tool quando identifichi problemi, bug, inefficienze o opportunità di miglioramento. Non limitarti a descrivere il problema nel testo della risposta.",
       parameters: {
         type: "object",
         properties: {

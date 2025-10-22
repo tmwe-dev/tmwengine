@@ -38,6 +38,23 @@ export function buildSystemPrompt(params: PromptParams): string {
     composedPrompt += params.dynamicWordLimit + '\n\n';
   }
   
+  // 🚨 OBBLIGO ASSOLUTO - CREAZIONE TASK
+  composedPrompt += '🚨 OBBLIGO ASSOLUTO - CREAZIONE TASK 🚨\n';
+  composedPrompt += 'Quando identifichi problemi, bug, inefficienze o opportunità di miglioramento:\n';
+  composedPrompt += '1. DEVI SEMPRE usare il tool propose_lovable_task per creare un task nella maschera /ai-tasks\n';
+  composedPrompt += '2. Il task deve contenere: title (max 80 char), file (path completo), problem (dettagliato), solution (opzionale), priority (alta/media/bassa)\n';
+  composedPrompt += '3. Routing disponibile: /ai-tasks visualizza tutti i task proposti\n';
+  composedPrompt += '4. NON limitarti a descrivere il problema nel testo: CREA IL TASK\n';
+  composedPrompt += '5. Esempio file path: src/components/ChatLaboratory.tsx\n\n';
+  
+  // 📁 STRUTTURA PROGETTO
+  composedPrompt += '📁 STRUTTURA PROGETTO LOVABLE\n';
+  composedPrompt += '- Componenti React: src/components/*.tsx\n';
+  composedPrompt += '- Pages/Routes: src/pages/*.tsx\n';
+  composedPrompt += '- Edge Functions: supabase/functions/*/index.ts\n';
+  composedPrompt += '- Database: supabase/migrations/*.sql\n';
+  composedPrompt += '- UI Task Management: /ai-tasks (routing già attivo)\n\n';
+  
   composedPrompt += '=== CONTESTO BASE ===\n';
   composedPrompt += baseContent + '\n\n';
 

@@ -1017,9 +1017,13 @@ const ChatLaboratory = () => {
 
     setOperationMode(newMode);
 
+    // ✅ SYNC: Attiva automaticamente Bar Mode quando necessario
     const { error } = await supabase
       .from('chat_laboratory_bar_mode')
-      .update({ operation_mode: newMode })
+      .update({ 
+        operation_mode: newMode,
+        mode: 'bar' // Forza Bar Mode attivo
+      })
       .eq('conversation_id', currentConversationId);
 
     if (error) {
@@ -1031,6 +1035,9 @@ const ChatLaboratory = () => {
       });
       return;
     }
+
+    // ✅ Sincronizza stato locale
+    setIsBarMode(true);
 
     toast({
       title: `Modalità cambiata`,
@@ -1379,14 +1386,12 @@ const ChatLaboratory = () => {
                   {viewMode === 'classic' ? <Columns className="h-4 w-4" /> : <MessagesSquare className="h-4 w-4" />}
                 </Button>
                 
-                {/* ✅ ALBERT: Mode Selector - sempre visibile quando Bar Mode è attivo */}
-                {isBarMode && (
-                  <AlbertModeSelector
-                    currentConversationId={currentConversationId}
-                    currentMode={operationMode}
-                    onModeChange={handleOperationModeChange}
-                  />
-                )}
+                {/* ✅ ALBERT: Mode Selector - sempre visibile */}
+                <AlbertModeSelector
+                  currentConversationId={currentConversationId}
+                  currentMode={operationMode}
+                  onModeChange={handleOperationModeChange}
+                />
                 
                 
                 {/* Maximize Button - sempre visibile */}

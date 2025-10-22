@@ -107,12 +107,13 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
   // Fetch Bar Mode settings
   const { data: barModeSettings } = await supabaseClient
     .from('chat_laboratory_bar_mode')
-    .select('mode, selected_topic, active_kb_id, voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms')
+    .select('mode, operation_mode, selected_topic, active_kb_id, voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms')
     .eq('conversation_id', conversationId)
     .single();
 
-  if (barModeSettings?.mode !== 'bar') {
-    throw new Error('Questa funzione è dedicata alla modalità Bar Chat');
+  // ✅ ALBERT: Verifica operation_mode invece di mode
+  if (barModeSettings?.operation_mode !== 'albert_advisor') {
+    throw new Error('Questa funzione è dedicata alla modalità Albert Advisor');
   }
 
   const selectedTopic = barModeSettings.selected_topic;

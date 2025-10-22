@@ -21,6 +21,7 @@ import { CollapsibleBarSection } from '@/components/chat-laboratory/CollapsibleB
 import { ConversationsSidebar } from '@/components/chat-laboratory/ConversationsSidebar';
 import { OnlineUsersList } from '@/components/chat-laboratory/OnlineUsersList';
 import { LabHeaderControls } from '@/components/chat-laboratory/LabHeaderControls';
+import { AlbertModeSelector } from '@/components/chat-laboratory/AlbertModeSelector';
 import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
@@ -398,6 +399,10 @@ const ChatLaboratory = () => {
       if (data) {
         setIsBarMode(data.mode === 'bar');
         setActiveKnowledgeBase(data.active_kb_id);
+        // ✅ ALBERT: Carica operation_mode con type safety
+        const mode = data.operation_mode as 'bar_chat' | 'albert_advisor' | null;
+        setOperationMode(mode || 'bar_chat');
+        console.log(`🧠 Operation mode caricato: ${mode || 'bar_chat'}`);
       }
 
       // ✅ NUOVO: Carica max_words dal primo voice agent attivo
@@ -899,7 +904,14 @@ const ChatLaboratory = () => {
         
         abortControllerRef.current = new AbortController();
         
-        const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
+        // ✅ ALBERT: Routing dinamico basato su operation_mode
+        const edgeFunctionName = operationMode === 'albert_advisor' 
+          ? 'albert-advisor-orchestrator' 
+          : 'bar-chat-orchestrator';
+        
+        console.log(`🎯 Calling edge function: ${edgeFunctionName} (mode: ${operationMode})`);
+        
+        const { data, error } = await supabase.functions.invoke(edgeFunctionName, {
           body: { 
             conversationId,
             userMessage: currentPrompt,
@@ -990,6 +1002,42 @@ const ChatLaboratory = () => {
     setParticipants(prev => prev.map(p => 
       p.id === participantId ? { ...p, is_active: !p.is_active } : p
     ));
+  };
+
+  // ✅ ALBERT: Handler cambio operation_mode
+  const handleOperationModeChange = async (newMode: 'bar_chat' | 'albert_advisor') => {
+    if (!currentConversationId) {
+      toast({
+        title: "Errore",
+        description: "Seleziona prima una conversazione",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setOperationMode(newMode);
+
+    const { error } = await supabase
+      .from('chat_laboratory_bar_mode')
+      .update({ operation_mode: newMode })
+      .eq('conversation_id', currentConversationId);
+
+    if (error) {
+      console.error('Error updating operation_mode:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile cambiare modalità",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: `Modalità cambiata`,
+      description: newMode === 'albert_advisor' 
+        ? '🧠 Albert Advisor attivo - Gli AI useranno tools per consulenza'
+        : '💬 Bar Chat attivo - Conversazione multi-agente standard'
+    });
   };
 
   // ✅ Opzione D: Trigger async audio generation con retry logic
@@ -1314,7 +1362,7 @@ const ChatLaboratory = () => {
               {/* Center - empty space */}
               <div className="flex items-center gap-1"></div>
 
-              {/* Right side - Participant, View Mode, Maximize and Settings */}
+              {/* Right side - Participant, View Mode, AlbertMode, Maximize and Settings */}
               <div className="flex items-center gap-1">
                 <ParticipantSelector
                   participants={participants}
@@ -1330,6 +1378,15 @@ const ChatLaboratory = () => {
                 >
                   {viewMode === 'classic' ? <Columns className="h-4 w-4" /> : <MessagesSquare className="h-4 w-4" />}
                 </Button>
+                
+                {/* ✅ ALBERT: Mode Selector - sempre visibile quando Bar Mode è attivo */}
+                {isBarMode && (
+                  <AlbertModeSelector
+                    currentConversationId={currentConversationId}
+                    currentMode={operationMode}
+                    onModeChange={handleOperationModeChange}
+                  />
+                )}
                 
                 
                 {/* Maximize Button - sempre visibile */}

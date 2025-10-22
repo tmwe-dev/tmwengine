@@ -48,7 +48,7 @@ import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
 import { AudioModeSelector } from '@/components/chat-laboratory/AudioModeSelector';
 import { CompactControlBar } from '@/components/chat-laboratory/CompactControlBar';
 import { WordLimitSliderCompact } from '@/components/chat-laboratory/WordLimitSliderCompact';
-import { ReIndexButton } from '@/components/chat-laboratory/ReIndexButton';
+
 
 interface Message {
   id: string;
@@ -1593,18 +1593,6 @@ const ChatLaboratory = () => {
                   </CardContent>
                 </Card>
 
-                {/* Admin Tools */}
-                <Card className="bg-white/5 border-white/10">
-                  <CardHeader>
-                    <CardTitle className="text-white text-sm">Manutenzione Sistema</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-white/60 mb-3">
-                      Re-indicizza il codebase per aggiornare la visibilità degli edge functions e documentazione agli agenti AI.
-                    </p>
-                    <ReIndexButton />
-                  </CardContent>
-                </Card>
               </div>
             </div>
           </div>

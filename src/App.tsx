@@ -49,9 +49,7 @@ import EdgeFunctionVersions from "./pages/EdgeFunctionVersions";
 import DatabaseSettings from "./pages/DatabaseSettings";
 import CallRoom from "./pages/CallRoom";
 import EmailRules from "./pages/EmailRules";
-import CodeScreen from "./pages/admin/CodeScreen";
 import TMWEApiTester from "./pages/TMWEApiTester";
-import CodeReview from "./pages/CodeReview";
 import NotificationSettings from "./pages/NotificationSettings";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import DesignLab from "./pages/DesignLab";
@@ -218,11 +216,6 @@ const App = () => {
                 <AdminPrompts />
               </ProtectedRoute>
             } />
-            <Route path="/admin/codescreen" element={
-              <ProtectedRoute>
-                <CodeScreen />
-              </ProtectedRoute>
-            } />
             <Route path="/intranet" element={
               <ProtectedRoute>
                 <CRMLayout><Intranet /></CRMLayout>
@@ -336,13 +329,6 @@ const App = () => {
                     <TMWEApiTester />
                   </CRMLayout>
                 </IntegratedAuthGuard>
-              </ProtectedRoute>
-            } />
-            <Route path="/code-review" element={
-              <ProtectedRoute>
-                <CRMLayout>
-                  <CodeReview />
-                </CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/notification-settings" element={

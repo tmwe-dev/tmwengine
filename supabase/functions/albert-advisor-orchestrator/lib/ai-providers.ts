@@ -43,7 +43,7 @@ export async function callClaude(
     
     const body: any = {
       model: 'claude-sonnet-4-5',
-      max_tokens: 200,
+      max_tokens: 3000,
       temperature: 0.7,
       messages: userMessages,
       system: fullSystemPrompt
@@ -316,7 +316,7 @@ export async function callGemini(
   const result = await withRetry(async () => {
     const requestPayload: any = {
       model: 'google/gemini-2.5-flash',
-      max_tokens: 200,
+      max_tokens: 3000,
       temperature: 0.7,
       messages: conversationHistory
     };

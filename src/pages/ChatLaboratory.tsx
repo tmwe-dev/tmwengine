@@ -38,6 +38,7 @@ import { LabMainControls } from '@/components/chat-laboratory/LabMainControls';
 import { SummaryGenerationButton } from '@/components/chat-laboratory/SummaryGenerationButton';
 import { Link } from 'react-router-dom';
 import { useSummaryAutoGenerator } from '@/hooks/useSummaryAutoGenerator';
+import { useClassicModeAudio } from '@/hooks/useClassicModeAudio';
 import { ConvergenceIndicator } from '@/components/chat-laboratory/ConvergenceIndicator';
 import { IntentBadges } from '@/components/chat-laboratory/IntentBadges';
 import { KnowledgeGraphViewer } from '@/components/chat-laboratory/KnowledgeGraphViewer';
@@ -178,6 +179,12 @@ const ChatLaboratory = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousMessagesLengthRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // ✅ Audio sequenziale per Classic Mode
+  const { handleAudioEnd: handleClassicModeAudioEnd } = useClassicModeAudio(
+    messages,
+    messagesEndRef
+  );
 
   // Listener per beforeunload
   useEffect(() => {
@@ -1712,10 +1719,10 @@ const ChatLaboratory = () => {
               )}
 
               {messages.map((message) => (
-                <div key={message.id}>
+                <div key={message.id} id={`message-${message.id}`}>
                   <MultiAgentMessage 
                     message={message}
-                    onAudioEnd={() => {}}
+                    onAudioEnd={() => handleClassicModeAudioEnd(message.id)}
                   />
                   {message.intent_tags && message.intent_tags.length > 0 && (
                     <div className="ml-16 -mt-2 mb-3">

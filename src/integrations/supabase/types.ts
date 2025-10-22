@@ -1295,7 +1295,7 @@ export type Database = {
           complexity_score: number | null
           components: Json | null
           content: string
-          content_tsvector: unknown | null
+          content_tsvector: unknown
           created_at: string | null
           dependencies: Json | null
           exports: Json | null
@@ -1313,7 +1313,7 @@ export type Database = {
           complexity_score?: number | null
           components?: Json | null
           content: string
-          content_tsvector?: unknown | null
+          content_tsvector?: unknown
           created_at?: string | null
           dependencies?: Json | null
           exports?: Json | null
@@ -1331,7 +1331,7 @@ export type Database = {
           complexity_score?: number | null
           components?: Json | null
           content?: string
-          content_tsvector?: unknown | null
+          content_tsvector?: unknown
           created_at?: string | null
           dependencies?: Json | null
           exports?: Json | null
@@ -5117,10 +5117,6 @@ export type Database = {
       }
     }
     Functions: {
-      binary_quantize: {
-        Args: { "": string } | { "": unknown }
-        Returns: unknown
-      }
       check_elevenlabs_quota: {
         Args: { p_characters: number; p_user_id: string }
         Returns: Json
@@ -5129,10 +5125,7 @@ export type Database = {
         Args: { table_name: string }
         Returns: boolean
       }
-      clean_expired_access_requests: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      clean_expired_access_requests: { Args: never; Returns: undefined }
       create_activity_records: {
         Args: { activity_data: Json }
         Returns: undefined
@@ -5146,18 +5139,22 @@ export type Database = {
         Returns: number
       }
       get_tables_with_counts: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           row_count: number
           table_name: string
         }[]
       }
-      get_temp_table_data: {
-        Args:
-          | { page_limit?: number; page_offset?: number; table_name: string }
-          | { table_name: string }
-        Returns: Json
-      }
+      get_temp_table_data:
+        | {
+            Args: {
+              page_limit?: number
+              page_offset?: number
+              table_name: string
+            }
+            Returns: Json
+          }
+        | { Args: { table_name: string }; Returns: Json }
       get_unread_messages_count: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: number
@@ -5167,47 +5164,11 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_users_email_counts: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           count: number
           email: string
         }[]
-      }
-      gtrgm_compress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { "": unknown }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      halfvec_avg: {
-        Args: { "": number[] }
-        Returns: unknown
-      }
-      halfvec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      halfvec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      halfvec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
       }
       has_role: {
         Args: {
@@ -5223,22 +5184,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      hnsw_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_sparsevec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnswhandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
       increment_elevenlabs_usage: {
         Args: { p_characters: number; p_cost: number; p_user_id: string }
         Returns: undefined
@@ -5247,33 +5192,10 @@ export type Database = {
         Args: { p_id: string; p_table: string; p_tokens_to_add: number }
         Returns: number
       }
-      is_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_room_member: {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
-      }
-      ivfflat_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflathandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      l2_norm: {
-        Args: { "": unknown } | { "": unknown }
-        Returns: number
-      }
-      l2_normalize: {
-        Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: unknown
       }
       match_knowledge_nodes: {
         Args: {
@@ -5291,10 +5213,7 @@ export type Database = {
           text: string
         }[]
       }
-      reset_ai_invocations: {
-        Args: { p_room_id: string }
-        Returns: undefined
-      }
+      reset_ai_invocations: { Args: { p_room_id: string }; Returns: undefined }
       reset_token_count: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
@@ -5344,30 +5263,8 @@ export type Database = {
           title: string
         }[]
       }
-      set_limit: {
-        Args: { "": number }
-        Returns: number
-      }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      show_trgm: {
-        Args: { "": string }
-        Returns: string[]
-      }
-      sparsevec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       transfer_company_to_rubrica: {
         Args: { imported_contact_id: string }
         Returns: Json
@@ -5375,30 +5272,6 @@ export type Database = {
       transfer_multiple_companies_to_rubrica: {
         Args: { imported_contact_ids: string[] }
         Returns: Json
-      }
-      vector_avg: {
-        Args: { "": number[] }
-        Returns: string
-      }
-      vector_dims: {
-        Args: { "": string } | { "": unknown }
-        Returns: number
-      }
-      vector_norm: {
-        Args: { "": string }
-        Returns: number
-      }
-      vector_out: {
-        Args: { "": string }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: { "": string }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
       }
     }
     Enums: {

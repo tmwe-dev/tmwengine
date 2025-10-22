@@ -20,7 +20,8 @@ const corsHeaders = {
 };
 
 // ============ AI TOOLS DEFINITION ============
-const AI_TOOLS = [
+// OpenAI/Lovable format (for GPT/Gemini)
+const AI_TOOLS_OPENAI = [
   {
     type: "function",
     function: {
@@ -75,6 +76,56 @@ const AI_TOOLS = [
   }
 ];
 
+// Anthropic Claude format (different structure)
+const AI_TOOLS_CLAUDE = [
+  {
+    name: "read_lovable_docs",
+    description: "Leggi documentazione Lovable per analizzare struttura progetto, errori runtime, task proposti o cronologia modifiche",
+    input_schema: {
+      type: "object",
+      properties: {
+        docType: {
+          type: "string",
+          enum: ["overview", "errors", "tasks", "history"],
+          description: "Tipo di documento: overview=struttura app, errors=errori rilevati, tasks=coda task, history=modifiche recenti"
+        }
+      },
+      required: ["docType"]
+    }
+  },
+  {
+    name: "propose_lovable_task",
+    description: "Proponi un task di miglioramento/fix per Lovable basato su analisi codice o errori rilevati",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: {
+          type: "string",
+          description: "Titolo breve del task (max 80 char)"
+        },
+        file: {
+          type: "string",
+          description: "Path del file da modificare (es: ChatLaboratory.tsx)"
+        },
+        problem: {
+          type: "string",
+          description: "Descrizione dettagliata del problema da risolvere"
+        },
+        solution: {
+          type: "string",
+          description: "Soluzione proposta (opzionale)"
+        },
+        priority: {
+          type: "string",
+          enum: ["alta", "media", "bassa"],
+          description: "Priorità del task"
+        }
+      },
+      required: ["title", "file", "problem", "priority"]
+    }
+  }
+];
+
 // ============ TOOL EXECUTION HANDLER ============
 async function handleToolCall(
   toolName: string,
@@ -82,7 +133,8 @@ async function handleToolCall(
   agentName: string,
   supabaseClient: any
 ): Promise<string> {
-  console.log(`🔧 ${agentName} calling tool: ${toolName}`);
+  console.log(`🔧 [TOOL CALL] ${agentName} → ${toolName}`);
+  console.log(`📝 [TOOL ARGS] ${JSON.stringify(toolArgs, null, 2)}`);
 
   if (toolName === 'read_lovable_docs') {
     const { docType } = toolArgs;
@@ -94,13 +146,15 @@ async function handleToolCall(
 
       if (error) throw error;
 
-      console.log(`📄 ${agentName} read ${docType} doc (${JSON.stringify(data).length} chars)`);
-      
-      return typeof data.content === 'string' 
+      const resultContent = typeof data.content === 'string' 
         ? data.content 
         : JSON.stringify(data.content, null, 2);
+      
+      console.log(`✅ [TOOL RESULT] read_lovable_docs(${docType}) → ${resultContent.length} chars`);
+      
+      return resultContent;
     } catch (err: any) {
-      console.error(`❌ Failed to read ${docType}:`, err);
+      console.error(`❌ [TOOL ERROR] read_lovable_docs(${docType}):`, err.message);
       return `Errore lettura ${docType}: ${err.message}`;
     }
   }
@@ -125,11 +179,14 @@ async function handleToolCall(
 
       if (error) throw error;
 
-      console.log(`✅ ${agentName} proposed task: ${title} (ID: ${data.taskId})`);
+      console.log(`✅ [TOOL RESULT] propose_lovable_task → Task ID: ${data.taskId}`);
+      console.log(`   📋 Title: ${title}`);
+      console.log(`   📁 File: ${file}`);
+      console.log(`   ⚡ Priority: ${priority}`);
       
       return `Task proposto con successo. ID: ${data.taskId}. Sarà visibile in ai-tasks.md dopo approvazione utente.`;
     } catch (err: any) {
-      console.error(`❌ Failed to propose task:`, err);
+      console.error(`❌ [TOOL ERROR] propose_lovable_task:`, err.message);
       return `Errore proposta task: ${err.message}`;
     }
   }
@@ -263,8 +320,9 @@ serve(async (req) => {
     const allResponses: any[] = [];
     
     for (let i = 0; i < sortedParticipants.length; i++) {
+      const currentAgent = sortedParticipants[i]; // ✅ FIX: Moved outside try-catch
+      
       try {
-        const currentAgent = sortedParticipants[i];
         console.log(`\n🎯 Agente ${i + 1}/${sortedParticipants.length}: ${currentAgent.name}`);
         
         // ============ BUILD TURN CONTEXT ============
@@ -388,7 +446,7 @@ NON usare placeholder tra parentesi quadre.
             conversationHistory,
             apiKey: anthropicConfig.api_key,
             startTime,
-            tools: AI_TOOLS // ✅ ALBERT: Passa tools
+            tools: AI_TOOLS_CLAUDE // ✅ FIX: Formato Anthropic corretto
           });
           
           aiResponse = result.content;
@@ -397,9 +455,12 @@ NON usare placeholder tra parentesi quadre.
           
           // ✅ ALBERT: Handle tool calls
           if (result.toolCalls && result.toolCalls.length > 0) {
-            console.log(`🔧 ${currentAgent.name} ha chiamato ${result.toolCalls.length} tool(s)`);
+            console.log(`🔧 [CLAUDE TOOLS] ${currentAgent.name} ha chiamato ${result.toolCalls.length} tool(s)`);
             
             for (const toolCall of result.toolCalls) {
+              console.log(`   → Tool: ${toolCall.name}`);
+              console.log(`   → Args: ${JSON.stringify(toolCall.arguments)}`);
+              
               const toolResult = await handleToolCall(
                 toolCall.name,
                 toolCall.arguments,
@@ -407,8 +468,12 @@ NON usare placeholder tra parentesi quadre.
                 supabaseClient
               );
               
+              console.log(`   → Result: ${toolResult.substring(0, 100)}...`);
+              
               aiResponse += `\n\n[TOOL RESULT: ${toolCall.name}]\n${toolResult}\n[/TOOL RESULT]`;
             }
+          } else {
+            console.log(`⚠️ [CLAUDE TOOLS] ${currentAgent.name} NON ha chiamato nessun tool`);
           }
         }
         else if (currentAgent.type === 'openai' || currentAgent.type === 'chatgpt') {
@@ -417,7 +482,7 @@ NON usare placeholder tra parentesi quadre.
             lovableApiKey: LOVABLE_API_KEY,
             openaiConfig,
             startTime,
-            tools: AI_TOOLS // ✅ ALBERT: Passa tools
+            tools: AI_TOOLS_OPENAI // ✅ OpenAI format
           });
           
           aiResponse = result.content;
@@ -426,9 +491,12 @@ NON usare placeholder tra parentesi quadre.
           
           // ✅ ALBERT: Handle tool calls
           if (result.toolCalls && result.toolCalls.length > 0) {
-            console.log(`🔧 ${currentAgent.name} ha chiamato ${result.toolCalls.length} tool(s)`);
+            console.log(`🔧 [GPT TOOLS] ${currentAgent.name} ha chiamato ${result.toolCalls.length} tool(s)`);
             
             for (const toolCall of result.toolCalls) {
+              console.log(`   → Tool: ${toolCall.name}`);
+              console.log(`   → Args: ${JSON.stringify(toolCall.arguments)}`);
+              
               const toolResult = await handleToolCall(
                 toolCall.name,
                 toolCall.arguments,
@@ -436,8 +504,12 @@ NON usare placeholder tra parentesi quadre.
                 supabaseClient
               );
               
+              console.log(`   → Result: ${toolResult.substring(0, 100)}...`);
+              
               aiResponse += `\n\n[TOOL RESULT: ${toolCall.name}]\n${toolResult}\n[/TOOL RESULT]`;
             }
+          } else {
+            console.log(`⚠️ [GPT TOOLS] ${currentAgent.name} NON ha chiamato nessun tool`);
           }
           
           if (!aiResponse || aiResponse.trim().length === 0) {
@@ -450,7 +522,7 @@ NON usare placeholder tra parentesi quadre.
             conversationHistory,
             lovableApiKey: LOVABLE_API_KEY,
             startTime,
-            tools: AI_TOOLS // ✅ ALBERT: Passa tools
+            tools: AI_TOOLS_OPENAI // ✅ OpenAI format (Lovable gateway)
           });
           
           aiResponse = result.content;
@@ -459,9 +531,12 @@ NON usare placeholder tra parentesi quadre.
           
           // ✅ ALBERT: Handle tool calls
           if (result.toolCalls && result.toolCalls.length > 0) {
-            console.log(`🔧 ${currentAgent.name} ha chiamato ${result.toolCalls.length} tool(s)`);
+            console.log(`🔧 [GEMINI TOOLS] ${currentAgent.name} ha chiamato ${result.toolCalls.length} tool(s)`);
             
             for (const toolCall of result.toolCalls) {
+              console.log(`   → Tool: ${toolCall.name}`);
+              console.log(`   → Args: ${JSON.stringify(toolCall.arguments)}`);
+              
               const toolResult = await handleToolCall(
                 toolCall.name,
                 toolCall.arguments,
@@ -469,8 +544,12 @@ NON usare placeholder tra parentesi quadre.
                 supabaseClient
               );
               
+              console.log(`   → Result: ${toolResult.substring(0, 100)}...`);
+              
               aiResponse += `\n\n[TOOL RESULT: ${toolCall.name}]\n${toolResult}\n[/TOOL RESULT]`;
             }
+          } else {
+            console.log(`⚠️ [GEMINI TOOLS] ${currentAgent.name} NON ha chiamato nessun tool`);
           }
         }
         else {

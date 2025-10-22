@@ -279,7 +279,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.get-ai-docs]
-verify_jwt = true
+verify_jwt = false
 
 [functions.log-error]
 verify_jwt = false

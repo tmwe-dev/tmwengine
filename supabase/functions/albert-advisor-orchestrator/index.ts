@@ -475,6 +475,12 @@ NON usare placeholder tra parentesi quadre.
           } else {
             console.log(`⚠️ [CLAUDE TOOLS] ${currentAgent.name} NON ha chiamato nessun tool`);
           }
+          
+          // ✅ Fallback per content vuoto con tool calls
+          if ((!aiResponse || aiResponse.trim().length === 0) && result.toolCalls && result.toolCalls.length > 0) {
+            aiResponse = `[Analisi completata via tool calls - ${result.toolCalls.length} operazioni eseguite]`;
+            console.log(`🔧 Claude: content vuoto ma ${result.toolCalls.length} tool calls → uso fallback`);
+          }
         }
         else if (currentAgent.type === 'openai' || currentAgent.type === 'chatgpt') {
           const result = await callChatGPT({
@@ -550,6 +556,12 @@ NON usare placeholder tra parentesi quadre.
             }
           } else {
             console.log(`⚠️ [GEMINI TOOLS] ${currentAgent.name} NON ha chiamato nessun tool`);
+          }
+          
+          // ✅ Fallback per content vuoto con tool calls
+          if ((!aiResponse || aiResponse.trim().length === 0) && result.toolCalls && result.toolCalls.length > 0) {
+            aiResponse = `[Analisi completata via tool calls - ${result.toolCalls.length} operazioni eseguite]`;
+            console.log(`🔧 Gemini: content vuoto ma ${result.toolCalls.length} tool calls → uso fallback`);
           }
         }
         else {

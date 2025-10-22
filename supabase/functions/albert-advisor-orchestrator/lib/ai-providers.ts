@@ -80,7 +80,7 @@ export async function callClaude(
     const textContent = data.content
       ?.filter((block: any) => block.type === 'text')
       .map((block: any) => block.text)
-      .join('\n') || '[ERRORE: Claude ha ritornato content vuoto]';
+      .join('\n') || '';
     
     // ✅ ALBERT: Extract tool calls
     const toolCalls = data.content
@@ -199,7 +199,7 @@ export async function callChatGPT(
       console.log(`✅ GPT-5: ${toolCalls.length} tool calls estratti`);
       
       return {
-        content: content.trim() || '[ERRORE: GPT-5 ha ritornato content vuoto]',
+        content: content.trim() || '',
         tokensIn: data.usage?.prompt_tokens || 0,
         tokensOut: data.usage?.completion_tokens || 0,
         duration: Date.now() - startTime,
@@ -287,7 +287,7 @@ export async function callChatGPT(
       console.log(`✅ GPT (direct): ${toolCalls.length} tool calls estratti`);
       
       return {
-        content: data.choices?.[0]?.message?.content?.trim() || '[ERRORE: ChatGPT ha ritornato content vuoto]',
+        content: data.choices?.[0]?.message?.content?.trim() || '',
         tokensIn: data.usage?.prompt_tokens || 0,
         tokensOut: data.usage?.completion_tokens || 0,
         duration: Date.now() - startTime,
@@ -358,7 +358,7 @@ export async function callGemini(
     console.log(`✅ Gemini: ${toolCalls.length} tool calls estratti`);
     
     return {
-      content: data.choices?.[0]?.message?.content?.trim() || '[ERRORE: Gemini ha ritornato content vuoto]',
+      content: data.choices?.[0]?.message?.content?.trim() || '',
       tokensIn: data.usage?.prompt_tokens || 0,
       tokensOut: data.usage?.completion_tokens || 0,
       duration: Date.now() - startTime,

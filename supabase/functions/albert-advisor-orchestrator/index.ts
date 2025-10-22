@@ -952,7 +952,7 @@ NON usare placeholder tra parentesi quadre.
             }
             
             // ✅ SECONDO TURNO: passa tool results e rigenera risposta
-            if ((!aiResponse || aiResponse.trim().length < 10) && toolResults.length > 0) {
+            if (toolResults.length > 0 && (!aiResponse || aiResponse.trim().length === 0)) {
               console.log(`🔄 Secondo turno Claude con ${toolResults.length} tool results`);
               
               const toolResultsText = toolResults.map(tr => 
@@ -976,6 +976,12 @@ NON usare placeholder tra parentesi quadre.
               tokenOutput += secondResult.tokensOut;
               
               console.log(`✅ Secondo turno completato: ${aiResponse.length} chars`);
+              
+              // Verifica finale: se ancora vuoto dopo secondo turno, genera errore
+              if (!aiResponse || aiResponse.trim().length === 0) {
+                console.error(`❌ ${currentAgent.name} ha ritornato vuoto anche dopo secondo turno`);
+                aiResponse = `[ERRORE: ${currentAgent.name} ha ritornato content vuoto anche dopo elaborazione tool]`;
+              }
             } else {
               // Fallback: appendi tool results come testo
               for (const tr of toolResults) {
@@ -1022,7 +1028,7 @@ NON usare placeholder tra parentesi quadre.
             }
             
             // ✅ SECONDO TURNO: passa tool results e rigenera risposta
-            if ((!aiResponse || aiResponse.trim().length < 10) && toolResults.length > 0) {
+            if (toolResults.length > 0 && (!aiResponse || aiResponse.trim().length === 0)) {
               console.log(`🔄 Secondo turno GPT con ${toolResults.length} tool results`);
               
               const secondTurnHistory = [
@@ -1043,6 +1049,12 @@ NON usare placeholder tra parentesi quadre.
               tokenOutput += secondResult.tokensOut;
               
               console.log(`✅ Secondo turno completato: ${aiResponse.length} chars`);
+              
+              // Verifica finale: se ancora vuoto dopo secondo turno, genera errore
+              if (!aiResponse || aiResponse.trim().length === 0) {
+                console.error(`❌ ${currentAgent.name} ha ritornato vuoto anche dopo secondo turno`);
+                aiResponse = `[ERRORE: ${currentAgent.name} ha ritornato content vuoto anche dopo elaborazione tool]`;
+              }
             } else {
               // Fallback: appendi tool results come testo
               for (const tr of toolResults) {
@@ -1093,7 +1105,7 @@ NON usare placeholder tra parentesi quadre.
             }
             
             // ✅ SECONDO TURNO: passa tool results e rigenera risposta
-            if ((!aiResponse || aiResponse.trim().length < 10) && toolResults.length > 0) {
+            if (toolResults.length > 0 && (!aiResponse || aiResponse.trim().length === 0)) {
               console.log(`🔄 Secondo turno Gemini con ${toolResults.length} tool results`);
               
               const secondTurnHistory = [
@@ -1113,6 +1125,12 @@ NON usare placeholder tra parentesi quadre.
               tokenOutput += secondResult.tokensOut;
               
               console.log(`✅ Secondo turno completato: ${aiResponse.length} chars`);
+              
+              // Verifica finale: se ancora vuoto dopo secondo turno, genera errore
+              if (!aiResponse || aiResponse.trim().length === 0) {
+                console.error(`❌ ${currentAgent.name} ha ritornato vuoto anche dopo secondo turno`);
+                aiResponse = `[ERRORE: ${currentAgent.name} ha ritornato content vuoto anche dopo elaborazione tool]`;
+              }
             } else {
               // Fallback: appendi tool results come testo
               for (const tr of toolResults) {

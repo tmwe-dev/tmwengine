@@ -115,7 +115,8 @@ const ChatLaboratory = () => {
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [conversationMode, setConversationMode] = useState<'ptt' | 'continuous'>('ptt');
   const [isAutoFollowEnabled, setIsAutoFollowEnabled] = useState(true);
-  const [globalMaxWords, setGlobalMaxWords] = useState(60); // ✅ NUOVO: Limite parole globale
+  const [globalMaxWords, setGlobalMaxWords] = useState(60);
+  const [operationMode, setOperationMode] = useState<'bar_chat' | 'albert_advisor'>('bar_chat');
 
   // Forza vista tabs quando Bar Mode è attivo
   useEffect(() => {

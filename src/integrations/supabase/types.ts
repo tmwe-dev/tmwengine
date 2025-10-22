@@ -417,6 +417,36 @@ export type Database = {
           },
         ]
       }
+      chat_laboratory_albert_prompts: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          system_prompt: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          system_prompt: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          system_prompt?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chat_laboratory_audio_responses: {
         Row: {
           agent_id: string
@@ -480,6 +510,7 @@ export type Database = {
           interrupt_requested: boolean | null
           kb_navigation_history: Json | null
           mode: string
+          operation_mode: string
           pause_between_turns_ms: number | null
           preset: string
           response_mode: string
@@ -506,6 +537,7 @@ export type Database = {
           interrupt_requested?: boolean | null
           kb_navigation_history?: Json | null
           mode?: string
+          operation_mode?: string
           pause_between_turns_ms?: number | null
           preset?: string
           response_mode?: string
@@ -532,6 +564,7 @@ export type Database = {
           interrupt_requested?: boolean | null
           kb_navigation_history?: Json | null
           mode?: string
+          operation_mode?: string
           pause_between_turns_ms?: number | null
           preset?: string
           response_mode?: string

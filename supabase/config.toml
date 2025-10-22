@@ -287,3 +287,6 @@ verify_jwt = false
 [functions.manage-ai-tasks]
 verify_jwt = false
 
+[functions.albert-advisor-orchestrator]
+verify_jwt = true
+

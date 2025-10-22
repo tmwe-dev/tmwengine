@@ -1602,25 +1602,6 @@ const ChatLaboratory = () => {
         </>
       )}
 
-      {/* Alert iframe warning - Sync Files */}
-      {typeof window !== 'undefined' && window.self !== window.top && (
-        <div className="container mx-auto px-3 pt-3">
-          <Alert className="bg-amber-500/10 border-amber-500/30">
-            <Info className="h-4 w-4 text-amber-500" />
-            <AlertTitle className="text-amber-600 dark:text-amber-400">Sync Files richiede finestra standalone</AlertTitle>
-            <AlertDescription className="text-amber-700 dark:text-amber-300">
-              Il browser blocca il file picker negli iframe per motivi di sicurezza.
-              <Button 
-                variant="link" 
-                className="h-auto p-0 ml-1 text-amber-600 dark:text-amber-400 underline"
-                onClick={() => window.open(window.location.href, '_blank')}
-              >
-                Apri in nuova finestra
-              </Button>
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
 
       {/* Messaggi */}
       <div className="flex-1 overflow-hidden relative">

@@ -1015,19 +1015,32 @@ const ChatLaboratory = () => {
       return;
     }
 
+    // 🔍 DEBUG: Stato PRIMA del cambio
+    const { data: before } = await supabase
+      .from('chat_laboratory_bar_mode')
+      .select('operation_mode, mode, user_id')
+      .eq('conversation_id', currentConversationId)
+      .single();
+    
+    console.log('🔍 BEFORE UPDATE:', before);
+
     setOperationMode(newMode);
 
-    // ✅ SYNC: Attiva automaticamente Bar Mode quando necessario
+    // ✅ UPSERT: Crea o aggiorna con user_id per RLS policy
+    const { data: currentUser } = await supabase.auth.getUser();
     const { error } = await supabase
       .from('chat_laboratory_bar_mode')
-      .update({ 
+      .upsert({ 
+        conversation_id: currentConversationId,
+        user_id: currentUser.user?.id, // ← Fix RLS policy
         operation_mode: newMode,
-        mode: 'bar' // Forza Bar Mode attivo
-      })
-      .eq('conversation_id', currentConversationId);
+        mode: 'bar'
+      }, {
+        onConflict: 'conversation_id'
+      });
 
     if (error) {
-      console.error('Error updating operation_mode:', error);
+      console.error('❌ Error updating operation_mode:', error);
       toast({
         title: "Errore",
         description: "Impossibile cambiare modalità",
@@ -1035,6 +1048,15 @@ const ChatLaboratory = () => {
       });
       return;
     }
+
+    // 🔍 DEBUG: Stato DOPO il cambio
+    const { data: after } = await supabase
+      .from('chat_laboratory_bar_mode')
+      .select('operation_mode, mode, user_id')
+      .eq('conversation_id', currentConversationId)
+      .single();
+    
+    console.log('✅ AFTER UPDATE:', after);
 
     // ✅ Sincronizza stato locale
     setIsBarMode(true);

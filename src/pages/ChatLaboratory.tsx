@@ -957,7 +957,12 @@ const ChatLaboratory = () => {
           
           abortControllerRef.current = new AbortController();
           
-          const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
+          // ✅ Routing dinamico basato su operationMode
+          const edgeFunctionName = operationMode === 'albert_advisor' 
+            ? 'albert-advisor-orchestrator' 
+            : 'chat-laboratory-orchestrator';
+          
+          const { data, error } = await supabase.functions.invoke(edgeFunctionName, {
             body: { 
               conversationId,
               userMessage: currentPrompt,

@@ -170,6 +170,164 @@ const AI_TOOLS_OPENAI = [
         required: ["file_path"]
       }
     }
+  },
+  // ============ DATABASE TOOLS ============
+  {
+    type: "function",
+    function: {
+      name: "query_database",
+      description: "Esegui query SELECT sul database per leggere dati da qualsiasi tabella pubblica. Accesso completo a tutte le tabelle: chat_laboratory_*, rubrica, attivita, intranet_*, knowledge_base_*, email_messages, etc.",
+      parameters: {
+        type: "object",
+        properties: {
+          table: {
+            type: "string",
+            description: "Nome della tabella (es: chat_laboratory_conversations, rubrica, attivita)"
+          },
+          columns: {
+            type: "string",
+            description: "Colonne da selezionare, separate da virgola (es: 'id,name,email' o '*' per tutte)"
+          },
+          filters: {
+            type: "object",
+            description: "Filtri WHERE come oggetto chiave-valore (es: {user_id: 'uuid', is_active: true})"
+          },
+          order_by: {
+            type: "string",
+            description: "Colonna per ordinamento (es: 'created_at')"
+          },
+          order_desc: {
+            type: "boolean",
+            description: "Se true, ordina in modo discendente"
+          },
+          limit: {
+            type: "number",
+            description: "Numero massimo di righe da restituire (default: 100, max: 1000)"
+          }
+        },
+        required: ["table", "columns"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "count_records",
+      description: "Conta record in una tabella con filtri opzionali",
+      parameters: {
+        type: "object",
+        properties: {
+          table: {
+            type: "string",
+            description: "Nome della tabella"
+          },
+          filters: {
+            type: "object",
+            description: "Filtri WHERE come oggetto chiave-valore"
+          }
+        },
+        required: ["table"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "insert_record",
+      description: "Inserisci un nuovo record in una tabella. Usa per creare attività CRM, contatti, note, etc.",
+      parameters: {
+        type: "object",
+        properties: {
+          table: {
+            type: "string",
+            description: "Nome della tabella (es: attivita, rubrica)"
+          },
+          data: {
+            type: "object",
+            description: "Dati da inserire come oggetto chiave-valore"
+          }
+        },
+        required: ["table", "data"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_record",
+      description: "Aggiorna record esistenti in una tabella",
+      parameters: {
+        type: "object",
+        properties: {
+          table: {
+            type: "string",
+            description: "Nome della tabella"
+          },
+          filters: {
+            type: "object",
+            description: "Filtri WHERE per identificare i record da aggiornare"
+          },
+          data: {
+            type: "object",
+            description: "Nuovi valori da impostare"
+          }
+        },
+        required: ["table", "filters", "data"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_knowledge_base",
+      description: "Cerca documenti nella knowledge base usando ricerca semantica con embeddings",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Query di ricerca testuale"
+          },
+          kb_id: {
+            type: "string",
+            description: "ID della knowledge base (opzionale, cerca in tutte se omesso)"
+          },
+          limit: {
+            type: "number",
+            description: "Numero massimo risultati (default: 5)"
+          }
+        },
+        required: ["query"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_table_schema",
+      description: "Ottieni schema di una tabella (colonne, tipi, constraints) per capire come strutturare query",
+      parameters: {
+        type: "object",
+        properties: {
+          table: {
+            type: "string",
+            description: "Nome della tabella"
+          }
+        },
+        required: ["table"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_all_tables",
+      description: "Lista tutte le tabelle disponibili nel database con conteggio record",
+      parameters: {
+        type: "object",
+        properties: {}
+      }
+    }
   }
 ];
 
@@ -302,6 +460,143 @@ const AI_TOOLS_CLAUDE = [
       },
       required: ["file_path"]
     }
+  },
+  // ============ DATABASE TOOLS ============
+  {
+    name: "query_database",
+    description: "Esegui query SELECT sul database per leggere dati da qualsiasi tabella pubblica. Accesso completo a tutte le tabelle: chat_laboratory_*, rubrica, attivita, intranet_*, knowledge_base_*, email_messages, etc.",
+    input_schema: {
+      type: "object",
+      properties: {
+        table: {
+          type: "string",
+          description: "Nome della tabella (es: chat_laboratory_conversations, rubrica, attivita)"
+        },
+        columns: {
+          type: "string",
+          description: "Colonne da selezionare, separate da virgola (es: 'id,name,email' o '*' per tutte)"
+        },
+        filters: {
+          type: "object",
+          description: "Filtri WHERE come oggetto chiave-valore (es: {user_id: 'uuid', is_active: true})"
+        },
+        order_by: {
+          type: "string",
+          description: "Colonna per ordinamento (es: 'created_at')"
+        },
+        order_desc: {
+          type: "boolean",
+          description: "Se true, ordina in modo discendente"
+        },
+        limit: {
+          type: "number",
+          description: "Numero massimo di righe da restituire (default: 100, max: 1000)"
+        }
+      },
+      required: ["table", "columns"]
+    }
+  },
+  {
+    name: "count_records",
+    description: "Conta record in una tabella con filtri opzionali",
+    input_schema: {
+      type: "object",
+      properties: {
+        table: {
+          type: "string",
+          description: "Nome della tabella"
+        },
+        filters: {
+          type: "object",
+          description: "Filtri WHERE come oggetto chiave-valore"
+        }
+      },
+      required: ["table"]
+    }
+  },
+  {
+    name: "insert_record",
+    description: "Inserisci un nuovo record in una tabella. Usa per creare attività CRM, contatti, note, etc.",
+    input_schema: {
+      type: "object",
+      properties: {
+        table: {
+          type: "string",
+          description: "Nome della tabella (es: attivita, rubrica)"
+        },
+        data: {
+          type: "object",
+          description: "Dati da inserire come oggetto chiave-valore"
+        }
+      },
+      required: ["table", "data"]
+    }
+  },
+  {
+    name: "update_record",
+    description: "Aggiorna record esistenti in una tabella",
+    input_schema: {
+      type: "object",
+      properties: {
+        table: {
+          type: "string",
+          description: "Nome della tabella"
+        },
+        filters: {
+          type: "object",
+          description: "Filtri WHERE per identificare i record da aggiornare"
+        },
+        data: {
+          type: "object",
+          description: "Nuovi valori da impostare"
+        }
+      },
+      required: ["table", "filters", "data"]
+    }
+  },
+  {
+    name: "search_knowledge_base",
+    description: "Cerca documenti nella knowledge base usando ricerca semantica con embeddings",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Query di ricerca testuale"
+        },
+        kb_id: {
+          type: "string",
+          description: "ID della knowledge base (opzionale, cerca in tutte se omesso)"
+        },
+        limit: {
+          type: "number",
+          description: "Numero massimo risultati (default: 5)"
+        }
+      },
+      required: ["query"]
+    }
+  },
+  {
+    name: "get_table_schema",
+    description: "Ottieni schema di una tabella (colonne, tipi, constraints) per capire come strutturare query",
+    input_schema: {
+      type: "object",
+      properties: {
+        table: {
+          type: "string",
+          description: "Nome della tabella"
+        }
+      },
+      required: ["table"]
+    }
+  },
+  {
+    name: "list_all_tables",
+    description: "Lista tutte le tabelle disponibili nel database con conteggio record",
+    input_schema: {
+      type: "object",
+      properties: {}
+    }
   }
 ];
 
@@ -380,6 +675,169 @@ async function handleToolCall(
     } catch (err: any) {
       console.error(`❌ [TOOL ERROR] propose_lovable_task:`, err.message);
       return `Errore proposta task: ${err.message}`;
+    }
+  }
+
+  // ============ DATABASE TOOLS HANDLERS ============
+  
+  if (toolName === 'query_database') {
+    const { table, columns, filters, order_by, order_desc, limit } = toolArgs;
+    
+    try {
+      let query = supabaseClient.from(table).select(columns);
+      
+      // Applica filtri
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          query = query.eq(key, value);
+        });
+      }
+      
+      // Ordinamento
+      if (order_by) {
+        query = query.order(order_by, { ascending: !order_desc });
+      }
+      
+      // Limit
+      const maxLimit = Math.min(limit || 100, 1000);
+      query = query.limit(maxLimit);
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      console.log(`✅ [DB QUERY] ${table} → ${data?.length || 0} righe`);
+      return JSON.stringify(data, null, 2);
+    } catch (err: any) {
+      console.error(`❌ [DB ERROR] query_database(${table}):`, err.message);
+      return `Errore query ${table}: ${err.message}`;
+    }
+  }
+  
+  if (toolName === 'count_records') {
+    const { table, filters } = toolArgs;
+    
+    try {
+      let query = supabaseClient.from(table).select('*', { count: 'exact', head: true });
+      
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          query = query.eq(key, value);
+        });
+      }
+      
+      const { count, error } = await query;
+      
+      if (error) throw error;
+      
+      console.log(`✅ [DB COUNT] ${table} → ${count} record`);
+      return `Tabella ${table}: ${count} record${filters ? ' (con filtri)' : ''}`;
+    } catch (err: any) {
+      console.error(`❌ [DB ERROR] count_records(${table}):`, err.message);
+      return `Errore conteggio ${table}: ${err.message}`;
+    }
+  }
+  
+  if (toolName === 'insert_record') {
+    const { table, data } = toolArgs;
+    
+    try {
+      const { data: inserted, error } = await supabaseClient
+        .from(table)
+        .insert(data)
+        .select();
+      
+      if (error) throw error;
+      
+      console.log(`✅ [DB INSERT] ${table} → Record creato:`, inserted?.[0]?.id);
+      return `Record inserito con successo in ${table}. ID: ${inserted?.[0]?.id || 'N/A'}\n${JSON.stringify(inserted?.[0], null, 2)}`;
+    } catch (err: any) {
+      console.error(`❌ [DB ERROR] insert_record(${table}):`, err.message);
+      return `Errore inserimento in ${table}: ${err.message}`;
+    }
+  }
+  
+  if (toolName === 'update_record') {
+    const { table, filters, data } = toolArgs;
+    
+    try {
+      let query = supabaseClient.from(table).update(data);
+      
+      Object.entries(filters).forEach(([key, value]) => {
+        query = query.eq(key, value);
+      });
+      
+      const { data: updated, error } = await query.select();
+      
+      if (error) throw error;
+      
+      console.log(`✅ [DB UPDATE] ${table} → ${updated?.length || 0} record aggiornati`);
+      return `${updated?.length || 0} record aggiornati in ${table}\n${JSON.stringify(updated, null, 2)}`;
+    } catch (err: any) {
+      console.error(`❌ [DB ERROR] update_record(${table}):`, err.message);
+      return `Errore aggiornamento ${table}: ${err.message}`;
+    }
+  }
+  
+  if (toolName === 'search_knowledge_base') {
+    const { query, kb_id, limit } = toolArgs;
+    
+    try {
+      // Per ora ricerca testuale semplice, in futuro può usare embeddings
+      let dbQuery = supabaseClient
+        .from('knowledge_base_documents')
+        .select('id, kb_id, title, content, created_at')
+        .ilike('content', `%${query}%`);
+      
+      if (kb_id) {
+        dbQuery = dbQuery.eq('kb_id', kb_id);
+      }
+      
+      dbQuery = dbQuery.limit(limit || 5);
+      
+      const { data, error } = await dbQuery;
+      
+      if (error) throw error;
+      
+      console.log(`✅ [KB SEARCH] "${query}" → ${data?.length || 0} documenti`);
+      return JSON.stringify(data, null, 2);
+    } catch (err: any) {
+      console.error(`❌ [KB ERROR] search_knowledge_base:`, err.message);
+      return `Errore ricerca KB: ${err.message}`;
+    }
+  }
+  
+  if (toolName === 'get_table_schema') {
+    const { table } = toolArgs;
+    
+    try {
+      const { data, error } = await supabaseClient
+        .from('information_schema.columns')
+        .select('column_name, data_type, is_nullable, column_default')
+        .eq('table_schema', 'public')
+        .eq('table_name', table);
+      
+      if (error) throw error;
+      
+      console.log(`✅ [SCHEMA] ${table} → ${data?.length || 0} colonne`);
+      return JSON.stringify(data, null, 2);
+    } catch (err: any) {
+      console.error(`❌ [SCHEMA ERROR] get_table_schema(${table}):`, err.message);
+      return `Errore schema ${table}: ${err.message}`;
+    }
+  }
+  
+  if (toolName === 'list_all_tables') {
+    try {
+      const { data, error } = await supabaseClient.rpc('get_tables_with_counts');
+      
+      if (error) throw error;
+      
+      console.log(`✅ [TABLES] Lista tabelle → ${data?.length || 0}`);
+      return JSON.stringify(data, null, 2);
+    } catch (err: any) {
+      console.error(`❌ [TABLES ERROR] list_all_tables:`, err.message);
+      return `Errore lista tabelle: ${err.message}`;
     }
   }
 

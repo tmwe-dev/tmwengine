@@ -45,7 +45,7 @@ export const BarVoiceRecorderV2_Hybrid = ({
   const isActiveRef = useRef(false); // ✅ Fix stale closure per onstop handler
 
   const VAD_SILENCE_MS = 1500;
-  const VAD_THRESHOLD = 0.05; // ✅ Uniformato con Stable per ridurre trigger su rumore
+  const VAD_THRESHOLD = 0.08; // FIX FASE 2: Aumentato da 0.05 a 0.08 per ridurre falsi trigger
 
   const monitorAudioLevel = () => {
     if (!analyserRef.current) return;
@@ -230,15 +230,34 @@ export const BarVoiceRecorderV2_Hybrid = ({
     try {
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       
-      const reader = new FileReader();
-      const base64Audio = await new Promise<string>((resolve, reject) => {
-        reader.onloadend = () => {
-          const base64 = (reader.result as string).split(',')[1];
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(audioBlob);
-      });
+      // FIX FASE 2: Chunking base64 per evitare OOM su file grandi
+      const MAX_CHUNK_SIZE = 1024 * 1024; // 1MB
+      
+      let base64Audio: string;
+      if (audioBlob.size > MAX_CHUNK_SIZE) {
+        console.log(`[BarVoiceRecorderV2] Large audio (${audioBlob.size} bytes), chunking...`);
+        const chunks: string[] = [];
+        
+        for (let i = 0; i < audioBlob.size; i += MAX_CHUNK_SIZE) {
+          const chunk = audioBlob.slice(i, Math.min(i + MAX_CHUNK_SIZE, audioBlob.size));
+          const chunkBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(chunk);
+          });
+          chunks.push(chunkBase64);
+        }
+        
+        base64Audio = chunks.join('');
+      } else {
+        const reader = new FileReader();
+        base64Audio = await new Promise<string>((resolve, reject) => {
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(audioBlob);
+        });
+      }
 
       const { data, error } = await supabase.functions.invoke('voice-to-text', {
         body: { 

@@ -39,6 +39,8 @@ export const NativeVideoCallDialog = ({
   // FIX #6: Prevent double calls with lastCallParamsRef
   const lastCallParamsRef = useRef('');
   const [audioBlocked, setAudioBlocked] = useState(false);
+  // FIX FASE 2: Countdown per autoplay retry
+  const [retryCountdown, setRetryCountdown] = useState(5);
 
   useEffect(() => {
     const callParams = `${isOpen}-${targetUserId}-${isIncoming}`;
@@ -54,11 +56,25 @@ export const NativeVideoCallDialog = ({
         startCall(targetUserId);
       }
     }
-    
-    if (!isOpen) {
-      lastCallParamsRef.current = '';
-    }
   }, [isOpen, targetUserId, isIncoming, answerCall, startCall]);
+
+  // FIX FASE 2: Reset lastCallParamsRef su unmount
+  useEffect(() => {
+    return () => {
+      lastCallParamsRef.current = '';
+    };
+  }, []);
+
+  // FIX FASE 2: Countdown per retry autoplay
+  useEffect(() => {
+    if (!audioBlocked) return;
+    
+    const timer = setInterval(() => {
+      setRetryCountdown(c => c > 0 ? c - 1 : 0);
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [audioBlocked]);
 
   // FIX #8: Handle autoplay blocking with UI fallback
   useEffect(() => {
@@ -106,17 +122,18 @@ export const NativeVideoCallDialog = ({
             className="absolute top-4 right-4 w-48 h-36 rounded-lg border-2 border-white shadow-lg object-cover"
           />
 
-          {/* FIX #8: Audio activation fallback */}
+          {/* FIX FASE 2: Audio activation fallback con countdown */}
           {audioBlocked && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-6 rounded-lg">
               <Button 
                 onClick={() => {
                   remoteVideoRef.current?.play();
                   setAudioBlocked(false);
+                  setRetryCountdown(5);
                 }}
                 size="lg"
               >
-                🔊 Attiva Audio
+                🔊 Attiva Audio {retryCountdown > 0 ? `(${retryCountdown}s)` : ''}
               </Button>
             </div>
           )}

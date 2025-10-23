@@ -10,13 +10,15 @@ interface BarVoiceRecorderProps {
   onTranscriptionComplete: (text: string) => void;
   isDisabled?: boolean;
   vadTimeout?: number; // VAD timeout in seconds (1-5)
+  appendUpdateMarker?: boolean; // FIX FASE 2: Rendi opzionale il marker |||UPDATE|||
 }
 
 export const BarVoiceRecorder = ({ 
   conversationId, 
   onTranscriptionComplete,
   isDisabled = false,
-  vadTimeout = 2
+  vadTimeout = 2,
+  appendUpdateMarker = true // FIX FASE 2: Default true per retrocompatibilità
 }: BarVoiceRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -275,7 +277,9 @@ export const BarVoiceRecorder = ({
         }
         
         console.log('📝 Trascrizione valida:', transcribedText);
-        onTranscriptionComplete(transcribedText + '|||UPDATE|||');
+        // FIX FASE 2: Applica marker solo se richiesto
+        const finalText = appendUpdateMarker ? transcribedText + '|||UPDATE|||' : transcribedText;
+        onTranscriptionComplete(finalText);
         // toast({ title: "✓ Audio trascritto" });
       };
 

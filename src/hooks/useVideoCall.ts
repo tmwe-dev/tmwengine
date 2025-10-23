@@ -24,6 +24,8 @@ export const useVideoCall = (roomId: string, userId: string) => {
   const answerSentRef = useRef(false);
   const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const broadcastChannelRef = useRef<any>(null);
+  // FIX FASE 2: De-duplication offer con hash
+  const offerHashRef = useRef<string>('');
 
   const { toast } = useToast();
   const { sendSignal, setHandlers, isReady } = useWebRTCSignaling(`${roomId}-video`, userId);
@@ -31,7 +33,14 @@ export const useVideoCall = (roomId: string, userId: string) => {
   useEffect(() => {
     setHandlers({
       onOffer: async (offer, from) => {
-        // FIX #5: Logging dettagliato per debug
+        // FIX FASE 2: De-duplication con hash
+        const hash = btoa(offer.sdp?.substring(0, 100) || '');
+        if (hash === offerHashRef.current) {
+          console.warn('[useVideoCall] ⚠️ Duplicate offer ignored (hash match)');
+          return;
+        }
+        offerHashRef.current = hash;
+        
         const timestamp = new Date().toISOString();
         console.log(`[useVideoCall] 📥 OFFER ricevuto alle ${timestamp} da:`, from);
         console.log('[useVideoCall] pendingOfferRef prima:', pendingOfferRef.current ? 'POPULATED' : 'NULL');
@@ -48,10 +57,11 @@ export const useVideoCall = (roomId: string, userId: string) => {
         console.log('[useVideoCall] pendingOfferRef dopo:', pendingOfferRef.current ? 'POPULATED' : 'NULL');
         console.log('[useVideoCall] ✅ OFFER salvato in pendingOfferRef');
         
-        // FIX #5: Salva anche in sessionStorage come backup
+        // FIX #5: Salva anche in sessionStorage come backup con timestamp
         sessionStorage.setItem('pendingOffer', JSON.stringify(offer));
         sessionStorage.setItem('pendingOfferFrom', from);
-        console.log('[useVideoCall] ✅ OFFER salvato anche in sessionStorage');
+        sessionStorage.setItem('pendingOfferTimestamp', Date.now().toString());
+        console.log('[useVideoCall] ✅ OFFER salvato anche in sessionStorage con timestamp');
       },
       onAnswer: async (answer) => {
         console.log('[useVideoCall] Received answer');
@@ -177,9 +187,10 @@ export const useVideoCall = (roomId: string, userId: string) => {
         };
       });
       
-      // FIX #7: Force play() on local video
+      // FIX FASE 2: Delay 500ms per video rendering (Safari fix)
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
+        await new Promise(r => setTimeout(r, 500));
         await localVideoRef.current.play().catch(e => 
           console.warn('[useVideoCall] Local play blocked:', e)
         );
@@ -211,12 +222,14 @@ export const useVideoCall = (roomId: string, userId: string) => {
           }
           
           remoteStreamRef.current = remoteStream;
-          // FIX #7: Force play() on remote video
+          // FIX FASE 2: Delay 500ms per video rendering (Safari fix)
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStream;
-            remoteVideoRef.current.play().catch(e => 
-              console.warn('[useVideoCall] Remote play blocked:', e)
-            );
+            setTimeout(() => {
+              remoteVideoRef.current?.play().catch(e => 
+                console.warn('[useVideoCall] Remote play blocked:', e)
+              );
+            }, 500);
           }
           setIsInCall(true);
         },
@@ -307,16 +320,25 @@ export const useVideoCall = (roomId: string, userId: string) => {
       setCallStatus('connecting');
       setRemotePeerId(callerId);
       
-      // FIX #2: Controlla sessionStorage per offerta pre-salvata
+      // FIX FASE 2: Valida timestamp sessionStorage (10s max)
       const savedOffer = sessionStorage.getItem('pendingOffer');
       const savedOfferFrom = sessionStorage.getItem('pendingOfferFrom');
+      const savedTimestamp = sessionStorage.getItem('pendingOfferTimestamp');
       
       if (savedOffer && !pendingOfferRef.current) {
-        console.log('[useVideoCall] 📦 Recuperata offerta da sessionStorage da:', savedOfferFrom);
-        pendingOfferRef.current = { from: savedOfferFrom || callerId, offer: JSON.parse(savedOffer) };
+        const isRecent = savedTimestamp && (Date.now() - parseInt(savedTimestamp)) < 10000;
+        
+        if (isRecent) {
+          console.log('[useVideoCall] 📦 Recuperata offerta VALIDA da sessionStorage da:', savedOfferFrom);
+          pendingOfferRef.current = { from: savedOfferFrom || callerId, offer: JSON.parse(savedOffer) };
+        } else {
+          console.warn('[useVideoCall] ⚠️ Offerta in sessionStorage troppo vecchia (>10s), ignorata');
+        }
+        
         sessionStorage.removeItem('pendingOffer');
         sessionStorage.removeItem('pendingOfferFrom');
-        console.log('[useVideoCall] ✅ OFFER caricata da sessionStorage');
+        sessionStorage.removeItem('pendingOfferTimestamp');
+        console.log('[useVideoCall] ✅ OFFER caricata e sessionStorage pulito');
       }
       
       // FIX #4: Timeout più lungo per reti lente (8 secondi invece di 3)
@@ -547,6 +569,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
       const sender = peerConnectionRef.current.getSenders()
         .find(s => s.track?.kind === 'video');
       
+      if (sender) {
+        // FIX FASE 2: Stop vecchio track DOPO replaceTrack
+        await sender.replaceTrack(newVideoTrack);
+        oldVideoTrack?.stop();
+        console.log('[useVideoCall] ✅ Video quality switched to:', quality);
+      }
       if (sender) {
         await sender.replaceTrack(newVideoTrack);
         oldVideoTrack.stop();

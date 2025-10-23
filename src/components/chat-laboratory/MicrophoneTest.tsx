@@ -15,6 +15,8 @@ export const MicrophoneTest = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationRef = useRef<number>();
+  // FIX FASE 2: useRef per evitare stale closure
+  const isTestingRef = useRef(false);
 
   const startTest = async () => {
     try {
@@ -41,6 +43,7 @@ export const MicrophoneTest = () => {
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
       setIsTesting(true);
+      isTestingRef.current = true; // FIX FASE 2: Sincronizza ref
       
       monitorAudio();
     } catch (err) {
@@ -64,6 +67,7 @@ export const MicrophoneTest = () => {
     }
     
     setIsTesting(false);
+    isTestingRef.current = false; // FIX FASE 2: Sincronizza ref
     setAudioLevel(0);
   };
 
@@ -73,7 +77,8 @@ export const MicrophoneTest = () => {
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
     
     const updateLevel = () => {
-      if (!analyserRef.current || !isTesting) return;
+      // FIX FASE 2: Usa ref invece di state per evitare stale closure
+      if (!analyserRef.current || !isTestingRef.current) return;
       
       analyserRef.current.getByteFrequencyData(dataArray);
       

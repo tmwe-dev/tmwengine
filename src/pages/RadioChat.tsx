@@ -23,8 +23,10 @@ const RadioChat = () => {
   } = useRadioChat();
 
   const handleSend = async () => {
-    await sendMessage();
-    setShowTextarea(false); // Hide textarea after sending
+    const success = await sendMessage();
+    if (success) {
+      setShowTextarea(false); // Hide textarea only after successful send
+    }
   };
 
   const handleIconClick = (messageId: string) => {

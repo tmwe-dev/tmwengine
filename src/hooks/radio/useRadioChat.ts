@@ -22,16 +22,19 @@ export function useRadioChat() {
   }, []);
 
   const sendMessage = async () => {
-    if (!inputValue.trim() || !conversationId) return;
+    if (!inputValue.trim() || !conversationId) return false;
 
     const userMessage = inputValue.trim();
     setInputValue('');
 
     // Save user message
-    await saveUserMessage(userMessage);
+    const savedMessage = await saveUserMessage(userMessage);
+    if (!savedMessage) return false;
 
     // Invoke orchestrator
     await invokeOrchestrator(conversationId, userMessage);
+    
+    return true;
   };
 
   const isLoading = isCreating || isLoadingMessages || isOrchestrating;

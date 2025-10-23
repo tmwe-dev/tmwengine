@@ -12,7 +12,7 @@ export function RadioCursor({ isActive, isFocused }: RadioCursorProps) {
 
   // Cursore custom: bianco quando focus, rosso quando no focus
   return (
-    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-6">
+    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-6 pointer-events-none">
       {/* Cursore */}
       <div className={cn(
         "w-[10px] h-5",

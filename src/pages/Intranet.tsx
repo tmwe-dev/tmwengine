@@ -15,6 +15,8 @@ import { AccessRequestsPanel } from '@/components/intranet/AccessRequestsPanel';
 import { EconomyModeToggle } from '@/components/intranet/EconomyModeToggle';
 import { UserLanguageSettings } from '@/components/intranet/UserLanguageSettings';
 import { VideoCallButton } from '@/components/intranet/VideoCallButton';
+import { DeleteRoomButton } from '@/components/intranet/DeleteRoomButton';
+import { RoomParticipantsList } from '@/components/intranet/RoomParticipantsList';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useGlobalIntranetPresence } from '@/hooks/useGlobalIntranetPresence';
 import { useIntranetNotifications } from '@/hooks/useIntranetNotifications';
@@ -381,6 +383,9 @@ const Intranet = () => {
                   </CardContent>
                 </Card>
 
+                {/* Lista partecipanti su mobile */}
+                {shouldHideHeader && <RoomParticipantsList roomId={selectedRoomId!} />}
+
                 {/* Input in BASSO quando layout normale */}
                 {shouldHideHeader && !isLayoutInverted && (
                   <Card className="bg-card-transparent border-0 shadow-none flex-shrink-0 max-h-[240px] overflow-hidden">
@@ -538,7 +543,15 @@ const Intranet = () => {
                 {/* Header stanza */}
                 <div className="flex-shrink-0 pb-2 border-b mb-4 flex justify-between items-center">
                   <h2 className="text-xl font-semibold">{selectedRoomName}</h2>
-                  <VideoCallButton roomId={selectedRoomId!} roomName={selectedRoomName} />
+                  <div className="flex items-center gap-2">
+                    <DeleteRoomButton 
+                      roomId={selectedRoomId!} 
+                      roomName={selectedRoomName}
+                      isCreatorOrAdmin={isCreatorOrAdmin}
+                      onDeleteSuccess={() => setSearchParams({})}
+                    />
+                    <VideoCallButton roomId={selectedRoomId!} roomName={selectedRoomName} />
+                  </div>
                 </div>
 
                 {/* Messaggi scrollabili */}
@@ -555,6 +568,9 @@ const Intranet = () => {
                     />
                   </CardContent>
                 </Card>
+
+                {/* Lista partecipanti */}
+                <RoomParticipantsList roomId={selectedRoomId!} />
               </div>
             </div>
 

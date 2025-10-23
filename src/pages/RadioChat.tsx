@@ -47,7 +47,7 @@ const RadioChat = () => {
           {/* Cursore animato - sempre visibile, cambia solo animazione */}
           {!isLoading && (
             <RadioCursor 
-              isActive={!isFocused && !inputValue} 
+              isActive={inputValue.length === 0} 
               isFocused={isFocused}
             />
           )}

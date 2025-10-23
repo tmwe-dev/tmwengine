@@ -25,11 +25,18 @@ const RadioChat = () => {
   const handleSend = async () => {
     console.log('🎯 handleSend called - Button clicked!');
     console.log('📝 inputValue before send:', inputValue);
+    console.log('🔒 Disabling interactions...');
+    
     const success = await sendMessage();
     console.log('✅ sendMessage result:', success);
+    
     if (success) {
-      console.log('🔄 Hiding textarea...');
-      setShowTextarea(false); // Hide textarea only after successful send
+      console.log('⏱️ Waiting for message to appear in list...');
+      // Wait a bit for the subscription to update messages
+      setTimeout(() => {
+        console.log('🔄 Hiding textarea now');
+        setShowTextarea(false);
+      }, 500);
     }
   };
 
@@ -97,14 +104,12 @@ const RadioChat = () => {
             </>
           )}
 
-          {/* Send Button - FUORI dal blocco showTextarea */}
-          {showTextarea && inputValue && (
-            <RadioSendButton 
-              onSend={handleSend} 
-              disabled={isLoading}
-              visible={true}
-            />
-          )}
+          {/* Send Button - Sempre renderizzato, visibilità gestita dal prop */}
+          <RadioSendButton 
+            onSend={handleSend} 
+            disabled={isLoading}
+            visible={showTextarea && !!inputValue}
+          />
         </div>
       </div>
     </div>

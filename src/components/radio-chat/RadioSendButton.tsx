@@ -22,9 +22,11 @@ export function RadioSendButton({ onSend, disabled, visible = true }: RadioSendB
       className={cn(
         "absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-full mt-8",
         "text-white hover:text-white/80 transition-all",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
         "hover:scale-110",
-        "z-50 cursor-pointer"
+        "z-50",
+        disabled 
+          ? "opacity-30 cursor-not-allowed pointer-events-none" 
+          : "cursor-pointer opacity-100"
       )}
     >
       <Send className="w-8 h-8" />

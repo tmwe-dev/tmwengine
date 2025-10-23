@@ -91,9 +91,14 @@ export function useRadioMessages(conversationId: string | null) {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
+          console.log('📨 New message received via subscription:', payload.new);
           setMessages(prev => {
             // Avoid duplicates
-            if (prev.some(m => m.id === payload.new.id)) return prev;
+            if (prev.some(m => m.id === payload.new.id)) {
+              console.log('⚠️ Duplicate message ignored');
+              return prev;
+            }
+            console.log('✅ Message added to list');
             return [...prev, payload.new];
           });
         }

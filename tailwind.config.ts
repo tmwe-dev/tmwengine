@@ -209,7 +209,7 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
         "slide-up": "slide-up 0.3s ease-out",
         "wiggle": "wiggle 0.8s ease-in-out",
-        "line-bounce": "line-bounce 3.6s ease-in-out",
+        "line-bounce": "line-bounce 3.6s ease-in-out infinite",
         "heartbeat": "heartbeat 1s ease-in-out infinite",
       },
     },

@@ -20,7 +20,7 @@ export function PromptLibraryColumn({
 }: PromptLibraryColumnProps) {
 
   return (
-    <div className={cn("flex-1 flex flex-col h-full border-r bg-background", className)}>
+    <div className={cn("flex flex-col h-full border-r bg-background", className)}>
       <div className="p-4 border-b space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-sm">Libreria Prompt</h3>

@@ -1,6 +1,5 @@
 import { LaboratoryPromptManager } from './LaboratoryPromptManager';
 import { ParticipantSelector } from './ParticipantSelector';
-import { AlbertModeSelector } from './AlbertModeSelector';
 import { Button } from '@/components/ui/button';
 
 interface LabHeaderControlsProps {
@@ -14,8 +13,6 @@ interface LabHeaderControlsProps {
     is_active: boolean;
   }>;
   toggleParticipant: (id: string) => void;
-  operationMode: 'bar_chat' | 'albert_advisor';
-  onOperationModeChange: (mode: 'bar_chat' | 'albert_advisor') => Promise<void>;
 }
 
 export const LabHeaderControls = ({
@@ -24,8 +21,6 @@ export const LabHeaderControls = ({
   setViewMode,
   participants,
   toggleParticipant,
-  operationMode,
-  onOperationModeChange,
 }: LabHeaderControlsProps) => {
   return (
     <div className="flex items-center gap-1">
@@ -41,11 +36,6 @@ export const LabHeaderControls = ({
       <ParticipantSelector
         participants={participants}
         onToggle={toggleParticipant}
-      />
-      <AlbertModeSelector
-        currentConversationId={currentConversationId}
-        currentMode={operationMode}
-        onModeChange={onOperationModeChange}
       />
     </div>
   );

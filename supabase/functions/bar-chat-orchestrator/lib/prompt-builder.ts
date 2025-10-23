@@ -170,11 +170,15 @@ export function buildConversationHistory(params: {
 
 /**
  * Convert database messages to conversation format
- * 🚫 APPENDICI ELIMINATE: Usa solo content + report
  */
 export function formatHistoryMessages(messages: any[]): any[] {
   return messages.map((msg: any) => {
     let messageContent = msg.content;
+    
+    // ✅ APPENDICI: Include nel context per AI (ma nascoste in UI)
+    if (msg.attachments?.appendix) {
+      messageContent += `\n\n[APPENDICE COLLEGA]\n${msg.attachments.appendix}\n[/APPENDICE]`;
+    }
     
     // ✅ REPORT: Include nel context per AI
     if (msg.attachments?.report) {

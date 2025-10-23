@@ -2,9 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, Phone, Columns, MessagesSquare, Settings2, Info } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, Phone, Columns, MessagesSquare, Settings2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
@@ -22,12 +21,10 @@ import { CollapsibleBarSection } from '@/components/chat-laboratory/CollapsibleB
 import { ConversationsSidebar } from '@/components/chat-laboratory/ConversationsSidebar';
 import { OnlineUsersList } from '@/components/chat-laboratory/OnlineUsersList';
 import { LabHeaderControls } from '@/components/chat-laboratory/LabHeaderControls';
-import { AlbertModeSelector } from '@/components/chat-laboratory/AlbertModeSelector';
 import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 import { SyncPricingButton } from '@/components/chat-laboratory/SyncPricingButton';
-import { SyncSourceFilesButton } from '@/components/chat-laboratory/SyncSourceFilesButton';
 import { BarModeTabsControls } from '@/components/chat-laboratory/BarModeTabsControls';
 import { InterruptButton } from '@/components/chat-laboratory/InterruptButton';
 import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
@@ -40,7 +37,6 @@ import { LabMainControls } from '@/components/chat-laboratory/LabMainControls';
 import { SummaryGenerationButton } from '@/components/chat-laboratory/SummaryGenerationButton';
 import { Link } from 'react-router-dom';
 import { useSummaryAutoGenerator } from '@/hooks/useSummaryAutoGenerator';
-import { useClassicModeAudio } from '@/hooks/useClassicModeAudio';
 import { ConvergenceIndicator } from '@/components/chat-laboratory/ConvergenceIndicator';
 import { IntentBadges } from '@/components/chat-laboratory/IntentBadges';
 import { KnowledgeGraphViewer } from '@/components/chat-laboratory/KnowledgeGraphViewer';
@@ -50,7 +46,6 @@ import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
 import { AudioModeSelector } from '@/components/chat-laboratory/AudioModeSelector';
 import { CompactControlBar } from '@/components/chat-laboratory/CompactControlBar';
 import { WordLimitSliderCompact } from '@/components/chat-laboratory/WordLimitSliderCompact';
-
 
 interface Message {
   id: string;
@@ -120,8 +115,7 @@ const ChatLaboratory = () => {
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [conversationMode, setConversationMode] = useState<'ptt' | 'continuous'>('ptt');
   const [isAutoFollowEnabled, setIsAutoFollowEnabled] = useState(true);
-  const [globalMaxWords, setGlobalMaxWords] = useState(60);
-  const [operationMode, setOperationMode] = useState<'bar_chat' | 'albert_advisor'>('bar_chat');
+  const [globalMaxWords, setGlobalMaxWords] = useState(60); // ✅ NUOVO: Limite parole globale
 
   // Forza vista tabs quando Bar Mode è attivo
   useEffect(() => {
@@ -182,12 +176,6 @@ const ChatLaboratory = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousMessagesLengthRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  // ✅ Audio sequenziale per Classic Mode
-  const { handleAudioEnd: handleClassicModeAudioEnd } = useClassicModeAudio(
-    messages,
-    messagesEndRef
-  );
 
   // Listener per beforeunload
   useEffect(() => {
@@ -409,10 +397,6 @@ const ChatLaboratory = () => {
       if (data) {
         setIsBarMode(data.mode === 'bar');
         setActiveKnowledgeBase(data.active_kb_id);
-        // ✅ ALBERT: Carica operation_mode con type safety
-        const mode = data.operation_mode as 'bar_chat' | 'albert_advisor' | null;
-        setOperationMode(mode || 'bar_chat');
-        console.log(`🧠 Operation mode caricato: ${mode || 'bar_chat'}`);
       }
 
       // ✅ NUOVO: Carica max_words dal primo voice agent attivo
@@ -914,14 +898,7 @@ const ChatLaboratory = () => {
         
         abortControllerRef.current = new AbortController();
         
-        // ✅ ALBERT: Routing dinamico basato su operation_mode
-        const edgeFunctionName = operationMode === 'albert_advisor' 
-          ? 'albert-advisor-orchestrator' 
-          : 'bar-chat-orchestrator';
-        
-        console.log(`🎯 Calling edge function: ${edgeFunctionName} (mode: ${operationMode})`);
-        
-        const { data, error } = await supabase.functions.invoke(edgeFunctionName, {
+        const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
           body: { 
             conversationId,
             userMessage: currentPrompt,
@@ -967,12 +944,7 @@ const ChatLaboratory = () => {
           
           abortControllerRef.current = new AbortController();
           
-          // ✅ Routing dinamico basato su operationMode
-          const edgeFunctionName = operationMode === 'albert_advisor' 
-            ? 'albert-advisor-orchestrator' 
-            : 'chat-laboratory-orchestrator';
-          
-          const { data, error } = await supabase.functions.invoke(edgeFunctionName, {
+          const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
             body: { 
               conversationId,
               userMessage: currentPrompt,
@@ -1017,71 +989,6 @@ const ChatLaboratory = () => {
     setParticipants(prev => prev.map(p => 
       p.id === participantId ? { ...p, is_active: !p.is_active } : p
     ));
-  };
-
-  // ✅ ALBERT: Handler cambio operation_mode
-  const handleOperationModeChange = async (newMode: 'bar_chat' | 'albert_advisor') => {
-    if (!currentConversationId) {
-      toast({
-        title: "Errore",
-        description: "Seleziona prima una conversazione",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // 🔍 DEBUG: Stato PRIMA del cambio
-    const { data: before } = await supabase
-      .from('chat_laboratory_bar_mode')
-      .select('operation_mode, mode, user_id')
-      .eq('conversation_id', currentConversationId)
-      .single();
-    
-    console.log('🔍 BEFORE UPDATE:', before);
-
-    setOperationMode(newMode);
-
-    // ✅ UPSERT: Crea o aggiorna con user_id per RLS policy
-    const { data: currentUser } = await supabase.auth.getUser();
-    const { error } = await supabase
-      .from('chat_laboratory_bar_mode')
-      .upsert({ 
-        conversation_id: currentConversationId,
-        user_id: currentUser.user?.id, // ← Fix RLS policy
-        operation_mode: newMode,
-        mode: 'bar'
-      }, {
-        onConflict: 'conversation_id'
-      });
-
-    if (error) {
-      console.error('❌ Error updating operation_mode:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile cambiare modalità",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // 🔍 DEBUG: Stato DOPO il cambio
-    const { data: after } = await supabase
-      .from('chat_laboratory_bar_mode')
-      .select('operation_mode, mode, user_id')
-      .eq('conversation_id', currentConversationId)
-      .single();
-    
-    console.log('✅ AFTER UPDATE:', after);
-
-    // ✅ Sincronizza stato locale
-    setIsBarMode(true);
-
-    toast({
-      title: `Modalità cambiata`,
-      description: newMode === 'albert_advisor' 
-        ? '🧠 Albert Advisor attivo - Gli AI useranno tools per consulenza'
-        : '💬 Bar Chat attivo - Conversazione multi-agente standard'
-    });
   };
 
   // ✅ Opzione D: Trigger async audio generation con retry logic
@@ -1406,7 +1313,7 @@ const ChatLaboratory = () => {
               {/* Center - empty space */}
               <div className="flex items-center gap-1"></div>
 
-              {/* Right side - Participant, View Mode, AlbertMode, Maximize and Settings */}
+              {/* Right side - Participant, View Mode, Maximize and Settings */}
               <div className="flex items-center gap-1">
                 <ParticipantSelector
                   participants={participants}
@@ -1422,13 +1329,6 @@ const ChatLaboratory = () => {
                 >
                   {viewMode === 'classic' ? <Columns className="h-4 w-4" /> : <MessagesSquare className="h-4 w-4" />}
                 </Button>
-                
-                {/* ✅ ALBERT: Mode Selector - sempre visibile */}
-                <AlbertModeSelector
-                  currentConversationId={currentConversationId}
-                  currentMode={operationMode}
-                  onModeChange={handleOperationModeChange}
-                />
                 
                 
                 {/* Maximize Button - sempre visibile */}
@@ -1552,16 +1452,6 @@ const ChatLaboratory = () => {
                         />
                         <ConversationCostBadge labConversationId={currentConversationId} />
                         <SyncPricingButton />
-                        <SyncSourceFilesButton />
-                        
-                        <Alert className="mt-3 bg-blue-500/10 border-blue-500/20">
-                          <Info className="h-4 w-4 text-blue-400" />
-                          <AlertTitle className="text-blue-200 text-xs">Sync Files</AlertTitle>
-                          <AlertDescription className="text-blue-300/70 text-xs">
-                            Carica uno <strong>snapshot statico</strong> dei file del progetto nel database.
-                            Per aggiornare, chiedi a Lovable AI: <code className="text-blue-200">"Rigenera snapshot files"</code>
-                          </AlertDescription>
-                        </Alert>
                       </>
                     ) : (
                       <p className="text-white/50 text-sm text-center py-4">
@@ -1604,13 +1494,11 @@ const ChatLaboratory = () => {
                     </Link>
                   </CardContent>
                 </Card>
-
               </div>
             </div>
           </div>
         </>
       )}
-
 
       {/* Messaggi */}
       <div className="flex-1 overflow-hidden relative">
@@ -1734,10 +1622,10 @@ const ChatLaboratory = () => {
               )}
 
               {messages.map((message) => (
-                <div key={message.id} id={`message-${message.id}`}>
+                <div key={message.id}>
                   <MultiAgentMessage 
                     message={message}
-                    onAudioEnd={() => handleClassicModeAudioEnd(message.id)}
+                    onAudioEnd={() => {}}
                   />
                   {message.intent_tags && message.intent_tags.length > 0 && (
                     <div className="ml-16 -mt-2 mb-3">

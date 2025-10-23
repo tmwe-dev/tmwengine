@@ -14,66 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      ai_collaboration_tasks: {
-        Row: {
-          approved_at: string | null
-          approved_by: string | null
-          completed_at: string | null
-          completed_by: string | null
-          created_at: string | null
-          file: string | null
-          files_modified: string[] | null
-          id: string
-          implementation_notes: string | null
-          priority: string
-          problem: string
-          proposed_at: string | null
-          proposed_by: string
-          solution: string | null
-          status: string | null
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          approved_at?: string | null
-          approved_by?: string | null
-          completed_at?: string | null
-          completed_by?: string | null
-          created_at?: string | null
-          file?: string | null
-          files_modified?: string[] | null
-          id?: string
-          implementation_notes?: string | null
-          priority: string
-          problem: string
-          proposed_at?: string | null
-          proposed_by: string
-          solution?: string | null
-          status?: string | null
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          approved_at?: string | null
-          approved_by?: string | null
-          completed_at?: string | null
-          completed_by?: string | null
-          created_at?: string | null
-          file?: string | null
-          files_modified?: string[] | null
-          id?: string
-          implementation_notes?: string | null
-          priority?: string
-          problem?: string
-          proposed_at?: string | null
-          proposed_by?: string
-          solution?: string | null
-          status?: string | null
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       ai_cost_tracking: {
         Row: {
           conversation_id: string | null
@@ -417,36 +357,6 @@ export type Database = {
           },
         ]
       }
-      chat_laboratory_albert_prompts: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          is_active: boolean
-          name: string
-          system_prompt: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          system_prompt: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          system_prompt?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       chat_laboratory_audio_responses: {
         Row: {
           agent_id: string
@@ -510,7 +420,6 @@ export type Database = {
           interrupt_requested: boolean | null
           kb_navigation_history: Json | null
           mode: string
-          operation_mode: string
           pause_between_turns_ms: number | null
           preset: string
           response_mode: string
@@ -537,7 +446,6 @@ export type Database = {
           interrupt_requested?: boolean | null
           kb_navigation_history?: Json | null
           mode?: string
-          operation_mode?: string
           pause_between_turns_ms?: number | null
           preset?: string
           response_mode?: string
@@ -564,7 +472,6 @@ export type Database = {
           interrupt_requested?: boolean | null
           kb_navigation_history?: Json | null
           mode?: string
-          operation_mode?: string
           pause_between_turns_ms?: number | null
           preset?: string
           response_mode?: string
@@ -1226,6 +1133,126 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      code_change_proposals: {
+        Row: {
+          affected_dependencies: Json | null
+          applied_at: string | null
+          approved_by: string | null
+          change_type: string | null
+          created_at: string | null
+          created_by_ai: boolean | null
+          diff: string | null
+          file_path: string
+          has_breaking_changes: boolean | null
+          id: string
+          impact_level: string | null
+          original_code: string | null
+          proposed_code: string
+          reason: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          status: string | null
+          syntax_valid: boolean | null
+        }
+        Insert: {
+          affected_dependencies?: Json | null
+          applied_at?: string | null
+          approved_by?: string | null
+          change_type?: string | null
+          created_at?: string | null
+          created_by_ai?: boolean | null
+          diff?: string | null
+          file_path: string
+          has_breaking_changes?: boolean | null
+          id?: string
+          impact_level?: string | null
+          original_code?: string | null
+          proposed_code: string
+          reason: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          status?: string | null
+          syntax_valid?: boolean | null
+        }
+        Update: {
+          affected_dependencies?: Json | null
+          applied_at?: string | null
+          approved_by?: string | null
+          change_type?: string | null
+          created_at?: string | null
+          created_by_ai?: boolean | null
+          diff?: string | null
+          file_path?: string
+          has_breaking_changes?: boolean | null
+          id?: string
+          impact_level?: string | null
+          original_code?: string | null
+          proposed_code?: string
+          reason?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          status?: string | null
+          syntax_valid?: boolean | null
+        }
+        Relationships: []
+      }
+      code_index: {
+        Row: {
+          complexity_score: number | null
+          components: Json | null
+          content: string
+          content_tsvector: unknown | null
+          created_at: string | null
+          dependencies: Json | null
+          exports: Json | null
+          file_path: string
+          file_type: string
+          functions: Json | null
+          id: string
+          imports: Json | null
+          language: string | null
+          last_updated: string | null
+          line_count: number | null
+          token_count: number | null
+        }
+        Insert: {
+          complexity_score?: number | null
+          components?: Json | null
+          content: string
+          content_tsvector?: unknown | null
+          created_at?: string | null
+          dependencies?: Json | null
+          exports?: Json | null
+          file_path: string
+          file_type: string
+          functions?: Json | null
+          id?: string
+          imports?: Json | null
+          language?: string | null
+          last_updated?: string | null
+          line_count?: number | null
+          token_count?: number | null
+        }
+        Update: {
+          complexity_score?: number | null
+          components?: Json | null
+          content?: string
+          content_tsvector?: unknown | null
+          created_at?: string | null
+          dependencies?: Json | null
+          exports?: Json | null
+          file_path?: string
+          file_type?: string
+          functions?: Json | null
+          id?: string
+          imports?: Json | null
+          language?: string | null
+          last_updated?: string | null
+          line_count?: number | null
+          token_count?: number | null
+        }
+        Relationships: []
       }
       config_ai: {
         Row: {
@@ -4025,54 +4052,6 @@ export type Database = {
         }
         Relationships: []
       }
-      project_source_files: {
-        Row: {
-          content: string
-          content_search: unknown
-          created_at: string | null
-          exports: Json | null
-          file_path: string
-          file_size: number
-          file_type: string
-          has_hooks: boolean | null
-          has_supabase_queries: boolean | null
-          id: string
-          imports: Json | null
-          last_synced_at: string | null
-          line_count: number
-        }
-        Insert: {
-          content: string
-          content_search?: unknown
-          created_at?: string | null
-          exports?: Json | null
-          file_path: string
-          file_size: number
-          file_type: string
-          has_hooks?: boolean | null
-          has_supabase_queries?: boolean | null
-          id?: string
-          imports?: Json | null
-          last_synced_at?: string | null
-          line_count: number
-        }
-        Update: {
-          content?: string
-          content_search?: unknown
-          created_at?: string | null
-          exports?: Json | null
-          file_path?: string
-          file_size?: number
-          file_type?: string
-          has_hooks?: boolean | null
-          has_supabase_queries?: boolean | null
-          id?: string
-          imports?: Json | null
-          last_synced_at?: string | null
-          line_count?: number
-        }
-        Relationships: []
-      }
       rubrica: {
         Row: {
           alias: string | null
@@ -5045,6 +5024,10 @@ export type Database = {
       }
     }
     Functions: {
+      binary_quantize: {
+        Args: { "": string } | { "": unknown }
+        Returns: unknown
+      }
       check_elevenlabs_quota: {
         Args: { p_characters: number; p_user_id: string }
         Returns: Json
@@ -5053,7 +5036,10 @@ export type Database = {
         Args: { table_name: string }
         Returns: boolean
       }
-      clean_expired_access_requests: { Args: never; Returns: undefined }
+      clean_expired_access_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       create_activity_records: {
         Args: { activity_data: Json }
         Returns: undefined
@@ -5067,22 +5053,18 @@ export type Database = {
         Returns: number
       }
       get_tables_with_counts: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           row_count: number
           table_name: string
         }[]
       }
-      get_temp_table_data:
-        | {
-            Args: {
-              page_limit?: number
-              page_offset?: number
-              table_name: string
-            }
-            Returns: Json
-          }
-        | { Args: { table_name: string }; Returns: Json }
+      get_temp_table_data: {
+        Args:
+          | { page_limit?: number; page_offset?: number; table_name: string }
+          | { table_name: string }
+        Returns: Json
+      }
       get_unread_messages_count: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: number
@@ -5092,11 +5074,47 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_users_email_counts: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           count: number
           email: string
         }[]
+      }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_avg: {
+        Args: { "": number[] }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
       }
       has_role: {
         Args: {
@@ -5112,6 +5130,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      hnsw_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnswhandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       increment_elevenlabs_usage: {
         Args: { p_characters: number; p_cost: number; p_user_id: string }
         Returns: undefined
@@ -5120,10 +5154,33 @@ export type Database = {
         Args: { p_id: string; p_table: string; p_tokens_to_add: number }
         Returns: number
       }
-      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       is_room_member: {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
+      }
+      ivfflat_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflathandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      l2_norm: {
+        Args: { "": unknown } | { "": unknown }
+        Returns: number
+      }
+      l2_normalize: {
+        Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: unknown
       }
       match_knowledge_nodes: {
         Args: {
@@ -5141,7 +5198,10 @@ export type Database = {
           text: string
         }[]
       }
-      reset_ai_invocations: { Args: { p_room_id: string }; Returns: undefined }
+      reset_ai_invocations: {
+        Args: { p_room_id: string }
+        Returns: undefined
+      }
       reset_token_count: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
@@ -5191,8 +5251,30 @@ export type Database = {
           title: string
         }[]
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
+      }
+      sparsevec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
       transfer_company_to_rubrica: {
         Args: { imported_contact_id: string }
         Returns: Json
@@ -5200,6 +5282,30 @@ export type Database = {
       transfer_multiple_companies_to_rubrica: {
         Args: { imported_contact_ids: string[] }
         Returns: Json
+      }
+      vector_avg: {
+        Args: { "": number[] }
+        Returns: string
+      }
+      vector_dims: {
+        Args: { "": string } | { "": unknown }
+        Returns: number
+      }
+      vector_norm: {
+        Args: { "": string }
+        Returns: number
+      }
+      vector_out: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: { "": string }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
       }
     }
     Enums: {

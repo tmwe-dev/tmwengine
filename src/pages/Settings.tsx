@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings as SettingsIcon, Brain } from 'lucide-react';
+import { Settings as SettingsIcon, Brain, Code } from 'lucide-react';
 import { UnifiedMemoryControls } from '@/components/chat/UnifiedMemoryControls';
-
+import { FileUploader } from '@/components/code-assistant/FileUploader';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
-type SettingsSection = 'memory' | 'general' | 'notifications' | 'integrations';
+type SettingsSection = 'memory' | 'general' | 'notifications' | 'integrations' | 'code-assistant';
 
 const Settings = () => {
   const [selectedSection, setSelectedSection] = useState<SettingsSection>('memory');
@@ -69,6 +69,28 @@ const Settings = () => {
           </Card>
         );
       
+      case 'code-assistant':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Code className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold">AI Code Assistant</h2>
+            </div>
+            <FileUploader />
+            <Card>
+              <CardHeader>
+                <CardTitle>Indexed Files</CardTitle>
+                <CardDescription>Rivedi le proposte di modifica codice generate dall'AI</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => navigate('/code-review')}>
+                  <Code className="h-4 w-4 mr-2" />
+                  View Code Review Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        );
       
       default:
         return null;
@@ -96,7 +118,7 @@ const Settings = () => {
               <SelectItem value="general">⚙️ Configurazione Generale</SelectItem>
               <SelectItem value="notifications">🔔 Notifiche</SelectItem>
               <SelectItem value="integrations">🔌 API & Integrazioni</SelectItem>
-              
+              <SelectItem value="code-assistant">💻 Code Assistant</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>

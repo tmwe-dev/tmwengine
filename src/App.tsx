@@ -49,14 +49,14 @@ import EdgeFunctionVersions from "./pages/EdgeFunctionVersions";
 import DatabaseSettings from "./pages/DatabaseSettings";
 import CallRoom from "./pages/CallRoom";
 import EmailRules from "./pages/EmailRules";
+import CodeScreen from "./pages/admin/CodeScreen";
 import TMWEApiTester from "./pages/TMWEApiTester";
+import CodeReview from "./pages/CodeReview";
 import NotificationSettings from "./pages/NotificationSettings";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import DesignLab from "./pages/DesignLab";
 import DesignLabDashboard from "./pages/DesignLabDashboard";
 import DesignLabScanner from "./pages/DesignLabScanner";
-import { ErrorBoundaryWithLogging } from "./components/ErrorBoundaryWithLogging";
-import { AITasksDashboard } from "./components/ai-collaboration/AITasksDashboard";
 
 const queryClient = new QueryClient();
 
@@ -189,11 +189,7 @@ const App = () => {
             } />
             <Route path="/chat-laboratory" element={
               <ProtectedRoute>
-                <CRMLayout>
-                  <ErrorBoundaryWithLogging>
-                    <ChatLaboratory />
-                  </ErrorBoundaryWithLogging>
-                </CRMLayout>
+                <CRMLayout><ChatLaboratory /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/radio-chat" element={
@@ -214,6 +210,11 @@ const App = () => {
             <Route path="/admin/prompts" element={
               <ProtectedRoute>
                 <AdminPrompts />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/codescreen" element={
+              <ProtectedRoute>
+                <CodeScreen />
               </ProtectedRoute>
             } />
             <Route path="/intranet" element={
@@ -331,6 +332,13 @@ const App = () => {
                 </IntegratedAuthGuard>
               </ProtectedRoute>
             } />
+            <Route path="/code-review" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <CodeReview />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
             <Route path="/notification-settings" element={
               <ProtectedRoute>
                 <CRMLayout>
@@ -356,13 +364,6 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <DesignLabScanner />
-                </CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/ai-tasks" element={
-              <ProtectedRoute>
-                <CRMLayout>
-                  <AITasksDashboard />
                 </CRMLayout>
               </ProtectedRoute>
             } />

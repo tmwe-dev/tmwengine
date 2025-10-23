@@ -12,6 +12,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { PromptSectionsList } from './PromptSectionsList';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { DynamicDropdown } from '@/components/design-system/menus/DynamicDropdown';
 
 interface LaboratoryPromptManagerProps {
   isProcessing?: boolean;
@@ -288,12 +289,17 @@ ESEMPI:
 
       if (error) throw error;
 
+      // Aggiorna lo state locale invece di ricaricare dal DB
+      setSections(prev => prev.map(section => 
+        section.id === id 
+          ? { ...section, content, updated_at: new Date().toISOString() }
+          : section
+      ));
+
       toast({
         title: "✅ Sezione Aggiornata",
         description: "Le modifiche sono state salvate.",
       });
-
-      loadAllSections();
     } catch (error) {
       console.error('Errore aggiornamento sezione:', error);
       toast({
@@ -343,12 +349,13 @@ ESEMPI:
 
       if (error) throw error;
 
+      // Rimuovi la sezione dallo state locale
+      setSections(prev => prev.filter(section => section.id !== id));
+
       toast({
         title: "🗑️ Sezione Eliminata",
         description: "La sezione è stata rimossa.",
       });
-
-      loadAllSections();
     } catch (error) {
       console.error('Errore eliminazione sezione:', error);
       toast({
@@ -368,12 +375,17 @@ ESEMPI:
 
       if (error) throw error;
 
+      // Aggiorna lo state locale invece di ricaricare dal DB
+      setSections(prev => prev.map(section => 
+        section.id === id 
+          ? { ...section, is_active: isActive }
+          : section
+      ));
+
       toast({
         title: isActive ? "✅ Sezione Attivata" : "⏸️ Sezione Disattivata",
         description: isActive ? "La sezione è ora attiva." : "La sezione è stata disattivata.",
       });
-
-      loadAllSections();
     } catch (error) {
       console.error('Errore toggle sezione:', error);
       toast({
@@ -389,6 +401,18 @@ ESEMPI:
   const personalitySections = sections.filter(s => s.section_type === 'agent_personality');
   const styleSections = sections.filter(s => s.section_type === 'CONVERSATION_STYLE');
   const orchestratorSection = sections.find(s => s.section_type === 'ORCHESTRATOR_RULES');
+
+  // Map sezioni per il dropdown
+  const sectionDropdownItems = [
+    { label: '🌐 Globale', value: 'global' },
+    { label: `📚 Base ${baseSections.length > 0 ? `(${baseSections.length})` : ''}`, value: 'base' },
+    { label: `🎭 Personalità ${personalitySections.length > 0 ? `(${personalitySections.length})` : ''}`, value: 'personality' },
+    { label: `💬 Stili ${styleSections.length > 0 ? `(${styleSections.length})` : ''}`, value: 'styles' },
+    { label: '🧠 Orchestrator', value: 'orchestrator' },
+    { label: '🧩 Compositore', value: 'composer' }
+  ];
+
+  const currentSectionLabel = sectionDropdownItems.find(item => item.value === activeTab)?.label || 'Seleziona sezione';
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -409,52 +433,30 @@ ESEMPI:
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[95vw] lg:max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header condizionale: compatto per Compositore */}
-        {activeTab !== 'composer' ? (
-          <DialogHeader>
+        {/* Header con Dropdown Sezione */}
+        <DialogHeader>
+          <div className="flex items-center justify-between gap-3">
             <DialogTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-primary" />
               Gestione Prompt Sistema
             </DialogTitle>
-          </DialogHeader>
-        ) : (
-          <DialogHeader className="py-3">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setActiveTab('global')}
-                className="shrink-0"
-              >
-                ← Torna a Gestione
-              </Button>
-              <DialogTitle className="flex items-center gap-2 text-base">
-                <Brain className="h-4 w-4 text-primary" />
-                Compositore Visivo
-              </DialogTitle>
-            </div>
-          </DialogHeader>
-        )}
+            <DynamicDropdown
+              trigger={
+                <Button variant="outline" size="sm" className="min-w-[200px] justify-between">
+                  {currentSectionLabel}
+                </Button>
+              }
+              items={sectionDropdownItems.map(item => ({
+                type: 'item' as const,
+                label: item.label,
+                onClick: () => setActiveTab(item.value)
+              }))}
+              align="end"
+            />
+          </div>
+        </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 h-full overflow-hidden flex flex-col">
-          {/* Nascondi TabsList nel Compositore */}
-          {activeTab !== 'composer' && (
-            <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="global">🌐 Globale</TabsTrigger>
-            <TabsTrigger value="base">
-              📚 Base {baseSections.length > 0 && `(${baseSections.length})`}
-            </TabsTrigger>
-            <TabsTrigger value="personality">
-              🎭 Personalità {personalitySections.length > 0 && `(${personalitySections.length})`}
-            </TabsTrigger>
-            <TabsTrigger value="styles">
-              💬 Stili {styleSections.length > 0 && `(${styleSections.length})`}
-            </TabsTrigger>
-            <TabsTrigger value="orchestrator">🧠 Orchestrator</TabsTrigger>
-            <TabsTrigger value="composer">🧩 Compositore</TabsTrigger>
-            </TabsList>
-          )}
-
           {/* COMPOSER TAB - Fix scroll con h-full */}
           <TabsContent value="composer" className="flex-1 h-full p-0 m-0">
             <PromptComposer />

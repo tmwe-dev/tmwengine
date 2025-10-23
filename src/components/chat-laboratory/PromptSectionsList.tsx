@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Save, Trash, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { DynamicDropdown, DropdownItem } from '@/components/design-system/menus/DynamicDropdown';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface PromptSection {
   id: string;
@@ -36,20 +36,35 @@ export function PromptSectionsList({
   sectionType,
   sectionTypeLabel
 }: PromptSectionsListProps) {
-  const [activeTab, setActiveTab] = useState<string>(sections[0]?.id || '__create__');
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<string>(sections[0]?.id || '');
   const [editContent, setEditContent] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newName, setNewName] = useState('');
   const [newContent, setNewContent] = useState('');
   const { toast } = useToast();
 
-  const handleStartEdit = (section: PromptSection) => {
-    setEditingId(section.id);
-    setEditContent(section.content);
+  const selectedSection = sections.find(s => s.id === selectedSectionId);
+
+  // Aggiorna editContent quando cambia la sezione selezionata
+  const handleSectionChange = (sectionId: string) => {
+    if (hasChanges && !confirm('Hai modifiche non salvate. Vuoi scartarle?')) {
+      return;
+    }
+    setSelectedSectionId(sectionId);
+    const newSection = sections.find(s => s.id === sectionId);
+    setEditContent(newSection?.content || '');
+    setHasChanges(false);
   };
 
-  const handleSaveEdit = async (sectionId: string) => {
+  const handleContentChange = (value: string) => {
+    setEditContent(value);
+    setHasChanges(value !== selectedSection?.content);
+  };
+
+  const handleSave = async () => {
+    if (!selectedSection) return;
+    
     if (!editContent.trim()) {
       toast({
         title: 'Errore',
@@ -60,8 +75,8 @@ export function PromptSectionsList({
     }
 
     try {
-      await onUpdate(sectionId, editContent);
-      setEditingId(null);
+      await onUpdate(selectedSection.id, editContent);
+      setHasChanges(false);
       toast({
         title: 'Salvato',
         description: 'Sezione aggiornata con successo'
@@ -70,6 +85,32 @@ export function PromptSectionsList({
       toast({
         title: 'Errore',
         description: 'Impossibile salvare le modifiche',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedSection) return;
+    
+    if (!confirm(`Eliminare definitivamente la sezione "${selectedSection.section_name}"?`)) {
+      return;
+    }
+
+    try {
+      await onDelete(selectedSection.id);
+      const remainingSections = sections.filter(s => s.id !== selectedSection.id);
+      setSelectedSectionId(remainingSections[0]?.id || '');
+      setEditContent(remainingSections[0]?.content || '');
+      setHasChanges(false);
+      toast({
+        title: 'Eliminata',
+        description: `Sezione "${selectedSection.section_name}" eliminata`
+      });
+    } catch (error) {
+      toast({
+        title: 'Errore',
+        description: 'Impossibile eliminare la sezione',
         variant: 'destructive'
       });
     }
@@ -89,8 +130,7 @@ export function PromptSectionsList({
       await onCreate(newName, newContent);
       setNewName('');
       setNewContent('');
-      setIsCreating(false);
-      setActiveTab(sections[0]?.id || '__create__');
+      setShowCreateDialog(false);
       toast({
         title: 'Creata',
         description: `Sezione "${newName}" creata con successo`
@@ -104,166 +144,159 @@ export function PromptSectionsList({
     }
   };
 
-  const handleDeleteSection = async (sectionId: string, sectionName: string) => {
-    if (!confirm(`Eliminare definitivamente la sezione "${sectionName}"?`)) {
-      return;
-    }
+  // Prepara dropdown items
+  const dropdownItems: DropdownItem[] = sections.map(section => ({
+    type: 'item',
+    label: section.section_name + (!section.is_active ? ' ⏸️' : ''),
+    onClick: () => handleSectionChange(section.id)
+  }));
 
-    try {
-      await onDelete(sectionId);
-      const remainingSections = sections.filter(s => s.id !== sectionId);
-      setActiveTab(remainingSections[0]?.id || '__create__');
-      toast({
-        title: 'Eliminata',
-        description: `Sezione "${sectionName}" eliminata`
-      });
-    } catch (error) {
-      toast({
-        title: 'Errore',
-        description: 'Impossibile eliminare la sezione',
-        variant: 'destructive'
-      });
-    }
-  };
+  // Se non ci sono sezioni
+  if (sections.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <p className="text-muted-foreground">
+            Nessuna sezione {sectionTypeLabel} presente
+          </p>
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Crea Prima Sezione
+          </Button>
+        </div>
 
-  return (
-    <div className="flex flex-col h-full">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        {/* Tabs orizzontali */}
-        <TabsList className="w-full justify-start overflow-x-auto flex-shrink-0 h-auto flex-wrap">
-          {sections.map(section => (
-            <TabsTrigger 
-              key={section.id}
-              value={section.id} 
-              className="relative gap-2"
-            >
-              <span className="truncate max-w-[150px]">{section.section_name}</span>
-              {!section.is_active && (
-                <span className="text-xs opacity-50" title="Sezione disattivata">⏸️</span>
-              )}
-            </TabsTrigger>
-          ))}
-          <TabsTrigger 
-            value="__create__" 
-            className="text-primary gap-1"
-            onClick={() => setIsCreating(true)}
-          >
-            <Plus className="h-4 w-4" />
-            <span>Nuova</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Content per ogni sezione esistente */}
-        {sections.map(section => (
-          <TabsContent 
-            key={section.id}
-            value={section.id} 
-            className="flex-1 flex flex-col gap-3 mt-4"
-          >
-            <div className="flex-1 flex flex-col gap-3 min-h-0">
-              {/* Textarea espansa */}
-              <Textarea
-                value={editingId === section.id ? editContent : section.content}
-                onChange={(e) => {
-                  if (editingId !== section.id) {
-                    handleStartEdit(section);
-                  }
-                  setEditContent(e.target.value);
-                }}
-                className="flex-1 font-mono text-sm resize-none min-h-[calc(100vh-450px)]"
-                placeholder="Inserisci il contenuto della sezione..."
-              />
-
-              {/* Action Bar */}
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={section.is_active}
-                    onCheckedChange={(val) => onToggle(section.id, val)}
-                  />
-                  <span className="text-sm font-medium">
-                    {section.is_active ? '✅ Attiva' : '⏸️ Disattivata'}
-                  </span>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => handleSaveEdit(section.id)}
-                    disabled={editingId !== section.id}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Salva
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDeleteSection(section.id, section.section_name)}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-        ))}
-
-        {/* Tab per creare nuova sezione */}
-        <TabsContent value="__create__" className="flex-1 mt-4">
-          <Card className="h-full flex flex-col">
-            <CardHeader>
+        {/* Dialog Creazione */}
+        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Nuova Sezione {sectionTypeLabel}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
               <Input
-                placeholder={`Nome sezione ${sectionType.toLowerCase()} (es. 'professionale_formale')`}
+                placeholder={`Nome sezione (es. 'professionale_formale')`}
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="font-medium"
               />
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col gap-3 min-h-0">
               <Textarea
-                placeholder={`Contenuto della sezione ${sectionTypeLabel}...`}
+                placeholder="Contenuto della sezione..."
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
-                className="flex-1 font-mono text-sm resize-none min-h-[calc(100vh-550px)]"
+                className="min-h-[300px] font-mono text-sm"
               />
-              <div className="flex gap-2 justify-end flex-shrink-0">
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setActiveTab(sections[0]?.id || '__create__');
-                    setIsCreating(false);
-                    setNewName('');
-                    setNewContent('');
-                  }}
-                >
-                  Annulla
-                </Button>
-                <Button onClick={handleCreateNew}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Crea Sezione
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                Annulla
+              </Button>
+              <Button onClick={handleCreateNew}>
+                <Save className="h-4 w-4 mr-2" />
+                Crea
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
 
-      {sections.length === 0 && !isCreating && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-3">
-            <p className="text-muted-foreground">
-              Nessuna sezione {sectionTypeLabel} presente
-            </p>
-            <Button onClick={() => {
-              setActiveTab('__create__');
-              setIsCreating(true);
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Crea Prima Sezione
+  return (
+    <div className="flex flex-col h-full gap-4">
+      {/* Dropdown Prompt Selector */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-muted-foreground shrink-0">Seleziona Prompt:</span>
+        <DynamicDropdown
+          trigger={
+            <Button variant="outline" className="w-full justify-between">
+              {selectedSection?.section_name || 'Seleziona...'}
             </Button>
+          }
+          items={dropdownItems}
+          align="start"
+          className="w-full"
+        />
+      </div>
+
+      {/* Textarea Contenuto */}
+      {selectedSection && (
+        <>
+          <Textarea
+            value={editContent || selectedSection.content}
+            onChange={(e) => handleContentChange(e.target.value)}
+            className="flex-1 font-mono text-sm resize-none min-h-[calc(100vh-450px)]"
+            placeholder="Inserisci il contenuto della sezione..."
+          />
+
+          {/* Action Bar */}
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={selectedSection.is_active}
+                onCheckedChange={(val) => onToggle(selectedSection.id, val)}
+              />
+              <span className="text-sm font-medium">
+                {selectedSection.is_active ? '✅ Attiva' : '⏸️ Disattivata'}
+              </span>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={!hasChanges}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Salva
+              </Button>
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => setShowCreateDialog(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Aggiungi
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={handleDelete}
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
+        </>
       )}
+
+      {/* Dialog Creazione Nuova Sezione */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nuova Sezione {sectionTypeLabel}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              placeholder={`Nome sezione (es. 'professionale_formale')`}
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+            <Textarea
+              placeholder="Contenuto della sezione..."
+              value={newContent}
+              onChange={(e) => setNewContent(e.target.value)}
+              className="min-h-[300px] font-mono text-sm"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Annulla
+            </Button>
+            <Button onClick={handleCreateNew}>
+              <Save className="h-4 w-4 mr-2" />
+              Crea
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -6,7 +6,7 @@ interface RadioCursorProps {
 }
 
 export function RadioCursor({ isActive, isFocused }: RadioCursorProps) {
-  if (isActive) {
+  if (!isActive) {
     return null;
   }
 

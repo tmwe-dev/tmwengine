@@ -52,7 +52,8 @@ export function RadioMessageInput({
         "bg-transparent border-none shadow-none",
         "text-white placeholder:text-transparent",
         "focus-visible:ring-0 focus-visible:ring-offset-0",
-        "resize-none"
+        "resize-none",
+        "caret-transparent"
       )}
     />
   );

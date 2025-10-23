@@ -589,11 +589,22 @@ const ChatLaboratory = () => {
           auto_play_audio: true,
         };
 
+        // ✅ CRITICAL FIX: Se voice_enabled è true, forza mode: 'bar'
+        // Questo previene l'errore "Questa funzione è dedicata alla modalità Bar Chat"
+        const finalMode = mode === 'bar' ? 'bar' : 'laboratory';
+        const voiceEnabled = mode === 'bar';
+        
+        console.log('🔧 [transferPendingSettings] Mode setup:', { 
+          rawMode: mode, 
+          finalMode, 
+          voiceEnabled 
+        });
+
         await supabase.from('chat_laboratory_bar_mode').insert({
           conversation_id: conversationId,
           user_id: user.id,
-          mode: mode,
-          voice_enabled: true,
+          mode: finalMode,
+          voice_enabled: voiceEnabled,
           active_kb_id: kb,
           ...controls,
         });

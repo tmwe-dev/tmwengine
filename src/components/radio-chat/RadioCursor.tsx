@@ -3,9 +3,10 @@ import { cn } from '@/lib/utils';
 interface RadioCursorProps {
   isActive: boolean;
   isFocused: boolean;
+  conversationId?: string | null;
 }
 
-export function RadioCursor({ isActive, isFocused }: RadioCursorProps) {
+export function RadioCursor({ isActive, isFocused, conversationId }: RadioCursorProps) {
   if (!isActive) {
     return null;
   }
@@ -22,7 +23,9 @@ export function RadioCursor({ isActive, isFocused }: RadioCursorProps) {
       
       {/* Testo sotto cursore */}
       <p className="text-white/70 text-sm md:text-base text-center whitespace-nowrap">
-        Hello, what do you want to know today?
+        {conversationId 
+          ? "Hello, what do you want to know today?" 
+          : "Initializing conversation..."}
       </p>
     </div>
   );

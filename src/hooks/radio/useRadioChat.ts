@@ -15,11 +15,13 @@ export function useRadioChat() {
     // Initialize conversation on mount
     const init = async () => {
       if (!conversationId) {
+        console.log('🚀 Initializing conversation...');
         await createConversation();
+        console.log('✅ Conversation initialized');
       }
     };
     init();
-  }, []);
+  }, [conversationId, createConversation]);
 
   const sendMessage = async () => {
     console.log('🚀 sendMessage called');

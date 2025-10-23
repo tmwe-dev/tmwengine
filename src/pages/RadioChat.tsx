@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { RadioCursor } from '@/components/radio-chat/RadioCursor';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
@@ -10,7 +10,7 @@ import { useRadioChat } from '@/hooks/radio/useRadioChat';
 
 const RadioChat = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showTextarea, setShowTextarea] = useState(true);
+  const [showTextarea, setShowTextarea] = useState(false);
 
   const {
     inputValue,
@@ -20,7 +20,15 @@ const RadioChat = () => {
     messages,
     sendMessage,
     isLoading,
+    conversationId,
   } = useRadioChat();
+
+  useEffect(() => {
+    if (conversationId) {
+      console.log('✅ Conversation ready, showing textarea');
+      setShowTextarea(true);
+    }
+  }, [conversationId]);
 
   const handleSend = async () => {
     console.log('🎯 handleSend called - Button clicked!');
@@ -80,6 +88,7 @@ const RadioChat = () => {
             <RadioCursor 
               isActive={true} 
               isFocused={false}
+              conversationId={conversationId}
             />
           )}
 
@@ -90,6 +99,7 @@ const RadioChat = () => {
                 <RadioCursor 
                   isActive={inputValue.length === 0} 
                   isFocused={isFocused}
+                  conversationId={conversationId}
                 />
               )}
               

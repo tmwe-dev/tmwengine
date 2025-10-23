@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
-import { MultiAgentMessage } from '@/components/chat-laboratory/MultiAgentMessage';
+import { MultiAgentMessage, StructuredAttachments } from '@/components/chat-laboratory/MultiAgentMessage';
 import { LaboratoryPromptManager } from '@/components/chat-laboratory/LaboratoryPromptManager';
 import { FileUploader, UploadedFile } from '@/components/chat/FileUploader';
 import { ImageGenerator } from '@/components/chat/ImageGenerator';
@@ -54,7 +54,7 @@ interface Message {
   sender_name: string;
   content: string;
   is_visible_to_ai: boolean;
-  attachments?: UploadedFile[];
+  attachments?: UploadedFile[] | StructuredAttachments;
   images?: string[];
   generated_images?: string[];
   token_input?: number;

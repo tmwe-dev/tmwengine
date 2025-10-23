@@ -40,7 +40,7 @@ interface StructuredPrompt {
   };
 }
 
-interface StructuredAttachments {
+export interface StructuredAttachments {
   appendix?: string;
   report?: string;
   structured_prompt?: StructuredPrompt;

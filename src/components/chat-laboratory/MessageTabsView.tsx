@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { MultiAgentMessage } from './MultiAgentMessage';
+import { MultiAgentMessage, StructuredAttachments } from './MultiAgentMessage';
 import { TabNavigation } from './TabNavigation';
 import { NewMessagesIndicator } from './NewMessagesIndicator';
 import { useTabSwitching } from '@/hooks/useTabSwitching';
 import { useAudioPlayback } from '@/hooks/useAudioPlayback';
 import { useNewMessagesIndicator } from '@/hooks/useNewMessagesIndicator';
+import { UploadedFile } from '@/components/chat/FileUploader';
 
 interface Message {
   id: string;
@@ -14,7 +15,7 @@ interface Message {
   sender_name: string;
   content: string;
   is_visible_to_ai: boolean;
-  attachments?: any[];
+  attachments?: UploadedFile[] | StructuredAttachments;
   images?: string[];
   generated_images?: string[];
   token_input?: number;

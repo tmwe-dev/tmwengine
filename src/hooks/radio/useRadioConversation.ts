@@ -14,13 +14,18 @@ export function useRadioConversation() {
   const [error, setError] = useState<string | null>(null);
 
   const createConversation = async () => {
+    console.log('🔧 createConversation called');
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log('🔐 Getting user for conversation creation...');
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('👤 User:', user);
+      
       if (!user) throw new Error('User not authenticated');
 
+      console.log('📝 Creating conversation...');
       // Create conversation
       const { data: conversation, error: convError } = await supabase
         .from('chat_laboratory_conversations')
@@ -31,9 +36,15 @@ export function useRadioConversation() {
         .select()
         .single();
 
-      if (convError) throw convError;
+      if (convError) {
+        console.log('❌ Conversation creation error:', convError);
+        throw convError;
+      }
+
+      console.log('✅ Conversation created:', conversation);
 
       // Add participants
+      console.log('👥 Adding participants...');
       const participantsToInsert = RADIO_CHAT_PARTICIPANTS.map(p => ({
         conversation_id: conversation.id,
         type: p.type,
@@ -46,9 +57,15 @@ export function useRadioConversation() {
         .from('chat_laboratory_participants')
         .insert(participantsToInsert);
 
-      if (partError) throw partError;
+      if (partError) {
+        console.log('❌ Participants error:', partError);
+        throw partError;
+      }
+
+      console.log('✅ Participants added');
 
       // Configure Bar Mode
+      console.log('🎵 Configuring bar mode...');
       const { error: barModeError } = await supabase
         .from('chat_laboratory_bar_mode')
         .insert({
@@ -58,12 +75,18 @@ export function useRadioConversation() {
           user_id: user.id,
         });
 
-      if (barModeError) throw barModeError;
+      if (barModeError) {
+        console.log('❌ Bar mode error:', barModeError);
+        throw barModeError;
+      }
+
+      console.log('✅ Bar mode configured');
+      console.log('🎉 Conversation fully created with ID:', conversation.id);
 
       setConversationId(conversation.id);
       return conversation.id;
     } catch (err: any) {
-      console.error('Error creating conversation:', err);
+      console.error('❌ Error creating conversation:', err);
       setError(err.message);
       return null;
     } finally {

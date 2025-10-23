@@ -22,16 +22,31 @@ export function useRadioChat() {
   }, []);
 
   const sendMessage = async () => {
-    if (!inputValue.trim() || !conversationId) return false;
+    console.log('🚀 sendMessage called');
+    console.log('📝 inputValue:', inputValue);
+    console.log('🆔 conversationId:', conversationId);
+    
+    if (!inputValue.trim() || !conversationId) {
+      console.log('❌ Validation failed:', { 
+        hasInput: !!inputValue.trim(), 
+        hasConversationId: !!conversationId 
+      });
+      return false;
+    }
 
     const userMessage = inputValue.trim();
     setInputValue('');
 
-    // Save user message
+    console.log('💾 Saving message:', userMessage);
     const savedMessage = await saveUserMessage(userMessage);
-    if (!savedMessage) return false;
+    console.log('✅ Message saved:', savedMessage);
+    
+    if (!savedMessage) {
+      console.log('❌ saveUserMessage returned null');
+      return false;
+    }
 
-    // Invoke orchestrator
+    console.log('🎭 Invoking orchestrator...');
     await invokeOrchestrator(conversationId, userMessage);
     
     return true;

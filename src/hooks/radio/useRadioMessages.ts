@@ -30,12 +30,25 @@ export function useRadioMessages(conversationId: string | null) {
   };
 
   const saveUserMessage = async (content: string) => {
-    if (!conversationId) return null;
+    console.log('💾 saveUserMessage called with:', content);
+    console.log('🆔 conversationId:', conversationId);
+    
+    if (!conversationId) {
+      console.log('❌ No conversationId, returning null');
+      return null;
+    }
 
     try {
+      console.log('🔐 Getting user...');
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      console.log('👤 User:', user);
+      
+      if (!user) {
+        console.log('❌ User not authenticated');
+        throw new Error('User not authenticated');
+      }
 
+      console.log('📤 Inserting message into database...');
       const { data, error: saveError } = await supabase
         .from('chat_laboratory_messages')
         .insert({
@@ -49,12 +62,16 @@ export function useRadioMessages(conversationId: string | null) {
         .select()
         .single();
 
-      if (saveError) throw saveError;
+      if (saveError) {
+        console.log('❌ Database error:', saveError);
+        throw saveError;
+      }
 
+      console.log('✅ Message inserted:', data);
       setMessages(prev => [...prev, data]);
       return data;
     } catch (err: any) {
-      console.error('Error saving message:', err);
+      console.error('❌ Error saving message:', err);
       setError(err.message);
       return null;
     }

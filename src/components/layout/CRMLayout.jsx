@@ -12,6 +12,7 @@ import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ProfileDialog } from '@/components/tmwe/ProfileDialog';
 import { GlobalCountrySelector } from '@/components/GlobalCountrySelector';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { TokenKeyIndicator } from '@/components/ui/token-key-indicator';
 import { useNavigationGroups } from '@/hooks/useNavigationGroups';
 import findairLogo from '@/assets/findair-logo-header.png';
 import {
@@ -199,16 +200,13 @@ const CRMLayout = ({ children }) => {
                 <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
                   {getCurrentPageTitle()}
                 </h1>
-                {/* TMWE Token Display */}
-                {tmweToken ? (
-                  <p className="text-xs font-mono text-green-600 px-3">
-                    Token: {tmweToken.substring(0, 40)}...
-                  </p>
-                ) : (
-                  <p className="text-xs font-semibold text-red-600 px-3">
-                    ❌ Token non disponibile
-                  </p>
-                )}
+                {/* TMWE Token Status */}
+                <TokenKeyIndicator 
+                  tokenCount={tmweToken ? 1 : 0}
+                  variant="total"
+                  showLabel={false}
+                  className="px-3"
+                />
               </>
             )}
           </div>

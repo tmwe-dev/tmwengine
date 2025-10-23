@@ -176,45 +176,31 @@ export default {
           "100%": { transform: "scale(1) rotate(0deg)" },
         },
         "line-bounce": {
-          // ANDATA: sinistra → destra
           "0%": { 
-            transform: "translateX(0%) scaleX(0)",
-            transformOrigin: "left"
+            transform: "translateX(0) scaleX(1)",
+            transformOrigin: "left",
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "8%": { 
-            transform: "translateX(5%) scaleX(0.5)",
-            transformOrigin: "left"
-          },
-          "25%": {
-            transform: "translateX(16.5%) scaleX(1)",
-            transformOrigin: "left"
-          },
-          "42%": {
-            transform: "translateX(28%) scaleX(0.5)",
-            transformOrigin: "left"
+            transform: "translateX(15%) scaleX(1)",
+            transformOrigin: "left",
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "50%": { 
-            transform: "translateX(33%) scaleX(0.017)",
-            transformOrigin: "left"
-          },
-          
-          // RITORNO: destra → sinistra (inversione)
-          "58%": {
-            transform: "translateX(28%) scaleX(-0.5)",
-            transformOrigin: "left"
-          },
-          "75%": {
-            transform: "translateX(16.5%) scaleX(-1)",
-            transformOrigin: "left"
+            transform: "translateX(90%) scaleX(0.017)",
+            transformOrigin: "left",
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "92%": { 
-            transform: "translateX(5%) scaleX(-0.5)",
-            transformOrigin: "left"
+            transform: "translateX(15%) scaleX(1)",
+            transformOrigin: "left",
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "100%": { 
-            transform: "translateX(0%) scaleX(0)",
-            transformOrigin: "left"
-          }
+            transform: "translateX(0) scaleX(1)",
+            transformOrigin: "left",
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+          },
         },
         "heartbeat": {
           "0%, 100%": { transform: "scale(1)" },
@@ -228,7 +214,7 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
         "slide-up": "slide-up 0.3s ease-out",
         "wiggle": "wiggle 0.8s ease-in-out",
-        "line-bounce": "line-bounce 3.6s ease-in-out infinite",
+        "line-bounce": "line-bounce 1.2s ease-in-out",
         "heartbeat": "heartbeat 1s ease-in-out infinite",
       },
     },

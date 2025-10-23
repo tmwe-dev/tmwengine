@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Clock, Zap, Copy, Download, Link, FileText, FileCheck, Sparkles, ChevronDown, Users } from 'lucide-react';
+import { Bot, User, Clock, Zap, Copy, Download, Link, FileText, FileCheck, Sparkles, ChevronDown, Users, FileCode } from 'lucide-react';
 import { UploadedFile } from '@/components/chat/FileUploader';
 import { toast } from '@/hooks/use-toast';
 import { AudioMessagePlayer } from '@/components/chat-laboratory/AudioMessagePlayer';
@@ -12,10 +12,38 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '@/integrations/supabase/client';
 
+interface StructuredPrompt {
+  global_system_prompt: string;
+  base_sections?: Array<{
+    type: string;
+    content: string;
+  }>;
+  agent_personality?: Array<{
+    agent_name: string;
+    content: string;
+  }>;
+  cumulative_summary?: string | null;
+  message_history?: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>;
+  turn_context?: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>;
+  metadata?: {
+    agent_index: number;
+    total_agents: number;
+    history_count: number;
+    turn_context_count: number;
+    economy_mode: boolean;
+  };
+}
+
 interface StructuredAttachments {
   appendix?: string;
   report?: string;
-  structured_prompt?: any;
+  structured_prompt?: StructuredPrompt;
   debug_info?: any;
 }
 
@@ -84,6 +112,7 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange }: M
   const [viewMode, setViewMode] = useState<ViewMode>('friendly');
   const [appendixAudioPlaying, setAppendixAudioPlaying] = useState(false);
   const [appendixOpen, setAppendixOpen] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
   const config = SENDER_CONFIG[message.sender_type];
   const Icon = config.icon;
 
@@ -91,6 +120,15 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange }: M
   const isStructuredAttachments = (attachments: any): attachments is StructuredAttachments => {
     return attachments && typeof attachments === 'object' && !Array.isArray(attachments);
   };
+
+  // Verifica presenza structured_prompt
+  const hasStructuredPrompt = 
+    isStructuredAttachments(message.attachments) && 
+    message.attachments.structured_prompt;
+  
+  const structuredPrompt = hasStructuredPrompt && isStructuredAttachments(message.attachments)
+    ? message.attachments.structured_prompt
+    : null;
 
   // Determine which content to display based on viewMode
   const displayContent = (() => {
@@ -246,6 +284,19 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange }: M
               </div>
             )}
             
+            {/* Icona "Vedi Prompt" - solo per messaggi AI con structured_prompt */}
+            {hasStructuredPrompt && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setShowPrompt(!showPrompt)}
+                title="Visualizza prompt completo utilizzato"
+              >
+                <FileCode className={`h-4 w-4 ${showPrompt ? 'text-violet-500' : ''}`} />
+              </Button>
+            )}
+            
             <Button
               variant="ghost"
               size="icon"
@@ -287,6 +338,152 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange }: M
                 <ReactMarkdown>
                   {isStructuredAttachments(message.attachments) ? message.attachments.report : (message.attachments as any)?.report}
                 </ReactMarkdown>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* 🧠 PROMPT COMPLETO UTILIZZATO */}
+        {hasStructuredPrompt && (
+          <Collapsible open={showPrompt} onOpenChange={setShowPrompt} className="mt-3">
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center justify-between w-full p-3 bg-violet-500/10 rounded-lg hover:bg-violet-500/20 transition-colors text-sm font-medium group border border-violet-500/30">
+                <span className="flex items-center gap-2">
+                  <FileCode className="h-4 w-4 text-violet-600" />
+                  <span className="text-foreground">🧠 Prompt Completo Utilizzato</span>
+                </span>
+                <div className="flex items-center gap-2">
+                  {structuredPrompt?.metadata && (
+                    <Badge variant="outline" className="text-xs bg-violet-500/10 border-violet-500/30">
+                      {structuredPrompt.metadata.history_count + 
+                       structuredPrompt.metadata.turn_context_count} messaggi
+                    </Badge>
+                  )}
+                  <ChevronDown className="h-4 w-4 text-violet-600 transition-transform group-data-[state=open]:rotate-180" />
+                </div>
+              </button>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent className="mt-2">
+              <div className="p-4 bg-violet-500/5 rounded-lg border border-violet-500/20 space-y-4 max-h-[700px] overflow-y-auto">
+                
+                {/* SEZIONE 1: System Prompt Globale */}
+                {structuredPrompt && (
+                  <div className="space-y-2">
+                    <h5 className="font-semibold text-sm text-violet-700 dark:text-violet-400 flex items-center gap-2 border-b border-violet-500/30 pb-1">
+                      <FileCode className="h-4 w-4" />
+                      📋 System Prompt Globale
+                    </h5>
+                    <div className="bg-background/80 p-3 rounded border border-violet-500/20 text-xs leading-relaxed whitespace-pre-wrap font-mono">
+                      {structuredPrompt.global_system_prompt}
+                    </div>
+                  </div>
+                )}
+
+                {/* SEZIONE 2: Riassunto Cumulativo (se presente) */}
+                {structuredPrompt?.cumulative_summary && (
+                  <div className="space-y-2">
+                    <h5 className="font-semibold text-sm text-violet-700 dark:text-violet-400 flex items-center gap-2 border-b border-violet-500/30 pb-1">
+                      📚 Riassunto Cumulativo
+                      <Badge variant="outline" className="text-xs bg-amber-500/10 border-amber-500/30">
+                        Storico &gt; 20 messaggi
+                      </Badge>
+                    </h5>
+                    <div className="bg-amber-500/5 p-3 rounded border border-amber-500/20 text-xs leading-relaxed">
+                      <ReactMarkdown>
+                        {structuredPrompt.cumulative_summary}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                )}
+
+                {/* SEZIONE 3: Storico Messaggi */}
+                {structuredPrompt?.message_history && 
+                 structuredPrompt.message_history.length > 0 && (
+                  <div className="space-y-2">
+                    <h5 className="font-semibold text-sm text-violet-700 dark:text-violet-400 flex items-center gap-2 border-b border-violet-500/30 pb-1">
+                      💬 Storico Messaggi
+                      <Badge variant="outline" className="text-xs bg-blue-500/10 border-blue-500/30">
+                        {structuredPrompt.message_history.length} messaggi
+                      </Badge>
+                    </h5>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {structuredPrompt.message_history.map((msg, i) => (
+                        <div 
+                          key={i} 
+                          className={`p-2 rounded text-xs border ${
+                            msg.role === 'user' 
+                              ? 'bg-blue-500/5 border-blue-500/20' 
+                              : 'bg-green-500/5 border-green-500/20'
+                          }`}
+                        >
+                          <div className="font-semibold text-[10px] uppercase tracking-wide mb-1 opacity-70">
+                            {msg.role === 'user' ? '👤 USER' : '🤖 ASSISTANT'}
+                          </div>
+                          <div className="whitespace-pre-wrap leading-relaxed">
+                            {msg.content}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* SEZIONE 4: Contesto Turno Corrente */}
+                {structuredPrompt?.turn_context && 
+                 structuredPrompt.turn_context.length > 0 && (
+                  <div className="space-y-2">
+                    <h5 className="font-semibold text-sm text-violet-700 dark:text-violet-400 flex items-center gap-2 border-b border-violet-500/30 pb-1">
+                      🔄 Contesto Turno Corrente
+                      <Badge variant="outline" className="text-xs bg-cyan-500/10 border-cyan-500/30">
+                        {structuredPrompt.turn_context.length} messaggi
+                      </Badge>
+                    </h5>
+                    <div className="space-y-2">
+                      {structuredPrompt.turn_context.map((msg, i) => (
+                        <div 
+                          key={i} 
+                          className={`p-2 rounded text-xs border ${
+                            msg.role === 'user' 
+                              ? 'bg-blue-500/5 border-blue-500/20' 
+                              : 'bg-green-500/5 border-green-500/20'
+                          }`}
+                        >
+                          <div className="font-semibold text-[10px] uppercase tracking-wide mb-1 opacity-70">
+                            {msg.role === 'user' ? '👤 USER' : '🤖 ASSISTANT'}
+                          </div>
+                          <div className="whitespace-pre-wrap leading-relaxed">
+                            {msg.content}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* SEZIONE 5: Metadata */}
+                {structuredPrompt?.metadata && (
+                  <div className="space-y-2">
+                    <h5 className="font-semibold text-sm text-violet-700 dark:text-violet-400 flex items-center gap-2 border-b border-violet-500/30 pb-1">
+                      ℹ️ Metadata
+                    </h5>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-background/80 p-2 rounded border border-violet-500/20">
+                        <span className="font-semibold">Agente:</span> {structuredPrompt.metadata.agent_index + 1}/{structuredPrompt.metadata.total_agents}
+                      </div>
+                      <div className="bg-background/80 p-2 rounded border border-violet-500/20">
+                        <span className="font-semibold">Messaggi Storico:</span> {structuredPrompt.metadata.history_count}
+                      </div>
+                      <div className="bg-background/80 p-2 rounded border border-violet-500/20">
+                        <span className="font-semibold">Messaggi Turno:</span> {structuredPrompt.metadata.turn_context_count}
+                      </div>
+                      <div className="bg-background/80 p-2 rounded border border-violet-500/20">
+                        <span className="font-semibold">Economy Mode:</span> {structuredPrompt.metadata.economy_mode ? '✅ Sì' : '❌ No'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               </div>
             </CollapsibleContent>
           </Collapsible>

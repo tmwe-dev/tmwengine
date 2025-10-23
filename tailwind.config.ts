@@ -177,30 +177,41 @@ export default {
         },
         "line-bounce": {
           "0%": { 
-            transform: "translateX(0) scaleX(1)",
-            transformOrigin: "left",
-            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+            transform: "translateX(0) scaleX(0.1)",
+            transformOrigin: "left"
           },
           "8%": { 
-            transform: "translateX(15%) scaleX(1)",
-            transformOrigin: "left",
-            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+            transform: "translateX(5%) scaleX(0.6)",
+            transformOrigin: "left"
+          },
+          "25%": {
+            transform: "translateX(10%) scaleX(1)",
+            transformOrigin: "left"
+          },
+          "42%": {
+            transform: "translateX(35%) scaleX(0.6)",
+            transformOrigin: "right"
           },
           "50%": { 
-            transform: "translateX(90%) scaleX(0.017)",
-            transformOrigin: "right",
-            backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+            transform: "translateX(40%) scaleX(0.1)",
+            transformOrigin: "right"
+          },
+          "58%": {
+            transform: "translateX(35%) scaleX(-0.6)",
+            transformOrigin: "right"
+          },
+          "75%": {
+            transform: "translateX(10%) scaleX(-1)",
+            transformOrigin: "right"
           },
           "92%": { 
-            transform: "translateX(15%) scaleX(1)",
-            transformOrigin: "right",
-            backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+            transform: "translateX(5%) scaleX(-0.6)",
+            transformOrigin: "left"
           },
           "100%": { 
-            transform: "translateX(0) scaleX(1)",
-            transformOrigin: "left",
-            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
-          },
+            transform: "translateX(0) scaleX(0.1)",
+            transformOrigin: "left"
+          }
         },
         "cursor-blink": {
           "0%, 49%": { opacity: "1" },

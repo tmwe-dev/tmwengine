@@ -10,26 +10,22 @@ export function RadioCursor({ isActive }: RadioCursorProps) {
     return (
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <div className={cn(
-          "w-3 h-6 bg-white",
+          "w-0.5 h-5 bg-white",
           "animate-pulse"
         )} />
       </div>
     );
   }
 
-  // Lineetta che si muove left-right quando inattivo
+  // Lineetta che si muove left-right quando inattivo (configurazione sidebar)
   return (
-    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full">
       <div className={cn(
-        "w-8 h-0.5 bg-white",
-        "animate-[slide_2s_ease-in-out_infinite]"
+        "relative w-[60%] h-[1px] mx-auto",
+        "after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:origin-left",
+        "after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent",
+        "after:animate-line-bounce"
       )} />
-      <style>{`
-        @keyframes slide {
-          0%, 100% { transform: translateX(-20px); }
-          50% { transform: translateX(20px); }
-        }
-      `}</style>
     </div>
   );
 }

@@ -23,8 +23,12 @@ const RadioChat = () => {
   } = useRadioChat();
 
   const handleSend = async () => {
+    console.log('🎯 handleSend called - Button clicked!');
+    console.log('📝 inputValue before send:', inputValue);
     const success = await sendMessage();
+    console.log('✅ sendMessage result:', success);
     if (success) {
+      console.log('🔄 Hiding textarea...');
       setShowTextarea(false); // Hide textarea only after successful send
     }
   };
@@ -90,16 +94,16 @@ const RadioChat = () => {
                 onBlur={() => setIsFocused(false)}
                 disabled={isLoading}
               />
-
-              {/* Send Button */}
-              {inputValue && (
-                <RadioSendButton 
-                  onSend={handleSend} 
-                  disabled={isLoading}
-                  visible={!!inputValue}
-                />
-              )}
             </>
+          )}
+
+          {/* Send Button - FUORI dal blocco showTextarea */}
+          {showTextarea && inputValue && (
+            <RadioSendButton 
+              onSend={handleSend} 
+              disabled={isLoading}
+              visible={true}
+            />
           )}
         </div>
       </div>

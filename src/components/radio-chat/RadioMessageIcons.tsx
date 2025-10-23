@@ -8,7 +8,12 @@ interface RadioMessageIconsProps {
 
 export function RadioMessageIcons({ messages, onIconClick }: RadioMessageIconsProps) {
   // Filter human messages
-  const humanMessages = messages.filter(msg => msg.sender_type === 'human');
+  console.log('📊 Total messages:', messages.length);
+  const humanMessages = messages.filter(msg => {
+    console.log('🔍 Message:', msg);
+    return msg.sender_type === 'human';
+  });
+  console.log('👤 Human messages:', humanMessages.length);
   
   if (humanMessages.length === 0) return null;
 

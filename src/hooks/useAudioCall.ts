@@ -322,10 +322,10 @@ export const useAudioCall = (roomId: string, userId: string) => {
           console.warn('[startCall] ⚠️ Push notification error:', pushError);
         }
         
-        // Lascia aperto il canale per 2 secondi prima di chiuderlo
+        // Lascia aperto il canale per 5 secondi prima di chiuderlo (aumentato per affidabilità)
         setTimeout(() => {
           channel.unsubscribe();
-        }, 2000);
+        }, 5000);
       }
       
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -340,6 +340,9 @@ export const useAudioCall = (roomId: string, userId: string) => {
       console.log('[useAudioCall] Got local media stream');
       localStreamRef.current = stream;
 
+      // FIX FASE 1: Imposta remotePeerId PRIMA di creare PeerConnection
+      if (targetUserId) setRemotePeerId(targetUserId);
+      
       const pc = new WebRTCPeerConnection({
       onIceCandidate: (candidate) => {
         // Use remotePeerId as fallback after pendingCallDataRef is cleared
@@ -408,7 +411,6 @@ export const useAudioCall = (roomId: string, userId: string) => {
       });
 
       peerConnectionRef.current = pc;
-      if (targetUserId) setRemotePeerId(targetUserId);
       // FIX #3: Non chiamare setIsInCall(true) qui - viene chiamato solo in onRemoteStream
 
       // Salva i dati della chiamata e aspetta il segnale "ready" da Bob
@@ -424,13 +426,32 @@ export const useAudioCall = (roomId: string, userId: string) => {
       });
     } catch (error: any) {
       console.error('[useAudioCall] Error starting call:', error);
+      
+      // FIX FASE 1: Gestione errori getUserMedia specifica
+      let message = 'Errore';
+      let description = 'Impossibile avviare la chiamata';
+      
+      if (error.name === 'NotAllowedError') {
+        message = 'Permessi microfono negati';
+        description = 'Consenti l\'accesso al microfono nelle impostazioni del browser';
+      } else if (error.name === 'NotReadableError') {
+        message = 'Microfono già in uso';
+        description = 'Chiudi altre applicazioni che stanno usando il microfono';
+      } else if (error.name === 'NotFoundError') {
+        message = 'Microfono non trovato';
+        description = 'Collega un microfono e riprova';
+      } else if (error.name === 'OverconstrainedError') {
+        message = 'Impostazioni non supportate';
+        description = 'Il microfono non supporta le impostazioni richieste';
+      }
+      
       toast({
-        title: 'Errore',
-        description: error.name === 'NotAllowedError' 
-          ? 'Permessi microfono negati' 
-          : 'Impossibile avviare la chiamata',
+        title: message,
+        description,
         variant: 'destructive'
       });
+      
+      setWaitingForRecipient(null);
     }
   }, [sendSignal, toast, monitorNetworkQuality, waitingForRecipient]);
 

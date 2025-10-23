@@ -95,29 +95,76 @@ export const useWebRTCSignaling = (roomId: string, userId: string) => {
     };
   }, [roomId, userId]);
 
+  // FIX FASE 1: Heartbeat 30s per mantenere viva la connessione
+  useEffect(() => {
+    if (!isReady || !channelRef.current) return;
+
+    console.log('[WebRTCSignaling] ❤️ Starting heartbeat (30s interval)');
+    
+    const heartbeatInterval = setInterval(async () => {
+      try {
+        await channelRef.current?.send({
+          type: 'broadcast',
+          event: 'heartbeat',
+          payload: { timestamp: Date.now() }
+        });
+        console.log('[WebRTCSignaling] 💓 Heartbeat sent');
+      } catch (error) {
+        console.error('[WebRTCSignaling] ❌ Heartbeat failed:', error);
+      }
+    }, 30000); // Ogni 30 secondi
+
+    return () => {
+      console.log('[WebRTCSignaling] 🛑 Stopping heartbeat');
+      clearInterval(heartbeatInterval);
+    };
+  }, [isReady]);
+
   const sendSignal = useCallback(async (message: Omit<SignalingMessage, 'from'>) => {
     if (!channelRef.current) {
       console.error('[WebRTCSignaling] ❌ Channel not initialized');
-      throw new Error('Channel not ready');
+      throw new Error('Channel not initialized');
     }
-    
+
     if (!isReady) {
-      console.warn('[WebRTCSignaling] ⚠️ Channel not ready, waiting...');
-      await new Promise(resolve => setTimeout(resolve, 500));
-      if (!isReady) {
-        console.error('[WebRTCSignaling] ❌ Channel still not ready after wait');
-        throw new Error('Channel timeout');
-      }
+      console.warn('[WebRTCSignaling] ⏳ Waiting for channel to be ready...');
+      // FIX FASE 1: Aspetta max 5s che il canale sia ready
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Channel ready timeout after 5s')), 5000);
+        const checkInterval = setInterval(() => {
+          if (isReady) {
+            clearTimeout(timeout);
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 100);
+      });
     }
-    
-    const fullMessage: SignalingMessage = { ...message, from: userId };
-    console.log('[WebRTCSignaling] Sending signal:', fullMessage.type, 'to:', fullMessage.to);
-    
-    return await channelRef.current.send({
-      type: 'broadcast',
-      event: 'webrtc-signal',
-      payload: fullMessage
-    });
+
+    const fullMessage: SignalingMessage = {
+      ...message,
+      from: userId,
+    };
+
+    console.log('[WebRTCSignaling] 📤 Sending signal:', fullMessage.type, 'to:', fullMessage.to);
+
+    try {
+      // FIX FASE 1: Race tra send e timeout 5s
+      await Promise.race([
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'webrtc-signal',
+          payload: fullMessage,
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Send timeout after 5s')), 5000)
+        )
+      ]);
+      console.log('[WebRTCSignaling] ✅ Signal sent successfully');
+    } catch (error) {
+      console.error('[WebRTCSignaling] ❌ Error sending signal:', error);
+      throw error;
+    }
   }, [userId, isReady]);
 
   const setHandlers = useCallback((handlers: typeof handlersRef.current) => {

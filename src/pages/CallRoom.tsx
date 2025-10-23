@@ -84,8 +84,15 @@ const CallRoom = () => {
 
       if (from) {
         console.log('[CallRoom] 🟢 Auto-answering call from:', from);
-        sessionStorage.removeItem('pendingIncomingCall'); // Cleanup
-        answerCall(from); // ✅ Passa esplicitamente chi sta chiamando
+        // FIX FASE 1: Cleanup sessionStorage PRIMA di answerCall
+        sessionStorage.removeItem('pendingIncomingCall');
+        sessionStorage.removeItem('pendingIncomingCallTimestamp');
+        sessionStorage.removeItem('acceptedCall');
+        
+        // Piccolo delay per garantire cleanup completo
+        setTimeout(() => {
+          answerCall(from); // ✅ Passa esplicitamente chi sta chiamando
+        }, 50);
       } else {
         console.warn('[CallRoom] ⚠️ Cannot auto-answer: no caller info available');
       }
@@ -127,10 +134,11 @@ const CallRoom = () => {
         <div className="flex gap-2 mb-4">
           <Button
             variant="ghost"
-            onClick={() => {
+            onClick={async () => {
               console.log('[CallRoom] Back button clicked, isInCall:', isInCall);
               if (isInCall) {
-                endCall();
+                // FIX FASE 1: Await endCall prima di navigate
+                await endCall();
               }
               setTimeout(() => {
                 navigate('/intranet');
@@ -144,9 +152,10 @@ const CallRoom = () => {
           {isInCall && (
             <Button
               variant="destructive"
-              onClick={() => {
+              onClick={async () => {
                 console.log('[CallRoom] Emergency exit');
-                endCall();
+                // FIX FASE 1: Await endCall prima di navigate
+                await endCall();
                 setTimeout(() => {
                   navigate('/intranet');
                 }, 100);
@@ -235,7 +244,10 @@ const CallRoom = () => {
                   <Button
                     variant="destructive"
                     size="lg"
-                    onClick={endCall}
+                    onClick={async () => {
+                      // FIX FASE 1: Await endCall per cleanup completo
+                      await endCall();
+                    }}
                     className="rounded-full w-16 h-16"
                   >
                     <PhoneOff className="h-6 w-6" />

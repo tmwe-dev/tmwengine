@@ -1,9 +1,17 @@
+// FIX FASE 1: Interfaccia per buffered candidates con timestamp
+interface BufferedCandidate {
+  candidate: RTCIceCandidateInit;
+  timestamp: number;
+}
+
 export class WebRTCPeerConnection {
   private pc: RTCPeerConnection;
   private localStream?: MediaStream;
   private onRemoteStream?: (stream: MediaStream) => void;
   private onConnectionStateChange?: (state: RTCPeerConnectionState) => void;
-  private pendingCandidates: RTCIceCandidateInit[] = [];
+  private pendingCandidates: BufferedCandidate[] = [];
+  private readonly MAX_BUFFER_SIZE = 100;
+  private readonly BUFFER_TIMEOUT_MS = 10000; // 10 secondi
 
   constructor(config: {
     iceServers?: RTCIceServer[];
@@ -86,10 +94,26 @@ export class WebRTCPeerConnection {
     console.log('[PeerConnection] Setting remote description, type:', sdp.type);
     await this.pc.setRemoteDescription(new RTCSessionDescription(sdp));
     
-    // Add buffered candidates after remote description is set
-    console.log('[PeerConnection] Adding', this.pendingCandidates.length, 'buffered candidates');
-    for (const candidate of this.pendingCandidates) {
-      await this.addIceCandidate(candidate);
+    // FIX FASE 1: Filtra candidates scaduti e ordina per sdpMLineIndex
+    const now = Date.now();
+    const validCandidates = this.pendingCandidates.filter(
+      c => now - c.timestamp < this.BUFFER_TIMEOUT_MS
+    );
+    
+    // Ordina per garantire processamento corretto
+    validCandidates.sort((a, b) => 
+      (a.candidate.sdpMLineIndex || 0) - (b.candidate.sdpMLineIndex || 0)
+    );
+    
+    console.log('[PeerConnection] Processing', validCandidates.length, 'buffered candidates (', 
+      this.pendingCandidates.length - validCandidates.length, 'expired)');
+    
+    for (const buffered of validCandidates) {
+      try {
+        await this.pc.addIceCandidate(new RTCIceCandidate(buffered.candidate));
+      } catch (error) {
+        console.error('[PeerConnection] ❌ Error adding buffered candidate:', error);
+      }
     }
     this.pendingCandidates = [];
   }
@@ -98,11 +122,20 @@ export class WebRTCPeerConnection {
     await this.pc.setLocalDescription(new RTCSessionDescription(sdp));
   }
 
-  async addIceCandidate(candidate: RTCIceCandidateInit) {
+  async addIceCandidate(candidate: RTCIceCandidateInit): Promise<void> {
     try {
       if (!this.pc.remoteDescription) {
-        console.warn('[PeerConnection] Buffering candidate - no remote description yet');
-        this.pendingCandidates.push(candidate);
+        // FIX FASE 1: Limita dimensione buffer
+        if (this.pendingCandidates.length >= this.MAX_BUFFER_SIZE) {
+          console.warn('[PeerConnection] ⚠️ ICE buffer full (', this.MAX_BUFFER_SIZE, '), dropping oldest candidate');
+          this.pendingCandidates.shift();
+        }
+        
+        console.warn('[PeerConnection] Buffering candidate - no remote description yet (total:', this.pendingCandidates.length + 1, ')');
+        this.pendingCandidates.push({
+          candidate,
+          timestamp: Date.now()
+        });
         return;
       }
       
@@ -133,18 +166,32 @@ export class WebRTCPeerConnection {
     return this.pc.getSenders();
   }
 
-  close() {
+  close(): void {
     if (this.pc.connectionState !== 'closed') {
-      console.log('[PeerConnection] Closing connection');
+      console.log('[PeerConnection] 🧹 Closing connection - FASE 1 cleanup order');
       
+      // FIX FASE 1: Stop tracks PRIMA di rimuovere handlers
+      if (this.localStream) {
+        this.localStream.getTracks().forEach(track => {
+          track.stop();
+          console.log('[PeerConnection] 🛑 Stopped track:', track.kind);
+        });
+      }
+      
+      // Poi rimuovi handlers
       this.pc.onicecandidate = null;
       this.pc.ontrack = null;
       this.pc.onconnectionstatechange = null;
       this.pc.oniceconnectionstatechange = null;
       this.pc.onicegatheringstatechange = null;
       
-      this.localStream?.getTracks().forEach(track => track.stop());
+      // Pulisci buffer
+      this.pendingCandidates = [];
+      
+      // ULTIMO: chiudi la connessione
       this.pc.close();
+      
+      console.log('[PeerConnection] ✅ Cleanup complete');
     } else {
       console.log('[PeerConnection] Connection already closed');
     }

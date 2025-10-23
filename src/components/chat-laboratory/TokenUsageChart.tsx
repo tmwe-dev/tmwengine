@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Euro } from "lucide-react";
+import { TokenKeyIndicator } from "@/components/ui/token-key-indicator";
 
 interface TokenUsageChartProps {
   conversationId: string;
@@ -195,9 +196,10 @@ export function TokenUsageChart({ conversationId, compact = false, onTotalTokens
       <CardHeader>
         <CardTitle className="text-sm flex items-center justify-between">
           <span>📊 Token Usage</span>
-          <span className="text-muted-foreground font-normal">
-            Totale: {totalTokens.toLocaleString()} token
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Totale:</span>
+            <TokenKeyIndicator tokenCount={totalTokens} variant="total" showLabel />
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>

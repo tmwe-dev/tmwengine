@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Zap } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { TokenKeyIndicator } from '@/components/ui/token-key-indicator';
 
 interface TokenCounterBadgeProps {
   conversationId?: string;
@@ -86,14 +86,11 @@ export const TokenCounterBadge = ({
   const isNearLimit = tokenCount >= alertThreshold;
   
   return (
-    <div className="flex items-center gap-2">
-      <Badge variant={isNearLimit ? 'destructive' : 'outline'} className="gap-2 bg-transparent">
-        {isNearLimit ? <AlertTriangle className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
-        <span className="font-mono">{tokenCount.toLocaleString()}</span>
-      </Badge>
-      <span className="text-xs text-muted-foreground">
-        / {totalTokens.toLocaleString()}
-      </span>
+    <div className="flex items-center gap-3">
+      {isNearLimit && <AlertTriangle className="h-4 w-4 text-destructive" />}
+      <TokenKeyIndicator tokenCount={tokenCount} variant="current" />
+      <span className="text-xs text-muted-foreground">/</span>
+      <TokenKeyIndicator tokenCount={totalTokens} variant="total" />
     </div>
   );
 };

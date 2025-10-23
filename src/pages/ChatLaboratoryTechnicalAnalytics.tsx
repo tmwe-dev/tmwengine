@@ -8,6 +8,7 @@ import { ArrowLeft, Activity, Database, Zap, FileText, TrendingUp, AlertCircle }
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { TokenKeyIndicator } from "@/components/ui/token-key-indicator";
 
 interface Message {
   id: string;
@@ -279,15 +280,19 @@ export default function ChatLaboratoryTechnicalAnalytics() {
 
                           {/* Token Info */}
                           {(msg.token_input || msg.token_output) && (
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
+                            <div className="flex items-center gap-4 pt-2 border-t">
                               {msg.token_input && (
-                                <span>📥 Input: {msg.token_input.toLocaleString()} tokens</span>
+                                <div className="flex items-center gap-1.5">
+                                  <TokenKeyIndicator tokenCount={msg.token_input} variant="input" showLabel />
+                                </div>
                               )}
                               {msg.token_output && (
-                                <span>📤 Output: {msg.token_output.toLocaleString()} tokens</span>
+                                <div className="flex items-center gap-1.5">
+                                  <TokenKeyIndicator tokenCount={msg.token_output} variant="output" showLabel />
+                                </div>
                               )}
                               {msg.tempo_risposta_ms && (
-                                <span>⚡ {(msg.tempo_risposta_ms / 1000).toFixed(2)}s</span>
+                                <span className="text-xs text-muted-foreground">⚡ {(msg.tempo_risposta_ms / 1000).toFixed(2)}s</span>
                               )}
                             </div>
                           )}

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { TokenKeyIndicator } from '@/components/ui/token-key-indicator';
 
 interface PromptSection {
   key: string;
@@ -142,9 +143,10 @@ export const PromptViewer = ({ structuredPrompt }: PromptViewerProps) => {
           <CardTitle className="text-lg flex items-center gap-2">
             🔍 Prompt Strutturato
           </CardTitle>
-          <Badge variant="outline" className="font-mono">
-            ~{totalTokens} tokens totali
-          </Badge>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Totale:</span>
+            <TokenKeyIndicator tokenCount={totalTokens} variant="total" showLabel />
+          </div>
         </div>
         
         {/* Debug Info Section */}
@@ -209,9 +211,7 @@ export const PromptViewer = ({ structuredPrompt }: PromptViewerProps) => {
                   <span className={`font-semibold ${section.color}`}>
                     {section.label}
                   </span>
-                  <Badge variant="secondary" className="text-xs">
-                    {section.tokenCount} tok
-                  </Badge>
+                  <TokenKeyIndicator tokenCount={section.tokenCount} />
                 </div>
                 
                 {isExpanded && (

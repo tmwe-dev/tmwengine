@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Clock, Zap, Copy, Download, Link, FileText, FileCheck, Sparkles, ChevronDown, Users, FileCode } from 'lucide-react';
+import { Bot, User, Clock, Copy, Download, Link, FileText, FileCheck, Sparkles, ChevronDown, Users, FileCode } from 'lucide-react';
 import { UploadedFile } from '@/components/chat/FileUploader';
 import { toast } from '@/hooks/use-toast';
 import { AudioMessagePlayer } from '@/components/chat-laboratory/AudioMessagePlayer';
@@ -11,6 +11,7 @@ import { MessageCostBadge } from './MessageCostBadge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '@/integrations/supabase/client';
+import { TokenKeyIndicator } from '@/components/ui/token-key-indicator';
 
 interface StructuredPrompt {
   global_system_prompt: string;
@@ -600,18 +601,12 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange }: M
         {/* Stats + Bottoni Richiesta Commento */}
         <div className="flex items-center justify-between gap-2">
           {(message.token_input || message.token_output || message.tempo_risposta_ms) && (
-            <div className="flex flex-wrap gap-2 text-xs">
+            <div className="flex flex-wrap gap-3 items-center">
               {message.token_input && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Zap className="h-3 w-3" />
-                  {message.token_input} token in
-                </Badge>
+                <TokenKeyIndicator tokenCount={message.token_input} variant="input" showLabel />
               )}
               {message.token_output && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Zap className="h-3 w-3" />
-                  {message.token_output} token out
-                </Badge>
+                <TokenKeyIndicator tokenCount={message.token_output} variant="output" showLabel />
               )}
               {message.tempo_risposta_ms && (
                 <Badge variant="outline" className="flex items-center gap-1">

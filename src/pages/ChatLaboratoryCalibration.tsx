@@ -10,6 +10,7 @@ import { TestResultsTable } from '@/components/chat-laboratory/calibration/TestR
 import { ConfigurationSelector } from '@/components/chat-laboratory/calibration/ConfigurationSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrchestratorTest } from '@/hooks/useOrchestratorTest';
+import { TokenKeyIndicator } from '@/components/ui/token-key-indicator';
 
 interface Message {
   id: string;
@@ -147,21 +148,17 @@ const ChatLaboratoryCalibration = () => {
                       </p>
 
                       {/* Metrics */}
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 items-center">
                         {message.tempo_risposta_ms !== null && (
                           <Badge variant="secondary" className="text-xs gap-1">
                             {message.tempo_risposta_ms}ms
                           </Badge>
                         )}
                         {message.token_input !== null && (
-                          <Badge variant="outline" className="text-xs gap-1">
-                            ↓ {message.token_input} tok
-                          </Badge>
+                          <TokenKeyIndicator tokenCount={message.token_input} variant="input" showLabel />
                         )}
                         {message.token_output !== null && (
-                          <Badge variant="outline" className="text-xs gap-1">
-                            ↑ {message.token_output} tok
-                          </Badge>
+                          <TokenKeyIndicator tokenCount={message.token_output} variant="output" showLabel />
                         )}
                       </div>
                     </div>

@@ -56,6 +56,21 @@ export const LaboratoryPromptManager = ({ isProcessing = false }: LaboratoryProm
     }
   }, [open]);
 
+  // Resetta activeTab se il tab corrente è vuoto
+  useEffect(() => {
+    const tabHasSections = (tab: string) => {
+      if (tab === 'base') return baseSections.length > 0;
+      if (tab === 'personality') return personalitySections.length > 0;
+      if (tab === 'styles') return styleSections.length > 0;
+      if (tab === 'orchestrator') return !!orchestratorSection;
+      return true; // global e composer sono sempre disponibili
+    };
+    
+    if (!tabHasSections(activeTab)) {
+      setActiveTab('global');
+    }
+  }, [sections, activeTab]);
+
   // Copy template to clipboard
   const copyTemplateToClipboard = (text: string, templateName: string) => {
     navigator.clipboard.writeText(text).then(() => {

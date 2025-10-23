@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,7 @@ interface PromptSection {
 interface PromptSectionsListProps {
   sections: PromptSection[];
   onUpdate: (id: string, content: string) => Promise<void>;
-  onCreate: (name: string, content: string) => Promise<void>;
+  onCreate: (sectionType: string, name: string, content: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onToggle: (id: string, isActive: boolean) => Promise<void>;
   sectionType: string;
@@ -37,7 +37,7 @@ export function PromptSectionsList({
   sectionTypeLabel
 }: PromptSectionsListProps) {
   const [selectedSectionId, setSelectedSectionId] = useState<string>(sections[0]?.id || '');
-  const [editContent, setEditContent] = useState('');
+  const [editContent, setEditContent] = useState(sections[0]?.content || '');
   const [hasChanges, setHasChanges] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newName, setNewName] = useState('');
@@ -45,6 +45,23 @@ export function PromptSectionsList({
   const { toast } = useToast();
 
   const selectedSection = sections.find(s => s.id === selectedSectionId);
+
+  // Sincronizza editContent con selectedSection quando cambia
+  useEffect(() => {
+    if (selectedSection) {
+      setEditContent(selectedSection.content);
+      setHasChanges(false);
+    }
+  }, [selectedSection?.id, selectedSection?.content]);
+
+  // Gestisce il caso in cui la sezione corrente viene eliminata
+  useEffect(() => {
+    if (sections.length > 0 && !sections.find(s => s.id === selectedSectionId)) {
+      setSelectedSectionId(sections[0].id);
+      setEditContent(sections[0].content);
+      setHasChanges(false);
+    }
+  }, [sections, selectedSectionId]);
 
   // Aggiorna editContent quando cambia la sezione selezionata
   const handleSectionChange = (sectionId: string) => {
@@ -99,10 +116,7 @@ export function PromptSectionsList({
 
     try {
       await onDelete(selectedSection.id);
-      const remainingSections = sections.filter(s => s.id !== selectedSection.id);
-      setSelectedSectionId(remainingSections[0]?.id || '');
-      setEditContent(remainingSections[0]?.content || '');
-      setHasChanges(false);
+      // Il parent aggiornerà sections, poi useEffect gestirà selectedSectionId
       toast({
         title: 'Eliminata',
         description: `Sezione "${selectedSection.section_name}" eliminata`
@@ -127,7 +141,7 @@ export function PromptSectionsList({
     }
 
     try {
-      await onCreate(newName, newContent);
+      await onCreate(sectionType, newName, newContent);
       setNewName('');
       setNewContent('');
       setShowCreateDialog(false);
@@ -220,7 +234,7 @@ export function PromptSectionsList({
       {selectedSection && (
         <>
           <Textarea
-            value={editContent || selectedSection.content}
+            value={editContent}
             onChange={(e) => handleContentChange(e.target.value)}
             className="flex-1 font-mono text-sm resize-none min-h-[calc(100vh-450px)]"
             placeholder="Inserisci il contenuto della sezione..."

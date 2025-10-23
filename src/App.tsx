@@ -41,6 +41,7 @@ import OAuthCallback from "./pages/OAuthCallback";
 import EmailSenders from "./pages/EmailSenders";
 import Intranet from "./pages/Intranet";
 import IntranetAdmin from "./pages/IntranetAdmin";
+import CallMetrics from "./pages/CallMetrics"; // FASE 3: Dashboard metriche
 import ImportErrorsMonitor from "./pages/ImportErrorsMonitor";
 import TemplateAlias from "./pages/TemplateAlias";
 import LanguageManager from "./pages/LanguageManager";
@@ -225,6 +226,11 @@ const App = () => {
             <Route path="/intranet-admin" element={
               <ProtectedRoute>
                 <CRMLayout><IntranetAdmin /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/call-metrics" element={
+              <ProtectedRoute>
+                <CRMLayout><CallMetrics /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/import-templates" element={

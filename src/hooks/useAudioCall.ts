@@ -3,6 +3,7 @@ import { WebRTCPeerConnection } from '@/utils/webrtc/PeerConnection';
 import { useWebRTCSignaling } from './useWebRTCSignaling';
 import { useToast } from './use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useCallAnalytics } from './useCallAnalytics'; // FASE 3: Analytics
 
 export const useAudioCall = (roomId: string, userId: string) => {
   const [isInCall, setIsInCall] = useState(false);
@@ -25,6 +26,14 @@ export const useAudioCall = (roomId: string, userId: string) => {
 
   const { toast } = useToast();
   const { sendSignal, setHandlers } = useWebRTCSignaling(roomId, userId);
+  
+  // FASE 3: Analytics tracking
+  const analytics = useCallAnalytics({
+    callType: 'audio',
+    callerId: userId,
+    calleeId: remotePeerId || '',
+    roomId: roomId,
+  });
 
   const monitorNetworkQuality = useCallback(async () => {
     if (!peerConnectionRef.current) return;
@@ -53,7 +62,10 @@ export const useAudioCall = (roomId: string, userId: string) => {
     }
   }, []);
 
-  const endCall = useCallback(() => {
+  const endCall = useCallback(async () => {
+    // FASE 3: End analytics tracking FIRST
+    await analytics.endCall();
+    
     if (remotePeerId) {
       sendSignal({ type: 'call-end', to: remotePeerId, payload: {} });
     }
@@ -275,6 +287,9 @@ export const useAudioCall = (roomId: string, userId: string) => {
         return;
       }
       
+      // FASE 3: Start analytics tracking
+      await analytics.startCall();
+      
       // 🆕 INVIA NOTIFICA GLOBALE PRIMA DI TUTTO
       if (targetUserId) {
         const channel = supabase.channel(`user-calls-${targetUserId}`);
@@ -345,6 +360,9 @@ export const useAudioCall = (roomId: string, userId: string) => {
       
       const pc = new WebRTCPeerConnection({
       onIceCandidate: (candidate) => {
+        // FASE 3: Track ICE candidates
+        analytics.incrementIceCandidates();
+        
         // Use remotePeerId as fallback after pendingCallDataRef is cleared
         const targetUser = pendingCallDataRef.current?.targetUserId || remotePeerId;
         
@@ -407,6 +425,13 @@ export const useAudioCall = (roomId: string, userId: string) => {
         onConnectionStateChange: (state) => {
           console.log('[useAudioCall] Connection state changed:', state);
           setConnectionState(state);
+          
+          // FASE 3: Track connection status
+          if (state === 'connected') {
+            analytics.updateStatus('connected');
+          } else if (state === 'failed' || state === 'disconnected') {
+            analytics.updateStatus('failed', `Connection ${state}`);
+          }
         }
       });
 
@@ -451,9 +476,13 @@ export const useAudioCall = (roomId: string, userId: string) => {
         variant: 'destructive'
       });
       
+      // FASE 3: Track failed call
+      await analytics.updateStatus('failed', `${message}: ${description}`);
+      await analytics.endCall(0);
+      
       setWaitingForRecipient(null);
     }
-  }, [sendSignal, toast, monitorNetworkQuality, waitingForRecipient]);
+  }, [sendSignal, toast, monitorNetworkQuality, waitingForRecipient, analytics]);
 
   const toggleMute = useCallback(() => {
     if (!localStreamRef.current) return;

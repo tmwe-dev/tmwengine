@@ -3,6 +3,7 @@ import { WebRTCPeerConnection } from '@/utils/webrtc/PeerConnection';
 import { useWebRTCSignaling } from './useWebRTCSignaling';
 import { useToast } from './use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useCallAnalytics } from './useCallAnalytics'; // FASE 3: Analytics
 
 export const useVideoCall = (roomId: string, userId: string) => {
   const [isInCall, setIsInCall] = useState(false);
@@ -29,6 +30,15 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
   const { toast } = useToast();
   const { sendSignal, setHandlers, isReady } = useWebRTCSignaling(`${roomId}-video`, userId);
+  
+  // FASE 3: Analytics tracking
+  const [currentQuality, setCurrentQuality] = useState<'low' | 'medium' | 'high' | 'auto'>('medium');
+  const analytics = useCallAnalytics({
+    callType: 'video',
+    callerId: userId,
+    calleeId: remotePeerId || '',
+    roomId: roomId,
+  });
 
   useEffect(() => {
     setHandlers({
@@ -144,6 +154,9 @@ export const useVideoCall = (roomId: string, userId: string) => {
         toast({ title: 'Errore', description: 'Non puoi chiamare te stesso!', variant: 'destructive' });
         return;
       }
+      
+      // FASE 3: Start analytics tracking
+      await analytics.startCall();
 
       // FIX #7: Use ideal/min constraints for cross-device compatibility
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -198,6 +211,9 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
       const pc = new WebRTCPeerConnection({
         onIceCandidate: (candidate) => {
+          // FASE 3: Track ICE candidates
+          analytics.incrementIceCandidates();
+          
           if (offerSentRef.current) {
             sendSignal({ type: 'ice-candidate', to: targetUserId, payload: candidate });
           } else {
@@ -235,6 +251,13 @@ export const useVideoCall = (roomId: string, userId: string) => {
         },
         onConnectionStateChange: (state) => {
           setConnectionState(state);
+          
+          // FASE 3: Track connection status
+          if (state === 'connected') {
+            analytics.updateStatus('connected');
+          } else if (state === 'failed' || state === 'disconnected') {
+            analytics.updateStatus('failed', `Connection ${state}`);
+          }
         }
       });
 
@@ -310,8 +333,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
       }
       
       toast({ title: 'Errore', description, variant: 'destructive' });
+      
+      // FASE 3: Track failed call
+      await analytics.updateStatus('failed', description);
+      await analytics.endCall(0);
     }
-  }, [userId, sendSignal, toast, roomId]);
+  }, [userId, sendSignal, toast, roomId, analytics]);
 
   const answerCall = useCallback(async (callerId: string) => {
     try {
@@ -548,8 +575,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
   }, []);
 
   // FIX #8: Implement replaceTrack() for quality switching
-  const switchVideoQuality = useCallback(async (quality: 'low' | 'medium' | 'high') => {
+  const switchVideoQuality = useCallback(async (quality: 'low' | 'medium' | 'high' | 'auto') => {
     if (!localStreamRef.current || !peerConnectionRef.current) return;
+    
+    // FASE 3: Track quality change
+    analytics.setVideoQuality(quality);
+    setCurrentQuality(quality);
     
     const constraints = {
       low: { width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 15 } },
@@ -591,6 +622,9 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
   const endCall = useCallback(async () => {
     console.log('[useVideoCall] 🔚 Ending call');
+    
+    // FASE 3: End analytics tracking FIRST
+    await analytics.endCall();
     
     if (remotePeerId) {
       try {

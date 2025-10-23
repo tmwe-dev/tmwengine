@@ -6,25 +6,25 @@ interface RadioCursorProps {
 
 export function RadioCursor({ isActive }: RadioCursorProps) {
   if (isActive) {
-    // Cursore quadrato lampeggiante quando attivo
+    // Linea animata left-right quando inattivo (no focus, campo vuoto)
     return (
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full">
         <div className={cn(
-          "w-0.5 h-5 bg-white",
-          "animate-pulse"
+          "relative w-[60%] h-[1px] mx-auto",
+          "after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:origin-left",
+          "after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent",
+          "after:animate-line-bounce"
         )} />
       </div>
     );
   }
 
-  // Lineetta che si muove left-right quando inattivo (configurazione sidebar)
+  // Cursore quadrato lampeggiante quando focus o scrittura
   return (
-    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full">
+    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
       <div className={cn(
-        "relative w-[60%] h-[1px] mx-auto",
-        "after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:origin-left",
-        "after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent",
-        "after:animate-line-bounce"
+        "w-0.5 h-5 bg-white",
+        "animate-pulse"
       )} />
     </div>
   );

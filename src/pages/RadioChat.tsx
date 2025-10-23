@@ -44,9 +44,9 @@ const RadioChat = () => {
 
         {/* Input Area */}
         <div className="relative w-full max-w-2xl">
-          {/* Cursore animato - visibile solo quando input vuoto e non in loading */}
-          {!inputValue && !isLoading && (
-            <RadioCursor isActive={isFocused} />
+          {/* Cursore animato - sempre visibile, cambia solo animazione */}
+          {!isLoading && (
+            <RadioCursor isActive={!isFocused && !inputValue} />
           )}
 
           {/* Input invisibile */}

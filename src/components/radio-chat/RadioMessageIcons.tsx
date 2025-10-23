@@ -18,20 +18,21 @@ export function RadioMessageIcons({ messages, onIconClick }: RadioMessageIconsPr
   if (humanMessages.length === 0) return null;
 
   return (
-    <div className="fixed right-6 top-[33%] flex flex-col gap-4 z-30">
+    <div className="fixed right-8 top-8 flex flex-col gap-4 z-50">
       {/* Human message icon */}
       <button
         onClick={() => onIconClick?.(humanMessages[0].id)}
         className={cn(
-          "w-12 h-12 rounded-full",
-          "bg-blue-500/20 hover:bg-blue-500/30",
+          "w-14 h-14 rounded-full",
+          "bg-blue-500/30 hover:bg-blue-500/40",
           "flex items-center justify-center",
           "transition-all duration-200",
-          "border-2 border-blue-400"
+          "border-2 border-blue-400",
+          "shadow-lg shadow-blue-500/20"
         )}
         title="Your message"
       >
-        <User className="w-6 h-6 text-blue-400" />
+        <User className="w-7 h-7 text-blue-400" />
       </button>
 
       {/* AI agent miniatures will appear below */}
@@ -42,16 +43,17 @@ export function RadioMessageIcons({ messages, onIconClick }: RadioMessageIconsPr
             key={msg.id}
             onClick={() => onIconClick?.(msg.id)}
             className={cn(
-              "w-12 h-12 rounded-full",
-              "bg-green-500/20 hover:bg-green-500/30",
+              "w-14 h-14 rounded-full",
+              "bg-green-500/30 hover:bg-green-500/40",
               "flex items-center justify-center",
               "transition-all duration-200",
               "border-2 border-green-400",
-              "text-green-400 text-xs font-bold"
+              "shadow-lg shadow-green-500/20",
+              "text-green-400 text-sm font-bold"
             )}
             title={msg.sender_name}
           >
-            AI{index + 1}
+            {msg.sender_name.substring(0, 2).toUpperCase()}
           </button>
         ))}
     </div>

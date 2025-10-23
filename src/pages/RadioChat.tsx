@@ -30,22 +30,30 @@ const RadioChat = () => {
     }
   }, [conversationId]);
 
+  // Reset textarea quando il messaggio viene inviato
+  useEffect(() => {
+    if (messages.length > 0 && inputValue === '') {
+      console.log('🔄 Message sent, hiding textarea');
+      setShowTextarea(false);
+      // Riattiva dopo un breve delay per permettere il nuovo input
+      setTimeout(() => {
+        setShowTextarea(true);
+      }, 100);
+    }
+  }, [messages.length, inputValue]);
+
   const handleSend = async () => {
     console.log('🎯 handleSend called - Button clicked!');
     console.log('📝 inputValue before send:', inputValue);
-    console.log('🔒 Disabling interactions...');
     
+    if (!inputValue.trim()) {
+      console.log('❌ Empty input, aborting');
+      return;
+    }
+    
+    console.log('🔒 Sending message...');
     const success = await sendMessage();
     console.log('✅ sendMessage result:', success);
-    
-    if (success) {
-      console.log('⏱️ Waiting for message to appear in list...');
-      // Wait a bit for the subscription to update messages
-      setTimeout(() => {
-        console.log('🔄 Hiding textarea now');
-        setShowTextarea(false);
-      }, 500);
-    }
   };
 
   const handleIconClick = (messageId: string) => {
@@ -83,16 +91,16 @@ const RadioChat = () => {
 
         {/* Input Area */}
         <div className="relative w-full max-w-2xl">
-          {/* Cursore animato - sempre visibile quando textarea vuota */}
-          {!isLoading && inputValue.length === 0 && (
+          {/* Cursore animato - mostrato solo quando textarea nascosta o vuota */}
+          {(!showTextarea || (showTextarea && inputValue.length === 0)) && (
             <RadioCursor 
-              isActive={true} 
-              isFocused={isFocused}
+              isActive={conversationId !== null && !isLoading} 
+              isFocused={showTextarea ? isFocused : false}
               conversationId={conversationId}
             />
           )}
 
-          {/* Input invisibile - mostrato solo se showTextarea è true */}
+          {/* Input - mostrato solo se showTextarea è true */}
           {showTextarea && (
             <RadioMessageInput
               value={inputValue}
@@ -104,11 +112,11 @@ const RadioChat = () => {
             />
           )}
 
-          {/* Send Button - Sempre renderizzato, visibilità gestita dal prop */}
+          {/* Send Button */}
           <RadioSendButton 
             onSend={handleSend} 
-            disabled={isLoading}
-            visible={showTextarea && !!inputValue}
+            disabled={isLoading || !inputValue.trim()}
+            visible={showTextarea && inputValue.trim().length > 0}
           />
         </div>
       </div>

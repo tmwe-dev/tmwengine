@@ -21,13 +21,6 @@ export function RadioMessageInput({
 }: RadioMessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    // Auto-focus on mount
-    if (textareaRef.current && !disabled) {
-      textareaRef.current.focus();
-    }
-  }, [disabled]);
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -46,15 +39,15 @@ export function RadioMessageInput({
       onFocus={onFocus}
       onBlur={onBlur}
       disabled={disabled}
-      placeholder=""
+      placeholder="Scrivi il tuo messaggio..."
       className={cn(
         "w-full min-h-[200px] max-h-[50vh] text-base md:text-lg",
         value.length > 0 ? "text-left" : "text-center",
         "bg-transparent border-none shadow-none",
-        "text-white placeholder:text-transparent",
+        "text-white placeholder:text-white/30",
         "focus-visible:ring-0 focus-visible:ring-offset-0",
         "resize-none overflow-y-auto",
-        value.length > 0 ? "caret-white" : "caret-transparent"
+        "caret-white"
       )}
     />
   );

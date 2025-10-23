@@ -201,19 +201,19 @@ export default {
           // RITORNO: destra → sinistra (inversione)
           "58%": {
             transform: "translateX(28%) scaleX(-0.5)",
-            transformOrigin: "right"
+            transformOrigin: "left"
           },
           "75%": {
             transform: "translateX(16.5%) scaleX(-1)",
-            transformOrigin: "right"
+            transformOrigin: "left"
           },
           "92%": { 
             transform: "translateX(5%) scaleX(-0.5)",
-            transformOrigin: "right"
+            transformOrigin: "left"
           },
           "100%": { 
             transform: "translateX(0%) scaleX(0)",
-            transformOrigin: "right"
+            transformOrigin: "left"
           }
         },
         "heartbeat": {

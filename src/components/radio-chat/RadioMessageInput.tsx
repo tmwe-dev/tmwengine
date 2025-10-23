@@ -48,7 +48,7 @@ export function RadioMessageInput({
       disabled={disabled}
       placeholder=""
       className={cn(
-        "w-full min-h-[120px] text-center text-2xl md:text-3xl",
+        "w-full min-h-[60px] text-center text-2xl md:text-3xl",
         "bg-transparent border-none shadow-none",
         "text-white placeholder:text-transparent",
         "focus-visible:ring-0 focus-visible:ring-offset-0",

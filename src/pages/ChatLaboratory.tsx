@@ -480,7 +480,9 @@ const ChatLaboratory = () => {
       const messages = (data || []).map(msg => ({
         ...msg,
         images: Array.isArray(msg.images) ? msg.images as string[] : [],
-        attachments: Array.isArray(msg.attachments) ? msg.attachments as unknown as UploadedFile[] : [],
+        attachments: Array.isArray(msg.attachments) 
+          ? msg.attachments as unknown as UploadedFile[] 
+          : (msg.attachments || {}),
         generated_images: Array.isArray(msg.generated_images) ? msg.generated_images as string[] : []
       })) as Message[];
       

@@ -12,9 +12,16 @@ export function useRadioConversation() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const createConversation = async () => {
+    if (hasInitialized || conversationId) {
+      console.log('⚠️ Conversation already exists or is being created');
+      return conversationId;
+    }
+    
     console.log('🔧 createConversation called');
+    setHasInitialized(true);
     setIsLoading(true);
     setError(null);
 

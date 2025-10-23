@@ -21,7 +21,7 @@ export function useRadioChat() {
       }
     };
     init();
-  }, [conversationId, createConversation]);
+  }, []);
 
   const sendMessage = async () => {
     console.log('🚀 sendMessage called');

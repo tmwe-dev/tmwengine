@@ -98,10 +98,15 @@ export default {
             height: "0",
           },
         },
+        "cursor-blink": {
+          "0%, 49%": { opacity: "1" },
+          "50%, 100%": { opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "cursor-blink": "cursor-blink 1s step-end infinite",
       },
     },
   },

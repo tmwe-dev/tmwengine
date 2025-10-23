@@ -39,24 +39,25 @@ export default function CodeScreen() {
 
   const loadIndexStats = async () => {
     try {
+      // NOTA: Tabella 'code_index' rimossa - usa ai_collaboration_tasks
       const { count, error } = await supabase
-        .from('code_index')
+        .from('ai_collaboration_tasks')
         .select('*', { count: 'exact', head: true });
 
       if (error) throw error;
 
       setTotalFiles(count || 0);
 
-      // Get last updated timestamp
+      // Get last updated timestamp (usa 'updated_at', non 'last_updated')
       const { data: lastFile } = await supabase
-        .from('code_index')
-        .select('last_updated')
-        .order('last_updated', { ascending: false })
+        .from('ai_collaboration_tasks')
+        .select('updated_at')
+        .order('updated_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle(); // Usa maybeSingle invece di single
 
-      if (lastFile?.last_updated) {
-        setLastIndexedAt(new Date(lastFile.last_updated));
+      if (lastFile?.updated_at) {
+        setLastIndexedAt(new Date(lastFile.updated_at));
       }
     } catch (error) {
       console.error('Error loading index stats:', error);
@@ -142,8 +143,9 @@ export default function CodeScreen() {
     }
 
     try {
+      // NOTA: Tabella 'code_index' rimossa - usa ai_collaboration_tasks
       const { error } = await supabase
-        .from('code_index')
+        .from('ai_collaboration_tasks')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
 

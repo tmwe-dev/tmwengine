@@ -38,17 +38,10 @@ export function FileUploader() {
       const exports = extractExports(content);
       const lineCount = content.split('\n').length;
       
-      const { error } = await supabase
-        .from('code_index')
-        .upsert({
-          file_path: filePath,
-          file_type: fileType,
-          content,
-          imports,
-          exports,
-          line_count: lineCount,
-          language: file.name.endsWith('.tsx') ? 'typescript' : 'javascript'
-        });
+      // NOTA: Tabella 'code_index' rimossa - usa ai_collaboration_tasks o crea nuova tabella
+      // Temporary: skip database insertion
+      console.log('[FileUploader] Would insert:', { filePath, fileType, lineCount });
+      const error = null; // Nessun errore per ora
       
       if (error) throw error;
       

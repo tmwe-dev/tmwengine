@@ -19,8 +19,9 @@ export default function CodeReview() {
   
   const loadProposals = async () => {
     setLoading(true);
+    // NOTA: Mappa 'code_change_proposals' → 'ai_collaboration_tasks'
     const { data, error } = await supabase
-      .from('code_change_proposals')
+      .from('ai_collaboration_tasks')
       .select('*')
       .order('created_at', { ascending: false });
     
@@ -34,8 +35,8 @@ export default function CodeReview() {
   
   const handleApprove = async (proposalId: string) => {
     const { error } = await supabase
-      .from('code_change_proposals')
-      .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+      .from('ai_collaboration_tasks')
+      .update({ status: 'approved', approved_at: new Date().toISOString() })
       .eq('id', proposalId);
     
     if (error) {
@@ -48,11 +49,13 @@ export default function CodeReview() {
   
   const handleReject = async (proposalId: string, reason: string) => {
     const { error } = await supabase
-      .from('code_change_proposals')
+      .from('ai_collaboration_tasks')
       .update({ 
-        status: 'rejected', 
-        rejection_reason: reason,
-        reviewed_at: new Date().toISOString() 
+        status: 'rejected',
+        // NOTA: rejection_reason non esiste in ai_collaboration_tasks
+        // usa implementation_notes per memorizzare il motivo
+        implementation_notes: `Rejected: ${reason}`,
+        approved_at: new Date().toISOString()
       })
       .eq('id', proposalId);
     

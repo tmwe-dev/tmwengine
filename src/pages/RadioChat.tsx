@@ -61,6 +61,14 @@ const RadioChat = () => {
     // TODO: Show message as card
   };
 
+  const handleCursorClick = () => {
+    console.log('🖱️ Cursor clicked');
+    if (conversationId && !isLoading) {
+      setShowTextarea(true);
+      setIsFocused(true);
+    }
+  };
+
   return (
     <div className="min-h-screen relative">
       {/* Sidebar Trigger */}
@@ -97,6 +105,7 @@ const RadioChat = () => {
               isActive={conversationId !== null && !isLoading} 
               isFocused={showTextarea ? isFocused : false}
               conversationId={conversationId}
+              onClick={handleCursorClick}
             />
           )}
 

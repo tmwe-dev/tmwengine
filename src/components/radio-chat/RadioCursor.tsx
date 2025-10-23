@@ -5,9 +5,10 @@ interface RadioCursorProps {
   isActive: boolean;
   isFocused?: boolean;
   conversationId?: string | null;
+  onClick?: () => void;
 }
 
-export function RadioCursor({ isActive, isFocused }: RadioCursorProps) {
+export function RadioCursor({ isActive, isFocused, onClick }: RadioCursorProps) {
   const [blink, setBlink] = useState(true);
 
   useEffect(() => {
@@ -23,7 +24,16 @@ export function RadioCursor({ isActive, isFocused }: RadioCursorProps) {
   const cursorBorderColor = isActive ? 'border-white' : 'border-red-500';
 
   return (
-    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!isActive}
+      className={cn(
+        "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
+        "transition-all duration-200",
+        isActive ? "cursor-pointer hover:scale-110" : "cursor-not-allowed"
+      )}
+    >
       <div 
         className={cn(
           "w-6 h-12 transition-all duration-300 border-2",
@@ -42,8 +52,8 @@ export function RadioCursor({ isActive, isFocused }: RadioCursorProps) {
         "text-xs font-medium whitespace-nowrap",
         isActive ? 'text-white/60' : 'text-red-400/80'
       )}>
-        {isActive ? 'Pronto per scrivere' : 'In attesa...'}
+        {isActive ? 'Clicca per scrivere' : 'In attesa...'}
       </div>
-    </div>
+    </button>
   );
 }

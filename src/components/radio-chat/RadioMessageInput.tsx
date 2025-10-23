@@ -17,7 +17,7 @@ export function RadioMessageInput({
   onSubmit,
   onFocus,
   onBlur,
-  disabled
+  disabled = false
 }: RadioMessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 

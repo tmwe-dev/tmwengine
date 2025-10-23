@@ -462,15 +462,18 @@ ESEMPI:
 
           {/* GLOBAL TAB */}
           <TabsContent value="global" className="flex-1 overflow-y-auto">
-            <div className="space-y-4">
-              <Label>Prompt Globale per tutti gli Agenti AI</Label>
-              <Textarea
-                value={globalPrompt}
-                onChange={(e) => setGlobalPrompt(e.target.value)}
-                placeholder="Inserisci il system prompt..."
-                className="min-h-[400px] font-mono text-sm"
-                disabled={isLoadingGlobal}
-              />
+            <div className="space-y-4 flex-1 flex flex-col">
+              <div className="flex-1 flex flex-col min-h-0">
+                <Label htmlFor="global-prompt" className="mb-2">Prompt Globale per tutti gli Agenti AI</Label>
+                <Textarea
+                  id="global-prompt"
+                  value={globalPrompt}
+                  onChange={(e) => setGlobalPrompt(e.target.value)}
+                  placeholder="Inserisci il prompt di sistema globale..."
+                  className="flex-1 font-mono text-sm resize-none min-h-[calc(100vh-500px)]"
+                  disabled={isLoadingGlobal}
+                />
+              </div>
               <p className="text-xs text-muted-foreground">
                 Questo prompt verrà utilizzato come base per tutti gli agenti AI.
               </p>
@@ -796,10 +799,9 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
-                  </div>
-                </div>
+              </div>
 
-                {/* SEZIONE PREVIEW PROMPT FINALE */}
+              {/* SEZIONE PREVIEW PROMPT FINALE */}
                 <div className="space-y-4 mt-8 pt-8 border-t">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">🔍 Preview Prompt Finale (Aggiornato DB)</h3>
@@ -867,12 +869,13 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
                     </div>
                   )}
                 </div>
-              </TabsContent>
+            </div>
+          </TabsContent>
 
           {/* BASE TAB */}
-          <TabsContent value="base" className="flex-1 overflow-y-auto">
+          <TabsContent value="base" className="h-full">
             {isLoadingSections ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
@@ -889,9 +892,9 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
           </TabsContent>
 
           {/* PERSONALITY TAB */}
-          <TabsContent value="personality" className="flex-1 overflow-y-auto">
+          <TabsContent value="personality" className="h-full">
             {isLoadingSections ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
@@ -908,9 +911,9 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
           </TabsContent>
 
           {/* STYLES TAB */}
-          <TabsContent value="styles" className="flex-1 overflow-y-auto">
+          <TabsContent value="styles" className="h-full">
             {isLoadingSections ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
@@ -927,23 +930,23 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
           </TabsContent>
 
           {/* ORCHESTRATOR TAB */}
-          <TabsContent value="orchestrator" className="flex-1 overflow-y-auto">
+          <TabsContent value="orchestrator" className="h-full">
             {isLoadingSections ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : orchestratorSection ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">🧠 Regole Orchestrator Autonomo</h3>
+              <div className="space-y-4 flex flex-col h-full">
+                <div className="flex items-center justify-between flex-shrink-0">
+                  <h3 className="text-lg font-semibold">🧠 Regole Orchestrator Autonomo</h3>
                 </div>
                 
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground flex-shrink-0">
                   L'orchestrator analizza automaticamente ogni risposta per decidere se continuare la conversazione. 
                   Dopo ogni messaggio, chiede all'AI se c'è una richiesta di intervento.
                 </p>
 
-                <Label>Prompt Orchestrator (usa Gemini 2.5 Flash Lite)</Label>
+                <Label className="flex-shrink-0">Prompt Orchestrator (usa Gemini 2.5 Flash Lite)</Label>
                 <Textarea
                   value={orchestratorSection.content}
                   onChange={(e) => {
@@ -952,21 +955,21 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
                     );
                     setSections(updated);
                   }}
-                  className="min-h-[200px] font-mono text-sm"
+                  className="flex-1 font-mono text-sm resize-none min-h-[calc(100vh-500px)]"
                   placeholder="Es: Leggi ultimo messaggio. Se c'è DOMANDA o RICHIESTA verso altri, rispondi TRUE. Altrimenti FALSE."
                 />
 
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground flex-shrink-0">
                   L'AI deve rispondere "true" o JSON con "continue": true per avviare un nuovo turno.
                   Tutti i limiti esistenti (pause, turni, ecc.) vengono rispettati.
                 </p>
 
-                <Button onClick={() => handleUpdateSection(orchestratorSection.id, orchestratorSection.content)}>
+                <Button className="flex-shrink-0" onClick={() => handleUpdateSection(orchestratorSection.id, orchestratorSection.content)}>
                   Salva Regole Orchestrator
                 </Button>
               </div>
             ) : (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="flex items-center justify-center h-full text-muted-foreground">
                 Nessuna sezione orchestrator trovata. Ricaricare la pagina.
               </div>
             )}

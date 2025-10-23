@@ -23,9 +23,8 @@ export function RadioCursor({ isActive }: RadioCursorProps) {
   return (
     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
       <div className={cn(
-        "w-1 h-8 bg-white",
-        "animate-cursor-blink",
-        "rounded-sm"
+        "w-0.5 h-5 bg-white",
+        "animate-cursor-blink"
       )} />
     </div>
   );

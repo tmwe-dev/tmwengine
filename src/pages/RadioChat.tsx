@@ -83,35 +83,25 @@ const RadioChat = () => {
 
         {/* Input Area */}
         <div className="relative w-full max-w-2xl">
-          {/* Cursore animato - sempre visibile quando textarea nascosta */}
-          {!showTextarea && !isLoading && (
+          {/* Cursore animato - sempre visibile quando textarea vuota */}
+          {!isLoading && inputValue.length === 0 && (
             <RadioCursor 
               isActive={true} 
-              isFocused={false}
+              isFocused={isFocused}
               conversationId={conversationId}
             />
           )}
 
           {/* Input invisibile - mostrato solo se showTextarea è true */}
           {showTextarea && (
-            <>
-              {!isLoading && (
-                <RadioCursor 
-                  isActive={inputValue.length === 0} 
-                  isFocused={isFocused}
-                  conversationId={conversationId}
-                />
-              )}
-              
-              <RadioMessageInput
-                value={inputValue}
-                onChange={setInputValue}
-                onSubmit={handleSend}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                disabled={isLoading}
-              />
-            </>
+            <RadioMessageInput
+              value={inputValue}
+              onChange={setInputValue}
+              onSubmit={handleSend}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              disabled={isLoading}
+            />
           )}
 
           {/* Send Button - Sempre renderizzato, visibilità gestita dal prop */}

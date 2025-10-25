@@ -4,40 +4,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioVoiceSelector } from './RadioVoiceSelector';
 import { RadioPromptSelector } from './RadioPromptSelector';
 import { RadioStrategySelector } from './RadioStrategySelector';
-import { RadioMonitorPanel } from './RadioMonitorPanel';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface RadioSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   conversationId: string | null;
-  viewMode?: 'carousel' | 'messages';
-  navIndex?: number;
-  totalAiMessages?: number;
-  activeMessageId?: string;
-  currentMessageSender?: string | null;
-  isSending?: boolean;
-  queueLength?: number;
-  isAudioPlaying?: boolean;
-  totalMessages?: number;
-  activeParticipants?: string[];
 }
 
-export function RadioSidebar({ 
-  isOpen, 
-  onClose, 
-  conversationId,
-  viewMode = 'carousel',
-  navIndex = 0,
-  totalAiMessages = 0,
-  activeMessageId = '',
-  currentMessageSender = null,
-  isSending = false,
-  queueLength = 0,
-  isAudioPlaying = false,
-  totalMessages = 0,
-  activeParticipants = []
-}: RadioSidebarProps) {
+export function RadioSidebar({ isOpen, onClose, conversationId }: RadioSidebarProps) {
   return (
     <>
       {/* Backdrop */}
@@ -67,11 +42,10 @@ export function RadioSidebar({
           
           <ScrollArea className="flex-1">
             <Tabs defaultValue="voice" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mx-4 mt-4">
+              <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
                 <TabsTrigger value="voice" className="text-xs">Voice</TabsTrigger>
                 <TabsTrigger value="strategy" className="text-xs">Strategy</TabsTrigger>
                 <TabsTrigger value="prompts" className="text-xs">Prompts</TabsTrigger>
-                <TabsTrigger value="monitor" className="text-xs">Monitor</TabsTrigger>
               </TabsList>
 
               <TabsContent value="voice" className="mt-0">
@@ -84,21 +58,6 @@ export function RadioSidebar({
 
               <TabsContent value="prompts" className="mt-0">
                 <RadioPromptSelector />
-              </TabsContent>
-
-              <TabsContent value="monitor" className="mt-0">
-                <RadioMonitorPanel
-                  viewMode={viewMode}
-                  navIndex={navIndex}
-                  totalAiMessages={totalAiMessages}
-                  activeMessageId={activeMessageId}
-                  currentMessageSender={currentMessageSender}
-                  isSending={isSending}
-                  queueLength={queueLength}
-                  isAudioPlaying={isAudioPlaying}
-                  totalMessages={totalMessages}
-                  activeParticipants={activeParticipants}
-                />
               </TabsContent>
             </Tabs>
           </ScrollArea>

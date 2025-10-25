@@ -182,7 +182,7 @@ export const RadioCarousel3D = ({
         0, 
         Math.sin(angle) * radius
       );
-      mesh.lookAt(new THREE.Vector3(0, 0, 0));
+      mesh.lookAt(cameraRef.current!.position);
       mesh.rotateY(Math.PI); // Fix testo rovesciato
       
       // Scale up the front-facing message (index 0)

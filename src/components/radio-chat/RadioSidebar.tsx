@@ -4,17 +4,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioVoiceSelector } from './RadioVoiceSelector';
 import { RadioPromptSelector } from './RadioPromptSelector';
 import { RadioStrategySelector } from './RadioStrategySelector';
-import { RadioAudioSettings } from './RadioAudioSettings';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface RadioSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   conversationId: string | null;
-  onVoiceInput?: (transcription: string) => void;
 }
 
-export function RadioSidebar({ isOpen, onClose, conversationId, onVoiceInput }: RadioSidebarProps) {
+export function RadioSidebar({ isOpen, onClose, conversationId }: RadioSidebarProps) {
   return (
     <>
       {/* Backdrop */}
@@ -44,11 +42,10 @@ export function RadioSidebar({ isOpen, onClose, conversationId, onVoiceInput }: 
           
           <ScrollArea className="flex-1">
             <Tabs defaultValue="voice" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mx-4 mt-4">
+              <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
                 <TabsTrigger value="voice" className="text-xs">Voice</TabsTrigger>
                 <TabsTrigger value="strategy" className="text-xs">Strategy</TabsTrigger>
                 <TabsTrigger value="prompts" className="text-xs">Prompts</TabsTrigger>
-                <TabsTrigger value="audio" className="text-xs">Audio</TabsTrigger>
               </TabsList>
 
               <TabsContent value="voice" className="mt-0">
@@ -61,10 +58,6 @@ export function RadioSidebar({ isOpen, onClose, conversationId, onVoiceInput }: 
 
               <TabsContent value="prompts" className="mt-0">
                 <RadioPromptSelector />
-              </TabsContent>
-
-              <TabsContent value="audio" className="mt-0">
-                <RadioAudioSettings onVoiceInput={onVoiceInput} />
               </TabsContent>
             </Tabs>
           </ScrollArea>

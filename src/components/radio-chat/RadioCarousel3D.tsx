@@ -25,13 +25,13 @@ const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
 
   // Sender name - Dark color
   ctx.fillStyle = '#1a1a2e';
-  ctx.font = 'bold 32px Arial';
+  ctx.font = 'bold 26px Arial';
   ctx.textAlign = 'center';
   ctx.fillText(message.sender_name, canvas.width / 2, 60);
 
   // Message content (word wrap) - Dark gray
   ctx.fillStyle = '#2d2d2d';
-  ctx.font = '24px Arial';
+  ctx.font = '20px Arial';
   ctx.textAlign = 'left';
   
   const words = message.content.split(' ');
@@ -52,7 +52,7 @@ const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
   lines.push(line);
 
   // Draw lines
-  const lineHeight = 36;
+  const lineHeight = 30;
   const startY = 120;
   lines.slice(0, 15).forEach((l, i) => {
     ctx.fillText(l.trim(), 30, startY + i * lineHeight);
@@ -233,7 +233,7 @@ export const RadioCarousel3D = ({
       const angleStep = (Math.PI * 2) / MAX_SLOTS;
       
       for (let i = 0; i < MAX_SLOTS; i++) {
-        const geometry = new THREE.PlaneGeometry(3.5, 5);
+        const geometry = new THREE.PlaneGeometry(2.5, 3.6);
         const material = new THREE.MeshBasicMaterial({ 
           side: THREE.DoubleSide, 
           transparent: true,

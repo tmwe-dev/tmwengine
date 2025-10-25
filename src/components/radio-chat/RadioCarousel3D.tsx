@@ -239,6 +239,7 @@ export const RadioCarousel3D = ({
     }
     
     hasInitializedSlotsRef.current = true;
+    renderedMessagesRef.current.clear(); // Reset messaggi renderizzati
     console.log(`✅ Carosello creato, meshesRef.size: ${meshesRef.current.size}`);
     console.log(`✅ groupRef.current.children.length: ${groupRef.current.children.length}`);
   }, []); // ← ARRAY VUOTO: esegue solo al mount

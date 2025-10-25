@@ -9,6 +9,7 @@ interface RadioMessageInputProps {
   onFocus?: () => void;
   onBlur?: () => void;
   disabled?: boolean;
+  className?: string;
 }
 
 export function RadioMessageInput({
@@ -17,7 +18,8 @@ export function RadioMessageInput({
   onSubmit,
   onFocus,
   onBlur,
-  disabled = false
+  disabled = false,
+  className
 }: RadioMessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -61,12 +63,13 @@ export function RadioMessageInput({
       disabled={disabled}
       placeholder=""
       className={cn(
-        "w-full h-[75vh] text-lg md:text-xl",
+        "w-full text-lg md:text-xl",
         "bg-transparent border-none shadow-none",
         "text-white placeholder:text-white/30",
         "focus-visible:ring-0 focus-visible:ring-offset-0",
         "resize-none overflow-y-auto align-top",
-        isFocused ? 'caret-white' : 'caret-red-500'
+        isFocused ? 'caret-white' : 'caret-red-500',
+        className
       )}
     />
   );

@@ -137,6 +137,29 @@ export const RadioCarousel3D = ({
     };
   }, []);
 
+  // ResizeObserver for container changes (sidebar open/close)
+  useEffect(() => {
+    if (!containerRef.current || !cameraRef.current || !rendererRef.current) return;
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        
+        if (cameraRef.current && rendererRef.current) {
+          cameraRef.current.aspect = width / height;
+          cameraRef.current.updateProjectionMatrix();
+          rendererRef.current.setSize(width, height);
+          
+          console.log('📐 Canvas resized:', { width, height });
+        }
+      }
+    });
+    
+    resizeObserver.observe(containerRef.current);
+    
+    return () => resizeObserver.disconnect();
+  }, []);
+
   // Update carousel with messages
   useEffect(() => {
     if (!groupRef.current) return;
@@ -201,7 +224,7 @@ export const RadioCarousel3D = ({
   return (
     <div 
       ref={containerRef} 
-      className="w-full h-[60vh]"
+      className="w-full h-full"
     />
   );
 };

@@ -214,8 +214,8 @@ const RadioChat = () => {
 
   return (
     <div className="min-h-screen relative">
-      {/* Header */}
-      <div className="fixed top-14 left-0 right-0 z-40 bg-background/80 backdrop-blur-sm border-b">
+      {/* Header - Fixed with proper height */}
+      <div className="fixed top-14 left-0 right-0 h-[70px] z-40 bg-background/80 backdrop-blur-sm border-b">
         <div className="flex items-center justify-between p-4">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -259,50 +259,45 @@ const RadioChat = () => {
         conversationId={currentConversationId}
       />
 
-      <div className="pt-28 pb-[30vh]">
+      {/* Main Content Area - Spazio centrale calcolato */}
+      <div className="pt-[calc(56px+70px)] pb-[200px]">
         {viewMode === 'carousel' ? (
-          <>
-            {/* 3D Carousel */}
-            <RadioCarousel3D 
-              messages={messages}
-              activeMessageId={activeMessageId}
-              onRotationComplete={handleCarouselRotationComplete}
-            />
-            
-            {/* Message View */}
-            {currentMessage && (
-              <RadioMessageView
-                message={currentMessage}
-                onAudioEnd={onAudioEndComplete}
-                onAudioStart={handleAudioStart}
+          <div className="relative h-[calc(100vh-56px-70px-200px)]">
+            {/* Carousel Container */}
+            <div className="absolute inset-0 z-10">
+              <RadioCarousel3D 
+                messages={messages}
+                activeMessageId={activeMessageId}
+                onRotationComplete={handleCarouselRotationComplete}
               />
+            </div>
+            
+            {/* Message View - Sovrapposto al carousel */}
+            {currentMessage && (
+              <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[40%] overflow-y-auto bg-gradient-to-t from-background via-background/95 to-transparent p-6">
+                <RadioMessageView
+                  message={currentMessage}
+                  onAudioEnd={onAudioEndComplete}
+                  onAudioStart={handleAudioStart}
+                />
+              </div>
             )}
-          </>
+          </div>
         ) : (
           /* Messages View */
           <RadioMessagesView messages={messages} />
         )}
-        
-        {/* DEBUG INFO */}
-        <div className="fixed top-20 right-4 bg-black/80 text-white text-xs p-4 rounded z-50">
-          <div>Mode: {viewMode}</div>
-          <div>Conv ID: {currentConversationId?.substring(0, 8)}</div>
-          <div>Active: {activeMessageId}</div>
-          <div>Queue: {unseenMessagesQueue.length}</div>
-          <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
-          <div>Total: {messages.length}</div>
-          <div>AI: {messages.filter(m => m.sender_type !== 'human').length}</div>
-          <div>Participants: {participants.filter(p => p.is_active).map(p => p.name).join(', ')}</div>
-        </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-8 pb-12 bg-gradient-to-t from-background via-background to-transparent">
-        <div className="w-full max-w-2xl mx-auto relative">
+      {/* Input Area - Fixed bottom con altezza definita */}
+      <div className="fixed bottom-0 left-0 right-0 h-[200px] z-30 bg-gradient-to-t from-background via-background/80 to-transparent p-4">
+        <div className="w-full max-w-2xl mx-auto relative h-full">
           <RadioMessageInput
             value={inputValue}
             onChange={setInputValue}
             onSubmit={handleSend}
             disabled={false}
+            className="h-full"
           />
           
           <RadioSendButton
@@ -312,6 +307,20 @@ const RadioChat = () => {
           />
         </div>
       </div>
+
+      {/* Debug Info - Solo in development */}
+      {import.meta.env.DEV && (
+        <div className="fixed top-[140px] right-4 bg-black/90 text-white text-xs p-3 rounded z-[60] max-w-[200px]">
+          <div>Mode: {viewMode}</div>
+          <div>Conv ID: {currentConversationId?.substring(0, 8)}</div>
+          <div>Active: {activeMessageId}</div>
+          <div>Queue: {unseenMessagesQueue.length}</div>
+          <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
+          <div>Total: {messages.length}</div>
+          <div>AI: {messages.filter(m => m.sender_type !== 'human').length}</div>
+          <div>Participants: {participants.filter(p => p.is_active).map(p => p.name).join(', ')}</div>
+        </div>
+      )}
     </div>
   );
 };

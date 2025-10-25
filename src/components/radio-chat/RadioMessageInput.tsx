@@ -50,7 +50,6 @@ export function RadioMessageInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={handleKeyDown}
-      style={{ paddingBottom: '70vh' }}
       onFocus={() => {
         setIsFocused(true);
         onFocus?.();
@@ -66,7 +65,7 @@ export function RadioMessageInput({
         "bg-transparent border-none shadow-none",
         "text-white placeholder:text-white/30",
         "focus-visible:ring-0 focus-visible:ring-offset-0",
-        "resize-none overflow-y-auto",
+        "resize-none overflow-y-auto align-top",
         isFocused ? 'caret-white' : 'caret-red-500'
       )}
     />

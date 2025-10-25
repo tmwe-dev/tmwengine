@@ -10,77 +10,78 @@ interface RadioCarousel3DProps {
 
 const createTextTexture = (message: RadioMessage, renderer?: THREE.WebGLRenderer): THREE.CanvasTexture => {
   const canvas = document.createElement('canvas');
-  
-  // ✅ ALTA RISOLUZIONE con devicePixelRatio
-  const scale = window.devicePixelRatio || 2;
-  canvas.width = 1024 * scale;
-  canvas.height = 1536 * scale;
   const ctx = canvas.getContext('2d')!;
-  ctx.scale(scale, scale);
 
-  // Background - Paper white
-  ctx.fillStyle = '#f8f8f8';
-  ctx.fillRect(0, 0, 1024, 1536);
+  const DPR = window.devicePixelRatio || 2;
 
-  // Specchia orizzontalmente il canvas per correggere inversione
+  // Misure reali ad alta risoluzione (PIÙ PICCOLE = PIÙ NITIDE)
+  const W = 800;
+  const H = 1100;
+
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  ctx.scale(DPR, DPR); // Fondamentale per font nitidi
+
+  // Background bianco puro (contrasto massimo)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  // Specchia orizzontalmente
   ctx.save();
   ctx.scale(-1, 1);
-  ctx.translate(-1024, 0);
+  ctx.translate(-W, 0);
 
-  // Sender name - Dark color
-  ctx.fillStyle = '#1a1a2e';
-  ctx.font = 'bold 52px Arial';
+  // Titolo (nome sender)
+  ctx.fillStyle = '#444444';
+  ctx.font = 'bold 36px sans-serif'; // Font più leggibile
   ctx.textAlign = 'center';
-  ctx.fillText(message.sender_name, 512, 120);
+  ctx.fillText(message.sender_name, W / 2, 60);
 
-  // Message content (word wrap) - Dark gray
-  ctx.fillStyle = '#2d2d2d';
-  ctx.font = '40px Arial';
+  // Corpo messaggio
+  ctx.fillStyle = '#333333';
+  ctx.font = '24px sans-serif'; // Font corpo ottimizzato
   ctx.textAlign = 'left';
-  
+
+  const lineHeight = 32; // Spaziatura migliore
+  const maxWidth = W - 80;
   const words = message.content.split(' ');
-  const lines: string[] = [];
+  let x = 40;
+  let y = 120;
   let line = '';
-  const maxWidth = 1024 - 120;
-  
-  for (const word of words) {
-    const testLine = line + word + ' ';
-    const width = ctx.measureText(testLine).width;
-    if (width > maxWidth && line !== '') {
-      lines.push(line);
-      line = word + ' ';
+
+  for (let i = 0; i < words.length; i++) {
+    const testLine = line + words[i] + ' ';
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && i > 0) {
+      ctx.fillText(line, x, y);
+      line = words[i] + ' ';
+      y += lineHeight;
     } else {
       line = testLine;
     }
   }
-  lines.push(line);
+  ctx.fillText(line, x, y);
 
-  // Draw lines
-  const lineHeight = 60;
-  const startY = 240;
-  lines.slice(0, 15).forEach((l, i) => {
-    ctx.fillText(l.trim(), 60, startY + i * lineHeight);
-  });
-
-  // Ripristina stato canvas originale
   ctx.restore();
 
-  // ✅ TEXTURE CON FILTERING OTTIMIZZATO
+  // Texture con filtering ottimale
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
   texture.needsUpdate = true;
   
-  // ✅ ANISOTROPIC FILTERING
+  // Anisotropic filtering
   if (renderer) {
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  } else {
+    texture.anisotropy = 4; // Fallback
   }
   
-  console.log("🎨 createTextTexture() HIGH-RES:", {
+  console.log("🎨 createTextTexture() OPTIMIZED:", {
     sender: message.sender_name,
-    width: canvas.width,
-    height: canvas.height,
-    scale: scale,
+    canvasSize: `${canvas.width}x${canvas.height}`,
+    logicalSize: `${W}x${H}`,
+    DPR: DPR,
     anisotropy: texture.anisotropy
   });
   
@@ -89,12 +90,14 @@ const createTextTexture = (message: RadioMessage, renderer?: THREE.WebGLRenderer
 
 const createEmptyTexture = (): THREE.CanvasTexture => {
   const canvas = document.createElement('canvas');
-  const scale = window.devicePixelRatio || 2;
-  canvas.width = 1024 * scale;
-  canvas.height = 1536 * scale;
+  const DPR = window.devicePixelRatio || 2;
+  const W = 800;
+  const H = 1100;
+  
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
   const ctx = canvas.getContext('2d')!;
   
-  // Canvas completamente trasparente (nessun contenuto visibile)
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   const texture = new THREE.CanvasTexture(canvas);
@@ -124,13 +127,13 @@ export const RadioCarousel3D = ({
     if (!containerRef.current) return;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      50,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1,
-      1000
-    );
-    camera.position.set(0, 0, 7);
+        const camera = new THREE.PerspectiveCamera(
+          60, // FOV più largo per vedere card complete
+          containerRef.current.clientWidth / containerRef.current.clientHeight,
+          0.1,
+          1000
+        );
+        camera.position.set(0, 0, 8); // Camera più distante
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ 
@@ -138,6 +141,7 @@ export const RadioCarousel3D = ({
       antialias: true 
     });
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio); // ✅ CRITICO per HD
     containerRef.current.appendChild(renderer.domElement);
 
     // Lighting
@@ -190,6 +194,7 @@ export const RadioCarousel3D = ({
       camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+      renderer.setPixelRatio(window.devicePixelRatio); // ✅ Mantieni HD su resize
     };
     window.addEventListener('resize', handleResize);
 
@@ -212,6 +217,7 @@ export const RadioCarousel3D = ({
           cameraRef.current.aspect = width / height;
           cameraRef.current.updateProjectionMatrix();
           rendererRef.current.setSize(width, height);
+          rendererRef.current.setPixelRatio(window.devicePixelRatio); // ✅ Mantieni HD su resize
           
           console.log('📐 Canvas resized:', { width, height });
         }

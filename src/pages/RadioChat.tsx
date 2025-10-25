@@ -305,10 +305,20 @@ const RadioChat = () => {
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)} 
         conversationId={currentConversationId}
+        viewMode={viewMode}
+        navIndex={navIndex}
+        totalAiMessages={aiMessages.length}
+        activeMessageId={activeMessageId}
+        currentMessageSender={currentMessage?.sender_name || null}
+        isSending={isSending}
+        queueLength={unseenMessagesQueue.length}
+        isAudioPlaying={isAudioPlaying}
+        totalMessages={messages.length}
+        activeParticipants={participants.filter(p => p.is_active).map(p => p.name)}
       />
 
       {/* Toggle Carousel/Messages - Top Left */}
-      <div className="fixed left-4 top-32 z-35 flex flex-col gap-2">
+      <div className="fixed left-4 top-32 z-50 flex flex-col gap-2 pointer-events-auto">
         <Button
           variant={viewMode === 'carousel' ? 'default' : 'ghost'}
           size="sm"
@@ -325,6 +335,17 @@ const RadioChat = () => {
           <MessageSquare className="w-4 h-4 mr-2" />
           Messages
         </Button>
+      </div>
+
+      {/* Queue Badge - Above Participant Icons */}
+      <div className="fixed left-4 bottom-52 z-40">
+        <div className={`text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-colors ${
+          unseenMessagesQueue.length === 0 ? 'bg-green-500' :
+          unseenMessagesQueue.length <= 3 ? 'bg-yellow-500 animate-pulse' :
+          'bg-red-500 animate-pulse'
+        }`}>
+          {unseenMessagesQueue.length}
+        </div>
       </div>
 
       {/* Participant Icons - Vertical Stack Above Hamburger */}
@@ -452,21 +473,6 @@ const RadioChat = () => {
         </div>
       </div>
 
-      {/* Debug Info - Solo in development */}
-      {import.meta.env.DEV && (
-        <div className="fixed top-[140px] right-4 bg-black/90 text-white text-xs p-3 rounded z-[60] max-w-[200px]">
-          <div>Mode: {viewMode}</div>
-          <div>Nav Index: {navIndex}/{aiMessages.length}</div>
-          <div>Active: {activeMessageId?.substring(0, 8)}</div>
-          <div>Current Msg: {currentMessage?.sender_name || 'NONE'}</div>
-          <div>Sending: {isSending ? 'YES' : 'NO'}</div>
-          <div>Queue: {unseenMessagesQueue.length}</div>
-          <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
-          <div>Total: {messages.length}</div>
-          <div>AI: {aiMessages.length}</div>
-          <div>Participants: {participants.filter(p => p.is_active).map(p => p.name).join(', ')}</div>
-        </div>
-      )}
     </div>
   );
 };

@@ -68,7 +68,8 @@ export function RadioMessageInput({
         "text-white placeholder:text-white/30",
         "focus-visible:ring-0 focus-visible:ring-offset-0",
         "resize-none overflow-y-auto align-top",
-        isFocused ? 'caret-white' : 'caret-red-500',
+        "caret-white",
+        value === '' && "animate-pulse",
         className
       )}
     />

@@ -172,6 +172,9 @@ export const RadioCarousel3D = ({
     const group = groupRef.current;
     const aiMessages = messages.filter(m => m.sender_type !== 'human');
     
+    // Reset messaggi renderizzati ad ogni update per evitare blocchi su re-render
+    renderedMessagesRef.current.clear();
+    
     const radius = 3.5;
     const angleStep = (Math.PI * 2) / MAX_SLOTS; // Angoli FISSI per 8 slot
 

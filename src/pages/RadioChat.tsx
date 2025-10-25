@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, LayoutGrid, MessageSquare } from 'lucide-react';
+import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
@@ -34,28 +34,67 @@ const RadioChat = () => {
     { id: 'claude-1', type: 'claude', name: 'Claude', is_active: true }
   ]);
   
+  // Manual navigation state
+  const [navIndex, setNavIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
+  
   const { toast } = useToast();
   
   const { isAudioPlaying, handleAudioStart, handleAudioEnd: audioEnd } = useAudioPlayback();
   
   const {
-    activeMessageId,
-    currentMessage,
-    handleAudioEnd: messageSwitch,
     unseenMessagesQueue
   } = useRadioMessages({
     messages,
     isAudioPlaying
   });
   
+  // Calculate activeMessageId manually from navIndex
+  const aiMessages = messages.filter(m => m.sender_type !== 'human');
+  const activeMessageId = aiMessages[navIndex]?.id || '';
+  const currentMessage = aiMessages[navIndex] || null;
+  
   const onAudioEndComplete = () => {
     audioEnd();
-    setTimeout(() => messageSwitch(), 50);
+    // Removed auto-switch - user navigates manually
   };
 
-  const handleCarouselRotationComplete = () => {
-    setTimeout(() => handleAudioStart(), 200);
+  // Manual navigation handlers
+  const handlePrevCard = () => {
+    if (aiMessages.length === 0) return;
+    setNavIndex((prev) => (prev - 1 + aiMessages.length) % aiMessages.length);
+    setShowSwipeHint(false);
   };
+  
+  const handleNextCard = () => {
+    if (aiMessages.length === 0) return;
+    setNavIndex((prev) => (prev + 1) % aiMessages.length);
+    setShowSwipeHint(false);
+  };
+
+  // Touch gesture handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStart - touchEnd > 150) handleNextCard();
+    if (touchStart - touchEnd < -150) handlePrevCard();
+  };
+  
+  // Hide swipe hint after 3 seconds
+  useEffect(() => {
+    if (showSwipeHint) {
+      const timer = setTimeout(() => setShowSwipeHint(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSwipeHint]);
 
   // Load messages from DB
   const loadMessages = async (conversationId: string) => {
@@ -309,14 +348,61 @@ const RadioChat = () => {
       <div className="pt-[calc(56px+70px)] pb-[200px]">
         {viewMode === 'carousel' ? (
           <div className="relative h-[calc(100vh-56px-70px-200px)] min-h-[500px]">
-            {/* Carousel Container */}
-            <div className="absolute inset-0 z-10">
+            {/* Carousel Container with touch gestures */}
+            <div 
+              className="absolute inset-0 z-10"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               <RadioCarousel3D 
                 messages={messages}
                 activeMessageId={activeMessageId}
-                onRotationComplete={handleCarouselRotationComplete}
               />
             </div>
+            
+            {/* Navigation Buttons */}
+            {aiMessages.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevCard}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all"
+                  aria-label="Previous message"
+                >
+                  <ChevronLeft className="w-6 h-6 text-white" />
+                </button>
+                <button
+                  onClick={handleNextCard}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all"
+                  aria-label="Next message"
+                >
+                  <ChevronRight className="w-6 h-6 text-white" />
+                </button>
+              </>
+            )}
+            
+            {/* Indicator Dots */}
+            {aiMessages.length > 1 && (
+              <div className="absolute bottom-[45%] left-0 right-0 flex justify-center gap-2 z-25">
+                {aiMessages.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`h-2 rounded-full transition-all ${
+                      idx === navIndex ? 'bg-white w-6' : 'bg-white/30 w-2'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+            
+            {/* Swipe Hint */}
+            {showSwipeHint && aiMessages.length > 1 && (
+              <div className="absolute top-4 left-0 right-0 flex justify-center z-25">
+                <div className="bg-black/60 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full animate-pulse">
+                  ← Swipe per navigare →
+                </div>
+              </div>
+            )}
             
             {/* Message View - Sovrapposto al carousel */}
             {currentMessage ? (
@@ -329,7 +415,7 @@ const RadioChat = () => {
               </div>
             ) : messages.length > 0 && (
               <div className="absolute bottom-0 left-0 right-0 z-20 p-6 text-center text-white/50">
-                Seleziona un messaggio dal carousel
+                Invia un messaggio per iniziare
               </div>
             )}
           </div>
@@ -367,14 +453,14 @@ const RadioChat = () => {
       {import.meta.env.DEV && (
         <div className="fixed top-[140px] right-4 bg-black/90 text-white text-xs p-3 rounded z-[60] max-w-[200px]">
           <div>Mode: {viewMode}</div>
-          <div>Conv ID: {currentConversationId?.substring(0, 8)}</div>
-          <div>Active: {activeMessageId}</div>
+          <div>Nav Index: {navIndex}/{aiMessages.length}</div>
+          <div>Active: {activeMessageId?.substring(0, 8)}</div>
           <div>Current Msg: {currentMessage?.sender_name || 'NONE'}</div>
           <div>Sending: {isSending ? 'YES' : 'NO'}</div>
           <div>Queue: {unseenMessagesQueue.length}</div>
           <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
           <div>Total: {messages.length}</div>
-          <div>AI: {messages.filter(m => m.sender_type !== 'human').length}</div>
+          <div>AI: {aiMessages.length}</div>
           <div>Participants: {participants.filter(p => p.is_active).map(p => p.name).join(', ')}</div>
         </div>
       )}

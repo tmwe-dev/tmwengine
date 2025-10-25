@@ -6,7 +6,6 @@ import { RadioMessage } from '@/types/radio';
 interface RadioCarousel3DProps {
   messages: RadioMessage[];
   activeMessageId: string;
-  onRotationComplete?: () => void;
 }
 
 const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
@@ -59,8 +58,7 @@ const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
 
 export const RadioCarousel3D = ({ 
   messages, 
-  activeMessageId,
-  onRotationComplete 
+  activeMessageId
 }: RadioCarousel3DProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -211,14 +209,9 @@ export const RadioCarousel3D = ({
     gsap.to(groupRef.current.rotation, {
       y: targetAngle,
       duration: 1.2,
-      ease: 'power2.inOut',
-      onComplete: () => {
-        if (onRotationComplete) {
-          setTimeout(onRotationComplete, 200);
-        }
-      }
+      ease: 'power2.inOut'
     });
-  }, [activeMessageId, messages, onRotationComplete]);
+  }, [activeMessageId, messages]);
 
   return (
     <div 

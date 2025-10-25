@@ -82,28 +82,10 @@ export const useRadioMessages = ({
   }, [messages, isAudioPlaying]);
 
   const handleAudioEnd = useCallback(() => {
-    if (unseenMessagesQueue.length > 0) {
-      const nextMessageId = unseenMessagesQueue[0];
-      setActiveMessageId(nextMessageId);
-      seenMessagesRef.current.add(nextMessageId);
-      setUnseenMessagesQueue(prev => prev.slice(1));
-    } else {
-      const currentIndex = messages.findIndex(msg => msg.id === activeMessageId);
-      if (currentIndex !== -1 && currentIndex < messages.length - 1) {
-        const nextMessage = messages[currentIndex + 1];
-        
-        const currentMessage = messages[currentIndex];
-        if (currentMessage.sender_type === 'human') {
-          return;
-        }
-
-        if (!seenMessagesRef.current.has(nextMessage.id)) {
-          setActiveMessageId(nextMessage.id);
-          seenMessagesRef.current.add(nextMessage.id);
-        }
-      }
-    }
-  }, [unseenMessagesQueue, messages, activeMessageId]);
+    // AUTO-SWITCH DISABLED - Manual navigation only
+    // User controls carousel navigation with swipe/buttons
+    console.log('🎵 Audio ended - manual navigation mode');
+  }, []);
 
   const currentMessage = messages.find(msg => msg.id === activeMessageId);
 

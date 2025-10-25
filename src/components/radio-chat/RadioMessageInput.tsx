@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
@@ -20,10 +20,12 @@ export function RadioMessageInput({
   disabled = false
 }: RadioMessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.focus();
+      setIsFocused(true);
     }
   }, []);
 
@@ -42,18 +44,24 @@ export function RadioMessageInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={handleKeyDown}
-      onFocus={onFocus}
-      onBlur={onBlur}
+      onFocus={() => {
+        setIsFocused(true);
+        onFocus?.();
+      }}
+      onBlur={() => {
+        setIsFocused(false);
+        onBlur?.();
+      }}
       disabled={disabled}
       placeholder=""
       className={cn(
-        "w-full min-h-[80px] max-h-[30vh] text-base md:text-lg",
+        "w-full min-h-[80px] max-h-[30vh] text-lg md:text-xl",
         "text-center",
         "bg-transparent border-none shadow-none",
         "text-white placeholder:text-white/30",
         "focus-visible:ring-0 focus-visible:ring-offset-0",
         "resize-none overflow-y-auto",
-        "value.trim().length === 0 ? 'caret-red-500' : 'caret-white'"
+        isFocused ? 'caret-white' : 'caret-red-500'
       )}
     />
   );

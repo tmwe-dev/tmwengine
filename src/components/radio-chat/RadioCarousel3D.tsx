@@ -185,8 +185,9 @@ export const RadioCarousel3D = ({
       mesh.lookAt(new THREE.Vector3(0, 0, 0));
       mesh.rotateY(Math.PI); // Fix testo rovesciato
       
-      // Scale up the front-facing message (index 0)
+      // Scale up the front-facing message (index 0) and align it perpendicular to camera
       if (i === 0) {
+        mesh.rotation.y = Math.PI; // Perfect perpendicular alignment
         mesh.scale.set(1.3, 1.3, 1.3);
       }
       

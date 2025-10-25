@@ -24,6 +24,7 @@ interface RadioParticipant {
 const RadioChat = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState<RadioMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'carousel' | 'messages'>('carousel');
@@ -115,67 +116,73 @@ const RadioChat = () => {
   };
 
   const handleSend = async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isSending) return;
     
-    console.log('📤 Sending message:', inputValue);
-    
-    // 1. Create conversation if not exists
-    let convId = currentConversationId;
-    if (!convId) {
-      convId = await createConversation();
-      if (!convId) return;
-      setCurrentConversationId(convId);
-    }
-    
-    // 2. Save human message
-    const { error: humanError } = await supabase
-      .from('chat_laboratory_messages')
-      .insert({
-        conversation_id: convId,
-        sender_type: 'human',
-        sender_name: 'You',
-        content: inputValue
-      });
-    
-    if (humanError) {
-      console.error('❌ Errore salvataggio messaggio:', humanError);
-      toast({
-        title: 'Errore',
-        description: 'Impossibile inviare il messaggio',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
+    const messageToSend = inputValue;
     setInputValue('');
+    setIsSending(true);
     
-    // 3. Call orchestrator
-    const activeParticipants = participants
-      .filter(p => p.is_active)
-      .map(p => ({
-        id: p.id,
-        type: p.type,
-        name: p.name,
-        is_active: true
-      }));
+    console.log('📤 Sending message:', messageToSend);
     
-    console.log('🎯 Calling orchestrator with participants:', activeParticipants);
-    
-    const { data, error } = await supabase.functions.invoke('radio-chat-orchestrator', {
-      body: {
-        conversationId: convId,
-        userMessage: inputValue,
-        participants: activeParticipants
+    try {
+      // 1. Create conversation if not exists
+      let convId = currentConversationId;
+      if (!convId) {
+        convId = await createConversation();
+        if (!convId) return;
+        setCurrentConversationId(convId);
       }
-    });
-    
-    if (error) {
-      console.error('❌ Errore orchestrator:', error);
-      toast({
-        title: 'Errore AI',
-        description: error.message,
-        variant: 'destructive'
+      
+      // 2. Save human message
+      const { error: humanError } = await supabase
+        .from('chat_laboratory_messages')
+        .insert({
+          conversation_id: convId,
+          sender_type: 'human',
+          sender_name: 'You',
+          content: messageToSend
+        });
+      
+      if (humanError) {
+        console.error('❌ Errore salvataggio messaggio:', humanError);
+        toast({
+          title: 'Errore',
+          description: 'Impossibile inviare il messaggio',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // 3. Call orchestrator
+      const activeParticipants = participants
+        .filter(p => p.is_active)
+        .map(p => ({
+          id: p.id,
+          type: p.type,
+          name: p.name,
+          is_active: true
+        }));
+      
+      console.log('🎯 Calling orchestrator with participants:', activeParticipants);
+      
+      const { data, error } = await supabase.functions.invoke('radio-chat-orchestrator', {
+        body: {
+          conversationId: convId,
+          userMessage: messageToSend,
+          participants: activeParticipants
+        }
       });
+      
+      if (error) {
+        console.error('❌ Errore orchestrator:', error);
+        toast({
+          title: 'Errore AI',
+          description: error.message,
+          variant: 'destructive'
+        });
+      }
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -202,7 +209,27 @@ const RadioChat = () => {
         },
         (payload) => {
           console.log('🔔 New message received:', payload);
-          loadMessages(currentConversationId);
+          
+          // Aggiungi solo il nuovo messaggio invece di ricaricare tutto
+          const newMsg = payload.new;
+          const typedMessage: RadioMessage = {
+            id: newMsg.id,
+            conversation_id: newMsg.conversation_id,
+            sender_type: newMsg.sender_type as 'human' | 'chatgpt' | 'gemini' | 'claude',
+            sender_name: newMsg.sender_name,
+            content: newMsg.content,
+            audio_url: newMsg.audio_url,
+            token_input: newMsg.token_input,
+            token_output: newMsg.token_output,
+            tempo_risposta_ms: newMsg.tempo_risposta_ms,
+            attachments: newMsg.attachments,
+            images: (Array.isArray(newMsg.images) ? newMsg.images : []) as string[],
+            generated_images: (Array.isArray(newMsg.generated_images) ? newMsg.generated_images : []) as string[],
+            is_visible_to_ai: newMsg.is_visible_to_ai ?? true,
+            created_at: newMsg.created_at
+          };
+          
+          setMessages(prev => [...prev, typedMessage]);
         }
       )
       .subscribe();
@@ -273,13 +300,17 @@ const RadioChat = () => {
             </div>
             
             {/* Message View - Sovrapposto al carousel */}
-            {currentMessage && (
+            {currentMessage ? (
               <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[40%] overflow-y-auto bg-gradient-to-t from-background via-background/95 to-transparent p-6">
                 <RadioMessageView
                   message={currentMessage}
                   onAudioEnd={onAudioEndComplete}
                   onAudioStart={handleAudioStart}
                 />
+              </div>
+            ) : messages.length > 0 && (
+              <div className="absolute bottom-0 left-0 right-0 z-20 p-6 text-center text-white/50">
+                Seleziona un messaggio dal carousel
               </div>
             )}
           </div>
@@ -292,17 +323,22 @@ const RadioChat = () => {
       {/* Input Area - Fixed bottom con altezza definita */}
       <div className="fixed bottom-0 left-0 right-0 h-[200px] z-30 bg-gradient-to-t from-background via-background/80 to-transparent p-4">
         <div className="w-full max-w-2xl mx-auto relative h-full">
+          {isSending && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg z-10">
+              <div className="text-white">Invio in corso...</div>
+            </div>
+          )}
           <RadioMessageInput
             value={inputValue}
             onChange={setInputValue}
             onSubmit={handleSend}
-            disabled={false}
+            disabled={isSending}
             className="h-full"
           />
           
           <RadioSendButton
             onSend={handleSend}
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || isSending}
             visible={inputValue.trim().length > 0}
           />
         </div>
@@ -314,6 +350,8 @@ const RadioChat = () => {
           <div>Mode: {viewMode}</div>
           <div>Conv ID: {currentConversationId?.substring(0, 8)}</div>
           <div>Active: {activeMessageId}</div>
+          <div>Current Msg: {currentMessage?.sender_name || 'NONE'}</div>
+          <div>Sending: {isSending ? 'YES' : 'NO'}</div>
           <div>Queue: {unseenMessagesQueue.length}</div>
           <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
           <div>Total: {messages.length}</div>

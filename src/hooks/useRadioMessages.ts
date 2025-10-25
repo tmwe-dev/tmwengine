@@ -25,6 +25,17 @@ export const useRadioMessages = ({
   const previousMessageCountRef = useRef(0);
   const lastHumanMessageIdRef = useRef<string>('');
 
+  // Initialize with first AI message if exists
+  useEffect(() => {
+    if (activeMessageId === '' && messages.length > 0) {
+      const firstAiMessage = messages.find(m => m.sender_type !== 'human');
+      if (firstAiMessage) {
+        setActiveMessageId(firstAiMessage.id);
+        seenMessagesRef.current.add(firstAiMessage.id);
+      }
+    }
+  }, [messages, activeMessageId]);
+
   useEffect(() => {
     if (messages.length === 0) return;
 
@@ -95,6 +106,16 @@ export const useRadioMessages = ({
   }, [unseenMessagesQueue, messages, activeMessageId]);
 
   const currentMessage = messages.find(msg => msg.id === activeMessageId);
+
+  useEffect(() => {
+    console.log('🎯 useRadioMessages state:', {
+      activeMessageId,
+      currentMessage: currentMessage?.sender_name,
+      totalMessages: messages.length,
+      unseenQueue: unseenMessagesQueue.length,
+      seenCount: seenMessagesRef.current.size
+    });
+  }, [activeMessageId, currentMessage, messages.length, unseenMessagesQueue.length]);
 
   return {
     activeMessageId,

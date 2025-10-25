@@ -16,7 +16,7 @@ export function RadioMessagesView({ messages }: RadioMessagesViewProps) {
   }));
 
   return (
-    <ScrollArea className="h-[60vh] px-4">
+    <ScrollArea className="h-[calc(100vh-56px-70px-200px)] px-4">
       <div className="space-y-4 pb-4">
         {formattedMessages.map((message) => (
           <MultiAgentMessage

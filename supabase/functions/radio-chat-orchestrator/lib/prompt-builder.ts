@@ -1,0 +1,211 @@
+/**
+ * ============ PROMPT BUILDER ============
+ * Constructs dynamic prompts for AI agents
+ */
+
+export interface PromptParams {
+  globalPrompt: string;
+  baseContent: string;
+  agentPersonality: string;
+  conversationStyle: string;
+  agentMode: string;
+  previousResponses: any[];
+  wasCalledDirectly: boolean;
+  lastResponse?: any;
+  styleSections?: Map<string, string>;
+  dynamicWordLimit?: string; // ✅ NUOVO: Limite parole dinamico dall'orchestrator
+}
+
+/**
+ * Build system prompt with style and mode injections
+ */
+export function buildSystemPrompt(params: PromptParams): string {
+  const {
+    globalPrompt,
+    baseContent,
+    agentPersonality,
+    conversationStyle,
+    agentMode,
+    previousResponses,
+    wasCalledDirectly,
+    lastResponse,
+    styleSections
+  } = params;
+
+  // Inizializza prompt vuoto
+  let composedPrompt = '';
+  
+  // ✅ PRIORITÀ MASSIMA: Limite dinamico dall'orchestrator
+  if (params.dynamicWordLimit) {
+    composedPrompt += params.dynamicWordLimit + '\n\n';
+  }
+  
+  // Add BASE sections
+  composedPrompt += '=== CONTESTO BASE ===\n';
+  composedPrompt += baseContent + '\n\n';
+
+  // Add AGENT_PERSONALITY
+  if (agentPersonality) {
+    composedPrompt += '=== TUA PERSONALITÀ ===\n';
+    composedPrompt += agentPersonality + '\n\n';
+  }
+
+  // Style injection from DB (con fallback a hardcoded per retrocompatibilità)
+  let styleInstructions = '';
+  
+  if (styleSections && styleSections.has(conversationStyle)) {
+    // Usa stile dal database
+    styleInstructions = styleSections.get(conversationStyle) || '';
+    console.log(`✅ Usando stile DB: ${conversationStyle}`);
+  } else {
+    // Fallback a hardcoded (per retrocompatibilità durante migrazione)
+    console.warn(`⚠️ Stile '${conversationStyle}' non trovato in DB, uso fallback hardcoded`);
+    
+    if (conversationStyle === 'boss_talk') {
+      styleInstructions = `
+STILE: Boss Talk - Pragmatico e Sintetico
+Massimo 50-60 parole, circa 4 frasi brevi.
+Focus su decisioni concrete, ROI, trade-off e prossimi passi.
+Taglia tutto ciò che non è direttamente azionabile.
+Usa dati concreti quando disponibili.
+Tono diretto e professionale.
+NON usare placeholder o testo tra parentesi quadre.
+NON aggiungere conteggi parole o metadata al testo.
+`;
+    } else if (conversationStyle === 'colleagues') {
+      styleInstructions = `
+STILE: Colleghi - Professionale ma Amichevole
+LIMITE RIGIDO: massimo 60-70 parole, circa 5 frasi brevi.
+Usa frasi dirette e concrete.
+Coinvolgi gli altri con nomi reali se noti, altrimenti usa riferimenti naturali.
+Evita introduzioni lunghe, ripetizioni e conclusioni prolisse.
+Tono collaborativo ma estremamente conciso.
+NON usare placeholder come nome generico o testo tra parentesi quadre.
+NON aggiungere conteggi parole o metadata al testo.
+Se non hai nulla di rilevante da aggiungere, scrivi SKIP.
+`;
+    } else if (conversationStyle === 'bar_chat') {
+      styleInstructions = `
+STILE: Bar Chat - Informale e Rilassato
+Massimo 40-50 parole, circa 3 frasi.
+Attacco conversazionale naturale come: Guarda, Senti, Allora.
+Scherzoso quando appropriato ma non forzato.
+Coinvolgi con domande dirette usando nomi reali se noti.
+Tono da conversazione informale, evita frasi conclusive formali.
+NON usare placeholder o testo tra parentesi quadre.
+NON aggiungere conteggi parole o metadata al testo.
+`;
+    }
+  }
+  
+  composedPrompt += styleInstructions + '\n\n';
+
+  // Add context about other agents
+  if (previousResponses.length > 0) {
+    const previousAgentsContext = previousResponses
+      .map(r => `${r.agentName}: ${r.content.substring(0, 200)}...`)
+      .join('\n\n');
+    
+    composedPrompt += `
+RISPOSTE PRECEDENTI IN QUESTO TURNO:
+${previousAgentsContext}
+
+Considera queste risposte quando formuli la tua. Puoi:
+- Concordare o aggiungere nuovi punti
+- Offrire una prospettiva diversa
+- Rispondere direttamente a uno degli altri agenti
+- Scrivere [SKIP] se non hai nulla di rilevante da aggiungere
+`;
+  }
+
+  // Direct call priority
+  if (wasCalledDirectly && lastResponse) {
+    composedPrompt += `
+🎯 SEI STATO CHIAMATO DIRETTAMENTE
+${lastResponse.agentName} ti ha menzionato esplicitamente nel suo ultimo intervento.
+Rispondi in modo specifico alla sua richiesta/domanda.
+NON scrivere [SKIP] in questo caso.
+
+`;
+  }
+  
+  // Agent mode injection
+  if (agentMode === 'consultation') {
+    composedPrompt += `
+📚 MODALITÀ: Consultazione Formale
+- Puoi essere dettagliato e approfondito (fino a 150 parole se necessario)
+- Usa linguaggio tecnico quando appropriato
+- Fornisci spiegazioni complete e strutturate
+- Cita fonti o riferimenti se rilevanti
+- Questo è il tuo UNICO intervento, quindi sii esaustivo
+
+`;
+  }
+
+  return composedPrompt;
+}
+
+/**
+ * Build full conversation history with system prompt and cumulative summary
+ */
+export function buildConversationHistory(params: {
+  systemPrompt: string;
+  cumulativeSummary: string | null;
+  historyMessages: any[];
+  turnContext: any[];
+}): any[] {
+  const { systemPrompt, cumulativeSummary, historyMessages, turnContext } = params;
+
+  return [
+    { role: 'system', content: systemPrompt },
+    // Cumulative summary if exists
+    ...(cumulativeSummary ? [{ 
+      role: 'system', 
+      content: `📚 CONTESTO PRECEDENTE (Riassunto cumulativo):\n${cumulativeSummary}\n\n---\n\n` 
+    }] : []),
+    ...historyMessages,
+    ...turnContext
+  ];
+}
+
+/**
+ * Convert database messages to conversation format
+ */
+export function formatHistoryMessages(messages: any[]): any[] {
+  return messages.map((msg: any) => {
+    let messageContent = msg.content;
+    
+    // ✅ APPENDICI: Include nel context per AI (ma nascoste in UI)
+    if (msg.attachments?.appendix) {
+      messageContent += `\n\n[APPENDICE COLLEGA]\n${msg.attachments.appendix}\n[/APPENDICE]`;
+    }
+    
+    // ✅ REPORT: Include nel context per AI
+    if (msg.attachments?.report) {
+      messageContent += `\n\n[REPORT COLLEGA]\n${msg.attachments.report}\n[/REPORT]`;
+    }
+    
+    console.log(`📝 [${msg.sender_name}] Content completo: ${messageContent.length} chars`);
+    
+    return {
+      role: msg.sender_type === 'human' ? 'user' : 'assistant',
+      content: messageContent
+    };
+  });
+}
+
+/**
+ * Calculate context size metrics
+ */
+export function calculateContextSize(conversationHistory: any[]): {
+  totalContextChars: number;
+  estimatedTokens: number;
+} {
+  const totalContextChars = conversationHistory
+    .map(m => m.content.length)
+    .reduce((sum, len) => sum + len, 0);
+
+  const estimatedTokens = Math.ceil(totalContextChars / 4);
+
+  return { totalContextChars, estimatedTokens };
+}

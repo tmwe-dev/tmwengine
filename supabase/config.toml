@@ -279,3 +279,6 @@ verify_jwt = true
 [functions.index-codebase]
 verify_jwt = true
 
+[functions.radio-chat-orchestrator]
+verify_jwt = true
+

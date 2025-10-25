@@ -53,7 +53,14 @@ const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
     ctx.fillText(l.trim(), 30, startY + i * lineHeight);
   });
 
-  return new THREE.CanvasTexture(canvas);
+  const texture = new THREE.CanvasTexture(canvas);
+  console.log("🎨 createTextTexture():", {
+    sender: message.sender_name,
+    width: canvas.width,
+    height: canvas.height,
+    preview: canvas.toDataURL().substring(0, 60) + "...",
+  });
+  return texture;
 };
 
 const createEmptyTexture = (): THREE.CanvasTexture => {
@@ -115,14 +122,35 @@ export const RadioCarousel3D = ({
     const group = new THREE.Group();
     scene.add(group);
 
+    // 🧪 TEST VISIBILITÀ: cubo rosso sempre visibile
+    const testGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const testMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const testCube = new THREE.Mesh(testGeometry, testMaterial);
+    testCube.position.set(0, 0, 0);
+    scene.add(testCube);
+    console.log('🧪 Cubo di test creato al centro scena');
+
     sceneRef.current = scene;
     cameraRef.current = camera;
     rendererRef.current = renderer;
     groupRef.current = group;
 
     // Animation loop
+    let frameCount = 0;
     const animate = () => {
       requestAnimationFrame(animate);
+      
+      // Debug: conta mesh visibili ogni 60 frame
+      if (frameCount % 60 === 0 && groupRef.current) {
+        const visibleMeshes = groupRef.current.children.filter((child) => {
+          if (!(child instanceof THREE.Mesh)) return false;
+          const mat = child.material as THREE.MeshBasicMaterial;
+          return mat.opacity > 0 && mat.visible !== false;
+        });
+        console.log(`🎬 Frame ${frameCount}: ${visibleMeshes.length}/${groupRef.current.children.length} mesh visibili`);
+      }
+      frameCount++;
+      
       renderer.render(scene, camera);
     };
     animate();
@@ -236,6 +264,15 @@ export const RadioCarousel3D = ({
       material.opacity = 1; // Rendi visibile
       material.needsUpdate = true;
       console.log(`  ✅ Slot ${i} riempito e reso visibile (opacity: 1)`);
+      console.log(`    🔎 Material:`, {
+        opacity: material.opacity,
+        transparent: material.transparent,
+        map: !!material.map,
+        visible: slotMesh.visible,
+        side: material.side,
+      });
+      console.log(`    📍 Posizione:`, slotMesh.position.toArray());
+      console.log(`    🔄 Rotazione:`, slotMesh.rotation.toArray());
       
       // Marca il messaggio come renderizzato
       renderedMessagesRef.current.add(msg.id);

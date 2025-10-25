@@ -3,23 +3,55 @@ import { Menu } from 'lucide-react';
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
+import { RadioMessageView } from '@/components/radio-chat/RadioMessageView';
+import { useRadioMessages } from '@/hooks/useRadioMessages';
+import { useAudioPlayback } from '@/hooks/useAudioPlayback';
+import { RadioMessage } from '@/types/radio';
 
 const RadioChat = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [messages, setMessages] = useState<RadioMessage[]>([]);
+  
+  const { isAudioPlaying, handleAudioStart, handleAudioEnd: audioEnd } = useAudioPlayback();
+  
+  const {
+    activeMessageId,
+    currentMessage,
+    handleAudioEnd: messageSwitch,
+    unseenMessagesQueue
+  } = useRadioMessages({
+    messages,
+    isAudioPlaying
+  });
+  
+  const onAudioEndComplete = () => {
+    audioEnd();
+    setTimeout(() => messageSwitch(), 50);
+  };
 
   const handleSend = async () => {
     if (!inputValue.trim()) return;
     
     console.log('📤 Sending message:', inputValue);
-    // TODO: Implementare logica di invio messaggio
     
+    // Mock: aggiungi messaggio human
+    const newMessage: RadioMessage = {
+      id: `msg-${Date.now()}`,
+      sender_type: 'human',
+      sender_name: 'You',
+      content: inputValue,
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, newMessage]);
     setInputValue('');
+    
+    // TODO: Chiamata a Supabase edge function per AI response
   };
 
   return (
     <div className="min-h-screen relative">
-      {/* Sidebar Trigger */}
       <button
         onClick={() => setSidebarOpen(true)}
         className="fixed top-4 left-4 z-40 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
@@ -27,10 +59,26 @@ const RadioChat = () => {
         <Menu className="w-6 h-6 text-white" />
       </button>
 
-      {/* Sidebar */}
       <RadioSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Main Content - Input al centro */}
+      <div className="pb-[30vh]">
+        {currentMessage && (
+          <RadioMessageView
+            message={currentMessage}
+            onAudioEnd={onAudioEndComplete}
+            onAudioStart={handleAudioStart}
+          />
+        )}
+        
+        {/* DEBUG INFO */}
+        <div className="fixed top-20 right-4 bg-black/80 text-white text-xs p-4 rounded">
+          <div>Active: {activeMessageId}</div>
+          <div>Queue: {unseenMessagesQueue.length}</div>
+          <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
+          <div>Total messages: {messages.length}</div>
+        </div>
+      </div>
+
       <div className="fixed bottom-0 left-0 right-0 p-8 pb-12">
         <div className="w-full max-w-2xl mx-auto relative">
           <RadioMessageInput

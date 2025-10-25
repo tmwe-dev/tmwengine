@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X } from 'lucide-react';
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
@@ -41,6 +41,7 @@ const RadioChat = () => {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [showSwipeHint, setShowSwipeHint] = useState(true);
+  const [debugPopupOpen, setDebugPopupOpen] = useState(false);
   
   const { toast } = useToast();
   
@@ -307,6 +308,18 @@ const RadioChat = () => {
         conversationId={currentConversationId}
       />
 
+      {/* Debug Icon - Above Toggle Buttons (Solo in development) */}
+      {import.meta.env.DEV && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setDebugPopupOpen(!debugPopupOpen)}
+          className="fixed left-4 top-24 z-35"
+        >
+          <Bug className="w-4 h-4" />
+        </Button>
+      )}
+
       {/* Toggle Carousel/Messages - Top Left */}
       <div className="fixed left-4 top-32 z-35 flex flex-col gap-2">
         <Button
@@ -452,19 +465,32 @@ const RadioChat = () => {
         </div>
       </div>
 
-      {/* Debug Info - Solo in development */}
-      {import.meta.env.DEV && (
-        <div className="fixed top-[140px] right-4 bg-black/90 text-white text-xs p-3 rounded z-[60] max-w-[200px]">
-          <div>Mode: {viewMode}</div>
-          <div>Nav Index: {navIndex}/{aiMessages.length}</div>
-          <div>Active: {activeMessageId?.substring(0, 8)}</div>
-          <div>Current Msg: {currentMessage?.sender_name || 'NONE'}</div>
-          <div>Sending: {isSending ? 'YES' : 'NO'}</div>
-          <div>Queue: {unseenMessagesQueue.length}</div>
-          <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
-          <div>Total: {messages.length}</div>
-          <div>AI: {aiMessages.length}</div>
-          <div>Participants: {participants.filter(p => p.is_active).map(p => p.name).join(', ')}</div>
+      {/* Debug Popup - Solo in development */}
+      {import.meta.env.DEV && debugPopupOpen && (
+        <div className="fixed top-[140px] right-4 bg-black/95 text-white text-xs p-4 rounded-lg shadow-lg z-[60] max-w-[250px] border border-white/20">
+          <div className="flex justify-between items-center mb-3 pb-2 border-b border-white/20">
+            <span className="font-bold text-sm">Debug Info</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDebugPopupOpen(false)}
+              className="h-6 w-6 p-0 hover:bg-white/20"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="space-y-1">
+            <div>Mode: {viewMode}</div>
+            <div>Nav Index: {navIndex}/{aiMessages.length}</div>
+            <div>Active: {activeMessageId?.substring(0, 8)}</div>
+            <div>Current Msg: {currentMessage?.sender_name || 'NONE'}</div>
+            <div>Sending: {isSending ? 'YES' : 'NO'}</div>
+            <div>Queue: {unseenMessagesQueue.length}</div>
+            <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
+            <div>Total: {messages.length}</div>
+            <div>AI: {aiMessages.length}</div>
+            <div>Participants: {participants.filter(p => p.is_active).map(p => p.name).join(', ')}</div>
+          </div>
         </div>
       )}
     </div>

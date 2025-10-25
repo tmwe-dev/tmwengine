@@ -56,7 +56,28 @@ const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
   return new THREE.CanvasTexture(canvas);
 };
 
-export const RadioCarousel3D = ({ 
+const createEmptyTexture = (): THREE.CanvasTexture => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 768;
+  const ctx = canvas.getContext('2d')!;
+
+  // Background semi-trasparente
+  ctx.fillStyle = '#f8f8f8';
+  ctx.globalAlpha = 0.3;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Bordo tratteggiato per indicare slot vuoto
+  ctx.globalAlpha = 1.0;
+  ctx.strokeStyle = '#cccccc';
+  ctx.lineWidth = 4;
+  ctx.setLineDash([10, 10]);
+  ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+
+  return new THREE.CanvasTexture(canvas);
+};
+
+export const RadioCarousel3D = ({
   messages, 
   activeMessageId
 }: RadioCarousel3DProps) => {
@@ -157,43 +178,60 @@ export const RadioCarousel3D = ({
     const group = groupRef.current;
     const aiMessages = messages.filter(m => m.sender_type !== 'human');
     
-    // Clear existing meshes
-    meshesRef.current.forEach(mesh => group.remove(mesh));
-    meshesRef.current.clear();
-
-    if (aiMessages.length === 0) return;
-
+    const MAX_SLOTS = 8;
     const radius = 3.5;
+    const angleStep = (Math.PI * 2) / MAX_SLOTS;
     
-    aiMessages.forEach((msg, i) => {
-      const texture = createTextTexture(msg);
-      const geometry = new THREE.PlaneGeometry(3.5, 5);
-      const material = new THREE.MeshBasicMaterial({ 
-        map: texture, 
-        side: THREE.DoubleSide, 
-        transparent: true 
-      });
-      const mesh = new THREE.Mesh(geometry, material);
-
-      // Offset con centratura perfetta della pagina frontale
-      const angleStep = (Math.PI * 2) / aiMessages.length;
-      const angle = (i * angleStep) - Math.PI / 2 + (angleStep / 2);
-      mesh.position.set(
-        Math.cos(angle) * radius, 
-        0, 
-        Math.sin(angle) * radius
-      );
-      mesh.lookAt(new THREE.Vector3(0, 0, 0));
-      mesh.rotateY(Math.PI); // Fix testo rovesciato
+    // 1. Se carosello non esiste, crealo con slot vuoti
+    if (meshesRef.current.size === 0) {
+      console.log('🎡 Creazione carosello con', MAX_SLOTS, 'slot vuoti');
       
-      // Scale up the front-facing message (index 0) and align it perpendicular to camera
-      if (i === 0) {
-        mesh.rotation.y = Math.PI; // Perfect perpendicular alignment
-        mesh.scale.set(1.3, 1.3, 1.3);
+      for (let i = 0; i < MAX_SLOTS; i++) {
+        const angle = (i * angleStep) - Math.PI / 2 + (angleStep / 2);
+        
+        // Crea mesh VUOTA (texture semi-trasparente)
+        const emptyTexture = createEmptyTexture();
+        const geometry = new THREE.PlaneGeometry(3.5, 5);
+        const material = new THREE.MeshBasicMaterial({ 
+          map: emptyTexture, 
+          side: THREE.DoubleSide, 
+          transparent: true,
+          opacity: 0.3
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        
+        mesh.position.set(
+          Math.cos(angle) * radius, 
+          0, 
+          Math.sin(angle) * radius
+        );
+        mesh.lookAt(new THREE.Vector3(0, 0, 0));
+        mesh.rotateY(Math.PI); // Fix testo rovesciato
+        
+        group.add(mesh);
+        meshesRef.current.set(`slot_${i}`, mesh);
       }
-      
-      group.add(mesh);
-      meshesRef.current.set(msg.id, mesh);
+    }
+    
+    // 2. Aggiorna solo gli slot con messaggi REALI
+    aiMessages.forEach((msg, i) => {
+      if (i < MAX_SLOTS) {
+        const slotMesh = meshesRef.current.get(`slot_${i}`);
+        if (slotMesh) {
+          console.log('📄 Aggiornamento slot', i, 'con messaggio:', msg.sender_name);
+          
+          // Aggiorna texture con contenuto reale
+          const newTexture = createTextTexture(msg);
+          const material = slotMesh.material as THREE.MeshBasicMaterial;
+          material.map?.dispose(); // Libera texture precedente
+          material.map = newTexture;
+          material.opacity = 1.0; // Slot riempito completamente opaco
+          material.needsUpdate = true;
+          
+          // Aggiorna riferimento per rotazione
+          meshesRef.current.set(msg.id, slotMesh);
+        }
+      }
     });
   }, [messages]);
 
@@ -206,7 +244,8 @@ export const RadioCarousel3D = ({
     
     if (activeIndex === -1) return;
 
-    const targetAngle = -(activeIndex / aiMessages.length) * Math.PI * 2 + Math.PI / 2;
+    const MAX_SLOTS = 8;
+    const targetAngle = -(activeIndex / MAX_SLOTS) * Math.PI * 2 + Math.PI / 2;
     
     gsap.to(groupRef.current.rotation, {
       y: targetAngle,

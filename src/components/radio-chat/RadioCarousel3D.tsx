@@ -194,55 +194,70 @@ export const RadioCarousel3D = ({
     return () => resizeObserver.disconnect();
   }, []);
 
-  // 1️⃣ INIZIALIZZAZIONE SLOT (esegue UNA SOLA VOLTA al mount)
+  // 1️⃣ INIZIALIZZAZIONE SLOT (aspetta che groupRef sia pronto)
   useEffect(() => {
-    console.log('🔍 useEffect inizializzazione slot - groupRef:', !!groupRef.current, 'hasInit:', hasInitializedSlotsRef.current, 'meshes:', meshesRef.current.size);
-    
-    if (!groupRef.current) {
-      console.log('⏸️ groupRef.current non ancora pronto, skip');
-      return;
-    }
-    
-    if (hasInitializedSlotsRef.current) {
-      console.log('⏭️ Slot già inizializzati, skip');
-      return;
-    }
-    
-    console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili`);
-    
-    const group = groupRef.current;
-    const radius = 3.5;
-    const angleStep = (Math.PI * 2) / MAX_SLOTS;
-    
-    for (let i = 0; i < MAX_SLOTS; i++) {
-      const geometry = new THREE.PlaneGeometry(3.5, 5);
-      const material = new THREE.MeshBasicMaterial({ 
-        side: THREE.DoubleSide, 
-        transparent: true,
-        opacity: 0 // Invisibile inizialmente
-      });
-      const mesh = new THREE.Mesh(geometry, material);
+    let attemptCount = 0;
+    const MAX_ATTEMPTS = 10;
 
-      // Posizionamento fisso
-      const angle = (i * angleStep) - Math.PI / 2 + (angleStep / 2);
-      mesh.position.set(
-        Math.cos(angle) * radius, 
-        0, 
-        Math.sin(angle) * radius
-      );
-      mesh.lookAt(new THREE.Vector3(0, 0, 0));
-      mesh.rotateY(Math.PI);
+    const checkAndInit = () => {
+      console.log(`🔍 Tentativo ${attemptCount + 1}/${MAX_ATTEMPTS} - groupRef:`, !!groupRef.current, 'hasInit:', hasInitializedSlotsRef.current);
       
-      group.add(mesh);
-      meshesRef.current.set(`slot_${i}`, mesh);
-      console.log(`  📍 Slot ${i} creato a posizione:`, mesh.position.toArray());
-    }
-    
-    hasInitializedSlotsRef.current = true;
-    renderedMessagesRef.current.clear(); // Reset messaggi renderizzati
-    console.log(`✅ Carosello creato, meshesRef.size: ${meshesRef.current.size}`);
-    console.log(`✅ groupRef.current.children.length: ${groupRef.current.children.length}`);
-  }, []); // ← ARRAY VUOTO: esegue solo al mount
+      if (!groupRef.current) {
+        attemptCount++;
+        if (attemptCount < MAX_ATTEMPTS) {
+          console.log('⏳ groupRef ancora null, ritento al prossimo frame...');
+          requestAnimationFrame(checkAndInit);
+        } else {
+          console.error('❌ groupRef non pronto dopo 10 tentativi');
+        }
+        return;
+      }
+
+      if (hasInitializedSlotsRef.current) {
+        console.log('⏭️ Slot già inizializzati, skip');
+        return;
+      }
+
+      console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili`);
+      
+      const group = groupRef.current;
+      const radius = 3.5;
+      const angleStep = (Math.PI * 2) / MAX_SLOTS;
+      
+      for (let i = 0; i < MAX_SLOTS; i++) {
+        const geometry = new THREE.PlaneGeometry(3.5, 5);
+        const material = new THREE.MeshBasicMaterial({ 
+          side: THREE.DoubleSide, 
+          transparent: true,
+          opacity: 0 // Invisibile inizialmente
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+
+        // Posizionamento fisso
+        const angle = (i * angleStep) - Math.PI / 2 + (angleStep / 2);
+        mesh.position.set(
+          Math.cos(angle) * radius, 
+          0, 
+          Math.sin(angle) * radius
+        );
+        mesh.lookAt(new THREE.Vector3(0, 0, 0));
+        mesh.rotateY(Math.PI);
+        
+        group.add(mesh);
+        meshesRef.current.set(`slot_${i}`, mesh);
+        console.log(`  📍 Slot ${i} creato a posizione:`, mesh.position.toArray());
+      }
+      
+      hasInitializedSlotsRef.current = true;
+      renderedMessagesRef.current.clear(); // Reset messaggi renderizzati
+      console.log(`✅ Carosello creato, meshesRef.size: ${meshesRef.current.size}`);
+      console.log(`✅ groupRef.current.children.length: ${groupRef.current.children.length}`);
+    };
+
+    // Lancia il controllo asincrono
+    console.log('🚀 Avvio polling per groupRef...');
+    requestAnimationFrame(checkAndInit);
+  }, []); // ← ARRAY VUOTO: esegue solo al mount, ma poi aspetta attivamente
 
   // 2️⃣ POPOLAZIONE MESSAGGI (si attiva quando arrivano nuovi messaggi)
   useEffect(() => {

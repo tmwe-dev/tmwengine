@@ -21,6 +21,12 @@ export function RadioMessageInput({
 }: RadioMessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, []);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -47,7 +53,7 @@ export function RadioMessageInput({
         "text-white placeholder:text-white/30",
         "focus-visible:ring-0 focus-visible:ring-offset-0",
         "resize-none overflow-y-auto",
-        "caret-white"
+        "value.trim().length === 0 ? 'caret-red-500' : 'caret-white'"
       )}
     />
   );

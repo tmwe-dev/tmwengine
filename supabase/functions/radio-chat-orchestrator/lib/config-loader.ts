@@ -104,15 +104,50 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
     throw new Error('Nessuna chiave API configurata');
   }
 
-  // Fetch Bar Mode settings
-  const { data: barModeSettings } = await supabaseClient
+  // Fetch Radio Chat settings (or create if not exists)
+  let { data: barModeSettings, error: settingsError } = await supabaseClient
     .from('chat_laboratory_bar_mode')
-    .select('mode, selected_topic, active_kb_id, voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms')
+    .select('mode, selected_topic, active_kb_id, voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms, turn_strategy, cognitive_buffers')
     .eq('conversation_id', conversationId)
-    .single();
+    .maybeSingle();
 
-  if (barModeSettings?.mode !== 'bar') {
-    throw new Error('Questa funzione è dedicata alla modalità Bar Chat');
+  // Se non esiste, crea record con defaults per Radio Chat
+  if (!barModeSettings) {
+    console.log('🔧 Creazione configurazione Radio Chat per conversation:', conversationId);
+    const { data: newSettings, error: createError } = await supabaseClient
+      .from('chat_laboratory_bar_mode')
+      .insert({
+        conversation_id: conversationId,
+        mode: 'radio',
+        voice_enabled: true,
+        agent_interaction_mode: 'consultation',
+        conversation_style: 'colleagues',
+        conversation_pace: 'normal',
+        pause_between_turns_ms: 800,
+        turn_strategy: 'SMART_PRIORITY',
+        cognitive_buffers: []
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.warn('⚠️ Impossibile creare configurazione, uso defaults:', createError);
+      // Fallback ai defaults
+      barModeSettings = {
+        mode: 'radio',
+        selected_topic: null,
+        active_kb_id: null,
+        voice_enabled: true,
+        conversation_pace: 'normal',
+        agent_interaction_mode: 'consultation',
+        conversation_style: 'colleagues',
+        pause_between_turns_ms: 800,
+        turn_strategy: 'SMART_PRIORITY',
+        cognitive_buffers: []
+      };
+    } else {
+      barModeSettings = newSettings;
+    }
   }
 
   const selectedTopic = barModeSettings.selected_topic;

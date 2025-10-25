@@ -202,13 +202,16 @@ export const RadioCarousel3D = ({
         group.add(mesh);
         meshesRef.current.set(`slot_${i}`, mesh);
       }
+      console.log('✅ Carosello creato, meshesRef.size:', meshesRef.current.size);
     }
 
     // 2️⃣ AGGIORNAMENTO: Riempi slot con messaggi REALI
+    console.log('📝 Tentativo di riempire', aiMessages.length, 'messaggi, meshesRef.size:', meshesRef.current.size);
     aiMessages.forEach((msg, i) => {
       if (i >= MAX_SLOTS) return; // Ignora messaggi oltre il limite
       
       const slotMesh = meshesRef.current.get(`slot_${i}`);
+      console.log(`  🔍 Slot ${i}:`, slotMesh ? '✅ trovato' : '❌ non trovato', 'per messaggio:', msg.sender_name);
       if (!slotMesh) return;
 
       const newTexture = createTextTexture(msg);
@@ -220,6 +223,7 @@ export const RadioCarousel3D = ({
       material.map = newTexture;
       material.opacity = 1; // Rendi visibile
       material.needsUpdate = true;
+      console.log(`  ✅ Slot ${i} riempito e reso visibile (opacity: 1)`);
       
       // Aggiungi riferimento per ID messaggio (usato per rotazione)
       meshesRef.current.set(msg.id, slotMesh);

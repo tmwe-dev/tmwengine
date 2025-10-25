@@ -39,10 +39,10 @@ export function RadioMessageInput({
       onFocus={onFocus}
       onBlur={onBlur}
       disabled={disabled}
-      placeholder="Scrivi il tuo messaggio..."
+      placeholder=""
       className={cn(
         "w-full min-h-[200px] max-h-[50vh] text-base md:text-lg",
-        value.length > 0 ? "text-left" : "text-center",
+        "text-center",
         "bg-transparent border-none shadow-none",
         "text-white placeholder:text-white/30",
         "focus-visible:ring-0 focus-visible:ring-offset-0",

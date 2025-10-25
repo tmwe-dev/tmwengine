@@ -175,8 +175,9 @@ export const RadioCarousel3D = ({
       });
       const mesh = new THREE.Mesh(geometry, material);
 
-      // Offset di -90° per avere indice 0 frontale
-      const angle = (i / aiMessages.length) * Math.PI * 2 - Math.PI / 2;
+      // Offset con centratura perfetta della pagina frontale
+      const angleStep = (Math.PI * 2) / aiMessages.length;
+      const angle = (i * angleStep) - Math.PI / 2 + (angleStep / 2);
       mesh.position.set(
         Math.cos(angle) * radius, 
         0, 

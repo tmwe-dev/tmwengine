@@ -348,7 +348,7 @@ const RadioChat = () => {
       />
 
       {/* Main Content Area */}
-      <div className="pt-6 pb-[200px]">
+      <div className="pt-26 pb-[200px]">
         {viewMode === 'carousel' ? (
           <div className="relative h-[calc(100vh-24px-70px-200px)] min-h-[500px]">
             {/* Carousel Container with touch gestures */}

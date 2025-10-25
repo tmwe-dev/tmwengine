@@ -18,6 +18,11 @@ const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
   ctx.fillStyle = '#f8f8f8';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // Specchia orizzontalmente il canvas per correggere inversione
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.translate(-canvas.width, 0);
+
   // Sender name - Dark color
   ctx.fillStyle = '#1a1a2e';
   ctx.font = 'bold 32px Arial';
@@ -52,6 +57,9 @@ const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
   lines.slice(0, 15).forEach((l, i) => {
     ctx.fillText(l.trim(), 30, startY + i * lineHeight);
   });
+
+  // Ripristina stato canvas originale
+  ctx.restore();
 
   const texture = new THREE.CanvasTexture(canvas);
   console.log("🎨 createTextTexture():", {
@@ -234,14 +242,14 @@ export const RadioCarousel3D = ({
         const mesh = new THREE.Mesh(geometry, material);
 
         // Posizionamento fisso
-        const angle = (i * angleStep) - Math.PI / 2 + (angleStep / 2);
+        const angle = (i * angleStep) - Math.PI / 2;
         mesh.position.set(
           Math.cos(angle) * radius, 
           0, 
           Math.sin(angle) * radius
         );
         mesh.lookAt(new THREE.Vector3(0, 0, 0));
-        // mesh.rotateY(Math.PI); // ← Rimosso: lookAt orienta già correttamente
+        mesh.rotateY(Math.PI); // Mostra faccia frontale
         
         group.add(mesh);
         meshesRef.current.set(`slot_${i}`, mesh);

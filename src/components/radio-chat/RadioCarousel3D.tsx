@@ -224,9 +224,6 @@ export const RadioCarousel3D = ({
       material.opacity = 1; // Rendi visibile
       material.needsUpdate = true;
       console.log(`  ✅ Slot ${i} riempito e reso visibile (opacity: 1)`);
-      
-      // Aggiungi riferimento per ID messaggio (usato per rotazione)
-      meshesRef.current.set(msg.id, slotMesh);
     });
   }, [messages]);
 

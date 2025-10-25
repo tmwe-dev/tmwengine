@@ -201,7 +201,7 @@ export const RadioCarousel3D = ({
   return (
     <div 
       ref={containerRef} 
-      className="w-full h-[60vh] bg-gradient-to-b from-background via-background/95 to-background"
+      className="w-full h-[60vh]"
     />
   );
 };

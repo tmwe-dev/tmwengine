@@ -29,6 +29,12 @@ export function RadioMessageInput({
     }
   }, []);
 
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+    }
+  }, [value]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -44,6 +50,7 @@ export function RadioMessageInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={handleKeyDown}
+      style={{ paddingBottom: '70vh' }}
       onFocus={() => {
         setIsFocused(true);
         onFocus?.();
@@ -55,8 +62,7 @@ export function RadioMessageInput({
       disabled={disabled}
       placeholder=""
       className={cn(
-        "w-full min-h-[80px] max-h-[30vh] text-lg md:text-xl",
-        "text-center",
+        "w-full h-[75vh] text-lg md:text-xl",
         "bg-transparent border-none shadow-none",
         "text-white placeholder:text-white/30",
         "focus-visible:ring-0 focus-visible:ring-offset-0",

@@ -56,10 +56,24 @@ const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
   return new THREE.CanvasTexture(canvas);
 };
 
-export const RadioCarousel3D = ({ 
+const createEmptyTexture = (): THREE.CanvasTexture => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 768;
+  const ctx = canvas.getContext('2d')!;
+  
+  // Canvas completamente trasparente (nessun contenuto visibile)
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  return new THREE.CanvasTexture(canvas);
+};
+
+export const RadioCarousel3D = ({
   messages, 
   activeMessageId
 }: RadioCarousel3DProps) => {
+  const MAX_SLOTS = 8; // Numero massimo di pagine nel carosello
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -157,37 +171,58 @@ export const RadioCarousel3D = ({
     const group = groupRef.current;
     const aiMessages = messages.filter(m => m.sender_type !== 'human');
     
-    // Clear existing meshes
-    meshesRef.current.forEach(mesh => group.remove(mesh));
-    meshesRef.current.clear();
-
-    if (aiMessages.length === 0) return;
-
     const radius = 3.5;
-    
-    aiMessages.forEach((msg, i) => {
-      const texture = createTextTexture(msg);
-      const geometry = new THREE.PlaneGeometry(3.5, 5);
-      const material = new THREE.MeshBasicMaterial({ 
-        map: texture, 
-        side: THREE.DoubleSide, 
-        transparent: true 
-      });
-      const mesh = new THREE.Mesh(geometry, material);
+    const angleStep = (Math.PI * 2) / MAX_SLOTS; // Angoli FISSI per 8 slot
 
-      // Offset con centratura perfetta della pagina frontale
-      const angleStep = (Math.PI * 2) / aiMessages.length;
-      const angle = (i * angleStep) - Math.PI / 2 + (angleStep / 2);
-      mesh.position.set(
-        Math.cos(angle) * radius, 
-        0, 
-        Math.sin(angle) * radius
-      );
-      mesh.lookAt(new THREE.Vector3(0, 0, 0));
-      mesh.rotateY(Math.PI); // Fix testo rovesciato
+    // 1️⃣ INIZIALIZZAZIONE: Crea carosello con slot INVISIBILI (solo prima volta)
+    if (meshesRef.current.size === 0) {
+      console.log('🎡 Creazione carosello con', MAX_SLOTS, 'slot invisibili');
       
-      group.add(mesh);
-      meshesRef.current.set(msg.id, mesh);
+      for (let i = 0; i < MAX_SLOTS; i++) {
+        const emptyTexture = createEmptyTexture();
+        const geometry = new THREE.PlaneGeometry(3.5, 5);
+        const material = new THREE.MeshBasicMaterial({ 
+          map: emptyTexture, 
+          side: THREE.DoubleSide, 
+          transparent: true,
+          opacity: 0 // Completamente invisibile
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+
+        // Posizionamento fisso (identico al codice precedente)
+        const angle = (i * angleStep) - Math.PI / 2 + (angleStep / 2);
+        mesh.position.set(
+          Math.cos(angle) * radius, 
+          0, 
+          Math.sin(angle) * radius
+        );
+        mesh.lookAt(new THREE.Vector3(0, 0, 0));
+        mesh.rotateY(Math.PI);
+        
+        group.add(mesh);
+        meshesRef.current.set(`slot_${i}`, mesh);
+      }
+    }
+
+    // 2️⃣ AGGIORNAMENTO: Riempi slot con messaggi REALI
+    aiMessages.forEach((msg, i) => {
+      if (i >= MAX_SLOTS) return; // Ignora messaggi oltre il limite
+      
+      const slotMesh = meshesRef.current.get(`slot_${i}`);
+      if (!slotMesh) return;
+
+      const newTexture = createTextTexture(msg);
+      const material = slotMesh.material as THREE.MeshBasicMaterial;
+      
+      // Rilascia vecchia texture per evitare memory leak
+      if (material.map) material.map.dispose();
+      
+      material.map = newTexture;
+      material.opacity = 1; // Rendi visibile
+      material.needsUpdate = true;
+      
+      // Aggiungi riferimento per ID messaggio (usato per rotazione)
+      meshesRef.current.set(msg.id, slotMesh);
     });
   }, [messages]);
 
@@ -200,7 +235,7 @@ export const RadioCarousel3D = ({
     
     if (activeIndex === -1) return;
 
-    const targetAngle = -(activeIndex / aiMessages.length) * Math.PI * 2 + Math.PI / 2;
+    const targetAngle = -(activeIndex / MAX_SLOTS) * Math.PI * 2 + Math.PI / 2;
     
     gsap.to(groupRef.current.rotation, {
       y: targetAngle,

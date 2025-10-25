@@ -165,23 +165,42 @@ const RadioChat = () => {
       
       console.log('🎯 Calling orchestrator with participants:', activeParticipants);
       
-      const { data, error } = await supabase.functions.invoke('radio-chat-orchestrator', {
+      // Create orchestrator promise with timeout
+      const orchestratorPromise = supabase.functions.invoke('radio-chat-orchestrator', {
         body: {
           conversationId: convId,
           userMessage: messageToSend,
           participants: activeParticipants
         }
       });
-      
-      if (error) {
-        console.error('❌ Errore orchestrator:', error);
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: AI non risponde')), 30000)
+      );
+
+      try {
+        const { data, error } = await Promise.race([orchestratorPromise, timeoutPromise]) as any;
+        
+        if (error) {
+          console.error('❌ Errore orchestrator:', error);
+          toast({
+            title: 'Errore AI',
+            description: error.message,
+            variant: 'destructive'
+          });
+        } else {
+          console.log('✅ Orchestrator completato:', data);
+        }
+      } catch (timeoutError: any) {
+        console.error('⏱️ Timeout orchestrator:', timeoutError);
         toast({
-          title: 'Errore AI',
-          description: error.message,
+          title: 'Timeout',
+          description: 'Le AI stanno impiegando troppo tempo',
           variant: 'destructive'
         });
       }
     } finally {
+      console.log('🔄 Finally block: resetting isSending');
       setIsSending(false);
     }
   };

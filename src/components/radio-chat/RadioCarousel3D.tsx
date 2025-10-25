@@ -177,13 +177,15 @@ export const RadioCarousel3D = ({
       });
       const mesh = new THREE.Mesh(geometry, material);
 
-      const angle = (i / aiMessages.length) * Math.PI * 2;
+      // Offset di -90° per avere indice 0 frontale
+      const angle = (i / aiMessages.length) * Math.PI * 2 - Math.PI / 2;
       mesh.position.set(
         Math.cos(angle) * radius, 
         0, 
         Math.sin(angle) * radius
       );
       mesh.lookAt(new THREE.Vector3(0, 0, 0));
+      mesh.rotateY(Math.PI); // Fix testo rovesciato
       
       // Scale up the front-facing message (index 0)
       if (i === 0) {
@@ -204,7 +206,7 @@ export const RadioCarousel3D = ({
     
     if (activeIndex === -1) return;
 
-    const targetAngle = -(activeIndex / aiMessages.length) * Math.PI * 2;
+    const targetAngle = -(activeIndex / aiMessages.length) * Math.PI * 2 + Math.PI / 2;
     
     gsap.to(groupRef.current.rotation, {
       y: targetAngle,

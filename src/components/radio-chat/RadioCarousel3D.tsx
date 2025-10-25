@@ -232,7 +232,6 @@ export const RadioCarousel3D = ({
       
       material.map = newTexture;
       material.opacity = 1; // Rendi visibile
-      material.transparent = false; // Forza rendering opaco
       material.needsUpdate = true;
       console.log(`  ✅ Slot ${i} riempito e reso visibile (opacity: 1)`);
       

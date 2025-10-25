@@ -289,7 +289,7 @@ const RadioChat = () => {
       {/* Main Content Area - Spazio centrale calcolato */}
       <div className="pt-[calc(56px+70px)] pb-[200px]">
         {viewMode === 'carousel' ? (
-          <div className="relative h-[calc(100vh-56px-70px-200px)]">
+          <div className="relative h-[calc(100vh-56px-70px-200px)] min-h-[500px]">
             {/* Carousel Container */}
             <div className="absolute inset-0 z-10">
               <RadioCarousel3D 

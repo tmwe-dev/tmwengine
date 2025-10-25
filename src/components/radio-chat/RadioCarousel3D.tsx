@@ -15,26 +15,18 @@ const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
   canvas.height = 768;
   const ctx = canvas.getContext('2d')!;
 
-  // Background gradient
-  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gradient.addColorStop(0, '#1a1a2e');
-  gradient.addColorStop(1, '#0f0f1e');
-  ctx.fillStyle = gradient;
+  // Background - Paper white
+  ctx.fillStyle = '#f8f8f8';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Border
-  ctx.strokeStyle = '#4a4a6a';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
-
-  // Sender name
-  ctx.fillStyle = '#8b5cf6';
+  // Sender name - Dark color
+  ctx.fillStyle = '#1a1a2e';
   ctx.font = 'bold 32px Arial';
   ctx.textAlign = 'center';
   ctx.fillText(message.sender_name, canvas.width / 2, 60);
 
-  // Message content (word wrap)
-  ctx.fillStyle = '#ffffff';
+  // Message content (word wrap) - Dark gray
+  ctx.fillStyle = '#2d2d2d';
   ctx.font = '24px Arial';
   ctx.textAlign = 'left';
   
@@ -165,7 +157,7 @@ export const RadioCarousel3D = ({
     if (!groupRef.current) return;
 
     const group = groupRef.current;
-    const aiMessages = messages.filter(m => m.sender_type !== 'human').slice(-7);
+    const aiMessages = messages.filter(m => m.sender_type !== 'human');
     
     // Clear existing meshes
     meshesRef.current.forEach(mesh => group.remove(mesh));
@@ -173,11 +165,11 @@ export const RadioCarousel3D = ({
 
     if (aiMessages.length === 0) return;
 
-    const radius = 2.5;
+    const radius = 3.5;
     
     aiMessages.forEach((msg, i) => {
       const texture = createTextTexture(msg);
-      const geometry = new THREE.PlaneGeometry(2, 3);
+      const geometry = new THREE.PlaneGeometry(3.5, 5);
       const material = new THREE.MeshBasicMaterial({ 
         map: texture, 
         side: THREE.DoubleSide, 
@@ -193,6 +185,11 @@ export const RadioCarousel3D = ({
       );
       mesh.lookAt(new THREE.Vector3(0, 0, 0));
       
+      // Scale up the front-facing message (index 0)
+      if (i === 0) {
+        mesh.scale.set(1.3, 1.3, 1.3);
+      }
+      
       group.add(mesh);
       meshesRef.current.set(msg.id, mesh);
     });
@@ -202,7 +199,7 @@ export const RadioCarousel3D = ({
   useEffect(() => {
     if (!groupRef.current || !activeMessageId) return;
 
-    const aiMessages = messages.filter(m => m.sender_type !== 'human').slice(-7);
+    const aiMessages = messages.filter(m => m.sender_type !== 'human');
     const activeIndex = aiMessages.findIndex(m => m.id === activeMessageId);
     
     if (activeIndex === -1) return;

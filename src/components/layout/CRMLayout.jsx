@@ -177,7 +177,8 @@ const CRMLayout = ({ children }) => {
         className={cn(
           "flex items-center relative",
           location.pathname !== '/attivita' && "border-b border-border",
-          isMobile ? "h-24 px-3 py-3" : "h-28 px-4 lg:px-6 py-3"
+          isMobile ? "h-24 px-3 py-3" : "h-28 px-4 lg:px-6 py-3",
+          location.pathname === '/radio-chat' ? "z-0" : "z-50"
         )}
         >
         {/* Left side: Menu Button + Page Title */}

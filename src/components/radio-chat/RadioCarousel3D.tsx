@@ -165,7 +165,7 @@ export const RadioCarousel3D = ({
     if (!groupRef.current) return;
 
     const group = groupRef.current;
-    const aiMessages = messages.filter(m => m.sender_type !== 'human').slice(-7);
+    const aiMessages = messages.filter(m => m.sender_type !== 'human');
     
     // Clear existing meshes
     meshesRef.current.forEach(mesh => group.remove(mesh));
@@ -202,7 +202,7 @@ export const RadioCarousel3D = ({
   useEffect(() => {
     if (!groupRef.current || !activeMessageId) return;
 
-    const aiMessages = messages.filter(m => m.sender_type !== 'human').slice(-7);
+    const aiMessages = messages.filter(m => m.sender_type !== 'human');
     const activeIndex = aiMessages.findIndex(m => m.id === activeMessageId);
     
     if (activeIndex === -1) return;

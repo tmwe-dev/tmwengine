@@ -33,6 +33,7 @@ const RadioChat = () => {
     { id: 'gemini-1', type: 'gemini', name: 'Gemini', is_active: true },
     { id: 'claude-1', type: 'claude', name: 'Claude', is_active: true }
   ]);
+  const [navIndex, setNavIndex] = useState(0);
   
   const { toast } = useToast();
   
@@ -192,6 +193,28 @@ const RadioChat = () => {
     ));
   };
 
+  const handleVoiceInput = (transcription: string) => {
+    console.log('🎤 Voice input received:', transcription);
+    setInputValue(transcription);
+    setSidebarOpen(false);
+  };
+
+  const handlePrevMessage = () => {
+    const aiMessages = messages.filter(m => m.sender_type !== 'human');
+    if (aiMessages.length === 0) return;
+    const currentIdx = aiMessages.findIndex(m => m.id === activeMessageId);
+    const prevIdx = currentIdx > 0 ? currentIdx - 1 : aiMessages.length - 1;
+    setNavIndex(prevIdx);
+  };
+
+  const handleNextMessage = () => {
+    const aiMessages = messages.filter(m => m.sender_type !== 'human');
+    if (aiMessages.length === 0) return;
+    const currentIdx = aiMessages.findIndex(m => m.id === activeMessageId);
+    const nextIdx = (currentIdx + 1) % aiMessages.length;
+    setNavIndex(nextIdx);
+  };
+
   // Real-time subscription
   useEffect(() => {
     if (!currentConversationId) return;
@@ -284,24 +307,44 @@ const RadioChat = () => {
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)} 
         conversationId={currentConversationId}
+        onVoiceInput={handleVoiceInput}
       />
 
       {/* Main Content Area - Spazio centrale calcolato */}
-      <div className="pt-[calc(56px+70px)] pb-[200px]">
+      <div className="pt-[calc(56px+70px)] pb-[200px] border-2 border-purple-500">
         {viewMode === 'carousel' ? (
-          <div className="relative h-[calc(100vh-56px-70px-200px)]">
+          <div className="relative h-[calc(100vh-56px-70px-200px)] min-h-[400px] flex flex-col border-2 border-orange-500">
             {/* Carousel Container */}
-            <div className="absolute inset-0 z-10">
+            <div className="flex-1 border-2 border-green-500">
               <RadioCarousel3D 
                 messages={messages}
                 activeMessageId={activeMessageId}
                 onRotationComplete={handleCarouselRotationComplete}
               />
             </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex items-center justify-center gap-4 py-3 border-t bg-muted/20 border-2 border-yellow-500">
+              <button
+                onClick={handlePrevMessage}
+                className="px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-muted-foreground">
+                {navIndex + 1} / {messages.filter(m => m.sender_type !== 'human').length || 0}
+              </span>
+              <button
+                onClick={handleNextMessage}
+                className="px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Next
+              </button>
+            </div>
             
             {/* Message View - Sovrapposto al carousel */}
             {currentMessage ? (
-              <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[40%] overflow-y-auto bg-gradient-to-t from-background via-background/95 to-transparent p-6">
+              <div className="max-h-[40%] overflow-y-auto bg-gradient-to-t from-background via-background/95 to-transparent p-6 border-2 border-blue-500">
                 <RadioMessageView
                   message={currentMessage}
                   onAudioEnd={onAudioEndComplete}
@@ -309,7 +352,7 @@ const RadioChat = () => {
                 />
               </div>
             ) : messages.length > 0 && (
-              <div className="absolute bottom-0 left-0 right-0 z-20 p-6 text-center text-white/50">
+              <div className="p-6 text-center text-white/50 border-2 border-red-500">
                 Seleziona un messaggio dal carousel
               </div>
             )}
@@ -349,13 +392,14 @@ const RadioChat = () => {
         <div className="fixed top-[140px] right-4 bg-black/90 text-white text-xs p-3 rounded z-[60] max-w-[200px]">
           <div>Mode: {viewMode}</div>
           <div>Conv ID: {currentConversationId?.substring(0, 8)}</div>
-          <div>Active: {activeMessageId}</div>
+          <div>Active: {activeMessageId.substring(0, 8)}</div>
           <div>Current Msg: {currentMessage?.sender_name || 'NONE'}</div>
           <div>Sending: {isSending ? 'YES' : 'NO'}</div>
           <div>Queue: {unseenMessagesQueue.length}</div>
           <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
           <div>Total: {messages.length}</div>
           <div>AI: {messages.filter(m => m.sender_type !== 'human').length}</div>
+          <div>Nav Index: {navIndex}</div>
           <div>Participants: {participants.filter(p => p.is_active).map(p => p.name).join(', ')}</div>
         </div>
       )}

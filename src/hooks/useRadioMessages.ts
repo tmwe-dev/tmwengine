@@ -27,11 +27,22 @@ export const useRadioMessages = ({
 
   // Initialize with first AI message if exists
   useEffect(() => {
-    if (activeMessageId === '' && messages.length > 0) {
-      const firstAiMessage = messages.find(m => m.sender_type !== 'human');
-      if (firstAiMessage) {
-        setActiveMessageId(firstAiMessage.id);
-        seenMessagesRef.current.add(firstAiMessage.id);
+    const aiMessages = messages.filter(m => m.sender_type !== 'human');
+    
+    if (activeMessageId === '' && aiMessages.length > 0) {
+      const firstAiMessage = aiMessages[0];
+      console.log('🎯 [useRadioMessages] Initializing with first AI message:', firstAiMessage.sender_name);
+      setActiveMessageId(firstAiMessage.id);
+      seenMessagesRef.current.add(firstAiMessage.id);
+      return;
+    }
+
+    // Validate activeMessageId still exists in messages
+    if (activeMessageId && !messages.find(m => m.id === activeMessageId)) {
+      console.warn('⚠️ [useRadioMessages] Active message not found, resetting to first AI');
+      if (aiMessages.length > 0) {
+        setActiveMessageId(aiMessages[0].id);
+        seenMessagesRef.current.add(aiMessages[0].id);
       }
     }
   }, [messages, activeMessageId]);

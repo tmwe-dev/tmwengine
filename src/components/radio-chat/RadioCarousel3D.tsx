@@ -241,8 +241,8 @@ export const RadioCarousel3D = ({
         });
         const mesh = new THREE.Mesh(geometry, material);
 
-        // Posizionamento fisso
-        const angle = (i * angleStep) - Math.PI / 2;
+        // Posizionamento fisso - senso ANTIORARIO
+        const angle = -(i * angleStep) + Math.PI;
         mesh.position.set(
           Math.cos(angle) * radius, 
           0, 

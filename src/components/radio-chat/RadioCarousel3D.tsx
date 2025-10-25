@@ -241,7 +241,7 @@ export const RadioCarousel3D = ({
           Math.sin(angle) * radius
         );
         mesh.lookAt(new THREE.Vector3(0, 0, 0));
-        mesh.rotateY(Math.PI);
+        // mesh.rotateY(Math.PI); // ← Rimosso: lookAt orienta già correttamente
         
         group.add(mesh);
         meshesRef.current.set(`slot_${i}`, mesh);

@@ -81,6 +81,7 @@ export const RadioCarousel3D = ({
   const groupRef = useRef<THREE.Group | null>(null);
   const meshesRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const renderedMessagesRef = useRef<Set<string>>(new Set());
+  const hasInitializedSlotsRef = useRef(false);
 
   // Initialize Three.js scene
   useEffect(() => {
@@ -179,7 +180,7 @@ export const RadioCarousel3D = ({
     const angleStep = (Math.PI * 2) / MAX_SLOTS; // Angoli FISSI per 8 slot
 
     // 1️⃣ INIZIALIZZAZIONE: Crea carosello con slot INVISIBILI (solo prima volta)
-    if (meshesRef.current.size === 0) {
+    if (!hasInitializedSlotsRef.current && meshesRef.current.size === 0) {
       console.log('🎡 Creazione carosello con', MAX_SLOTS, 'slot invisibili');
       
       for (let i = 0; i < MAX_SLOTS; i++) {
@@ -207,6 +208,7 @@ export const RadioCarousel3D = ({
         meshesRef.current.set(`slot_${i}`, mesh);
       }
       console.log('✅ Carosello creato, meshesRef.size:', meshesRef.current.size);
+      hasInitializedSlotsRef.current = true;
     }
 
     // 2️⃣ AGGIORNAMENTO: Riempi slot con messaggi REALI
@@ -238,7 +240,7 @@ export const RadioCarousel3D = ({
       // Marca il messaggio come renderizzato
       renderedMessagesRef.current.add(msg.id);
     });
-  }, [messages]);
+  }, [messages, groupRef.current]);
 
   // Rotate to active message
   useEffect(() => {

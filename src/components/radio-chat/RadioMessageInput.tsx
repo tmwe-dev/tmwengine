@@ -63,11 +63,13 @@ export function RadioMessageInput({
       disabled={disabled}
       placeholder=""
       className={cn(
-        "w-full text-lg md:text-xl",
-        "bg-transparent border-none shadow-none",
+        "w-full text-lg md:text-xl lg:text-2xl",
+        "bg-transparent border border-purple-400/30 shadow-none",
         "text-white placeholder:text-white/30",
         "focus-visible:ring-0 focus-visible:ring-offset-0",
         "resize-none overflow-y-auto align-top",
+        "max-h-[4.5rem] md:max-h-[5rem] lg:max-h-[6rem]",
+        "px-4 py-3 rounded-lg",
         isFocused ? 'caret-white' : 'caret-red-500',
         className
       )}

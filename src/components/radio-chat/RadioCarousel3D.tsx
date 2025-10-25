@@ -127,8 +127,9 @@ export const RadioCarousel3D = ({
     if (!containerRef.current) return;
 
     const scene = new THREE.Scene();
+        const fov = window.innerWidth < 768 ? 55 : 60; // FOV più stretto su mobile
         const camera = new THREE.PerspectiveCamera(
-          60, // FOV più largo per vedere card complete
+          fov,
           containerRef.current.clientWidth / containerRef.current.clientHeight,
           0.1,
           1000
@@ -260,7 +261,8 @@ export const RadioCarousel3D = ({
       const angleStep = (Math.PI * 2) / MAX_SLOTS;
       
       for (let i = 0; i < MAX_SLOTS; i++) {
-        const geometry = new THREE.PlaneGeometry(2.5, 3.6);
+        const scaleFactor = Math.min(window.innerWidth / 1200, 1.2); // Max 120% su schermi grandi
+        const geometry = new THREE.PlaneGeometry(2.5 * scaleFactor, 3.6 * scaleFactor);
         const material = new THREE.MeshBasicMaterial({ 
           side: THREE.DoubleSide, 
           transparent: true,

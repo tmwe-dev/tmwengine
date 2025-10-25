@@ -363,7 +363,7 @@ const RadioChat = () => {
       {/* Main Content Area */}
       <div className="pt-26 pb-[200px]">
         {viewMode === 'carousel' ? (
-          <div className="relative h-[calc(100vh-416px)] min-h-[500px] overflow-visible">
+          <div className="relative h-[calc(100vh-416px)] min-h-[400px] md:min-h-[500px] lg:min-h-[600px] overflow-visible">
             {/* Carousel Container with touch gestures */}
             <div 
               className="absolute inset-0 z-10"
@@ -443,7 +443,7 @@ const RadioChat = () => {
 
       {/* Input Area - Fixed bottom con altezza definita */}
       <div className="fixed bottom-0 left-0 right-0 h-[200px] z-30 bg-gradient-to-t from-background via-background/80 to-transparent p-4">
-        <div className="w-full max-w-2xl mx-auto relative h-full">
+        <div className="w-[90%] max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto relative h-full">
           {isSending && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg z-10">
               <div className="text-white">Invio in corso...</div>

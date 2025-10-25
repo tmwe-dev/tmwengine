@@ -215,7 +215,7 @@ const RadioChat = () => {
   return (
     <div className="min-h-screen relative">
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-sm border-b">
+      <div className="fixed top-14 left-0 right-0 z-40 bg-background/80 backdrop-blur-sm border-b">
         <div className="flex items-center justify-between p-4">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -253,9 +253,13 @@ const RadioChat = () => {
         </div>
       </div>
 
-      <RadioSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <RadioSidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        conversationId={currentConversationId}
+      />
 
-      <div className="pt-20 pb-[30vh]">
+      <div className="pt-28 pb-[30vh]">
         {viewMode === 'carousel' ? (
           <>
             {/* 3D Carousel */}

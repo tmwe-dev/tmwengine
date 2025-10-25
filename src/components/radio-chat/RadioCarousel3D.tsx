@@ -8,36 +8,40 @@ interface RadioCarousel3DProps {
   activeMessageId: string;
 }
 
-const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
+const createTextTexture = (message: RadioMessage, renderer?: THREE.WebGLRenderer): THREE.CanvasTexture => {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 768;
+  
+  // ✅ ALTA RISOLUZIONE con devicePixelRatio
+  const scale = window.devicePixelRatio || 2;
+  canvas.width = 1024 * scale;
+  canvas.height = 1536 * scale;
   const ctx = canvas.getContext('2d')!;
+  ctx.scale(scale, scale);
 
   // Background - Paper white
   ctx.fillStyle = '#f8f8f8';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, 1024, 1536);
 
   // Specchia orizzontalmente il canvas per correggere inversione
   ctx.save();
   ctx.scale(-1, 1);
-  ctx.translate(-canvas.width, 0);
+  ctx.translate(-1024, 0);
 
   // Sender name - Dark color
   ctx.fillStyle = '#1a1a2e';
-  ctx.font = 'bold 26px Arial';
+  ctx.font = 'bold 52px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText(message.sender_name, canvas.width / 2, 60);
+  ctx.fillText(message.sender_name, 512, 120);
 
   // Message content (word wrap) - Dark gray
   ctx.fillStyle = '#2d2d2d';
-  ctx.font = '20px Arial';
+  ctx.font = '40px Arial';
   ctx.textAlign = 'left';
   
   const words = message.content.split(' ');
   const lines: string[] = [];
   let line = '';
-  const maxWidth = canvas.width - 60;
+  const maxWidth = 1024 - 120;
   
   for (const word of words) {
     const testLine = line + word + ' ';
@@ -52,35 +56,52 @@ const createTextTexture = (message: RadioMessage): THREE.CanvasTexture => {
   lines.push(line);
 
   // Draw lines
-  const lineHeight = 30;
-  const startY = 120;
+  const lineHeight = 60;
+  const startY = 240;
   lines.slice(0, 15).forEach((l, i) => {
-    ctx.fillText(l.trim(), 30, startY + i * lineHeight);
+    ctx.fillText(l.trim(), 60, startY + i * lineHeight);
   });
 
   // Ripristina stato canvas originale
   ctx.restore();
 
+  // ✅ TEXTURE CON FILTERING OTTIMIZZATO
   const texture = new THREE.CanvasTexture(canvas);
-  console.log("🎨 createTextTexture():", {
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  
+  // ✅ ANISOTROPIC FILTERING
+  if (renderer) {
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  }
+  
+  console.log("🎨 createTextTexture() HIGH-RES:", {
     sender: message.sender_name,
     width: canvas.width,
     height: canvas.height,
-    preview: canvas.toDataURL().substring(0, 60) + "...",
+    scale: scale,
+    anisotropy: texture.anisotropy
   });
+  
   return texture;
 };
 
 const createEmptyTexture = (): THREE.CanvasTexture => {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 768;
+  const scale = window.devicePixelRatio || 2;
+  canvas.width = 1024 * scale;
+  canvas.height = 1536 * scale;
   const ctx = canvas.getContext('2d')!;
   
   // Canvas completamente trasparente (nessun contenuto visibile)
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  return new THREE.CanvasTexture(canvas);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  
+  return texture;
 };
 
 export const RadioCarousel3D = ({
@@ -300,7 +321,7 @@ export const RadioCarousel3D = ({
       
       console.log(`  🔍 Slot ${i}: ✅ trovato per messaggio: ${msg.sender_name}`);
       
-      const newTexture = createTextTexture(msg);
+      const newTexture = createTextTexture(msg, rendererRef.current || undefined);
       const material = slotMesh.material as THREE.MeshBasicMaterial;
       
       // Rilascia vecchia texture
@@ -346,7 +367,8 @@ export const RadioCarousel3D = ({
   return (
     <div 
       ref={containerRef} 
-      className="w-full h-full"
+      className="w-full h-full overflow-visible"
+      style={{ position: 'relative' }}
     />
   );
 };

@@ -80,6 +80,7 @@ export const RadioCarousel3D = ({
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const groupRef = useRef<THREE.Group | null>(null);
   const meshesRef = useRef<Map<string, THREE.Mesh>>(new Map());
+  const renderedMessagesRef = useRef<Set<string>>(new Set());
 
   // Initialize Three.js scene
   useEffect(() => {
@@ -214,6 +215,12 @@ export const RadioCarousel3D = ({
       console.log(`  🔍 Slot ${i}:`, slotMesh ? '✅ trovato' : '❌ non trovato', 'per messaggio:', msg.sender_name);
       if (!slotMesh) return;
 
+      // Verifica se il messaggio è già stato renderizzato
+      if (renderedMessagesRef.current.has(msg.id)) {
+        console.log(`  ⏩ Slot ${i} già popolato con ${msg.sender_name}, skip`);
+        return;
+      }
+
       const newTexture = createTextTexture(msg);
       const material = slotMesh.material as THREE.MeshBasicMaterial;
       
@@ -224,6 +231,9 @@ export const RadioCarousel3D = ({
       material.opacity = 1; // Rendi visibile
       material.needsUpdate = true;
       console.log(`  ✅ Slot ${i} riempito e reso visibile (opacity: 1)`);
+      
+      // Marca il messaggio come renderizzato
+      renderedMessagesRef.current.add(msg.id);
     });
   }, [messages]);
 

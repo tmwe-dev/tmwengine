@@ -4,6 +4,7 @@ import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
 import { RadioMessageView } from '@/components/radio-chat/RadioMessageView';
+import { RadioCarousel3D } from '@/components/radio-chat/RadioCarousel3D';
 import { useRadioMessages } from '@/hooks/useRadioMessages';
 import { useAudioPlayback } from '@/hooks/useAudioPlayback';
 import { RadioMessage } from '@/types/radio';
@@ -28,6 +29,10 @@ const RadioChat = () => {
   const onAudioEndComplete = () => {
     audioEnd();
     setTimeout(() => messageSwitch(), 50);
+  };
+
+  const handleCarouselRotationComplete = () => {
+    setTimeout(() => handleAudioStart(), 200);
   };
 
   const handleSend = async () => {
@@ -62,6 +67,14 @@ const RadioChat = () => {
       <RadioSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="pb-[30vh]">
+        {/* 3D Carousel */}
+        <RadioCarousel3D 
+          messages={messages}
+          activeMessageId={activeMessageId}
+          onRotationComplete={handleCarouselRotationComplete}
+        />
+        
+        {/* Message View */}
         {currentMessage && (
           <RadioMessageView
             message={currentMessage}
@@ -76,6 +89,7 @@ const RadioChat = () => {
           <div>Queue: {unseenMessagesQueue.length}</div>
           <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
           <div>Total messages: {messages.length}</div>
+          <div>AI messages: {messages.filter(m => m.sender_type !== 'human').length}</div>
         </div>
       </div>
 

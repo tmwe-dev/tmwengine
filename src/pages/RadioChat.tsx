@@ -300,7 +300,7 @@ const RadioChat = () => {
   }, [currentConversationId]);
 
   return (
-    <div className="min-h-screen relative">
+    <div className="relative h-full">
       <RadioSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)} 

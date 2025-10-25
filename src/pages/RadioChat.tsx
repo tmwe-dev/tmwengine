@@ -18,7 +18,7 @@ const RadioChat = () => {
   };
 
   return (
-    <div className="min-h-screen relative bg-background">
+    <div className="min-h-screen relative">
       {/* Sidebar Trigger */}
       <button
         onClick={() => setSidebarOpen(true)}
@@ -31,7 +31,7 @@ const RadioChat = () => {
       <RadioSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content - Input al centro */}
-      <div className="flex items-center justify-center min-h-screen p-8">
+      <div className="fixed bottom-0 left-0 right-0 p-8 pb-12">
         <div className="w-full max-w-2xl relative">
           <RadioMessageInput
             value={inputValue}

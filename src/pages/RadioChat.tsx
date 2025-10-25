@@ -6,6 +6,8 @@ import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
 import { RadioMessageView } from '@/components/radio-chat/RadioMessageView';
 import { RadioCarousel3D } from '@/components/radio-chat/RadioCarousel3D';
 import { RadioParticipantSelector } from '@/components/radio-chat/RadioParticipantSelector';
+import { RadioSidebarTrigger } from '@/components/radio-chat/RadioSidebarTrigger';
+import { RadioParticipantIcon } from '@/components/radio-chat/RadioParticipantIcon';
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
 import { useRadioMessages } from '@/hooks/useRadioMessages';
 import { useAudioPlayback } from '@/hooks/useAudioPlayback';
@@ -299,53 +301,54 @@ const RadioChat = () => {
 
   return (
     <div className="min-h-screen relative">
-      {/* Header - Fixed with proper height */}
-      <div className="fixed top-14 left-0 right-0 h-[70px] z-40 bg-background/80 backdrop-blur-sm border-b">
-        <div className="flex items-center justify-between p-4">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-          
-          {/* Participant Selector */}
-          <RadioParticipantSelector
-            participants={participants}
-            onToggle={handleToggleParticipant}
-            className="flex-1 justify-center"
-          />
-          
-          {/* View Mode Toggle */}
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === 'carousel' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('carousel')}
-            >
-              <LayoutGrid className="w-4 h-4 mr-2" />
-              Carousel
-            </Button>
-            <Button
-              variant={viewMode === 'messages' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('messages')}
-            >
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Messages
-            </Button>
-          </div>
-        </div>
-      </div>
-
       <RadioSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)} 
         conversationId={currentConversationId}
       />
 
-      {/* Main Content Area - Spazio centrale calcolato */}
-      <div className="pt-[calc(56px+70px)] pb-[200px]">
+      {/* Toggle Carousel/Messages - Top Left */}
+      <div className="fixed left-4 top-32 z-35 flex flex-col gap-2">
+        <Button
+          variant={viewMode === 'carousel' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('carousel')}
+        >
+          <LayoutGrid className="w-4 h-4 mr-2" />
+          Carousel
+        </Button>
+        <Button
+          variant={viewMode === 'messages' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('messages')}
+        >
+          <MessageSquare className="w-4 h-4 mr-2" />
+          Messages
+        </Button>
+      </div>
+
+      {/* Participant Icons - Vertical Stack Above Hamburger */}
+      <div className="fixed left-4 bottom-28 z-40 flex flex-col gap-3">
+        {participants.map(p => (
+          <RadioParticipantIcon
+            key={p.id}
+            type={p.type}
+            name={p.name}
+            isActive={p.is_active}
+            onToggle={() => handleToggleParticipant(p.id)}
+          />
+        ))}
+      </div>
+
+      {/* Hamburger Sidebar - Bottom Left */}
+      <RadioSidebarTrigger
+        className="fixed left-0 bottom-8 z-40"
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(true)}
+      />
+
+      {/* Main Content Area */}
+      <div className="pt-14 pb-[200px]">
         {viewMode === 'carousel' ? (
           <div className="relative h-[calc(100vh-56px-70px-200px)] min-h-[500px]">
             {/* Carousel Container with touch gestures */}

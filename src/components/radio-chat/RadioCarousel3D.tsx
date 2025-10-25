@@ -194,75 +194,99 @@ export const RadioCarousel3D = ({
     return () => resizeObserver.disconnect();
   }, []);
 
-  // Update carousel with messages
+  // 1️⃣ INIZIALIZZAZIONE SLOT (esegue UNA SOLA VOLTA al mount)
   useEffect(() => {
-    if (!groupRef.current) return;
-
-    const group = groupRef.current;
-    const aiMessages = messages.filter(m => m.sender_type !== 'human');
+    console.log('🔍 useEffect inizializzazione slot - groupRef:', !!groupRef.current, 'hasInit:', hasInitializedSlotsRef.current, 'meshes:', meshesRef.current.size);
     
-    // Reset messaggi renderizzati ad ogni update per evitare blocchi su re-render
-    renderedMessagesRef.current.clear();
-    
-    const radius = 3.5;
-    const angleStep = (Math.PI * 2) / MAX_SLOTS; // Angoli FISSI per 8 slot
-
-    // 1️⃣ INIZIALIZZAZIONE: Crea carosello con slot INVISIBILI (solo prima volta)
-    if (!hasInitializedSlotsRef.current && meshesRef.current.size === 0) {
-      console.log('🎡 Creazione carosello con', MAX_SLOTS, 'slot invisibili');
-      
-      for (let i = 0; i < MAX_SLOTS; i++) {
-        const emptyTexture = createEmptyTexture();
-        const geometry = new THREE.PlaneGeometry(3.5, 5);
-        const material = new THREE.MeshBasicMaterial({ 
-          map: emptyTexture, 
-          side: THREE.DoubleSide, 
-          transparent: true,
-          opacity: 0 // Completamente invisibile
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-
-        // Posizionamento fisso (identico al codice precedente)
-        const angle = (i * angleStep) - Math.PI / 2 + (angleStep / 2);
-        mesh.position.set(
-          Math.cos(angle) * radius, 
-          0, 
-          Math.sin(angle) * radius
-        );
-        mesh.lookAt(new THREE.Vector3(0, 0, 0));
-        mesh.rotateY(Math.PI);
-        
-        group.add(mesh);
-        meshesRef.current.set(`slot_${i}`, mesh);
-      }
-      console.log('✅ Carosello creato, meshesRef.size:', meshesRef.current.size);
-      hasInitializedSlotsRef.current = true;
+    if (!groupRef.current) {
+      console.log('⏸️ groupRef.current non ancora pronto, skip');
+      return;
     }
+    
+    if (hasInitializedSlotsRef.current) {
+      console.log('⏭️ Slot già inizializzati, skip');
+      return;
+    }
+    
+    console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili`);
+    
+    const group = groupRef.current;
+    const radius = 3.5;
+    const angleStep = (Math.PI * 2) / MAX_SLOTS;
+    
+    for (let i = 0; i < MAX_SLOTS; i++) {
+      const geometry = new THREE.PlaneGeometry(3.5, 5);
+      const material = new THREE.MeshBasicMaterial({ 
+        side: THREE.DoubleSide, 
+        transparent: true,
+        opacity: 0 // Invisibile inizialmente
+      });
+      const mesh = new THREE.Mesh(geometry, material);
 
-    // 2️⃣ AGGIORNAMENTO: Riempi slot con messaggi REALI
-    console.log('📝 Tentativo di riempire', aiMessages.length, 'messaggi, meshesRef.size:', meshesRef.current.size);
-    aiMessages.forEach((msg, i) => {
-      if (i >= MAX_SLOTS) return; // Ignora messaggi oltre il limite
+      // Posizionamento fisso
+      const angle = (i * angleStep) - Math.PI / 2 + (angleStep / 2);
+      mesh.position.set(
+        Math.cos(angle) * radius, 
+        0, 
+        Math.sin(angle) * radius
+      );
+      mesh.lookAt(new THREE.Vector3(0, 0, 0));
+      mesh.rotateY(Math.PI);
       
-      const slotMesh = meshesRef.current.get(`slot_${i}`);
-      console.log(`  🔍 Slot ${i}:`, slotMesh ? '✅ trovato' : '❌ non trovato', 'per messaggio:', msg.sender_name);
-      if (!slotMesh) return;
+      group.add(mesh);
+      meshesRef.current.set(`slot_${i}`, mesh);
+      console.log(`  📍 Slot ${i} creato a posizione:`, mesh.position.toArray());
+    }
+    
+    hasInitializedSlotsRef.current = true;
+    console.log(`✅ Carosello creato, meshesRef.size: ${meshesRef.current.size}`);
+    console.log(`✅ groupRef.current.children.length: ${groupRef.current.children.length}`);
+  }, []); // ← ARRAY VUOTO: esegue solo al mount
 
-      // Verifica se il messaggio è già stato renderizzato
+  // 2️⃣ POPOLAZIONE MESSAGGI (si attiva quando arrivano nuovi messaggi)
+  useEffect(() => {
+    console.log('📝 useEffect messaggi - messages:', messages.length, 'meshesRef:', meshesRef.current.size, 'groupReady:', !!groupRef.current);
+    
+    if (!groupRef.current || meshesRef.current.size === 0) {
+      console.log('⏸️ Gruppo o slot non pronti, skip popolazione messaggi');
+      return;
+    }
+    
+    const aiMessages = messages.filter(m => m.sender_type !== 'human');
+    console.log(`📝 Tentativo di riempire ${aiMessages.length} messaggi AI, meshesRef.size: ${meshesRef.current.size}`);
+    
+    aiMessages.forEach((msg, i) => {
+      // Skip se già renderizzato
       if (renderedMessagesRef.current.has(msg.id)) {
-        console.log(`  ⏩ Slot ${i} già popolato con ${msg.sender_name}, skip`);
+        console.log(`  ⏭️ Messaggio ${msg.id} (${msg.sender_name}) già renderizzato, skip`);
         return;
       }
-
+      
+      if (i >= MAX_SLOTS) {
+        console.log(`  ⚠️ Troppi messaggi (${aiMessages.length}), max ${MAX_SLOTS}`);
+        return;
+      }
+      
+      const slotKey = `slot_${i}`;
+      const slotMesh = meshesRef.current.get(slotKey);
+      
+      if (!slotMesh) {
+        console.log(`  ❌ Slot ${i} non trovato in meshesRef`);
+        return;
+      }
+      
+      console.log(`  🔍 Slot ${i}: ✅ trovato per messaggio: ${msg.sender_name}`);
+      
       const newTexture = createTextTexture(msg);
       const material = slotMesh.material as THREE.MeshBasicMaterial;
       
-      // Rilascia vecchia texture per evitare memory leak
+      // Rilascia vecchia texture
       if (material.map) material.map.dispose();
       
       material.map = newTexture;
-      material.opacity = 1; // Rendi visibile
+      material.opacity = 1;
       material.needsUpdate = true;
+      
       console.log(`  ✅ Slot ${i} riempito e reso visibile (opacity: 1)`);
       console.log(`    🔎 Material:`, {
         opacity: material.opacity,
@@ -274,10 +298,9 @@ export const RadioCarousel3D = ({
       console.log(`    📍 Posizione:`, slotMesh.position.toArray());
       console.log(`    🔄 Rotazione:`, slotMesh.rotation.toArray());
       
-      // Marca il messaggio come renderizzato
       renderedMessagesRef.current.add(msg.id);
     });
-  }, [messages, groupRef.current]);
+  }, [messages]); // ← Dipende SOLO da messages
 
   // Rotate to active message
   useEffect(() => {

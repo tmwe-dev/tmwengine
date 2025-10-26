@@ -74,11 +74,6 @@ const RadioChat = () => {
   
   const currentMessage = messages.find(m => m.id === activeMessageId) || null;
   
-  // Callback per fine audio nel carousel mode (no auto-advance)
-  const onAudioEndComplete = () => {
-    console.log('🎬 [RadioChat] Audio completato in carousel mode');
-    handleAudioEnd();
-  };
 
   // Handler for carousel audio end with auto-advance (sincronizzato come Chat Laboratory)
   const handleCarouselAudioEnd = () => {
@@ -483,7 +478,7 @@ const RadioChat = () => {
                 <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[40%] overflow-y-auto bg-gradient-to-t from-background via-background/95 to-transparent p-6 animate-in slide-in-from-bottom-4 duration-200">
                   <RadioMessageView
                     message={currentMessage}
-                    onAudioEnd={onAudioEndComplete}
+                    onAudioEnd={handleCarouselAudioEnd}
                     onAudioStart={(msgId) => handleAudioStart(msgId)}
                     isAudioEnabled={isAudioEnabled}
                     canAutoPlay={canPlayAudio(currentMessage.id)}

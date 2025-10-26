@@ -135,9 +135,9 @@ export const RadioCarouselAudioPlayer = ({
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-6 py-4">
+    <div className="w-full max-w-4xl mx-auto px-6 py-2">
       {/* Speaker Name */}
-      <div className="mb-3 text-sm text-purple-300/80 text-center font-medium">
+      <div className="mb-1.5 text-xs text-purple-300/70 text-center font-medium">
         {senderName}
       </div>
       
@@ -165,7 +165,7 @@ export const RadioCarouselAudioPlayer = ({
 
           {/* Progress Bar */}
           <div 
-            className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer group relative"
+            className="flex-1 h-0.5 bg-white/10 rounded-full cursor-pointer group relative"
             onClick={handleSeek}
           >
             {/* Background Track */}
@@ -179,8 +179,8 @@ export const RadioCarouselAudioPlayer = ({
             
             {/* Playhead Circle */}
             <div 
-              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-purple-400 rounded-full shadow-lg shadow-purple-400/50 transition-all group-hover:w-4 group-hover:h-4"
-              style={{ left: `calc(${progress}% - 6px)` }}
+              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-purple-400 rounded-full shadow-lg shadow-purple-400/50 transition-all group-hover:w-3 group-hover:h-3"
+              style={{ left: `calc(${progress}% - 5px)` }}
             />
           </div>
 

@@ -474,8 +474,8 @@ const RadioChat = () => {
               )}
             </div>
             
-            {/* Audio Player - Fixed below carousel */}
-            <div className="shrink-0 border-t border-purple-400/20 bg-gradient-to-b from-black/40 to-black/60">
+            {/* Audio Player - Absolute overlay, doesn't push carousel */}
+            <div className="absolute bottom-0 left-0 right-0 z-25 border-t border-purple-400/20 bg-gradient-to-b from-black/40 to-black/60 pointer-events-auto">
               <RadioCarouselAudioPlayer
                 messages={messages}
                 activeMessageId={activeMessageId}

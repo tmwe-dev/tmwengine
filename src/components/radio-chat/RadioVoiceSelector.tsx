@@ -110,19 +110,11 @@ export const RadioVoiceSelector = ({
     );
   }
 
-  if (agents.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground p-4 text-center">
-        Nessun agente vocale attivo
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 p-4">
       <h3 className="text-sm font-semibold text-foreground">Voice Settings</h3>
       
-      {/* Audio Toggle */}
+      {/* Audio Toggle - SEMPRE VISIBILE */}
       <div className="flex items-center justify-between p-4 rounded-lg bg-primary/10">
         <div className="flex items-center gap-3">
           {isAudioEnabled ? (
@@ -143,7 +135,7 @@ export const RadioVoiceSelector = ({
         />
       </div>
 
-      {/* Auto-Advance Toggle */}
+      {/* Auto-Advance Toggle - SEMPRE VISIBILE */}
       <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/10">
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 flex items-center justify-center">
@@ -164,48 +156,55 @@ export const RadioVoiceSelector = ({
         />
       </div>
 
-      {agents.map(agent => (
-        <div key={agent.id} className="space-y-4 p-4 rounded-lg bg-muted/50">
-          <div className="font-medium text-sm">{agent.name}</div>
-          
-          {/* Word Limit Slider */}
-          <div className="space-y-2">
-            <Label className="text-xs flex justify-between">
-              <span>Max Parole</span>
-              <span className="font-mono">{agent.max_words_per_response}</span>
-            </Label>
-            <Slider
-              value={[agent.max_words_per_response]}
-              onValueChange={([val]) => updateWordLimit(agent.id, val)}
-              min={10}
-              max={300}
-              step={10}
-              className="w-full"
-            />
-          </div>
-
-          {/* Voice ID Selector */}
-          <div className="space-y-2">
-            <Label className="text-xs">Voice ID</Label>
-            <Select
-              value={agent.voice_id}
-              onValueChange={(val) => updateVoiceId(agent.id, val)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="9BWtsMINqrJLrRacOk9x">Aria</SelectItem>
-                <SelectItem value="CwhRBWXzGAHq8TQ4Fs17">Roger</SelectItem>
-                <SelectItem value="EXAVITQu4vr4xnSDxMaL">Sarah</SelectItem>
-                <SelectItem value="FGY2WhTYpPnrIDTdsKH5">Laura</SelectItem>
-                <SelectItem value="IKne3meq5aSn9XLyUdCD">Charlie</SelectItem>
-                <SelectItem value="JBFqnCBsd6RMkjVDRZzb">George</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Sezione Agenti - CONDIZIONALE */}
+      {agents.length === 0 ? (
+        <div className="text-sm text-muted-foreground p-4 text-center">
+          Nessun agente vocale caricato
         </div>
-      ))}
+      ) : (
+        agents.map(agent => (
+          <div key={agent.id} className="space-y-4 p-4 rounded-lg bg-muted/50">
+            <div className="font-medium text-sm">{agent.name}</div>
+            
+            {/* Word Limit Slider */}
+            <div className="space-y-2">
+              <Label className="text-xs flex justify-between">
+                <span>Max Parole</span>
+                <span className="font-mono">{agent.max_words_per_response}</span>
+              </Label>
+              <Slider
+                value={[agent.max_words_per_response]}
+                onValueChange={([val]) => updateWordLimit(agent.id, val)}
+                min={10}
+                max={300}
+                step={10}
+                className="w-full"
+              />
+            </div>
+
+            {/* Voice ID Selector */}
+            <div className="space-y-2">
+              <Label className="text-xs">Voice ID</Label>
+              <Select
+                value={agent.voice_id}
+                onValueChange={(val) => updateVoiceId(agent.id, val)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="9BWtsMINqrJLrRacOk9x">Aria</SelectItem>
+                  <SelectItem value="CwhRBWXzGAHq8TQ4Fs17">Roger</SelectItem>
+                  <SelectItem value="EXAVITQu4vr4xnSDxMaL">Sarah</SelectItem>
+                  <SelectItem value="FGY2WhTYpPnrIDTdsKH5">Laura</SelectItem>
+                  <SelectItem value="IKne3meq5aSn9XLyUdCD">Charlie</SelectItem>
+                  <SelectItem value="JBFqnCBsd6RMkjVDRZzb">George</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 };

@@ -201,19 +201,18 @@ const RadioChat = () => {
         .map(p => ({
           type: p.type,
           name: p.name,
-          system_prompt: ''  // Required by multiround-orchestrator
+          is_active: true  // Required by bar-chat-orchestrator
         }));
       
-      console.log('🎯 Calling multiround-orchestrator with participants:', activeParticipants);
+      console.log('🎯 Calling bar-chat-orchestrator with participants:', activeParticipants);
       
       // Create orchestrator promise with timeout
-      const orchestratorPromise = supabase.functions.invoke('multiround-orchestrator', {
+      const orchestratorPromise = supabase.functions.invoke('bar-chat-orchestrator', {
         body: {
           conversationId: convId,
           userMessage: messageToSend,
-          activeParticipants: activeParticipants,
-          maxWords: 60,  // Limit response length
-          audioMode: 'stable'  // Use stable TTS
+          participants: activeParticipants,  // Correct key: 'participants'
+          response_mode: 'all'  // All AIs respond together
         }
       });
 

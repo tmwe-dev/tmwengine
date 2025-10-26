@@ -9,7 +9,7 @@ import { RadioParticipantSelector } from '@/components/radio-chat/RadioParticipa
 import { RadioSidebarTrigger } from '@/components/radio-chat/RadioSidebarTrigger';
 import { RadioParticipantIcon } from '@/components/radio-chat/RadioParticipantIcon';
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
-import { RadioCarouselAudioPlayer } from '@/components/radio-chat/RadioCarouselAudioPlayer';
+import { RadioAudioPlayerPopup } from '@/components/radio-chat/RadioAudioPlayerPopup';
 import { useRadioAudioPlayback } from '@/hooks/useRadioAudioPlayback';
 import { useAudioPreference } from '@/hooks/useAudioPreference';
 import { RadioMessage } from '@/types/radio';
@@ -41,6 +41,7 @@ const RadioChat = () => {
   
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [debugPopupOpen, setDebugPopupOpen] = useState(false);
+  const [isAudioPopupOpen, setIsAudioPopupOpen] = useState(false);
   
   const { toast } = useToast();
   
@@ -68,6 +69,14 @@ const RadioChat = () => {
       setActiveMessageId(aiMessages[0].id);
     }
   }, [aiMessages.length, activeMessageId]);
+
+  // Auto-open popup when audio is available
+  useEffect(() => {
+    const activeMessage = messages.find((m) => m.id === activeMessageId);
+    if (activeMessage?.audio_url && viewMode === 'carousel') {
+      setIsAudioPopupOpen(true);
+    }
+  }, [activeMessageId, messages, viewMode]);
   
   const currentMessage = messages.find(m => m.id === activeMessageId) || null;
   
@@ -474,14 +483,6 @@ const RadioChat = () => {
               )}
             </div>
             
-            {/* Audio Player - Absolute overlay, doesn't push carousel */}
-            <div className="absolute bottom-0 left-0 right-0 z-25 border-t border-purple-400/20 bg-gradient-to-b from-black/40 to-black/60 pointer-events-auto">
-              <RadioCarouselAudioPlayer
-                messages={messages}
-                activeMessageId={activeMessageId}
-                onAudioEnd={handleCarouselAudioEnd}
-              />
-            </div>
           </div>
         ) : (
           (() => {
@@ -530,6 +531,15 @@ const RadioChat = () => {
         </div>
       )}
 
+      {/* Audio Player Popup - Fixed Bottom Center */}
+      <RadioAudioPlayerPopup
+        messages={messages}
+        activeMessageId={activeMessageId}
+        onAudioEnd={handleCarouselAudioEnd}
+        isOpen={isAudioPopupOpen}
+        onClose={() => setIsAudioPopupOpen(false)}
+      />
+
       {/* Debug Popup - Solo in development */}
       {import.meta.env.DEV && debugPopupOpen && (
         <div className="fixed top-[140px] right-4 bg-black/95 text-white text-xs p-4 rounded-lg shadow-lg z-[60] max-w-[250px] border border-white/20">
@@ -552,6 +562,7 @@ const RadioChat = () => {
             <div>Queue: N/A</div>
             <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
             <div>Playing ID: {currentPlayingId?.substring(0, 8) || 'NONE'}</div>
+            <div>Popup: {isAudioPopupOpen ? 'OPEN' : 'CLOSED'}</div>
             <div>Total: {messages.length}</div>
             <div>AI: {aiMessages.length}</div>
             <div>Participants: {participants.filter(p => p.is_active).map(p => p.name).join(', ')}</div>

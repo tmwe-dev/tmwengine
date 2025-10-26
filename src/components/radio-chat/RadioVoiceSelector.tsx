@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Volume2, VolumeX } from 'lucide-react';
+import { useAudioPreference } from '@/hooks/useAudioPreference';
 
 interface VoiceAgent {
   id: string;
@@ -22,6 +24,7 @@ export const RadioVoiceSelector = ({ conversationId }: RadioVoiceSelectorProps) 
   const [agents, setAgents] = useState<VoiceAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { isAudioEnabled, toggleAudio } = useAudioPreference();
 
   const loadAgents = async () => {
     setLoading(true);
@@ -106,6 +109,27 @@ export const RadioVoiceSelector = ({ conversationId }: RadioVoiceSelectorProps) 
     <div className="space-y-6 p-4">
       <h3 className="text-sm font-semibold text-foreground">Voice Settings</h3>
       
+      {/* Audio Toggle */}
+      <div className="flex items-center justify-between p-4 rounded-lg bg-primary/10">
+        <div className="flex items-center gap-3">
+          {isAudioEnabled ? (
+            <Volume2 className="w-5 h-5 text-primary" />
+          ) : (
+            <VolumeX className="w-5 h-5 text-muted-foreground" />
+          )}
+          <div>
+            <div className="font-medium text-sm">Audio Lettura Messaggi</div>
+            <div className="text-xs text-muted-foreground">
+              {isAudioEnabled ? 'Attivo' : 'Disattivato'}
+            </div>
+          </div>
+        </div>
+        <Switch
+          checked={isAudioEnabled}
+          onCheckedChange={toggleAudio}
+        />
+      </div>
+
       {agents.map(agent => (
         <div key={agent.id} className="space-y-4 p-4 rounded-lg bg-muted/50">
           <div className="font-medium text-sm">{agent.name}</div>

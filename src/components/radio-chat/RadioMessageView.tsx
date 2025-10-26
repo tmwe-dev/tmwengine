@@ -5,12 +5,14 @@ interface RadioMessageViewProps {
   message: RadioMessage;
   onAudioEnd: () => void;
   onAudioStart: () => void;
+  isAudioEnabled?: boolean;
 }
 
 export const RadioMessageView = ({ 
   message, 
   onAudioEnd,
-  onAudioStart 
+  onAudioStart,
+  isAudioEnabled = true
 }: RadioMessageViewProps) => {
   const isHuman = message.sender_type === 'human';
   
@@ -32,6 +34,7 @@ export const RadioMessageView = ({
           autoPlay={!isHuman}
           onPlayStart={onAudioStart}
           onPlayEnd={onAudioEnd}
+          isAudioEnabled={isAudioEnabled}
         />
       )}
     </div>

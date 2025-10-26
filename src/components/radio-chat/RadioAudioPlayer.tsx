@@ -9,6 +9,7 @@ interface RadioAudioPlayerProps {
   onPlayStart?: () => void;
   onPlayEnd?: () => void;
   onPlayingChange?: (isPlaying: boolean) => void;
+  isAudioEnabled?: boolean;
 }
 
 export const RadioAudioPlayer = ({
@@ -16,7 +17,8 @@ export const RadioAudioPlayer = ({
   autoPlay = false,
   onPlayStart,
   onPlayEnd,
-  onPlayingChange
+  onPlayingChange,
+  isAudioEnabled = true
 }: RadioAudioPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -56,7 +58,7 @@ export const RadioAudioPlayer = ({
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
-    if (autoPlay && !hasStartedRef.current) {
+    if (autoPlay && isAudioEnabled && !hasStartedRef.current) {
       audio.play()
         .then(() => {
           setIsPlaying(true);
@@ -74,7 +76,7 @@ export const RadioAudioPlayer = ({
       audio.removeEventListener('error', handleError);
       audio.pause();
     };
-  }, [audioUrl, autoPlay, onPlayStart, onPlayEnd, onPlayingChange]);
+  }, [audioUrl, autoPlay, onPlayStart, onPlayEnd, onPlayingChange, isAudioEnabled]);
 
   useEffect(() => {
     if (audioRef.current) {

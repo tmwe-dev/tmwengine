@@ -11,6 +11,7 @@ import { RadioParticipantIcon } from '@/components/radio-chat/RadioParticipantIc
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
 import { useRadioMessages } from '@/hooks/useRadioMessages';
 import { useAudioPlayback } from '@/hooks/useAudioPlayback';
+import { useAudioPreference } from '@/hooks/useAudioPreference';
 import { RadioMessage } from '@/types/radio';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +49,7 @@ const RadioChat = () => {
   const { toast } = useToast();
   
   const { isAudioPlaying, handleAudioStart, handleAudioEnd: audioEnd } = useAudioPlayback();
+  const { isAudioEnabled } = useAudioPreference();
   
   const {
     unseenMessagesQueue
@@ -460,6 +462,7 @@ const RadioChat = () => {
                   message={currentMessage}
                   onAudioEnd={onAudioEndComplete}
                   onAudioStart={handleAudioStart}
+                  isAudioEnabled={isAudioEnabled}
                 />
               </div>
             ) : messages.length > 0 && !currentMessage && (

@@ -58,57 +58,91 @@ const RadioChat = () => {
   
   // Load participants from elevenlabs_agents
   useEffect(() => {
+    console.log('🚀 [MOUNT] RadioChat useEffect triggered, supabase ready:', !!supabase);
+    
     const loadParticipants = async () => {
-      console.log('🔍 [DEBUG] Inizio caricamento participants...');
-      
-      const { data, error } = await supabase
-        .from('elevenlabs_agents')
-        .select('id, name, is_active, elevenlabs_agent_id')
-        .eq('is_active', true) // ✅ Solo agenti disponibili nel sistema
-        .order('order_index', { ascending: true });
-      
-      console.log('🔍 [DEBUG] Query result:', { data, error, count: data?.length || 0 });
-      
-      if (error) {
-        console.error('❌ Errore caricamento agents:', error);
-        return;
-      }
-      
-      if (!data || data.length === 0) {
-        console.warn('⚠️ Nessun agente disponibile nel DB (is_active=true)');
-        return;
-      }
-      
-      // Map agents to participants
-      const mapped: RadioParticipant[] = (data || []).map(agent => {
-        console.log('🔍 [DEBUG] Mapping agent:', { name: agent.name, id: agent.id });
+      try {
+        console.log('🔍 [DEBUG] Inizio caricamento participants...');
         
-        // Extract type from name (e.g., "Vittorio - Gemini" → "gemini")
-        let type: 'chatgpt' | 'gemini' | 'claude' = 'gemini';
-        const nameLower = agent.name.toLowerCase();
+        const { data, error } = await supabase
+          .from('elevenlabs_agents')
+          .select('id, name, is_active, elevenlabs_agent_id')
+          .eq('is_active', true)
+          .order('order_index', { ascending: true });
         
-        if (nameLower.includes('chatgpt') || nameLower.includes('gpt')) {
-          type = 'chatgpt';
-        } else if (nameLower.includes('claude') || nameLower.includes('anthropic')) {
-          type = 'claude';
-        } else if (nameLower.includes('gemini')) {
-          type = 'gemini';
+        console.log('🔍 [DEBUG] Query result:', { 
+          hasData: !!data, 
+          count: data?.length || 0,
+          hasError: !!error,
+          error: error?.message 
+        });
+        
+        if (error) {
+          console.error('❌ Errore query:', error);
+          toast({
+            title: "Errore caricamento agenti",
+            description: error.message,
+            variant: "destructive"
+          });
+          return;
         }
         
-        return {
-          id: agent.elevenlabs_agent_id || agent.id,
-          type,
-          name: agent.name.split(' - ')[0], // "Vittorio - Gemini" → "Vittorio"
-          is_active: true // ✅ Tutti gli agenti caricati sono attivi in conversazione di default
-        };
-      });
-      
-      console.log('✅ Participants caricati da DB:', mapped);
-      setParticipants(mapped);
+        if (!data || data.length === 0) {
+          console.warn('⚠️ Nessun agente con is_active=true');
+          toast({
+            title: "Nessun agente disponibile",
+            description: "Attiva almeno un agente nelle impostazioni AI",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        const mapped: RadioParticipant[] = data.map(agent => {
+          let type: 'chatgpt' | 'gemini' | 'claude' = 'gemini';
+          const nameLower = agent.name.toLowerCase();
+          
+          if (nameLower.includes('gpt')) type = 'chatgpt';
+          else if (nameLower.includes('claude') || nameLower.includes('anthropic')) type = 'claude';
+          else if (nameLower.includes('gemini')) type = 'gemini';
+          
+          console.log('🔍 [MAP]', { 
+            name: agent.name, 
+            type, 
+            id: agent.elevenlabs_agent_id 
+          });
+          
+          return {
+            id: agent.elevenlabs_agent_id || agent.id,
+            type,
+            name: agent.name.split(' - ')[0],
+            is_active: true
+          };
+        });
+        
+        console.log('✅ [SUCCESS] Participants caricati:', mapped);
+        setParticipants(mapped);
+        
+        toast({
+          title: "Agenti caricati",
+          description: `${mapped.length} agenti disponibili`,
+        });
+        
+      } catch (err) {
+        console.error('💥 [FATAL]', err);
+        toast({
+          title: "Errore critico",
+          description: err instanceof Error ? err.message : String(err),
+          variant: "destructive"
+        });
+      }
     };
     
-    loadParticipants();
-  }, []);
+    if (supabase) {
+      loadParticipants();
+    } else {
+      console.error('❌ Supabase client not ready');
+    }
+  }, [toast]);
   
   // Persist auto-advance changes to localStorage
   useEffect(() => {

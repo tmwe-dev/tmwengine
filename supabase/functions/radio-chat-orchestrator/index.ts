@@ -283,20 +283,30 @@ serve(async (req) => {
         };
         allResponses.push(responseData);
 
-        // ============ RETURN RESPONSE (FIRST AGENT ONLY) ============
-        if (i === 0) {
-          console.log(`\n✅ Prima risposta (${currentAgent.name}), ritorno al client`);
-          return new Response(
-            JSON.stringify({
-              response: aiResponse,
-              speaker: currentAgent.name,
-              audioUrl: audioUrl,
-              tempResponse: null
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+        // ============ SAVE TO DATABASE ============
+        const { error: insertError } = await supabaseClient
+          .from('chat_laboratory_messages')
+          .insert({
+            conversation_id: conversationId,
+            sender_type: currentAgent.type,
+            sender_name: currentAgent.name,
+            content: aiResponse,
+            audio_url: audioUrl,
+            tokens_in: rawResponse?.tokensIn || 0,
+            tokens_out: rawResponse?.tokensOut || 0,
+            ai_call_duration_ms: rawResponse?.duration || 0,
+            created_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          console.error(`❌ Errore salvataggio ${currentAgent.name}:`, insertError);
         } else {
-          console.log(`\n⏳ Risposta da ${currentAgent.name} ricevuta, pausa di ${pauseBetweenTurnsMs}ms`);
+          console.log(`✅ ${currentAgent.name} salvato nel DB`);
+        }
+
+        // ============ PAUSE BETWEEN AGENTS ============
+        if (i < sortedParticipants.length - 1) {
+          console.log(`⏸️ Pausa di ${pauseBetweenTurnsMs}ms prima del prossimo agente...`);
           await delay(pauseBetweenTurnsMs);
         }
 
@@ -309,6 +319,27 @@ serve(async (req) => {
       } catch (error) {
         console.error(`❌ Errore chiamata ${sortedParticipants[i]?.name}:`, error);
       }
+    }
+
+    // ============ RETURN FINALE (DOPO IL LOOP) ============
+    if (allResponses.length > 0) {
+      const firstResponse = allResponses[0];
+      console.log(`\n✅ Ritorno la prima risposta (${firstResponse.agentName}) al client`);
+      return new Response(
+        JSON.stringify({
+          response: firstResponse.content,
+          speaker: firstResponse.agentName,
+          audioUrl: firstResponse.audioUrl,
+          tempResponse: null
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } else {
+      console.error('❌ Nessuna risposta generata da nessun agente');
+      return new Response(
+        JSON.stringify({ error: 'Nessuna risposta generata' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
   } catch (error) {
     console.error('❌ Errore orchestrator:', error);

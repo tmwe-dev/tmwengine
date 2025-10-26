@@ -199,20 +199,20 @@ const RadioChat = () => {
       const activeParticipants = participants
         .filter(p => p.is_active)
         .map(p => ({
+          id: p.id,
           type: p.type,
           name: p.name,
-          is_active: true  // Required by bar-chat-orchestrator
+          is_active: true
         }));
       
-      console.log('🎯 Calling bar-chat-orchestrator with participants:', activeParticipants);
+      console.log('🎯 Calling radio-chat-orchestrator with participants:', activeParticipants);
       
       // Create orchestrator promise with timeout
-      const orchestratorPromise = supabase.functions.invoke('bar-chat-orchestrator', {
+      const orchestratorPromise = supabase.functions.invoke('radio-chat-orchestrator', {
         body: {
           conversationId: convId,
           userMessage: messageToSend,
-          participants: activeParticipants,  // Correct key: 'participants'
-          response_mode: 'all'  // All AIs respond together
+          participants: activeParticipants
         }
       });
 

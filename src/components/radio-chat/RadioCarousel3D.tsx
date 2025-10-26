@@ -96,8 +96,8 @@ const createTextTexture = (message: RadioMessage, renderer?: THREE.WebGLRenderer
   ctx.textAlign = 'center';
   ctx.fillText(message.sender_name, W / 2, 80);
 
-  // Corpo messaggio con colore grigio scuro
-  ctx.fillStyle = '#1f2937'; // gray-800
+  // Corpo messaggio in bianco
+  ctx.fillStyle = '#ffffff'; // white
   ctx.font = '24px sans-serif';
   ctx.textAlign = 'left';
 

@@ -135,60 +135,57 @@ export const RadioCarouselAudioPlayer = ({
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-6 py-4">
+    <div className="flex items-center gap-4 px-2 py-3">
+      {/* Play/Pause Button */}
+      <button
+        onClick={togglePlay}
+        className="shrink-0 w-9 h-9 rounded-full bg-purple-500/20 hover:bg-purple-500/30 flex items-center justify-center transition-all border border-purple-400/30"
+        aria-label={isPlaying ? 'Pause' : 'Play'}
+      >
+        {isPlaying ? (
+          <Pause className="w-4 h-4 text-purple-300" fill="currentColor" />
+        ) : (
+          <Play className="w-4 h-4 text-purple-300" fill="currentColor" />
+        )}
+      </button>
+
       {/* Speaker Name */}
-      <div className="mb-3 text-sm text-purple-300/80 text-center font-medium">
+      <div className="text-xs text-purple-300/70 font-medium shrink-0">
         {senderName}
       </div>
-      
-      {/* Audio Controls */}
-      <div className="flex items-center gap-4">
-        {/* Play/Pause Button */}
-        <button
-          onClick={togglePlay}
-          className="shrink-0 w-10 h-10 rounded-full bg-purple-500/20 hover:bg-purple-500/30 flex items-center justify-center transition-all border border-purple-400/30"
-          aria-label={isPlaying ? 'Pause' : 'Play'}
+
+      {/* Progress Bar Container */}
+      <div className="flex-1 flex items-center gap-3">
+        {/* Current Time */}
+        <span className="text-xs text-purple-300/60 font-mono min-w-[35px]">
+          {formatTime(currentTime)}
+        </span>
+
+        {/* Progress Bar */}
+        <div 
+          className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer group relative"
+          onClick={handleSeek}
         >
-          {isPlaying ? (
-            <Pause className="w-5 h-5 text-purple-300" fill="currentColor" />
-          ) : (
-            <Play className="w-5 h-5 text-purple-300" fill="currentColor" />
-          )}
-        </button>
-
-        {/* Progress Bar Container */}
-        <div className="flex-1 flex items-center gap-3">
-          {/* Current Time */}
-          <span className="text-xs text-purple-300/60 font-mono min-w-[40px]">
-            {formatTime(currentTime)}
-          </span>
-
-          {/* Progress Bar */}
-          <div 
-            className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer group relative"
-            onClick={handleSeek}
-          >
-            {/* Background Track */}
-            <div className="absolute inset-0 rounded-full overflow-hidden">
-              {/* Progress Fill */}
-              <div 
-                className="h-full bg-gradient-to-r from-purple-400 to-purple-300 rounded-full transition-all"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            
-            {/* Playhead Circle */}
+          {/* Background Track */}
+          <div className="absolute inset-0 rounded-full overflow-hidden">
+            {/* Progress Fill */}
             <div 
-              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-purple-400 rounded-full shadow-lg shadow-purple-400/50 transition-all group-hover:w-4 group-hover:h-4"
-              style={{ left: `calc(${progress}% - 6px)` }}
+              className="h-full bg-gradient-to-r from-purple-400 to-purple-300 rounded-full transition-all"
+              style={{ width: `${progress}%` }}
             />
           </div>
-
-          {/* Duration */}
-          <span className="text-xs text-purple-300/60 font-mono min-w-[40px]">
-            {formatTime(duration)}
-          </span>
+          
+          {/* Playhead Circle */}
+          <div 
+            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-purple-400 rounded-full shadow-lg shadow-purple-400/50 transition-all group-hover:w-3.5 group-hover:h-3.5"
+            style={{ left: `calc(${progress}% - 6px)` }}
+          />
         </div>
+
+        {/* Duration */}
+        <span className="text-xs text-purple-300/60 font-mono min-w-[35px]">
+          {formatTime(duration)}
+        </span>
       </div>
     </div>
   );

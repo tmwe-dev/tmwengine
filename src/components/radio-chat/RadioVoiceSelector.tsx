@@ -37,8 +37,15 @@ export const RadioVoiceSelector = ({
     const { data, error } = await supabase
       .from('elevenlabs_agents')
       .select('id, name, voice_id, max_words_per_response, is_active')
-      .eq('is_active', true)
+      // .eq('is_active', true)  // ← TEMPORANEAMENTE COMMENTATO PER DEBUG
       .order('name');
+
+    console.log('📊 [RadioVoiceSelector] Query result:', { 
+      data, 
+      error, 
+      count: data?.length,
+      agents: data?.map(a => ({ name: a.name, is_active: a.is_active }))
+    });
 
     if (error) {
       console.error('❌ Error loading agents:', error);

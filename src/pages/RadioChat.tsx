@@ -406,10 +406,10 @@ const RadioChat = () => {
       </button>
 
       {/* Main Content Area */}
-      <div className="pt-4 pb-[200px]">
+      <div className="pt-0 pb-[200px]">
         {viewMode === 'carousel' ? (
           <>
-            <div className="flex flex-col h-[calc(100vh-300px)] min-h-[600px] md:min-h-[700px] lg:min-h-[850px]">
+            <div className="flex flex-col h-[calc(100vh-140px)] min-h-[600px] md:min-h-[700px] lg:min-h-[850px]">
             {/* Carousel Container - Flex 1 */}
             <div className="relative flex-1 min-h-0 overflow-visible">
               <div className="absolute inset-0 z-10">

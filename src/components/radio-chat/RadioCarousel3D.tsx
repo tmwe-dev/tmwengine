@@ -193,8 +193,8 @@ export const RadioCarousel3D = ({
           0.1,
           1000
         );
-        camera.position.set(0, 0, 13.5); // Camera leggermente più vicina per card +5%
-    camera.lookAt(0, 1.5, 0); // Guarda verso il nuovo centro del carosello (spostato in alto)
+    camera.position.set(0, 0, 13.5); // Camera leggermente più vicina per card +5%
+    camera.lookAt(0, 0.82, 0); // Guarda esattamente al centro delle card (elimina spazio sopra)
 
     const renderer = new THREE.WebGLRenderer({ 
       alpha: true, 

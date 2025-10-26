@@ -193,7 +193,7 @@ export const RadioCarousel3D = ({
           0.1,
           1000
         );
-    camera.position.set(0, 0.82, 13.5); // Camera allineata al centro delle card (stesso Y delle mesh)
+    camera.position.set(0, 0.35, 13.5); // Camera leggermente sopra il centro per bilanciare visibilità
     camera.lookAt(0, 0.82, 0); // Guarda esattamente al centro delle card (elimina spazio sopra)
 
     const renderer = new THREE.WebGLRenderer({ 

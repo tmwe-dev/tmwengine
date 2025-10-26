@@ -455,6 +455,7 @@ const RadioChat = () => {
                     onAudioStart={(msgId) => handleAudioStart(msgId)}
                     isAudioEnabled={isAudioEnabled}
                     canAutoPlay={canPlayAudio(currentMessage.id)}
+                    showAudioPlayer={false}
                   />
                 </div>
               ) : messages.length > 0 && !currentMessage && (

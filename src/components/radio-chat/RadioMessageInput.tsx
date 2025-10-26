@@ -70,7 +70,7 @@ export function RadioMessageInput({
       placeholder=""
       className={cn(
         "w-full text-lg md:text-xl lg:text-2xl",
-        "bg-transparent border border-purple-400/30 shadow-none",
+        "bg-gradient-to-r from-purple-500/40 via-purple-400/20 to-transparent backdrop-blur-sm border border-purple-400/30 shadow-none",
         "text-white placeholder:text-white/30",
         "focus-visible:ring-0 focus-visible:ring-offset-0",
         "resize-none overflow-y-auto align-top",

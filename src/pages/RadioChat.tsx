@@ -464,12 +464,7 @@ const RadioChat = () => {
 
       {/* Input Area - Fixed bottom con altezza definita */}
       {inputVisible && (
-        <>
-          {/* Gradient sopra l'input (top → bottom) */}
-          <div className="fixed bottom-[200px] left-0 right-0 h-[120px] z-30 bg-gradient-to-b from-background via-background/80 to-transparent pointer-events-none" />
-          
-          {/* Area input con gradient sotto (bottom → top) */}
-          <div className="fixed bottom-0 left-0 right-0 h-[200px] z-30 bg-gradient-to-t from-background via-background/80 to-transparent p-4 animate-in slide-in-from-bottom-4 duration-200">
+        <div className="fixed bottom-0 left-0 right-0 h-[200px] z-30 bg-gradient-to-t from-background via-background/80 to-transparent p-4 animate-in slide-in-from-bottom-4 duration-200">
           <div className="w-[90%] max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto relative h-full">
             {isSending && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg z-10">
@@ -492,7 +487,6 @@ const RadioChat = () => {
             />
           </div>
         </div>
-        </>
       )}
 
       {/* Debug Popup - Solo in development */}

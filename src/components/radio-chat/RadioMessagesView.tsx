@@ -17,6 +17,7 @@ export function RadioMessagesView({
 }: RadioMessagesViewProps) {
   // Hook per gestione stato audio
   const { 
+    isAudioPlaying,
     handleAudioStart, 
     handleAudioEnd: audioEnd 
   } = useRadioAudioPlayback();
@@ -28,7 +29,8 @@ export function RadioMessagesView({
     handleAudioEnd: tabSwitchOnAudioEnd
   } = useRadioVirtualTabs({
     messages,
-    isAutoAdvanceEnabled
+    isAutoAdvanceEnabled,
+    isAudioPlaying
   });
 
   // Callback combinato: gestisce sia audio che cambio tab

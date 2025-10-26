@@ -193,7 +193,7 @@ export const RadioCarousel3D = ({
           0.1,
           1000
         );
-        camera.position.set(0, 0, 13); // Camera più distante per pagine grandi
+        camera.position.set(0, 0, 11.5); // Camera più vicina per vedere card complete
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ 

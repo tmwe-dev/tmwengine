@@ -135,49 +135,68 @@ export const RadioAudioPlayer = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  return (
-    <div className="flex items-center gap-4 p-4 bg-white/5 rounded-lg">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={togglePlay}
-        className="text-white hover:text-white/80"
-      >
-        {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-      </Button>
+  const handleSeekClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !duration) return;
 
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = x / rect.width;
+    const newTime = percentage * duration;
+
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  return (
+    <div className="flex items-center gap-4 px-2 py-3">
+      {/* Play/Pause Button */}
+      <button
+        onClick={togglePlay}
+        disabled={!isAudioEnabled}
+        className="shrink-0 w-9 h-9 rounded-full bg-purple-500/20 hover:bg-purple-500/30 flex items-center justify-center transition-all border border-purple-400/30 disabled:opacity-50"
+        aria-label={isPlaying ? 'Pause' : 'Play'}
+      >
+        {isPlaying ? (
+          <Pause className="w-4 h-4 text-purple-300" fill="currentColor" />
+        ) : (
+          <Play className="w-4 h-4 text-purple-300" fill="currentColor" />
+        )}
+      </button>
+
+      {/* Progress Bar Container */}
       <div className="flex-1 flex items-center gap-3">
-        <span className="text-sm text-white/60 min-w-[40px]">
+        {/* Current Time */}
+        <span className="text-xs text-purple-300/60 font-mono min-w-[35px] text-right">
           {formatTime(currentTime)}
         </span>
-        <Slider
-          value={[currentTime]}
-          max={duration || 100}
-          step={0.1}
-          onValueChange={handleSeek}
-          className="flex-1"
-        />
-        <span className="text-sm text-white/60 min-w-[40px]">
+
+        {/* Progress Bar */}
+        <div 
+          className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer group relative"
+          onClick={handleSeekClick}
+        >
+          {/* Background Track */}
+          <div className="absolute inset-0 rounded-full overflow-hidden">
+            {/* Progress Fill */}
+            <div 
+              className="h-full bg-gradient-to-r from-purple-400 to-purple-300 rounded-full transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          
+          {/* Playhead Circle */}
+          <div 
+            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-purple-400 rounded-full shadow-lg shadow-purple-400/50 transition-all group-hover:w-3.5 group-hover:h-3.5"
+            style={{ left: `calc(${progress}% - 6px)` }}
+          />
+        </div>
+
+        {/* Duration */}
+        <span className="text-xs text-purple-300/60 font-mono min-w-[35px]">
           {formatTime(duration)}
         </span>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleMute}
-          className="text-white hover:text-white/80"
-        >
-          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-        </Button>
-        <Slider
-          value={[isMuted ? 0 : volume]}
-          max={1}
-          step={0.1}
-          onValueChange={handleVolumeChange}
-          className="w-20"
-        />
       </div>
     </div>
   );

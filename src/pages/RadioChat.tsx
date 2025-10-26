@@ -9,6 +9,7 @@ import { RadioParticipantSelector } from '@/components/radio-chat/RadioParticipa
 import { RadioSidebarTrigger } from '@/components/radio-chat/RadioSidebarTrigger';
 import { RadioParticipantIcon } from '@/components/radio-chat/RadioParticipantIcon';
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
+import { RadioCarouselAudioPlayer } from '@/components/radio-chat/RadioCarouselAudioPlayer';
 import { useRadioAudioPlayback } from '@/hooks/useRadioAudioPlayback';
 import { useAudioPreference } from '@/hooks/useAudioPreference';
 import { RadioMessage } from '@/types/radio';
@@ -74,6 +75,22 @@ const RadioChat = () => {
   const onAudioEndComplete = () => {
     console.log('🎬 [RadioChat] Audio completato in carousel mode');
     handleAudioEnd();
+  };
+
+  // Handler for carousel audio end with auto-advance
+  const handleCarouselAudioEnd = () => {
+    console.log('🏁 [RadioChat] Audio ended in carousel, advancing to next');
+    
+    const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
+    
+    if (currentIndex === -1 || currentIndex >= aiMessages.length - 1) {
+      console.log('🏁 No next message available');
+      return;
+    }
+    
+    const nextMessage = aiMessages[currentIndex + 1];
+    console.log('➡️ Advancing to:', nextMessage.sender_name);
+    setActiveMessageId(nextMessage.id);
   };
 
   // Navigazione manuale per carousel
@@ -391,14 +408,15 @@ const RadioChat = () => {
       {/* Main Content Area */}
       <div className="pt-26 pb-[200px]">
         {viewMode === 'carousel' ? (
-          <div className="relative h-[calc(100vh-300px)] min-h-[600px] md:min-h-[700px] lg:min-h-[850px] overflow-visible">
-            {/* Carousel Container */}
-            <div className="absolute inset-0 z-10">
-              <RadioCarousel3D 
-                messages={messages}
-                activeMessageId={activeMessageId}
-              />
-            </div>
+          <div className="flex flex-col h-[calc(100vh-300px)] min-h-[600px] md:min-h-[700px] lg:min-h-[850px]">
+            {/* Carousel Container - Flex 1 */}
+            <div className="relative flex-1 min-h-0 overflow-visible">
+              <div className="absolute inset-0 z-10">
+                <RadioCarousel3D 
+                  messages={messages}
+                  activeMessageId={activeMessageId}
+                />
+              </div>
             
             {/* Navigation Buttons */}
             {aiMessages.length > 1 && (
@@ -438,22 +456,32 @@ const RadioChat = () => {
               </div>
             )}
             
-            {/* Message View - Sovrapposto al carousel */}
-            {messageViewVisible && currentMessage ? (
-              <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[40%] overflow-y-auto bg-gradient-to-t from-background via-background/95 to-transparent p-6 animate-in slide-in-from-bottom-4 duration-200">
-                <RadioMessageView
-                  message={currentMessage}
-                  onAudioEnd={onAudioEndComplete}
-                  onAudioStart={(msgId) => handleAudioStart(msgId)}
-                  isAudioEnabled={isAudioEnabled}
-                  canAutoPlay={canPlayAudio(currentMessage.id)}
-                />
-              </div>
-            ) : messages.length > 0 && !currentMessage && (
-              <div className="absolute bottom-0 left-0 right-0 z-20 p-6 text-center text-white/50">
-                Invia un messaggio per iniziare
-              </div>
-            )}
+              {/* Message View - Sovrapposto al carousel */}
+              {messageViewVisible && currentMessage ? (
+                <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[40%] overflow-y-auto bg-gradient-to-t from-background via-background/95 to-transparent p-6 animate-in slide-in-from-bottom-4 duration-200">
+                  <RadioMessageView
+                    message={currentMessage}
+                    onAudioEnd={onAudioEndComplete}
+                    onAudioStart={(msgId) => handleAudioStart(msgId)}
+                    isAudioEnabled={isAudioEnabled}
+                    canAutoPlay={canPlayAudio(currentMessage.id)}
+                  />
+                </div>
+              ) : messages.length > 0 && !currentMessage && (
+                <div className="absolute bottom-0 left-0 right-0 z-20 p-6 text-center text-white/50">
+                  Invia un messaggio per iniziare
+                </div>
+              )}
+            </div>
+            
+            {/* Audio Player - Fixed below carousel */}
+            <div className="shrink-0 border-t border-purple-400/20 bg-gradient-to-b from-black/40 to-black/60">
+              <RadioCarouselAudioPlayer
+                messages={messages}
+                activeMessageId={activeMessageId}
+                onAudioEnd={handleCarouselAudioEnd}
+              />
+            </div>
           </div>
         ) : (
           (() => {

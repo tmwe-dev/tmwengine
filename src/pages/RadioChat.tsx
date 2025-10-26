@@ -74,16 +74,25 @@ const RadioChat = () => {
 
   // Handler for carousel audio end with auto-advance (replica Chat Laboratory)
   const handleCarouselAudioEnd = () => {
-    if (!isAutoAdvanceEnabled) return;
+    console.log('🏁 [RadioChat] Audio ended, isAutoAdvance:', isAutoAdvanceEnabled);
     
-    handleAudioEnd(); // Stop audio
+    // SEMPRE ferma l'audio (anche se auto-advance è OFF)
+    handleAudioEnd();
+    
+    // Auto-advance SOLO se abilitato
+    if (!isAutoAdvanceEnabled) {
+      console.log('⏸️ Auto-advance disabilitato, stop qui');
+      return;
+    }
     
     const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
     
     if (currentIndex !== -1 && currentIndex < aiMessages.length - 1) {
       const nextMessage = aiMessages[currentIndex + 1];
       console.log('➡️ [RadioChat] Advancing to:', nextMessage.sender_name);
-      setActiveMessageId(nextMessage.id); // ✅ CAMBIO IMMEDIATO
+      setActiveMessageId(nextMessage.id);
+    } else {
+      console.log('⏹️ Fine conversazione, nessun messaggio successivo');
     }
   };
 
@@ -466,7 +475,7 @@ const RadioChat = () => {
                     onAudioEnd={handleCarouselAudioEnd}
                     onAudioStart={(msgId) => handleAudioStart(msgId)}
                     isAudioEnabled={isAudioEnabled}
-                    canAutoPlay={canPlayAudio(currentMessage.id)}
+                    canAutoPlay={true}
                     showAudioPlayer={true}
                   />
                 </div>

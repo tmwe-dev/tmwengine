@@ -4,8 +4,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioVoiceSelector } from './RadioVoiceSelector';
 import { RadioPromptSelector } from './RadioPromptSelector';
 import { RadioStrategySelector } from './RadioStrategySelector';
+import { RadioParticipantSelector } from './RadioParticipantSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+
+interface RadioParticipant {
+  id: string;
+  type: 'chatgpt' | 'gemini' | 'claude';
+  name: string;
+  is_active: boolean;
+}
 
 interface RadioSidebarProps {
   isOpen: boolean;
@@ -15,6 +23,8 @@ interface RadioSidebarProps {
   onViewModeChange: (mode: 'carousel' | 'messages') => void;
   isAutoAdvanceEnabled?: boolean;
   onAutoAdvanceChange?: (enabled: boolean) => void;
+  participants: RadioParticipant[];
+  onToggleParticipant: (id: string) => void;
 }
 
 export function RadioSidebar({ 
@@ -24,7 +34,9 @@ export function RadioSidebar({
   viewMode, 
   onViewModeChange,
   isAutoAdvanceEnabled = true,
-  onAutoAdvanceChange
+  onAutoAdvanceChange,
+  participants,
+  onToggleParticipant
 }: RadioSidebarProps) {
   return (
     <>
@@ -54,6 +66,15 @@ export function RadioSidebar({
           </div>
           
           <ScrollArea className="flex-1">
+            {/* Agent Selection - First in Sidebar */}
+            <div className="p-4 border-b">
+              <h3 className="text-sm font-medium mb-3">Active Agents</h3>
+              <RadioParticipantSelector
+                participants={participants}
+                onToggle={onToggleParticipant}
+              />
+            </div>
+
             <Tabs defaultValue="voice" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
                 <TabsTrigger value="voice" className="text-xs">Voice</TabsTrigger>

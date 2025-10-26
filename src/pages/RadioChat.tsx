@@ -344,6 +344,8 @@ const RadioChat = () => {
         onViewModeChange={setViewMode}
         isAutoAdvanceEnabled={isAutoAdvanceEnabled}
         onAutoAdvanceChange={setIsAutoAdvanceEnabled}
+        participants={participants}
+        onToggleParticipant={handleToggleParticipant}
       />
 
       {/* Debug Icon - Above Toggle Buttons (Solo in development) */}
@@ -357,20 +359,6 @@ const RadioChat = () => {
           <Bug className="w-4 h-4" />
         </Button>
       )}
-
-
-      {/* Participant Icons - Vertical Stack Above Hamburger */}
-      <div className="fixed right-4 bottom-28 z-40 flex flex-col gap-3">
-        {participants.map(p => (
-          <RadioParticipantIcon
-            key={p.id}
-            type={p.type}
-            name={p.name}
-            isActive={p.is_active}
-            onToggle={() => handleToggleParticipant(p.id)}
-          />
-        ))}
-      </div>
 
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger

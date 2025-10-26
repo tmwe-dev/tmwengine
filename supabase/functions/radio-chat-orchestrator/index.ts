@@ -432,11 +432,12 @@ IMPORTANTE: Se non hai nulla di rilevante da aggiungere alla conversazione, risp
   let tokenOutput = 0;
   const startTime = Date.now();
 
-  if ((agent.type === 'anthropic' || agent.type === 'claude') && anthropicConfig?.api_key) {
+  if ((agent.type === 'anthropic' || agent.type === 'claude') && anthropicConfig?.apiKey) {
     try {
       const result = await callClaude({
         conversationHistory,
-        apiKey: anthropicConfig.api_key,
+        apiKey: anthropicConfig.apiKey,
+        model: anthropicConfig.model,
         startTime
       });
       aiResponse = result.content;

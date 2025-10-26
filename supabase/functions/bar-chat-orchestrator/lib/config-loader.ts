@@ -88,8 +88,9 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
   // Fetch API keys
   const { data: anthropicConfig } = await supabaseClient
     .from('config_ai')
-    .select('api_key')
+    .select('api_key, modello')
     .eq('provider', 'anthropic')
+    .eq('attivo', true)
     .maybeSingle();
 
   const { data: openaiConfig } = await supabaseClient
@@ -163,7 +164,10 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
   }
 
   return {
-    anthropicConfig,
+    anthropicConfig: {
+      apiKey: anthropicConfig?.api_key,
+      model: anthropicConfig?.modello || 'claude-sonnet-4-5-20250929'
+    },
     openaiConfig,
     LOVABLE_API_KEY,
     barModeSettings: {

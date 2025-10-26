@@ -271,10 +271,11 @@ NON usare placeholder tra parentesi quadre.
         let tokenOutput = 0;
         const startTime = Date.now();
 
-        if ((currentAgent.type === 'anthropic' || currentAgent.type === 'claude') && anthropicConfig?.api_key) {
+        if ((currentAgent.type === 'anthropic' || currentAgent.type === 'claude') && anthropicConfig?.apiKey) {
           const result = await callClaude({
             conversationHistory,
-            apiKey: anthropicConfig.api_key,
+            apiKey: anthropicConfig.apiKey,
+            model: anthropicConfig.model,
             startTime
           });
           

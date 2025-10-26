@@ -21,7 +21,7 @@ export interface AICallResult {
  * Call Anthropic Claude API
  */
 export async function callClaude(
-  params: AICallParams & { apiKey: string }
+  params: AICallParams & { apiKey: string; model?: string }
 ): Promise<AICallResult> {
   const { conversationHistory, apiKey, startTime } = params;
   
@@ -47,7 +47,7 @@ export async function callClaude(
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: params.model || 'claude-sonnet-4-5-20250929',
         max_tokens: 200,
         temperature: 0.7,
         messages: userMessages,

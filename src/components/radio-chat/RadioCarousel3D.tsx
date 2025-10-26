@@ -107,26 +107,6 @@ const createEmptyTexture = (): THREE.CanvasTexture => {
   return texture;
 };
 
-// Helper per calcolare dimensioni proporzionali al viewport
-const calculateProportionalSizes = (
-  containerHeight: number,
-  containerWidth: number,
-  targetHeightPercent: number = 0.80
-) => {
-  const fov = containerWidth < 768 ? 65 : 70;
-  const cameraDistance = 13;
-  const vFOV = (fov * Math.PI) / 180;
-  const visibleHeight = 2 * Math.tan(vFOV / 2) * cameraDistance;
-  const pixelToThreeRatio = visibleHeight / containerHeight;
-  
-  const pageHeightPixels = containerHeight * targetHeightPercent;
-  const pageHeight = pageHeightPixels * pixelToThreeRatio;
-  const pageWidth = pageHeight * 0.694; // aspect ratio canvas texture (800:1100)
-  const radius = pageHeight * 0.82;
-  
-  return { pageWidth, pageHeight, radius, cameraDistance, fov };
-};
-
 export const RadioCarousel3D = ({
   messages, 
   activeMessageId
@@ -147,20 +127,14 @@ export const RadioCarousel3D = ({
     if (!containerRef.current) return;
 
     const scene = new THREE.Scene();
-    
-    // Calcola dimensioni proporzionali
-    const sizes = calculateProportionalSizes(
-      containerRef.current.clientHeight,
-      containerRef.current.clientWidth
-    );
-    
-    const camera = new THREE.PerspectiveCamera(
-      sizes.fov,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1,
-      1000
-    );
-    camera.position.set(0, 0, sizes.cameraDistance);
+        const fov = window.innerWidth < 768 ? 65 : 70; // FOV più ampio per carosello grande
+        const camera = new THREE.PerspectiveCamera(
+          fov,
+          containerRef.current.clientWidth / containerRef.current.clientHeight,
+          0.1,
+          1000
+        );
+        camera.position.set(0, 0, 13); // Camera più distante per pagine grandi
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ 
@@ -218,44 +192,10 @@ export const RadioCarousel3D = ({
     // Resize handler
     const handleResize = () => {
       if (!containerRef.current || !camera || !renderer) return;
-      
-      // Ricalcola dimensioni proporzionali
-      const sizes = calculateProportionalSizes(
-        containerRef.current.clientHeight,
-        containerRef.current.clientWidth
-      );
-      
-      // Aggiorna camera
       camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
-      camera.fov = sizes.fov;
-      camera.position.z = sizes.cameraDistance;
       camera.updateProjectionMatrix();
-      
       renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
-      
-      // Aggiorna geometrie esistenti
-      if (groupRef.current && meshesRef.current.size > 0) {
-        meshesRef.current.forEach((mesh, key) => {
-          const oldGeometry = mesh.geometry;
-          mesh.geometry = new THREE.PlaneGeometry(sizes.pageWidth, sizes.pageHeight);
-          oldGeometry.dispose();
-        });
-        
-        // Aggiorna raggio carosello
-        const angleStep = (Math.PI * 2) / MAX_SLOTS;
-        meshesRef.current.forEach((mesh, key) => {
-          const slotIndex = parseInt(key.split('_')[1]);
-          const angle = -(slotIndex * angleStep) + Math.PI;
-          mesh.position.set(
-            Math.cos(angle) * sizes.radius,
-            0,
-            Math.sin(angle) * sizes.radius
-          );
-        });
-      }
-      
-      console.log('📐 Resize: nuove dimensioni proporzionali applicate');
+      renderer.setPixelRatio(window.devicePixelRatio); // ✅ Mantieni HD su resize
     };
     window.addEventListener('resize', handleResize);
 
@@ -275,40 +215,12 @@ export const RadioCarousel3D = ({
         const { width, height } = entry.contentRect;
         
         if (cameraRef.current && rendererRef.current) {
-          // Ricalcola dimensioni proporzionali
-          const sizes = calculateProportionalSizes(height, width);
-          
-          // Aggiorna camera
           cameraRef.current.aspect = width / height;
-          cameraRef.current.fov = sizes.fov;
-          cameraRef.current.position.z = sizes.cameraDistance;
           cameraRef.current.updateProjectionMatrix();
-          
           rendererRef.current.setSize(width, height);
-          rendererRef.current.setPixelRatio(window.devicePixelRatio);
+          rendererRef.current.setPixelRatio(window.devicePixelRatio); // ✅ Mantieni HD su resize
           
-          // Aggiorna geometrie esistenti
-          if (groupRef.current && meshesRef.current.size > 0) {
-            meshesRef.current.forEach((mesh) => {
-              const oldGeometry = mesh.geometry;
-              mesh.geometry = new THREE.PlaneGeometry(sizes.pageWidth, sizes.pageHeight);
-              oldGeometry.dispose();
-            });
-            
-            // Aggiorna raggio carosello
-            const angleStep = (Math.PI * 2) / MAX_SLOTS;
-            meshesRef.current.forEach((mesh, key) => {
-              const slotIndex = parseInt(key.split('_')[1]);
-              const angle = -(slotIndex * angleStep) + Math.PI;
-              mesh.position.set(
-                Math.cos(angle) * sizes.radius,
-                0,
-                Math.sin(angle) * sizes.radius
-              );
-            });
-          }
-          
-          console.log('📐 Container resized (sidebar):', { width, height });
+          console.log('📐 Canvas resized:', { width, height });
         }
       }
     });
@@ -345,31 +257,12 @@ export const RadioCarousel3D = ({
       console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili`);
       
       const group = groupRef.current;
-      
-      // Calcola dimensioni proporzionali al container
-      if (!containerRef.current) {
-        console.error('❌ containerRef non disponibile');
-        return;
-      }
-      
-      const sizes = calculateProportionalSizes(
-        containerRef.current.clientHeight,
-        containerRef.current.clientWidth
-      );
-      
-      console.log('📐 Dimensioni calcolate:', {
-        containerHeight: containerRef.current.clientHeight,
-        pageWidth: sizes.pageWidth.toFixed(2),
-        pageHeight: sizes.pageHeight.toFixed(2),
-        radius: sizes.radius.toFixed(2),
-        percentuale: '80%'
-      });
-      
-      const radius = sizes.radius;
+      const radius = 6.0;
       const angleStep = (Math.PI * 2) / MAX_SLOTS;
       
       for (let i = 0; i < MAX_SLOTS; i++) {
-        const geometry = new THREE.PlaneGeometry(sizes.pageWidth, sizes.pageHeight);
+        const scaleFactor = Math.min(window.innerWidth / 1200, 2.0); // Max 200% su schermi grandi
+        const geometry = new THREE.PlaneGeometry(4.25 * scaleFactor, 6.12 * scaleFactor);
         const material = new THREE.MeshBasicMaterial({
           side: THREE.DoubleSide, 
           transparent: true,

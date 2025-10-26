@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Keyboard } from 'lucide-react';
+import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Keyboard, FileText } from 'lucide-react';
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
@@ -28,6 +28,7 @@ const RadioChat = () => {
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [inputVisible, setInputVisible] = useState(false);
+  const [messageViewVisible, setMessageViewVisible] = useState(true);
   const [messages, setMessages] = useState<RadioMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'carousel' | 'messages'>('carousel');
@@ -362,6 +363,19 @@ const RadioChat = () => {
         onToggle={() => setSidebarOpen(true)}
       />
 
+      {/* FileText Icon - Below Keyboard */}
+      <button
+        onClick={() => setMessageViewVisible(!messageViewVisible)}
+        className="fixed left-0 bottom-64 z-40 w-12 h-20 bg-black rounded-r-lg flex items-center justify-center transition-all duration-200 hover:w-14"
+        aria-label="Toggle message view"
+      >
+        <FileText 
+          className={`w-6 h-6 transition-colors ${
+            messageViewVisible ? 'text-gray-500' : (currentMessage ? 'text-cyan-400' : 'text-gray-500')
+          }`} 
+        />
+      </button>
+
       {/* Keyboard Icon - Above Hamburger */}
       <button
         onClick={() => setInputVisible(!inputVisible)}
@@ -436,15 +450,15 @@ const RadioChat = () => {
             )}
             
             {/* Message View - Sovrapposto al carousel */}
-            {currentMessage ? (
-              <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[40%] overflow-y-auto bg-gradient-to-t from-background via-background/95 to-transparent p-6">
+            {messageViewVisible && currentMessage ? (
+              <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[40%] overflow-y-auto bg-gradient-to-t from-background via-background/95 to-transparent p-6 animate-in slide-in-from-bottom-4 duration-200">
                 <RadioMessageView
                   message={currentMessage}
                   onAudioEnd={onAudioEndComplete}
                   onAudioStart={handleAudioStart}
                 />
               </div>
-            ) : messages.length > 0 && (
+            ) : messages.length > 0 && !currentMessage && (
               <div className="absolute bottom-0 left-0 right-0 z-20 p-6 text-center text-white/50">
                 Invia un messaggio per iniziare
               </div>

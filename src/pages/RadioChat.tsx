@@ -466,13 +466,13 @@ const RadioChat = () => {
           </div>
           
           {/* Audio Player Pop-up - Outside flex container */}
-          {!messageViewVisible && (
+          <div className={messageViewVisible ? 'opacity-0 pointer-events-none' : ''}>
             <RadioCarouselAudioPlayerWrapper
               messages={messages}
               activeMessageId={activeMessageId}
               onAudioEnd={handleCarouselAudioEnd}
             />
-          )}
+          </div>
           </>
         ) : (
           (() => {

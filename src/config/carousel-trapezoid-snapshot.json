@@ -1,0 +1,111 @@
+{
+  "preset_name": "Trapezoid Perspective Effect",
+  "created": "2025-10-26T11:05:00.000Z",
+  "screenshot": "Screenshot_2025-10-26_alle_11.05.01.png",
+  "author": "Luca",
+  "version": "1.0.0",
+  
+  "three_js_config": {
+    "scene": {
+      "background": "transparent"
+    },
+    "camera": {
+      "type": "PerspectiveCamera",
+      "fov_mobile": 62,
+      "fov_desktop": 67,
+      "aspect_ratio": "dynamic",
+      "near": 0.1,
+      "far": 1000,
+      "position": [0, 0, 13.5],
+      "look_at": [0, 1.5, 0]
+    },
+    "renderer": {
+      "alpha": true,
+      "antialias": true,
+      "pixel_ratio": "window.devicePixelRatio"
+    },
+    "lighting": {
+      "ambient": {
+        "color": "0xffffff",
+        "intensity": 0.6
+      },
+      "point": {
+        "color": "0x8b5cf6",
+        "intensity": 1,
+        "distance": 100,
+        "position": [0, 0, 5]
+      }
+    }
+  },
+  
+  "carousel_config": {
+    "max_slots": 8,
+    "radius": 7.8,
+    "angle_step_formula": "(Math.PI * 2) / MAX_SLOTS",
+    "rotation_direction": "counter_clockwise",
+    "mesh": {
+      "geometry": {
+        "type": "PlaneGeometry",
+        "width": 4.83,
+        "height": 7.04,
+        "scale_factor": "Math.min(window.innerWidth / 1200, 2.0)"
+      },
+      "material": {
+        "type": "MeshBasicMaterial",
+        "side": "DoubleSide",
+        "transparent": true,
+        "initial_opacity": 0
+      },
+      "position": {
+        "x": "Math.cos(angle) * radius",
+        "y": 1.5,
+        "z": "Math.sin(angle) * radius"
+      },
+      "look_at": [0, 0, 0],
+      "note": "KEY FEATURE: Mesh at Y=1.5 but looks at Y=0 creates trapezoid tilt"
+    }
+  },
+  
+  "visual_effects": {
+    "trapezoid_tilt": {
+      "enabled": true,
+      "angle_degrees": "~10-15",
+      "created_by": "mesh_position_y (1.5) != mesh_lookat_y (0)",
+      "visual_impact": "Top of card appears smaller/farther, bottom larger/closer"
+    },
+    "perspective_distortion": {
+      "type": "natural_3d_perspective",
+      "enhanced_by": "camera_lookat_different_from_mesh_lookat"
+    }
+  },
+  
+  "notes": [
+    "Questo preset crea un effetto trapezio prospettico unico",
+    "Le card appaiono inclinate verso il basso (~10-15 gradi)",
+    "Effetto cinematografico molto apprezzato dall'utente",
+    "La combinazione di mesh.position.y=1.5 e mesh.lookAt(0,0,0) è il segreto",
+    "Camera guarda verso (0, 1.5, 0) per inquadrare correttamente le card inclinate"
+  ],
+  
+  "how_to_restore": {
+    "step_1": "Import preset from src/config/carouselPresets.ts",
+    "step_2": "Apply TRAPEZOID_CAROUSEL configuration",
+    "step_3": "Ensure mesh.lookAt uses (0, 0, 0) not (0, 1.5, 0)",
+    "step_4": "Verify camera.lookAt points to (0, 1.5, 0)"
+  },
+  
+  "comparison_with_flat": {
+    "trapezoid": {
+      "mesh_y": 1.5,
+      "mesh_lookat_y": 0,
+      "tilt_angle": "~10-15°",
+      "effect": "prospettico"
+    },
+    "flat": {
+      "mesh_y": 1.5,
+      "mesh_lookat_y": 1.5,
+      "tilt_angle": "0°",
+      "effect": "verticale"
+    }
+  }
+}

@@ -72,6 +72,7 @@ interface MultiAgentMessageProps {
   message: Message;
   onAudioEnd?: () => void;
   onAudioStateChange?: (isPlaying: boolean) => void;
+  canAutoPlay?: boolean;
 }
 
 const SENDER_CONFIG = {
@@ -109,7 +110,7 @@ const SENDER_CONFIG = {
   }
 };
 
-export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange }: MultiAgentMessageProps) => {
+export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange, canAutoPlay = true }: MultiAgentMessageProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('friendly');
   const [appendixAudioPlaying, setAppendixAudioPlaying] = useState(false);
   const [appendixOpen, setAppendixOpen] = useState(false);
@@ -565,7 +566,7 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange }: M
           <div className="mt-2">
             <AudioMessagePlayer 
               audioUrl={message.audio_url}
-              autoPlay={true}
+              autoPlay={canAutoPlay}
               onPlayStart={() => {
                 console.log(`🔊 [MultiAgentMessage] Audio START: ${message.sender_name}`);
                 onAudioStateChange?.(true);

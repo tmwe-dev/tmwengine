@@ -17,7 +17,8 @@ export function RadioMessagesView({
 }: RadioMessagesViewProps) {
   // Usa hooks dedicati per gestione audio e tab switching
   const { 
-    isAudioPlaying, 
+    isAudioPlaying,
+    currentPlayingId, 
     handleAudioStart, 
     handleAudioEnd: audioEnd 
   } = useRadioAudioPlayback();
@@ -48,16 +49,21 @@ export function RadioMessagesView({
   return (
     <ScrollArea className="h-full px-4">
       <div className="space-y-4 pb-4 max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto">
-        {formattedMessages.map((message) => (
-          <MultiAgentMessage
-            key={message.id}
-            message={message}
-            onAudioEnd={onAudioEndComplete}
-            onAudioStateChange={(playing) => 
-              playing ? handleAudioStart(message.id) : audioEnd()
-            }
-          />
-        ))}
+        {formattedMessages.map((message) => {
+          const canAutoPlay = !isAudioPlaying || currentPlayingId === message.id;
+          
+          return (
+            <MultiAgentMessage
+              key={message.id}
+              message={message}
+              onAudioEnd={onAudioEndComplete}
+              onAudioStateChange={(playing) => 
+                playing ? handleAudioStart(message.id) : audioEnd()
+              }
+              canAutoPlay={canAutoPlay && isAudioEnabled}
+            />
+          );
+        })}
       </div>
     </ScrollArea>
   );

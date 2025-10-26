@@ -561,10 +561,9 @@ const RadioChat = () => {
       )}
 
       {/* Audio Player - Completely independent fixed element */}
-      {viewMode === 'carousel' && (
+      {viewMode === 'carousel' && currentMessage && (
         <RadioCarouselAudioPlayerWrapper
-          messages={messages}
-          activeMessageId={activeMessageId}
+          message={currentMessage}
           onAudioEnd={handleCarouselAudioEnd}
           className={messageViewVisible ? 'opacity-0 pointer-events-none' : ''}
         />

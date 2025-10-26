@@ -3,8 +3,7 @@ import { RadioMessage } from '@/types/radio';
 import { cn } from '@/lib/utils';
 
 interface RadioCarouselAudioPlayerWrapperProps {
-  messages: RadioMessage[];
-  activeMessageId: string;
+  message: RadioMessage;
   onAudioEnd: () => void;
   className?: string;
 }

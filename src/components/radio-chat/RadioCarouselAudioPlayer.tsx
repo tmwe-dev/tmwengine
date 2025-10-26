@@ -3,18 +3,14 @@ import { Play, Pause } from 'lucide-react';
 import { RadioMessage } from '@/types/radio';
 
 interface RadioCarouselAudioPlayerProps {
-  messages: RadioMessage[];
-  activeMessageId: string;
+  message: RadioMessage;
   onAudioEnd: () => void;
 }
 
 export const RadioCarouselAudioPlayer = ({
-  messages,
-  activeMessageId,
+  message,
   onAudioEnd
 }: RadioCarouselAudioPlayerProps) => {
-  const [currentAudioUrl, setCurrentAudioUrl] = useState<string>('');
-  const [senderName, setSenderName] = useState<string>('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -22,23 +18,16 @@ export const RadioCarouselAudioPlayer = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasAutoPlayedRef = useRef(false);
 
-  // Update audio when activeMessageId changes
-  useEffect(() => {
-    const activeMessage = messages.find(m => m.id === activeMessageId);
-    
-    if (activeMessage?.audio_url) {
-      console.log('🎵 [RadioCarouselAudioPlayer] Changing audio:', activeMessage.sender_name);
-      setCurrentAudioUrl(activeMessage.audio_url);
-      setSenderName(activeMessage.sender_name);
-      hasAutoPlayedRef.current = false;
-    } else {
-      setCurrentAudioUrl('');
-      setSenderName('');
-    }
-  }, [activeMessageId, messages.find(m => m.id === activeMessageId)?.audio_url]);
+  const currentAudioUrl = message.audio_url || '';
+  const senderName = message.sender_name;
 
   // Audio element setup and autoplay
   useEffect(() => {
+    console.log('🎵 [RadioCarouselAudioPlayer] useEffect triggered:', { 
+      audioUrl: currentAudioUrl, 
+      sender: senderName 
+    });
+
     if (!currentAudioUrl) {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -47,6 +36,7 @@ export const RadioCarouselAudioPlayer = ({
       setIsPlaying(false);
       setCurrentTime(0);
       setDuration(0);
+      hasAutoPlayedRef.current = false;
       return;
     }
 
@@ -55,6 +45,9 @@ export const RadioCarouselAudioPlayer = ({
       console.log('⏭️ [RadioCarouselAudioPlayer] Audio già caricato, skip re-init');
       return;
     }
+
+    // Reset autoplay flag quando cambia audio
+    hasAutoPlayedRef.current = false;
 
     const audio = new Audio(currentAudioUrl);
     audioRef.current = audio;
@@ -101,7 +94,7 @@ export const RadioCarouselAudioPlayer = ({
       audio.removeEventListener('error', handleError);
       audio.pause();
     };
-  }, [currentAudioUrl, onAudioEnd]);
+  }, [message.audio_url, message.sender_name, onAudioEnd]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;

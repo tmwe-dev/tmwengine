@@ -265,7 +265,18 @@ async function testAnthropic(apiKey: string, model: string) {
     clearTimeout(timeoutId);
 
     if (response.status === 401) {
-      return { success: false, error: 'API Key non valida' };
+      const errorBody = await response.text();
+      console.error('❌ Anthropic 401 Error Body:', errorBody);
+      
+      let errorDetail = 'API Key non valida';
+      try {
+        const parsed = JSON.parse(errorBody);
+        if (parsed.error?.message) {
+          errorDetail = parsed.error.message;
+        }
+      } catch {}
+      
+      return { success: false, error: `Auth Error: ${errorDetail}` };
     }
     if (response.status === 429) {
       return { success: false, error: 'Rate limit raggiunto' };
@@ -275,7 +286,17 @@ async function testAnthropic(apiKey: string, model: string) {
     }
     if (!response.ok) {
       const errorText = await response.text();
-      return { success: false, error: `HTTP ${response.status}: ${errorText}` };
+      console.error(`❌ Anthropic HTTP ${response.status}:`, errorText);
+      
+      let errorMessage = errorText;
+      try {
+        const parsed = JSON.parse(errorText);
+        if (parsed.error?.message) {
+          errorMessage = parsed.error.message;
+        }
+      } catch {}
+      
+      return { success: false, error: `HTTP ${response.status}: ${errorMessage}` };
     }
 
     const data = await response.json();

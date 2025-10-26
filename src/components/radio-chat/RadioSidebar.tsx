@@ -1,18 +1,21 @@
-import { X } from 'lucide-react';
+import { X, LayoutGrid, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioVoiceSelector } from './RadioVoiceSelector';
 import { RadioPromptSelector } from './RadioPromptSelector';
 import { RadioStrategySelector } from './RadioStrategySelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 
 interface RadioSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   conversationId: string | null;
+  viewMode: 'carousel' | 'messages';
+  onViewModeChange: (mode: 'carousel' | 'messages') => void;
 }
 
-export function RadioSidebar({ isOpen, onClose, conversationId }: RadioSidebarProps) {
+export function RadioSidebar({ isOpen, onClose, conversationId, viewMode, onViewModeChange }: RadioSidebarProps) {
   return (
     <>
       {/* Backdrop */}
@@ -49,6 +52,28 @@ export function RadioSidebar({ isOpen, onClose, conversationId }: RadioSidebarPr
               </TabsList>
 
               <TabsContent value="voice" className="mt-0">
+                {/* Toggle Carousel/Messages */}
+                <div className="p-4 border-b flex flex-col gap-2">
+                  <Button
+                    variant={viewMode === 'carousel' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => onViewModeChange('carousel')}
+                    className="w-full justify-start"
+                  >
+                    <LayoutGrid className="w-4 h-4 mr-2" />
+                    Carousel
+                  </Button>
+                  <Button
+                    variant={viewMode === 'messages' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => onViewModeChange('messages')}
+                    className="w-full justify-start"
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Messages
+                  </Button>
+                </div>
+
                 <RadioVoiceSelector conversationId={conversationId} />
               </TabsContent>
 

@@ -426,15 +426,19 @@ const RadioChat = () => {
               </>
             )}
             
-            {/* Indicator Dots */}
+            {/* Indicator Dots - Below Right Arrow */}
             {aiMessages.length > 1 && (
-              <div className="absolute bottom-[45%] left-0 right-0 flex justify-center gap-2 z-25">
+              <div className="absolute right-4 top-[calc(50%+60px)] z-35 flex flex-col gap-2">
                 {aiMessages.map((_, idx) => (
-                  <div
+                  <button
                     key={idx}
-                    className={`h-2 rounded-full transition-all ${
-                      idx === navIndex ? 'bg-white w-6' : 'bg-white/30 w-2'
+                    onClick={() => setNavIndex(idx)}
+                    className={`h-3 w-3 rounded-full transition-all cursor-pointer ${
+                      idx === navIndex 
+                        ? 'bg-white scale-125' 
+                        : 'bg-white/40 hover:bg-white/60'
                     }`}
+                    aria-label={`Go to message ${idx + 1}`}
                   />
                 ))}
               </div>

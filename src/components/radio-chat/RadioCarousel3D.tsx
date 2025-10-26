@@ -320,6 +320,7 @@ export const RadioCarousel3D = ({
           opacity: 0 // Invisibile inizialmente
         });
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.scale.set(0.9, 0.9, 0.9); // Riduce dimensioni al 90%
 
         // Posizionamento fisso - senso ANTIORARIO
         const angle = -(i * angleStep) + Math.PI;

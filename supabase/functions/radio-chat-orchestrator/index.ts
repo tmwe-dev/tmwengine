@@ -152,42 +152,49 @@ serve(async (req) => {
     for (const agent of firstTurnAgents) {
       if (aiTurnsCount >= MAX_AI_TURNS_BEFORE_USER) break;
 
-      const result = await executeAgentTurn({
-        agent,
-        userMessage,
-        allResponses,
-        conversationId,
-        supabaseClient,
-        config,
-        cachedPrompts,
-        historyMessages,
-        cumulativeSummary,
-        cognitiveBuffers,
-        activeVoiceAgents,
-        globalSystemPrompt,
-        baseContent,
-        conversationStyle,
-        agentMode,
-        voiceEnabled,
-        elevenLabsApiKey,
-        pauseBetweenTurnsMs,
-        anthropicConfig,
-        openaiConfig,
-        LOVABLE_API_KEY
-      });
+      try {
+        const result = await executeAgentTurn({
+          agent,
+          userMessage,
+          allResponses,
+          conversationId,
+          supabaseClient,
+          config,
+          cachedPrompts,
+          historyMessages,
+          cumulativeSummary,
+          cognitiveBuffers,
+          activeVoiceAgents,
+          globalSystemPrompt,
+          baseContent,
+          conversationStyle,
+          agentMode,
+          voiceEnabled,
+          elevenLabsApiKey,
+          pauseBetweenTurnsMs,
+          anthropicConfig,
+          openaiConfig,
+          LOVABLE_API_KEY
+        });
 
-      if (result.skipped) {
-        console.log(`⏭️ ${agent.name} ha fatto SKIP`);
+        if (result.skipped) {
+          console.log(`⏭️ ${agent.name} ha fatto SKIP`);
+          continue;
+        }
+
+        allResponses.push(result.response);
+        cognitiveBuffers = result.updatedBuffers;
+        aiTurnsCount++;
+
+        // Pausa tra turni
+        if (pauseBetweenTurnsMs > 0 && aiTurnsCount < MAX_AI_TURNS_BEFORE_USER) {
+          await delay(pauseBetweenTurnsMs);
+        }
+        
+      } catch (error: any) {
+        console.error(`❌ ${agent.name} fallito durante primo turno:`, error.message);
+        // Continua con il prossimo agente invece di interrompere tutto
         continue;
-      }
-
-      allResponses.push(result.response);
-      cognitiveBuffers = result.updatedBuffers;
-      aiTurnsCount++;
-
-      // Pausa tra turni
-      if (pauseBetweenTurnsMs > 0 && aiTurnsCount < MAX_AI_TURNS_BEFORE_USER) {
-        await delay(pauseBetweenTurnsMs);
       }
     }
 
@@ -208,48 +215,55 @@ serve(async (req) => {
 
       console.log(`\n🎯 Turno ${aiTurnsCount + 1}: ${selectedAgent.name} (${turnStrategy})`);
 
-      const result = await executeAgentTurn({
-        agent: selectedAgent,
-        userMessage,
-        allResponses,
-        conversationId,
-        supabaseClient,
-        config,
-        cachedPrompts,
-        historyMessages,
-        cumulativeSummary,
-        cognitiveBuffers,
-        activeVoiceAgents,
-        globalSystemPrompt,
-        baseContent,
-        conversationStyle,
-        agentMode,
-        voiceEnabled,
-        elevenLabsApiKey,
-        pauseBetweenTurnsMs,
-        anthropicConfig,
-        openaiConfig,
-        LOVABLE_API_KEY
-      });
-
-      if (result.skipped) {
-        console.log(`⏭️ ${selectedAgent.name} ha fatto SKIP`);
-        // Se tutti skippano, ferma il loop
-        const allSkipped = activeParticipants.every(p => {
-          const buffer = cognitiveBuffers.find(b => b.agent_id === p.type);
-          return buffer && buffer.response_count === 0;
+      try {
+        const result = await executeAgentTurn({
+          agent: selectedAgent,
+          userMessage,
+          allResponses,
+          conversationId,
+          supabaseClient,
+          config,
+          cachedPrompts,
+          historyMessages,
+          cumulativeSummary,
+          cognitiveBuffers,
+          activeVoiceAgents,
+          globalSystemPrompt,
+          baseContent,
+          conversationStyle,
+          agentMode,
+          voiceEnabled,
+          elevenLabsApiKey,
+          pauseBetweenTurnsMs,
+          anthropicConfig,
+          openaiConfig,
+          LOVABLE_API_KEY
         });
-        if (allSkipped) break;
+
+        if (result.skipped) {
+          console.log(`⏭️ ${selectedAgent.name} ha fatto SKIP`);
+          // Se tutti skippano, ferma il loop
+          const allSkipped = activeParticipants.every(p => {
+            const buffer = cognitiveBuffers.find(b => b.agent_id === p.type);
+            return buffer && buffer.response_count === 0;
+          });
+          if (allSkipped) break;
+          continue;
+        }
+
+        allResponses.push(result.response);
+        cognitiveBuffers = result.updatedBuffers;
+        aiTurnsCount++;
+
+        // Pausa tra turni
+        if (pauseBetweenTurnsMs > 0 && aiTurnsCount < MAX_AI_TURNS_BEFORE_USER) {
+          await delay(pauseBetweenTurnsMs);
+        }
+        
+      } catch (error: any) {
+        console.error(`❌ ${selectedAgent.name} fallito durante turno dinamico:`, error.message);
+        // Continua con il prossimo agente
         continue;
-      }
-
-      allResponses.push(result.response);
-      cognitiveBuffers = result.updatedBuffers;
-      aiTurnsCount++;
-
-      // Pausa tra turni
-      if (pauseBetweenTurnsMs > 0 && aiTurnsCount < MAX_AI_TURNS_BEFORE_USER) {
-        await delay(pauseBetweenTurnsMs);
       }
     }
 
@@ -419,14 +433,22 @@ IMPORTANTE: Se non hai nulla di rilevante da aggiungere alla conversazione, risp
   const startTime = Date.now();
 
   if ((agent.type === 'anthropic' || agent.type === 'claude') && anthropicConfig?.api_key) {
-    const result = await callClaude({
-      conversationHistory,
-      apiKey: anthropicConfig.api_key,
-      startTime
-    });
-    aiResponse = result.content;
-    tokenInput = result.tokensIn;
-    tokenOutput = result.tokensOut;
+    try {
+      const result = await callClaude({
+        conversationHistory,
+        apiKey: anthropicConfig.api_key,
+        startTime
+      });
+      aiResponse = result.content;
+      tokenInput = result.tokensIn;
+      tokenOutput = result.tokensOut;
+    } catch (error: any) {
+      if (error.message.includes('INSUFFICIENT_CREDITS')) {
+        console.warn(`⚠️ ${agent.name}: Crediti Anthropic insufficienti, SKIP`);
+        return { skipped: true, updatedBuffers: cognitiveBuffers };
+      }
+      throw error; // Re-throw altri errori
+    }
   }
   else if (agent.type === 'openai' || agent.type === 'chatgpt') {
     const result = await callChatGPT({

@@ -61,6 +61,12 @@ export async function callClaude(
       
       if (response.status === 429) throw new Error('429');
       if (response.status >= 500) throw new Error('5xx');
+      
+      // 🔥 Check specifico per crediti insufficienti
+      if (response.status === 400 && errorText.includes('credit balance')) {
+        throw new Error('INSUFFICIENT_CREDITS: Anthropic credits too low');
+      }
+      
       throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
     }
     

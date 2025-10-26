@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 // Import moduli refactored
-import { delay, estimateTokens } from './lib/utils.ts';
+import { delay } from './lib/utils.ts';
 import { getCachedPrompts, loadBarModeConfig, loadConversationData } from './lib/config-loader.ts';
 import { 
   buildSystemPrompt, 
@@ -182,28 +182,31 @@ serve(async (req) => {
         console.log(`📝 Context include: messaggio utente + ${allResponses.length} risposte precedenti`);
 
         // ============ BUILD SYSTEM PROMPT ============
-        const systemPrompt = buildSystemPrompt(
-          globalSystemPrompt,
-          baseContent,
-          currentAgent.configuration.agentDescription,
-          conversationStyle,
-          currentAgent.name
-        );
-        const systemPromptTokens = estimateTokens(systemPrompt);
-        console.log(`🤖 System prompt: ${systemPromptTokens} tokens`);
+        // Recupera la personalità dal cache usando il nome dell'agente
+        const agentPersonality = cachedPrompts.agentPersonalities.get(currentAgent.name.toLowerCase()) || '';
+        
+        const systemPrompt = buildSystemPrompt({
+          globalPrompt: globalSystemPrompt,
+          baseContent: baseContent,
+          agentPersonality: agentPersonality,
+          conversationStyle: conversationStyle,
+          agentMode: agentMode,
+          previousResponses: allResponses,
+          wasCalledDirectly: false,
+          styleSections: cachedPrompts.conversationStyles
+        });
 
         // ============ BUILD CONVERSATION HISTORY ============
-        const conversationHistory = buildConversationHistory(historyMessages);
-        const conversationHistoryTokens = estimateTokens(conversationHistory);
-        console.log(`📜 Cronologia: ${conversationHistoryTokens} tokens`);
+        const conversationHistory = buildConversationHistory({
+          systemPrompt: systemPrompt,
+          cumulativeSummary: cumulativeSummary,
+          historyMessages: historyMessages,
+          turnContext: turnContext
+        });
 
         // ============ CALCULATE CONTEXT SIZE ============
-        const contextSize = calculateContextSize(
-          systemPromptTokens,
-          conversationHistoryTokens,
-          anthropicConfig.maxModelTokens,
-          userMessage
-        );
+        const contextSize = calculateContextSize(conversationHistory);
+        console.log(`📊 Context: ${contextSize.totalContextChars} chars, ~${contextSize.estimatedTokens} tokens`);
 
         // ============ CHOOSE AI PROVIDER ============
         let aiResponse = null;
@@ -212,36 +215,33 @@ serve(async (req) => {
 
         if (currentAgent.type === 'anthropic' || currentAgent.type === 'claude') {
           provider = 'claude';
-          const { response, raw } = await callClaude(
-            anthropicConfig.apiKey,
-            systemPrompt,
-            conversationHistory,
-            userMessage,
-            contextSize
-          );
-          aiResponse = response;
-          rawResponse = raw;
+          const result = await callClaude({
+            apiKey: anthropicConfig.apiKey,
+            model: anthropicConfig.model,
+            conversationHistory: conversationHistory,
+            callStartTime: Date.now()
+          });
+          aiResponse = result.content;
+          rawResponse = result;
         } else if (currentAgent.type === 'openai' || currentAgent.type === 'chatgpt') {
           provider = 'chatgpt';
-          const { response, raw } = await callChatGPT(
-            openaiConfig.apiKey,
-            systemPrompt,
-            conversationHistory,
-            userMessage,
-            contextSize
-          );
-          aiResponse = response;
-          rawResponse = raw;
+          const result = await callChatGPT({
+            lovableApiKey: LOVABLE_API_KEY,
+            openaiConfig: openaiConfig,
+            conversationHistory: conversationHistory,
+            callStartTime: Date.now()
+          });
+          aiResponse = result.content;
+          rawResponse = result;
         } else if (currentAgent.type === 'lovable_ai' || currentAgent.type === 'gemini') {
           provider = 'gemini';
-          const { response, raw } = await callGemini(
-            LOVABLE_API_KEY,
-            systemPrompt,
-            conversationHistory,
-            userMessage
-          );
-          aiResponse = response;
-          rawResponse = raw;
+          const result = await callGemini({
+            lovableApiKey: LOVABLE_API_KEY,
+            conversationHistory: conversationHistory,
+            callStartTime: Date.now()
+          });
+          aiResponse = result.content;
+          rawResponse = result;
         } else {
           console.warn(`⚠️ Tipo agente sconosciuto: ${currentAgent.type}`);
           continue;

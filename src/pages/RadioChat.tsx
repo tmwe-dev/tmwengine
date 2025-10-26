@@ -305,24 +305,45 @@ const RadioChat = () => {
     };
   }, [currentConversationId]);
 
-  // Listen for debug toggle from topbar
-  useEffect(() => {
-    const handleDebugToggle = (e: CustomEvent) => {
-      setDebugPopupOpen(e.detail.open);
-    };
-    window.addEventListener('radio-debug-toggle', handleDebugToggle as EventListener);
-    return () => window.removeEventListener('radio-debug-toggle', handleDebugToggle as EventListener);
-  }, []);
-
   return (
     <div className="relative h-full">
       <RadioSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)} 
         conversationId={currentConversationId}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
       />
+
+      {/* Debug Icon - Above Toggle Buttons (Solo in development) */}
+      {import.meta.env.DEV && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setDebugPopupOpen(!debugPopupOpen)}
+          className="fixed left-4 top-24 z-35"
+        >
+          <Bug className="w-4 h-4" />
+        </Button>
+      )}
+
+      {/* Toggle Carousel/Messages - Top Left */}
+      <div className="fixed left-4 top-32 z-35 flex flex-col gap-2">
+        <Button
+          variant={viewMode === 'carousel' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('carousel')}
+        >
+          <LayoutGrid className="w-4 h-4 mr-2" />
+          Carousel
+        </Button>
+        <Button
+          variant={viewMode === 'messages' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('messages')}
+        >
+          <MessageSquare className="w-4 h-4 mr-2" />
+          Messages
+        </Button>
+      </div>
 
       {/* Participant Icons - Vertical Stack Above Hamburger */}
       <div className="fixed left-4 bottom-28 z-40 flex flex-col gap-3">

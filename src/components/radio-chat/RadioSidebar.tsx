@@ -1,21 +1,18 @@
-import { X, LayoutGrid, MessageSquare } from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioVoiceSelector } from './RadioVoiceSelector';
 import { RadioPromptSelector } from './RadioPromptSelector';
 import { RadioStrategySelector } from './RadioStrategySelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
 
 interface RadioSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   conversationId: string | null;
-  viewMode: 'carousel' | 'messages';
-  onViewModeChange: (mode: 'carousel' | 'messages') => void;
 }
 
-export function RadioSidebar({ isOpen, onClose, conversationId, viewMode, onViewModeChange }: RadioSidebarProps) {
+export function RadioSidebar({ isOpen, onClose, conversationId }: RadioSidebarProps) {
   return (
     <>
       {/* Backdrop */}
@@ -52,31 +49,6 @@ export function RadioSidebar({ isOpen, onClose, conversationId, viewMode, onView
               </TabsList>
 
               <TabsContent value="voice" className="mt-0">
-                {/* Toggle Carousel/Messages */}
-                <div className="p-4 border-b">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {viewMode === 'carousel' ? (
-                        <LayoutGrid className="w-5 h-5 text-primary" />
-                      ) : (
-                        <MessageSquare className="w-5 h-5 text-primary" />
-                      )}
-                      <div>
-                        <div className="font-medium text-sm">
-                          {viewMode === 'carousel' ? 'Carousel 3D' : 'Lista Messaggi'}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Modalità visualizzazione
-                        </div>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={viewMode === 'messages'}
-                      onCheckedChange={(checked) => onViewModeChange(checked ? 'messages' : 'carousel')}
-                    />
-                  </div>
-                </div>
-                
                 <RadioVoiceSelector conversationId={conversationId} />
               </TabsContent>
 

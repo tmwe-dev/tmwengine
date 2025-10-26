@@ -37,8 +37,7 @@ import {
   Check,
   User,
   Sparkles,
-  Globe,
-  Bug
+  Globe
  } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -164,33 +163,8 @@ const CRMLayout = ({ children }) => {
     }
   }, [location.pathname]);
 
-  // RadioChat Debug Button Component
-  const RadioChatDebugButton = () => {
-    if (location.pathname !== '/radio-chat') return null;
-
-    const [debugOpen, setDebugOpen] = useState(false);
-
-    const toggleDebug = () => {
-      const newValue = !debugOpen;
-      setDebugOpen(newValue);
-      window.dispatchEvent(new CustomEvent('radio-debug-toggle', { detail: { open: newValue } }));
-    };
-
-    return (
-      <Button
-        variant={debugOpen ? "default" : "ghost"}
-        size="icon"
-        onClick={toggleDebug}
-        className="h-8 w-8"
-        title="Debug Info"
-      >
-        <Bug className="h-4 w-4" />
-      </Button>
-    );
-  };
-
   return (
-    <div
+    <div 
       className="min-h-screen"
       style={location.pathname === '/attivita' ? {
         background: 'linear-gradient(135deg, rgba(0, 240, 50, 0.15) 0px, rgba(0, 0, 0, 0.35) 600px, rgb(0, 0, 0) 600px)'
@@ -250,9 +224,6 @@ const CRMLayout = ({ children }) => {
           >
             <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
           </button>
-
-          {/* RadioChat Debug Button */}
-          <RadioChatDebugButton />
 
           {/* TMWE Profile Button - only show if user has profile */}
           {userProfile && (

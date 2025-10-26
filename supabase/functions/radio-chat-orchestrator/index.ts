@@ -148,6 +148,21 @@ serve(async (req) => {
     );
 
     const firstTurnAgents = [geminiAgent, openaiAgent, claudeAgent].filter(Boolean);
+    
+    console.log(`🎯 First turn agents: ${firstTurnAgents.map(a => a.name).join(', ')}`);
+    
+    if (firstTurnAgents.length === 0) {
+      console.error('❌ CRITICAL: Nessun agent attivo trovato in activeParticipants!');
+      console.error('📋 activeParticipants ricevuti:', JSON.stringify(activeParticipants, null, 2));
+      return new Response(
+        JSON.stringify({ 
+          error: 'no_active_agents', 
+          message: 'Nessun agente AI attivo. Verifica che almeno un agent sia attivato nel CRM.',
+          received_participants: activeParticipants.length
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     for (const agent of firstTurnAgents) {
       if (aiTurnsCount >= MAX_AI_TURNS_BEFORE_USER) break;

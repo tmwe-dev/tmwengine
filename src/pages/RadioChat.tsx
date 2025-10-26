@@ -33,13 +33,13 @@ const RadioChat = () => {
   const [messages, setMessages] = useState<RadioMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'carousel' | 'messages'>('carousel');
-  const [participants, setParticipants] = useState<RadioParticipant[]>([
-    { id: 'chatgpt-1', type: 'chatgpt', name: 'ChatGPT', is_active: true },
-    { id: 'gemini-1', type: 'gemini', name: 'Gemini', is_active: true },
-    { id: 'claude-1', type: 'claude', name: 'Claude', is_active: true }
-  ]);
+  const [participants, setParticipants] = useState<RadioParticipant[]>([]);
   
-  const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
+  // Persist auto-advance in localStorage
+  const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(() => {
+    const saved = localStorage.getItem('radio-auto-advance');
+    return saved ? JSON.parse(saved) : true;
+  });
   const [debugPopupOpen, setDebugPopupOpen] = useState(false);
   
   const { toast } = useToast();
@@ -55,6 +55,53 @@ const RadioChat = () => {
   } = useRadioAudioPlayback();
   
   const { isAudioEnabled } = useAudioPreference();
+  
+  // Load participants from elevenlabs_agents
+  useEffect(() => {
+    const loadParticipants = async () => {
+      const { data, error } = await supabase
+        .from('elevenlabs_agents')
+        .select('id, name, is_active')
+        .order('order_index', { ascending: true });
+      
+      if (error) {
+        console.error('❌ Errore caricamento agents:', error);
+        return;
+      }
+      
+      // Map agents to participants
+      const mapped: RadioParticipant[] = (data || []).map(agent => {
+        // Extract type from name (e.g., "Vittorio - Gemini" → "gemini")
+        let type: 'chatgpt' | 'gemini' | 'claude' = 'gemini';
+        const nameLower = agent.name.toLowerCase();
+        
+        if (nameLower.includes('chatgpt') || nameLower.includes('gpt')) {
+          type = 'chatgpt';
+        } else if (nameLower.includes('claude')) {
+          type = 'claude';
+        } else if (nameLower.includes('gemini')) {
+          type = 'gemini';
+        }
+        
+        return {
+          id: agent.id,
+          type,
+          name: agent.name.split(' - ')[0], // "Vittorio - Gemini" → "Vittorio"
+          is_active: agent.is_active
+        };
+      });
+      
+      console.log('✅ Participants caricati da DB:', mapped);
+      setParticipants(mapped);
+    };
+    
+    loadParticipants();
+  }, []);
+  
+  // Persist auto-advance changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('radio-auto-advance', JSON.stringify(isAutoAdvanceEnabled));
+  }, [isAutoAdvanceEnabled]);
   
   // Calculate AI messages
   const aiMessages = messages.filter(m => m.sender_type !== 'human');
@@ -260,10 +307,39 @@ const RadioChat = () => {
     }
   };
 
-  const handleToggleParticipant = (id: string) => {
+  const handleToggleParticipant = async (id: string) => {
+    // Find current participant
+    const participant = participants.find(p => p.id === id);
+    if (!participant) return;
+    
+    const newState = !participant.is_active;
+    
+    // 1. Update DB
+    const { error } = await supabase
+      .from('elevenlabs_agents')
+      .update({ is_active: newState })
+      .eq('id', id);
+    
+    if (error) {
+      console.error('❌ Errore toggle agent:', error);
+      toast({
+        title: 'Errore',
+        description: 'Impossibile aggiornare lo stato dell\'agente',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // 2. Update local state
     setParticipants(prev => prev.map(p => 
-      p.id === id ? { ...p, is_active: !p.is_active } : p
+      p.id === id ? { ...p, is_active: newState } : p
     ));
+    
+    console.log(`✅ Agent ${participant.name} → is_active: ${newState}`);
+    toast({
+      title: 'Agente aggiornato',
+      description: `${participant.name} è ora ${newState ? 'attivo' : 'disattivato'}`
+    });
   };
 
   // Real-time subscription

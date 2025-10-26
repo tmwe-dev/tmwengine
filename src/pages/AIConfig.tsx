@@ -38,10 +38,23 @@ const AIConfig = () => {
       { value: 'o4-mini-2025-04-16', label: 'O4 Mini (reasoning veloce)', free: false }
     ],
     anthropic: [
-      { value: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5 (consigliato - più intelligente)', free: false },
-      { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1 (massime prestazioni)', free: false },
-      { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (bilanciato)', free: false },
-      { value: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (veloce)', free: false }
+      // Claude 4.5 (Latest)
+      { value: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5 (Sep 2025)', free: false },
+      { value: 'claude-haiku-4-5-20251015', label: 'Claude Haiku 4.5 (Oct 2025)', free: false },
+      
+      // Claude 4
+      { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1 (Aug 2025)', free: false },
+      { value: 'claude-opus-4-20250514', label: 'Claude Opus 4 (May 2025)', free: false },
+      { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (May 2025)', free: false },
+      
+      // Claude 3.5
+      { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet (Oct 2024)', free: false },
+      { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku (Oct 2024)', free: false },
+      
+      // Claude 3
+      { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus (Feb 2024)', free: false },
+      { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet (Feb 2024)', free: false },
+      { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku (Mar 2024)', free: false },
     ],
     google: [
       { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', free: true },

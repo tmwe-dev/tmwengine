@@ -3,7 +3,7 @@ import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Key
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
-import { RadioMessageView } from '@/components/radio-chat/RadioMessageView';
+import { RadioMessagePopup } from '@/components/radio-chat/RadioMessagePopup';
 import { RadioCarousel3D } from '@/components/radio-chat/RadioCarousel3D';
 import { RadioParticipantSelector } from '@/components/radio-chat/RadioParticipantSelector';
 import { RadioSidebarTrigger } from '@/components/radio-chat/RadioSidebarTrigger';
@@ -29,7 +29,7 @@ const RadioChat = () => {
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [inputVisible, setInputVisible] = useState(false);
-  const [messageViewVisible, setMessageViewVisible] = useState(false);
+  const [popupOpen, setPopupOpen] = useState(false);
   const [messages, setMessages] = useState<RadioMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'carousel' | 'messages'>('carousel');
@@ -367,15 +367,15 @@ const RadioChat = () => {
         onToggle={() => setSidebarOpen(true)}
       />
 
-      {/* FileText Icon - Below Keyboard */}
+      {/* MessageSquare Icon - Open Popup */}
       <button
-        onClick={() => setMessageViewVisible(!messageViewVisible)}
+        onClick={() => setPopupOpen(!popupOpen)}
         className="fixed left-0 bottom-64 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20 flex items-center justify-center transition-all duration-200 hover:bg-white/5"
-        aria-label="Toggle message view"
+        aria-label="Open message popup"
       >
-        <FileText 
+        <MessageSquare 
           className={`w-6 h-6 transition-colors ${
-            messageViewVisible ? 'text-gray-500' : (currentMessage ? 'text-cyan-400' : 'text-gray-500')
+            popupOpen ? 'text-cyan-400' : (currentMessage ? 'text-white/70' : 'text-gray-500')
           }`}
           strokeWidth={1}
         />
@@ -446,19 +446,8 @@ const RadioChat = () => {
               </div>
             )}
             
-              {/* Message View - Sovrapposto al carousel */}
-              {messageViewVisible && currentMessage ? (
-                <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[40%] overflow-y-auto bg-gradient-to-t from-background via-background/95 to-transparent p-6 animate-in slide-in-from-bottom-4 duration-200">
-                  <RadioMessageView
-                    message={currentMessage}
-                    onAudioEnd={onAudioEndComplete}
-                    onAudioStart={(msgId) => handleAudioStart(msgId)}
-                    isAudioEnabled={isAudioEnabled}
-                    canAutoPlay={canPlayAudio(currentMessage.id)}
-                    showAudioPlayer={true}
-                  />
-                </div>
-              ) : messages.length > 0 && !currentMessage && (
+              {/* Placeholder message */}
+              {messages.length > 0 && !currentMessage && (
                 <div className="absolute bottom-0 left-0 right-0 z-20 p-6 text-center text-white/50">
                   Invia un messaggio per iniziare
                 </div>
@@ -548,7 +537,19 @@ const RadioChat = () => {
           messages={messages}
           activeMessageId={activeMessageId}
           onAudioEnd={handleCarouselAudioEnd}
-          className={messageViewVisible ? 'opacity-0 pointer-events-none' : ''}
+          className={popupOpen ? 'opacity-0 pointer-events-none' : ''}
+        />
+      )}
+
+      {/* Message Popup - Opens when MessageSquare icon is clicked */}
+      {popupOpen && currentMessage && (
+        <RadioMessagePopup
+          message={currentMessage}
+          onClose={() => setPopupOpen(false)}
+          onAudioEnd={onAudioEndComplete}
+          onAudioStart={handleAudioStart}
+          isAudioEnabled={isAudioEnabled}
+          canAutoPlay={canPlayAudio(currentMessage.id)}
         />
       )}
     </div>

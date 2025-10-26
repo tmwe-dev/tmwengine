@@ -195,24 +195,25 @@ const RadioChat = () => {
         return;
       }
       
-      // 3. Call orchestrator
+      // 3. Call orchestrator with correct format
       const activeParticipants = participants
         .filter(p => p.is_active)
         .map(p => ({
-          id: p.id,
           type: p.type,
           name: p.name,
-          is_active: true
+          system_prompt: ''  // Required by multiround-orchestrator
         }));
       
-      console.log('🎯 Calling orchestrator with participants:', activeParticipants);
+      console.log('🎯 Calling multiround-orchestrator with participants:', activeParticipants);
       
       // Create orchestrator promise with timeout
-      const orchestratorPromise = supabase.functions.invoke('radio-chat-orchestrator', {
+      const orchestratorPromise = supabase.functions.invoke('multiround-orchestrator', {
         body: {
           conversationId: convId,
           userMessage: messageToSend,
-          participants: activeParticipants
+          activeParticipants: activeParticipants,
+          maxWords: 60,  // Limit response length
+          audioMode: 'stable'  // Use stable TTS
         }
       });
 
@@ -291,6 +292,30 @@ const RadioChat = () => {
           };
           
           setMessages(prev => [...prev, typedMessage]);
+        }
+      )
+      .on('postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_laboratory_messages',
+          filter: `conversation_id=eq.${currentConversationId}`
+        },
+        (payload) => {
+          console.log('🔄 Message updated with audio:', payload);
+          
+          const updatedMsg = payload.new;
+          setMessages(prev => prev.map(msg =>
+            msg.id === updatedMsg.id
+              ? {
+                  ...msg,
+                  audio_url: updatedMsg.audio_url,  // Audio arrives progressively
+                  token_input: updatedMsg.token_input,
+                  token_output: updatedMsg.token_output,
+                  tempo_risposta_ms: updatedMsg.tempo_risposta_ms
+                }
+              : msg
+          ));
         }
       )
       .subscribe();

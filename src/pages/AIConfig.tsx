@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Bot, Eye, EyeOff, Plus, Trash2, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Bot, Eye, EyeOff, Plus, Trash2, CheckCircle, Loader2, AlertCircle, Edit } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const AIConfig = () => {
   const { toast } = useToast();
@@ -24,6 +25,7 @@ const AIConfig = () => {
     apiKey: '',
     attivo: false
   });
+  const [editingConfig, setEditingConfig] = useState<any>(null);
 
   // Modelli disponibili per provider
   const modelsByProvider = {
@@ -229,6 +231,55 @@ const AIConfig = () => {
         description: "Impossibile eliminare la configurazione",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleUpdateAiConfig = async (configId: string) => {
+    setSaving(true);
+    try {
+      if (!editingConfig.provider || !editingConfig.modello) {
+        toast({
+          title: "Errore",
+          description: "Provider e modello sono obbligatori",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const updateData: any = {
+        provider: editingConfig.provider,
+        modello: editingConfig.modello,
+        attivo: editingConfig.attivo
+      };
+
+      // Aggiorna API key solo se ne è stata fornita una nuova
+      if (editingConfig.apiKey && editingConfig.apiKey.trim() !== '' && editingConfig.apiKey !== '********') {
+        updateData.api_key = editingConfig.apiKey;
+      }
+
+      const { error } = await supabase
+        .from('config_ai')
+        .update(updateData)
+        .eq('id', configId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Successo",
+        description: "Configurazione aggiornata con successo",
+      });
+
+      setEditingConfig(null);
+      await loadAIConfigurations();
+    } catch (error) {
+      console.error('Errore aggiornamento AI config:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare la configurazione",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -495,6 +546,20 @@ const AIConfig = () => {
                       )}
                     </Button>
                     <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingConfig({
+                        id: config.id,
+                        provider: config.provider,
+                        modello: config.modello,
+                        apiKey: '********',
+                        attivo: config.attivo
+                      })}
+                      title="Modifica configurazione"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeleteAiConfig(config.id)}
@@ -508,6 +573,105 @@ const AIConfig = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!editingConfig} onOpenChange={(open) => !open && setEditingConfig(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Modifica Configurazione AI</DialogTitle>
+            <DialogDescription>
+              Aggiorna provider, modello o API key
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Provider Selection */}
+            <div className="space-y-1">
+              <Label className="text-sm">Provider AI</Label>
+              <Select 
+                value={editingConfig?.provider} 
+                onValueChange={(val) => setEditingConfig(prev => ({...prev, provider: val}))}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
+                  <SelectItem value="google">Google AI</SelectItem>
+                  <SelectItem value="lovable">Lovable AI Gateway</SelectItem>
+                  <SelectItem value="huggingface">HuggingFace</SelectItem>
+                  <SelectItem value="custom">Custom API</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Model Selection */}
+            <div className="space-y-1">
+              <Label className="text-sm">Modello</Label>
+              <Select 
+                value={editingConfig?.modello}
+                onValueChange={(val) => setEditingConfig(prev => ({...prev, modello: val}))}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {editingConfig?.provider && modelsByProvider[editingConfig.provider]?.map(model => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <span>{model.label}</span>
+                        {model.free && (
+                          <Badge variant="secondary" className="text-xs">GRATUITO</Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* API Key (if not Lovable) */}
+            {editingConfig?.provider !== 'lovable' && (
+              renderSecretField(
+                "API Key",
+                editingConfig?.apiKey || '',
+                "editApiKey",
+                (value) => setEditingConfig(prev => ({...prev, apiKey: value})),
+                "Nuova API key (lascia ******** per mantenere quella esistente)"
+              )
+            )}
+
+            {editingConfig?.provider === 'lovable' && (
+              <div className="space-y-1">
+                <Label className="text-sm">API Key</Label>
+                <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                  <Badge variant="secondary" className="text-xs">Auto-Configurata</Badge>
+                  <span className="text-sm text-muted-foreground">Usa LOVABLE_API_KEY da Supabase</span>
+                </div>
+              </div>
+            )}
+
+            {/* Active Toggle */}
+            <div className="flex items-center gap-2 pt-2">
+              <Switch
+                checked={editingConfig?.attivo}
+                onCheckedChange={(checked) => setEditingConfig(prev => ({...prev, attivo: checked}))}
+              />
+              <Label className="text-sm">Configurazione Attiva</Label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => setEditingConfig(null)}>
+              Annulla
+            </Button>
+            <Button onClick={() => handleUpdateAiConfig(editingConfig.id)} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Salva Modifiche
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

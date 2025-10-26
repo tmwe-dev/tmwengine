@@ -9,7 +9,7 @@ import { RadioParticipantSelector } from '@/components/radio-chat/RadioParticipa
 import { RadioSidebarTrigger } from '@/components/radio-chat/RadioSidebarTrigger';
 import { RadioParticipantIcon } from '@/components/radio-chat/RadioParticipantIcon';
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
-import { RadioCarouselAudioPlayerPopup } from '@/components/radio-chat/RadioCarouselAudioPlayerPopup';
+import { RadioCarouselAudioPlayer } from '@/components/radio-chat/RadioCarouselAudioPlayer';
 import { useRadioAudioPlayback } from '@/hooks/useRadioAudioPlayback';
 import { useAudioPreference } from '@/hooks/useAudioPreference';
 import { RadioMessage } from '@/types/radio';
@@ -475,13 +475,13 @@ const RadioChat = () => {
             </div>
             
             {/* Audio Player - Fixed below carousel */}
-            {!messageViewVisible && (
-              <RadioCarouselAudioPlayerPopup
+            <div className="shrink-0 border-t border-purple-400/20 bg-gradient-to-b from-black/40 to-black/60">
+              <RadioCarouselAudioPlayer
                 messages={messages}
                 activeMessageId={activeMessageId}
                 onAudioEnd={handleCarouselAudioEnd}
               />
-            )}
+            </div>
           </div>
         ) : (
           (() => {

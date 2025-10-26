@@ -1,4 +1,4 @@
-import { RadioAudioPlayerPopup } from './RadioAudioPlayerPopup';
+import { RadioAudioPlayer } from './RadioAudioPlayer';
 import { RadioMessage } from '@/types/radio';
 
 interface RadioMessageViewProps {
@@ -31,7 +31,7 @@ export const RadioMessageView = ({
       </div>
       
       {message.audio_url && (
-        <RadioAudioPlayerPopup
+        <RadioAudioPlayer
           audioUrl={message.audio_url}
           messageId={message.id}
           autoPlay={!isHuman}

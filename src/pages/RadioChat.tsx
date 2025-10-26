@@ -59,19 +59,30 @@ const RadioChat = () => {
   // Load participants from elevenlabs_agents
   useEffect(() => {
     const loadParticipants = async () => {
+      console.log('🔍 [DEBUG] Inizio caricamento participants...');
+      
       const { data, error } = await supabase
         .from('elevenlabs_agents')
         .select('id, name, is_active, elevenlabs_agent_id')
         .eq('is_active', true) // ✅ Solo agenti disponibili nel sistema
         .order('order_index', { ascending: true });
       
+      console.log('🔍 [DEBUG] Query result:', { data, error, count: data?.length || 0 });
+      
       if (error) {
         console.error('❌ Errore caricamento agents:', error);
         return;
       }
       
+      if (!data || data.length === 0) {
+        console.warn('⚠️ Nessun agente disponibile nel DB (is_active=true)');
+        return;
+      }
+      
       // Map agents to participants
       const mapped: RadioParticipant[] = (data || []).map(agent => {
+        console.log('🔍 [DEBUG] Mapping agent:', { name: agent.name, id: agent.id });
+        
         // Extract type from name (e.g., "Vittorio - Gemini" → "gemini")
         let type: 'chatgpt' | 'gemini' | 'claude' = 'gemini';
         const nameLower = agent.name.toLowerCase();
@@ -418,17 +429,21 @@ const RadioChat = () => {
 
   return (
     <div className="relative h-full">
-      <RadioSidebar 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-        conversationId={currentConversationId}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        isAutoAdvanceEnabled={isAutoAdvanceEnabled}
-        onAutoAdvanceChange={setIsAutoAdvanceEnabled}
-        participants={participants}
-        onToggleParticipant={handleToggleParticipant}
-      />
+        {(() => {
+          console.log('🔍 [DEBUG] Rendering RadioSidebar con participants:', participants);
+          return null;
+        })()}
+        <RadioSidebar 
+          isOpen={sidebarOpen} 
+          onClose={() => setSidebarOpen(false)} 
+          conversationId={currentConversationId}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          isAutoAdvanceEnabled={isAutoAdvanceEnabled}
+          onAutoAdvanceChange={setIsAutoAdvanceEnabled}
+          participants={participants}
+          onToggleParticipant={handleToggleParticipant}
+        />
 
       {/* Debug Icon - Above Toggle Buttons (Solo in development) */}
       {import.meta.env.DEV && (

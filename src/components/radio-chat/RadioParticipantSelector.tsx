@@ -20,6 +20,16 @@ export function RadioParticipantSelector({
   className 
 }: RadioParticipantSelectorProps) {
   
+  console.log('🔍 [DEBUG] RadioParticipantSelector riceve:', participants);
+  
+  if (!participants || participants.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground text-center py-4 px-2 border border-dashed border-border rounded-lg">
+        ⚠️ Nessun agente disponibile. Verifica le impostazioni.
+      </div>
+    );
+  }
+  
   const avatarConfig = {
     chatgpt: {
       active: '🤖',

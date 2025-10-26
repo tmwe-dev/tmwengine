@@ -28,6 +28,34 @@ serve(async (req) => {
     const { conversationId, userMessage, participants } = await req.json();
     console.log('📻 Radio Chat Orchestrator riceve:', { conversationId, userMessage, participants });
 
+    // ============ VALIDATION: Check participants ============
+    if (!participants || participants.length === 0) {
+      console.error('❌ Nessun partecipante fornito');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Nessun agente disponibile. Attiva almeno un agente nella sidebar.' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const activeParticipantsCheck = participants.filter((p: any) => p.is_active);
+    if (activeParticipantsCheck.length === 0) {
+      console.error('❌ Nessun agente attivo trovato');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Tutti gli agenti sono disattivati. Attiva almeno un agente nella sidebar.' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''

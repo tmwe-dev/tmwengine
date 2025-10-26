@@ -1,21 +1,18 @@
-import { X, LayoutGrid, MessageSquare } from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioVoiceSelector } from './RadioVoiceSelector';
 import { RadioPromptSelector } from './RadioPromptSelector';
 import { RadioStrategySelector } from './RadioStrategySelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
 
 interface RadioSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   conversationId: string | null;
-  viewMode: 'carousel' | 'messages';
-  onViewModeChange: (mode: 'carousel' | 'messages') => void;
 }
 
-export function RadioSidebar({ isOpen, onClose, conversationId, viewMode, onViewModeChange }: RadioSidebarProps) {
+export function RadioSidebar({ isOpen, onClose, conversationId }: RadioSidebarProps) {
   return (
     <>
       {/* Backdrop */}
@@ -52,43 +49,6 @@ export function RadioSidebar({ isOpen, onClose, conversationId, viewMode, onView
               </TabsList>
 
               <TabsContent value="voice" className="mt-0">
-                <div className="p-4 space-y-4">
-                  {/* Toggle Carousel/Messages */}
-                  <div className="flex items-center justify-between p-4 rounded-lg bg-primary/10">
-                    <div className="flex items-center gap-3">
-                      {viewMode === 'carousel' ? (
-                        <LayoutGrid className="w-5 h-5 text-primary" />
-                      ) : (
-                        <MessageSquare className="w-5 h-5 text-primary" />
-                      )}
-                      <div>
-                        <div className="font-medium text-sm">Modalità Visualizzazione</div>
-                        <div className="text-xs text-muted-foreground">
-                          {viewMode === 'carousel' ? 'Carosello 3D' : 'Lista Messaggi'}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant={viewMode === 'carousel' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => onViewModeChange('carousel')}
-                        className="h-8 px-3"
-                      >
-                        3D
-                      </Button>
-                      <Button
-                        variant={viewMode === 'messages' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => onViewModeChange('messages')}
-                        className="h-8 px-3"
-                      >
-                        Lista
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                
                 <RadioVoiceSelector conversationId={conversationId} />
               </TabsContent>
 

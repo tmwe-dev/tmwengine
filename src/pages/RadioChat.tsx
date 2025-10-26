@@ -48,21 +48,6 @@ const RadioChat = () => {
   
   const { toast } = useToast();
   
-  // Sincronizza messageViewVisible con evento da topbar
-  useEffect(() => {
-    const handleMessageViewToggle = (e: CustomEvent) => {
-      setMessageViewVisible(e.detail.visible);
-    };
-    window.addEventListener('radio-messageview-toggle', handleMessageViewToggle as EventListener);
-    return () => window.removeEventListener('radio-messageview-toggle', handleMessageViewToggle as EventListener);
-  }, []);
-
-  // Sincronizza anche al mount
-  useEffect(() => {
-    const stored = localStorage.getItem('radio-message-view');
-    if (stored !== null) setMessageViewVisible(stored === 'true');
-  }, []);
-  
   const { isAudioPlaying, handleAudioStart, handleAudioEnd: audioEnd } = useAudioPlayback();
   const { isAudioEnabled } = useAudioPreference();
   
@@ -326,8 +311,6 @@ const RadioChat = () => {
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)} 
         conversationId={currentConversationId}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
       />
 
       {/* Debug Icon - Above Toggle Buttons (Solo in development) */}
@@ -342,6 +325,25 @@ const RadioChat = () => {
         </Button>
       )}
 
+      {/* Toggle Carousel/Messages - Top Left */}
+      <div className="fixed left-4 top-32 z-35 flex flex-col gap-2">
+        <Button
+          variant={viewMode === 'carousel' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('carousel')}
+        >
+          <LayoutGrid className="w-4 h-4 mr-2" />
+          Carousel
+        </Button>
+        <Button
+          variant={viewMode === 'messages' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('messages')}
+        >
+          <MessageSquare className="w-4 h-4 mr-2" />
+          Messages
+        </Button>
+      </div>
 
       {/* Participant Icons - Vertical Stack Above Hamburger */}
       <div className="fixed left-4 bottom-28 z-40 flex flex-col gap-3">
@@ -363,6 +365,18 @@ const RadioChat = () => {
         onToggle={() => setSidebarOpen(true)}
       />
 
+      {/* FileText Icon - Below Keyboard */}
+      <button
+        onClick={() => setMessageViewVisible(!messageViewVisible)}
+        className="fixed left-0 bottom-64 z-40 w-12 h-20 bg-black rounded-r-lg flex items-center justify-center transition-all duration-200 hover:w-14"
+        aria-label="Toggle message view"
+      >
+        <FileText 
+          className={`w-6 h-6 transition-colors ${
+            messageViewVisible ? 'text-gray-500' : (currentMessage ? 'text-cyan-400' : 'text-gray-500')
+          }`} 
+        />
+      </button>
 
       {/* Keyboard Icon - Above Hamburger */}
       <button

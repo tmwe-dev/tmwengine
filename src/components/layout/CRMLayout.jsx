@@ -37,8 +37,7 @@ import {
   Check,
   User,
   Sparkles,
-  Globe,
-  FileText
+  Globe
  } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -164,38 +163,6 @@ const CRMLayout = ({ children }) => {
     }
   }, [location.pathname]);
 
-  const RadioChatFileTextToggle = () => {
-    const location = useLocation();
-    const [messageViewVisible, setMessageViewVisible] = useState(() => {
-      return localStorage.getItem('radio-message-view') === 'true';
-    });
-
-    // Non mostrare se non siamo su RadioChat
-    if (location.pathname !== '/radio-chat') return null;
-
-    const toggleMessageView = () => {
-      const newValue = !messageViewVisible;
-      setMessageViewVisible(newValue);
-      localStorage.setItem('radio-message-view', String(newValue));
-      // Dispatch event per comunicare con RadioChat
-      window.dispatchEvent(new CustomEvent('radio-messageview-toggle', { 
-        detail: { visible: newValue } 
-      }));
-    };
-
-    return (
-      <Button
-        variant={messageViewVisible ? "default" : "ghost"}
-        size="icon"
-        onClick={toggleMessageView}
-        className="h-8 w-8 shrink-0"
-        title="Dettagli Messaggio"
-      >
-        <FileText className="h-4 w-4" />
-      </Button>
-    );
-  };
-
   return (
     <div 
       className="min-h-screen"
@@ -257,9 +224,6 @@ const CRMLayout = ({ children }) => {
           >
             <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
           </button>
-
-          {/* FileText Toggle per RadioChat */}
-          <RadioChatFileTextToggle />
 
           {/* TMWE Profile Button - only show if user has profile */}
           {userProfile && (

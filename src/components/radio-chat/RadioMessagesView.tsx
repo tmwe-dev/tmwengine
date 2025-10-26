@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { MultiAgentMessage } from '@/components/chat-laboratory/MultiAgentMessage';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioMessage } from '@/types/radio';
@@ -33,14 +34,27 @@ export function RadioMessagesView({
     isAudioPlaying
   });
 
+  // State per sincronizzazione (come Chat Laboratory)
+  const [shouldSwitchTab, setShouldSwitchTab] = useState(false);
+
   // Callback combinato: gestisce sia audio che cambio tab
   const onAudioEndComplete = () => {
-    console.log('🎬 [RadioMessagesView] ═══ AUDIO COMPLETATO ═══');
-    console.log('🎬 [RadioMessagesView] activeMessageId prima:', activeMessageId);
-    audioEnd();
-    console.log('🎬 [RadioMessagesView] Chiamata tabSwitchOnAudioEnd...');
-    tabSwitchOnAudioEnd();
+    console.log(`🎬 [RadioMessagesView] onAudioEndComplete chiamato`);
+    audioEnd(); 
+    
+    setTimeout(() => {
+      setShouldSwitchTab(true);
+    }, 50);
   };
+
+  // useEffect per sincronizzazione (come Chat Laboratory)
+  useEffect(() => {
+    if (shouldSwitchTab && !isAudioPlaying) {
+      console.log(`🔄 [RadioMessagesView] Sincronizzazione completata, cambio tab`);
+      tabSwitchOnAudioEnd();
+      setShouldSwitchTab(false);
+    }
+  }, [shouldSwitchTab, isAudioPlaying, tabSwitchOnAudioEnd]);
 
   // Convert RadioMessage to expected format for MultiAgentMessage
   const formattedMessages = messages.map(msg => {

@@ -10,7 +10,6 @@ import { RadioSidebarTrigger } from '@/components/radio-chat/RadioSidebarTrigger
 import { RadioParticipantIcon } from '@/components/radio-chat/RadioParticipantIcon';
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
 import { useRadioAudioPlayback } from '@/hooks/useRadioAudioPlayback';
-import { useRadioTabSwitching } from '@/hooks/useRadioTabSwitching';
 import { useAudioPreference } from '@/hooks/useAudioPreference';
 import { RadioMessage } from '@/types/radio';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,42 +44,36 @@ const RadioChat = () => {
   const { toast } = useToast();
   
   // Hooks audio dedicati per Radio Chat
+  // Hooks audio dedicati per Radio Chat
   const { 
     isAudioPlaying, 
     currentPlayingId,
     canPlayAudio,
     handleAudioStart, 
-    handleAudioEnd: audioEnd
+    handleAudioEnd
   } = useRadioAudioPlayback();
   
   const { isAudioEnabled } = useAudioPreference();
   
-  const {
-    activeMessageId,
-    setActiveMessageId,
-    handleAudioEnd: tabSwitchOnAudioEnd,
-    unseenMessagesQueue
-  } = useRadioTabSwitching({
-    messages,
-    isAutoAdvanceEnabled,
-    isAudioPlaying
-  });
-  
-  // Calculate current message and AI messages
+  // Calculate AI messages
   const aiMessages = messages.filter(m => m.sender_type !== 'human');
+  
+  // Simple state for carousel navigation (only used in carousel mode)
+  const [activeMessageId, setActiveMessageId] = useState<string>('');
+  
+  // Auto-set first AI message as active for carousel
+  useEffect(() => {
+    if (aiMessages.length > 0 && !activeMessageId) {
+      setActiveMessageId(aiMessages[0].id);
+    }
+  }, [aiMessages.length, activeMessageId]);
+  
   const currentMessage = messages.find(m => m.id === activeMessageId) || null;
   
-  // Callback completo quando audio finisce
+  // Callback per fine audio nel carousel mode (no auto-advance)
   const onAudioEndComplete = () => {
-    console.log('🎬 [RadioChat] onAudioEndComplete chiamato');
-    audioEnd(); // Setta isAudioPlaying = false
-    
-    // Se auto-advance attivo, cambia tab dopo delay
-    if (isAutoAdvanceEnabled) {
-      setTimeout(() => {
-        tabSwitchOnAudioEnd();
-      }, 50);
-    }
+    console.log('🎬 [RadioChat] Audio completato in carousel mode');
+    handleAudioEnd();
   };
 
   // Navigazione manuale per carousel
@@ -525,13 +518,12 @@ const RadioChat = () => {
           </div>
           <div className="space-y-1">
             <div>Mode: {viewMode}</div>
-            <div>Active: {activeMessageId?.substring(0, 8)}</div>
+            <div>Active: {activeMessageId?.substring(0, 8) || 'NONE'}</div>
             <div>Current Msg: {currentMessage?.sender_name || 'NONE'}</div>
             <div>Sending: {isSending ? 'YES' : 'NO'}</div>
-            <div>Queue: {unseenMessagesQueue.length}</div>
+            <div>Queue: N/A</div>
             <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
             <div>Playing ID: {currentPlayingId?.substring(0, 8) || 'NONE'}</div>
-            <div>Auto-Advance: {isAutoAdvanceEnabled ? 'ON' : 'OFF'}</div>
             <div>Total: {messages.length}</div>
             <div>AI: {aiMessages.length}</div>
             <div>Participants: {participants.filter(p => p.is_active).map(p => p.name).join(', ')}</div>

@@ -2,7 +2,7 @@ import { MultiAgentMessage } from '@/components/chat-laboratory/MultiAgentMessag
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioMessage } from '@/types/radio';
 import { useRadioAudioPlayback } from '@/hooks/useRadioAudioPlayback';
-import { useRadioTabSwitching } from '@/hooks/useRadioTabSwitching';
+import { useRadioVirtualTabs } from '@/hooks/useRadioVirtualTabs';
 
 interface RadioMessagesViewProps {
   messages: RadioMessage[];
@@ -15,27 +15,27 @@ export function RadioMessagesView({
   isAutoAdvanceEnabled = true,
   isAudioEnabled = true
 }: RadioMessagesViewProps) {
-  // Usa hooks dedicati per gestione audio e tab switching
+  // Hook per gestione stato audio
   const { 
-    isAudioPlaying,
-    currentPlayingId, 
     handleAudioStart, 
     handleAudioEnd: audioEnd 
   } = useRadioAudioPlayback();
 
+  // Hook per tab virtuali (replica logica MessageTabsView)
   const {
+    activeMessageId,
+    canAutoPlayForMessage,
     handleAudioEnd: tabSwitchOnAudioEnd
-  } = useRadioTabSwitching({
+  } = useRadioVirtualTabs({
     messages,
-    isAutoAdvanceEnabled,
-    isAudioPlaying
+    isAutoAdvanceEnabled
   });
 
+  // Callback combinato: gestisce sia audio che cambio tab
   const onAudioEndComplete = () => {
+    console.log('🎬 [RadioMessagesView] Audio completato');
     audioEnd();
-    if (isAutoAdvanceEnabled) {
-      setTimeout(() => tabSwitchOnAudioEnd(), 50);
-    }
+    tabSwitchOnAudioEnd();
   };
 
   // Convert RadioMessage to expected format for MultiAgentMessage
@@ -67,38 +67,21 @@ export function RadioMessagesView({
     totalMessages: formattedMessages.length,
     messagesWithAudio: formattedMessages.filter(m => m.audio_url).length,
     isAudioEnabled,
-    isAudioPlaying,
-    currentPlayingId
-  });
-
-  formattedMessages.forEach((msg, idx) => {
-    console.log(`📝 [RadioMessagesView] Messaggio ${idx}:`, {
-      id: msg.id,
-      sender_type: msg.sender_type,
-      sender_name: msg.sender_name,
-      has_audio: !!msg.audio_url,
-      audio_url: msg.audio_url?.substring(0, 50)
-    });
+    activeMessageId: activeMessageId.substring(0, 8)
   });
 
   return (
     <ScrollArea className="h-full px-4">
       <div className="space-y-4 pb-4 max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto">
-        {formattedMessages.map((message, index) => {
-          // 🎯 Primo messaggio AI deve SEMPRE poter fare autoplay
-          const isFirstAIMessage = message.sender_type !== 'human' && 
-            index === formattedMessages.findIndex(m => m.sender_type !== 'human');
+        {formattedMessages.map((message) => {
+          // 🎯 LOGICA TAB VIRTUALE: canAutoPlay basato su activeMessageId
+          const canAutoPlay = canAutoPlayForMessage(message.id) && isAudioEnabled;
           
-          const canAutoPlay = isFirstAIMessage || 
-            (!isAudioPlaying || currentPlayingId === message.id);
-          
-          console.log(`🎵 [RadioMessagesView] Messaggio ${message.id}:`, {
-            sender: message.sender_name,
-            isFirstAI: isFirstAIMessage,
-            canAutoPlay: canAutoPlay && isAudioEnabled,
-            isAudioEnabled,
-            isAudioPlaying,
-            currentPlayingId
+          console.log(`🎵 [RadioMessagesView] Messaggio ${message.sender_name}:`, {
+            messageId: message.id.substring(0, 8),
+            isActive: message.id === activeMessageId,
+            canAutoPlay,
+            hasAudio: !!message.audio_url
           });
           
           return (
@@ -109,7 +92,7 @@ export function RadioMessagesView({
               onAudioStateChange={(playing) => 
                 playing ? handleAudioStart(message.id) : audioEnd()
               }
-              canAutoPlay={canAutoPlay && isAudioEnabled}
+              canAutoPlay={canAutoPlay}
             />
           );
         })}

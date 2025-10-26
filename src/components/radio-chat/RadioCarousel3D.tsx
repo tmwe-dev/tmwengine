@@ -22,31 +22,90 @@ const createTextTexture = (message: RadioMessage, renderer?: THREE.WebGLRenderer
   canvas.height = H * DPR;
   ctx.scale(DPR, DPR); // Fondamentale per font nitidi
 
-  // Background bianco puro (contrasto massimo)
-  ctx.fillStyle = '#ffffff';
+  // Configurazione colori per ogni tipo di sender (come nelle card messages)
+  const gradientConfig = {
+    human: { 
+      from: 'rgba(59, 130, 246, 0.1)',    // blue-500/10
+      to: 'rgba(37, 99, 235, 0.05)',      // blue-600/5
+      border: 'rgba(59, 130, 246, 0.2)',  // blue-500/20
+      title: '#1e40af',                    // blue-800
+      badge: '#2563eb'                     // blue-600
+    },
+    chatgpt: { 
+      from: 'rgba(34, 197, 94, 0.1)',     // green-500/10
+      to: 'rgba(22, 163, 74, 0.05)',      // green-600/5
+      border: 'rgba(34, 197, 94, 0.2)',   // green-500/20
+      title: '#166534',                    // green-800
+      badge: '#16a34a'                     // green-600
+    },
+    gemini: { 
+      from: 'rgba(6, 182, 212, 0.1)',     // cyan-500/10
+      to: 'rgba(8, 145, 178, 0.05)',      // cyan-600/5
+      border: 'rgba(6, 182, 212, 0.2)',   // cyan-500/20
+      title: '#155e75',                    // cyan-800
+      badge: '#0891b2'                     // cyan-600
+    },
+    claude: { 
+      from: 'rgba(168, 85, 247, 0.1)',    // purple-500/10
+      to: 'rgba(147, 51, 234, 0.05)',     // purple-600/5
+      border: 'rgba(168, 85, 247, 0.2)',  // purple-500/20
+      title: '#6b21a8',                    // purple-800
+      badge: '#9333ea'                     // purple-600
+    }
+  };
+
+  const senderType = message.sender_type as 'human' | 'chatgpt' | 'gemini' | 'claude';
+  const colors = gradientConfig[senderType];
+
+  // Background gradiente diagonale (come nelle card)
+  const gradient = ctx.createLinearGradient(0, 0, W, H);
+  gradient.addColorStop(0, colors.from);
+  gradient.addColorStop(1, colors.to);
+  ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, W, H);
+
+  // Bordo colorato
+  ctx.strokeStyle = colors.border;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(1.5, 1.5, W - 3, H - 3);
 
   // Specchia orizzontalmente
   ctx.save();
   ctx.scale(-1, 1);
   ctx.translate(-W, 0);
 
-  // Titolo (nome sender)
-  ctx.fillStyle = '#444444';
-  ctx.font = 'bold 36px sans-serif'; // Font più leggibile
-  ctx.textAlign = 'center';
-  ctx.fillText(message.sender_name, W / 2, 60);
+  // Badge tipo agente (top-right corner, ma specchiato diventa top-left)
+  const badgeText = senderType.toUpperCase();
+  const badgePadding = 12;
+  const badgeHeight = 32;
+  ctx.font = 'bold 18px sans-serif';
+  const badgeWidth = ctx.measureText(badgeText).width + badgePadding * 2;
 
-  // Corpo messaggio
-  ctx.fillStyle = '#333333';
-  ctx.font = '24px sans-serif'; // Font corpo ottimizzato
+  // Badge background
+  ctx.fillStyle = colors.badge;
+  ctx.fillRect(20, 20, badgeWidth, badgeHeight);
+
+  // Badge text
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.fillText(badgeText, 20 + badgeWidth/2, 20 + badgeHeight/2 + 6);
+
+  // Titolo (nome sender) con colore del brand
+  ctx.fillStyle = colors.title;
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(message.sender_name, W / 2, 80);
+
+  // Corpo messaggio con colore grigio scuro
+  ctx.fillStyle = '#1f2937'; // gray-800
+  ctx.font = '24px sans-serif';
   ctx.textAlign = 'left';
 
-  const lineHeight = 32; // Spaziatura migliore
+  const lineHeight = 32;
   const maxWidth = W - 80;
   const words = message.content.split(' ');
   let x = 40;
-  let y = 120;
+  let y = 140; // Spostato più in basso per fare spazio al badge
   let line = '';
 
   for (let i = 0; i < words.length; i++) {

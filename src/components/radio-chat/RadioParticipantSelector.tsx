@@ -47,7 +47,6 @@ export function RadioParticipantSelector({
           <button
             key={participant.id}
             onClick={() => onToggle(participant.id)}
-            disabled={!participant.is_active}
             className={cn(
               "relative w-16 h-16 rounded-full",
               "flex items-center justify-center text-2xl",
@@ -55,11 +54,11 @@ export function RadioParticipantSelector({
               "border-2",
               participant.is_active
                 ? `bg-gradient-to-br ${config.color} border-white shadow-lg hover:scale-110 cursor-pointer`
-                : "bg-gray-700 border-gray-600 opacity-30 cursor-not-allowed"
+                : "bg-gray-800 border-gray-500 opacity-50 hover:opacity-70 cursor-pointer"
             )}
             title={participant.is_active 
               ? `${participant.name} - Clicca per disattivare` 
-              : `${participant.name} - Disattivato nel CRM`}
+              : `${participant.name} - Clicca per attivare`}
           >
             <span className={cn(
               "transition-all duration-300",

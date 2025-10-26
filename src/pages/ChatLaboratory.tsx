@@ -416,13 +416,60 @@ const ChatLaboratory = () => {
   };
 
   const initializeParticipants = async () => {
-    const defaultParticipants: Participant[] = [
-      { id: 'human-1', type: 'human', name: 'Tu', is_active: true },
-      { id: 'chatgpt-1', type: 'chatgpt', name: 'ChatGPT', is_active: true, system_prompt: '' },
-      { id: 'gemini-1', type: 'gemini', name: 'Gemini', is_active: true, system_prompt: '' },
-      { id: 'claude-1', type: 'claude', name: 'Claude', is_active: true, system_prompt: '' },
-    ];
-    setParticipants(defaultParticipants);
+    try {
+      // ✅ Carica agenti disponibili dal DB
+      const { data, error } = await supabase
+        .from('elevenlabs_agents')
+        .select('id, name, is_active, elevenlabs_agent_id')
+        .eq('is_active', true) // ✅ Solo agenti disponibili nel sistema
+        .order('order_index', { ascending: true });
+      
+      if (error) {
+        console.error('❌ Errore caricamento agents:', error);
+        // Fallback a default se errore
+        const defaultParticipants: Participant[] = [
+          { id: 'human-1', type: 'human', name: 'Tu', is_active: true },
+          { id: 'chatgpt-1', type: 'chatgpt', name: 'ChatGPT', is_active: true, system_prompt: '' },
+          { id: 'gemini-1', type: 'gemini', name: 'Gemini', is_active: true, system_prompt: '' },
+          { id: 'claude-1', type: 'claude', name: 'Claude', is_active: true, system_prompt: '' },
+        ];
+        setParticipants(defaultParticipants);
+        return;
+      }
+      
+      // Map agents to participants
+      const aiParticipants: Participant[] = (data || []).map(agent => {
+        let type: 'chatgpt' | 'gemini' | 'claude' = 'gemini';
+        const nameLower = agent.name.toLowerCase();
+        
+        if (nameLower.includes('chatgpt') || nameLower.includes('gpt')) {
+          type = 'chatgpt';
+        } else if (nameLower.includes('claude') || nameLower.includes('anthropic')) {
+          type = 'claude';
+        } else if (nameLower.includes('gemini')) {
+          type = 'gemini';
+        }
+        
+        return {
+          id: agent.elevenlabs_agent_id || agent.id,
+          type,
+          name: agent.name.split(' - ')[0],
+          is_active: true, // ✅ Attivi in conversazione di default
+          system_prompt: ''
+        };
+      });
+      
+      // Aggiungi sempre l'utente umano
+      const allParticipants: Participant[] = [
+        { id: 'human-1', type: 'human', name: 'Tu', is_active: true },
+        ...aiParticipants
+      ];
+      
+      console.log('✅ Participants caricati in ChatLaboratory:', allParticipants);
+      setParticipants(allParticipants);
+    } catch (err) {
+      console.error('❌ Errore in initializeParticipants:', err);
+    }
   };
 
   const loadConversations = async () => {

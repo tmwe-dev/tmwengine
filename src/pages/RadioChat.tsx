@@ -62,6 +62,7 @@ const RadioChat = () => {
       const { data, error } = await supabase
         .from('elevenlabs_agents')
         .select('id, name, is_active, elevenlabs_agent_id')
+        .eq('is_active', true) // ✅ Solo agenti disponibili nel sistema
         .order('order_index', { ascending: true });
       
       if (error) {
@@ -87,7 +88,7 @@ const RadioChat = () => {
           id: agent.elevenlabs_agent_id || agent.id,
           type,
           name: agent.name.split(' - ')[0], // "Vittorio - Gemini" → "Vittorio"
-          is_active: agent.is_active
+          is_active: true // ✅ Tutti gli agenti caricati sono attivi in conversazione di default
         };
       });
       
@@ -307,38 +308,22 @@ const RadioChat = () => {
     }
   };
 
-  const handleToggleParticipant = async (id: string) => {
-    // Find current participant
+  const handleToggleParticipant = (id: string) => {
+    // ✅ Toggle SOLO stato locale (attivo/disattivo in questa conversazione)
+    // NON modifica il DB (disponibilità globale gestita in /settings)
     const participant = participants.find(p => p.id === id);
     if (!participant) return;
     
     const newState = !participant.is_active;
     
-    // 1. Update DB
-    const { error } = await supabase
-      .from('elevenlabs_agents')
-      .update({ is_active: newState })
-      .eq('id', id);
-    
-    if (error) {
-      console.error('❌ Errore toggle agent:', error);
-      toast({
-        title: 'Errore',
-        description: 'Impossibile aggiornare lo stato dell\'agente',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    // 2. Update local state
     setParticipants(prev => prev.map(p => 
       p.id === id ? { ...p, is_active: newState } : p
     ));
     
-    console.log(`✅ Agent ${participant.name} → is_active: ${newState}`);
+    console.log(`✅ Agent ${participant.name} → attivo in conversazione: ${newState}`);
     toast({
-      title: 'Agente aggiornato',
-      description: `${participant.name} è ora ${newState ? 'attivo' : 'disattivato'}`
+      title: newState ? 'Agente attivato' : 'Agente disattivato',
+      description: `${participant.name} è ${newState ? 'attivo' : 'disattivo'} in questa conversazione`,
     });
   };
 

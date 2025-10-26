@@ -456,7 +456,7 @@ const RadioChat = () => {
           </div>
         ) : (
           /* Messages View - Full overlay con background */
-          <div className="fixed inset-0 z-40 bg-background pt-32 pb-24">
+          <div className="w-full h-full pt-20 pb-24">
             <RadioMessagesView messages={messages} />
           </div>
         )}

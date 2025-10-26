@@ -31,21 +31,24 @@ export const AudioMessagePlayer = ({
     const audio = audioRef.current;
     if (!audio) return;
 
+    console.log('🎧 [AudioMessagePlayer] useEffect triggered - audioUrl:', audioUrl.substring(0, 50), 'autoPlay:', autoPlay);
+
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
     const handleLoadedMetadata = () => setDuration(audio.duration);
     
     const handleEnded = () => {
+      console.log('🏁 [AudioMessagePlayer] handleEnded chiamato');
       setIsPlaying(false);
       onPlayingChange?.(false);
+      console.log('🏁 [AudioMessagePlayer] Chiamata onPlayEnd...');
       onPlayEnd?.();
     };
 
     const handleError = () => {
-      console.error('❌ Audio playback error');
+      console.error('❌ [AudioMessagePlayer] Audio playback error');
       setIsPlaying(false);
       onPlayingChange?.(false);
       onError?.(new Error('Audio playback failed'));
-      // ✅ FIX 2: onPlayEnd viene chiamato da onError in MultiAgentMessage, evitiamo doppia chiamata
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -54,11 +57,15 @@ export const AudioMessagePlayer = ({
     audio.addEventListener('error', handleError);
 
     if (autoPlay) {
+      console.log('🔊 [AudioMessagePlayer] autoPlay=true, avvio playback...');
       audio.play().then(() => {
+        console.log('✅ [AudioMessagePlayer] Playback avviato con successo');
         setIsPlaying(true);
         onPlayingChange?.(true);
         onPlayStart?.();
-      }).catch(console.error);
+      }).catch((err) => {
+        console.error('❌ [AudioMessagePlayer] Errore play():', err);
+      });
     }
 
     return () => {

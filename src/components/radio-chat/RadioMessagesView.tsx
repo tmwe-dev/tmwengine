@@ -33,8 +33,10 @@ export function RadioMessagesView({
 
   // Callback combinato: gestisce sia audio che cambio tab
   const onAudioEndComplete = () => {
-    console.log('🎬 [RadioMessagesView] Audio completato');
+    console.log('🎬 [RadioMessagesView] ═══ AUDIO COMPLETATO ═══');
+    console.log('🎬 [RadioMessagesView] activeMessageId prima:', activeMessageId);
     audioEnd();
+    console.log('🎬 [RadioMessagesView] Chiamata tabSwitchOnAudioEnd...');
     tabSwitchOnAudioEnd();
   };
 
@@ -77,12 +79,15 @@ export function RadioMessagesView({
           // 🎯 LOGICA TAB VIRTUALE: canAutoPlay basato su activeMessageId
           const canAutoPlay = canAutoPlayForMessage(message.id) && isAudioEnabled;
           
-          console.log(`🎵 [RadioMessagesView] Messaggio ${message.sender_name}:`, {
-            messageId: message.id.substring(0, 8),
-            isActive: message.id === activeMessageId,
-            canAutoPlay,
-            hasAudio: !!message.audio_url
-          });
+          if (message.audio_url) {
+            console.log(`🎵 [RadioMessagesView] Render messaggio ${message.sender_name}:`, {
+              messageId: message.id.substring(0, 8),
+              isActive: message.id === activeMessageId,
+              canAutoPlay,
+              hasAudio: true,
+              senderType: message.sender_type
+            });
+          }
           
           return (
             <MultiAgentMessage

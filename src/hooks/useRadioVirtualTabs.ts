@@ -75,22 +75,36 @@ export const useRadioVirtualTabs = ({
 
   // ✅ handleAudioEnd: REPLICA LOGICA MessageTabsView
   const handleAudioEnd = useCallback(() => {
+    console.log('🔄 [useRadioVirtualTabs] ═══ handleAudioEnd CHIAMATO ═══');
+    console.log('🔄 [useRadioVirtualTabs] isAutoAdvanceEnabled:', isAutoAdvanceEnabled);
+    console.log('🔄 [useRadioVirtualTabs] activeMessageId corrente:', activeMessageId);
+    console.log('🔄 [useRadioVirtualTabs] Totale messaggi:', messages.length);
+    
     if (!isAutoAdvanceEnabled) {
       console.log('⏸️ [useRadioVirtualTabs] Auto-advance disabilitato');
       return;
     }
 
     const currentIndex = messages.findIndex(m => m.id === activeMessageId);
-    if (currentIndex === -1) return;
+    console.log('🔄 [useRadioVirtualTabs] currentIndex:', currentIndex);
+    if (currentIndex === -1) {
+      console.error('❌ [useRadioVirtualTabs] activeMessageId non trovato nei messaggi!');
+      return;
+    }
 
     // Trova prossimo messaggio AI (salta HUMAN)
     let nextIndex = currentIndex + 1;
+    console.log('🔄 [useRadioVirtualTabs] Cerco prossimo messaggio da index:', nextIndex);
+    
     while (nextIndex < messages.length) {
       const nextMessage = messages[nextIndex];
+      console.log(`🔄 [useRadioVirtualTabs] Controllo messaggio ${nextIndex}: ${nextMessage.sender_name} (${nextMessage.sender_type})`);
       
       if (nextMessage.sender_type !== 'human') {
-        console.log(`🎵 [useRadioVirtualTabs] Audio finito → Tab successivo: ${nextMessage.sender_name}`);
+        console.log(`🎵 [useRadioVirtualTabs] ✅ TROVATO prossimo messaggio AI: ${nextMessage.sender_name}`);
+        console.log(`🎵 [useRadioVirtualTabs] Cambio activeMessageId da ${activeMessageId.substring(0, 8)} a ${nextMessage.id.substring(0, 8)}`);
         setActiveMessageId(nextMessage.id);
+        console.log('🎵 [useRadioVirtualTabs] setActiveMessageId eseguito!');
         return;
       }
       

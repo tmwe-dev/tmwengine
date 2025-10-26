@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Bug, X, FileText } from 'lucide-react';
+import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Keyboard, FileText } from 'lucide-react';
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
 import { RadioMessageView } from '@/components/radio-chat/RadioMessageView';
 import { RadioCarousel3D } from '@/components/radio-chat/RadioCarousel3D';
+import { RadioParticipantSelector } from '@/components/radio-chat/RadioParticipantSelector';
 import { RadioSidebarTrigger } from '@/components/radio-chat/RadioSidebarTrigger';
-import { RadioKeyboardTrigger } from '@/components/radio-chat/RadioKeyboardTrigger';
+import { RadioParticipantIcon } from '@/components/radio-chat/RadioParticipantIcon';
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
 import { RadioCarouselAudioPlayerWrapper } from '@/components/radio-chat/RadioCarouselAudioPlayerWrapper';
 import { useRadioAudioPlayback } from '@/hooks/useRadioAudioPlayback';
@@ -343,8 +344,6 @@ const RadioChat = () => {
         onViewModeChange={setViewMode}
         isAutoAdvanceEnabled={isAutoAdvanceEnabled}
         onAutoAdvanceChange={setIsAutoAdvanceEnabled}
-        participants={participants}
-        onToggleParticipant={handleToggleParticipant}
       />
 
       {/* Debug Icon - Above Toggle Buttons (Solo in development) */}
@@ -360,6 +359,19 @@ const RadioChat = () => {
       )}
 
 
+      {/* Participant Icons - Vertical Stack Above Hamburger */}
+      <div className="fixed right-4 bottom-28 z-40 flex flex-col gap-3">
+        {participants.map(p => (
+          <RadioParticipantIcon
+            key={p.id}
+            type={p.type}
+            name={p.name}
+            isActive={p.is_active}
+            onToggle={() => handleToggleParticipant(p.id)}
+          />
+        ))}
+      </div>
+
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger
         className="fixed left-0 bottom-8 z-40"
@@ -367,17 +379,29 @@ const RadioChat = () => {
         onToggle={() => setSidebarOpen(true)}
       />
 
-      {/* FileText Icon - Above Hamburger */}
+      {/* FileText Icon - Below Keyboard */}
       <button
         onClick={() => setMessageViewVisible(!messageViewVisible)}
-        className="fixed left-0 bottom-36 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20 flex items-center justify-center transition-all duration-200 hover:w-14 hover:bg-white/5"
+        className="fixed left-0 bottom-64 z-40 w-12 h-20 bg-black rounded-r-lg flex items-center justify-center transition-all duration-200 hover:w-14"
         aria-label="Toggle message view"
       >
         <FileText 
-          className={`w-6 h-6 transition-colors stroke-[1] ${
-            messageViewVisible ? 'text-cyan-400' : 'text-white/60'
-          }`}
-          strokeWidth={1} 
+          className={`w-6 h-6 transition-colors ${
+            messageViewVisible ? 'text-gray-500' : (currentMessage ? 'text-cyan-400' : 'text-gray-500')
+          }`} 
+        />
+      </button>
+
+      {/* Keyboard Icon - Above Hamburger */}
+      <button
+        onClick={() => setInputVisible(!inputVisible)}
+        className="fixed left-0 bottom-36 z-40 w-12 h-20 bg-black rounded-r-lg flex items-center justify-center transition-all duration-200 hover:w-14"
+        aria-label="Toggle input"
+      >
+        <Keyboard 
+          className={`w-6 h-6 transition-colors ${
+            inputVisible ? 'text-purple-400' : 'text-gray-500'
+          }`} 
         />
       </button>
 
@@ -454,31 +478,11 @@ const RadioChat = () => {
           
           {/* Audio Player Pop-up - Outside flex container */}
           {!messageViewVisible && (
-            <div className="relative">
-              <RadioCarouselAudioPlayerWrapper
-                messages={messages}
-                activeMessageId={activeMessageId}
-                onAudioEnd={handleCarouselAudioEnd}
-              />
-              
-              {/* Keyboard Triggers - Floating on sides */}
-              <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between w-[90%] max-w-2xl pointer-events-none">
-                <div className="pointer-events-auto">
-                  <RadioKeyboardTrigger
-                    isActive={inputVisible}
-                    onClick={() => setInputVisible(!inputVisible)}
-                    position="left"
-                  />
-                </div>
-                <div className="pointer-events-auto">
-                  <RadioKeyboardTrigger
-                    isActive={inputVisible}
-                    onClick={() => setInputVisible(!inputVisible)}
-                    position="right"
-                  />
-                </div>
-              </div>
-            </div>
+            <RadioCarouselAudioPlayerWrapper
+              messages={messages}
+              activeMessageId={activeMessageId}
+              onAudioEnd={handleCarouselAudioEnd}
+            />
           )}
           </>
         ) : (

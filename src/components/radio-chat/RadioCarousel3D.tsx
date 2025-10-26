@@ -215,6 +215,14 @@ export const RadioCarousel3D = ({
     const group = new THREE.Group();
     scene.add(group);
 
+    // 🧪 TEST VISIBILITÀ: cubo rosso sempre visibile
+    const testGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const testMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const testCube = new THREE.Mesh(testGeometry, testMaterial);
+    testCube.position.set(0, 0, 0);
+    scene.add(testCube);
+    console.log('🧪 Cubo di test creato al centro scena');
+
     sceneRef.current = scene;
     cameraRef.current = camera;
     rendererRef.current = renderer;
@@ -427,7 +435,7 @@ export const RadioCarousel3D = ({
     <div 
       ref={containerRef} 
       className="w-full h-full overflow-visible"
-      style={{ position: 'relative', pointerEvents: 'none' }}
+      style={{ position: 'relative' }}
     />
   );
 };

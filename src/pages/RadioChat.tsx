@@ -137,12 +137,8 @@ const RadioChat = () => {
       }
     };
     
-    if (supabase) {
-      loadParticipants();
-    } else {
-      console.error('❌ Supabase client not ready');
-    }
-  }, [toast]);
+    loadParticipants();
+  }, [supabase]);
   
   // Persist auto-advance changes to localStorage
   useEffect(() => {

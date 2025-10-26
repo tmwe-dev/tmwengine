@@ -61,7 +61,7 @@ const RadioChat = () => {
     const loadParticipants = async () => {
       const { data, error } = await supabase
         .from('elevenlabs_agents')
-        .select('id, name, is_active')
+        .select('id, name, is_active, elevenlabs_agent_id')
         .order('order_index', { ascending: true });
       
       if (error) {
@@ -77,14 +77,14 @@ const RadioChat = () => {
         
         if (nameLower.includes('chatgpt') || nameLower.includes('gpt')) {
           type = 'chatgpt';
-        } else if (nameLower.includes('claude')) {
+        } else if (nameLower.includes('claude') || nameLower.includes('anthropic')) {
           type = 'claude';
         } else if (nameLower.includes('gemini')) {
           type = 'gemini';
         }
         
         return {
-          id: agent.id,
+          id: agent.elevenlabs_agent_id || agent.id,
           type,
           name: agent.name.split(' - ')[0], // "Vittorio - Gemini" → "Vittorio"
           is_active: agent.is_active

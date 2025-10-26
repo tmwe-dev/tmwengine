@@ -21,7 +21,7 @@ export function RadioSidebar({ isOpen, onClose, conversationId, viewMode, onView
       {/* Backdrop */}
       {isOpen && (
         <div 
-          className="fixed left-0 right-0 bottom-0 top-14 bg-black/60 z-40 animate-in fade-in"
+          className="fixed left-0 right-0 bottom-0 top-14 bg-transparent z-40 animate-in fade-in"
           onClick={onClose}
         />
       )}

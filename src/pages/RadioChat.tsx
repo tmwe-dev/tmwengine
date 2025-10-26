@@ -68,7 +68,7 @@ const RadioChat = () => {
           .from('elevenlabs_agents')
           .select('id, name, is_active, elevenlabs_agent_id')
           .eq('is_active', true)
-          .order('order_priority', { ascending: true });
+          .order('order_index', { ascending: true });
         
         console.log('🔍 [DEBUG] Query result:', { 
           hasData: !!data, 

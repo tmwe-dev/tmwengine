@@ -5,8 +5,10 @@ import { Slider } from '@/components/ui/slider';
 
 interface RadioAudioPlayerProps {
   audioUrl: string;
+  messageId: string;
   autoPlay?: boolean;
-  onPlayStart?: () => void;
+  canAutoPlay?: boolean;
+  onPlayStart?: (messageId: string) => void;
   onPlayEnd?: () => void;
   onPlayingChange?: (isPlaying: boolean) => void;
   isAudioEnabled?: boolean;
@@ -14,7 +16,9 @@ interface RadioAudioPlayerProps {
 
 export const RadioAudioPlayer = ({
   audioUrl,
+  messageId,
   autoPlay = false,
+  canAutoPlay = true,
   onPlayStart,
   onPlayEnd,
   onPlayingChange,
@@ -58,15 +62,16 @@ export const RadioAudioPlayer = ({
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
-    if (autoPlay && isAudioEnabled && !hasStartedRef.current) {
+    if (autoPlay && canAutoPlay && isAudioEnabled && !hasStartedRef.current) {
       audio.play()
         .then(() => {
+          console.log(`▶️ [RadioAudioPlayer] Autoplay START: ${messageId}`);
           setIsPlaying(true);
           onPlayingChange?.(true);
-          onPlayStart?.();
+          onPlayStart?.(messageId);
           hasStartedRef.current = true;
         })
-        .catch(err => console.error('Autoplay failed:', err));
+        .catch(err => console.warn('⚠️ Autoplay bloccato:', err));
     }
 
     return () => {
@@ -76,7 +81,7 @@ export const RadioAudioPlayer = ({
       audio.removeEventListener('error', handleError);
       audio.pause();
     };
-  }, [audioUrl, autoPlay, onPlayStart, onPlayEnd, onPlayingChange, isAudioEnabled]);
+  }, [audioUrl, autoPlay, canAutoPlay, onPlayStart, onPlayEnd, onPlayingChange, isAudioEnabled, messageId]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -94,14 +99,15 @@ export const RadioAudioPlayer = ({
     } else {
       audioRef.current.play()
         .then(() => {
+          console.log(`▶️ [RadioAudioPlayer] Manual START: ${messageId}`);
           setIsPlaying(true);
           onPlayingChange?.(true);
           if (!hasStartedRef.current) {
-            onPlayStart?.();
+            onPlayStart?.(messageId);
             hasStartedRef.current = true;
           }
         })
-        .catch(err => console.error('Play failed:', err));
+        .catch(err => console.error('❌ Play failed:', err));
     }
   };
 

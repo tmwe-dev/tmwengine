@@ -9,8 +9,8 @@ import { RadioParticipantSelector } from '@/components/radio-chat/RadioParticipa
 import { RadioSidebarTrigger } from '@/components/radio-chat/RadioSidebarTrigger';
 import { RadioParticipantIcon } from '@/components/radio-chat/RadioParticipantIcon';
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
-import { useRadioMessages } from '@/hooks/useRadioMessages';
-import { useAudioPlayback } from '@/hooks/useAudioPlayback';
+import { useRadioAudioPlayback } from '@/hooks/useRadioAudioPlayback';
+import { useRadioTabSwitching } from '@/hooks/useRadioTabSwitching';
 import { useAudioPreference } from '@/hooks/useAudioPreference';
 import { RadioMessage } from '@/types/radio';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,69 +39,64 @@ const RadioChat = () => {
     { id: 'claude-1', type: 'claude', name: 'Claude', is_active: true }
   ]);
   
-  // Manual navigation state
-  const [navIndex, setNavIndex] = useState(0);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
-  const [showSwipeHint, setShowSwipeHint] = useState(true);
+  const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [debugPopupOpen, setDebugPopupOpen] = useState(false);
   
   const { toast } = useToast();
   
-  const { isAudioPlaying, handleAudioStart, handleAudioEnd: audioEnd } = useAudioPlayback();
+  // Hooks audio dedicati per Radio Chat
+  const { 
+    isAudioPlaying, 
+    currentPlayingId,
+    canPlayAudio,
+    handleAudioStart, 
+    handleAudioEnd: audioEnd
+  } = useRadioAudioPlayback();
+  
   const { isAudioEnabled } = useAudioPreference();
   
   const {
+    activeMessageId,
+    setActiveMessageId,
+    handleAudioEnd: tabSwitchOnAudioEnd,
     unseenMessagesQueue
-  } = useRadioMessages({
+  } = useRadioTabSwitching({
     messages,
+    isAutoAdvanceEnabled,
     isAudioPlaying
   });
   
-  // Calculate activeMessageId manually from navIndex
+  // Calculate current message and AI messages
   const aiMessages = messages.filter(m => m.sender_type !== 'human');
-  const activeMessageId = aiMessages[navIndex]?.id || '';
-  const currentMessage = aiMessages[navIndex] || null;
+  const currentMessage = messages.find(m => m.id === activeMessageId) || null;
   
+  // Callback completo quando audio finisce
   const onAudioEndComplete = () => {
-    audioEnd();
-    // Removed auto-switch - user navigates manually
+    console.log('🎬 [RadioChat] onAudioEndComplete chiamato');
+    audioEnd(); // Setta isAudioPlaying = false
+    
+    // Se auto-advance attivo, cambia tab dopo delay
+    if (isAutoAdvanceEnabled) {
+      setTimeout(() => {
+        tabSwitchOnAudioEnd();
+      }, 50);
+    }
   };
 
-  // Manual navigation handlers
+  // Navigazione manuale per carousel
   const handlePrevCard = () => {
     if (aiMessages.length === 0) return;
-    setNavIndex((prev) => (prev - 1 + aiMessages.length) % aiMessages.length);
-    setShowSwipeHint(false);
+    const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
+    const newIndex = (currentIndex - 1 + aiMessages.length) % aiMessages.length;
+    setActiveMessageId(aiMessages[newIndex].id);
   };
   
   const handleNextCard = () => {
     if (aiMessages.length === 0) return;
-    setNavIndex((prev) => (prev + 1) % aiMessages.length);
-    setShowSwipeHint(false);
+    const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
+    const newIndex = (currentIndex + 1) % aiMessages.length;
+    setActiveMessageId(aiMessages[newIndex].id);
   };
-
-  // Touch gesture handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (touchStart - touchEnd > 150) handleNextCard();
-    if (touchStart - touchEnd < -150) handlePrevCard();
-  };
-  
-  // Hide swipe hint after 3 seconds
-  useEffect(() => {
-    if (showSwipeHint) {
-      const timer = setTimeout(() => setShowSwipeHint(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [showSwipeHint]);
 
   // Load messages from DB
   const loadMessages = async (conversationId: string) => {
@@ -313,6 +308,8 @@ const RadioChat = () => {
         conversationId={currentConversationId}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        isAutoAdvanceEnabled={isAutoAdvanceEnabled}
+        onAutoAdvanceChange={setIsAutoAdvanceEnabled}
       />
 
       {/* Debug Icon - Above Toggle Buttons (Solo in development) */}
@@ -378,13 +375,8 @@ const RadioChat = () => {
       <div className="pt-26 pb-[200px]">
         {viewMode === 'carousel' ? (
           <div className="relative h-[calc(100vh-300px)] min-h-[600px] md:min-h-[700px] lg:min-h-[850px] overflow-visible">
-            {/* Carousel Container with touch gestures */}
-            <div 
-              className="absolute inset-0 z-10"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
+            {/* Carousel Container */}
+            <div className="absolute inset-0 z-10">
               <RadioCarousel3D 
                 messages={messages}
                 activeMessageId={activeMessageId}
@@ -414,12 +406,12 @@ const RadioChat = () => {
             {/* Indicator Dots - Below Right Arrow */}
             {aiMessages.length > 1 && (
               <div className="absolute right-4 top-[calc(50%+60px)] z-35 flex flex-col gap-2">
-                {aiMessages.map((_, idx) => (
+                {aiMessages.map((msg, idx) => (
                   <button
-                    key={idx}
-                    onClick={() => setNavIndex(idx)}
+                    key={msg.id}
+                    onClick={() => setActiveMessageId(msg.id)}
                     className={`h-3 w-3 rounded-full transition-all cursor-pointer ${
-                      idx === navIndex 
+                      msg.id === activeMessageId
                         ? 'bg-white scale-125' 
                         : 'bg-white/40 hover:bg-white/60'
                     }`}
@@ -429,23 +421,15 @@ const RadioChat = () => {
               </div>
             )}
             
-            {/* Swipe Hint */}
-            {showSwipeHint && aiMessages.length > 1 && (
-              <div className="absolute top-4 left-0 right-0 flex justify-center z-25">
-                <div className="bg-black/60 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full animate-pulse">
-                  ← Swipe per navigare →
-                </div>
-              </div>
-            )}
-            
             {/* Message View - Sovrapposto al carousel */}
             {messageViewVisible && currentMessage ? (
               <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[40%] overflow-y-auto bg-gradient-to-t from-background via-background/95 to-transparent p-6 animate-in slide-in-from-bottom-4 duration-200">
                 <RadioMessageView
                   message={currentMessage}
                   onAudioEnd={onAudioEndComplete}
-                  onAudioStart={handleAudioStart}
+                  onAudioStart={(msgId) => handleAudioStart(msgId)}
                   isAudioEnabled={isAudioEnabled}
+                  canAutoPlay={canPlayAudio(currentMessage.id)}
                 />
               </div>
             ) : messages.length > 0 && !currentMessage && (
@@ -457,7 +441,11 @@ const RadioChat = () => {
         ) : (
           /* Messages View - Full overlay con background */
           <div className="w-full h-full pt-20 pb-24">
-            <RadioMessagesView messages={messages} />
+            <RadioMessagesView 
+              messages={messages}
+              isAutoAdvanceEnabled={isAutoAdvanceEnabled}
+              isAudioEnabled={isAudioEnabled}
+            />
           </div>
         )}
       </div>
@@ -505,12 +493,13 @@ const RadioChat = () => {
           </div>
           <div className="space-y-1">
             <div>Mode: {viewMode}</div>
-            <div>Nav Index: {navIndex}/{aiMessages.length}</div>
             <div>Active: {activeMessageId?.substring(0, 8)}</div>
             <div>Current Msg: {currentMessage?.sender_name || 'NONE'}</div>
             <div>Sending: {isSending ? 'YES' : 'NO'}</div>
             <div>Queue: {unseenMessagesQueue.length}</div>
             <div>Audio: {isAudioPlaying ? 'Playing' : 'Stopped'}</div>
+            <div>Playing ID: {currentPlayingId?.substring(0, 8) || 'NONE'}</div>
+            <div>Auto-Advance: {isAutoAdvanceEnabled ? 'ON' : 'OFF'}</div>
             <div>Total: {messages.length}</div>
             <div>AI: {aiMessages.length}</div>
             <div>Participants: {participants.filter(p => p.is_active).map(p => p.name).join(', ')}</div>

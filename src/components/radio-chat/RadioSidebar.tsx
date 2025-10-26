@@ -13,9 +13,19 @@ interface RadioSidebarProps {
   conversationId: string | null;
   viewMode: 'carousel' | 'messages';
   onViewModeChange: (mode: 'carousel' | 'messages') => void;
+  isAutoAdvanceEnabled?: boolean;
+  onAutoAdvanceChange?: (enabled: boolean) => void;
 }
 
-export function RadioSidebar({ isOpen, onClose, conversationId, viewMode, onViewModeChange }: RadioSidebarProps) {
+export function RadioSidebar({ 
+  isOpen, 
+  onClose, 
+  conversationId, 
+  viewMode, 
+  onViewModeChange,
+  isAutoAdvanceEnabled = true,
+  onAutoAdvanceChange
+}: RadioSidebarProps) {
   return (
     <>
       {/* Backdrop */}
@@ -74,7 +84,11 @@ export function RadioSidebar({ isOpen, onClose, conversationId, viewMode, onView
                   </Button>
                 </div>
 
-                <RadioVoiceSelector conversationId={conversationId} />
+                <RadioVoiceSelector 
+                  conversationId={conversationId}
+                  isAutoAdvanceEnabled={isAutoAdvanceEnabled}
+                  onAutoAdvanceChange={onAutoAdvanceChange}
+                />
               </TabsContent>
 
               <TabsContent value="strategy" className="mt-0">

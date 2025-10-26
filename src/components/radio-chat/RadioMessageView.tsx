@@ -4,15 +4,17 @@ import { RadioMessage } from '@/types/radio';
 interface RadioMessageViewProps {
   message: RadioMessage;
   onAudioEnd: () => void;
-  onAudioStart: () => void;
+  onAudioStart: (messageId: string) => void;
   isAudioEnabled?: boolean;
+  canAutoPlay?: boolean;
 }
 
 export const RadioMessageView = ({ 
   message, 
   onAudioEnd,
   onAudioStart,
-  isAudioEnabled = true
+  isAudioEnabled = true,
+  canAutoPlay = true
 }: RadioMessageViewProps) => {
   const isHuman = message.sender_type === 'human';
   
@@ -31,7 +33,9 @@ export const RadioMessageView = ({
       {message.audio_url && (
         <RadioAudioPlayer
           audioUrl={message.audio_url}
+          messageId={message.id}
           autoPlay={!isHuman}
+          canAutoPlay={canAutoPlay}
           onPlayStart={onAudioStart}
           onPlayEnd={onAudioEnd}
           isAudioEnabled={isAudioEnabled}

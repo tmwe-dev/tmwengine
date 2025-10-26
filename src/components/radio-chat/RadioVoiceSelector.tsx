@@ -18,9 +18,15 @@ interface VoiceAgent {
 
 interface RadioVoiceSelectorProps {
   conversationId: string | null;
+  isAutoAdvanceEnabled?: boolean;
+  onAutoAdvanceChange?: (enabled: boolean) => void;
 }
 
-export const RadioVoiceSelector = ({ conversationId }: RadioVoiceSelectorProps) => {
+export const RadioVoiceSelector = ({ 
+  conversationId,
+  isAutoAdvanceEnabled = true,
+  onAutoAdvanceChange
+}: RadioVoiceSelectorProps) => {
   const [agents, setAgents] = useState<VoiceAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -127,6 +133,27 @@ export const RadioVoiceSelector = ({ conversationId }: RadioVoiceSelectorProps) 
         <Switch
           checked={isAudioEnabled}
           onCheckedChange={toggleAudio}
+        />
+      </div>
+
+      {/* Auto-Advance Toggle */}
+      <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/10">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 flex items-center justify-center">
+            <span className="text-lg">⏭️</span>
+          </div>
+          <div>
+            <div className="font-medium text-sm">Auto-Advance</div>
+            <div className="text-xs text-muted-foreground">
+              {isAutoAdvanceEnabled 
+                ? 'Passa automaticamente al messaggio successivo' 
+                : 'Navigazione manuale'}
+            </div>
+          </div>
+        </div>
+        <Switch
+          checked={isAutoAdvanceEnabled}
+          onCheckedChange={onAutoAdvanceChange}
         />
       </div>
 

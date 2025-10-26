@@ -34,27 +34,12 @@ export function RadioMessagesView({
     isAudioPlaying
   });
 
-  // State per sincronizzazione (come Chat Laboratory)
-  const [shouldSwitchTab, setShouldSwitchTab] = useState(false);
-
-  // Callback combinato: gestisce sia audio che cambio tab
+  // Callback combinato: gestisce sia audio che cambio tab (replica Chat Laboratory)
   const onAudioEndComplete = () => {
     console.log(`🎬 [RadioMessagesView] onAudioEndComplete chiamato`);
-    audioEnd(); 
-    
-    setTimeout(() => {
-      setShouldSwitchTab(true);
-    }, 50);
+    audioEnd(); // Stop audio
+    tabSwitchOnAudioEnd(); // ✅ CAMBIO IMMEDIATO - nessun setTimeout, nessun useEffect
   };
-
-  // useEffect per sincronizzazione (come Chat Laboratory)
-  useEffect(() => {
-    if (shouldSwitchTab && !isAudioPlaying) {
-      console.log(`🔄 [RadioMessagesView] Sincronizzazione completata, cambio tab`);
-      tabSwitchOnAudioEnd();
-      setShouldSwitchTab(false);
-    }
-  }, [shouldSwitchTab, isAudioPlaying, tabSwitchOnAudioEnd]);
 
   // Convert RadioMessage to expected format for MultiAgentMessage
   const formattedMessages = messages.map(msg => {

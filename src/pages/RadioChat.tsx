@@ -62,9 +62,6 @@ const RadioChat = () => {
   // Simple state for carousel navigation (only used in carousel mode)
   const [activeMessageId, setActiveMessageId] = useState<string>('');
   
-  // State per sincronizzazione carousel (come Chat Laboratory)
-  const [shouldSwitchCarousel, setShouldSwitchCarousel] = useState(false);
-  
   // Auto-set first AI message as active for carousel
   useEffect(() => {
     if (aiMessages.length > 0 && !activeMessageId) {
@@ -75,32 +72,20 @@ const RadioChat = () => {
   const currentMessage = messages.find(m => m.id === activeMessageId) || null;
   
 
-  // Handler for carousel audio end with auto-advance (sincronizzato come Chat Laboratory)
+  // Handler for carousel audio end with auto-advance (replica Chat Laboratory)
   const handleCarouselAudioEnd = () => {
-    console.log('🏁 [RadioChat] Audio ended in carousel');
-    handleAudioEnd(); 
+    if (!isAutoAdvanceEnabled) return;
     
-    setTimeout(() => {
-      setShouldSwitchCarousel(true);
-    }, 50);
-  };
-
-  // useEffect per avanzamento carousel sincronizzato
-  useEffect(() => {
-    if (shouldSwitchCarousel && !isAudioPlaying && isAutoAdvanceEnabled) {
-      console.log('🔄 [RadioChat] Sincronizzazione completata, avanzamento carousel');
-      
-      const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
-      
-      if (currentIndex !== -1 && currentIndex < aiMessages.length - 1) {
-        const nextMessage = aiMessages[currentIndex + 1];
-        console.log('➡️ Advancing to:', nextMessage.sender_name);
-        setActiveMessageId(nextMessage.id);
-      }
-      
-      setShouldSwitchCarousel(false);
+    handleAudioEnd(); // Stop audio
+    
+    const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
+    
+    if (currentIndex !== -1 && currentIndex < aiMessages.length - 1) {
+      const nextMessage = aiMessages[currentIndex + 1];
+      console.log('➡️ [RadioChat] Advancing to:', nextMessage.sender_name);
+      setActiveMessageId(nextMessage.id); // ✅ CAMBIO IMMEDIATO
     }
-  }, [shouldSwitchCarousel, isAudioPlaying, isAutoAdvanceEnabled, aiMessages, activeMessageId]);
+  };
 
   // Navigazione manuale per carousel
   const handlePrevCard = () => {

@@ -193,8 +193,8 @@ export const RadioCarousel3D = ({
           0.1,
           1000
         );
-        camera.position.set(0, 0, 13.8); // Camera leggermente più distante per compensare
-    camera.lookAt(0, 0, 0);
+        camera.position.set(0, 0, 13.5); // Camera leggermente più vicina per card +5%
+    camera.lookAt(0, 1.5, 0); // Guarda verso il nuovo centro del carosello (spostato in alto)
 
     const renderer = new THREE.WebGLRenderer({ 
       alpha: true, 
@@ -313,7 +313,7 @@ export const RadioCarousel3D = ({
       
       for (let i = 0; i < MAX_SLOTS; i++) {
         const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
-        const geometry = new THREE.PlaneGeometry(4.6 * scaleFactor, 6.7 * scaleFactor); // Ridotto del 10% per dimensioni ottimali (~68% viewport)
+        const geometry = new THREE.PlaneGeometry(4.83 * scaleFactor, 7.04 * scaleFactor); // Aumentato del 5% per dimensioni ottimali (~72% viewport)
         const material = new THREE.MeshBasicMaterial({
           side: THREE.DoubleSide, 
           transparent: true,
@@ -325,7 +325,7 @@ export const RadioCarousel3D = ({
         const angle = -(i * angleStep) + Math.PI;
         mesh.position.set(
           Math.cos(angle) * radius, 
-          0, 
+          1.5, // Spostato più in alto per ridurre margine superiore
           Math.sin(angle) * radius
         );
         mesh.lookAt(new THREE.Vector3(0, 0, 0));

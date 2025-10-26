@@ -34,6 +34,7 @@ const RadioChat = () => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'carousel' | 'messages'>('carousel');
   const [participants, setParticipants] = useState<RadioParticipant[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   
   // Persist auto-advance in localStorage
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(() => {
@@ -55,6 +56,28 @@ const RadioChat = () => {
   } = useRadioAudioPlayback();
   
   const { isAudioEnabled } = useAudioPreference();
+  
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('🔐 [AUTH] Current user:', {
+        userId: user?.id,
+        email: user?.email,
+        isAuthenticated: !!user
+      });
+      setCurrentUser(user);
+      
+      if (!user) {
+        toast({
+          title: "⚠️ Non autenticato",
+          description: "Devi essere loggato per usare Radio Chat",
+          variant: "destructive"
+        });
+      }
+    };
+    checkAuth();
+  }, [toast]);
   
   // Load participants from elevenlabs_agents
   useEffect(() => {

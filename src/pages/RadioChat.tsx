@@ -68,13 +68,14 @@ const RadioChat = () => {
           .from('elevenlabs_agents')
           .select('id, name, is_active, elevenlabs_agent_id')
           .eq('is_active', true)
-          .order('order_index', { ascending: true });
+          .order('order_priority', { ascending: true });
         
         console.log('🔍 [DEBUG] Query result:', { 
           hasData: !!data, 
           count: data?.length || 0,
+          data: data,
           hasError: !!error,
-          error: error?.message 
+          error: error
         });
         
         if (error) {

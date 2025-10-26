@@ -28,7 +28,7 @@ const RadioChat = () => {
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [inputVisible, setInputVisible] = useState(false);
-  const [messageViewVisible, setMessageViewVisible] = useState(true);
+  const [messageViewVisible, setMessageViewVisible] = useState(false);
   const [messages, setMessages] = useState<RadioMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'carousel' | 'messages'>('carousel');

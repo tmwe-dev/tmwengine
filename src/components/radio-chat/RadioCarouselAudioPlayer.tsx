@@ -35,7 +35,7 @@ export const RadioCarouselAudioPlayer = ({
       setCurrentAudioUrl('');
       setSenderName('');
     }
-  }, [activeMessageId, messages]);
+  }, [activeMessageId, messages.find(m => m.id === activeMessageId)?.audio_url]);
 
   // Audio element setup and autoplay
   useEffect(() => {
@@ -47,6 +47,12 @@ export const RadioCarouselAudioPlayer = ({
       setIsPlaying(false);
       setCurrentTime(0);
       setDuration(0);
+      return;
+    }
+
+    // Guard: se audio già caricato con stesso URL, skip re-init
+    if (audioRef.current && audioRef.current.src === currentAudioUrl) {
+      console.log('⏭️ [RadioCarouselAudioPlayer] Audio già caricato, skip re-init');
       return;
     }
 

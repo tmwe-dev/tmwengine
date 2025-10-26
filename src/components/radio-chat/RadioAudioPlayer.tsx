@@ -34,6 +34,12 @@ export const RadioAudioPlayer = ({
   const hasStartedRef = useRef(false);
 
   useEffect(() => {
+    // Guard: se audio già caricato con stesso URL, skip re-init
+    if (audioRef.current && audioRef.current.src === audioUrl) {
+      console.log('⏭️ [RadioAudioPlayer] Audio già caricato, skip re-init');
+      return;
+    }
+
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 

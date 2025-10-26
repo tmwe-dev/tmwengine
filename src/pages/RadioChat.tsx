@@ -300,7 +300,14 @@ const RadioChat = () => {
             created_at: newMsg.created_at
           };
           
-          setMessages(prev => [...prev, typedMessage]);
+          // Previeni duplicati (può succedere con ottimistic update)
+          setMessages(prev => {
+            if (prev.some(m => m.id === typedMessage.id)) {
+              console.log('⏭️ [RadioChat] Messaggio già presente, skip');
+              return prev;
+            }
+            return [...prev, typedMessage];
+          });
         }
       )
       .on('postgres_changes',
@@ -314,17 +321,28 @@ const RadioChat = () => {
           console.log('🔄 Message updated with audio:', payload);
           
           const updatedMsg = payload.new;
-          setMessages(prev => prev.map(msg =>
-            msg.id === updatedMsg.id
-              ? {
-                  ...msg,
-                  audio_url: updatedMsg.audio_url,  // Audio arrives progressively
-                  token_input: updatedMsg.token_input,
-                  token_output: updatedMsg.token_output,
-                  tempo_risposta_ms: updatedMsg.tempo_risposta_ms
-                }
-              : msg
-          ));
+          
+          // Verifica se audio_url è effettivamente cambiato
+          setMessages(prev => {
+            const existingMsg = prev.find(m => m.id === updatedMsg.id);
+            
+            if (existingMsg?.audio_url === updatedMsg.audio_url) {
+              console.log('⏭️ [RadioChat] Audio URL non cambiato, skip update');
+              return prev; // Nessun cambio = nessun re-render
+            }
+            
+            return prev.map(msg =>
+              msg.id === updatedMsg.id
+                ? {
+                    ...msg,
+                    audio_url: updatedMsg.audio_url,
+                    token_input: updatedMsg.token_input,
+                    token_output: updatedMsg.token_output,
+                    tempo_risposta_ms: updatedMsg.tempo_risposta_ms
+                  }
+                : msg
+            );
+          });
         }
       )
       .subscribe();

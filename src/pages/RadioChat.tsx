@@ -464,14 +464,6 @@ const RadioChat = () => {
               )}
             </div>
           </div>
-          
-          {/* Audio Player Pop-up - Outside flex container */}
-          <RadioCarouselAudioPlayerWrapper
-            messages={messages}
-            activeMessageId={activeMessageId}
-            onAudioEnd={handleCarouselAudioEnd}
-            className={messageViewVisible ? 'opacity-0 pointer-events-none' : ''}
-          />
           </>
         ) : (
           (() => {
@@ -547,6 +539,16 @@ const RadioChat = () => {
             <div>Participants: {participants.filter(p => p.is_active).map(p => p.name).join(', ')}</div>
           </div>
         </div>
+      )}
+
+      {/* Audio Player - Completely independent fixed element */}
+      {viewMode === 'carousel' && (
+        <RadioCarouselAudioPlayerWrapper
+          messages={messages}
+          activeMessageId={activeMessageId}
+          onAudioEnd={handleCarouselAudioEnd}
+          className={messageViewVisible ? 'opacity-0 pointer-events-none' : ''}
+        />
       )}
     </div>
   );

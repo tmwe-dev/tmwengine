@@ -6,6 +6,7 @@ interface RadioMessageInputProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  onClose?: () => void;
   onFocus?: () => void;
   onBlur?: () => void;
   disabled?: boolean;
@@ -16,6 +17,7 @@ export function RadioMessageInput({
   value,
   onChange,
   onSubmit,
+  onClose,
   onFocus,
   onBlur,
   disabled = false,
@@ -43,6 +45,10 @@ export function RadioMessageInput({
       if (value.trim() && !disabled) {
         onSubmit();
       }
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose?.();
     }
   };
 

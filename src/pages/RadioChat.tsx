@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X } from 'lucide-react';
+import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Keyboard } from 'lucide-react';
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
@@ -27,6 +27,7 @@ const RadioChat = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [inputVisible, setInputVisible] = useState(false);
   const [messages, setMessages] = useState<RadioMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'carousel' | 'messages'>('carousel');
@@ -162,6 +163,7 @@ const RadioChat = () => {
     
     const messageToSend = inputValue;
     setInputValue('');
+    setInputVisible(false); // Nascondi textarea dopo invio
     setIsSending(true);
     
     console.log('📤 Sending message:', messageToSend);
@@ -360,6 +362,19 @@ const RadioChat = () => {
         onToggle={() => setSidebarOpen(true)}
       />
 
+      {/* Keyboard Icon - Above Hamburger */}
+      <button
+        onClick={() => setInputVisible(!inputVisible)}
+        className="fixed left-0 bottom-36 z-40 w-12 h-20 bg-black rounded-r-lg flex items-center justify-center transition-all duration-200 hover:w-14"
+        aria-label="Toggle input"
+      >
+        <Keyboard 
+          className={`w-6 h-6 transition-colors ${
+            inputVisible ? 'text-purple-400' : 'text-gray-500'
+          }`} 
+        />
+      </button>
+
       {/* Main Content Area */}
       <div className="pt-26 pb-[200px]">
         {viewMode === 'carousel' ? (
@@ -442,28 +457,31 @@ const RadioChat = () => {
       </div>
 
       {/* Input Area - Fixed bottom con altezza definita */}
-      <div className="fixed bottom-0 left-0 right-0 h-[200px] z-30 bg-gradient-to-t from-background via-background/80 to-transparent p-4">
-        <div className="w-[90%] max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto relative h-full">
-          {isSending && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg z-10">
-              <div className="text-white">Invio in corso...</div>
-            </div>
-          )}
-          <RadioMessageInput
-            value={inputValue}
-            onChange={setInputValue}
-            onSubmit={handleSend}
-            disabled={isSending}
-            className="h-full"
-          />
-          
-          <RadioSendButton
-            onSend={handleSend}
-            disabled={!inputValue.trim() || isSending}
-            visible={inputValue.trim().length > 0}
-          />
+      {inputVisible && (
+        <div className="fixed bottom-0 left-0 right-0 h-[200px] z-30 bg-gradient-to-t from-background via-background/80 to-transparent p-4 animate-in slide-in-from-bottom-4 duration-200">
+          <div className="w-[90%] max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto relative h-full">
+            {isSending && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg z-10">
+                <div className="text-white">Invio in corso...</div>
+              </div>
+            )}
+            <RadioMessageInput
+              value={inputValue}
+              onChange={setInputValue}
+              onSubmit={handleSend}
+              onClose={() => setInputVisible(false)}
+              disabled={isSending}
+              className="h-full"
+            />
+            
+            <RadioSendButton
+              onSend={handleSend}
+              disabled={!inputValue.trim() || isSending}
+              visible={inputValue.trim().length > 0}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Debug Popup - Solo in development */}
       {import.meta.env.DEV && debugPopupOpen && (

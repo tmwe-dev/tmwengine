@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { RadioMessage } from '@/types/radio';
@@ -180,6 +180,7 @@ export const RadioCarousel3D = ({
   const meshesRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const renderedMessagesRef = useRef<Set<string>>(new Set());
   const hasInitializedSlotsRef = useRef(false);
+  const [slotsReady, setSlotsReady] = useState(false);
 
   // Initialize Three.js scene
   useEffect(() => {
@@ -337,6 +338,7 @@ export const RadioCarousel3D = ({
       
       hasInitializedSlotsRef.current = true;
       renderedMessagesRef.current.clear(); // Reset messaggi renderizzati
+      setSlotsReady(true); // ✅ Trigger re-render per popolazione messaggi
       console.log(`✅ Carosello creato, meshesRef.size: ${meshesRef.current.size}`);
       console.log(`✅ groupRef.current.children.length: ${groupRef.current.children.length}`);
     };
@@ -350,8 +352,12 @@ export const RadioCarousel3D = ({
   useEffect(() => {
     console.log('📝 useEffect messaggi - messages:', messages.length, 'meshesRef:', meshesRef.current.size, 'groupReady:', !!groupRef.current);
     
-    if (!groupRef.current || meshesRef.current.size === 0) {
-      console.log('⏸️ Gruppo o slot non pronti, skip popolazione messaggi');
+    if (!groupRef.current || !slotsReady || meshesRef.current.size === 0) {
+      console.log('⏸️ Gruppo o slot non pronti, skip popolazione messaggi', {
+        hasGroup: !!groupRef.current,
+        slotsReady,
+        meshesCount: meshesRef.current.size
+      });
       return;
     }
     
@@ -403,7 +409,7 @@ export const RadioCarousel3D = ({
       
       renderedMessagesRef.current.add(msg.id);
     });
-  }, [messages]); // ← Dipende SOLO da messages
+  }, [messages, slotsReady]); // ← Sincronizzato con inizializzazione slot
 
   // Rotate to active message
   useEffect(() => {

@@ -325,7 +325,7 @@ export const RadioCarousel3D = ({
         const angle = -(i * angleStep) + Math.PI;
         mesh.position.set(
           Math.cos(angle) * radius, 
-          0.82, // Inclinazione ridotta a ~6° invece di ~10.87°
+          1.5, // Spostato più in alto per ridurre margine superiore
           Math.sin(angle) * radius
         );
         mesh.lookAt(new THREE.Vector3(0, 0, 0));

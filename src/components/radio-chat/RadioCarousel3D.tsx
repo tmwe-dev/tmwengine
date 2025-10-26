@@ -127,14 +127,14 @@ export const RadioCarousel3D = ({
     if (!containerRef.current) return;
 
     const scene = new THREE.Scene();
-        const fov = window.innerWidth < 768 ? 55 : 60; // FOV più stretto su mobile
+        const fov = window.innerWidth < 768 ? 65 : 70; // FOV più ampio per carosello grande
         const camera = new THREE.PerspectiveCamera(
           fov,
           containerRef.current.clientWidth / containerRef.current.clientHeight,
           0.1,
           1000
         );
-        camera.position.set(0, 0, 8); // Camera più distante
+        camera.position.set(0, 0, 13); // Camera più distante per pagine grandi
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ 
@@ -257,13 +257,13 @@ export const RadioCarousel3D = ({
       console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili`);
       
       const group = groupRef.current;
-      const radius = 3.5;
+      const radius = 6.0;
       const angleStep = (Math.PI * 2) / MAX_SLOTS;
       
       for (let i = 0; i < MAX_SLOTS; i++) {
-        const scaleFactor = Math.min(window.innerWidth / 1200, 1.2); // Max 120% su schermi grandi
-        const geometry = new THREE.PlaneGeometry(2.5 * scaleFactor, 3.6 * scaleFactor);
-        const material = new THREE.MeshBasicMaterial({ 
+        const scaleFactor = Math.min(window.innerWidth / 1200, 2.0); // Max 200% su schermi grandi
+        const geometry = new THREE.PlaneGeometry(4.25 * scaleFactor, 6.12 * scaleFactor);
+        const material = new THREE.MeshBasicMaterial({
           side: THREE.DoubleSide, 
           transparent: true,
           opacity: 0 // Invisibile inizialmente

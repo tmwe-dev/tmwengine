@@ -9,7 +9,7 @@ interface RadioCarouselAudioPlayerWrapperProps {
 
 export const RadioCarouselAudioPlayerWrapper = (props: RadioCarouselAudioPlayerWrapperProps) => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-purple-400/30 bg-gradient-to-b from-black/95 to-black/98 shadow-[0_-4px_20px_rgba(168,85,247,0.15)]">
+    <div className="fixed bottom-4 left-4 right-4 z-50 border-2 border-purple-400/40 bg-black/95 backdrop-blur-lg rounded-xl shadow-[0_0_40px_rgba(168,85,247,0.3)]">
       <RadioCarouselAudioPlayer {...props} />
     </div>
   );

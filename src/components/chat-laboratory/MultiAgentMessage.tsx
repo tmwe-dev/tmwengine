@@ -562,7 +562,7 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange, can
         )}
 
         {/* Audio Player (se presente audio_url) */}
-        {message.audio_url && message.sender_type !== 'human' && (
+        {message.audio_url && (
           <div className="mt-2">
             <AudioMessagePlayer 
               audioUrl={message.audio_url}

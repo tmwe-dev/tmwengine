@@ -439,6 +439,14 @@ const RadioChat = () => {
             )}
           </div>
         ) : (
+          (() => {
+            console.log('🔊 [RadioChat] Audio settings:', {
+              isAudioEnabled,
+              isAutoAdvanceEnabled,
+              totalMessages: messages.length
+            });
+            return null;
+          })(),
           /* Messages View - Full overlay con background */
           <div className="w-full h-full pt-20 pb-24">
             <RadioMessagesView 

@@ -257,12 +257,12 @@ export const RadioCarousel3D = ({
       console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili`);
       
       const group = groupRef.current;
-      const radius = 7.5; // Aumentato da 6.0 (+25%)
+      const radius = 8.25; // Aumentato del 37.5% totale
       const angleStep = (Math.PI * 2) / MAX_SLOTS;
       
       for (let i = 0; i < MAX_SLOTS; i++) {
-        const scaleFactor = Math.min(window.innerWidth / 1200, 2.0); // Max 200% su schermi grandi
-        const geometry = new THREE.PlaneGeometry(5.31 * scaleFactor, 7.65 * scaleFactor); // Aumentato da 4.25x6.12 (+25%)
+        const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
+        const geometry = new THREE.PlaneGeometry(5.84 * scaleFactor, 8.42 * scaleFactor); // Aumentato del 37.5% totale
         const material = new THREE.MeshBasicMaterial({
           side: THREE.DoubleSide, 
           transparent: true,

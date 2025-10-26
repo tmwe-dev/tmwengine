@@ -329,7 +329,7 @@ const RadioChat = () => {
 
 
       {/* Participant Icons - Vertical Stack Above Hamburger */}
-      <div className="fixed left-4 bottom-28 z-40 flex flex-col gap-3">
+      <div className="fixed right-4 bottom-28 z-40 flex flex-col gap-3">
         {participants.map(p => (
           <RadioParticipantIcon
             key={p.id}

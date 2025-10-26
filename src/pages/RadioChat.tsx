@@ -472,8 +472,10 @@ const RadioChat = () => {
             )}
           </div>
         ) : (
-          /* Messages View */
-          <RadioMessagesView messages={messages} />
+          /* Messages View - Full overlay con background */
+          <div className="fixed inset-0 z-40 bg-background pt-32 pb-24">
+            <RadioMessagesView messages={messages} />
+          </div>
         )}
       </div>
 

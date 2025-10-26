@@ -370,13 +370,14 @@ const RadioChat = () => {
       {/* FileText Icon - Below Keyboard */}
       <button
         onClick={() => setMessageViewVisible(!messageViewVisible)}
-        className="fixed left-0 bottom-64 z-40 w-12 h-20 bg-black rounded-r-lg flex items-center justify-center transition-all duration-200 hover:w-14"
+        className="fixed left-0 bottom-64 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20 flex items-center justify-center transition-all duration-200 hover:bg-white/5"
         aria-label="Toggle message view"
       >
         <FileText 
           className={`w-6 h-6 transition-colors ${
             messageViewVisible ? 'text-gray-500' : (currentMessage ? 'text-cyan-400' : 'text-gray-500')
-          }`} 
+          }`}
+          strokeWidth={1}
         />
       </button>
 

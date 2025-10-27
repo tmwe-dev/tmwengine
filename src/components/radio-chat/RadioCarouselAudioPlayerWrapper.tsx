@@ -27,6 +27,11 @@ export const RadioCarouselAudioPlayerWrapper = ({
 
   const isHuman = message.sender_type === 'human';
 
+  if (!message.audio_url) {
+    console.log(`⏭️ [CarouselWrapper] Skipping audio player: no audio_url for ${message.sender_name}`);
+    return null;
+  }
+
   return (
     <div className={cn(
       "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-2xl w-[45%] border-2 border-purple-400/40 bg-black/95 backdrop-blur-lg rounded-xl shadow-[0_0_40px_rgba(168,85,247,0.3)]",

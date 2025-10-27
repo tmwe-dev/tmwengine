@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import albertGif from '@/assets/albert-mining.gif';
 import pitagoraGif from '@/assets/pitagora-gym.gif';
+import archimedeGif from '@/assets/archimede-stones.gif';
 
 interface RadioParticipant {
   id: string;
@@ -46,7 +47,7 @@ export function RadioParticipantSelector({
       color: 'from-purple-500 to-pink-500'
     },
     claude: {
-      gif: null,
+      gif: archimedeGif,
       active: '🧠',
       inactive: '⚫',
       color: 'from-orange-500 to-red-500'
@@ -54,52 +55,59 @@ export function RadioParticipantSelector({
   };
 
   return (
-    <div className={cn("flex gap-4", className)}>
+    <div className={cn("flex gap-4 justify-center items-start", className)}>
       {participants.map((participant) => {
         const config = avatarConfig[participant.type];
         
         return (
-          <button
+          <div 
             key={participant.id}
-            onClick={() => onToggle(participant.id)}
-            className={cn(
-              "relative w-16 h-16 rounded-full overflow-hidden",
-              "flex items-center justify-center",
-              "transition-all duration-300 transform",
-              "border-2",
-              participant.is_active
-                ? `${config.gif ? '' : `bg-gradient-to-br ${config.color}`} border-white shadow-lg hover:scale-110 cursor-pointer`
-                : "bg-gray-800 border-gray-500 opacity-50 hover:opacity-70 cursor-pointer"
-            )}
-            title={participant.is_active 
-              ? `${participant.name} - Clicca per disattivare` 
-              : `${participant.name} - Clicca per attivare`}
+            className="flex flex-col items-center gap-2 flex-1"
           >
-            {config.gif ? (
-              <img 
-                src={config.gif} 
-                alt={participant.name}
-                className={cn(
-                  "w-full h-full object-cover",
-                  participant.is_active 
-                    ? "opacity-100" 
-                    : "opacity-30 grayscale"
-                )}
-              />
-            ) : (
-              <span className={cn(
-                "text-2xl transition-all duration-300",
-                participant.is_active ? "animate-pulse" : ""
-              )}>
-                {participant.is_active ? config.active : config.inactive}
-              </span>
-            )}
+            {/* GIF Container - Nessun bordo, nessun rounded */}
+            <button
+              onClick={() => onToggle(participant.id)}
+              className={cn(
+                "relative w-full aspect-square",
+                "flex items-center justify-center",
+                "transition-all duration-300",
+                "hover:scale-105 cursor-pointer",
+                participant.is_active 
+                  ? "opacity-100" 
+                  : "opacity-40 grayscale"
+              )}
+              title={participant.is_active 
+                ? `${participant.name} - Clicca per disattivare` 
+                : `${participant.name} - Clicca per attivare`}
+            >
+              {config.gif ? (
+                <img 
+                  src={config.gif} 
+                  alt={participant.name}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <span className="text-4xl">
+                  {participant.is_active ? config.active : config.inactive}
+                </span>
+              )}
+              
+              {/* Active indicator */}
+              {participant.is_active && (
+                <div className="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full border border-white animate-pulse z-10" />
+              )}
+            </button>
             
-            {/* Active indicator */}
-            {participant.is_active && (
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse z-10" />
-            )}
-          </button>
+            {/* Nome agente sotto la GIF */}
+            <span className={cn(
+              "text-xs font-medium text-center transition-colors",
+              participant.is_active 
+                ? "text-foreground" 
+                : "text-muted-foreground"
+            )}>
+              {participant.name}
+            </span>
+          </div>
         );
       })}
     </div>

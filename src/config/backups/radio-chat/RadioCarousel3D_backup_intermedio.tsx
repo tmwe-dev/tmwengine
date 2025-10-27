@@ -415,52 +415,11 @@ export const RadioCarousel3D = ({
     if (activeIndex === -1) return;
 
     const targetAngle = -(activeIndex / MAX_SLOTS) * Math.PI * 2 + Math.PI / 2;
-    const radius = 7.8;
-    const angleStep = (Math.PI * 2) / MAX_SLOTS;
-    const inclinationAngle = Math.atan2(0.82, radius); // ~6° inclinazione originale
     
     gsap.to(groupRef.current.rotation, {
       y: targetAngle,
       duration: 1.2,
-      ease: 'power2.inOut',
-      onUpdate: () => {
-        // Durante la rotazione, anima solo la card frontale per raddrizzarla
-        meshesRef.current.forEach((mesh, slotKey) => {
-          const slotIndex = parseInt(slotKey.split('_')[1]);
-          const meshAngle = -(slotIndex * angleStep) + Math.PI;
-          const currentGroupAngle = groupRef.current!.rotation.y;
-          
-          // Angolo assoluto della mesh rispetto alla camera
-          const absoluteAngle = meshAngle + currentGroupAngle;
-          
-          // Normalizza tra 0 e 2π
-          const normalizedAngle = ((absoluteAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-          
-          // Distanza angolare dalla posizione frontale (0 o 2π)
-          const distanceFromFront = Math.min(
-            Math.abs(normalizedAngle),
-            Math.abs(normalizedAngle - Math.PI * 2)
-          );
-          
-          // Solo la card esattamente frontale (entro 0.15 radianti ≈ 8.6°) si raddrizza
-          if (distanceFromFront < 0.15) {
-            gsap.to(mesh.rotation, {
-              x: 0, // Raddrizza completamente
-              duration: 0.5,
-              ease: 'power2.out',
-              overwrite: true
-            });
-          } else {
-            // Ripristina inclinazione originale per tutte le altre
-            gsap.to(mesh.rotation, {
-              x: -inclinationAngle,
-              duration: 0.5,
-              ease: 'power2.out',
-              overwrite: true
-            });
-          }
-        });
-      }
+      ease: 'power2.inOut'
     });
   }, [activeMessageId, messages]);
 

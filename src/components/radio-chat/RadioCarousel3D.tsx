@@ -283,10 +283,6 @@ export const RadioCarousel3D = ({
 
   // 1️⃣ INIZIALIZZAZIONE SLOT (aspetta che groupRef sia pronto)
   useEffect(() => {
-    // Calcolo manuale dell'inclinazione: arctan(altezza / raggio)
-    const TILT_ANGLE = Math.atan2(0.82, 7.8); // ~6 gradi
-    console.log(`📐 Inclinazione calcolata: ${(TILT_ANGLE * 180 / Math.PI).toFixed(2)}°`);
-    
     let attemptCount = 0;
     const MAX_ATTEMPTS = 10;
 
@@ -423,24 +419,7 @@ export const RadioCarousel3D = ({
     gsap.to(groupRef.current.rotation, {
       y: targetAngle,
       duration: 1.2,
-      ease: 'power2.inOut',
-      onUpdate: () => {
-        const activeSlotKey = `slot_${activeIndex}`;
-        const TILT_ANGLE = Math.atan2(0.82, 7.8);
-        
-        meshesRef.current.forEach((mesh, slotKey) => {
-          if (slotKey === activeSlotKey) {
-            // Card frontale → usa lookAt verso l'alto per raddrizzare
-            mesh.lookAt(new THREE.Vector3(0, 100, 0));
-          } else {
-            // Altre card → ripristina lookAt originale verso centro
-            mesh.lookAt(new THREE.Vector3(0, 0, 0));
-            
-            // Poi applica manualmente l'inclinazione corretta solo a rotation.x
-            mesh.rotation.x = TILT_ANGLE;
-          }
-        });
-      }
+      ease: 'power2.inOut'
     });
   }, [activeMessageId, messages]);
 

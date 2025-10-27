@@ -20,16 +20,17 @@ export function CollapsibleComposerSidebar({
   return (
     <div className="relative">
       {/* Trigger strip sempre visibile */}
-      <div
+      <button
         className={cn(
           "absolute left-0 top-0 bottom-0 w-5 bg-muted/30 hover:bg-primary/10 transition-colors z-10 cursor-pointer flex items-center justify-center",
           isOpen && "opacity-0 pointer-events-none"
         )}
-        onMouseEnter={() => setIsOpen(true)}
+        onClick={() => setIsOpen(true)}
         title="Apri gruppi prompt"
+        aria-label="Apri sidebar gruppi prompt"
       >
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
-      </div>
+      </button>
 
       {/* Sidebar overlay */}
       <div
@@ -37,7 +38,6 @@ export function CollapsibleComposerSidebar({
           "absolute left-0 top-0 bottom-0 w-[240px] bg-background border-r shadow-xl z-20 transition-transform duration-200 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
-        onMouseLeave={() => setIsOpen(false)}
       >
         {/* Header con bottone chiusura */}
         <div className="p-4 border-b flex items-center justify-between">

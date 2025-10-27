@@ -246,15 +246,15 @@ export function PromptComposer() {
         />
         
         {/* Layout 50/50 per Library e Canvas */}
-        <div className="flex-1 flex">
+        <div className="flex-1 flex h-full overflow-hidden">
           <PromptLibraryColumn
-            className="flex-1"
+            className="flex-1 h-full"
             sections={filteredSections}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
           />
           <CompositionCanvas
-            className="flex-1"
+            className="flex-1 h-full"
             blocks={composedBlocks}
             onRemoveBlock={handleRemoveBlock}
             onUpdateBlock={handleUpdateBlock}

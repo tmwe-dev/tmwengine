@@ -20,6 +20,14 @@ export const useRadioVirtualTabs = ({
 
   // ✅ Inizializzazione: primo messaggio con audio
   useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useRadioVirtualTabs] useEffect triggered:', {
+        activeMessageId,
+        messagesLength: messages.length,
+        messagesWithAudio: messages.filter(m => m.audio_url).length
+      });
+    }
+    
     if (!activeMessageId && messages.length > 0) {
       const firstWithAudio = messages.find(m => m.audio_url);
       if (firstWithAudio) {
@@ -29,7 +37,7 @@ export const useRadioVirtualTabs = ({
         setActiveMessageId(firstWithAudio.id);
       }
     }
-  }, [messages.length, activeMessageId]);
+  }, [messages, activeMessageId]);
 
   // ✅ Funzione per verificare se un messaggio può fare autoplay
   const canAutoPlayForMessage = useCallback((messageId: string) => {

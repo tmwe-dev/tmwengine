@@ -16,6 +16,17 @@ export function RadioSidebarTrigger({
   isAudioEnabled = false,
   isAutoAdvanceEnabled = false
 }: RadioSidebarTriggerProps) {
+  // ✅ LOGGING TEMPORANEO PER DEBUG
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🍺 [RadioSidebarTrigger] Props ricevute:', {
+      isAudioEnabled,
+      isAutoAdvanceEnabled,
+      shouldShowYellow: isAudioEnabled && isAutoAdvanceEnabled,
+      shouldShowBlue: isAudioEnabled && !isAutoAdvanceEnabled,
+      shouldShowGray: !isAudioEnabled
+    });
+  }
+  
   // ✅ 3 STATI: Spenta | Azzurra (solo audio) | Gialla+Bianca (audio+autoadvance)
   const beerColor = !isAudioEnabled 
     ? 'text-gray-500'

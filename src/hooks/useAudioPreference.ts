@@ -12,9 +12,28 @@ export const useAudioPreference = () => {
     setIsAudioEnabled(prev => {
       const newValue = !prev;
       localStorage.setItem(AUDIO_ENABLED_KEY, String(newValue));
+      
+      // ✅ Triggera evento custom per sincronizzare altri componenti
+      window.dispatchEvent(new CustomEvent('audio-preference-changed', { 
+        detail: { isAudioEnabled: newValue } 
+      }));
+      
       return newValue;
     });
   };
+
+  // ✅ Ascolta i cambiamenti da altri componenti
+  useEffect(() => {
+    const handleStorageChange = (e: CustomEvent<{ isAudioEnabled: boolean }>) => {
+      setIsAudioEnabled(e.detail.isAudioEnabled);
+    };
+
+    window.addEventListener('audio-preference-changed', handleStorageChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('audio-preference-changed', handleStorageChange as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(AUDIO_ENABLED_KEY, String(isAudioEnabled));

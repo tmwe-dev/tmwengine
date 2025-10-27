@@ -18,22 +18,36 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minuti
 
 /**
  * Load and cache prompts from database
- * ✅ Fix 3B: Accept conversationId to load conversation-specific prompt
+ * ✅ Support conversation-specific prompts AND composed (ready) prompts
  */
 export async function getCachedPrompts(supabase: any, conversationId?: string): Promise<PromptCache> {
   const now = Date.now();
   
-  // ✅ Try to load conversation-specific prompt FIRST (bypassing cache)
+  // ✅ PRIORITY 1: Check if conversation uses a COMPOSED PROMPT (ready prompt)
   let conversationPrompt: string | null = null;
   
   if (conversationId) {
     const { data: conv } = await supabase
       .from('chat_laboratory_conversations')
-      .select('system_prompt_id')
+      .select('composed_prompt_id, system_prompt_id')
       .eq('id', conversationId)
       .single();
     
-    if (conv?.system_prompt_id) {
+    // If composed_prompt_id exists, use it (highest priority)
+    if (conv?.composed_prompt_id) {
+      const { data: composedPrompt } = await supabase
+        .from('chat_laboratory_composed_prompts')
+        .select('content')
+        .eq('id', conv.composed_prompt_id)
+        .single();
+      
+      if (composedPrompt?.content) {
+        conversationPrompt = composedPrompt.content;
+        console.log(`🎯 [PROMPT] Usando PROMPT PRONTO per conversazione ${conversationId}`);
+      }
+    }
+    // Otherwise, try conversation-specific system prompt
+    else if (conv?.system_prompt_id) {
       const { data: specificPrompt } = await supabase
         .from('chat_laboratory_system_prompts')
         .select('contenuto')
@@ -42,7 +56,7 @@ export async function getCachedPrompts(supabase: any, conversationId?: string): 
       
       if (specificPrompt?.contenuto) {
         conversationPrompt = specificPrompt.contenuto;
-        console.log(`✅ [PROMPT] Usando prompt specifico per conversazione ${conversationId}`);
+        console.log(`✅ [PROMPT] Usando prompt sistema specifico per conversazione ${conversationId}`);
       }
     }
   }

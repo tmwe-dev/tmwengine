@@ -17,7 +17,7 @@ interface ComposedPrompt {
   content: string;
   target_agent: string;
   created_at: string;
-  section_ids: string[];
+  section_ids: any; // Json type from Supabase
 }
 
 interface ReadyPromptsListProps {

@@ -3,9 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PromptComposer } from './prompt-composer/PromptComposer';
+import { ReadyPromptsList } from './ReadyPromptsList';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Brain, Loader2, BookOpen, ChevronDown, Copy, Check } from 'lucide-react';
+import { Brain, Loader2, BookOpen, ChevronDown, Copy, Check, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -424,7 +425,8 @@ ESEMPI:
     { label: `🎭 Personalità ${personalitySections.length > 0 ? `(${personalitySections.length})` : ''}`, value: 'personality' },
     { label: `💬 Stili ${styleSections.length > 0 ? `(${styleSections.length})` : ''}`, value: 'styles' },
     { label: '🧠 Orchestrator', value: 'orchestrator' },
-    { label: '🧩 Compositore', value: 'composer' }
+    { label: '🧩 Compositore', value: 'composer' },
+    { label: '📦 Prompt Pronti', value: 'ready' }
   ];
 
   const currentSectionLabel = sectionDropdownItems.find(item => item.value === activeTab)?.label || 'Seleziona sezione';
@@ -990,6 +992,11 @@ SE BLOCCATO: Forzi chiusura: "Senti, pragmaticamente facciamo così: [soluzione]
                 Nessuna sezione orchestrator trovata. Ricaricare la pagina.
               </div>
             )}
+          </TabsContent>
+
+          {/* READY PROMPTS TAB */}
+          <TabsContent value="ready" className="flex-1 h-full p-0 m-0">
+            <ReadyPromptsList />
           </TabsContent>
 
         </Tabs>

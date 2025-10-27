@@ -1,8 +1,35 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, FileText, Archive, Settings, Activity, AlertCircle, Brain } from "lucide-react";
+import { Database, FileText, Archive, Settings, Activity, AlertCircle, Brain, Download } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { exportAllPromptsToTxt, downloadTxtFile } from "@/lib/promptExporter";
+import { useState } from "react";
 
 export default function DatabaseSettings() {
+  const { toast } = useToast();
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPrompts = async () => {
+    setExporting(true);
+    try {
+      const txtContent = await exportAllPromptsToTxt();
+      downloadTxtFile(txtContent);
+      
+      toast({
+        title: "✅ Export completato",
+        description: "File scaricato con successo"
+      });
+    } catch (error) {
+      toast({
+        title: "❌ Errore",
+        description: "Impossibile esportare i prompt",
+        variant: "destructive"
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const menuItems = [
     {
       title: "Tabelle Database",
@@ -73,23 +100,51 @@ export default function DatabaseSettings() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {menuItems.map((item) => (
-          <Link key={item.href} to={item.href}>
-            <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors`}>
-                    <item.icon className={`h-6 w-6 ${item.color}`} />
+        {menuItems.map((item) => {
+          if (item.onClick) {
+            return (
+              <button
+                key={item.title}
+                onClick={item.onClick}
+                disabled={exporting}
+                type="button"
+                className="w-full text-left"
+              >
+                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors`}>
+                        <item.icon className={`h-6 w-6 ${item.color}`} />
+                      </div>
+                      <CardTitle className="text-lg">{item.title}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>{item.description}</CardDescription>
+                  </CardContent>
+                </Card>
+              </button>
+            );
+          }
+
+          return (
+            <Link key={item.title} to={item.href}>
+              <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors`}>
+                      <item.icon className={`h-6 w-6 ${item.color}`} />
+                    </div>
+                    <CardTitle className="text-lg">{item.title}</CardTitle>
                   </div>
-                  <CardTitle className="text-lg">{item.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>{item.description}</CardDescription>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>{item.description}</CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

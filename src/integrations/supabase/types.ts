@@ -741,6 +741,7 @@ export type Database = {
       chat_laboratory_conversations: {
         Row: {
           active_participants: Json | null
+          composed_prompt_id: string | null
           convergence_metrics: Json | null
           conversation_phase: string | null
           conversation_style: string | null
@@ -774,6 +775,7 @@ export type Database = {
         }
         Insert: {
           active_participants?: Json | null
+          composed_prompt_id?: string | null
           convergence_metrics?: Json | null
           conversation_phase?: string | null
           conversation_style?: string | null
@@ -807,6 +809,7 @@ export type Database = {
         }
         Update: {
           active_participants?: Json | null
+          composed_prompt_id?: string | null
           convergence_metrics?: Json | null
           conversation_phase?: string | null
           conversation_style?: string | null
@@ -839,6 +842,13 @@ export type Database = {
           vad_silence_duration?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "chat_laboratory_conversations_composed_prompt_id_fkey"
+            columns: ["composed_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_composed_prompts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chat_laboratory_conversations_system_prompt_id_fkey"
             columns: ["system_prompt_id"]

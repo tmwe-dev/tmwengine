@@ -23,7 +23,9 @@ export const useRadioVirtualTabs = ({
     if (!activeMessageId && messages.length > 0) {
       const firstWithAudio = messages.find(m => m.audio_url);
       if (firstWithAudio) {
-        console.log(`🎯 [useRadioVirtualTabs] Primo messaggio con audio attivo: ${firstWithAudio.sender_name}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🎯 [useRadioVirtualTabs] Primo messaggio con audio attivo: ${firstWithAudio.sender_name}`);
+        }
         setActiveMessageId(firstWithAudio.id);
       }
     }
@@ -36,16 +38,22 @@ export const useRadioVirtualTabs = ({
 
   // ✅ handleAudioEnd: trova semplicemente prossimo messaggio con audio
   const handleAudioEnd = useCallback(() => {
-    console.log('🔄 [useRadioVirtualTabs] handleAudioEnd chiamato');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 [useRadioVirtualTabs] handleAudioEnd chiamato');
+    }
     
     if (!isAutoAdvanceEnabled) {
-      console.log('⏸️ [useRadioVirtualTabs] Auto-advance disabilitato');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('⏸️ [useRadioVirtualTabs] Auto-advance disabilitato');
+      }
       return;
     }
 
     const currentIndex = messages.findIndex(m => m.id === activeMessageId);
     if (currentIndex === -1) {
-      console.error('❌ [useRadioVirtualTabs] activeMessageId non trovato');
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ [useRadioVirtualTabs] activeMessageId non trovato');
+      }
       return;
     }
 
@@ -55,10 +63,17 @@ export const useRadioVirtualTabs = ({
       .find(m => m.audio_url);
     
     if (nextMessage) {
-      console.log(`🎵 [useRadioVirtualTabs] Prossimo messaggio: ${nextMessage.sender_name}`);
-      setActiveMessageId(nextMessage.id);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🎵 [useRadioVirtualTabs] Prossimo messaggio: ${nextMessage.sender_name}`);
+      }
+      // FIX 1: Delay per transizione fluida
+      setTimeout(() => {
+        setActiveMessageId(nextMessage.id);
+      }, 50);
     } else {
-      console.log('🏁 [useRadioVirtualTabs] Nessun altro messaggio con audio');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🏁 [useRadioVirtualTabs] Nessun altro messaggio con audio');
+      }
     }
   }, [messages, activeMessageId, isAutoAdvanceEnabled]);
 

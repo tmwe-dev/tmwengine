@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MultiAgentMessage } from '@/components/chat-laboratory/MultiAgentMessage';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioMessage } from '@/types/radio';
 import { useRadioAudioPlayback } from '@/hooks/useRadioAudioPlayback';
 import { useRadioVirtualTabs } from '@/hooks/useRadioVirtualTabs';
+import { cn } from '@/lib/utils';
 
 interface RadioMessagesViewProps {
   messages: RadioMessage[];
@@ -33,11 +34,44 @@ export function RadioMessagesView({
     isAutoAdvanceEnabled
   });
 
-  // ✅ Callback combinato: gestisce audio stop e tab switch
+  // FIX 2: State per sincronizzazione audio-tab
+  const [shouldSwitchTab, setShouldSwitchTab] = useState(false);
+
+  // FIX 4: Ref per auto-scroll
+  const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // FIX 2: Callback con delay per sincronizzazione perfetta
   const onAudioEndComplete = () => {
     audioEnd();
-    tabSwitchOnAudioEnd();
+    setTimeout(() => {
+      setShouldSwitchTab(true);
+    }, 50);
   };
+
+  // FIX 2: useEffect per sincronizzazione audio-tab
+  useEffect(() => {
+    if (shouldSwitchTab && !isAudioPlaying) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔄 [RadioMessagesView] Sincronizzazione completata, cambio tab`);
+      }
+      tabSwitchOnAudioEnd();
+      setShouldSwitchTab(false);
+    }
+  }, [shouldSwitchTab, isAudioPlaying, tabSwitchOnAudioEnd]);
+
+  // FIX 4: useEffect per auto-scroll al messaggio attivo
+  useEffect(() => {
+    if (activeMessageId) {
+      const element = messageRefs.current.get(activeMessageId);
+      if (element) {
+        element.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'nearest'
+        });
+      }
+    }
+  }, [activeMessageId]);
 
   // Convert RadioMessage to expected format for MultiAgentMessage
   const formattedMessages = messages.map(msg => {
@@ -64,12 +98,14 @@ export function RadioMessagesView({
   });
 
   // Debug logging
-  console.log('🔍 [RadioMessagesView] DEBUG:', {
-    totalMessages: formattedMessages.length,
-    messagesWithAudio: formattedMessages.filter(m => m.audio_url).length,
-    isAudioEnabled,
-    activeMessageId: activeMessageId.substring(0, 8)
-  });
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [RadioMessagesView] DEBUG:', {
+      totalMessages: formattedMessages.length,
+      messagesWithAudio: formattedMessages.filter(m => m.audio_url).length,
+      isAudioEnabled,
+      activeMessageId: activeMessageId.substring(0, 8)
+    });
+  }
 
   return (
     <ScrollArea className="h-full px-4">
@@ -78,7 +114,7 @@ export function RadioMessagesView({
           // 🎯 LOGICA TAB VIRTUALE: canAutoPlay basato su activeMessageId
           const canAutoPlay = canAutoPlayForMessage(message.id) && isAudioEnabled;
           
-          if (message.audio_url) {
+          if (message.audio_url && process.env.NODE_ENV === 'development') {
             console.log(`🎵 [RadioMessagesView] Render messaggio ${message.sender_name}:`, {
               messageId: message.id.substring(0, 8),
               isActive: message.id === activeMessageId,
@@ -88,16 +124,29 @@ export function RadioMessagesView({
             });
           }
           
+          // FIX 3 + 4: Wrapper con animazione e ref per scroll
           return (
-            <MultiAgentMessage
+            <div 
               key={message.id}
-              message={message}
-              onAudioEnd={onAudioEndComplete}
-              onAudioStateChange={(playing) => 
-                playing ? handleAudioStart(message.id) : audioEnd()
-              }
-              canAutoPlay={canAutoPlay}
-            />
+              ref={(el) => {
+                if (el) messageRefs.current.set(message.id, el);
+              }}
+              className={cn(
+                "transition-all duration-300 ease-in-out",
+                message.id === activeMessageId 
+                  ? "opacity-100 scale-100" 
+                  : "opacity-60 scale-[0.98]"
+              )}
+            >
+              <MultiAgentMessage
+                message={message}
+                onAudioEnd={onAudioEndComplete}
+                onAudioStateChange={(playing) => 
+                  playing ? handleAudioStart(message.id) : audioEnd()
+                }
+                canAutoPlay={canAutoPlay}
+              />
+            </div>
           );
         })}
       </div>

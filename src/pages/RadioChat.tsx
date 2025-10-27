@@ -18,13 +18,6 @@ import { RadioMessage } from '@/types/radio';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-// Import avatar assets
-import albertGif from '@/assets/albert-mining.gif';
-import albertStatic from '@/assets/albert-static.png';
-import pitagoraGif from '@/assets/pitagora-gym.gif';
-import pitagoraStatic from '@/assets/pitagora-static.png';
-import archimedeGif from '@/assets/archimede-stones.gif';
-import archimedeStatic from '@/assets/archimede-static.png';
 
 interface RadioParticipant {
   id: string;
@@ -523,35 +516,6 @@ const RadioChat = () => {
     };
   }, [currentConversationId]);
 
-  // ============= SWIPE/TRACKPAD SUPPORT =============
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const swipeThreshold = 75;
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    if (distance > swipeThreshold) handleNextCard();
-    else if (distance < -swipeThreshold) handlePrevCard();
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-      e.preventDefault();
-      if (e.deltaX > 30) handleNextCard();
-      else if (e.deltaX < -30) handlePrevCard();
-    }
-  };
-
   return (
     <div className="relative h-full">
         {(() => {
@@ -622,13 +586,7 @@ const RadioChat = () => {
           <>
             <div className="flex flex-col h-[calc(100vh-140px)] min-h-[600px] md:min-h-[700px] lg:min-h-[850px]">
             {/* Carousel Container - Flex 1 */}
-            <div 
-              className="relative flex-1 min-h-0 overflow-visible"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              onWheel={handleWheel}
-            >
+            <div className="relative flex-1 min-h-0 overflow-visible">
               <div className="absolute inset-0 z-10">
                 <RadioCarousel3D 
                   messages={messages}
@@ -636,75 +594,41 @@ const RadioChat = () => {
                 />
               </div>
             
-            {/* Invisible Click Areas for Navigation */}
+            {/* Navigation Buttons */}
             {aiMessages.length > 1 && (
               <>
-                {/* Left click area - 25% dello schermo */}
                 <button
                   onClick={handlePrevCard}
-                  className="absolute left-0 top-0 bottom-0 w-1/4 z-20 cursor-w-resize group"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all"
                   aria-label="Previous message"
                 >
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none">
-                    <ChevronLeft className="w-8 h-8 text-white" />
-                  </div>
+                  <ChevronLeft className="w-6 h-6 text-white" />
                 </button>
-                
-                {/* Right click area - 25% dello schermo */}
                 <button
                   onClick={handleNextCard}
-                  className="absolute right-0 top-0 bottom-0 w-1/4 z-20 cursor-e-resize group"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all"
                   aria-label="Next message"
                 >
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none">
-                    <ChevronRight className="w-8 h-8 text-white" />
-                  </div>
+                  <ChevronRight className="w-6 h-6 text-white" />
                 </button>
               </>
             )}
             
-            {/* Avatar Navigation Column - Sostituisce Indicator Dots */}
+            {/* Indicator Dots - Below Right Arrow */}
             {aiMessages.length > 1 && (
-              <div className="hidden md:flex absolute right-6 top-1/2 -translate-y-1/2 z-30 flex-col gap-6">
-                {aiMessages.map((msg) => {
-                  const isActive = msg.id === activeMessageId;
-                  const agentType = msg.sender_type;
-                  
-                  // Mapping type → avatar
-                  const avatarConfig = {
-                    chatgpt: { gif: albertGif, static: albertStatic, name: 'Albert' },
-                    gemini: { gif: pitagoraGif, static: pitagoraStatic, name: 'Pitagora' },
-                    claude: { gif: archimedeGif, static: archimedeStatic, name: 'Archimede' }
-                  };
-                  
-                  const config = avatarConfig[agentType as keyof typeof avatarConfig] || avatarConfig.chatgpt;
-                  
-                  return (
-                    <button
-                      key={msg.id}
-                      onClick={() => setActiveMessageId(msg.id)}
-                      className={cn(
-                        "relative w-16 h-16 rounded-full overflow-hidden",
-                        "transition-all duration-300 cursor-pointer",
-                        "border-2",
-                        isActive 
-                          ? "border-white scale-110 shadow-lg shadow-white/30" 
-                          : "border-white/30 opacity-50 hover:opacity-80 hover:scale-105"
-                      )}
-                      aria-label={`Go to ${config.name}'s message`}
-                      title={config.name}
-                    >
-                      <img 
-                        src={isActive ? config.gif : config.static}
-                        alt={config.name}
-                        className={cn(
-                          "w-full h-full object-cover transition-all",
-                          !isActive && "grayscale"
-                        )}
-                      />
-                    </button>
-                  );
-                })}
+              <div className="absolute right-4 top-[calc(50%+60px)] z-35 flex flex-col gap-2">
+                {aiMessages.map((msg, idx) => (
+                  <button
+                    key={msg.id}
+                    onClick={() => setActiveMessageId(msg.id)}
+                    className={`h-3 w-3 rounded-full transition-all cursor-pointer ${
+                      msg.id === activeMessageId
+                        ? 'bg-white scale-125' 
+                        : 'bg-white/40 hover:bg-white/60'
+                    }`}
+                    aria-label={`Go to message ${idx + 1}`}
+                  />
+                ))}
               </div>
             )}
             

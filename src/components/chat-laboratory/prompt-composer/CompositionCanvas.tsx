@@ -143,6 +143,7 @@ export function CompositionCanvas({
             onClick={handleSave}
             disabled={isSaving || blocks.length === 0}
             size="sm"
+            className="disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isSaving ? (
               <>

@@ -48,7 +48,7 @@ export async function callClaude(
       },
       body: JSON.stringify({
         model: params.model || 'claude-sonnet-4-5-20250929',
-        max_tokens: 200,
+        max_tokens: 800,
         temperature: 0.7,
         messages: userMessages,
         system: fullSystemPrompt
@@ -71,8 +71,15 @@ export async function callClaude(
     }
     
     const data = await response.json();
+    
+    const rawContent = data.content?.[0]?.text?.trim();
+    if (!rawContent) {
+      console.error('❌ Claude content vuoto! Full response:', JSON.stringify(data, null, 2));
+      throw new Error('Claude returned empty content - possibile problema crediti o prompt');
+    }
+    
     return {
-      content: data.content?.[0]?.text?.trim() || '[ERRORE: Claude ha ritornato content vuoto]',
+      content: rawContent,
       tokensIn: data.usage?.input_tokens || 0,
       tokensOut: data.usage?.output_tokens || 0,
       duration: Date.now() - startTime

@@ -198,6 +198,59 @@ const RadioChat = () => {
     loadParticipants();
   }, [supabase]);
   
+  // Load last conversation on mount
+  useEffect(() => {
+    const loadLastConversation = async () => {
+      if (!currentUser?.id) return;
+      
+      console.log('🔍 [RadioChat] Loading last conversation...');
+      
+      const { data, error } = await supabase
+        .from('chat_laboratory_conversations')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error) {
+        console.log('ℹ️ No existing conversation, creating new one...');
+        // Crea nuova conversazione se non esiste
+        const { data: newConv, error: createError } = await supabase
+          .from('chat_laboratory_conversations')
+          .insert({
+            user_id: currentUser.id,
+            titolo: 'Radio Chat ' + new Date().toLocaleDateString()
+          })
+          .select()
+          .single();
+        
+        if (createError) {
+          console.error('❌ Error creating conversation:', createError);
+          toast({
+            title: "Errore",
+            description: "Impossibile creare conversazione",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        console.log('✅ [RadioChat] Created new conversation:', newConv.id);
+        setCurrentConversationId(newConv.id);
+        return;
+      }
+      
+      if (data?.id) {
+        console.log('✅ [RadioChat] Loaded conversation:', data.id);
+        setCurrentConversationId(data.id);
+      }
+    };
+    
+    if (currentUser) {
+      loadLastConversation();
+    }
+  }, [currentUser, supabase, toast]);
+  
   // Persist auto-advance changes to localStorage
   useEffect(() => {
     localStorage.setItem('radio-auto-advance', JSON.stringify(isAutoAdvanceEnabled));

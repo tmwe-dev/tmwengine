@@ -398,22 +398,24 @@ ESEMPI:
         </div>
       </div>
 
-      {/* Tabs navigation */}
-      <div className="border-b px-4 bg-background">
-        <TabsList className="w-full justify-start h-12">
-          <TabsTrigger value="global" onClick={() => setActiveTab('global')}>🌐 Globale</TabsTrigger>
-          <TabsTrigger value="base" onClick={() => setActiveTab('base')}>📚 Base</TabsTrigger>
-          <TabsTrigger value="personality" onClick={() => setActiveTab('personality')}>🎭 Personalità</TabsTrigger>
-          <TabsTrigger value="styles" onClick={() => setActiveTab('styles')}>💬 Stili</TabsTrigger>
-          <TabsTrigger value="orchestrator" onClick={() => setActiveTab('orchestrator')}>🧠 Orchestrator</TabsTrigger>
-          <TabsTrigger value="composer" onClick={() => setActiveTab('composer')}>🧩 Compositore</TabsTrigger>
-          <TabsTrigger value="ready" onClick={() => setActiveTab('ready')}>📦 Prompt Pronti</TabsTrigger>
-        </TabsList>
-      </div>
-
-      {/* Content area */}
+      {/* Content area with tabs */}
       <div className="flex-1 overflow-hidden">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          {/* Tabs navigation */}
+          <div className="border-b px-4 bg-background flex-shrink-0">
+            <TabsList className="w-full justify-start h-12">
+              <TabsTrigger value="global">🌐 Globale</TabsTrigger>
+              <TabsTrigger value="base">📚 Base</TabsTrigger>
+              <TabsTrigger value="personality">🎭 Personalità</TabsTrigger>
+              <TabsTrigger value="styles">💬 Stili</TabsTrigger>
+              <TabsTrigger value="orchestrator">🧠 Orchestrator</TabsTrigger>
+              <TabsTrigger value="composer">🧩 Compositore</TabsTrigger>
+              <TabsTrigger value="ready">📦 Prompt Pronti</TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* Tab contents */}
+          <div className="flex-1 overflow-hidden">
           {/* TAB COMPOSER - Full height senza scroll wrapper */}
           <TabsContent value="composer" className="h-full m-0 p-0">
             <PromptComposer />
@@ -705,6 +707,7 @@ ESEMPI:
           <TabsContent value="ready" className="h-full m-0 p-0">
             <ReadyPromptsList />
           </TabsContent>
+          </div>
         </Tabs>
       </div>
     </div>

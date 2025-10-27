@@ -685,11 +685,10 @@ const RadioChat = () => {
                         className={cn(
                           "relative w-14 h-14 rounded-full overflow-hidden",
                           "transition-all duration-300 cursor-pointer",
-                          "border-2",
                           "shadow-lg",
                           isActive 
-                            ? "border-white scale-110 shadow-white/40" 
-                            : "border-white/30 opacity-50 hover:opacity-80 hover:scale-105"
+                            ? "scale-110 shadow-white/40" 
+                            : "opacity-50 hover:opacity-80 hover:scale-105"
                         )}
                         aria-label={`Go to ${config.name}'s message`}
                         title={config.name}
@@ -730,15 +729,6 @@ const RadioChat = () => {
           </div>
           </>
         ) : (
-          (() => {
-            console.log('🔊 [RadioChat] Audio settings:', {
-              isAudioEnabled,
-              isAutoAdvanceEnabled,
-              totalMessages: messages.length
-            });
-            return null;
-          })(),
-          /* Messages View - Full overlay con background */
           <div className="w-full h-full pt-20 pb-24">
             <RadioMessagesView 
               messages={messages}

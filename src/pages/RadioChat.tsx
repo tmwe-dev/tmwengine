@@ -520,7 +520,7 @@ const RadioChat = () => {
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger
         className={cn(
-          "fixed left-0 bottom-8 z-40 transition-transform duration-300",
+          "fixed left-0 bottom-64 z-40 transition-transform duration-300",
           sidebarOpen && "translate-x-[320px]"
         )}
         isOpen={sidebarOpen}
@@ -533,7 +533,7 @@ const RadioChat = () => {
       <button
         onClick={() => setMessageViewVisible(!messageViewVisible)}
         className={cn(
-          "fixed left-0 bottom-64 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+          "fixed left-0 bottom-36 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
           "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
           sidebarOpen && "translate-x-[320px]"
         )}
@@ -551,7 +551,7 @@ const RadioChat = () => {
       <button
         onClick={() => setInputVisible(!inputVisible)}
         className={cn(
-          "fixed left-0 bottom-36 z-40 w-12 h-20 bg-black rounded-r-lg",
+          "fixed left-0 bottom-8 z-40 w-12 h-20 bg-black rounded-r-lg",
           "flex items-center justify-center transition-all duration-300 hover:w-14",
           sidebarOpen && "translate-x-[320px]"
         )}

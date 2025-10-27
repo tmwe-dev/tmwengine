@@ -23,35 +23,21 @@ export function RadioMessagesView({
     handleAudioEnd: audioEnd 
   } = useRadioAudioPlayback();
 
-  // Hook per tab virtuali (replica logica MessageTabsView)
+  // Hook per tab virtuali
   const {
     activeMessageId,
     canAutoPlayForMessage,
     handleAudioEnd: tabSwitchOnAudioEnd
   } = useRadioVirtualTabs({
     messages,
-    isAutoAdvanceEnabled,
-    isAudioPlaying
+    isAutoAdvanceEnabled
   });
 
-  // Callback combinato: gestisce sia audio che cambio tab (replica Chat Laboratory)
+  // ✅ Callback combinato: gestisce audio stop e tab switch
   const onAudioEndComplete = () => {
-    console.log(`🎬 [RadioMessagesView] onAudioEndComplete chiamato`);
-    audioEnd(); // Stop audio
-    tabSwitchOnAudioEnd(); // ✅ CAMBIO IMMEDIATO - nessun setTimeout, nessun useEffect
+    audioEnd();
+    tabSwitchOnAudioEnd();
   };
-
-  // ✅ NUOVO: Retriggera audio quando activeMessageId cambia
-  useEffect(() => {
-    if (!activeMessageId || !isAudioEnabled) return;
-    
-    const activeMessage = messages.find(m => m.id === activeMessageId);
-    if (!activeMessage?.audio_url) return;
-    
-    console.log(`🔄 [RadioMessagesView] activeMessageId changed → trigger audio:`, activeMessage.sender_name);
-    
-    // Il MultiAgentMessage gestirà autoplay internamente quando canAutoPlay diventa true
-  }, [activeMessageId, messages, isAudioEnabled]);
 
   // Convert RadioMessage to expected format for MultiAgentMessage
   const formattedMessages = messages.map(msg => {

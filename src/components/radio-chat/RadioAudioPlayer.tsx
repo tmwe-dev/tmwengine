@@ -34,12 +34,9 @@ export const RadioAudioPlayer = ({
   const hasStartedRef = useRef(false);
 
   useEffect(() => {
-    // Guard: se audio già caricato con stesso URL, skip re-init
-    if (audioRef.current && audioRef.current.src === audioUrl) {
-      console.log('⏭️ [RadioAudioPlayer] Audio già caricato, skip re-init');
-      return;
-    }
-
+    // ✅ RESET hasStartedRef per permettere nuovo autoplay
+    hasStartedRef.current = false;
+    
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
@@ -86,8 +83,9 @@ export const RadioAudioPlayer = ({
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
       audio.pause();
+      hasStartedRef.current = false; // ✅ RESET su cleanup
     };
-  }, [audioUrl, autoPlay, canAutoPlay, onPlayStart, onPlayEnd, onPlayingChange, isAudioEnabled, messageId]);
+  }, [messageId, audioUrl, autoPlay, canAutoPlay, onPlayStart, onPlayEnd, onPlayingChange, isAudioEnabled]);
 
   useEffect(() => {
     if (audioRef.current) {

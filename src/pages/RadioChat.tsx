@@ -186,29 +186,18 @@ const RadioChat = () => {
   
   const currentMessage = messages.find(m => m.id === activeMessageId) || null;
   
-
-  // Handler for carousel audio end with auto-advance (sincronizzato con useRadioVirtualTabs)
+  // ✅ Handler carousel: semplicissimo - avanza al prossimo
   const handleCarouselAudioEnd = () => {
-    console.log('🏁 [RadioChat] Audio ended, isAutoAdvance:', isAutoAdvanceEnabled);
+    handleAudioEnd(); // Stop audio state
     
-    // SEMPRE ferma l'audio (anche se auto-advance è OFF)
-    handleAudioEnd();
+    if (!isAutoAdvanceEnabled) return;
     
-    // Auto-advance SOLO se abilitato
-    if (!isAutoAdvanceEnabled) {
-      console.log('⏸️ Auto-advance disabilitato, stop qui');
-      return;
-    }
-    
-    // ✅ IDENTICA LOGICA di useRadioVirtualTabs.handleAudioEnd
     const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
+    const nextMessage = aiMessages[currentIndex + 1];
     
-    if (currentIndex !== -1 && currentIndex < aiMessages.length - 1) {
-      const nextMessage = aiMessages[currentIndex + 1];
-      console.log('➡️ [RadioChat] Advancing to:', nextMessage.sender_name);
-      setActiveMessageId(nextMessage.id); // Questo trigger il useEffect in RadioMessagesView
-    } else {
-      console.log('⏹️ Fine conversazione, nessun messaggio successivo');
+    if (nextMessage) {
+      console.log('➡️ [RadioChat] Auto-advance to:', nextMessage.sender_name);
+      setActiveMessageId(nextMessage.id);
     }
   };
 

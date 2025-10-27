@@ -262,7 +262,7 @@ serve(async (req) => {
 
         // ============ AUDIO GENERATION ============
         let audioUrl = null;
-        if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.includes(currentAgent.name)) {
+        if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.some((v: any) => v.name === currentAgent.name)) {
           try {
             const voiceAgent = activeVoiceAgents.find((v: any) => v.name === currentAgent.name);
             audioUrl = await generateAudioForSingleResponse({

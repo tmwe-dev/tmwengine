@@ -224,7 +224,7 @@ const RadioChat = () => {
       console.log(`🎯 [RadioChat] Setting first AI message with audio: ${firstWithAudio.sender_name}`);
       setActiveMessageId(firstWithAudio.id);
     }
-  }, [aiMessages, activeMessageId]);
+  }, [aiMessages.length, activeMessageId]);
   
   const currentMessage = messages.find(m => m.id === activeMessageId) || null;
   

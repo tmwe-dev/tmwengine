@@ -46,9 +46,14 @@ export const RadioAudioPlayer = ({
   const onPlayEndRef = useRef(onPlayEnd);
   const onPlayingChangeRef = useRef(onPlayingChange);
   const onTimeUpdateRef = useRef(onTimeUpdate);
+  
+  // ✅ Refs per props che non devono triggerare re-mount
+  const autoPlayRef = useRef(autoPlay);
+  const canAutoPlayRef = useRef(canAutoPlay);
+  const isAudioEnabledRef = useRef(isAudioEnabled);
 
   useEffect(() => {
-    console.log(`🔄 [RadioAudioPlayer] SETUP per: ${messageId.substring(0,8)}, autoPlay: ${autoPlay}, enabled: ${isAudioEnabled}`);
+    console.log(`🔄 [RadioAudioPlayer] SETUP per: ${messageId.substring(0,8)}`);
     // ✅ RESET hasStartedRef per permettere nuovo autoplay
     hasStartedRef.current = false;
     
@@ -81,7 +86,7 @@ export const RadioAudioPlayer = ({
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
-    if (autoPlay && canAutoPlay && isAudioEnabled && !hasStartedRef.current && audio.paused) {
+    if (autoPlayRef.current && canAutoPlayRef.current && isAudioEnabledRef.current && !hasStartedRef.current && audio.paused) {
       console.log(`🎬 [RadioAudioPlayer] Tentativo autoplay: ${messageId}`);
       audio.play()
         .then(() => {
@@ -101,17 +106,20 @@ export const RadioAudioPlayer = ({
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
       audio.pause();
-      hasStartedRef.current = false; // ✅ RESET su cleanup
+      hasStartedRef.current = false;
     };
-  }, [messageId, audioUrl, autoPlay, canAutoPlay, isAudioEnabled]);
+  }, [messageId, audioUrl]);
 
-  // Aggiorna refs quando le callback cambiano (senza triggerare re-mount audio)
+  // Aggiorna refs quando le callback o props cambiano (senza triggerare re-mount audio)
   useEffect(() => {
     onPlayStartRef.current = onPlayStart;
     onPlayEndRef.current = onPlayEnd;
     onPlayingChangeRef.current = onPlayingChange;
     onTimeUpdateRef.current = onTimeUpdate;
-  }, [onPlayStart, onPlayEnd, onPlayingChange, onTimeUpdate]);
+    autoPlayRef.current = autoPlay;
+    canAutoPlayRef.current = canAutoPlay;
+    isAudioEnabledRef.current = isAudioEnabled;
+  }, [onPlayStart, onPlayEnd, onPlayingChange, onTimeUpdate, autoPlay, canAutoPlay, isAudioEnabled]);
 
   useEffect(() => {
     if (audioRef.current) {

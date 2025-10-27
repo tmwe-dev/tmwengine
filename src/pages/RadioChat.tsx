@@ -83,6 +83,16 @@ const RadioChat = () => {
     checkAuth();
   }, [toast]);
   
+  // Listener per apertura debug popup da header
+  useEffect(() => {
+    const handleToggleDebug = () => {
+      setDebugPopupOpen(prev => !prev);
+    };
+    
+    window.addEventListener('toggle-debug-popup', handleToggleDebug);
+    return () => window.removeEventListener('toggle-debug-popup', handleToggleDebug);
+  }, []);
+  
   // Load participants from elevenlabs_agents
   useEffect(() => {
     console.log('🚀 [MOUNT] RadioChat useEffect triggered, supabase ready:', !!supabase);
@@ -561,7 +571,7 @@ const RadioChat = () => {
       </button>
 
       {/* Main Content Area */}
-      <div className="pt-0 pb-[200px]">
+      <div className="pt-0 pb-[200px] -mt-8">
         {viewMode === 'carousel' ? (
           <>
             <div className="flex flex-col h-[calc(100vh-140px)] min-h-[600px] md:min-h-[700px] lg:min-h-[850px]">

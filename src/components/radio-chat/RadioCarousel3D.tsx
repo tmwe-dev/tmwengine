@@ -416,42 +416,36 @@ export const RadioCarousel3D = ({
 
     const targetAngle = -(activeIndex / MAX_SLOTS) * Math.PI * 2 + Math.PI / 2;
     const radius = 7.8;
-    const angleStep = (Math.PI * 2) / MAX_SLOTS;
-    const inclinationAngle = Math.atan2(0.82, radius); // ~6° inclinazione originale
-    
     gsap.to(groupRef.current.rotation, {
       y: targetAngle,
       duration: 1.2,
       ease: 'power2.inOut',
       onUpdate: () => {
-        // Durante la rotazione, anima solo la card frontale per raddrizzarla
+        // ✅ Raddrizza SOLO la mesh del messaggio attivo
+        const activeSlotKey = `slot_${activeIndex}`;
+        
         meshesRef.current.forEach((mesh, slotKey) => {
-          const slotIndex = parseInt(slotKey.split('_')[1]);
-          const meshAngle = -(slotIndex * angleStep) + Math.PI;
-          const currentGroupAngle = groupRef.current!.rotation.y;
-          
-          // Angolo assoluto della mesh rispetto alla camera
-          const absoluteAngle = meshAngle + currentGroupAngle;
-          
-          // Normalizza tra 0 e 2π
-          const normalizedAngle = ((absoluteAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-          
-          // Distanza angolare dalla posizione frontale (0 o 2π)
-          const distanceFromFront = Math.min(
-            Math.abs(normalizedAngle),
-            Math.abs(normalizedAngle - Math.PI * 2)
-          );
-          
-          // Solo la card esattamente frontale (entro 0.05 radianti ≈ 2.9°) si raddrizza
-          if (distanceFromFront < 0.05) {
+          if (slotKey === activeSlotKey) {
+            // Questa è la card frontale → raddrizza
             gsap.to(mesh.rotation, {
-              x: 0, // Raddrizza completamente
+              x: 0,
+              duration: 0.5,
+              ease: 'power2.out',
+              overwrite: true
+            });
+          } else {
+            // Altre card → ripristina lookAt() originale
+            const tempMesh = new THREE.Mesh();
+            tempMesh.position.copy(mesh.position);
+            tempMesh.lookAt(new THREE.Vector3(0, 0, 0));
+            
+            gsap.to(mesh.rotation, {
+              x: tempMesh.rotation.x,
               duration: 0.5,
               ease: 'power2.out',
               overwrite: true
             });
           }
-          // Le altre mesh mantengono il lookAt() originale con inclinazione ~6°
         });
       }
     });

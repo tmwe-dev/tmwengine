@@ -565,6 +565,7 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange, can
         {message.audio_url && (
           <div className="mt-2">
             <AudioMessagePlayer 
+              key={message.id}
               audioUrl={message.audio_url}
               autoPlay={canAutoPlay}
               onPlayStart={() => {

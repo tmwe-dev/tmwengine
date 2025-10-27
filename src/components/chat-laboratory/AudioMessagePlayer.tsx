@@ -31,21 +31,16 @@ export const AudioMessagePlayer = ({
     const audio = audioRef.current;
     if (!audio) return;
 
-    console.log('🎧 [AudioMessagePlayer] useEffect triggered - audioUrl:', audioUrl.substring(0, 50), 'autoPlay:', autoPlay);
-
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
     const handleLoadedMetadata = () => setDuration(audio.duration);
     
     const handleEnded = () => {
-      console.log('🏁 [AudioMessagePlayer] handleEnded chiamato');
       setIsPlaying(false);
       onPlayingChange?.(false);
-      console.log('🏁 [AudioMessagePlayer] Chiamata onPlayEnd...');
       onPlayEnd?.();
     };
 
     const handleError = () => {
-      console.error('❌ [AudioMessagePlayer] Audio playback error');
       setIsPlaying(false);
       onPlayingChange?.(false);
       onError?.(new Error('Audio playback failed'));
@@ -57,18 +52,15 @@ export const AudioMessagePlayer = ({
     audio.addEventListener('error', handleError);
 
     if (autoPlay) {
-      console.log('🔊 [AudioMessagePlayer] autoPlay=true, avvio playback...');
       audio.play().then(() => {
-        console.log('✅ [AudioMessagePlayer] Playback avviato con successo');
         setIsPlaying(true);
         onPlayingChange?.(true);
         onPlayStart?.();
-      }).catch((err) => {
-        console.error('❌ [AudioMessagePlayer] Errore play():', err);
-      });
+      }).catch(console.error);
     }
 
     return () => {
+      audio.pause();
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
@@ -90,7 +82,6 @@ export const AudioMessagePlayer = ({
       audio.pause();
       setIsPlaying(false);
       onPlayingChange?.(false);
-      // ✅ FIX 1: NON chiamare onPlayEnd su pausa manuale (solo su ended naturale)
     } else {
       audio.play().then(() => {
         setIsPlaying(true);

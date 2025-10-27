@@ -40,8 +40,15 @@ export const RadioAudioPlayer = ({
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasStartedRef = useRef(false);
+  
+  // ✅ Refs per callback sempre aggiornate senza causare re-mount
+  const onPlayStartRef = useRef(onPlayStart);
+  const onPlayEndRef = useRef(onPlayEnd);
+  const onPlayingChangeRef = useRef(onPlayingChange);
+  const onTimeUpdateRef = useRef(onTimeUpdate);
 
   useEffect(() => {
+    console.log(`🔄 [RadioAudioPlayer] SETUP per: ${messageId.substring(0,8)}, autoPlay: ${autoPlay}, enabled: ${isAudioEnabled}`);
     // ✅ RESET hasStartedRef per permettere nuovo autoplay
     hasStartedRef.current = false;
     
@@ -54,19 +61,19 @@ export const RadioAudioPlayer = ({
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
-      onTimeUpdate?.(audio.currentTime, audio.duration);
+      onTimeUpdateRef.current?.(audio.currentTime, audio.duration);
     };
 
     const handleEnded = () => {
       setIsPlaying(false);
-      onPlayingChange?.(false);
-      onPlayEnd?.();
+      onPlayingChangeRef.current?.(false);
+      onPlayEndRef.current?.();
     };
 
     const handleError = (e: ErrorEvent) => {
       console.error('Audio playback error:', e);
       setIsPlaying(false);
-      onPlayingChange?.(false);
+      onPlayingChangeRef.current?.(false);
     };
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
@@ -74,19 +81,21 @@ export const RadioAudioPlayer = ({
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
-    if (autoPlay && canAutoPlay && isAudioEnabled && !hasStartedRef.current) {
+    if (autoPlay && canAutoPlay && isAudioEnabled && !hasStartedRef.current && audio.paused) {
+      console.log(`🎬 [RadioAudioPlayer] Tentativo autoplay: ${messageId}`);
       audio.play()
         .then(() => {
           console.log(`▶️ [RadioAudioPlayer] Autoplay START: ${messageId}`);
           setIsPlaying(true);
-          onPlayingChange?.(true);
-          onPlayStart?.(messageId);
+          onPlayingChangeRef.current?.(true);
+          onPlayStartRef.current?.(messageId);
           hasStartedRef.current = true;
         })
         .catch(err => console.warn('⚠️ Autoplay bloccato:', err));
     }
 
     return () => {
+      console.log(`🧹 [RadioAudioPlayer] CLEANUP per: ${messageId.substring(0,8)}`);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
@@ -94,7 +103,15 @@ export const RadioAudioPlayer = ({
       audio.pause();
       hasStartedRef.current = false; // ✅ RESET su cleanup
     };
-  }, [messageId, audioUrl, autoPlay, canAutoPlay, onPlayStart, onPlayEnd, onPlayingChange, isAudioEnabled, onTimeUpdate]);
+  }, [messageId, audioUrl, autoPlay, canAutoPlay, isAudioEnabled]);
+
+  // Aggiorna refs quando le callback cambiano (senza triggerare re-mount audio)
+  useEffect(() => {
+    onPlayStartRef.current = onPlayStart;
+    onPlayEndRef.current = onPlayEnd;
+    onPlayingChangeRef.current = onPlayingChange;
+    onTimeUpdateRef.current = onTimeUpdate;
+  }, [onPlayStart, onPlayEnd, onPlayingChange, onTimeUpdate]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -108,15 +125,15 @@ export const RadioAudioPlayer = ({
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
-      onPlayingChange?.(false);
+      onPlayingChangeRef.current?.(false);
     } else {
       audioRef.current.play()
         .then(() => {
           console.log(`▶️ [RadioAudioPlayer] Manual START: ${messageId}`);
           setIsPlaying(true);
-          onPlayingChange?.(true);
+          onPlayingChangeRef.current?.(true);
           if (!hasStartedRef.current) {
-            onPlayStart?.(messageId);
+            onPlayStartRef.current?.(messageId);
             hasStartedRef.current = true;
           }
         })

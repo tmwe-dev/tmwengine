@@ -82,6 +82,7 @@ export const useTabSwitching = ({
           console.log(`   - Queue DOPO: ${newQueue.length}`);
           return newQueue;
         });
+        return;
       }
     });
 

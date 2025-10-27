@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Keyboard, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -214,15 +214,23 @@ const RadioChat = () => {
   // Simple state for carousel navigation (only used in carousel mode)
   const [activeMessageId, setActiveMessageId] = useState<string>('');
   
+  // ✅ FIX AUDIO: useMemo per stabilità firstAiMessageId
+  const firstAiMessageId = useMemo(() => {
+    return aiMessages.length > 0 ? aiMessages[0].id : '';
+  }, [aiMessages.length]);
+  
   // Auto-set first AI message as active for carousel
   useEffect(() => {
-    if (aiMessages.length > 0 && !activeMessageId) {
-      console.log(`🎯 [RadioChat] Setting first AI message: ${aiMessages[0].sender_name}`);
-      setActiveMessageId(aiMessages[0].id);
+    if (firstAiMessageId && !activeMessageId) {
+      console.log(`🎯 [RadioChat] Setting first AI message: ${aiMessages[0]?.sender_name}`);
+      setActiveMessageId(firstAiMessageId);
     }
-  }, [aiMessages.length, activeMessageId]);
+  }, [firstAiMessageId, activeMessageId, aiMessages]);
   
-  const currentMessage = messages.find(m => m.id === activeMessageId) || null;
+  // ✅ FIX AUDIO: useMemo per stabilità currentMessage (previene undefined transitorio)
+  const currentMessage = useMemo(() => {
+    return messages.find(m => m.id === activeMessageId) || null;
+  }, [messages, activeMessageId]);
   
   // ✅ Handler carousel: semplicissimo - avanza al prossimo
   const handleCarouselAudioEnd = () => {
@@ -517,14 +525,24 @@ const RadioChat = () => {
           
           const updatedMsg = payload.new;
           
-          // Verifica se audio_url è effettivamente cambiato
+          // ✅ FIX AUDIO: verifica se QUALSIASI campo rilevante è cambiato
           setMessages(prev => {
             const existingMsg = prev.find(m => m.id === updatedMsg.id);
             
-            if (existingMsg?.audio_url === updatedMsg.audio_url) {
-              console.log('⏭️ [RadioChat] Audio URL non cambiato, skip update');
-              return prev; // Nessun cambio = nessun re-render
+            // Skip se NESSUN campo rilevante è cambiato
+            if (
+              existingMsg?.audio_url === updatedMsg.audio_url &&
+              existingMsg?.token_input === updatedMsg.token_input &&
+              existingMsg?.token_output === updatedMsg.token_output
+            ) {
+              console.log('⏭️ [RadioChat] Nessun campo cambiato, skip update');
+              return prev; // NO re-render
             }
+            
+            console.log('🔄 [RadioChat] Campi aggiornati:', {
+              audio_changed: existingMsg?.audio_url !== updatedMsg.audio_url,
+              tokens_changed: existingMsg?.token_input !== updatedMsg.token_input
+            });
             
             return prev.map(msg =>
               msg.id === updatedMsg.id

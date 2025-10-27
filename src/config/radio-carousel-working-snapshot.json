@@ -1,0 +1,124 @@
+{
+  "snapshot_name": "Radio Chat Carousel 3D - AUDIO_DAMAGED",
+  "created": "2025-10-27T14:30:00Z",
+  "status": "AUDIO_DAMAGED ⚠️",
+  "version": "1.0.0-audio-damaged",
+  "author": "Luca",
+  "description": "✅ Carousel 3D funzionante | ❌ Audio NON funzionante",
+  
+  "working_features": [
+    "✅ Carousel 3D visibile e animato",
+    "✅ Messaggi appaiono in realtime nel carousel",
+    "✅ Orchestrator risponde con tutti e 3 gli agenti",
+    "✅ Texture HD con DPR e anisotropic filtering",
+    "✅ Responsive design mobile/desktop"
+  ],
+  
+  "broken_features": [
+    "❌ Audio NON viene generato",
+    "❌ audio_url rimane null nel database",
+    "❌ RadioAudioPlayerWrapper non appare"
+  ],
+  
+  "carousel_3d_config": {
+    "file": "src/components/radio-chat/RadioCarousel3D.tsx",
+    "status": "✅ FUNZIONANTE",
+    "critical_settings": {
+      "MAX_SLOTS": 8,
+      "radius": 7.8,
+      "camera": {
+        "fov_mobile": 62,
+        "fov_desktop": 67,
+        "position": [0, 0.35, 13.5],
+        "lookAt": [0, 0.82, 0]
+      },
+      "mesh": {
+        "geometry": {
+          "width": 4.83,
+          "height": 7.04,
+          "scaleFactor": "Math.min(window.innerWidth / 1200, 2.0)"
+        },
+        "position_y": 0.82,
+        "lookAt": [0, 0, 0],
+        "rotation": "antiorario (-i * angleStep + Math.PI)"
+      },
+      "texture": {
+        "canvas_width": 800,
+        "canvas_height": 1100,
+        "DPR": "window.devicePixelRatio || 2",
+        "anisotropy": "renderer.capabilities.getMaxAnisotropy()"
+      }
+    }
+  },
+  
+  "orchestrator_state": {
+    "file": "supabase/functions/radio-chat-orchestrator/index.ts",
+    "status": "⚠️ AUDIO BROKEN",
+    "implemented_fixes": [
+      "✅ Rimosso messageId duplicato (era riga 285)",
+      "✅ audioUrl = await generateAudioForSingleResponse (riga 268)",
+      "✅ Salvataggio DB per ogni agente con messageId unico"
+    ],
+    "audio_issue": "generateAudioForSingleResponse ritorna Promise<string | null> ma audio_url rimane null"
+  },
+  
+  "frontend_state": {
+    "file": "src/pages/RadioChat.tsx",
+    "status": "✅ FUNZIONANTE",
+    "implemented_fixes": [
+      "✅ voice_id aggiunto alla query (riga 93)",
+      "✅ voice_id mappato nei participants (riga 145)",
+      "✅ Timeout orchestrator 90s (riga 346)",
+      "✅ Gestito errore createConversation con return (riga 323)"
+    ]
+  },
+  
+  "audio_generator_state": {
+    "file": "supabase/functions/radio-chat-orchestrator/lib/audio-generator.ts",
+    "status": "⚠️ AUDIO BROKEN",
+    "changes": [
+      "✅ Return type cambiato a Promise<string | null> (riga 30)",
+      "✅ return audioUrl aggiunto (riga 85)",
+      "✅ return null nel catch (riga 88)"
+    ],
+    "suspected_issue": "Possibile problema con generazione audio ElevenLabs o upload Supabase Storage"
+  },
+  
+  "visual_effects": {
+    "trapezoid_tilt": {
+      "enabled": false,
+      "angle": "~6°",
+      "created_by": "mesh_position_y (0.82) != mesh_lookat_y (0)"
+    },
+    "card_visibility": {
+      "opacity_initial": 0,
+      "opacity_populated": 1,
+      "material_transparent": true,
+      "side": "DoubleSide"
+    }
+  },
+  
+  "next_steps_to_fix_audio": [
+    "1. Verificare logs orchestrator durante generazione audio",
+    "2. Testare chiamata ElevenLabs API manualmente",
+    "3. Verificare upload Supabase Storage con file test",
+    "4. Controllare che voiceId sia corretto nei participants",
+    "5. Verificare elevenLabsApiKey sia presente in env"
+  ],
+  
+  "how_to_restore": {
+    "step_1": "Copiare file da src/config/backups/radio-chat/",
+    "step_2": "Ripristinare RadioCarousel3D.tsx (carousel funzionante)",
+    "step_3": "Ripristinare radio-chat-orchestrator/index.ts",
+    "step_4": "Ripristinare RadioChat.tsx",
+    "step_5": "Deploy e testare: carousel dovrebbe funzionare, audio no"
+  },
+  
+  "backup_files": {
+    "carousel": "src/config/backups/radio-chat/RadioCarousel3D_AUDIO_DAMAGED_20251027.tsx",
+    "orchestrator": "src/config/backups/radio-chat/radio-chat-orchestrator_AUDIO_DAMAGED_20251027.ts.backup",
+    "frontend": "src/config/backups/radio-chat/RadioChat_AUDIO_DAMAGED_20251027.tsx"
+  },
+  
+  "warning": "⚠️ QUESTA VERSIONE NON HA AUDIO FUNZIONANTE - Usare solo per ripristinare il carousel visivo"
+}

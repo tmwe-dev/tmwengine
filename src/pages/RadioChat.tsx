@@ -190,12 +190,20 @@ const RadioChat = () => {
   // Simple state for carousel navigation (only used in carousel mode)
   const [activeMessageId, setActiveMessageId] = useState<string>('');
   
-  // Auto-set first AI message as active for carousel
+  // Auto-set first AI message WITH audio_url as active for carousel
   useEffect(() => {
-    if (aiMessages.length > 0 && !activeMessageId) {
+    if (aiMessages.length === 0) return;
+    
+    const firstMessageWithAudio = aiMessages.find(m => m.audio_url);
+    
+    if (firstMessageWithAudio && !activeMessageId) {
+      console.log(`🎯 [RadioChat] Setting first message with audio: ${firstMessageWithAudio.sender_name}`);
+      setActiveMessageId(firstMessageWithAudio.id);
+    } else if (!activeMessageId && aiMessages.length > 0) {
+      // Fallback: set first message even without audio to show card
       setActiveMessageId(aiMessages[0].id);
     }
-  }, [aiMessages.length, activeMessageId]);
+  }, [aiMessages, activeMessageId]);
   
   const currentMessage = messages.find(m => m.id === activeMessageId) || null;
   
@@ -709,6 +717,7 @@ const RadioChat = () => {
         <RadioCarouselAudioPlayerWrapper
           message={currentMessage}
           onAudioEnd={handleCarouselAudioEnd}
+          isAudioEnabled={isAudioEnabled}
           className={messageViewVisible ? 'opacity-0 pointer-events-none' : ''}
         />
       )}

@@ -12,6 +12,10 @@ interface RadioAudioPlayerProps {
   onPlayEnd?: () => void;
   onPlayingChange?: (isPlaying: boolean) => void;
   isAudioEnabled?: boolean;
+  showProgress?: boolean;
+  showSenderName?: boolean;
+  senderName?: string;
+  onTimeUpdate?: (currentTime: number, duration: number) => void;
 }
 
 export const RadioAudioPlayer = ({
@@ -22,7 +26,11 @@ export const RadioAudioPlayer = ({
   onPlayStart,
   onPlayEnd,
   onPlayingChange,
-  isAudioEnabled = true
+  isAudioEnabled = true,
+  showProgress = true,
+  showSenderName = false,
+  senderName = '',
+  onTimeUpdate
 }: RadioAudioPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -46,6 +54,7 @@ export const RadioAudioPlayer = ({
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
+      onTimeUpdate?.(audio.currentTime, audio.duration);
     };
 
     const handleEnded = () => {
@@ -85,7 +94,7 @@ export const RadioAudioPlayer = ({
       audio.pause();
       hasStartedRef.current = false; // ✅ RESET su cleanup
     };
-  }, [messageId, audioUrl, autoPlay, canAutoPlay, onPlayStart, onPlayEnd, onPlayingChange, isAudioEnabled]);
+  }, [messageId, audioUrl, autoPlay, canAutoPlay, onPlayStart, onPlayEnd, onPlayingChange, isAudioEnabled, onTimeUpdate]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -153,6 +162,8 @@ export const RadioAudioPlayer = ({
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  if (!audioUrl) return null;
+
   return (
     <div className="flex items-center gap-4 px-2 py-3">
       {/* Play/Pause Button */}
@@ -169,8 +180,16 @@ export const RadioAudioPlayer = ({
         )}
       </button>
 
+      {/* Sender Name (optional) */}
+      {showSenderName && senderName && (
+        <div className="text-xs text-purple-300/70 font-medium shrink-0">
+          {senderName}
+        </div>
+      )}
+
       {/* Progress Bar Container */}
-      <div className="flex-1 flex items-center gap-3">
+      {showProgress && (
+        <div className="flex-1 flex items-center gap-3">
         {/* Current Time */}
         <span className="text-xs text-purple-300/60 font-mono min-w-[35px] text-right">
           {formatTime(currentTime)}
@@ -201,7 +220,8 @@ export const RadioAudioPlayer = ({
         <span className="text-xs text-purple-300/60 font-mono min-w-[35px]">
           {formatTime(duration)}
         </span>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

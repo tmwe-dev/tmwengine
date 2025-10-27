@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface RadioCursorProps {
@@ -6,18 +6,46 @@ interface RadioCursorProps {
   isFocused?: boolean;
   conversationId?: string | null;
   onClick?: () => void;
+  audioProgress?: number;
+  isAudioPlaying?: boolean;
 }
 
-export function RadioCursor({ isActive, isFocused, onClick }: RadioCursorProps) {
+export function RadioCursor({ 
+  isActive, 
+  isFocused, 
+  onClick,
+  audioProgress = 0,
+  isAudioPlaying = false 
+}: RadioCursorProps) {
   const [blink, setBlink] = useState(true);
+  const lastProgressCheckpointRef = useRef(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setBlink(prev => !prev);
-    }, 530);
+    if (!isAudioPlaying) {
+      // Idle mode: slow fixed blink
+      const interval = setInterval(() => {
+        setBlink(prev => !prev);
+      }, 530);
+      return () => clearInterval(interval);
+    }
 
-    return () => clearInterval(interval);
-  }, []);
+    // Playing mode: blink every 5% progress
+    const CHECKPOINT_INTERVAL = 0.05;
+    const currentCheckpoint = Math.floor(audioProgress / CHECKPOINT_INTERVAL);
+    
+    if (currentCheckpoint > lastProgressCheckpointRef.current) {
+      setBlink(false);
+      setTimeout(() => setBlink(true), 100);
+      lastProgressCheckpointRef.current = currentCheckpoint;
+    }
+  }, [audioProgress, isAudioPlaying]);
+
+  // Reset checkpoint when audio ends
+  useEffect(() => {
+    if (!isAudioPlaying) {
+      lastProgressCheckpointRef.current = 0;
+    }
+  }, [isAudioPlaying]);
 
   // Determina il colore in base allo stato
   const cursorColor = isActive ? 'bg-white' : 'bg-red-500';

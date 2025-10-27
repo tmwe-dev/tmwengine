@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Keyboard, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
@@ -58,6 +59,7 @@ const RadioChat = () => {
   } = useRadioAudioPlayback();
   
   const { isAudioEnabled } = useAudioPreference();
+  const isMobile = useIsMobile();
   
   // Check authentication status
   useEffect(() => {
@@ -498,13 +500,19 @@ const RadioChat = () => {
           onToggleParticipant={handleToggleParticipant}
         />
 
-      {/* Debug Icon - Above Toggle Buttons (Solo in development) */}
+      {/* Debug Icon - Sotto il titolo "Radio Chat" nell'header */}
       {import.meta.env.DEV && (
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setDebugPopupOpen(!debugPopupOpen)}
-          className="fixed left-4 top-24 z-35"
+          className={cn(
+            "fixed z-50",
+            isMobile 
+              ? "left-16 top-[72px]"
+              : "left-20 top-[88px]"
+          )}
+          title="Debug Monitor"
         >
           <Bug className="w-4 h-4" />
         </Button>

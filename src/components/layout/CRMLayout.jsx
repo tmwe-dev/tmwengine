@@ -37,8 +37,7 @@ import {
   Check,
   User,
   Sparkles,
-  Globe,
-  Bug
+  Globe
  } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -201,31 +200,13 @@ const CRMLayout = ({ children }) => {
                 <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
                   {getCurrentPageTitle()}
                 </h1>
-                {/* TMWE Token Status + Debug Monitor */}
-                <div className="flex items-center gap-2 px-3">
-                  <TokenKeyIndicator 
-                    tokenCount={tmweToken ? 1 : 0}
-                    variant="total"
-                    showLabel={false}
-                    className=""
-                  />
-                  
-                  {/* Debug Monitor - Solo in RadioChat */}
-                  {import.meta.env.DEV && location.pathname === '/radio-chat' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        // Trigger evento per aprire debug popup
-                        window.dispatchEvent(new CustomEvent('toggle-debug-popup'));
-                      }}
-                      className="p-1 h-auto"
-                      title="Debug Monitor"
-                    >
-                      <Bug className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
+                {/* TMWE Token Status */}
+                <TokenKeyIndicator 
+                  tokenCount={tmweToken ? 1 : 0}
+                  variant="total"
+                  showLabel={false}
+                  className="px-3"
+                />
               </>
             )}
           </div>

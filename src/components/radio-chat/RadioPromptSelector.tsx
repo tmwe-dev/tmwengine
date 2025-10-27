@@ -327,6 +327,23 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
             </Select>
           </div>
 
+          {conversationId && (
+            <Button
+              onClick={assignComposedPromptToConversation}
+              disabled={saving || !selectedComposedId || conversationComposedId === selectedComposedId}
+              className="w-full"
+            >
+              {conversationComposedId === selectedComposedId ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Assegnato
+                </>
+              ) : (
+                'Usa in questa conversazione'
+              )}
+            </Button>
+          )}
+
           {selectedComposedId && (
             <>
               <Textarea
@@ -342,23 +359,6 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
                   Se assegni un prompt pronto, sostituirà il prompt globale per questa conversazione.
                 </p>
               </div>
-
-              {conversationId && (
-                <Button
-                  onClick={assignComposedPromptToConversation}
-                  disabled={saving || !selectedComposedId || conversationComposedId === selectedComposedId}
-                  className="w-full"
-                >
-                  {conversationComposedId === selectedComposedId ? (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Assegnato
-                    </>
-                  ) : (
-                    'Usa questo prompt pronto'
-                  )}
-                </Button>
-              )}
             </>
           )}
         </TabsContent>

@@ -182,40 +182,6 @@ serve(async (req) => {
         
         console.log(`📝 Context include: messaggio utente + ${allResponses.length} risposte precedenti`);
 
-        // ============ DETECT DIRECT CALLS ============
-        const lastResponse = allResponses[allResponses.length - 1];
-        const lastMessage = recentMessages.length > 0 ? recentMessages[recentMessages.length - 1] : null;
-
-        const wasCalledByAgent = lastResponse && (
-          lastResponse.content.toLowerCase().includes(currentAgent.name.toLowerCase()) ||
-          lastResponse.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`) ||
-          lastResponse.content.match(new RegExp(`\\b${currentAgent.name}\\b`, 'i'))
-        );
-
-        const wasDirectlyAddressed = lastMessage && (
-          lastMessage.content.toLowerCase().includes(currentAgent.name.toLowerCase()) ||
-          lastMessage.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`)
-        );
-
-        const isDirectCall = wasCalledByAgent || wasDirectlyAddressed;
-
-        if (wasCalledByAgent) {
-          console.log(`📢 ${lastResponse.agentName} ha chiamato ${currentAgent.name} → PRIORITÀ RISPOSTA`);
-        }
-
-        // ============ SKIP LOGIC: NATURAL TURN-TAKING ============
-        // Se c'è una chiamata diretta, rispondi SOLO se sei chiamato
-        if (allResponses.length > 0 && !isDirectCall) {
-          console.log(`⏭️ ${currentAgent.name} salta turno (non chiamato direttamente)`);
-          continue; // Skip questo agente
-        }
-
-        // Se NON c'è chiamata diretta ma ci sono già risposte, solo il primo agente risponde
-        if (allResponses.length > 0 && historyMessages.length > 3) {
-          console.log(`⏭️ ${currentAgent.name} salta turno (conversazione già avviata)`);
-          continue; // Skip questo agente
-        }
-
         // ============ BUILD SYSTEM PROMPT ============
         // Recupera la personalità dal cache usando il nome dell'agente
         const agentPersonality = cachedPrompts.agentPersonalities.get(currentAgent.name.toLowerCase()) || '';

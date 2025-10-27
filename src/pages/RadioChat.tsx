@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Keyboard, FileText } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
@@ -511,15 +512,24 @@ const RadioChat = () => {
 
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger
-        className="fixed left-0 bottom-8 z-40"
+        className={cn(
+          "fixed left-0 bottom-8 z-40 transition-transform duration-300",
+          sidebarOpen && "translate-x-[320px]"
+        )}
         isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(true)}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        isAudioEnabled={isAudioEnabled}
+        isAutoAdvanceEnabled={isAutoAdvanceEnabled}
       />
 
       {/* FileText Icon - Below Keyboard */}
       <button
         onClick={() => setMessageViewVisible(!messageViewVisible)}
-        className="fixed left-0 bottom-64 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20 flex items-center justify-center transition-all duration-200 hover:bg-white/5"
+        className={cn(
+          "fixed left-0 bottom-64 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+          "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
+          sidebarOpen && "translate-x-[320px]"
+        )}
         aria-label="Toggle message view"
       >
         <FileText 
@@ -533,7 +543,11 @@ const RadioChat = () => {
       {/* Keyboard Icon - Above Hamburger */}
       <button
         onClick={() => setInputVisible(!inputVisible)}
-        className="fixed left-0 bottom-36 z-40 w-12 h-20 bg-black rounded-r-lg flex items-center justify-center transition-all duration-200 hover:w-14"
+        className={cn(
+          "fixed left-0 bottom-36 z-40 w-12 h-20 bg-black rounded-r-lg",
+          "flex items-center justify-center transition-all duration-300 hover:w-14",
+          sidebarOpen && "translate-x-[320px]"
+        )}
         aria-label="Toggle input"
       >
         <Keyboard 

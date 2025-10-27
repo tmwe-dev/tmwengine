@@ -33,7 +33,7 @@ export const RadioCarouselAudioPlayerWrapper = ({
       className
     )}>
       <RadioAudioPlayer
-        audioUrl={message.audio_url || ''}
+        audioUrl={message.audio_url!}
         messageId={message.id}
         senderName={message.sender_name}
         autoPlay={!isHuman}

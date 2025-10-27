@@ -179,7 +179,7 @@ export const RadioAudioPlayer = ({
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  if (!audioUrl) return null;
+  if (!audioUrl || audioUrl.trim() === '') return null;
 
   return (
     <div className="flex items-center gap-4 px-2 py-3">

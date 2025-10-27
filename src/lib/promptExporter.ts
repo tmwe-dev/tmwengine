@@ -5,6 +5,7 @@ interface ExportPromptSection {
   section_name: string;
   content: string;
   order_priority: number;
+  is_active: boolean;
 }
 
 interface ExportComposedPrompt {
@@ -29,7 +30,6 @@ export async function exportAllPromptsToTxt(): Promise<string> {
     supabase
       .from('chat_laboratory_prompt_sections')
       .select('section_type, section_name, content, order_priority, is_active')
-      .eq('is_active', true)
       .order('section_type, order_priority'),
     
     supabase
@@ -47,6 +47,7 @@ export async function exportAllPromptsToTxt(): Promise<string> {
   const personalitySections = sections.filter(s => s.section_type === 'AGENT_PERSONALITY' || s.section_type === 'personality');
   const styleSections = sections.filter(s => s.section_type === 'CONVERSATION_STYLE');
   const orchestratorSections = sections.filter(s => s.section_type === 'ORCHESTRATOR_RULES');
+  const topicSections = sections.filter(s => s.section_type === 'TOPIC_OBJECTIVE');
 
   // Build TXT content
   let output = '';
@@ -73,7 +74,7 @@ export async function exportAllPromptsToTxt(): Promise<string> {
   if (baseSections.length > 0) {
     output += `${indexNum}. SEZIONI BASE (${baseSections.length})\n`;
     baseSections.forEach((s, i) => {
-      output += `   ${indexNum}.${i + 1} ${s.section_name}\n`;
+      output += `   ${indexNum}.${i + 1} ${s.section_name}${s.is_active ? ' [ATTIVO]' : ' [Inattivo]'}\n`;
     });
     indexNum++;
   }
@@ -81,7 +82,7 @@ export async function exportAllPromptsToTxt(): Promise<string> {
   if (personalitySections.length > 0) {
     output += `${indexNum}. PERSONALITÀ AGENTI (${personalitySections.length})\n`;
     personalitySections.forEach((s, i) => {
-      output += `   ${indexNum}.${i + 1} ${s.section_name}\n`;
+      output += `   ${indexNum}.${i + 1} ${s.section_name}${s.is_active ? ' [ATTIVO]' : ' [Inattivo]'}\n`;
     });
     indexNum++;
   }
@@ -89,7 +90,7 @@ export async function exportAllPromptsToTxt(): Promise<string> {
   if (styleSections.length > 0) {
     output += `${indexNum}. STILI CONVERSAZIONE (${styleSections.length})\n`;
     styleSections.forEach((s, i) => {
-      output += `   ${indexNum}.${i + 1} ${s.section_name}\n`;
+      output += `   ${indexNum}.${i + 1} ${s.section_name}${s.is_active ? ' [ATTIVO]' : ' [Inattivo]'}\n`;
     });
     indexNum++;
   }
@@ -97,7 +98,15 @@ export async function exportAllPromptsToTxt(): Promise<string> {
   if (orchestratorSections.length > 0) {
     output += `${indexNum}. ORCHESTRATOR (${orchestratorSections.length})\n`;
     orchestratorSections.forEach((s, i) => {
-      output += `   ${indexNum}.${i + 1} ${s.section_name}\n`;
+      output += `   ${indexNum}.${i + 1} ${s.section_name}${s.is_active ? ' [ATTIVO]' : ' [Inattivo]'}\n`;
+    });
+    indexNum++;
+  }
+
+  if (topicSections.length > 0) {
+    output += `${indexNum}. OBIETTIVI CONVERSAZIONE (${topicSections.length})\n`;
+    topicSections.forEach((s, i) => {
+      output += `   ${indexNum}.${i + 1} ${s.section_name}${s.is_active ? ' [ATTIVO]' : ' [Inattivo]'}\n`;
     });
     indexNum++;
   }
@@ -138,7 +147,8 @@ export async function exportAllPromptsToTxt(): Promise<string> {
     output += '╚═══════════════════════════════════════════════════════════╝\n\n';
 
     baseSections.forEach((section, idx) => {
-      output += `── ${indexNum}.${idx + 1} ${section.section_name} (Priorità: ${section.order_priority}) ──\n\n`;
+      output += `── ${indexNum}.${idx + 1} ${section.section_name} ──\n`;
+      output += `Priorità: ${section.order_priority} | Stato: ${section.is_active ? '✅ ATTIVO' : '⏸️ Inattivo'}\n\n`;
       output += `${section.content}\n\n`;
       output += '─'.repeat(60) + '\n\n';
     });
@@ -152,7 +162,8 @@ export async function exportAllPromptsToTxt(): Promise<string> {
     output += '╚═══════════════════════════════════════════════════════════╝\n\n';
 
     personalitySections.forEach((section, idx) => {
-      output += `── ${indexNum}.${idx + 1} ${section.section_name} ──\n\n`;
+      output += `── ${indexNum}.${idx + 1} ${section.section_name} ──\n`;
+      output += `Priorità: ${section.order_priority} | Stato: ${section.is_active ? '✅ ATTIVO' : '⏸️ Inattivo'}\n\n`;
       output += `${section.content}\n\n`;
       output += '─'.repeat(60) + '\n\n';
     });
@@ -166,7 +177,8 @@ export async function exportAllPromptsToTxt(): Promise<string> {
     output += '╚═══════════════════════════════════════════════════════════╝\n\n';
 
     styleSections.forEach((section, idx) => {
-      output += `── ${indexNum}.${idx + 1} ${section.section_name} ──\n\n`;
+      output += `── ${indexNum}.${idx + 1} ${section.section_name} ──\n`;
+      output += `Priorità: ${section.order_priority} | Stato: ${section.is_active ? '✅ ATTIVO' : '⏸️ Inattivo'}\n\n`;
       output += `${section.content}\n\n`;
       output += '─'.repeat(60) + '\n\n';
     });
@@ -180,14 +192,30 @@ export async function exportAllPromptsToTxt(): Promise<string> {
     output += '╚═══════════════════════════════════════════════════════════╝\n\n';
 
     orchestratorSections.forEach((section, idx) => {
-      output += `── ${indexNum}.${idx + 1} ${section.section_name} ──\n\n`;
+      output += `── ${indexNum}.${idx + 1} ${section.section_name} ──\n`;
+      output += `Priorità: ${section.order_priority} | Stato: ${section.is_active ? '✅ ATTIVO' : '⏸️ Inattivo'}\n\n`;
       output += `${section.content}\n\n`;
       output += '─'.repeat(60) + '\n\n';
     });
     indexNum++;
   }
 
-  // 6. Composed Prompts (Ready)
+  // 6. Topic Objectives
+  if (topicSections.length > 0) {
+    output += '\n╔═══════════════════════════════════════════════════════════╗\n';
+    output += `║  ${indexNum}. OBIETTIVI CONVERSAZIONE                             ║\n`;
+    output += '╚═══════════════════════════════════════════════════════════╝\n\n';
+
+    topicSections.forEach((section, idx) => {
+      output += `── ${indexNum}.${idx + 1} ${section.section_name} ──\n`;
+      output += `Priorità: ${section.order_priority} | Stato: ${section.is_active ? '✅ ATTIVO' : '⏸️ Inattivo'}\n\n`;
+      output += `${section.content}\n\n`;
+      output += '─'.repeat(60) + '\n\n';
+    });
+    indexNum++;
+  }
+
+  // 7. Composed Prompts (Ready)
   if (composedPrompts.length > 0) {
     output += '\n╔═══════════════════════════════════════════════════════════╗\n';
     output += `║  ${indexNum}. PROMPT PRONTI IN PRODUZIONE                         ║\n`;

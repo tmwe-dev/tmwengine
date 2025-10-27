@@ -257,21 +257,53 @@ serve(async (req) => {
 
         console.log(`✅ Risposta (${provider}): ${aiResponse}`);
 
+        // ============ GENERATE MESSAGE ID (BEFORE AUDIO) ============
+        const messageId = crypto.randomUUID();
+
         // ============ AUDIO GENERATION ============
         let audioUrl = null;
         if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.includes(currentAgent.name)) {
           try {
-            audioUrl = await generateAudioForSingleResponse(
-              aiResponse,
-              elevenLabsApiKey,
-              currentAgent.configuration.voiceId
-            );
-            console.log(`🔊 Audio generato per ${currentAgent.name}: ${audioUrl}`);
+            const voiceAgent = activeVoiceAgents.find((v: any) => v.name === currentAgent.name);
+            await generateAudioForSingleResponse({
+              supabaseClient: supabaseClient,
+              conversationId: conversationId,
+              messageId: messageId,
+              content: aiResponse,
+              voiceId: voiceAgent?.voice_id || 'EXAVITQu4vr4xnSDxMaL',
+              elevenLabsApiKey: elevenLabsApiKey
+            });
+            console.log(`🔊 Audio richiesto per ${currentAgent.name} (messageId: ${messageId})`);
           } catch (audioError) {
             console.error(`❌ Errore generazione audio per ${currentAgent.name}:`, audioError);
           }
         } else {
           console.log(`🔇 Audio disabilitato o agente non abilitato: ${currentAgent.name}`);
+        }
+
+        // ============ GENERATE MESSAGE ID ============
+        const messageId = crypto.randomUUID();
+
+        // ============ SAVE TO DATABASE ============
+        const { error: insertError } = await supabaseClient
+          .from('chat_laboratory_messages')
+          .insert({
+            id: messageId,
+            conversation_id: conversationId,
+            sender_type: currentAgent.type,
+            sender_name: currentAgent.name,
+            content: aiResponse,
+            audio_url: audioUrl,
+            token_input: rawResponse?.tokensIn || 0,
+            token_output: rawResponse?.tokensOut || 0,
+            tempo_risposta_ms: rawResponse?.duration || 0,
+            created_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          console.error(`❌ Errore salvataggio ${currentAgent.name}:`, insertError);
+        } else {
+          console.log(`✅ ${currentAgent.name} salvato nel DB con ID ${messageId}`);
         }
 
         // ============ STORE RESPONSE ============
@@ -283,20 +315,9 @@ serve(async (req) => {
         };
         allResponses.push(responseData);
 
-        // ============ RETURN RESPONSE (FIRST AGENT ONLY) ============
-        if (i === 0) {
-          console.log(`\n✅ Prima risposta (${currentAgent.name}), ritorno al client`);
-          return new Response(
-            JSON.stringify({
-              response: aiResponse,
-              speaker: currentAgent.name,
-              audioUrl: audioUrl,
-              tempResponse: null
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        } else {
-          console.log(`\n⏳ Risposta da ${currentAgent.name} ricevuta, pausa di ${pauseBetweenTurnsMs}ms`);
+        // ============ PAUSE BETWEEN AGENTS ============
+        if (i < sortedParticipants.length - 1) {
+          console.log(`⏸️ Pausa di ${pauseBetweenTurnsMs}ms prima del prossimo agente...`);
           await delay(pauseBetweenTurnsMs);
         }
 
@@ -309,6 +330,27 @@ serve(async (req) => {
       } catch (error) {
         console.error(`❌ Errore chiamata ${sortedParticipants[i]?.name}:`, error);
       }
+    }
+
+    // ============ RETURN FINALE (DOPO IL LOOP) ============
+    if (allResponses.length > 0) {
+      const firstResponse = allResponses[0];
+      console.log(`\n✅ Loop completo. Ritorno prima risposta (${firstResponse.agentName}) al client`);
+      return new Response(
+        JSON.stringify({
+          response: firstResponse.content,
+          speaker: firstResponse.agentName,
+          audioUrl: firstResponse.audioUrl,
+          tempResponse: null
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } else {
+      console.error('❌ Nessuna risposta generata da nessun agente');
+      return new Response(
+        JSON.stringify({ error: 'Nessuna risposta generata' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
   } catch (error) {

@@ -22,6 +22,7 @@ interface RadioParticipant {
   type: 'chatgpt' | 'gemini' | 'claude';
   name: string;
   is_active: boolean;
+  voice_id?: string;
 }
 
 const RadioChat = () => {
@@ -328,7 +329,8 @@ const RadioChat = () => {
           id: p.id,
           type: p.type,
           name: p.name,
-          is_active: true
+          is_active: true,
+          voiceId: p.voice_id
         }));
       
       console.log('🎯 Calling radio-chat-orchestrator with participants:', activeParticipants);
@@ -343,7 +345,7 @@ const RadioChat = () => {
       });
 
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: AI non risponde')), 30000)
+        setTimeout(() => reject(new Error('Timeout: AI non risponde')), 90000)
       );
 
       try {

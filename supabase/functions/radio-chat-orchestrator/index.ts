@@ -171,6 +171,26 @@ serve(async (req) => {
         const currentAgent = sortedParticipants[i];
         console.log(`\n🎯 Agente ${i + 1}/${sortedParticipants.length}: ${currentAgent.name}`);
         
+        // ============ CHECK IF DIRECTLY CALLED ============
+        const lastResponse = allResponses[allResponses.length - 1];
+        const lastMessage = historyMessages[historyMessages.length - 1];
+
+        const wasCalledByAgent = lastResponse && (
+          lastResponse.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`) ||
+          lastResponse.content.match(new RegExp(`\\b${currentAgent.name}\\b`, 'i'))
+        );
+
+        const wasDirectlyAddressed = lastMessage && (
+          lastMessage.content.toLowerCase().includes(currentAgent.name.toLowerCase()) ||
+          lastMessage.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`)
+        );
+
+        const isDirectCall = wasCalledByAgent || wasDirectlyAddressed;
+
+        if (wasCalledByAgent) {
+          console.log(`📢 ${lastResponse.agentName} ha chiamato ${currentAgent.name} → PRIORITÀ RISPOSTA`);
+        }
+        
         // ============ BUILD TURN CONTEXT ============
         const turnContext = [
           { role: 'user', content: userMessage },

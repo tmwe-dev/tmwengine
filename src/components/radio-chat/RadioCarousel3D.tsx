@@ -179,6 +179,7 @@ export const RadioCarousel3D = ({
   const groupRef = useRef<THREE.Group | null>(null);
   const meshesRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const renderedMessagesRef = useRef<Set<string>>(new Set());
+  const originalRotationsRef = useRef<Map<string, number>>(new Map());
   const hasInitializedSlotsRef = useRef(false);
 
   // Initialize Three.js scene
@@ -330,6 +331,9 @@ export const RadioCarousel3D = ({
         );
         mesh.lookAt(new THREE.Vector3(0, 0, 0));
         
+        // ✅ Salva la rotazione X originale
+        originalRotationsRef.current.set(`slot_${i}`, mesh.rotation.x);
+        
         group.add(mesh);
         meshesRef.current.set(`slot_${i}`, mesh);
         console.log(`  📍 Slot ${i} creato a posizione:`, mesh.position.toArray());
@@ -434,17 +438,17 @@ export const RadioCarousel3D = ({
               overwrite: true
             });
           } else {
-            // Altre card → ripristina lookAt() originale
-            const tempMesh = new THREE.Mesh();
-            tempMesh.position.copy(mesh.position);
-            tempMesh.lookAt(new THREE.Vector3(0, 0, 0));
+            // Altre card → ripristina rotazione.x originale salvata
+            const originalRotationX = originalRotationsRef.current.get(slotKey);
             
-            gsap.to(mesh.rotation, {
-              x: tempMesh.rotation.x,
-              duration: 0.5,
-              ease: 'power2.out',
-              overwrite: true
-            });
+            if (originalRotationX !== undefined) {
+              gsap.to(mesh.rotation, {
+                x: originalRotationX,
+                duration: 0.5,
+                ease: 'power2.out',
+                overwrite: true
+              });
+            }
           }
         });
       }

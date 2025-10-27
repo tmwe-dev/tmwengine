@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings as SettingsIcon, Brain, Code } from 'lucide-react';
+import { Settings as SettingsIcon, Brain, Code, Radio } from 'lucide-react';
 import { UnifiedMemoryControls } from '@/components/chat/UnifiedMemoryControls';
 import { FileUploader } from '@/components/code-assistant/FileUploader';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { BarChatAgentsSection } from '@/components/settings/BarChatAgentsSection';
+import { useBarChatAgents } from '@/hooks/useBarChatAgents';
 
-type SettingsSection = 'memory' | 'general' | 'notifications' | 'integrations' | 'code-assistant';
+type SettingsSection = 'memory' | 'general' | 'notifications' | 'integrations' | 'code-assistant' | 'voice-agents';
 
 const Settings = () => {
   const [selectedSection, setSelectedSection] = useState<SettingsSection>('memory');
   const navigate = useNavigate();
+  const barChatAgentsHook = useBarChatAgents();
 
   const renderSectionContent = () => {
     switch (selectedSection) {
@@ -92,6 +95,21 @@ const Settings = () => {
           </div>
         );
       
+      case 'voice-agents':
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Radio className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold">Agenti Vocali Bar Chat</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-6">
+              Configura gli agenti vocali ElevenLabs per la modalità Bar Chat. 
+              Gestisci personalità, voci e parametri di generazione.
+            </p>
+            <BarChatAgentsSection {...barChatAgentsHook} />
+          </div>
+        );
+      
       default:
         return null;
     }
@@ -119,6 +137,7 @@ const Settings = () => {
               <SelectItem value="notifications">🔔 Notifiche</SelectItem>
               <SelectItem value="integrations">🔌 API & Integrazioni</SelectItem>
               <SelectItem value="code-assistant">💻 Code Assistant</SelectItem>
+              <SelectItem value="voice-agents">🎙️ Agenti Vocali Bar Chat</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>

@@ -179,6 +179,7 @@ export const RadioCarousel3D = ({
   const groupRef = useRef<THREE.Group | null>(null);
   const meshesRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const renderedMessagesRef = useRef<Set<string>>(new Set());
+  const originalRotationsRef = useRef<Map<string, number>>(new Map());
   const hasInitializedSlotsRef = useRef(false);
 
   // Initialize Three.js scene
@@ -330,6 +331,9 @@ export const RadioCarousel3D = ({
         );
         mesh.lookAt(new THREE.Vector3(0, 0, 0));
         
+        // ✅ Salva SOLO rotation.x (inclinazione verticale ~6°)
+        originalRotationsRef.current.set(`slot_${i}`, mesh.rotation.x);
+        
         group.add(mesh);
         meshesRef.current.set(`slot_${i}`, mesh);
         console.log(`  📍 Slot ${i} creato a posizione:`, mesh.position.toArray());
@@ -421,16 +425,30 @@ export const RadioCarousel3D = ({
       duration: 1.2,
       ease: 'power2.inOut',
       onUpdate: () => {
-        // ✅ Raddrizza la card frontale con lookAt verso l'alto
+        // ✅ Modifica SOLO rotation.x della card frontale
         const activeSlotKey = `slot_${activeIndex}`;
         
         meshesRef.current.forEach((mesh, slotKey) => {
           if (slotKey === activeSlotKey) {
-            // Card frontale → guarda verso l'alto (raddrizza verticalmente)
-            mesh.lookAt(new THREE.Vector3(0, 100, 0));
+            // Card frontale → raddrizza modificando SOLO rotation.x
+            gsap.to(mesh.rotation, {
+              x: 0, // Raddrizzamento verticale
+              duration: 0.5,
+              ease: 'power2.out',
+              overwrite: 'auto'
+            });
           } else {
-            // Altre card → tornano a guardare il centro (inclinazione originale)
-            mesh.lookAt(new THREE.Vector3(0, 0, 0));
+            // Altre card → ripristina rotation.x originale (inclinazione ~6°)
+            const originalRotationX = originalRotationsRef.current.get(slotKey);
+            
+            if (originalRotationX !== undefined) {
+              gsap.to(mesh.rotation, {
+                x: originalRotationX,
+                duration: 0.5,
+                ease: 'power2.out',
+                overwrite: 'auto'
+              });
+            }
           }
         });
       }

@@ -18,7 +18,7 @@ export const useRadioVirtualTabs = ({
 }: UseRadioVirtualTabsProps): UseRadioVirtualTabsReturn => {
   const [activeMessageId, setActiveMessageId] = useState('');
 
-  // ✅ Inizializzazione: primo messaggio con audio
+  // ✅ Inizializzazione: primo messaggio con audio (logica robusta per race conditions)
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       console.log('🔍 [useRadioVirtualTabs] useEffect triggered:', {
@@ -28,14 +28,24 @@ export const useRadioVirtualTabs = ({
       });
     }
     
-    if (!activeMessageId && messages.length > 0) {
-      const firstWithAudio = messages.find(m => m.audio_url);
-      if (firstWithAudio) {
+    // ✅ Trova sempre il primo messaggio con audio disponibile
+    const firstWithAudio = messages.find(m => m.audio_url);
+    
+    if (firstWithAudio) {
+      // ✅ Setta activeMessageId SOLO se:
+      // 1. Non è ancora settato (!activeMessageId)
+      // 2. O il messaggio attivo non ha audio (race condition fix)
+      const currentMessage = messages.find(m => m.id === activeMessageId);
+      const shouldSetActive = !activeMessageId || !currentMessage?.audio_url;
+      
+      if (shouldSetActive) {
         if (process.env.NODE_ENV === 'development') {
-          console.log(`🎯 [useRadioVirtualTabs] Primo messaggio con audio attivo: ${firstWithAudio.sender_name}`);
+          console.log(`🎯 [useRadioVirtualTabs] Settaggio primo messaggio attivo: ${firstWithAudio.sender_name}`);
         }
         setActiveMessageId(firstWithAudio.id);
       }
+    } else if (process.env.NODE_ENV === 'development') {
+      console.log('⚠️ [useRadioVirtualTabs] Nessun messaggio con audio trovato ancora');
     }
   }, [messages, activeMessageId]);
 

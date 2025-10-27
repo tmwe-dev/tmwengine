@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit2, Trash2, ArrowLeft, FileText, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 interface PromptSection {
   id: string;
@@ -44,12 +45,6 @@ const CONTEXT_LABELS = {
   agent_personality: '🎭 Tavola Rotonda (Agente)',
   topic_objective: '📋 Tavola Rotonda (Topic)',
   kb_context: '📚 Tavola Rotonda (KB)'
-};
-
-const getCharacterBadgeVariant = (length: number) => {
-  if (length < 500) return 'default'; // Green
-  if (length <= 1500) return 'secondary'; // Yellow
-  return 'destructive'; // Red
 };
 
 const getCharacterBadgeColor = (length: number) => {
@@ -283,7 +278,7 @@ export default function AdminPrompts() {
                   <div className="flex items-center justify-between mb-2">
                     <Label>Contenuto Prompt</Label>
                     <div className="flex items-center gap-2">
-                      <Badge variant={getCharacterBadgeVariant(formData.content.length)}>
+                      <Badge variant="outline" className={getCharacterBadgeColor(formData.content.length)}>
                         {formData.content.length} caratteri
                       </Badge>
                       {formData.content.length > 1500 && (
@@ -315,8 +310,11 @@ export default function AdminPrompts() {
                     {AVAILABLE_TOPICS.map(topic => (
                       <Badge
                         key={topic}
-                        variant={formData.topic_tags.includes(topic) ? 'default' : 'outline'}
-                        className="cursor-pointer"
+                        variant="outline"
+                        className={cn(
+                          "cursor-pointer",
+                          formData.topic_tags.includes(topic) && "border-primary text-primary"
+                        )}
                         onClick={() => toggleTopicTag(topic)}
                       >
                         {topic}
@@ -442,7 +440,7 @@ export default function AdminPrompts() {
                         </TableCell>
                         <TableCell>
                           <Badge 
-                            variant={getCharacterBadgeVariant(charLength)}
+                            variant="outline"
                             className={getCharacterBadgeColor(charLength)}
                           >
                             {charLength}
@@ -464,13 +462,13 @@ export default function AdminPrompts() {
                               <span className="text-xs text-muted-foreground">-</span>
                             ) : (
                               prompt.topic_tags.slice(0, 2).map(tag => (
-                                <Badge key={tag} variant="secondary" className="text-xs">
+                                <Badge key={tag} variant="outline" className="text-xs text-muted-foreground">
                                   {tag}
                                 </Badge>
                               ))
                             )}
                             {prompt.topic_tags.length > 2 && (
-                              <Badge variant="secondary" className="text-xs">
+                              <Badge variant="outline" className="text-xs text-muted-foreground">
                                 +{prompt.topic_tags.length - 2}
                               </Badge>
                             )}
@@ -478,7 +476,10 @@ export default function AdminPrompts() {
                         </TableCell>
                         <TableCell className="text-center">{prompt.order_priority}</TableCell>
                         <TableCell className="text-center">
-                          <Badge variant={prompt.is_active ? 'default' : 'secondary'}>
+                          <Badge 
+                            variant="outline"
+                            className={prompt.is_active ? 'text-green-600 border-green-600' : 'text-muted-foreground'}
+                          >
                             {prompt.is_active ? '✓ Attivo' : '✗ Inattivo'}
                           </Badge>
                         </TableCell>

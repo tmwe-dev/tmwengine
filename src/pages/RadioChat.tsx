@@ -198,58 +198,41 @@ const RadioChat = () => {
     loadParticipants();
   }, [supabase]);
   
-  // Load last conversation on mount
+  // Always create NEW conversation on mount
   useEffect(() => {
-    const loadLastConversation = async () => {
+    const createNewConversation = async () => {
       if (!currentUser?.id) return;
       
-      console.log('🔍 [RadioChat] Loading last conversation...');
+      console.log('🆕 [RadioChat] Creating NEW conversation...');
       
-      const { data, error } = await supabase
+      const { data: newConv, error: createError } = await supabase
         .from('chat_laboratory_conversations')
-        .select('id')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
+        .insert({
+          user_id: currentUser.id,
+          titolo: 'Radio Chat ' + new Date().toLocaleDateString()
+        })
+        .select()
         .single();
       
-      if (error) {
-        console.log('ℹ️ No existing conversation, creating new one...');
-        // Crea nuova conversazione se non esiste
-        const { data: newConv, error: createError } = await supabase
-          .from('chat_laboratory_conversations')
-          .insert({
-            user_id: currentUser.id,
-            titolo: 'Radio Chat ' + new Date().toLocaleDateString()
-          })
-          .select()
-          .single();
-        
-        if (createError) {
-          console.error('❌ Error creating conversation:', createError);
-          toast({
-            title: "Errore",
-            description: "Impossibile creare conversazione",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        console.log('✅ [RadioChat] Created new conversation:', newConv.id);
-        setCurrentConversationId(newConv.id);
+      if (createError) {
+        console.error('❌ Error creating conversation:', createError);
+        toast({
+          title: "Errore",
+          description: "Impossibile creare conversazione",
+          variant: "destructive"
+        });
         return;
       }
       
-      if (data?.id) {
-        console.log('✅ [RadioChat] Loaded conversation:', data.id);
-        setCurrentConversationId(data.id);
-      }
+      console.log('✅ [RadioChat] Created new conversation:', newConv.id);
+      setCurrentConversationId(newConv.id);
+      setMessages([]); // ✅ Start empty
     };
     
     if (currentUser) {
-      loadLastConversation();
+      createNewConversation();
     }
-  }, [currentUser, supabase, toast]);
+  }, [currentUser]);
   
   // Persist auto-advance changes to localStorage
   useEffect(() => {
@@ -494,8 +477,13 @@ const RadioChat = () => {
           variant: 'destructive'
         });
       }
-    } finally {
-      console.log('🔄 Finally block: resetting isSending');
+    } catch (error: any) {
+      console.error('❌ Errore handleSend:', error);
+      toast({
+        title: 'Errore',
+        description: error.message || 'Errore durante invio',
+        variant: 'destructive'
+      });
       setIsSending(false);
     }
   };
@@ -564,6 +552,12 @@ const RadioChat = () => {
             }
             return [...prev, typedMessage];
           });
+          
+          // ✅ Sblocca input dopo PRIMO messaggio AI ricevuto
+          if (newMsg.sender_type !== 'human') {
+            console.log('🔓 [Realtime] Messaggio AI ricevuto → Sblocco input');
+            setIsSending(false);
+          }
         }
       )
       .on('postgres_changes',

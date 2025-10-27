@@ -509,20 +509,6 @@ const RadioChat = () => {
           participants={participants}
           onToggleParticipant={handleToggleParticipant}
         />
-
-      {/* Debug Icon - Accanto all'icona del token nell'header */}
-      {import.meta.env.DEV && !isMobile && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setDebugPopupOpen(!debugPopupOpen)}
-          className="fixed left-[180px] top-[92px] z-50"
-          title="Debug Monitor"
-        >
-          <Bug className="w-4 h-4" />
-        </Button>
-      )}
-
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger
         className={cn(

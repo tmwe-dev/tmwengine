@@ -789,7 +789,7 @@ const RadioChat = () => {
       )}
 
       {/* Audio Player - Completely independent fixed element */}
-      {viewMode === 'carousel' && currentMessage && (
+      {viewMode === 'carousel' && currentMessage && currentMessage.audio_url && (
         <RadioCarouselAudioPlayerWrapper
           message={currentMessage}
           onAudioEnd={handleCarouselAudioEnd}

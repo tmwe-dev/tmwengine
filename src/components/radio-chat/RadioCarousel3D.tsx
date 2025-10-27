@@ -450,15 +450,8 @@ export const RadioCarousel3D = ({
               ease: 'power2.out',
               overwrite: true
             });
-          } else {
-            // Ripristina inclinazione originale per tutte le altre
-            gsap.to(mesh.rotation, {
-              x: -inclinationAngle,
-              duration: 0.5,
-              ease: 'power2.out',
-              overwrite: true
-            });
           }
+          // Le altre mesh mantengono il lookAt() originale con inclinazione ~6°
         });
       }
     });

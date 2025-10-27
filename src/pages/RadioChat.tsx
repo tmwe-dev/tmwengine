@@ -63,13 +63,13 @@ const RadioChat = () => {
   const { toast } = useToast();
   
   // Hooks audio dedicati per Radio Chat
-  // Hooks audio dedicati per Radio Chat
   const { 
     isAudioPlaying, 
     currentPlayingId,
     canPlayAudio,
     handleAudioStart, 
-    handleAudioEnd
+    handleAudioEnd,
+    stopCurrentAudio
   } = useRadioAudioPlayback();
   
   const { isAudioEnabled } = useAudioPreference();
@@ -270,22 +270,31 @@ const RadioChat = () => {
   
   // ✅ Handler carousel: semplicissimo - avanza al prossimo
   const handleCarouselAudioEnd = () => {
-    handleAudioEnd(); // Stop audio state
+    handleAudioEnd(); // Stop audio state (async)
     
     if (!isAutoAdvanceEnabled) return;
     
-    const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
-    const nextMessage = aiMessages[currentIndex + 1];
-    
-    if (nextMessage) {
-      console.log('➡️ [RadioChat] Auto-advance to:', nextMessage.sender_name);
-      setActiveMessageId(nextMessage.id);
-    }
+    // ✅ P0 FIX: Delay per aspettare che isAudioPlaying = false
+    setTimeout(() => {
+      const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
+      const nextMessage = aiMessages[currentIndex + 1];
+      
+      if (nextMessage) {
+        console.log('➡️ [RadioChat] Auto-advance to:', nextMessage.sender_name);
+        setActiveMessageId(nextMessage.id);
+      }
+    }, 50);
   };
 
   // Navigazione manuale per carousel
   const handlePrevCard = () => {
     if (aiMessages.length === 0) return;
+    
+    // ✅ P0 FIX: Stop audio se sta suonando
+    if (isAudioPlaying) {
+      stopCurrentAudio();
+    }
+    
     const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
     const newIndex = (currentIndex - 1 + aiMessages.length) % aiMessages.length;
     setActiveMessageId(aiMessages[newIndex].id);
@@ -293,6 +302,12 @@ const RadioChat = () => {
   
   const handleNextCard = () => {
     if (aiMessages.length === 0) return;
+    
+    // ✅ P0 FIX: Stop audio se sta suonando
+    if (isAudioPlaying) {
+      stopCurrentAudio();
+    }
+    
     const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
     const newIndex = (currentIndex + 1) % aiMessages.length;
     setActiveMessageId(aiMessages[newIndex].id);

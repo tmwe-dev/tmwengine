@@ -117,7 +117,7 @@ export function RadioSidebar({
               </TabsContent>
 
               <TabsContent value="prompts" className="mt-0">
-                <RadioPromptSelector />
+                <RadioPromptSelector conversationId={conversationId} />
               </TabsContent>
             </Tabs>
           </ScrollArea>

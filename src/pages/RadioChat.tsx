@@ -35,7 +35,13 @@ const RadioChat = () => {
   const [messageViewVisible, setMessageViewVisible] = useState(false);
   const [messages, setMessages] = useState<RadioMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'carousel' | 'messages'>('carousel');
+  
+  // ✅ Fix 2: Persist viewMode in localStorage
+  const [viewMode, setViewMode] = useState<'carousel' | 'messages'>(() => {
+    const saved = localStorage.getItem('radio-view-mode');
+    return (saved as 'carousel' | 'messages') || 'carousel';
+  });
+  
   const [participants, setParticipants] = useState<RadioParticipant[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   
@@ -183,6 +189,11 @@ const RadioChat = () => {
   useEffect(() => {
     localStorage.setItem('radio-auto-advance', JSON.stringify(isAutoAdvanceEnabled));
   }, [isAutoAdvanceEnabled]);
+  
+  // ✅ Fix 2: Persist viewMode changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('radio-view-mode', viewMode);
+  }, [viewMode]);
   
   // Calculate AI messages
   const aiMessages = messages.filter(m => m.sender_type !== 'human');

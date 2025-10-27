@@ -18,9 +18,34 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minuti
 
 /**
  * Load and cache prompts from database
+ * ✅ Fix 3B: Accept conversationId to load conversation-specific prompt
  */
-export async function getCachedPrompts(supabase: any): Promise<PromptCache> {
+export async function getCachedPrompts(supabase: any, conversationId?: string): Promise<PromptCache> {
   const now = Date.now();
+  
+  // ✅ Try to load conversation-specific prompt FIRST (bypassing cache)
+  let conversationPrompt: string | null = null;
+  
+  if (conversationId) {
+    const { data: conv } = await supabase
+      .from('chat_laboratory_conversations')
+      .select('system_prompt_id')
+      .eq('id', conversationId)
+      .single();
+    
+    if (conv?.system_prompt_id) {
+      const { data: specificPrompt } = await supabase
+        .from('chat_laboratory_system_prompts')
+        .select('contenuto')
+        .eq('id', conv.system_prompt_id)
+        .single();
+      
+      if (specificPrompt?.contenuto) {
+        conversationPrompt = specificPrompt.contenuto;
+        console.log(`✅ [PROMPT] Usando prompt specifico per conversazione ${conversationId}`);
+      }
+    }
+  }
   
   if (!promptCache || (now - promptCache.timestamp > CACHE_TTL)) {
     console.log('📦 Ricaricando prompt cache...');
@@ -78,7 +103,17 @@ export async function getCachedPrompts(supabase: any): Promise<PromptCache> {
     console.log(`✅ Cache aggiornata: ${promptCache.agentPersonalities.size} personalità, ${promptCache.conversationStyles.size} stili`);
   }
   
-  return promptCache;
+  // ✅ Override globalPrompt with conversation-specific if available
+  const finalCache = {
+    ...promptCache,
+    globalPrompt: conversationPrompt || promptCache.globalPrompt
+  };
+  
+  if (conversationPrompt) {
+    console.log(`🎯 [PROMPT] Applicato prompt specifico conversazione (${conversationPrompt.length} chars)`);
+  }
+  
+  return finalCache;
 }
 
 /**

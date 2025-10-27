@@ -121,7 +121,8 @@ serve(async (req) => {
     });
 
     // ============ LOAD CACHED PROMPTS ============
-    const cachedPrompts = await getCachedPrompts(supabaseClient);
+    // ✅ Fix 3B: Pass conversationId to load conversation-specific prompt
+    const cachedPrompts = await getCachedPrompts(supabaseClient, conversationId);
     const globalSystemPrompt = cachedPrompts.globalPrompt;
     const baseContent = cachedPrompts.baseSections;
     console.log(`📦 Prompts cached caricati (BASE: ${baseContent.length} chars)`);

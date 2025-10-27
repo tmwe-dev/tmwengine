@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, CheckCircle } from 'lucide-react';
 
 interface GlobalPrompt {
   id: string;
@@ -21,10 +21,15 @@ interface PromptSection {
   section_type: string;
 }
 
-export const RadioPromptSelector = () => {
+interface RadioPromptSelectorProps {
+  conversationId?: string | null;
+}
+
+export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps) => {
   const [globalPrompts, setGlobalPrompts] = useState<GlobalPrompt[]>([]);
   const [selectedGlobalId, setSelectedGlobalId] = useState<string>('');
   const [globalContent, setGlobalContent] = useState('');
+  const [conversationPromptId, setConversationPromptId] = useState<string | null>(null);
   
   const [personalitySections, setPersonalitySections] = useState<PromptSection[]>([]);
   const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
@@ -49,8 +54,28 @@ export const RadioPromptSelector = () => {
 
     if (!globalError && globals && globals.length > 0) {
       setGlobalPrompts(globals);
-      setSelectedGlobalId(globals[0].id);
-      setGlobalContent(globals[0].contenuto);
+      
+      // ✅ Fix 3A: Load conversation's assigned prompt
+      let initialPromptId = globals[0].id;
+      
+      if (conversationId) {
+        const { data: conv } = await supabase
+          .from('chat_laboratory_conversations')
+          .select('system_prompt_id')
+          .eq('id', conversationId)
+          .single();
+        
+        if (conv?.system_prompt_id) {
+          initialPromptId = conv.system_prompt_id;
+          setConversationPromptId(conv.system_prompt_id);
+        }
+      }
+      
+      setSelectedGlobalId(initialPromptId);
+      const selectedPrompt = globals.find(p => p.id === initialPromptId);
+      if (selectedPrompt) {
+        setGlobalContent(selectedPrompt.contenuto);
+      }
     }
 
     // Load personality sections
@@ -118,6 +143,39 @@ export const RadioPromptSelector = () => {
     setSaving(false);
   };
 
+  // ✅ Fix 3A: Assign prompt to current conversation
+  const assignPromptToConversation = async () => {
+    if (!conversationId || !selectedGlobalId) {
+      toast({
+        title: 'Errore',
+        description: 'Nessuna conversazione attiva',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setSaving(true);
+    const { error } = await supabase
+      .from('chat_laboratory_conversations')
+      .update({ system_prompt_id: selectedGlobalId })
+      .eq('id', conversationId);
+
+    if (error) {
+      toast({
+        title: 'Errore',
+        description: 'Impossibile assegnare il prompt',
+        variant: 'destructive'
+      });
+    } else {
+      setConversationPromptId(selectedGlobalId);
+      toast({
+        title: 'Prompt assegnato',
+        description: 'Questo prompt sarà usato per questa conversazione',
+      });
+    }
+    setSaving(false);
+  };
+
   const onGlobalChange = (id: string) => {
     setSelectedGlobalId(id);
     const prompt = globalPrompts.find(p => p.id === id);
@@ -148,7 +206,7 @@ export const RadioPromptSelector = () => {
 
         <TabsContent value="global" className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label className="text-sm">Prompt Globale</Label>
+            <Label className="text-sm">Prompt per questa chat</Label>
             <Select value={selectedGlobalId} onValueChange={onGlobalChange}>
               <SelectTrigger>
                 <SelectValue />
@@ -157,6 +215,7 @@ export const RadioPromptSelector = () => {
                 {globalPrompts.map(prompt => (
                   <SelectItem key={prompt.id} value={prompt.id}>
                     {prompt.nome}
+                    {conversationPromptId === prompt.id && ' ✓'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -167,26 +226,46 @@ export const RadioPromptSelector = () => {
             value={globalContent}
             onChange={(e) => setGlobalContent(e.target.value)}
             className="min-h-[200px] font-mono text-xs"
-            placeholder="Contenuto del prompt globale..."
+            placeholder="Contenuto del prompt..."
           />
 
-          <Button
-            onClick={saveGlobalPrompt}
-            disabled={saving || !selectedGlobalId}
-            className="w-full"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Salvataggio...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Salva Prompt Globale
-              </>
+          <div className="flex gap-2">
+            <Button
+              onClick={saveGlobalPrompt}
+              disabled={saving || !selectedGlobalId}
+              variant="outline"
+              className="flex-1"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvataggio...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Salva Prompt
+                </>
+              )}
+            </Button>
+
+            {conversationId && (
+              <Button
+                onClick={assignPromptToConversation}
+                disabled={saving || !selectedGlobalId || conversationPromptId === selectedGlobalId}
+                className="flex-1"
+              >
+                {conversationPromptId === selectedGlobalId ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Assegnato
+                  </>
+                ) : (
+                  'Usa in questa chat'
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
         </TabsContent>
 
         <TabsContent value="personality" className="space-y-4 mt-4">

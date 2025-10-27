@@ -52,11 +52,38 @@ export const AudioMessagePlayer = ({
     audio.addEventListener('error', handleError);
 
     if (autoPlay) {
-      audio.play().then(() => {
-        setIsPlaying(true);
-        onPlayingChange?.(true);
-        onPlayStart?.();
-      }).catch(console.error);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎵 [AudioMessagePlayer] autoPlay=true, readyState:', audio.readyState);
+      }
+      
+      const attemptPlay = () => {
+        audio.play().then(() => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✅ [AudioMessagePlayer] Playback started successfully');
+          }
+          setIsPlaying(true);
+          onPlayingChange?.(true);
+          onPlayStart?.();
+        }).catch((err) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('❌ [AudioMessagePlayer] Play failed:', err);
+          }
+        });
+      };
+
+      // Se audio non è ready, aspetta canplay
+      if (audio.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('⏳ [AudioMessagePlayer] Audio not ready, waiting for canplay...');
+        }
+        const handleCanPlay = () => {
+          attemptPlay();
+          audio.removeEventListener('canplay', handleCanPlay);
+        };
+        audio.addEventListener('canplay', handleCanPlay);
+      } else {
+        attemptPlay();
+      }
     }
 
     return () => {

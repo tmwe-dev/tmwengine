@@ -149,6 +149,11 @@ const RadioChat = () => {
           else if (nameLower.includes('claude') || nameLower.includes('anthropic')) type = 'claude';
           else if (nameLower.includes('gemini')) type = 'gemini';
           
+          // Map type to character names based on GIF animations
+          const displayName = type === 'chatgpt' ? 'Albert' 
+                            : type === 'gemini' ? 'Pitagora' 
+                            : 'Archimede';
+          
           console.log('🔍 [MAP]', { 
             name: agent.name, 
             type, 
@@ -158,7 +163,7 @@ const RadioChat = () => {
           return {
             id: agent.elevenlabs_agent_id || agent.id,
             type,
-            name: agent.name, // ✅ FIX: usa nome completo dal DB
+            name: displayName,
             is_active: true,
             voice_id: agent.voice_id
           };

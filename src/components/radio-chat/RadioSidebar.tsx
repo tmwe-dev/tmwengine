@@ -7,6 +7,7 @@ import { RadioStrategySelector } from './RadioStrategySelector';
 import { RadioParticipantSelector } from './RadioParticipantSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import albertGif from '@/assets/albert-mining.gif';
 
 interface RadioParticipant {
   id: string;
@@ -66,6 +67,15 @@ export function RadioSidebar({
           </div>
           
           <ScrollArea className="flex-1">
+            {/* Albert Einstein GIF Header */}
+            <div className="p-4 pb-2 flex justify-center">
+              <img 
+                src={albertGif} 
+                alt="Albert Einstein mining" 
+                className="w-32 h-auto opacity-90 hover:opacity-100 transition-opacity rounded-lg"
+              />
+            </div>
+
             {/* Agent Selection - First in Sidebar */}
             <div className="p-4 border-b">
               <h3 className="text-sm font-medium mb-3">Active Agents</h3>

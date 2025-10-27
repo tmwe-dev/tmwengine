@@ -43,11 +43,6 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
   const [composedContent, setComposedContent] = useState('');
   const [conversationComposedId, setConversationComposedId] = useState<string | null>(null);
   
-  const [personalitySections, setPersonalitySections] = useState<PromptSection[]>([]);
-  const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
-  const [personalityContent, setPersonalityContent] = useState('');
-  const [conversationPersonalityId, setConversationPersonalityId] = useState<string | null>(null);
-  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -121,40 +116,6 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
       }
     }
 
-    // Load personality sections
-    const { data: personalities, error: personalityError } = await supabase
-      .from('chat_laboratory_prompt_sections')
-      .select('id, section_name, content, section_type')
-      .eq('section_type', 'agent_personality')
-      .eq('is_active', true)
-      .order('section_name');
-
-    if (!personalityError && personalities && personalities.length > 0) {
-      setPersonalitySections(personalities);
-      
-      // Load conversation's assigned personality
-      let initialPersonalityId = personalities[0].id;
-      
-      if (conversationId) {
-        const { data: conv } = await supabase
-          .from('chat_laboratory_conversations')
-          .select('personality_section_id')
-          .eq('id', conversationId)
-          .single();
-        
-        if (conv?.personality_section_id) {
-          initialPersonalityId = conv.personality_section_id;
-          setConversationPersonalityId(conv.personality_section_id);
-        }
-      }
-      
-      setSelectedPersonalityId(initialPersonalityId);
-      const selectedPersonality = personalities.find(p => p.id === initialPersonalityId);
-      if (selectedPersonality) {
-        setPersonalityContent(selectedPersonality.content);
-      }
-    }
-
     setLoading(false);
   };
 
@@ -182,29 +143,6 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
     setSaving(false);
   };
 
-  const savePersonalityPrompt = async () => {
-    if (!selectedPersonalityId) return;
-    
-    setSaving(true);
-    const { error } = await supabase
-      .from('chat_laboratory_prompt_sections')
-      .update({ content: personalityContent })
-      .eq('id', selectedPersonalityId);
-
-    if (error) {
-      toast({
-        title: 'Errore',
-        description: 'Impossibile salvare la personality',
-        variant: 'destructive'
-      });
-    } else {
-      toast({
-        title: 'Salvato',
-        description: 'Personality aggiornata con successo',
-      });
-    }
-    setSaving(false);
-  };
 
   const assignPromptToConversation = async () => {
     if (!conversationId || !selectedGlobalId) {
@@ -278,37 +216,6 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
     setSaving(false);
   };
 
-  const assignPersonalityToConversation = async () => {
-    if (!conversationId || !selectedPersonalityId) {
-      toast({
-        title: 'Errore',
-        description: 'Nessuna conversazione attiva',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    setSaving(true);
-    const { error } = await supabase
-      .from('chat_laboratory_conversations')
-      .update({ personality_section_id: selectedPersonalityId })
-      .eq('id', conversationId);
-
-    if (error) {
-      toast({
-        title: 'Errore',
-        description: 'Impossibile assegnare la personalità',
-        variant: 'destructive'
-      });
-    } else {
-      setConversationPersonalityId(selectedPersonalityId);
-      toast({
-        title: 'Personalità assegnata',
-        description: 'La personalità è stata assegnata alla conversazione',
-      });
-    }
-    setSaving(false);
-  };
 
   const onGlobalChange = (id: string) => {
     setSelectedGlobalId(id);
@@ -322,12 +229,6 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
     if (prompt) setComposedContent(prompt.content);
   };
 
-  const onPersonalityChange = (id: string) => {
-    setSelectedPersonalityId(id);
-    const section = personalitySections.find(s => s.id === id);
-    if (section) setPersonalityContent(section.content);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -339,10 +240,9 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
   return (
     <div className="p-4">
       <Tabs defaultValue="global" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="global">Global</TabsTrigger>
           <TabsTrigger value="ready">Pronti</TabsTrigger>
-          <TabsTrigger value="personality">Personality</TabsTrigger>
         </TabsList>
 
         <TabsContent value="global" className="space-y-4 mt-4">
@@ -463,69 +363,6 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
           )}
         </TabsContent>
 
-        <TabsContent value="personality" className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <Label className="text-sm">Personality</Label>
-            <Select value={selectedPersonalityId} onValueChange={onPersonalityChange}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {personalitySections.map(section => (
-                  <SelectItem key={section.id} value={section.id}>
-                    {section.section_name}
-                    {conversationPersonalityId === section.id && ' ✓'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Textarea
-            value={personalityContent}
-            onChange={(e) => setPersonalityContent(e.target.value)}
-            className="min-h-[200px] font-mono text-xs"
-            placeholder="Contenuto della personality..."
-          />
-
-          <div className="flex gap-2">
-            <Button
-              onClick={savePersonalityPrompt}
-              disabled={saving || !selectedPersonalityId}
-              variant="outline"
-              className="flex-1"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Salvataggio...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Salva Personality
-                </>
-              )}
-            </Button>
-
-            {conversationId && (
-              <Button
-                onClick={assignPersonalityToConversation}
-                disabled={saving || !selectedPersonalityId || conversationPersonalityId === selectedPersonalityId}
-                className="flex-1"
-              >
-                {conversationPersonalityId === selectedPersonalityId ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Assegnata
-                  </>
-                ) : (
-                  'Usa in questa chat'
-                )}
-              </Button>
-            )}
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );

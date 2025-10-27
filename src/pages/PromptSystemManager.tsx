@@ -626,15 +626,37 @@ ESEMPI:
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <PromptSectionsList
-                sections={personalitySections}
-                onUpdate={handleUpdateSection}
-                onCreate={(name, content) => handleCreateSection('AGENT_PERSONALITY', name, content)}
-                onDelete={handleDeleteSection}
-                onToggle={handleToggleSection}
-                sectionType="AGENT_PERSONALITY"
-                sectionTypeLabel="Personalità Agente"
-              />
+              <div className="space-y-4">
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">ℹ️</div>
+                    <div className="flex-1 space-y-2">
+                      <h4 className="font-semibold text-blue-900 dark:text-blue-100">
+                        Assegnazione Automatica delle Personalità
+                      </h4>
+                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                        Le personalità definite qui vengono <strong>automaticamente assegnate agli agenti con nome corrispondente</strong>.
+                      </p>
+                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                        Ad esempio: la personalità <code className="bg-blue-100 dark:bg-blue-900 px-1 py-0.5 rounded">"Renny - Esperto Logistica"</code> viene automaticamente utilizzata dall'agente <code className="bg-blue-100 dark:bg-blue-900 px-1 py-0.5 rounded">"Renny - GPT"</code>.
+                      </p>
+                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                        Non è necessario assegnare manualmente le personalità nelle conversazioni Radio Chat.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <PromptSectionsList
+                  sections={personalitySections}
+                  onUpdate={handleUpdateSection}
+                  onCreate={(name, content) => handleCreateSection('AGENT_PERSONALITY', name, content)}
+                  onDelete={handleDeleteSection}
+                  onToggle={handleToggleSection}
+                  sectionType="AGENT_PERSONALITY"
+                  sectionTypeLabel="Personalità Agente"
+                />
+              </div>
             )}
           </TabsContent>
 

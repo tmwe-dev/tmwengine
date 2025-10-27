@@ -46,7 +46,12 @@ export async function generateAudioForSingleResponse(params: {
         body: JSON.stringify({
           text: ttsText,
           model_id: 'eleven_turbo_v2_5',
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+          voice_settings: { 
+            stability: 0.71,
+            similarity_boost: 0.5,
+            style: 0.0,
+            use_speaker_boost: true
+          }
         })
       },
       15000
@@ -116,11 +121,16 @@ export async function generateAudioForResponses(params: AudioGenerationParams): 
             'xi-api-key': elevenLabsApiKey,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            text: ttsText,
-            model_id: 'eleven_turbo_v2_5',
-            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-          })
+        body: JSON.stringify({
+          text: ttsText,
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: { 
+            stability: 0.71,
+            similarity_boost: 0.5,
+            style: 0.0,
+            use_speaker_boost: true
+          }
+        })
         },
         15000
       );

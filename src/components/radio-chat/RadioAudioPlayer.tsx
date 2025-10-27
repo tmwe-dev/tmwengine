@@ -59,6 +59,14 @@ export const RadioAudioPlayer = ({
     
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
+    
+    // ✅ Logging diagnostico qualità audio
+    audio.addEventListener('canplaythrough', () => {
+      console.log(`🎵 [Audio Quality] ${messageId.substring(0,8)}:`, {
+        duration: audio.duration,
+        url: audioUrl.substring(0, 60)
+      });
+    });
 
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);

@@ -58,6 +58,7 @@ import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import DesignLab from "./pages/DesignLab";
 import DesignLabDashboard from "./pages/DesignLabDashboard";
 import DesignLabScanner from "./pages/DesignLabScanner";
+import PromptSystemManager from "./pages/PromptSystemManager";
 
 const queryClient = new QueryClient();
 
@@ -370,6 +371,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <DesignLabScanner />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/prompt-system-manager" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <PromptSystemManager />
                 </CRMLayout>
               </ProtectedRoute>
             } />

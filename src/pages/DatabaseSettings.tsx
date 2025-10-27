@@ -61,9 +61,9 @@ export default function DatabaseSettings() {
     },
     {
       title: "Gestione Prompt Sistema",
-      description: "Configura prompt globali, personalità e stili conversazione",
+      description: "Configura prompt globali, personalità, stili e compositore avanzato",
       icon: Brain,
-      href: "/chat-laboratory-prompt-manager",
+      href: "/prompt-system-manager",
       color: "text-cyan-500"
     },
     {

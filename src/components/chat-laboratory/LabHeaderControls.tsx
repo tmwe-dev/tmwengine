@@ -1,6 +1,7 @@
-import { LaboratoryPromptManager } from './LaboratoryPromptManager';
 import { ParticipantSelector } from './ParticipantSelector';
 import { Button } from '@/components/ui/button';
+import { Brain } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface LabHeaderControlsProps {
   currentConversationId: string | null;
@@ -32,7 +33,16 @@ export const LabHeaderControls = ({
       >
         {viewMode === 'classic' ? '📑' : '💬'}
       </Button>
-      <LaboratoryPromptManager />
+      <Button
+        variant="ghost"
+        size="icon"
+        asChild
+        title="Gestione Prompt Sistema"
+      >
+        <Link to="/prompt-system-manager">
+          <Brain className="h-4 w-4" />
+        </Link>
+      </Button>
       <ParticipantSelector
         participants={participants}
         onToggle={toggleParticipant}

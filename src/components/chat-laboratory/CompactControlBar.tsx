@@ -7,8 +7,8 @@ import { InterruptButton } from './InterruptButton';
 import { BarModeToggle } from './BarModeToggle';
 import { AudioModeSelector } from './AudioModeSelector';
 import { AutoFollowIndicator } from './AutoFollowIndicator';
-import { LaboratoryPromptManager } from './LaboratoryPromptManager';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
+import { Link } from 'react-router-dom';
 import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
 import { WordLimitSliderCompact } from './WordLimitSliderCompact';
 import { Pause, Play, Brain, Zap, Mic, Beaker, Phone, StopCircle } from 'lucide-react';
@@ -385,8 +385,18 @@ export const CompactControlBar = ({
 
   return (
     <div className={cn("flex items-center gap-1.5 px-2 py-1 bg-muted/20 rounded-md border", className)}>
-      {/* Brain Button */}
-      <LaboratoryPromptManager isProcessing={isProcessing} />
+      {/* Brain Button - Link to Prompt System Manager */}
+      <Button
+        variant="ghost"
+        size="icon"
+        asChild
+        className="shrink-0"
+        title="Gestione Prompt Sistema"
+      >
+        <Link to="/prompt-system-manager">
+          <Brain className="h-4 w-4" />
+        </Link>
+      </Button>
 
       {/* Stop AI Button - visibile solo quando isProcessing */}
       {isProcessing && (

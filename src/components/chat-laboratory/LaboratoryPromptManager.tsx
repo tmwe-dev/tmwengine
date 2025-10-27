@@ -412,11 +412,11 @@ ESEMPI:
     }
   };
 
-  // Filter sections by type
-  const baseSections = sections.filter(s => s.section_type === 'base');
-  const personalitySections = sections.filter(s => s.section_type === 'agent_personality');
-  const styleSections = sections.filter(s => s.section_type === 'CONVERSATION_STYLE');
-  const orchestratorSection = sections.find(s => s.section_type === 'ORCHESTRATOR_RULES');
+  // Filter sections by type (case-insensitive)
+  const baseSections = sections.filter(s => s.section_type.toLowerCase() === 'base');
+  const personalitySections = sections.filter(s => s.section_type.toLowerCase() === 'agent_personality');
+  const styleSections = sections.filter(s => s.section_type.toLowerCase() === 'conversation_style');
+  const orchestratorSection = sections.find(s => s.section_type.toLowerCase() === 'orchestrator_rules');
 
   // Map sezioni per il dropdown
   const sectionDropdownItems = [

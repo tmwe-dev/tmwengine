@@ -40,6 +40,14 @@ export default function DatabaseSettings() {
       color: "text-cyan-500"
     },
     {
+      title: "Esporta Prompt Sistema",
+      description: "Scarica tutti i prompt attivi in formato TXT strutturato",
+      icon: Download,
+      href: "#",
+      color: "text-purple-500",
+      onClick: handleExportPrompts
+    },
+    {
       title: "Analytics Laboratorio",
       description: "Statistiche tecniche del chat laboratory",
       icon: Activity,

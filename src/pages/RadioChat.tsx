@@ -83,6 +83,16 @@ const RadioChat = () => {
     checkAuth();
   }, [toast]);
   
+  // Listener per apertura debug popup da header
+  useEffect(() => {
+    const handleToggleDebug = () => {
+      setDebugPopupOpen(prev => !prev);
+    };
+    
+    window.addEventListener('toggle-debug-popup', handleToggleDebug);
+    return () => window.removeEventListener('toggle-debug-popup', handleToggleDebug);
+  }, []);
+  
   // Load participants from elevenlabs_agents
   useEffect(() => {
     console.log('🚀 [MOUNT] RadioChat useEffect triggered, supabase ready:', !!supabase);
@@ -500,18 +510,6 @@ const RadioChat = () => {
           onToggleParticipant={handleToggleParticipant}
         />
 
-      {/* Debug Icon - Accanto all'icona del token nell'header */}
-      {import.meta.env.DEV && !isMobile && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setDebugPopupOpen(!debugPopupOpen)}
-          className="fixed left-[180px] top-[92px] z-50"
-          title="Debug Monitor"
-        >
-          <Bug className="w-4 h-4" />
-        </Button>
-      )}
 
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger

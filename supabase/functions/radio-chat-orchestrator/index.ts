@@ -265,7 +265,7 @@ serve(async (req) => {
         if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.includes(currentAgent.name)) {
           try {
             const voiceAgent = activeVoiceAgents.find((v: any) => v.name === currentAgent.name);
-            await generateAudioForSingleResponse({
+            audioUrl = await generateAudioForSingleResponse({
               supabaseClient: supabaseClient,
               conversationId: conversationId,
               messageId: messageId,
@@ -280,9 +280,6 @@ serve(async (req) => {
         } else {
           console.log(`🔇 Audio disabilitato o agente non abilitato: ${currentAgent.name}`);
         }
-
-        // ============ GENERATE MESSAGE ID ============
-        const messageId = crypto.randomUUID();
 
         // ============ SAVE TO DATABASE ============
         const { error: insertError } = await supabaseClient

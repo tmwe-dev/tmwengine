@@ -90,7 +90,7 @@ const RadioChat = () => {
         
         const { data, error } = await supabase
           .from('elevenlabs_agents')
-          .select('id, name, is_active, elevenlabs_agent_id')
+          .select('id, name, is_active, elevenlabs_agent_id, voice_id')
           .eq('is_active', true)
           .order('order_index', { ascending: true });
         
@@ -140,7 +140,8 @@ const RadioChat = () => {
             id: agent.elevenlabs_agent_id || agent.id,
             type,
             name: agent.name.split(' - ')[0],
-            is_active: true
+            is_active: true,
+            voice_id: agent.voice_id
           };
         });
         
@@ -319,6 +320,11 @@ const RadioChat = () => {
           description: 'Impossibile inviare il messaggio',
           variant: 'destructive'
         });
+        return;
+      }
+      
+      if (!convId) {
+        console.error('❌ convId is null dopo createConversation');
         return;
       }
       

@@ -27,7 +27,7 @@ export async function generateAudioForSingleResponse(params: {
   content: string;
   voiceId: string;
   elevenLabsApiKey: string;
-}): Promise<void> {
+}): Promise<string | null> {
   const { supabaseClient, conversationId, messageId, content, voiceId, elevenLabsApiKey } = params;
   
   try {
@@ -82,8 +82,10 @@ export async function generateAudioForSingleResponse(params: {
       .eq('id', messageId);
     
     console.log(`✅ [IMMEDIATO] Audio generato per ${messageId.substring(0, 8)}: ${audioUrl.substring(0, 60)}...`);
+    return audioUrl;
   } catch (error: any) {
     console.error(`⚠️ TTS fallito:`, error.message);
+    return null;
   }
 }
 

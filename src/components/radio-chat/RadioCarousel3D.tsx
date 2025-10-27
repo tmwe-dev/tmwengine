@@ -442,8 +442,8 @@ export const RadioCarousel3D = ({
             Math.abs(normalizedAngle - Math.PI * 2)
           );
           
-          // Solo la card esattamente frontale (entro 0.15 radianti ≈ 8.6°) si raddrizza
-          if (distanceFromFront < 0.15) {
+          // Solo la card esattamente frontale (entro 0.05 radianti ≈ 2.9°) si raddrizza
+          if (distanceFromFront < 0.05) {
             gsap.to(mesh.rotation, {
               x: 0, // Raddrizza completamente
               duration: 0.5,

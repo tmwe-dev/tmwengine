@@ -264,9 +264,9 @@ serve(async (req) => {
 
         // ============ AUDIO GENERATION ============
         let audioUrl = null;
-        if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.some((v: any) => v.name === currentAgent.name)) {
+        if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.some((v: any) => v.elevenlabs_agent_id === currentAgent.id)) {
           try {
-            const voiceAgent = activeVoiceAgents.find((v: any) => v.name === currentAgent.name);
+            const voiceAgent = activeVoiceAgents.find((v: any) => v.elevenlabs_agent_id === currentAgent.id);
             audioUrl = await generateAudioForSingleResponse({
               supabaseClient: supabaseClient,
               conversationId: conversationId,

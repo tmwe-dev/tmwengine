@@ -453,7 +453,7 @@ const ChatLaboratory = () => {
         return {
           id: agent.elevenlabs_agent_id || agent.id,
           type,
-          name: agent.name.split(' - ')[0],
+          name: agent.name, // ✅ FIX: usa nome completo dal DB
           is_active: true, // ✅ Attivi in conversazione di default
           system_prompt: ''
         };

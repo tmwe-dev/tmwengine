@@ -139,7 +139,7 @@ const RadioChat = () => {
           return {
             id: agent.elevenlabs_agent_id || agent.id,
             type,
-            name: agent.name.split(' - ')[0],
+            name: agent.name, // ✅ FIX: usa nome completo dal DB
             is_active: true,
             voice_id: agent.voice_id
           };
@@ -187,7 +187,7 @@ const RadioChat = () => {
   const currentMessage = messages.find(m => m.id === activeMessageId) || null;
   
 
-  // Handler for carousel audio end with auto-advance (replica Chat Laboratory)
+  // Handler for carousel audio end with auto-advance (sincronizzato con useRadioVirtualTabs)
   const handleCarouselAudioEnd = () => {
     console.log('🏁 [RadioChat] Audio ended, isAutoAdvance:', isAutoAdvanceEnabled);
     
@@ -200,12 +200,13 @@ const RadioChat = () => {
       return;
     }
     
+    // ✅ IDENTICA LOGICA di useRadioVirtualTabs.handleAudioEnd
     const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
     
     if (currentIndex !== -1 && currentIndex < aiMessages.length - 1) {
       const nextMessage = aiMessages[currentIndex + 1];
       console.log('➡️ [RadioChat] Advancing to:', nextMessage.sender_name);
-      setActiveMessageId(nextMessage.id);
+      setActiveMessageId(nextMessage.id); // Questo trigger il useEffect in RadioMessagesView
     } else {
       console.log('⏹️ Fine conversazione, nessun messaggio successivo');
     }

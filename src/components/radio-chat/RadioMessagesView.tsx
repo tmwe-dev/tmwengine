@@ -41,6 +41,18 @@ export function RadioMessagesView({
     tabSwitchOnAudioEnd(); // ✅ CAMBIO IMMEDIATO - nessun setTimeout, nessun useEffect
   };
 
+  // ✅ NUOVO: Retriggera audio quando activeMessageId cambia
+  useEffect(() => {
+    if (!activeMessageId || !isAudioEnabled) return;
+    
+    const activeMessage = messages.find(m => m.id === activeMessageId);
+    if (!activeMessage?.audio_url) return;
+    
+    console.log(`🔄 [RadioMessagesView] activeMessageId changed → trigger audio:`, activeMessage.sender_name);
+    
+    // Il MultiAgentMessage gestirà autoplay internamente quando canAutoPlay diventa true
+  }, [activeMessageId, messages, isAudioEnabled]);
+
   // Convert RadioMessage to expected format for MultiAgentMessage
   const formattedMessages = messages.map(msg => {
     // Normalizza sender_type con mapping esplicito

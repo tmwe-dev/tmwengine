@@ -500,18 +500,13 @@ const RadioChat = () => {
           onToggleParticipant={handleToggleParticipant}
         />
 
-      {/* Debug Icon - Sotto il titolo "Radio Chat" nell'header */}
-      {import.meta.env.DEV && (
+      {/* Debug Icon - Accanto all'icona del token nell'header */}
+      {import.meta.env.DEV && !isMobile && (
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setDebugPopupOpen(!debugPopupOpen)}
-          className={cn(
-            "fixed z-50",
-            isMobile 
-              ? "left-16 top-[72px]"
-              : "left-20 top-[88px]"
-          )}
+          className="fixed left-[180px] top-[92px] z-50"
           title="Debug Monitor"
         >
           <Bug className="w-4 h-4" />

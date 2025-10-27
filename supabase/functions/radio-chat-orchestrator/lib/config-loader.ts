@@ -10,6 +10,7 @@ interface PromptCache {
   agentPersonalities: Map<string, string>;
   conversationStyles: Map<string, string>;
   orchestratorRules: string;
+  conversationPersonality: string | null;
   timestamp: number;
 }
 
@@ -25,11 +26,12 @@ export async function getCachedPrompts(supabase: any, conversationId?: string): 
   
   // ✅ PRIORITY 1: Check if conversation uses a COMPOSED PROMPT (ready prompt)
   let conversationPrompt: string | null = null;
+  let conversationPersonality: string | null = null;
   
   if (conversationId) {
     const { data: conv } = await supabase
       .from('chat_laboratory_conversations')
-      .select('composed_prompt_id, system_prompt_id')
+      .select('composed_prompt_id, system_prompt_id, personality_section_id')
       .eq('id', conversationId)
       .single();
     
@@ -57,6 +59,20 @@ export async function getCachedPrompts(supabase: any, conversationId?: string): 
       if (specificPrompt?.contenuto) {
         conversationPrompt = specificPrompt.contenuto;
         console.log(`✅ [PROMPT] Usando prompt sistema specifico per conversazione ${conversationId}`);
+      }
+    }
+
+    // Load conversation-specific personality if assigned
+    if (conv?.personality_section_id) {
+      const { data: personalitySection } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .select('content')
+        .eq('id', conv.personality_section_id)
+        .single();
+      
+      if (personalitySection?.content) {
+        conversationPersonality = personalitySection.content;
+        console.log(`🎭 [PERSONALITY] Usando personalità assegnata alla conversazione (${conversationPersonality.length} chars)`);
       }
     }
   }
@@ -111,20 +127,25 @@ export async function getCachedPrompts(supabase: any, conversationId?: string): 
         ]) || []
       ),
       orchestratorRules: orchestratorData.data?.content || 'Leggi l\'ultimo messaggio. Se contiene una DOMANDA o RICHIESTA verso altri, rispondi TRUE. Altrimenti FALSE.',
+      conversationPersonality: null,
       timestamp: now
     };
     
     console.log(`✅ Cache aggiornata: ${promptCache.agentPersonalities.size} personalità, ${promptCache.conversationStyles.size} stili`);
   }
   
-  // ✅ Override globalPrompt with conversation-specific if available
+  // ✅ Override globalPrompt and personality with conversation-specific if available
   const finalCache = {
     ...promptCache,
-    globalPrompt: conversationPrompt || promptCache.globalPrompt
+    globalPrompt: conversationPrompt || promptCache.globalPrompt,
+    conversationPersonality: conversationPersonality
   };
   
   if (conversationPrompt) {
     console.log(`🎯 [PROMPT] Applicato prompt specifico conversazione (${conversationPrompt.length} chars)`);
+  }
+  if (conversationPersonality) {
+    console.log(`🎭 [PERSONALITY] Applicata personalità specifica conversazione (${conversationPersonality.length} chars)`);
   }
   
   return finalCache;

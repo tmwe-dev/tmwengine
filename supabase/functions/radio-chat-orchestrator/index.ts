@@ -194,7 +194,8 @@ serve(async (req) => {
           agentMode: agentMode,
           previousResponses: allResponses,
           wasCalledDirectly: false,
-          styleSections: cachedPrompts.conversationStyles
+          styleSections: cachedPrompts.conversationStyles,
+          conversationPersonality: cachedPrompts.conversationPersonality // ✅ Pass conversation personality
         });
 
         // ============ BUILD CONVERSATION HISTORY ============

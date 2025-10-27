@@ -13,7 +13,8 @@ export interface PromptParams {
   wasCalledDirectly: boolean;
   lastResponse?: any;
   styleSections?: Map<string, string>;
-  dynamicWordLimit?: string; // ✅ NUOVO: Limite parole dinamico dall'orchestrator
+  dynamicWordLimit?: string;
+  conversationPersonality?: string | null; // ✅ NUOVO: Personalità assegnata alla conversazione
 }
 
 /**
@@ -44,8 +45,14 @@ export function buildSystemPrompt(params: PromptParams): string {
   composedPrompt += '=== CONTESTO BASE ===\n';
   composedPrompt += baseContent + '\n\n';
 
-  // Add AGENT_PERSONALITY
-  if (agentPersonality) {
+  // Add CONVERSATION PERSONALITY (if assigned to conversation - PRIORITY over agent personality)
+  if (params.conversationPersonality) {
+    composedPrompt += '=== PERSONALITÀ ASSEGNATA ALLA CONVERSAZIONE ===\n';
+    composedPrompt += params.conversationPersonality + '\n\n';
+    console.log('🎭 Usando personalità assegnata alla conversazione');
+  }
+  // Add AGENT_PERSONALITY (fallback se non c'è personalità conversation-level)
+  else if (agentPersonality) {
     composedPrompt += '=== TUA PERSONALITÀ ===\n';
     composedPrompt += agentPersonality + '\n\n';
   }

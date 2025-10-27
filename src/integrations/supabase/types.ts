@@ -759,6 +759,7 @@ export type Database = {
           last_token_update: string | null
           memoria_completa: boolean | null
           pause_between_agents_ms: number | null
+          personality_section_id: string | null
           reduce_user_messages: boolean | null
           response_mode: string | null
           riassunto_contesto: string | null
@@ -793,6 +794,7 @@ export type Database = {
           last_token_update?: string | null
           memoria_completa?: boolean | null
           pause_between_agents_ms?: number | null
+          personality_section_id?: string | null
           reduce_user_messages?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
@@ -827,6 +829,7 @@ export type Database = {
           last_token_update?: string | null
           memoria_completa?: boolean | null
           pause_between_agents_ms?: number | null
+          personality_section_id?: string | null
           reduce_user_messages?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
@@ -847,6 +850,13 @@ export type Database = {
             columns: ["composed_prompt_id"]
             isOneToOne: false
             referencedRelation: "chat_laboratory_composed_prompts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_laboratory_conversations_personality_section_id_fkey"
+            columns: ["personality_section_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_prompt_sections"
             referencedColumns: ["id"]
           },
           {

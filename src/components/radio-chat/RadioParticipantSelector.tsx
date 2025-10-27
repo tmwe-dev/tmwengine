@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import albertGif from '@/assets/albert-mining.gif';
+import albertStatic from '@/assets/albert-static.png';
 import pitagoraGif from '@/assets/pitagora-gym.gif';
+import pitagoraStatic from '@/assets/pitagora-static.png';
 import archimedeGif from '@/assets/archimede-stones.gif';
+import archimedeStatic from '@/assets/archimede-static.png';
 
 interface RadioParticipant {
   id: string;
@@ -36,18 +39,21 @@ export function RadioParticipantSelector({
   const avatarConfig = {
     chatgpt: {
       gif: albertGif,
+      staticFrame: albertStatic,
       active: '🤖',
       inactive: '🔘',
       color: 'from-blue-500 to-cyan-500'
     },
     gemini: {
       gif: pitagoraGif,
+      staticFrame: pitagoraStatic,
       active: '✨',
       inactive: '⚪',
       color: 'from-purple-500 to-pink-500'
     },
     claude: {
       gif: archimedeGif,
+      staticFrame: archimedeStatic,
       active: '🧠',
       inactive: '⚫',
       color: 'from-orange-500 to-red-500'
@@ -71,30 +77,25 @@ export function RadioParticipantSelector({
                 "relative w-full aspect-square",
                 "flex items-center justify-center",
                 "transition-all duration-300",
-                "hover:scale-105 cursor-pointer",
-                participant.is_active 
-                  ? "opacity-100" 
-                  : "opacity-40 grayscale"
+                "hover:scale-105 cursor-pointer"
               )}
               title={participant.is_active 
-                ? `${participant.name} - Clicca per disattivare` 
-                : `${participant.name} - Clicca per attivare`}
+                ? `${participant.name} - In azione` 
+                : `${participant.name} - Fermo (clicca per attivare)`}
             >
               {config.gif ? (
                 <img 
-                  src={config.gif} 
+                  src={participant.is_active ? config.gif : config.staticFrame}
                   alt={participant.name}
-                  className="w-full h-full object-contain"
+                  className={cn(
+                    "w-full h-full object-contain transition-all duration-300",
+                    !participant.is_active && "grayscale"
+                  )}
                 />
               ) : (
                 <span className="text-4xl">
                   {participant.is_active ? config.active : config.inactive}
                 </span>
-              )}
-              
-              {/* Active indicator */}
-              {participant.is_active && (
-                <div className="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full border border-white animate-pulse z-10" />
               )}
             </button>
             

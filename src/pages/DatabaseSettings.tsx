@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, FileText, Archive, Settings, Activity, AlertCircle } from "lucide-react";
+import { Database, FileText, Archive, Settings, Activity, AlertCircle, Brain } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function DatabaseSettings() {
@@ -31,6 +31,13 @@ export default function DatabaseSettings() {
       icon: Settings,
       href: "/database-settings/functions",
       color: "text-orange-500"
+    },
+    {
+      title: "Gestione Prompt Sistema",
+      description: "Configura prompt globali, personalità e stili conversazione",
+      icon: Brain,
+      href: "/chat-laboratory-prompt-manager",
+      color: "text-cyan-500"
     },
     {
       title: "Analytics Laboratorio",

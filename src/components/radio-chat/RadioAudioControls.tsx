@@ -153,7 +153,7 @@ export const RadioAudioControls = ({
 
   return (
     <div className={cn(
-      "fixed z-[60]",
+      "fixed bottom-8 z-[60]",
       "bg-black/95 backdrop-blur-lg",
       "border-2 border-purple-400/40",
       "rounded-xl shadow-[0_0_30px_rgba(168,85,247,0.25)]",
@@ -161,10 +161,9 @@ export const RadioAudioControls = ({
       "flex items-center gap-2",
       "relative overflow-hidden",
       "transition-all duration-300",
-      // Posizionamento condizionale - sempre affiancato a destra del player
       isPlayerExpanded 
-        ? "bottom-8 left-[calc(27.5%+45%+0.5rem)]" // Affiancato al player expanded
-        : "bottom-8 left-[calc(27.5%+96px+0.5rem)]" // Affiancato al player mini
+        ? "left-[calc(27.5%+45%+0.5rem)]"
+        : "left-[calc(27.5%+96px+0.5rem)]"
     )}>
       
       {/* Gradient overlay solo lilla */}

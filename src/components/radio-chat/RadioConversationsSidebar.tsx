@@ -284,7 +284,7 @@ export const RadioConversationsSidebar = ({
           {/* Conversation Count */}
           <Badge 
             variant="secondary" 
-            className="h-9 px-3 text-base font-semibold flex items-center gap-2 bg-muted hover:bg-muted/80 transition-colors"
+            className="h-9 px-3 text-base font-semibold flex items-center gap-2 bg-transparent border border-border hover:bg-transparent transition-colors"
           >
             <MessageSquare className="h-5 w-5" />
             {filteredConversations.length}

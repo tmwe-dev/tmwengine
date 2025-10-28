@@ -310,8 +310,23 @@ export const RadioCarousel3D = ({
       }
 
       if (hasInitializedSlotsRef.current) {
-        console.log('⏭️ Slot già inizializzati, skip');
-        return;
+        console.log('🔄 Slot già esistenti, pulisco per re-init con nuovo zoom');
+        // Pulisci slot esistenti
+        if (groupRef.current) {
+          groupRef.current.children.forEach((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.geometry.dispose();
+              if (child.material instanceof THREE.MeshBasicMaterial) {
+                if (child.material.map) child.material.map.dispose();
+                child.material.dispose();
+              }
+            }
+          });
+          groupRef.current.clear();
+        }
+        meshesRef.current.clear();
+        hasInitializedSlotsRef.current = false;
+        console.log('✅ Pulizia completata, procedo con re-init');
       }
 
       console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili (zoom: ${zoom})`);
@@ -359,46 +374,8 @@ export const RadioCarousel3D = ({
       console.log('🧹 RadioCarousel3D unmounting, reset hasInitializedSlotsRef');
       hasInitializedSlotsRef.current = false;
     };
-  }, []); // ← Cleanup al unmount
+  }, [zoom]); // ← Re-inizializza quando zoom cambia
 
-  // 🔄 UPDATE ZOOM DINAMICO (senza ri-creare slot)
-  useEffect(() => {
-    if (!groupRef.current || meshesRef.current.size === 0) return;
-    
-    console.log(`🔍 Zoom cambiato a ${zoom}, aggiorno slot esistenti...`);
-    
-    const radius = 7.8 * zoom;
-    const angleStep = (Math.PI * 2) / MAX_SLOTS;
-    const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
-    
-    meshesRef.current.forEach((mesh, key) => {
-      const i = parseInt(key.split('_')[1]);
-      
-      // Aggiorna geometry
-      mesh.geometry.dispose();
-      mesh.geometry = new THREE.PlaneGeometry(
-        4.83 * scaleFactor * zoom, 
-        7.04 * scaleFactor * zoom
-      );
-      
-      // Aggiorna posizione
-      const angle = -(i * angleStep) + Math.PI;
-      mesh.position.set(
-        Math.cos(angle) * radius,
-        0.82 * zoom,
-        Math.sin(angle) * radius
-      );
-      mesh.lookAt(new THREE.Vector3(0, 0, 0));
-    });
-    
-    // Aggiorna camera
-    if (cameraRef.current) {
-      cameraRef.current.position.set(0, 1.2 * zoom, 13.5 * zoom);
-      cameraRef.current.lookAt(0, 0.82 * zoom, 0);
-    }
-    
-    console.log(`✅ ${meshesRef.current.size} slot aggiornati con zoom ${zoom}`);
-  }, [zoom]); // ← Dipende solo da zoom
 
   // 2️⃣ POPOLAZIONE MESSAGGI (si attiva quando arrivano nuovi messaggi)
   useEffect(() => {

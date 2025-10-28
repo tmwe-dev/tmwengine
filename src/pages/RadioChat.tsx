@@ -3,6 +3,7 @@ import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Key
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
+import { RadioConversationsSidebar } from '@/components/radio-chat/RadioConversationsSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
 import { RadioSendButton } from '@/components/radio-chat/RadioSendButton';
 import { RadioMessageView } from '@/components/radio-chat/RadioMessageView';
@@ -36,13 +37,14 @@ interface RadioParticipant {
 }
 
 const RadioChat = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // ✅ Open by default to show chat selector
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [inputVisible, setInputVisible] = useState(false);
   const [messageViewVisible, setMessageViewVisible] = useState(false);
   const [messages, setMessages] = useState<RadioMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<any[]>([]); // ✅ Lista chat
   
   // ⚡ LIVELLO 2: Cache prompts client-side
   const [cachedPrompts, setCachedPrompts] = useState<any>(null);
@@ -69,6 +71,7 @@ const RadioChat = () => {
   });
   
   const [debugPopupOpen, setDebugPopupOpen] = useState(false);
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'conversations' | 'settings'>('conversations'); // ✅ Tab selector
   
   const { toast } = useToast();
   
@@ -208,44 +211,136 @@ const RadioChat = () => {
     loadParticipants();
   }, [supabase]);
   
-  // Always create NEW conversation on mount
+  // ✅ Load conversations list on mount
   useEffect(() => {
-    const createNewConversation = async () => {
-      if (!currentUser?.id) return;
-      
-      console.log('🆕 [RadioChat] Creating NEW conversation...');
-      
-      const { data: newConv, error: createError } = await supabase
-        .from('chat_laboratory_conversations')
-        .insert({
-          user_id: currentUser.id,
-          titolo: 'Radio Chat ' + new Date().toLocaleDateString()
-        })
-        .select()
-        .single();
-      
-      if (createError) {
-        console.error('❌ Error creating conversation:', createError);
-        toast({
-          title: "Errore",
-          description: "Impossibile creare conversazione",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      console.log('✅ [RadioChat] Created new conversation:', newConv.id);
-      setCurrentConversationId(newConv.id);
-      setMessages([]); // ✅ Start empty
-      
-      // ⚡ LIVELLO 2: Carica prompt all'apertura conversazione
-      loadCachedPrompts(newConv.id);
-    };
-    
-    if (currentUser) {
-      createNewConversation();
+    if (currentUser?.id) {
+      loadConversations();
     }
   }, [currentUser]);
+  
+  // Load conversations from DB
+  const loadConversations = async () => {
+    if (!currentUser?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_conversations')
+        .select('id, titolo, created_at, updated_at')
+        .eq('user_id', currentUser.id)
+        .order('updated_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      setConversations(data || []);
+      console.log('✅ Loaded conversations:', data?.length || 0);
+    } catch (err) {
+      console.error('❌ Error loading conversations:', err);
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare conversazioni",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Handle conversation selection
+  const handleSelectConversation = async (conversationId: string) => {
+    console.log('✅ Selecting conversation:', conversationId);
+    setCurrentConversationId(conversationId);
+    await loadMessages(conversationId);
+    loadCachedPrompts(conversationId);
+    setSidebarOpen(false);
+  };
+  
+  // Handle new conversation
+  const handleNewConversation = async () => {
+    if (!currentUser?.id) return;
+    
+    console.log('🆕 Creating NEW conversation...');
+    
+    const { data: newConv, error: createError } = await supabase
+      .from('chat_laboratory_conversations')
+      .insert({
+        user_id: currentUser.id,
+        titolo: 'Radio Chat ' + new Date().toLocaleDateString()
+      })
+      .select()
+      .single();
+    
+    if (createError) {
+      console.error('❌ Error creating conversation:', createError);
+      toast({
+        title: "Errore",
+        description: "Impossibile creare conversazione",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log('✅ Created new conversation:', newConv.id);
+    setCurrentConversationId(newConv.id);
+    setMessages([]);
+    loadCachedPrompts(newConv.id);
+    await loadConversations();
+    setSidebarOpen(false);
+  };
+  
+  // Handle delete conversation
+  const handleDeleteConversation = async (conversationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_conversations')
+        .delete()
+        .eq('id', conversationId);
+      
+      if (error) throw error;
+      
+      if (conversationId === currentConversationId) {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+      
+      await loadConversations();
+      
+      toast({
+        title: "Conversazione eliminata",
+        description: "La conversazione è stata eliminata con successo"
+      });
+    } catch (err) {
+      console.error('❌ Error deleting conversation:', err);
+      toast({
+        title: "Errore",
+        description: "Impossibile eliminare conversazione",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Handle update title
+  const handleUpdateTitle = async (conversationId: string, title: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_conversations')
+        .update({ titolo: title })
+        .eq('id', conversationId);
+      
+      if (error) throw error;
+      
+      await loadConversations();
+      
+      toast({
+        title: "Titolo aggiornato",
+        description: "Il titolo è stato modificato con successo"
+      });
+    } catch (err) {
+      console.error('❌ Error updating title:', err);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare titolo",
+        variant: "destructive"
+      });
+    }
+  };
   
   // ⚡ LIVELLO 2: Load prompts client-side (save 300-500ms per message)
   const loadCachedPrompts = async (conversationId: string) => {
@@ -781,19 +876,65 @@ const RadioChat = () => {
           console.log('🔍 [DEBUG] Rendering RadioSidebar con participants:', participants);
           return null;
         })()}
-        <RadioSidebar 
-          isOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)} 
-          conversationId={currentConversationId}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          isAutoAdvanceEnabled={isAutoAdvanceEnabled}
-          onAutoAdvanceChange={setIsAutoAdvanceEnabled}
-          participants={participants}
-          onToggleParticipant={handleToggleParticipant}
-          carouselZoom={carouselZoom}
-          onCarouselZoomChange={handleZoomChange}
-        />
+        
+        {/* Dual Sidebar: Conversations + Settings */}
+        <div className={cn(
+          "fixed left-0 top-0 h-full w-[320px] bg-background/95 backdrop-blur-sm border-r border-border/40 z-50 transition-transform duration-300",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
+          {/* Tab Navigation */}
+          <div className="flex border-b border-border/40">
+            <button
+              onClick={() => setActiveSidebarTab('conversations')}
+              className={cn(
+                "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                activeSidebarTab === 'conversations' 
+                  ? 'bg-primary/10 text-primary border-b-2 border-primary' 
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Chat
+            </button>
+            <button
+              onClick={() => setActiveSidebarTab('settings')}
+              className={cn(
+                "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                activeSidebarTab === 'settings' 
+                  ? 'bg-primary/10 text-primary border-b-2 border-primary' 
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Impostazioni
+            </button>
+          </div>
+          
+          {/* Tab Content */}
+          {activeSidebarTab === 'conversations' ? (
+            <RadioConversationsSidebar
+              conversations={conversations}
+              currentConversationId={currentConversationId}
+              onSelectConversation={handleSelectConversation}
+              onNewConversation={handleNewConversation}
+              onDeleteConversation={handleDeleteConversation}
+              onUpdateTitle={handleUpdateTitle}
+              onCloseSidebar={() => setSidebarOpen(false)}
+            />
+          ) : (
+            <RadioSidebar 
+              isOpen={true}
+              onClose={() => setSidebarOpen(false)} 
+              conversationId={currentConversationId}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              isAutoAdvanceEnabled={isAutoAdvanceEnabled}
+              onAutoAdvanceChange={setIsAutoAdvanceEnabled}
+              participants={participants}
+              onToggleParticipant={handleToggleParticipant}
+              carouselZoom={carouselZoom}
+              onCarouselZoomChange={handleZoomChange}
+            />
+          )}
+        </div>
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger
         className={cn(

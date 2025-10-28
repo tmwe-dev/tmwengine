@@ -59,7 +59,6 @@ const RadioChatContent = () => {
     return localStorage.getItem('radio-current-conversation-id');
   });
   const [conversations, setConversations] = useState<any[]>([]); // ✅ Lista chat
-  const [isCreatingNewConversation, setIsCreatingNewConversation] = useState(false); // 🆕 Flag per prevenire race condition
   
   // ⚡ LIVELLO 2: Cache prompts client-side
   const [cachedPrompts, setCachedPrompts] = useState<any>(null);
@@ -239,19 +238,13 @@ const RadioChatContent = () => {
     loadParticipants();
   }, [supabase]);
   
-  // ✅ Load conversations list on mount
+  // ✅ Load conversations list on mount (Pattern ChatLaboratory)
+  // ❌ NO auto-restore da localStorage - come ChatLaboratory
   useEffect(() => {
-    if (currentUser?.id && !isCreatingNewConversation) { // 🆕 Blocca durante creazione nuova chat
+    if (currentUser?.id) {
       loadConversations();
-      
-      // ✅ Ripristina ultima conversazione al mount
-      const savedConvId = localStorage.getItem('radio-current-conversation-id');
-      if (savedConvId && savedConvId !== currentConversationId) {
-        loadMessages(savedConvId);
-        loadCachedPrompts(savedConvId);
-      }
     }
-  }, [currentUser, isCreatingNewConversation]);
+  }, [currentUser]);
   
   // Load conversations from DB
   const loadConversations = async () => {
@@ -317,54 +310,54 @@ const RadioChatContent = () => {
     setSidebarOpen(false);
   };
   
-  // Handle new conversation
+  // Handle new conversation (Pattern identico ChatLaboratory)
   const handleNewConversation = async () => {
     if (!currentUser?.id) return;
     
-    console.log('🆕 [1/7] Inizio creazione conversazione');
-    console.log('🆕 [2/7] Messaggi attuali:', messages.length);
-    console.log('🆕 [3/7] Conversazione corrente:', currentConversationId);
-    
-    setIsCreatingNewConversation(true); // 🔒 Blocca auto-load
-    
-    const { data: newConv, error: createError } = await supabase
-      .from('chat_laboratory_conversations')
-      .insert({
-        user_id: currentUser.id,
-        titolo: 'Radio Chat ' + new Date().toLocaleDateString()
-      })
-      .select()
-      .single();
-    
-    if (createError) {
-      console.error('❌ Error creating conversation:', createError);
+    try {
+      console.log('🆕 Creating new conversation...');
+      
+      // 1️⃣ Crea conversazione nel DB (come ChatLaboratory)
+      const { data: newConv, error: createError } = await supabase
+        .from('chat_laboratory_conversations')
+        .insert({
+          user_id: currentUser.id,
+          titolo: 'Radio Chat ' + new Date().toLocaleDateString()
+        })
+        .select()
+        .single();
+      
+      if (createError) throw createError;
+      
+      console.log('✅ New conversation created:', newConv.id);
+      
+      // 2️⃣ Imposta nuovo ID (come ChatLaboratory)
+      setCurrentConversationId(newConv.id);
+      
+      // 3️⃣ Pulisce messaggi e UI (come ChatLaboratory)
+      setMessages([]);
+      setInputValue('');
+      setInputVisible(false);
+      setMessageViewVisible(false);
+      setActiveMessageId('');
+      
+      // 4️⃣ Carica dati (come ChatLaboratory)
+      loadCachedPrompts(newConv.id);
+      await loadConversations();
+      setSidebarOpen(false);
+      
+      toast({
+        title: "✨ Nuova conversazione",
+        description: "Inizia a chattare!",
+      });
+    } catch (error) {
+      console.error('❌ Error creating conversation:', error);
       toast({
         title: "Errore",
         description: "Impossibile creare conversazione",
         variant: "destructive"
       });
-      setIsCreatingNewConversation(false); // 🔓 Riabilita anche in caso di errore
-      return;
     }
-    
-    console.log('🆕 [4/7] Nuova conversazione creata:', newConv.id);
-    
-    setCurrentConversationId(newConv.id);
-    
-    console.log('🆕 [5/7] Reset UI completo...');
-    setMessages([]); // Reset messaggi
-    setInputValue(''); // Reset input
-    setInputVisible(false); // Nascondi textarea
-    setMessageViewVisible(false); // Reset vista messaggi
-    
-    console.log('🆕 [6/7] Messaggi dopo reset:', messages.length);
-    
-    loadCachedPrompts(newConv.id);
-    await loadConversations();
-    setSidebarOpen(false);
-    
-    setIsCreatingNewConversation(false); // 🔓 Riabilita auto-load
-    console.log('🆕 [7/7] Conversazione pronta!');
   };
   
   // Handle delete conversation

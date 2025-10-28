@@ -86,7 +86,7 @@ export const RadioAudioPlayer = ({
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
-    if (autoPlayRef.current && canAutoPlayRef.current && isAudioEnabledRef.current && !hasStartedRef.current && audio.paused) {
+    if (autoPlay && canAutoPlay && isAudioEnabled && !hasStartedRef.current && audio.paused) {
       console.log(`🎬 [RadioAudioPlayer] Tentativo autoplay: ${messageId}`);
       audio.play()
         .then(() => {

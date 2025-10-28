@@ -31,18 +31,6 @@ export const RadioMessageView = ({
       <div className="text-white/90 whitespace-pre-wrap mb-4 text-base md:text-lg lg:text-xl">
         {message.content}
       </div>
-      
-      {showAudioPlayer === true && message.audio_url && (
-        <RadioAudioPlayerWrapper
-          audioUrl={message.audio_url}
-          messageId={message.id}
-          autoPlay={!isHuman}
-          canAutoPlay={canAutoPlay}
-          onPlayStart={onAudioStart}
-          onPlayEnd={onAudioEnd}
-          isAudioEnabled={isAudioEnabled}
-        />
-      )}
     </div>
   );
 };

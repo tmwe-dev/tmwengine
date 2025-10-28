@@ -348,6 +348,45 @@ export const RadioCarousel3D = ({
     requestAnimationFrame(checkAndInit);
   }, []); // ← ARRAY VUOTO: esegue solo al mount, ma poi aspetta attivamente
 
+  // 🔄 UPDATE ZOOM DINAMICO (senza ri-creare slot)
+  useEffect(() => {
+    if (!groupRef.current || meshesRef.current.size === 0) return;
+    
+    console.log(`🔍 Zoom cambiato a ${zoom}, aggiorno slot esistenti...`);
+    
+    const radius = 7.8 * zoom;
+    const angleStep = (Math.PI * 2) / MAX_SLOTS;
+    const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
+    
+    meshesRef.current.forEach((mesh, key) => {
+      const i = parseInt(key.split('_')[1]);
+      
+      // Aggiorna geometry
+      mesh.geometry.dispose();
+      mesh.geometry = new THREE.PlaneGeometry(
+        4.83 * scaleFactor * zoom, 
+        7.04 * scaleFactor * zoom
+      );
+      
+      // Aggiorna posizione
+      const angle = -(i * angleStep) + Math.PI;
+      mesh.position.set(
+        Math.cos(angle) * radius,
+        0.82 * zoom,
+        Math.sin(angle) * radius
+      );
+      mesh.lookAt(new THREE.Vector3(0, 0, 0));
+    });
+    
+    // Aggiorna camera
+    if (cameraRef.current) {
+      cameraRef.current.position.set(0, 0.35 * zoom, 13.5 * zoom);
+      cameraRef.current.lookAt(0, 0.82 * zoom, 0);
+    }
+    
+    console.log(`✅ ${meshesRef.current.size} slot aggiornati con zoom ${zoom}`);
+  }, [zoom]); // ← Dipende solo da zoom
+
   // 2️⃣ POPOLAZIONE MESSAGGI (si attiva quando arrivano nuovi messaggi)
   useEffect(() => {
     console.log('📝 useEffect messaggi - messages:', messages.length, 'meshesRef:', meshesRef.current.size, 'groupReady:', !!groupRef.current);

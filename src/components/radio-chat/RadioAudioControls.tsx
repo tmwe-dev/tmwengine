@@ -150,7 +150,7 @@ export const RadioAudioControls = ({
   ];
 
   return (
-    <div className="fixed bottom-8 left-[calc(27.5%+46%)] z-50
+    <div className="fixed bottom-8 left-[calc(50%+22.5%+0.5rem)] z-50
                     bg-black/95 backdrop-blur-lg
                     border-2 border-purple-400/40
                     rounded-xl shadow-[0_0_30px_rgba(168,85,247,0.25)]

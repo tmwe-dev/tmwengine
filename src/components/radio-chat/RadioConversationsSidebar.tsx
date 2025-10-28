@@ -317,7 +317,7 @@ export const RadioConversationsSidebar = ({
                     "after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left",
                     currentConversationId === conv.id 
                       ? 'bg-email-selected border-primary/40 after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent' 
-                      : 'bg-card/95 backdrop-blur border-border/20 hover:border-border/40 hover:bg-transparent after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce'
+                      : 'bg-transparent border-border/20 hover:border-border/40 hover:bg-transparent after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce'
                   )}
                   onClick={() => !editingId && onSelectConversation(conv.id)}
                 >

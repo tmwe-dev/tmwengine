@@ -24,8 +24,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { emailMessageApi, emailSyncApi, emailFolderApi } from '@/lib/tmwe-api-integrated';
-import { emailSearchApi } from '@/lib/tmwe-email-search-api'; // ✅ NEW: Email Search RPC
+import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api-integrated';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api'; // ✅ Email Search RPC for ALL read operations
 import { EmailHeader } from '@/components/tmwe/EmailHeader';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
@@ -133,12 +133,12 @@ const EmailDashboard = () => {
   const { data: apiEmailCount } = useQuery({
     queryKey: ['api-email-count', selectedFolder],
     queryFn: async () => {
-      const result = await emailMessageApi.getMessages({ 
+      const result = await emailSearchApi.getEmailsMetadata({ 
         folder: selectedFolder, 
-        limit: 1, 
-        offset: 0  // ✅ Usa offset invece di page
+        page: 1,
+        limit: 1
       });
-      return result?.total || 0;
+      return result?.data?.total || result?.total || 0;
     },
     staleTime: 2 * 60 * 1000, // Cache 2 minuti
   });
@@ -146,7 +146,7 @@ const EmailDashboard = () => {
   const { data: folderInfo } = useQuery({
     queryKey: ['folder-info', selectedFolder],
     queryFn: async () => {
-      const result = await emailMessageApi.getMessages({ folder: selectedFolder, limit: 1, offset: 0 });
+      const result = await emailSearchApi.getFolderInfo(selectedFolder);
       return result;
     },
   });
@@ -157,7 +157,7 @@ const EmailDashboard = () => {
   const { data: globalEmailCount } = useQuery({
     queryKey: ['global-folders-count'],
     queryFn: async () => {
-      const foldersResponse = await emailFolderApi.getFolders();
+      const foldersResponse = await emailSearchApi.getFolders();
       const folders = foldersResponse?.data || [];
       // Somma i messaggi di tutte le cartelle
       return folders.reduce((sum: number, f: any) => sum + (f.messages || 0), 0);
@@ -180,12 +180,12 @@ const EmailDashboard = () => {
     queryKey: ['sync-status', selectedFolder],
     queryFn: async () => {
       // 1. Conta email sul SERVER (API)
-      const apiResponse = await emailMessageApi.getMessages({ 
+      const apiResponse = await emailSearchApi.getEmailsMetadata({ 
         folder: selectedFolder, 
-        limit: 1, 
-        offset: 0  // ✅ Usa offset invece di page
+        page: 1,
+        limit: 1
       });
-      const apiTotal = apiResponse?.total || 0;
+      const apiTotal = apiResponse?.data?.total || apiResponse?.total || 0;
 
       // 2. Conta email nel DB (solo per confronto sync)
       const { data: { user } } = await supabase.auth.getUser();
@@ -463,7 +463,7 @@ const EmailDashboard = () => {
 
   const handleBulkMarkAsRead = async (emailIds: string[]) => {
     try {
-      await Promise.all(emailIds.map(id => emailMessageApi.getMessage(id, true)));
+      await emailMessageApi.markMessages(emailIds, 'read');
       queryClient.invalidateQueries({ queryKey: ['messages'] });
       toast.success('Email segnate come lette');
     } catch (error) {

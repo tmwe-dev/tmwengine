@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { emailMessageApi, emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { emailMessageApi } from '@/lib/tmwe-api-integrated';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { QueryClient } from '@tanstack/react-query';
@@ -56,9 +57,9 @@ export const useEmailDownload = () => {
       // 1. Ottieni la lista di tutte le cartelle
       setCurrentPhase('loading');
       toast.info('Caricamento cartelle...');
-      console.log('🔍 Chiamata a emailFolderApi.getFolders()...');
+      console.log('🔍 Chiamata a emailSearchApi.getFolders()...');
       
-      const foldersResponse = await emailFolderApi.getFolders();
+      const foldersResponse = await emailSearchApi.getFolders();
       console.log('📦 Risposta API cartelle:', foldersResponse);
       console.log('📦 Tipo risposta:', typeof foldersResponse);
       console.log('📦 Chiavi risposta:', foldersResponse ? Object.keys(foldersResponse) : 'null');

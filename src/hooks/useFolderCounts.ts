@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 
 /**
  * Hook per lazy loading dei conteggi delle cartelle email
@@ -21,7 +21,7 @@ export const useFolderCounts = (folderNames: string[]) => {
         // Carica conteggi in background per ogni cartella
         for (const folder of folderNames) {
           try {
-            const info = await emailFolderApi.getFolderInfo(folder);
+            const info = await emailSearchApi.getFolderInfo(folder);
             setCounts(prev => ({
               ...prev,
               [folder]: info.message_count || info.messages || 0

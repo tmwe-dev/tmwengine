@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { getSyncPreferences, saveSyncPreferences } from '@/lib/email-sync-preferences';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -40,7 +40,7 @@ export const EmailSyncPreferences = ({
   // Carica le cartelle disponibili
   const { data: foldersData, isLoading: loadingFolders } = useQuery({
     queryKey: ['folders', userEmail],
-    queryFn: () => emailFolderApi.getFolders(),
+    queryFn: () => emailSearchApi.getFolders(),
   });
 
   // Carica le preferenze esistenti

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CloudDownload, CheckCircle2, RefreshCw } from 'lucide-react';
@@ -21,7 +21,7 @@ export const EmailSyncStatus = ({
     queryKey: ['folder-sync-comparison', selectedFolder],
     queryFn: async () => {
       // 1. Ottieni info cartella dal server API
-      const folders = await emailFolderApi.getFolders();
+      const folders = await emailSearchApi.getFolders();
       const folderData = folders?.data?.find((f: any) => f.name === selectedFolder);
       const serverTotal = folderData?.messages || 0;
 

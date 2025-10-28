@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { EmailSyncPreferences } from './EmailSyncPreferences';
 import { supabase } from '@/integrations/supabase/client';
 import { getSyncPreferences, filterFolders } from '@/lib/email-sync-preferences';
-import { emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 
 interface DirectAPIDownloadDialogProps {
   open: boolean;
@@ -59,7 +59,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
   // Fetch folders and preferences for preview
   const { data: foldersData } = useQuery({
     queryKey: ['folders', userEmail],
-    queryFn: () => emailFolderApi.getFolders(),
+    queryFn: () => emailSearchApi.getFolders(),
     enabled: !!userEmail && step === 'config',
   });
 

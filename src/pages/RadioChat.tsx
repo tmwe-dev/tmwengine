@@ -1363,7 +1363,7 @@ const RadioChatContent = () => {
       {/* Fixed container: Audio Player + Controls - Posizionamento dinamico */}
       <div className={cn(
         "fixed left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2 transition-all duration-200",
-        inputVisible ? "bottom-[16px]" : "bottom-[48px]"
+        inputVisible ? "bottom-[-34px]" : "bottom-[48px]"
       )}>
         {/* Audio Player - Carousel mode only */}
         {viewMode === 'carousel' && currentMessage && currentMessage.audio_url && (

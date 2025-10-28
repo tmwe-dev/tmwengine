@@ -220,6 +220,9 @@ export const RadioCarousel3D = ({
     rendererRef.current = renderer;
     groupRef.current = group;
 
+    // ✅ CRITICO: Posizione iniziale camera (FISSA, non dipende da zoom)
+    camera.position.set(0, 1.2, 13.5);
+
     // Animation loop
     let frameCount = 0;
     const animate = () => {

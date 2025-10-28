@@ -154,6 +154,7 @@ export const RadioAudioControls = ({
   return (
     <div className={cn(
       "fixed bottom-8 z-[60]",
+      "w-[45%] max-w-2xl",
       "bg-black/95 backdrop-blur-lg",
       "border-2 border-purple-400/40",
       "rounded-xl shadow-[0_0_30px_rgba(168,85,247,0.25)]",
@@ -170,7 +171,7 @@ export const RadioAudioControls = ({
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-purple-500/5 pointer-events-none" />
       
       {/* Contenuto orizzontale */}
-      <div className="relative z-10 flex items-center gap-2 w-full">
+      <div className="relative z-10 flex items-center gap-2">
         
         {/* Mode selector compatto */}
         <div className="flex items-center gap-1">
@@ -254,7 +255,7 @@ export const RadioAudioControls = ({
         {/* Close button */}
         <button 
           onClick={onClose}
-          className="w-10 h-10 rounded-md bg-purple-500/10 hover:bg-purple-500/20 flex items-center justify-center ml-auto transition-all"
+          className="w-10 h-10 rounded-md bg-purple-500/10 hover:bg-purple-500/20 flex items-center justify-center transition-all"
         >
           <X className="w-4 h-4 text-purple-400" />
         </button>

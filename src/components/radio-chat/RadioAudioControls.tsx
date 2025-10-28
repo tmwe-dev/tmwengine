@@ -13,11 +13,21 @@ type AudioMode = 'stable' | 'v2_hybrid';
 interface RadioAudioControlsProps {
   conversationId: string | null;
   onClose: () => void;
+  participants?: Array<{
+    id: string;
+    type: string;
+    name: string;
+    is_active: boolean;
+    voice_id?: string;
+  }>;
+  cachedPrompts?: any;
 }
 
 export const RadioAudioControls = ({
   conversationId,
   onClose,
+  participants = [],
+  cachedPrompts
 }: RadioAudioControlsProps) => {
   const [audioMode, setAudioMode] = useState<AudioMode>('stable');
   const [vadTimeout, setVadTimeout] = useState<number>(2);
@@ -113,14 +123,33 @@ export const RadioAudioControls = ({
         return;
       }
 
+      // ✅ Prepara participants attivi (stesso formato di RadioChat)
+      const activeParticipants = participants
+        .filter(p => p.is_active)
+        .map(p => ({
+          id: p.id,
+          type: p.type,
+          name: p.name,
+          is_active: true,
+          voiceId: p.voice_id
+        }));
+
+      // ✅ Costruisci body completo
+      const requestBody: any = {
+        conversationId,
+        userMessage: text,
+        participants: activeParticipants
+      };
+
+      // ⚡ Includi cached prompts se disponibili (performance boost)
+      if (cachedPrompts) {
+        requestBody.cachedPrompts = cachedPrompts;
+      }
+
       const { error: orchError } = await supabase.functions.invoke(
         'radio-chat-orchestrator',
         {
-          body: {
-            conversationId,
-            userMessage: text,
-            triggeredBy: 'voice'
-          }
+          body: requestBody
         }
       );
 

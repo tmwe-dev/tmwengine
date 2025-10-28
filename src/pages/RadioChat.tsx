@@ -1377,6 +1377,8 @@ const RadioChatContent = () => {
           <RadioAudioControls
             conversationId={currentConversationId}
             onClose={() => setShowAudioControls(false)}
+            participants={participants}
+            cachedPrompts={cachedPrompts}
           />
         )}
       </div>

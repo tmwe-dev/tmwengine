@@ -190,7 +190,7 @@ export const RadioAudioPlayer = ({
   if (!audioUrl || audioUrl.trim() === '') return null;
 
   return (
-    <div className="flex items-center gap-4 px-2 py-3">
+    <div className="flex items-center gap-4 px-2 py-2">
       {/* Play/Pause Button */}
       <button
         onClick={togglePlay}

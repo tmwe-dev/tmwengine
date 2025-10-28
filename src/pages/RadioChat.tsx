@@ -1184,9 +1184,10 @@ const RadioChatContent = () => {
 
       {/* Main Content Area */}
         <div className="pt-4 pb-[200px]">
-        {viewMode === 'carousel' ? (
-          <>
-            <div className="flex flex-col h-[calc(100vh-140px)] min-h-[600px] md:min-h-[700px] lg:min-h-[850px]">
+        
+        {/* Carousel View - Sempre montato, nascosto quando inattivo */}
+        <div className={viewMode === 'carousel' ? 'block' : 'hidden'}>
+          <div className="flex flex-col h-[calc(100vh-140px)] min-h-[600px] md:min-h-[700px] lg:min-h-[850px]">
             {/* Carousel Container - Flex 1 */}
             <div 
               className="relative flex-1 min-h-0 overflow-visible"
@@ -1292,8 +1293,10 @@ const RadioChatContent = () => {
               )}
             </div>
           </div>
-          </>
-        ) : (
+        </div>
+
+        {/* Messages View - Sempre montato, nascosto quando inattivo */}
+        <div className={viewMode === 'messages' ? 'block' : 'hidden'}>
           <div className="w-full h-full pt-20 pb-24">
             <RadioMessagesView 
               messages={messages}
@@ -1301,7 +1304,8 @@ const RadioChatContent = () => {
               isAudioEnabled={isAudioEnabled}
             />
           </div>
-        )}
+        </div>
+        
       </div>
 
       {/* Input Area - Fixed bottom con altezza definita */}

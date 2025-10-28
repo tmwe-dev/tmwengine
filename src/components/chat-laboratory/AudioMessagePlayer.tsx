@@ -26,6 +26,7 @@ export const AudioMessagePlayer = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const hasAutoPlayedRef = useRef<{ url: string; played: boolean }>({ url: '', played: false });
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -52,6 +53,17 @@ export const AudioMessagePlayer = ({
     audio.addEventListener('error', handleError);
 
     if (autoPlay) {
+      // ✅ CONTROLLO: Se già eseguito per questo audioUrl, SKIP
+      if (hasAutoPlayedRef.current.url === audioUrl && hasAutoPlayedRef.current.played) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('⏭️ [AudioMessagePlayer] autoPlay già eseguito per questo URL, skip');
+        }
+        return;
+      }
+
+      // ✅ Marca come eseguito PER QUESTO URL SPECIFICO
+      hasAutoPlayedRef.current = { url: audioUrl, played: true };
+
       if (process.env.NODE_ENV === 'development') {
         console.log('🎵 [AudioMessagePlayer] autoPlay=true, readyState:', audio.readyState);
       }
@@ -94,6 +106,11 @@ export const AudioMessagePlayer = ({
       audio.removeEventListener('error', handleError);
     };
   }, [audioUrl, autoPlay]);
+
+  // Reset tracking quando cambia l'audio URL
+  useEffect(() => {
+    hasAutoPlayedRef.current = { url: '', played: false };
+  }, [audioUrl]);
 
   useEffect(() => {
     if (audioRef.current) {

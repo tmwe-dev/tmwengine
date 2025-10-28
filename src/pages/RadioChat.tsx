@@ -1290,6 +1290,7 @@ const RadioChatContent = () => {
           <div className="w-full h-full pt-20 pb-24">
             <RadioMessagesView 
               messages={messages}
+              isAutoAdvanceEnabled={isAutoAdvanceEnabled}
               isAudioEnabled={isAudioEnabled}
             />
           </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -107,7 +108,13 @@ export const EmailSidebar = ({
 
   const { data: foldersData, isLoading } = useQuery({
     queryKey: ['folders'],
-    queryFn: () => emailFolderApi.getFolders(),
+    queryFn: async () => {
+      // ✅ LECTURA: Usar /email_search para carpetas (rápido vía RPC)
+      const result = await emailSearchApi.getFolders();
+      console.log('📁 Folders from /email_search:', result);
+      console.log('📁 Folders array:', result?.data || result?.folders);
+      return result;
+    },
   });
 
   const createFolderMutation = useMutation({

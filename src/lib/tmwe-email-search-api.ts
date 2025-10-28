@@ -4,13 +4,21 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Reuse fetchApi from tmwe-api-integrated
 const fetchApi = async (endpoint: string, data: any) => {
+  console.log('🚀 Email Search API Request:', { 
+    endpoint, 
+    handler: data.handler,
+    params: Object.keys(data).filter(k => k !== 'handler')
+  });
+  
+  const startTime = performance.now();
+  
   try {
     const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
       body: { 
         endpoint, 
         data,
         optimizationFlags: {
-          enableLogging: false,
+          enableLogging: true,  // ✅ Activar logging en edge function
           useDoubleSerializat: false,
           useSequentialExecution: false,
           useTextResponse: false,
@@ -20,14 +28,32 @@ const fetchApi = async (endpoint: string, data: any) => {
       },
     });
 
+    const duration = performance.now() - startTime;
+
     if (error) {
-      console.error('❌ Email Search API Error:', error);
+      console.error('❌ Email Search API Error:', { 
+        handler: data.handler,
+        error,
+        duration: `${duration.toFixed(2)}ms`
+      });
       throw error;
     }
 
+    console.log('✅ Email Search API Response:', { 
+      handler: data.handler,
+      success: responseData?.success,
+      dataKeys: responseData?.data ? Object.keys(responseData.data) : 'no data object',
+      duration: `${duration.toFixed(2)}ms`
+    });
+    
     return responseData;
   } catch (error: any) {
-    console.error('🔥 Email Search API Communication Error:', error);
+    const duration = performance.now() - startTime;
+    console.error('🔥 Email Search API Communication Error:', { 
+      handler: data.handler,
+      error: error.message,
+      duration: `${duration.toFixed(2)}ms`
+    });
     throw error;
   }
 };

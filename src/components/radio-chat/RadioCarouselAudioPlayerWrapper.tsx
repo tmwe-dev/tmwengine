@@ -42,6 +42,10 @@ export const RadioCarouselAudioPlayerWrapper = ({
         onPlayingChange={setIsPlaying}
         audioProgress={audioProgress}
         onTimeUpdate={handleTimeUpdate}
+        autoPlay={!isHuman}
+        canAutoPlay={true}
+        onPlayStart={(id) => console.log(`▶️ [Carousel Mini] Audio START: ${id}`)}
+        onPlayEnd={onAudioEnd}
       />
     );
   }

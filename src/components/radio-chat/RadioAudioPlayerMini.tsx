@@ -10,6 +10,10 @@ interface RadioAudioPlayerMiniProps {
   onPlayingChange?: (isPlaying: boolean) => void;
   audioProgress?: number;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
+  autoPlay?: boolean;
+  canAutoPlay?: boolean;
+  onPlayStart?: (messageId: string) => void;
+  onPlayEnd?: () => void;
 }
 
 export const RadioAudioPlayerMini = ({
@@ -20,7 +24,11 @@ export const RadioAudioPlayerMini = ({
   isPlaying: externalIsPlaying,
   onPlayingChange,
   audioProgress,
-  onTimeUpdate
+  onTimeUpdate,
+  autoPlay = false,
+  canAutoPlay = false,
+  onPlayStart,
+  onPlayEnd
 }: RadioAudioPlayerMiniProps) => {
   const [internalIsPlaying, setInternalIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -32,14 +40,34 @@ export const RadioAudioPlayerMini = ({
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
-    const handleEnded = () => setIsPlaying(false);
+    // Autoplay logic
+    if (autoPlay && canAutoPlay && isAudioEnabled) {
+      console.log(`🔊 [Mini Player] Attempting autoplay for message: ${messageId}`);
+      audio.play()
+        .then(() => {
+          console.log(`✅ [Mini Player] Autoplay SUCCESS: ${messageId}`);
+          setIsPlaying(true);
+          if (onPlayStart) onPlayStart(messageId);
+        })
+        .catch(err => {
+          console.error(`❌ [Mini Player] Autoplay FAILED: ${messageId}`, err);
+        });
+    }
+
+    // Handle audio end
+    const handleEnded = () => {
+      console.log(`⏹️ [Mini Player] Audio ENDED: ${messageId}`);
+      setIsPlaying(false);
+      if (onPlayEnd) onPlayEnd();
+    };
+
     audio.addEventListener('ended', handleEnded);
 
     return () => {
       audio.removeEventListener('ended', handleEnded);
       audio.pause();
     };
-  }, [audioUrl]);
+  }, [audioUrl, autoPlay, canAutoPlay, isAudioEnabled, messageId]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -49,7 +77,10 @@ export const RadioAudioPlayerMini = ({
       setIsPlaying(false);
     } else {
       audioRef.current.play()
-        .then(() => setIsPlaying(true))
+        .then(() => {
+          setIsPlaying(true);
+          if (onPlayStart) onPlayStart(messageId);
+        })
         .catch(err => console.error('Play failed:', err));
     }
   };

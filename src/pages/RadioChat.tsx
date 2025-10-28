@@ -1302,6 +1302,7 @@ const RadioChatContent = () => {
               messages={messages}
               isAutoAdvanceEnabled={isAutoAdvanceEnabled}
               isAudioEnabled={isAudioEnabled}
+              isAudioPlaying={isAudioPlaying}
             />
           </div>
         </div>

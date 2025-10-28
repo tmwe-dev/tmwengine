@@ -10,28 +10,34 @@ interface RadioMessagesViewProps {
   messages: RadioMessage[];
   isAutoAdvanceEnabled?: boolean;
   isAudioEnabled?: boolean;
+  isAudioPlaying?: boolean;
 }
 
 export function RadioMessagesView({ 
   messages,
   isAutoAdvanceEnabled = true,
-  isAudioEnabled = true
+  isAudioEnabled = true,
+  isAudioPlaying: externalIsAudioPlaying
 }: RadioMessagesViewProps) {
   // Hook per gestione stato audio
   const { 
-    isAudioPlaying,
+    isAudioPlaying: internalIsAudioPlaying,
     handleAudioStart, 
     handleAudioEnd: audioEnd 
   } = useRadioAudioPlayback();
 
-  // Hook per tab virtuali
+  // Usa lo stato audio esterno se fornito, altrimenti usa quello interno
+  const isAudioPlaying = externalIsAudioPlaying ?? internalIsAudioPlaying;
+
+  // Hook per tab virtuali (con isAudioPlaying propagato)
   const {
     activeMessageId,
     canAutoPlayForMessage,
     handleAudioEnd: tabSwitchOnAudioEnd
   } = useRadioVirtualTabs({
     messages,
-    isAutoAdvanceEnabled
+    isAutoAdvanceEnabled,
+    isAudioPlaying
   });
 
   // FIX 2: State per sincronizzazione audio-tab

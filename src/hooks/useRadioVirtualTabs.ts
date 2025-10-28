@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { RadioMessage } from '@/types/radio';
 
 interface UseRadioVirtualTabsProps {
   messages: RadioMessage[];
   isAutoAdvanceEnabled: boolean;
+  isAudioPlaying: boolean;
 }
 
 interface UseRadioVirtualTabsReturn {
@@ -14,41 +15,80 @@ interface UseRadioVirtualTabsReturn {
 
 export const useRadioVirtualTabs = ({
   messages,
-  isAutoAdvanceEnabled
+  isAutoAdvanceEnabled,
+  isAudioPlaying
 }: UseRadioVirtualTabsProps): UseRadioVirtualTabsReturn => {
   const [activeMessageId, setActiveMessageId] = useState('');
+  const lastProcessedCountRef = useRef(0);
 
-  // ✅ Inizializzazione e rivalidazione: assicura che activeMessageId punti sempre a messaggio esistente
+  // ✅ Inizializzazione, rivalidazione e gestione nuovi messaggi
   useEffect(() => {
+    const messagesWithAudio = messages.filter(m => m.audio_url);
+    
     if (process.env.NODE_ENV === 'development') {
       console.log('🔍 [useRadioVirtualTabs] useEffect triggered:', {
-        activeMessageId,
+        activeMessageId: activeMessageId.substring(0, 8) || 'none',
         messagesLength: messages.length,
-        messagesWithAudio: messages.filter(m => m.audio_url).length
+        messagesWithAudio: messagesWithAudio.length,
+        lastProcessedCount: lastProcessedCountRef.current,
+        isAudioPlaying
       });
     }
     
-    // ✅ Trova sempre il primo messaggio con audio disponibile
-    const firstWithAudio = messages.find(m => m.audio_url);
+    const firstWithAudio = messagesWithAudio[0];
     
-    if (firstWithAudio) {
-      // ✅ RIVALIDAZIONE: Verifica che activeMessageId punti a un messaggio esistente con audio
-      const currentMessage = messages.find(m => m.id === activeMessageId);
-      const isCurrentValid = currentMessage && currentMessage.audio_url;
-      
-      // ✅ Setta/Resetta activeMessageId se:
-      // 1. Non è ancora settato (!activeMessageId)
-      // 2. O il messaggio attivo non esiste più/non ha audio (!isCurrentValid)
-      if (!isCurrentValid) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`🔄 [useRadioVirtualTabs] ${!activeMessageId ? 'Inizializzazione' : 'Rivalidazione'}: settaggio active → ${firstWithAudio.sender_name}`);
-        }
-        setActiveMessageId(firstWithAudio.id);
+    if (!firstWithAudio) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('⚠️ [useRadioVirtualTabs] Nessun messaggio con audio');
       }
-    } else if (process.env.NODE_ENV === 'development') {
-      console.log('⚠️ [useRadioVirtualTabs] Nessun messaggio con audio trovato ancora');
+      return;
     }
-  }, [messages, activeMessageId]);
+
+    // CASO 1: Inizializzazione - nessun messaggio attivo ancora
+    if (!activeMessageId) {
+      console.log(`🆕 [useRadioVirtualTabs] Inizializzazione: ${firstWithAudio.sender_name}`);
+      setActiveMessageId(firstWithAudio.id);
+      lastProcessedCountRef.current = messagesWithAudio.length;
+      return;
+    }
+
+    // CASO 2: Rivalidazione - il messaggio attivo non esiste più
+    const currentMessage = messages.find(m => m.id === activeMessageId);
+    if (!currentMessage || !currentMessage.audio_url) {
+      console.log(`🔄 [useRadioVirtualTabs] Rivalidazione: messaggio attivo non valido → ${firstWithAudio.sender_name}`);
+      setActiveMessageId(firstWithAudio.id);
+      lastProcessedCountRef.current = messagesWithAudio.length;
+      return;
+    }
+
+    // CASO 3: NUOVO MESSAGGIO ARRIVATO (come Chat Laboratory)
+    if (messagesWithAudio.length > lastProcessedCountRef.current) {
+      const currentIndex = messagesWithAudio.findIndex(m => m.id === activeMessageId);
+      const newMessages = messagesWithAudio.slice(currentIndex + 1);
+      
+      if (newMessages.length > 0) {
+        const nextMessage = newMessages[0];
+        
+        // 🎯 LOGICA IDENTICA A CHAT LABORATORY (useTabSwitching.ts linea 67-73)
+        if (!isAudioPlaying && isAutoAdvanceEnabled) {
+          // Audio fermo → ATTIVA SUBITO
+          console.log(`▶️ [useRadioVirtualTabs] Audio fermo → Attivo ${nextMessage.sender_name} SUBITO`);
+          setActiveMessageId(nextMessage.id);
+          lastProcessedCountRef.current = messagesWithAudio.length;
+        } else if (isAudioPlaying) {
+          // Audio attivo → logga che il messaggio aspetta (gestito da handleAudioEnd)
+          console.log(`⏳ [useRadioVirtualTabs] Audio attivo → ${nextMessage.sender_name} aspetta`);
+          lastProcessedCountRef.current = messagesWithAudio.length;
+        } else {
+          // Auto-advance disabilitato
+          console.log(`🚫 [useRadioVirtualTabs] Auto-advance OFF → ${nextMessage.sender_name} ignorato`);
+          lastProcessedCountRef.current = messagesWithAudio.length;
+        }
+      } else {
+        lastProcessedCountRef.current = messagesWithAudio.length;
+      }
+    }
+  }, [messages, activeMessageId, isAutoAdvanceEnabled, isAudioPlaying]);
 
   // ✅ Funzione per verificare se un messaggio può fare autoplay
   const canAutoPlayForMessage = useCallback((messageId: string) => {

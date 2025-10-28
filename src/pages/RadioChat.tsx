@@ -692,7 +692,7 @@ const RadioChat = () => {
       </button>
 
       {/* Main Content Area */}
-      <div className="pt-0 pb-[200px] -mt-8">
+      <div className="pt-4 pb-[200px]">
         {viewMode === 'carousel' ? (
           <>
             <div className="flex flex-col h-[calc(100vh-140px)] min-h-[600px] md:min-h-[700px] lg:min-h-[850px]">

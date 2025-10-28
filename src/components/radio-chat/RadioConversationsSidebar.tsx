@@ -14,6 +14,7 @@ import {
   Search,
   Calendar,
   Sparkles,
+  FileText,
   Cpu,
   Bot,
   User as UserIcon
@@ -63,6 +64,8 @@ interface RadioConversationsSidebarProps {
   onDeleteConversation: (id: string) => void;
   onUpdateTitle: (id: string, title: string) => void;
   onCloseSidebar?: () => void;
+  onGenerateSummary?: (conversationId: string) => void;
+  onGenerateFullReport?: (conversationId: string) => void;
 }
 
 export const RadioConversationsSidebar = ({
@@ -72,7 +75,9 @@ export const RadioConversationsSidebar = ({
   onNewConversation,
   onDeleteConversation,
   onUpdateTitle,
-  onCloseSidebar
+  onCloseSidebar,
+  onGenerateSummary,
+  onGenerateFullReport
 }: RadioConversationsSidebarProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -385,6 +390,34 @@ export const RadioConversationsSidebar = ({
                       
                       {/* Actions */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {onGenerateSummary && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            title="Genera riassunto"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onGenerateSummary(conv.id);
+                            }}
+                          >
+                            <Sparkles className="w-3 h-3" />
+                          </Button>
+                        )}
+                        {onGenerateFullReport && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            title="Genera report completo"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onGenerateFullReport(conv.id);
+                            }}
+                          >
+                            <FileText className="w-3 h-3" />
+                          </Button>
+                        )}
                         <Button
                           size="icon"
                           variant="ghost"

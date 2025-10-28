@@ -109,7 +109,7 @@ export const RadioAudioPlayerMini = ({
       {/* Expand Button */}
       <button
         onClick={onExpand}
-        className="w-10 h-10 rounded-full bg-purple-500/10 hover:bg-purple-500/20 
+        className="w-8 h-8 rounded-full bg-purple-500/10 hover:bg-purple-500/20 
                    flex items-center justify-center transition-all"
         aria-label="Expand player"
       >

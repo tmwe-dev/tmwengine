@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
-import { RadioVoiceRecorder } from './RadioVoiceRecorder';
-import { RadioVoiceRecorderV2_Hybrid } from './RadioVoiceRecorderV2_Hybrid';
-import { RadioAudioSettingsPopup } from './RadioAudioSettingsPopup';
+import { InteractiveMicrophoneButton } from '@/components/chat-laboratory/InteractiveMicrophoneButton';
 import { RadioWordLimitSlider } from './RadioWordLimitSlider';
-import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { X, Mic, Headphones } from 'lucide-react';
+import { X, Mic, Headphones, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -27,6 +23,11 @@ export const RadioAudioControls = ({
   const [vadTimeout, setVadTimeout] = useState<number>(2);
   const [maxWords, setMaxWords] = useState<number>(80);
   const [isPaused, setIsPaused] = useState(false);
+  const [micStatus, setMicStatus] = useState<{ 
+    isActive: boolean; 
+    audioLevel: number; 
+    silenceCountdown: number 
+  }>({ isActive: false, audioLevel: 0, silenceCountdown: 0 });
   const { isPlayerExpanded } = useRadioAudioPlayer();
 
   useEffect(() => {
@@ -139,12 +140,14 @@ export const RadioAudioControls = ({
   const modes = [
     { 
       id: 'stable' as const,
+      number: 1 as const,
       label: 'PTT', 
       icon: Mic,
       description: 'Push-to-talk con VAD configurabile',
     },
     { 
       id: 'v2_hybrid' as const,
+      number: 2 as const,
       label: 'Listen', 
       icon: Headphones,
       description: 'Modalità ascolto continuo',
@@ -157,46 +160,61 @@ export const RadioAudioControls = ({
       "bg-black/95 backdrop-blur-lg",
       "border-2 border-purple-400/40",
       "rounded-xl shadow-[0_0_30px_rgba(168,85,247,0.25)]",
-      "h-[56px] px-3 py-2",
-      "flex items-center gap-2",
+      "px-3 py-2",
+      "flex flex-col gap-2",
       "relative overflow-hidden",
       "transition-all duration-300"
     )}>
       
-      {/* Gradient overlay solo lilla */}
+      {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-purple-500/5 pointer-events-none" />
       
-      {/* Contenuto orizzontale */}
+      {/* Volume bar e countdown - Mostrati SOPRA i controlli quando attivo */}
+      {micStatus.isActive && (
+        <div className="relative z-10 flex items-center gap-2 px-2 py-1 bg-purple-500/20 rounded-md border border-purple-400/40 animate-fade-in">
+          <Volume2 className="h-3 w-3 text-purple-300" />
+          <div className="flex-1 h-1.5 bg-purple-900/50 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-purple-400 to-pink-400 transition-all"
+              style={{ width: `${micStatus.audioLevel * 100}%` }}
+            />
+          </div>
+          {micStatus.silenceCountdown > 0 && (
+            <span className="text-xs text-purple-300 font-medium">
+              Invio tra {micStatus.silenceCountdown}s...
+            </span>
+          )}
+        </div>
+      )}
+      
+      {/* Contenuto principale orizzontale */}
       <div className="relative z-10 flex items-center gap-2">
         
-        {/* Mode selector compatto */}
-        <div className="flex items-center gap-1">
-          {modes.map((mode) => {
-            const Icon = mode.icon;
-            const isSelected = audioMode === mode.id;
-            
-            return (
-              <button
-                key={mode.id}
-                onClick={() => handleModeChange(mode.id)}
-                className={cn(
-                  "w-10 h-10 rounded-md flex items-center justify-center transition-all",
-                  isSelected 
-                    ? "bg-purple-500/30 border border-purple-400/50 text-purple-300" 
-                    : "bg-purple-500/10 border border-purple-400/20 text-purple-400 hover:bg-purple-500/20"
-                )}
-                title={mode.description}
-              >
-                <Icon className="w-4 h-4" />
-              </button>
-            );
-          })}
+        {/* Microfoni interattivi (tasto 1 e 2) */}
+        <div className="flex items-center gap-1.5">
+          {modes.map((mode) => (
+            <InteractiveMicrophoneButton
+              key={mode.id}
+              mode={mode.id === 'stable' ? 'ptt' : 'hybrid'}
+              number={mode.number}
+              label={mode.label}
+              icon={mode.icon}
+              conversationId={conversationId}
+              onTranscriptionComplete={handleTranscription}
+              isDisabled={isPaused}
+              isSelected={audioMode === mode.id}
+              onSelect={() => handleModeChange(mode.id)}
+              vadTimeout={mode.id === 'stable' ? vadTimeout : undefined}
+              description={mode.description}
+              onStatusChange={setMicStatus}
+            />
+          ))}
         </div>
         
         {/* Separatore */}
         <div className="h-6 w-px bg-purple-400/30" />
         
-        {/* VAD Slider compatto (solo se stable mode) */}
+        {/* VAD Slider (solo PTT) */}
         {audioMode === 'stable' && (
           <>
             <div className="flex items-center gap-1.5 min-w-[100px]">
@@ -215,7 +233,7 @@ export const RadioAudioControls = ({
           </>
         )}
         
-        {/* Response limit slider compatto */}
+        {/* Max Words Slider */}
         <div className="flex items-center gap-1.5 min-w-[100px]">
           <span className="text-[10px] text-purple-400 whitespace-nowrap">Max</span>
           <RadioWordLimitSlider
@@ -227,26 +245,6 @@ export const RadioAudioControls = ({
         
         {/* Separatore */}
         <div className="h-6 w-px bg-purple-400/30" />
-        
-        {/* Voice recorder button */}
-        <div className="flex-shrink-0">
-          {audioMode === 'stable' && (
-            <RadioVoiceRecorder
-              conversationId={conversationId}
-              onTranscriptionComplete={handleTranscription}
-              isDisabled={isPaused}
-              vadTimeout={vadTimeout}
-            />
-          )}
-          
-          {audioMode === 'v2_hybrid' && conversationId && (
-            <RadioVoiceRecorderV2_Hybrid
-              conversationId={conversationId}
-              onTranscriptionComplete={handleTranscription}
-              isDisabled={isPaused}
-            />
-          )}
-        </div>
         
         {/* Close button */}
         <button 

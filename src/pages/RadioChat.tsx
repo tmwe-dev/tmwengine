@@ -1367,23 +1367,26 @@ const RadioChatContent = () => {
         </div>
       )}
 
-      {/* Audio Player - Completely independent fixed element */}
-      {viewMode === 'carousel' && currentMessage && currentMessage.audio_url && (
-        <RadioCarouselAudioPlayerWrapper
-          message={currentMessage}
-          onAudioEnd={handleCarouselAudioEnd}
-          isAudioEnabled={isAudioEnabled}
-          className={messageViewVisible ? 'opacity-0 pointer-events-none' : ''}
-        />
-      )}
+      {/* Fixed container: Audio Player + Controls - 10px from carousel bottom */}
+      <div className="fixed bottom-[98px] left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2">
+        {/* Audio Player - Carousel mode only */}
+        {viewMode === 'carousel' && currentMessage && currentMessage.audio_url && (
+          <RadioCarouselAudioPlayerWrapper
+            message={currentMessage}
+            onAudioEnd={handleCarouselAudioEnd}
+            isAudioEnabled={isAudioEnabled}
+            className={messageViewVisible ? 'opacity-0 pointer-events-none' : ''}
+          />
+        )}
 
-      {/* Audio Controls Popup - FLOTTANTE FUORI DAL FLUSSO */}
-      {currentConversationId && showAudioControls && (
-        <RadioAudioControls
-          conversationId={currentConversationId}
-          onClose={() => setShowAudioControls(false)}
-        />
-      )}
+        {/* Audio Controls - Always visible when active */}
+        {currentConversationId && showAudioControls && (
+          <RadioAudioControls
+            conversationId={currentConversationId}
+            onClose={() => setShowAudioControls(false)}
+          />
+        )}
+      </div>
     </div>
   );
 };

@@ -214,7 +214,7 @@ export const RadioAudioPlayer = ({
 
       {/* Progress Bar Container */}
       {showProgress && (
-        <div className="flex-1 flex items-center gap-3">
+        <div className="flex items-center gap-4">
         {/* Current Time */}
         <span className="text-xs text-purple-300/60 font-mono min-w-[35px] text-right">
           {formatTime(currentTime)}
@@ -222,7 +222,7 @@ export const RadioAudioPlayer = ({
 
         {/* Progress Bar */}
         <div 
-          className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer group relative"
+          className="w-32 h-1 bg-white/10 rounded-full cursor-pointer group relative"
           onClick={handleSeekClick}
         >
           {/* Background Track */}

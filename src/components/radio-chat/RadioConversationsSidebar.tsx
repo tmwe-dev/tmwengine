@@ -248,6 +248,11 @@ export const RadioConversationsSidebar = ({
             {/* New Conversation */}
             <Button
               onClick={() => {
+                // 🆕 Reset filtri prima di creare nuova conversazione
+                setSearchQuery("");
+                setDateRange(undefined);
+                console.log("🔄 Filtri sidebar resettati");
+                
                 onNewConversation();
                 onCloseSidebar?.();
               }}

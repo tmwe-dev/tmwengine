@@ -48,6 +48,7 @@ const RadioChat = () => {
     return localStorage.getItem('radio-current-conversation-id');
   });
   const [conversations, setConversations] = useState<any[]>([]); // ✅ Lista chat
+  const [isCreatingNewConversation, setIsCreatingNewConversation] = useState(false); // 🆕 Flag per prevenire race condition
   
   // ⚡ LIVELLO 2: Cache prompts client-side
   const [cachedPrompts, setCachedPrompts] = useState<any>(null);
@@ -216,7 +217,7 @@ const RadioChat = () => {
   
   // ✅ Load conversations list on mount
   useEffect(() => {
-    if (currentUser?.id) {
+    if (currentUser?.id && !isCreatingNewConversation) { // 🆕 Blocca durante creazione nuova chat
       loadConversations();
       
       // ✅ Ripristina ultima conversazione al mount
@@ -226,7 +227,7 @@ const RadioChat = () => {
         loadCachedPrompts(savedConvId);
       }
     }
-  }, [currentUser]);
+  }, [currentUser, isCreatingNewConversation]);
   
   // Load conversations from DB
   const loadConversations = async () => {
@@ -266,7 +267,11 @@ const RadioChat = () => {
   const handleNewConversation = async () => {
     if (!currentUser?.id) return;
     
-    console.log('🆕 Creating NEW conversation...');
+    console.log('🆕 [1/7] Inizio creazione conversazione');
+    console.log('🆕 [2/7] Messaggi attuali:', messages.length);
+    console.log('🆕 [3/7] Conversazione corrente:', currentConversationId);
+    
+    setIsCreatingNewConversation(true); // 🔒 Blocca auto-load
     
     const { data: newConv, error: createError } = await supabase
       .from('chat_laboratory_conversations')
@@ -284,15 +289,28 @@ const RadioChat = () => {
         description: "Impossibile creare conversazione",
         variant: "destructive"
       });
+      setIsCreatingNewConversation(false); // 🔓 Riabilita anche in caso di errore
       return;
     }
     
-    console.log('✅ Created new conversation:', newConv.id);
+    console.log('🆕 [4/7] Nuova conversazione creata:', newConv.id);
+    
     setCurrentConversationId(newConv.id);
-    setMessages([]);
+    
+    console.log('🆕 [5/7] Reset UI completo...');
+    setMessages([]); // Reset messaggi
+    setInputValue(''); // Reset input
+    setInputVisible(false); // Nascondi textarea
+    setMessageViewVisible(false); // Reset vista messaggi
+    
+    console.log('🆕 [6/7] Messaggi dopo reset:', messages.length);
+    
     loadCachedPrompts(newConv.id);
     await loadConversations();
     setSidebarOpen(false);
+    
+    setIsCreatingNewConversation(false); // 🔓 Riabilita auto-load
+    console.log('🆕 [7/7] Conversazione pronta!');
   };
   
   // Handle delete conversation

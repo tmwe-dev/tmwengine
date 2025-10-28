@@ -44,7 +44,9 @@ const RadioChat = () => {
   const [inputVisible, setInputVisible] = useState(false);
   const [messageViewVisible, setMessageViewVisible] = useState(false);
   const [messages, setMessages] = useState<RadioMessage[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(() => {
+    return localStorage.getItem('radio-current-conversation-id');
+  });
   const [conversations, setConversations] = useState<any[]>([]); // ✅ Lista chat
   
   // ⚡ LIVELLO 2: Cache prompts client-side
@@ -216,6 +218,13 @@ const RadioChat = () => {
   useEffect(() => {
     if (currentUser?.id) {
       loadConversations();
+      
+      // ✅ Ripristina ultima conversazione al mount
+      const savedConvId = localStorage.getItem('radio-current-conversation-id');
+      if (savedConvId && savedConvId !== currentConversationId) {
+        loadMessages(savedConvId);
+        loadCachedPrompts(savedConvId);
+      }
     }
   }, [currentUser]);
   
@@ -299,6 +308,7 @@ const RadioChat = () => {
       if (conversationId === currentConversationId) {
         setCurrentConversationId(null);
         setMessages([]);
+        localStorage.removeItem('radio-current-conversation-id');
       }
       
       await loadConversations();
@@ -467,6 +477,15 @@ const RadioChat = () => {
   useEffect(() => {
     localStorage.setItem('radio-view-mode', viewMode);
   }, [viewMode]);
+  
+  // ✅ Persist currentConversationId to localStorage
+  useEffect(() => {
+    if (currentConversationId) {
+      localStorage.setItem('radio-current-conversation-id', currentConversationId);
+    } else {
+      localStorage.removeItem('radio-current-conversation-id');
+    }
+  }, [currentConversationId]);
   
   // Persist carousel zoom changes to localStorage with debouncing
   const debouncedSetCarouselZoom = useCallback(

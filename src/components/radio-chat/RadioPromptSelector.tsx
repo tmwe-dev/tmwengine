@@ -54,68 +54,61 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
   const loadData = async () => {
     setLoading(true);
     
-    // Load global prompts
+    // 1️⃣ PRIMA: Carica tutti i prompt in parallelo
     const { data: globals, error: globalError } = await supabase
       .from('chat_laboratory_system_prompts')
       .select('id, nome, contenuto')
       .order('nome');
-
-    if (!globalError && globals && globals.length > 0) {
-      setGlobalPrompts(globals);
-      
-      // Load conversation's assigned prompt
-      let initialPromptId = globals[0].id;
-      
-      if (conversationId) {
-        const { data: conv } = await supabase
-          .from('chat_laboratory_conversations')
-          .select('system_prompt_id, composed_prompt_id')
-          .eq('id', conversationId)
-          .single();
-        
-        if (conv?.system_prompt_id) {
-          initialPromptId = conv.system_prompt_id;
-          setConversationPromptId(conv.system_prompt_id);
-        }
-
-        if (conv?.composed_prompt_id) {
-          setConversationComposedId(conv.composed_prompt_id);
-        }
-      }
-      
-      setSelectedGlobalId(initialPromptId);
-      const selectedPrompt = globals.find(p => p.id === initialPromptId);
-      if (selectedPrompt) {
-        setGlobalContent(selectedPrompt.contenuto);
-      }
-    }
-
-    // Load composed prompts (ready prompts)
+    
     const { data: composed, error: composedError } = await supabase
       .from('chat_laboratory_composed_prompts')
       .select('id, name, content, target_agent')
       .order('created_at', { ascending: false });
-
-    if (!composedError && composed && composed.length > 0) {
-      setComposedPrompts(composed);
+    
+    if (globals) setGlobalPrompts(globals);
+    if (composed) setComposedPrompts(composed);
+    
+    // 2️⃣ POI: Carica la conversazione e controlla PRIMA il composed_prompt_id
+    if (conversationId) {
+      const { data: conv } = await supabase
+        .from('chat_laboratory_conversations')
+        .select('system_prompt_id, composed_prompt_id')
+        .eq('id', conversationId)
+        .single();
       
-      if (conversationId) {
-        const { data: conv } = await supabase
-          .from('chat_laboratory_conversations')
-          .select('composed_prompt_id')
-          .eq('id', conversationId)
-          .single();
-        
-        if (conv?.composed_prompt_id) {
+      // ✅ PRIORITÀ 1: Se esiste composed_prompt_id, usa quello
+      if (conv?.composed_prompt_id && composed) {
+        const selectedComposed = composed.find(p => p.id === conv.composed_prompt_id);
+        if (selectedComposed) {
           setSelectedComposedId(conv.composed_prompt_id);
-          const selectedComposed = composed.find(p => p.id === conv.composed_prompt_id);
-          if (selectedComposed) {
-            setComposedContent(selectedComposed.content);
-          }
+          setComposedContent(selectedComposed.content);
+          setConversationComposedId(conv.composed_prompt_id);
+          console.log('✅ [RESTORE] Composed prompt loaded:', conv.composed_prompt_id);
         }
       }
+      // ✅ PRIORITÀ 2: Altrimenti usa system_prompt_id
+      else if (conv?.system_prompt_id && globals) {
+        const selectedPrompt = globals.find(p => p.id === conv.system_prompt_id);
+        if (selectedPrompt) {
+          setSelectedGlobalId(conv.system_prompt_id);
+          setGlobalContent(selectedPrompt.contenuto);
+          setConversationPromptId(conv.system_prompt_id);
+          console.log('✅ [RESTORE] Global prompt loaded:', conv.system_prompt_id);
+        }
+      }
+      // ✅ FALLBACK: Se nessuno dei due esiste, usa il primo global prompt
+      else if (globals && globals.length > 0) {
+        setSelectedGlobalId(globals[0].id);
+        setGlobalContent(globals[0].contenuto);
+        console.log('✅ [FALLBACK] Default global prompt loaded');
+      }
     }
-
+    // 3️⃣ Se non c'è conversazione, usa il primo global prompt
+    else if (globals && globals.length > 0) {
+      setSelectedGlobalId(globals[0].id);
+      setGlobalContent(globals[0].contenuto);
+    }
+    
     setLoading(false);
   };
 

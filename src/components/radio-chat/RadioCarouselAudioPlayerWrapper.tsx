@@ -38,6 +38,10 @@ export const RadioCarouselAudioPlayerWrapper = ({
         messageId={message.id}
         onExpand={() => setIsExpanded(true)}
         isAudioEnabled={isAudioEnabled}
+        isPlaying={isPlaying}
+        onPlayingChange={setIsPlaying}
+        audioProgress={audioProgress}
+        onTimeUpdate={handleTimeUpdate}
       />
     );
   }

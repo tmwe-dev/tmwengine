@@ -6,16 +6,27 @@ interface RadioAudioPlayerMiniProps {
   messageId: string;
   onExpand: () => void;
   isAudioEnabled?: boolean;
+  isPlaying?: boolean;
+  onPlayingChange?: (isPlaying: boolean) => void;
+  audioProgress?: number;
+  onTimeUpdate?: (currentTime: number, duration: number) => void;
 }
 
 export const RadioAudioPlayerMini = ({
   audioUrl,
   messageId,
   onExpand,
-  isAudioEnabled = true
+  isAudioEnabled = true,
+  isPlaying: externalIsPlaying,
+  onPlayingChange,
+  audioProgress,
+  onTimeUpdate
 }: RadioAudioPlayerMiniProps) => {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [internalIsPlaying, setInternalIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  const isPlaying = externalIsPlaying ?? internalIsPlaying;
+  const setIsPlaying = onPlayingChange ?? setInternalIsPlaying;
 
   useEffect(() => {
     const audio = new Audio(audioUrl);
@@ -44,11 +55,11 @@ export const RadioAudioPlayerMini = ({
   };
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 
+    <div className="fixed bottom-4 left-[calc(50%-22.5%)] z-50 
                     bg-black/95 backdrop-blur-lg 
                     border-2 border-purple-400/40 
                     rounded-xl shadow-[0_0_30px_rgba(168,85,247,0.25)]
-                    p-2 flex items-center gap-2">
+                    p-2 flex items-center gap-2 w-24">
       {/* Play/Pause Button */}
       <button
         onClick={togglePlay}

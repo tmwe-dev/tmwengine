@@ -163,7 +163,7 @@ export const RadioConversationsSidebar = ({
   return (
     <div className="flex flex-col h-full bg-transparent">
       {/* Header with Title + Close Button */}
-      <div className="flex items-center justify-between p-4 border-b bg-background">
+      <div className="flex items-center justify-between p-4 border-b bg-transparent">
         <h2 className="text-lg font-semibold">Conversazioni</h2>
         <button
           onClick={onCloseSidebar}

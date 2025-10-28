@@ -195,10 +195,8 @@ export const RadioCarousel3D = ({
           0.1,
           1000
         );
-    camera.position.set(0, 0.35 * zoom, 13.5 * zoom); // Camera leggermente sopra il centro per bilanciare visibilità
-    camera.lookAt(0, 0.82 * zoom, 0); // Guarda esattamente al centro delle card (elimina spazio sopra)
 
-    const renderer = new THREE.WebGLRenderer({ 
+    const renderer = new THREE.WebGLRenderer({
       alpha: true, 
       antialias: true 
     });
@@ -282,6 +280,15 @@ export const RadioCarousel3D = ({
     
     return () => resizeObserver.disconnect();
   }, []);
+
+  // 📷 CAMERA POSITION (reagisce a zoom)
+  useEffect(() => {
+    if (!cameraRef.current) return;
+    
+    console.log(`📷 Aggiorno camera con zoom: ${zoom}`);
+    cameraRef.current.position.set(0, 1.2 * zoom, 13.5 * zoom); // Camera più alta
+    cameraRef.current.lookAt(0, 0.82 * zoom, 0);
+  }, [zoom]);
 
   // 1️⃣ INIZIALIZZAZIONE SLOT (aspetta che groupRef sia pronto)
   useEffect(() => {
@@ -386,7 +393,7 @@ export const RadioCarousel3D = ({
     
     // Aggiorna camera
     if (cameraRef.current) {
-      cameraRef.current.position.set(0, 0.35 * zoom, 13.5 * zoom);
+      cameraRef.current.position.set(0, 1.2 * zoom, 13.5 * zoom);
       cameraRef.current.lookAt(0, 0.82 * zoom, 0);
     }
     

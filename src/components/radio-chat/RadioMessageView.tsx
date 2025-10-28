@@ -32,7 +32,7 @@ export const RadioMessageView = ({
         {message.content}
       </div>
       
-      {showAudioPlayer && message.audio_url && (
+      {showAudioPlayer === true && message.audio_url && (
         <RadioAudioPlayerWrapper
           audioUrl={message.audio_url}
           messageId={message.id}

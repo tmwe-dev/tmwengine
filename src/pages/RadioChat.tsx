@@ -1306,7 +1306,7 @@ const RadioChatContent = () => {
 
       {/* Input Area - Fixed bottom con altezza definita */}
       {inputVisible && (
-        <div className="fixed bottom-0 left-0 right-0 h-[200px] z-30 bg-gradient-to-t from-background via-background/80 to-transparent p-4 animate-in slide-in-from-bottom-4 duration-200">
+        <div className="fixed bottom-[30px] left-0 right-0 h-[200px] z-30 bg-gradient-to-t from-background via-background/80 to-transparent p-4 animate-in slide-in-from-bottom-4 duration-200">
           <div className="w-[90%] max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto relative h-full">
             {isSending && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg z-10">
@@ -1363,7 +1363,7 @@ const RadioChatContent = () => {
       {/* Fixed container: Audio Player + Controls - Posizionamento dinamico */}
       <div className={cn(
         "fixed left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2 transition-all duration-200",
-        inputVisible ? "bottom-[-34px]" : "bottom-[48px]"
+        inputVisible ? "bottom-[-4px]" : "bottom-[78px]"
       )}>
         {/* Audio Player - Carousel mode only */}
         {viewMode === 'carousel' && currentMessage && currentMessage.audio_url && (

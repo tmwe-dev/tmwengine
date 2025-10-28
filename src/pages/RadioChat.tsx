@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Keyboard, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -19,6 +19,7 @@ import { RadioMessage } from '@/types/radio';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { debounce } from 'lodash';
 
 // Import avatar assets
 import albertGif from '@/assets/albert-mining.gif';
@@ -467,16 +468,18 @@ const RadioChat = () => {
     localStorage.setItem('radio-view-mode', viewMode);
   }, [viewMode]);
   
-  // Persist carousel zoom changes to localStorage
-  useEffect(() => {
-    localStorage.setItem('radio-carousel-zoom', carouselZoom.toString());
-  }, [carouselZoom]);
+  // Persist carousel zoom changes to localStorage with debouncing
+  const debouncedSetCarouselZoom = useCallback(
+    debounce((zoom: number) => {
+      setCarouselZoom(zoom);
+      localStorage.setItem('radio-carousel-zoom', zoom.toString());
+    }, 50),
+    []
+  );
   
   const handleZoomChange = (zoom: number) => {
-    // Inverti zoom: slider alto → carousel grande, slider basso → carousel piccolo
-    const invertedZoom = 2.0 - zoom;
-    console.log(`🔄 Zoom slider: ${zoom.toFixed(2)} → carousel: ${invertedZoom.toFixed(2)}`);
-    setCarouselZoom(invertedZoom);
+    console.log(`🔄 Zoom slider: ${zoom.toFixed(2)}`);
+    debouncedSetCarouselZoom(zoom);
   };
   
   // Calculate AI messages

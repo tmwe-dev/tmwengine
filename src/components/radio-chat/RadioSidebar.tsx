@@ -122,14 +122,14 @@ export function RadioSidebar({
                     <Slider
                       value={[carouselZoom]}
                       onValueChange={([val]) => onCarouselZoomChange?.(val)}
-                      min={0.7}
-                      max={1.3}
-                      step={0.05}
+                      min={0.5}
+                      max={2.0}
+                      step={0.01}
                       className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>70%</span>
-                      <span>130%</span>
+                      <span>50%</span>
+                      <span>200%</span>
                     </div>
                   </div>
                 )}

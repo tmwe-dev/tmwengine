@@ -281,16 +281,20 @@ export const RadioCarousel3D = ({
     return () => resizeObserver.disconnect();
   }, []);
 
-  // 📷 CAMERA POSITION (reagisce a zoom)
+  // 📷 ZOOM FLUIDO con FOV (ultra-light, zero geometry recalc)
   useEffect(() => {
     if (!cameraRef.current) return;
     
-    console.log(`📷 Aggiorno camera con zoom: ${zoom}`);
-    cameraRef.current.position.set(0, 1.2 * zoom, 13.5 * zoom); // Camera più alta
-    cameraRef.current.lookAt(0, 0.82 * zoom, 0);
+    const baseFOV = 50; // Field of View base in gradi
+    const newFOV = baseFOV / zoom; // zoom=1.3 → FOV=38° (più vicino), zoom=0.5 → FOV=100° (più lontano)
+    
+    cameraRef.current.fov = newFOV;
+    cameraRef.current.updateProjectionMatrix();
+    
+    console.log(`📷 Zoom ${zoom.toFixed(2)} → FOV ${newFOV.toFixed(1)}° (fluido)`);
   }, [zoom]);
 
-  // 1️⃣ INIZIALIZZAZIONE SLOT (aspetta che groupRef sia pronto)
+  // 1️⃣ INIZIALIZZAZIONE SLOT (aspetta che groupRef sia pronto) - GEOMETRIA FISSA
   useEffect(() => {
     let attemptCount = 0;
     const MAX_ATTEMPTS = 10;
@@ -314,15 +318,15 @@ export const RadioCarousel3D = ({
         return;
       }
 
-      console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili (zoom: ${zoom})`);
+      console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili (geometria fissa)`);
       
       const group = groupRef.current;
-      const radius = 7.8 * zoom; // Radius leggermente ridotto per card più contenute
+      const radius = 7.8; // ✅ FISSO (no zoom scaling)
       const angleStep = (Math.PI * 2) / MAX_SLOTS;
       
       for (let i = 0; i < MAX_SLOTS; i++) {
         const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
-        const geometry = new THREE.PlaneGeometry(4.83 * scaleFactor * zoom, 7.04 * scaleFactor * zoom); // Aumentato del 5% per dimensioni ottimali (~72% viewport)
+        const geometry = new THREE.PlaneGeometry(4.83 * scaleFactor, 7.04 * scaleFactor); // ✅ FISSO
         const material = new THREE.MeshBasicMaterial({
           side: THREE.DoubleSide, 
           transparent: true,
@@ -334,7 +338,7 @@ export const RadioCarousel3D = ({
         const angle = -(i * angleStep) + Math.PI;
         mesh.position.set(
           Math.cos(angle) * radius, 
-          0.82 * zoom, // Inclinazione ridotta a ~6° (da 10.87°)
+          0.82, // ✅ FISSO (no zoom scaling)
           Math.sin(angle) * radius
         );
         mesh.lookAt(new THREE.Vector3(0, 0, 0));
@@ -361,49 +365,7 @@ export const RadioCarousel3D = ({
     };
   }, []); // ← Init solo una volta al mount
 
-  // 🔄 UPDATE IN-PLACE quando zoom cambia (Soluzione 3: chirurgico, zero ghosting)
-  useEffect(() => {
-    if (!groupRef.current || meshesRef.current.size === 0) {
-      console.log('⏸️ Skip update in-place, mesh non pronti');
-      return;
-    }
-    
-    console.log(`🔄 Zoom cambiato a ${zoom}, UPDATE IN-PLACE degli slot esistenti...`);
-    
-    const radius = 7.8 * zoom;
-    const angleStep = (Math.PI * 2) / MAX_SLOTS;
-    const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
-    
-    meshesRef.current.forEach((mesh, key) => {
-      const i = parseInt(key.split('_')[1]);
-      
-      // 1. Aggiorna geometry (dispose vecchia, crea nuova)
-      mesh.geometry.dispose();
-      mesh.geometry = new THREE.PlaneGeometry(
-        4.83 * scaleFactor * zoom, 
-        7.04 * scaleFactor * zoom
-      );
-      
-      // 2. Aggiorna posizione
-      const angle = -(i * angleStep) + Math.PI;
-      mesh.position.set(
-        Math.cos(angle) * radius,
-        0.82 * zoom,
-        Math.sin(angle) * radius
-      );
-      mesh.lookAt(new THREE.Vector3(0, 0, 0));
-      
-      // ✅ Texture e material.opacity rimangono intatti (no ghosting)
-    });
-    
-    // 3. Aggiorna camera
-    if (cameraRef.current) {
-      cameraRef.current.position.set(0, 1.2 * zoom, 13.5 * zoom);
-      cameraRef.current.lookAt(0, 0.82 * zoom, 0);
-    }
-    
-    console.log(`✅ ${meshesRef.current.size} slot aggiornati in-place con zoom ${zoom} (zero ghosting)`);
-  }, [zoom]); // ← Dipende solo da zoom
+  // 🔄 REMOVED: No more geometry updates on zoom change (FOV handles it)
 
 
   // 2️⃣ POPOLAZIONE MESSAGGI (si attiva quando arrivano nuovi messaggi)

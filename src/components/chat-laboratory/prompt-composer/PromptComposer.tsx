@@ -183,11 +183,10 @@ export function PromptComposer() {
   const handleSaveComposition = async (name: string, targetAgent: string) => {
     setIsSaving(true);
     try {
-      // Assembla contenuto finale
-      const finalContent = [
-        globalPrompt?.content || '',
-        ...composedBlocks.map(b => b.content)
-      ].join('\n\n---\n\n');
+      // Assembla contenuto finale - SOLO blocchi esplicitamente trascinati
+      const finalContent = composedBlocks
+        .map(b => b.content)
+        .join('\n\n---\n\n');
 
       const sectionIds = composedBlocks.map(b => b.section_id);
 

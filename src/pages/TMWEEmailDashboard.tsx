@@ -200,6 +200,7 @@ const EmailDashboard = () => {
   const { 
     data: messagesData,
     isLoading: messagesLoading,
+    error: messagesError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -241,6 +242,13 @@ const EmailDashboard = () => {
     initialPageParam: 1,
   });
 
+  // ✅ Error handling for messages query
+  useEffect(() => {
+    if (messagesError) {
+      console.error('❌ Error fetching messages:', messagesError);
+      toast.error('Error al cargar emails desde el API');
+    }
+  }, [messagesError]);
 
   const { data: emailDetailResponse, isLoading: isLoadingDetail, error: detailError } = useQuery({
     queryKey: ['message', selectedEmailId],
@@ -321,26 +329,40 @@ const EmailDashboard = () => {
   });
 
   const emailsFromPages = (messagesData?.pages || []).flatMap(page => {
+    console.log('📦 API Response Structure:', page);
     const messages = page?.messages || page?.data || [];
     
     if (!Array.isArray(messages)) {
+      console.warn('⚠️ Messages is not an array:', messages);
       return [];
     }
     
+    if (messages.length > 0) {
+      console.log('📧 First message structure:', messages[0]);
+    }
+    
     return messages.map((msg: any) => {
-      // ✅ UPDATED: Handle EmailAddress type from API
+      // ✅ CORRECTED: Prioritize name over email for better readability
       const fromAddress = typeof msg.from === 'object' 
-        ? msg.from.email || msg.from.name || 'Unknown'
+        ? msg.from.name || msg.from.email || 'Unknown'
         : msg.from || 'Unknown';
+
+      // ✅ CORRECTED: Populate preview field from multiple possible sources
+      const preview = msg.preview || 
+                     msg.snippet || 
+                     msg.body_preview || 
+                     (msg.body_text ? msg.body_text.substring(0, 150) : '') ||
+                     (msg.body_html ? msg.body_html.replace(/<[^>]*>/g, '').substring(0, 150) : '') ||
+                     '';
 
       return {
         id: String(msg.uid || msg.id),
         subject: msg.subject || '(No Subject)',
         from: fromAddress,
-        preview: '',
+        preview: preview,
         date: msg.date,
-        read: msg.is_read === true || msg.seen === 1,
-        starred: msg.is_flagged === true || msg.flagged === 1,
+        read: msg.is_read === true || msg.seen === 1 || msg.read === true,
+        starred: msg.is_flagged === true || msg.flagged === 1 || msg.starred === true,
         hasAttachments: !!(
           msg.has_attachments || 
           msg.hasAttachments || 
@@ -349,6 +371,8 @@ const EmailDashboard = () => {
           (msg.attachments && msg.attachments.length > 0) ||
           (msg.size && parseInt(msg.size) > 50000)
         ),
+        group: msg.group || msg.sender_group || null,
+        hasRules: msg.hasRules || msg.has_rules || false,
       };
     });
   });

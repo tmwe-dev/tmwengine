@@ -83,14 +83,13 @@ export function RadioMessagesView({
     <ScrollArea className="h-full px-4">
       <div className="space-y-4 pb-4 max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto">
         {formattedMessages.map((message) => {
-          // ✅ CHIAVE: solo il messaggio attivo viene mostrato
           const isActive = message.id === activeTab;
           
+          // ✅ CHIAVE: smonta i componenti non attivi
+          if (!isActive) return null;
+          
           return (
-            <div 
-              key={message.id} 
-              style={{ display: isActive ? 'block' : 'none' }}
-            >
+            <div key={message.id}>
               <MultiAgentMessage
                 message={message}
                 onAudioEnd={onAudioEndComplete}

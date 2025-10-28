@@ -123,6 +123,14 @@ export const RadioAudioPlayer = ({
 
   // ✅ NUOVO: Monitora canAutoPlay per avviare audio quando il messaggio diventa attivo
   useEffect(() => {
+    console.log(`🔍 [RadioAudioPlayer] canAutoPlay monitor:`, {
+      messageId: messageId.substring(0,8),
+      canAutoPlay,
+      isAudioEnabled,
+      paused: audioRef.current?.paused,
+      hasStarted: hasStartedRef.current
+    });
+    
     if (!audioRef.current || !canAutoPlay || !isAudioEnabled) return;
     
     // Se canAutoPlay diventa true E l'audio non è già in riproduzione
@@ -140,6 +148,12 @@ export const RadioAudioPlayer = ({
         .catch(err => console.warn('⚠️ Autoplay bloccato:', err));
     }
   }, [canAutoPlay, isAudioEnabled, messageId]);
+
+  // ✅ Reset esplicito di hasStarted quando cambia messageId
+  useEffect(() => {
+    console.log(`🔄 [RadioAudioPlayer] Reset hasStarted per: ${messageId.substring(0,8)}`);
+    hasStartedRef.current = false;
+  }, [messageId]);
 
   useEffect(() => {
     if (audioRef.current) {

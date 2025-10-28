@@ -346,7 +346,13 @@ export const RadioCarousel3D = ({
     // Lancia il controllo asincrono
     console.log('🚀 Avvio polling per groupRef...');
     requestAnimationFrame(checkAndInit);
-  }, []); // ← ARRAY VUOTO: esegue solo al mount, ma poi aspetta attivamente
+    
+    // Cleanup: resetta flag quando componente viene smontato
+    return () => {
+      console.log('🧹 RadioCarousel3D unmounting, reset hasInitializedSlotsRef');
+      hasInitializedSlotsRef.current = false;
+    };
+  }, []); // ← Cleanup al unmount
 
   // 🔄 UPDATE ZOOM DINAMICO (senza ri-creare slot)
   useEffect(() => {

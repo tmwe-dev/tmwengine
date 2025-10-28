@@ -49,7 +49,7 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [conversationId]);
 
   const loadData = async () => {
     setLoading(true);

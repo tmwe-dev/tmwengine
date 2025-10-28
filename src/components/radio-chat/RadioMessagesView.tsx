@@ -101,6 +101,7 @@ export function RadioMessagesView({
               <MultiAgentMessage
                 message={message}
                 canAutoPlay={isActive}
+                isAudioPlayingGlobally={isAudioPlaying}
                 onAudioEnd={onAudioEndComplete}
                 onAudioStateChange={(playing) => playing ? handleAudioStart() : audioEnd()}
               />

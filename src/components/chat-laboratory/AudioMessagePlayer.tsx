@@ -6,6 +6,7 @@ import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 interface AudioMessagePlayerProps {
   audioUrl: string;
   autoPlay?: boolean;
+  isAudioPlayingGlobally?: boolean;
   onPlayingChange?: (isPlaying: boolean) => void;
   onPlayStart?: () => void;
   onPlayEnd?: () => void;
@@ -15,6 +16,7 @@ interface AudioMessagePlayerProps {
 export const AudioMessagePlayer = ({ 
   audioUrl, 
   autoPlay = false,
+  isAudioPlayingGlobally = false,
   onPlayingChange,
   onPlayStart,
   onPlayEnd,
@@ -26,7 +28,7 @@ export const AudioMessagePlayer = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const hasAutoPlayedRef = useRef<{ url: string; played: boolean }>({ url: '', played: false });
+  const hasAutoPlayedRef = useRef(false);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -52,17 +54,9 @@ export const AudioMessagePlayer = ({
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
-    if (autoPlay) {
-      // ✅ CONTROLLO: Se già eseguito per questo audioUrl, SKIP
-      if (hasAutoPlayedRef.current.url === audioUrl && hasAutoPlayedRef.current.played) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('⏭️ [AudioMessagePlayer] autoPlay già eseguito per questo URL, skip');
-        }
-        return;
-      }
-
-      // ✅ Marca come eseguito PER QUESTO URL SPECIFICO
-      hasAutoPlayedRef.current = { url: audioUrl, played: true };
+    // ✅ CONTROLLO: autoPlay solo se NON già eseguito E NON sta suonando altro audio
+    if (autoPlay && !hasAutoPlayedRef.current && !isAudioPlayingGlobally) {
+      hasAutoPlayedRef.current = true;
 
       if (process.env.NODE_ENV === 'development') {
         console.log('🎵 [AudioMessagePlayer] autoPlay=true, readyState:', audio.readyState);
@@ -105,11 +99,11 @@ export const AudioMessagePlayer = ({
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [audioUrl, autoPlay]);
+  }, [audioUrl, autoPlay, isAudioPlayingGlobally]);
 
-  // Reset tracking quando cambia l'audio URL
+  // ✅ Reset hasAutoPlayedRef solo quando cambia audioUrl
   useEffect(() => {
-    hasAutoPlayedRef.current = { url: '', played: false };
+    hasAutoPlayedRef.current = false;
   }, [audioUrl]);
 
   useEffect(() => {

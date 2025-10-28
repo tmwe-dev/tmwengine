@@ -91,6 +91,11 @@ export const useTabSwitching = ({
 
   // 🎯 Quando audio finisce, passa al PRIMO messaggio NON VISTO
   const handleAudioEnd = useCallback(() => {
+    if (!isAutoFollowEnabled) {
+      console.log(`⏹️ [handleAudioEnd] AutoFollow disabilitato, skip cambio tab`);
+      return;
+    }
+
     const timestamp = new Date().toISOString();
     console.log(`🎵 [handleAudioEnd] CHIAMATO @ ${timestamp}`);
     console.log(`   - unseenMessagesQueue:`, unseenMessagesQueue);
@@ -126,7 +131,7 @@ export const useTabSwitching = ({
         console.log(`⏹️ [handleAudioEnd] Nessun altro messaggio da mostrare`);
       }
     }
-  }, [unseenMessagesQueue, messages, activeTab]);
+  }, [unseenMessagesQueue, messages, activeTab, isAutoFollowEnabled]);
 
   return {
     activeTab,

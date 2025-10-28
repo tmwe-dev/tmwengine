@@ -18,7 +18,7 @@ export const useRadioVirtualTabs = ({
 }: UseRadioVirtualTabsProps): UseRadioVirtualTabsReturn => {
   const [activeMessageId, setActiveMessageId] = useState('');
 
-  // ✅ Inizializzazione: primo messaggio con audio (logica robusta per race conditions)
+  // ✅ Inizializzazione e rivalidazione: assicura che activeMessageId punti sempre a messaggio esistente
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       console.log('🔍 [useRadioVirtualTabs] useEffect triggered:', {
@@ -32,15 +32,16 @@ export const useRadioVirtualTabs = ({
     const firstWithAudio = messages.find(m => m.audio_url);
     
     if (firstWithAudio) {
-      // ✅ Setta activeMessageId SOLO se:
-      // 1. Non è ancora settato (!activeMessageId)
-      // 2. O il messaggio attivo non ha audio (race condition fix)
+      // ✅ RIVALIDAZIONE: Verifica che activeMessageId punti a un messaggio esistente con audio
       const currentMessage = messages.find(m => m.id === activeMessageId);
-      const shouldSetActive = !activeMessageId || !currentMessage?.audio_url;
+      const isCurrentValid = currentMessage && currentMessage.audio_url;
       
-      if (shouldSetActive) {
+      // ✅ Setta/Resetta activeMessageId se:
+      // 1. Non è ancora settato (!activeMessageId)
+      // 2. O il messaggio attivo non esiste più/non ha audio (!isCurrentValid)
+      if (!isCurrentValid) {
         if (process.env.NODE_ENV === 'development') {
-          console.log(`🎯 [useRadioVirtualTabs] Settaggio primo messaggio attivo: ${firstWithAudio.sender_name}`);
+          console.log(`🔄 [useRadioVirtualTabs] ${!activeMessageId ? 'Inizializzazione' : 'Rivalidazione'}: settaggio active → ${firstWithAudio.sender_name}`);
         }
         setActiveMessageId(firstWithAudio.id);
       }

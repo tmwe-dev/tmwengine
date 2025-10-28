@@ -14,6 +14,7 @@ import { RadioParticipantIcon } from '@/components/radio-chat/RadioParticipantIc
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
 import { RadioCarouselAudioPlayerWrapper } from '@/components/radio-chat/RadioCarouselAudioPlayerWrapper';
 import { RadioAudioControls } from '@/components/radio-chat/RadioAudioControls';
+import { RadioMicTrigger } from '@/components/radio-chat/RadioMicTrigger';
 import { useRadioAudioPlayback } from '@/hooks/useRadioAudioPlayback';
 import { useAudioPreference } from '@/hooks/useAudioPreference';
 import { RadioMessage } from '@/types/radio';
@@ -1151,6 +1152,17 @@ const RadioChat = () => {
         />
       </button>
 
+      {/* Mic Icon - Between FileText and Keyboard */}
+      <RadioMicTrigger
+        className={cn(
+          "fixed left-0 bottom-22 z-40 transition-transform duration-300",
+          sidebarOpen && "translate-x-[320px]"
+        )}
+        isActive={showAudioControls}
+        onClick={() => setShowAudioControls(!showAudioControls)}
+        disabled={!currentConversationId}
+      />
+
       {/* Keyboard Icon - Above Hamburger */}
       <button
         onClick={() => setInputVisible(!inputVisible)}
@@ -1167,6 +1179,14 @@ const RadioChat = () => {
           }`} 
         />
       </button>
+
+      {/* Audio Controls Popup */}
+      {currentConversationId && showAudioControls && (
+        <RadioAudioControls
+          conversationId={currentConversationId}
+          onClose={() => setShowAudioControls(false)}
+        />
+      )}
 
         {/* Main Content Area */}
         <div className="pt-4 pb-[200px]">

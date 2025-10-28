@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { RadioAudioPlayer } from './RadioAudioPlayer';
+import { RadioAudioPlayerMini } from './RadioAudioPlayerMini';
 import { RadioMessage } from '@/types/radio';
 import { cn } from '@/lib/utils';
+import { Minimize2 } from 'lucide-react';
 
 interface RadioCarouselAudioPlayerWrapperProps {
   message: RadioMessage;
@@ -16,6 +18,7 @@ export const RadioCarouselAudioPlayerWrapper = ({
   className,
   isAudioEnabled = true
 }: RadioCarouselAudioPlayerWrapperProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -27,11 +30,33 @@ export const RadioCarouselAudioPlayerWrapper = ({
 
   const isHuman = message.sender_type === 'human';
 
+  // Visualizzazione MINI (default)
+  if (!isExpanded) {
+    return (
+      <RadioAudioPlayerMini
+        audioUrl={message.audio_url!}
+        messageId={message.id}
+        onExpand={() => setIsExpanded(true)}
+        isAudioEnabled={isAudioEnabled}
+      />
+    );
+  }
+
+  // Visualizzazione ESTESA
   return (
     <div className={cn(
-      "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-2xl w-[45%] border-2 border-purple-400/40 bg-black/95 backdrop-blur-lg rounded-xl shadow-[0_0_40px_rgba(168,85,247,0.3)]",
+      "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-2xl w-[45%] border-2 border-purple-400/40 bg-black/95 backdrop-blur-lg rounded-xl shadow-[0_0_40px_rgba(168,85,247,0.3)] relative",
       className
     )}>
+      {/* Bottone minimize */}
+      <button
+        onClick={() => setIsExpanded(false)}
+        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-purple-500/20 hover:bg-purple-500/30 flex items-center justify-center transition-all z-10"
+        aria-label="Minimize player"
+      >
+        <Minimize2 className="w-4 h-4 text-purple-300" />
+      </button>
+
       <RadioAudioPlayer
         audioUrl={message.audio_url!}
         messageId={message.id}

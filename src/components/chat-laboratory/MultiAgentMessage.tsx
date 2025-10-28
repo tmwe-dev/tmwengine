@@ -576,7 +576,6 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange, can
               }}
               onPlayEnd={() => {
                 console.log(`⏸️ [MultiAgentMessage] Audio END: ${message.sender_name}`);
-                onAudioStateChange?.(false);
                 onAudioEnd?.();
               }}
               onError={(error) => {

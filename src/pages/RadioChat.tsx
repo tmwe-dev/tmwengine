@@ -22,6 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { debounce } from 'lodash';
+import { RadioAudioPlayerProvider } from '@/contexts/RadioAudioPlayerContext';
 
 // Import avatar assets
 import albertGif from '@/assets/albert-mining.gif';
@@ -40,6 +41,14 @@ interface RadioParticipant {
 }
 
 const RadioChat = () => {
+  return (
+    <RadioAudioPlayerProvider>
+      <RadioChatContent />
+    </RadioAudioPlayerProvider>
+  );
+};
+
+const RadioChatContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true); // ✅ Open by default to show chat selector
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);

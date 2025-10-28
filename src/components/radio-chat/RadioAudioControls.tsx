@@ -10,6 +10,7 @@ import { X, Mic, Headphones } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useRadioAudioPlayer } from '@/contexts/RadioAudioPlayerContext';
 
 type AudioMode = 'stable' | 'v2_hybrid';
 
@@ -26,6 +27,7 @@ export const RadioAudioControls = ({
   const [vadTimeout, setVadTimeout] = useState<number>(2);
   const [maxWords, setMaxWords] = useState<number>(80);
   const [isPaused, setIsPaused] = useState(false);
+  const { isPlayerExpanded } = useRadioAudioPlayer();
 
   useEffect(() => {
     if (conversationId) {
@@ -150,13 +152,20 @@ export const RadioAudioControls = ({
   ];
 
   return (
-    <div className="fixed bottom-8 left-[calc(50%+22.5%+0.5rem)] z-50
-                    bg-black/95 backdrop-blur-lg
-                    border-2 border-purple-400/40
-                    rounded-xl shadow-[0_0_30px_rgba(168,85,247,0.25)]
-                    h-[56px] px-3 py-2
-                    flex items-center gap-2
-                    relative overflow-hidden">
+    <div className={cn(
+      "fixed z-[60]",
+      "bg-black/95 backdrop-blur-lg",
+      "border-2 border-purple-400/40",
+      "rounded-xl shadow-[0_0_30px_rgba(168,85,247,0.25)]",
+      "h-[56px] px-3 py-2",
+      "flex items-center gap-2",
+      "relative overflow-hidden",
+      "transition-all duration-300",
+      // Posizionamento condizionale
+      isPlayerExpanded 
+        ? "bottom-[96px] left-[27.5%] w-[45%]" // Sotto il player espanso
+        : "bottom-8 left-[calc(50%+22.5%+0.5rem)]" // Affiancato al mini player
+    )}>
       
       {/* Gradient overlay solo lilla */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-purple-500/5 pointer-events-none" />

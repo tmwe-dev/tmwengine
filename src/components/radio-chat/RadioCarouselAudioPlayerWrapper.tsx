@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { RadioAudioPlayer } from './RadioAudioPlayer';
 import { RadioAudioPlayerMini } from './RadioAudioPlayerMini';
 import { RadioMessage } from '@/types/radio';
 import { cn } from '@/lib/utils';
 import { Minimize2 } from 'lucide-react';
+import { useRadioAudioPlayer } from '@/contexts/RadioAudioPlayerContext';
 
 interface RadioCarouselAudioPlayerWrapperProps {
   message: RadioMessage;
@@ -21,6 +22,12 @@ export const RadioCarouselAudioPlayerWrapper = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const { setIsPlayerExpanded } = useRadioAudioPlayer();
+
+  // Sincronizza stato locale con context
+  useEffect(() => {
+    setIsPlayerExpanded(isExpanded);
+  }, [isExpanded, setIsPlayerExpanded]);
 
   const handleTimeUpdate = (currentTime: number, duration: number) => {
     if (duration > 0) {

@@ -1180,15 +1180,7 @@ const RadioChat = () => {
         />
       </button>
 
-      {/* Audio Controls Popup */}
-      {currentConversationId && showAudioControls && (
-        <RadioAudioControls
-          conversationId={currentConversationId}
-          onClose={() => setShowAudioControls(false)}
-        />
-      )}
-
-        {/* Main Content Area */}
+      {/* Main Content Area */}
         <div className="pt-4 pb-[200px]">
         {viewMode === 'carousel' ? (
           <>
@@ -1373,6 +1365,14 @@ const RadioChat = () => {
           onAudioEnd={handleCarouselAudioEnd}
           isAudioEnabled={isAudioEnabled}
           className={messageViewVisible ? 'opacity-0 pointer-events-none' : ''}
+        />
+      )}
+
+      {/* Audio Controls Popup - FLOTTANTE FUORI DAL FLUSSO */}
+      {currentConversationId && showAudioControls && (
+        <RadioAudioControls
+          conversationId={currentConversationId}
+          onClose={() => setShowAudioControls(false)}
         />
       )}
     </div>

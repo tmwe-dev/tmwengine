@@ -55,9 +55,7 @@ const RadioChatContent = () => {
   const [inputVisible, setInputVisible] = useState(false);
   const [messageViewVisible, setMessageViewVisible] = useState(false);
   const [messages, setMessages] = useState<RadioMessage[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(() => {
-    return localStorage.getItem('radio-current-conversation-id');
-  });
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<any[]>([]); // ✅ Lista chat
   
   // ⚡ LIVELLO 2: Cache prompts client-side
@@ -643,14 +641,6 @@ const RadioChatContent = () => {
     localStorage.setItem('radio-view-mode', viewMode);
   }, [viewMode]);
   
-  // ✅ Persist currentConversationId to localStorage
-  useEffect(() => {
-    if (currentConversationId) {
-      localStorage.setItem('radio-current-conversation-id', currentConversationId);
-    } else {
-      localStorage.removeItem('radio-current-conversation-id');
-    }
-  }, [currentConversationId]);
   
   // Persist carousel zoom changes to localStorage with debouncing
   const debouncedSetCarouselZoom = useCallback(
@@ -1300,9 +1290,7 @@ const RadioChatContent = () => {
           <div className="w-full h-full pt-20 pb-24">
             <RadioMessagesView 
               messages={messages}
-              isAutoAdvanceEnabled={isAutoAdvanceEnabled}
               isAudioEnabled={isAudioEnabled}
-              isAudioPlaying={isAudioPlaying}
             />
           </div>
         </div>

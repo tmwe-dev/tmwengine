@@ -143,7 +143,18 @@ serve(async (req) => {
     // ============ USE FINAL CACHED PROMPTS (client or DB) ============
     const globalSystemPrompt = finalCachedPrompts.globalPrompt;
     const baseContent = finalCachedPrompts.baseSections;
-    console.log(`📦 Prompts caricati (BASE: ${baseContent.length} chars)`);
+    
+    // ✅ RILEVA SE È UN PROMPT COMPOSTO (non inizia con testo generico)
+    const isComposedPrompt = globalSystemPrompt && 
+                             globalSystemPrompt.length > 500 && 
+                             !globalSystemPrompt.startsWith('Sei un assistente') &&
+                             globalSystemPrompt.includes('IDENTITÀ:');
+    
+    if (isComposedPrompt) {
+      console.log(`🎯 [COMPOSED] Usando prompt composto (${globalSystemPrompt.length} chars) - NO assemblaggio`);
+    } else {
+      console.log(`🔧 [LEGACY] Assemblaggio prompt dinamico da sezioni separate (BASE: ${baseContent.length} chars)`);
+    }
 
     // ============ FORMAT HISTORY MESSAGES ============
     const historyMessages = formatHistoryMessages(recentMessages);
@@ -221,22 +232,32 @@ serve(async (req) => {
         console.log(`📝 Context include: messaggio utente + ${allResponses.length} risposte precedenti`);
 
         // ============ BUILD SYSTEM PROMPT ============
-        // ⚡ LIVELLO 2: Support both Map and plain object (for client-sent prompts)
-        const agentPersonality = finalCachedPrompts.agentPersonalities instanceof Map
-          ? finalCachedPrompts.agentPersonalities.get(currentAgent.name.toLowerCase()) || ''
-          : finalCachedPrompts.agentPersonalities[currentAgent.name.toLowerCase()] || '';
+        let systemPrompt: string;
         
-        const systemPrompt = buildSystemPrompt({
-          globalPrompt: globalSystemPrompt,
-          baseContent: baseContent,
-          agentPersonality: agentPersonality,
-          conversationStyle: conversationStyle,
-          agentMode: agentMode,
-          previousResponses: allResponses,
-          wasCalledDirectly: isDirectCall,
-          styleSections: finalCachedPrompts.conversationStyles,
-          conversationPersonality: finalCachedPrompts.conversationPersonality
-        });
+        if (isComposedPrompt) {
+          // ✅ USA DIRETTAMENTE il prompt composto - NO assemblaggio
+          systemPrompt = globalSystemPrompt;
+          console.log(`🎯 [${currentAgent.name}] Usando prompt composto diretto (${systemPrompt.length} chars)`);
+        } else {
+          // 🔧 Assemblaggio dinamico per prompt legacy
+          // ⚡ LIVELLO 2: Support both Map and plain object (for client-sent prompts)
+          const agentPersonality = finalCachedPrompts.agentPersonalities instanceof Map
+            ? finalCachedPrompts.agentPersonalities.get(currentAgent.name.toLowerCase()) || ''
+            : finalCachedPrompts.agentPersonalities[currentAgent.name.toLowerCase()] || '';
+          
+          systemPrompt = buildSystemPrompt({
+            globalPrompt: globalSystemPrompt,
+            baseContent: baseContent,
+            agentPersonality: agentPersonality,
+            conversationStyle: conversationStyle,
+            agentMode: agentMode,
+            previousResponses: allResponses,
+            wasCalledDirectly: isDirectCall,
+            styleSections: finalCachedPrompts.conversationStyles,
+            conversationPersonality: finalCachedPrompts.conversationPersonality
+          });
+          console.log(`🔧 [${currentAgent.name}] Prompt assemblato dinamicamente (${systemPrompt.length} chars)`);
+        }
 
         // ============ BUILD CONVERSATION HISTORY ============
         const conversationHistory = buildConversationHistory({

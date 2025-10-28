@@ -184,7 +184,7 @@ export const RadioConversationsSidebar = ({
                   <Search className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80" align="start">
+              <PopoverContent className="w-80 pointer-events-auto" align="start">
                 <div className="space-y-2">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -222,7 +222,7 @@ export const RadioConversationsSidebar = ({
                   <Calendar className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
                 <div className="p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Seleziona periodo</span>

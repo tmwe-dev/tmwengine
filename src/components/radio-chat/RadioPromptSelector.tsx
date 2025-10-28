@@ -217,16 +217,50 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
   };
 
 
-  const onGlobalChange = (id: string) => {
+  const onGlobalChange = async (id: string) => {
     setSelectedGlobalId(id);
     const prompt = globalPrompts.find(p => p.id === id);
     if (prompt) setGlobalContent(prompt.contenuto);
+    
+    // Auto-save: salva immediatamente nel DB
+    if (conversationId) {
+      const { error } = await supabase
+        .from('chat_laboratory_conversations')
+        .update({ 
+          system_prompt_id: id,
+          composed_prompt_id: null 
+        })
+        .eq('id', conversationId);
+      
+      if (!error) {
+        setConversationPromptId(id);
+        setConversationComposedId(null);
+        console.log('✅ Auto-saved prompt:', id);
+      }
+    }
   };
 
-  const onComposedChange = (id: string) => {
+  const onComposedChange = async (id: string) => {
     setSelectedComposedId(id);
     const prompt = composedPrompts.find(p => p.id === id);
     if (prompt) setComposedContent(prompt.content);
+    
+    // Auto-save: salva immediatamente nel DB
+    if (conversationId) {
+      const { error } = await supabase
+        .from('chat_laboratory_conversations')
+        .update({ 
+          composed_prompt_id: id,
+          system_prompt_id: null 
+        })
+        .eq('id', conversationId);
+      
+      if (!error) {
+        setConversationComposedId(id);
+        setConversationPromptId(null);
+        console.log('✅ Auto-saved composed prompt:', id);
+      }
+    }
   };
 
   if (loading) {
@@ -270,43 +304,24 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
             placeholder="Contenuto del prompt..."
           />
 
-          <div className="flex gap-2">
-            <Button
-              onClick={saveGlobalPrompt}
-              disabled={saving || !selectedGlobalId}
-              variant="outline"
-              className="flex-1"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Salvataggio...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Salva Prompt
-                </>
-              )}
-            </Button>
-
-            {conversationId && (
-              <Button
-                onClick={assignPromptToConversation}
-                disabled={saving || !selectedGlobalId || conversationPromptId === selectedGlobalId}
-                className="flex-1"
-              >
-                {conversationPromptId === selectedGlobalId ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Assegnato
-                  </>
-                ) : (
-                  'Usa in questa chat'
-                )}
-              </Button>
+          <Button
+            onClick={saveGlobalPrompt}
+            disabled={saving || !selectedGlobalId}
+            variant="outline"
+            className="w-full"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Salvataggio...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Salva Prompt
+              </>
             )}
-          </div>
+          </Button>
         </TabsContent>
 
         <TabsContent value="ready" className="space-y-4 mt-4">
@@ -326,23 +341,6 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
               </SelectContent>
             </Select>
           </div>
-
-          {conversationId && (
-            <Button
-              onClick={assignComposedPromptToConversation}
-              disabled={saving || !selectedComposedId || conversationComposedId === selectedComposedId}
-              className="w-full"
-            >
-              {conversationComposedId === selectedComposedId ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Assegnato
-                </>
-              ) : (
-                'Usa in questa conversazione'
-              )}
-            </Button>
-          )}
 
           {selectedComposedId && (
             <>

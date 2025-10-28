@@ -53,7 +53,13 @@ const folderIcons: Record<string, any> = {
   'Archives': Archive,
 };
 
-const getFolderIcon = (folderName: string) => {
+const getFolderIcon = (folderName: string | undefined | null) => {
+  // ✅ Validación defensiva
+  if (!folderName || typeof folderName !== 'string') {
+    console.warn('⚠️ getFolderIcon called with invalid name:', folderName);
+    return Folder;
+  }
+  
   // Check exact match
   if (folderIcons[folderName]) return folderIcons[folderName];
   
@@ -112,7 +118,7 @@ export const EmailSidebar = ({
       // ✅ LECTURA: Usar /email_search para carpetas (rápido vía RPC)
       const result = await emailSearchApi.getFolders();
       console.log('📁 Folders from /email_search:', result);
-      console.log('📁 Folders array:', result?.data || result?.folders);
+      console.log('📁 Full result structure:', JSON.stringify(result, null, 2));
       return result;
     },
   });
@@ -151,64 +157,124 @@ export const EmailSidebar = ({
     }
   };
 
-  const folders = foldersData?.folders || [];
+  // ✅ Detectar automáticamente la estructura de la respuesta
+  const folders = (() => {
+    if (!foldersData) {
+      console.log('📁 No foldersData');
+      return [];
+    }
+    
+    // Opción 1: result.folders (actual)
+    if (Array.isArray(foldersData.folders)) {
+      console.log('📁 Using foldersData.folders:', foldersData.folders.length);
+      return foldersData.folders;
+    }
+    
+    // Opción 2: result.data.folders
+    if (foldersData.data && Array.isArray(foldersData.data.folders)) {
+      console.log('📁 Using foldersData.data.folders:', foldersData.data.folders.length);
+      return foldersData.data.folders;
+    }
+    
+    // Opción 3: result.data (array directo)
+    if (Array.isArray(foldersData.data)) {
+      console.log('📁 Using foldersData.data as array:', foldersData.data.length);
+      return foldersData.data;
+    }
+    
+    // Opción 4: result mismo es el array
+    if (Array.isArray(foldersData)) {
+      console.log('📁 Using foldersData as array:', foldersData.length);
+      return foldersData;
+    }
+    
+    console.warn('⚠️ Unknown folder structure:', Object.keys(foldersData));
+    return [];
+  })();
+
+  console.log('📁 Final folders array:', folders);
+  
+  // ✅ Filtrar carpetas inválidas primero
+  const validFolders = folders.filter((f: any) => {
+    if (!f || typeof f !== 'object') {
+      console.warn('⚠️ Invalid folder object:', f);
+      return false;
+    }
+    
+    // Soportar tanto f.name como f.folder_name
+    const folderName = f.name || f.folder_name || f.path;
+    
+    if (!folderName || typeof folderName !== 'string') {
+      console.warn('⚠️ Folder missing name:', f);
+      return false;
+    }
+    
+    return true;
+  });
+
+  console.log('📁 Valid folders:', validFolders.length, 'of', folders.length);
   
   // Separate system folders from custom folders
   const systemFolderNames = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk'];
-  const systemFolders = folders.filter((f: any) => 
-    systemFolderNames.includes(f.name)
-  );
-  const customFolders = folders.filter((f: any) => 
-    !systemFolderNames.includes(f.name)
-  );
+  const systemFolders = validFolders.filter((f: any) => {
+    const folderName = f.name || f.folder_name || f.path;
+    return systemFolderNames.includes(folderName);
+  });
+  const customFolders = validFolders.filter((f: any) => {
+    const folderName = f.name || f.folder_name || f.path;
+    return !systemFolderNames.includes(folderName);
+  });
 
   const renderFolder = (folder: any) => {
-    const Icon = getFolderIcon(folder.name);
+    // ✅ Normalizar nombre de carpeta
+    const folderName = folder.name || folder.folder_name || folder.path || 'Unknown';
+    
+    const Icon = getFolderIcon(folderName);
     // Support both API formats: unread_messages (OpenAPI spec) and unseen (current API)
     const unseenCount = folder.unread_messages || folder.unseen || 0;
     const totalMessages = folder.total_messages || folder.messages || 0;
-    const indent = folder.name.split('/').length - 1;
+    const indent = folderName.split('/').length - 1;
     
     return (
       <Button
-        key={folder.name}
-        variant={selectedFolder === folder.name ? 'secondary' : 'ghost'}
+        key={folder.id || folderName}
+        variant={selectedFolder === folderName ? 'secondary' : 'ghost'}
         className={cn(
           'relative w-full group transition-all duration-200 overflow-hidden',
           isCollapsed ? 'justify-center px-2' : 'justify-between',
-          selectedFolder === folder.name && 'bg-email-selected text-primary-foreground',
+          selectedFolder === folderName && 'bg-email-selected text-primary-foreground',
           'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left',
-          selectedFolder === folder.name 
+          selectedFolder === folderName 
             ? 'after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent'
             : 'after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent',
           'hover:bg-transparent',
           'hover:after:animate-line-bounce'
         )}
         style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
-        onClick={() => onFolderSelect(folder.name)}
-        title={isCollapsed ? `${folder.name} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
+        onClick={() => onFolderSelect(folderName)}
+        title={isCollapsed ? `${folderName} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
       >
         <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
           <Icon className={cn(
             "h-4 w-4 flex-shrink-0 transition-all duration-200",
             "group-hover:scale-105 group-hover:animate-wiggle",
-            selectedFolder === folder.name ? "text-purple-400 scale-110" : "scale-100",
+            selectedFolder === folderName ? "text-purple-400 scale-110" : "scale-100",
             isCollapsed ? "" : "mr-3"
           )} />
           {!isCollapsed && (
             <span className={cn(
               "truncate transition-transform duration-200",
               "group-hover:scale-110",
-              selectedFolder === folder.name ? "text-purple-300 font-semibold scale-110" : "scale-100"
+              selectedFolder === folderName ? "text-purple-300 font-semibold scale-110" : "scale-100"
             )}>
-              {folder.name}
+              {folderName}
             </span>
           )}
         </div>
         {!isCollapsed && unseenCount > 0 && (
           <Badge variant="secondary" className={cn(
             "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border",
-            selectedFolder === folder.name 
+            selectedFolder === folderName
               ? "text-purple-300 border-purple-300" 
               : "text-white border-white"
           )}>
@@ -313,6 +379,21 @@ export const EmailSidebar = ({
                     )}
                   </div>
                 </>
+              )}
+              
+              {folders.length === 0 && !isLoading && (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  <Folder className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No se pudieron cargar las carpetas</p>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    onClick={() => queryClient.invalidateQueries({ queryKey: ['folders'] })}
+                    className="mt-2"
+                  >
+                    Reintentar
+                  </Button>
+                </div>
               )}
             </>
           )}

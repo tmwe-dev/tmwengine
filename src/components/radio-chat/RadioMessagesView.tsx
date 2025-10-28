@@ -40,21 +40,29 @@ export function RadioMessagesView({
 
   // 🎯 Callback completo: quando audio finisce
   const onAudioEndComplete = () => {
-    console.log(`🎬 [RadioMessagesView] onAudioEndComplete chiamato`);
+    const timestamp = new Date().toISOString();
+    console.log(`🎬 [RadioMessagesView] onAudioEndComplete chiamato @ ${timestamp}`);
+    console.log(`   - activeTab prima del cambio: ${activeTab.substring(0, 8)}`);
     audioEnd(); // Setta isAudioPlaying = false
     
-    // Delay per assicurare sync
+    // ✅ Delay 200ms per garantire cleanup completo di AudioMessagePlayer
+    // (pause, removeEventListener, unmount)
     setTimeout(() => {
+      console.log(`⏱️ [RadioMessagesView] Delay completato, settando shouldSwitchTab @ ${new Date().toISOString()}`);
       setShouldSwitchTab(true);
-    }, 50);
+    }, 200);
   };
 
   // 🎯 Effetto: cambia tab DOPO che isAudioPlaying è aggiornato
   useEffect(() => {
     if (shouldSwitchTab && !isAudioPlaying) {
-      console.log(`🔄 [RadioMessagesView] Sincronizzazione completata, cambio messaggio attivo`);
+      const timestamp = new Date().toISOString();
+      console.log(`🔄 [RadioMessagesView] Sincronizzazione completata @ ${timestamp}`);
+      console.log(`   - isAudioPlaying: ${isAudioPlaying}`);
+      console.log(`   - Chiamando tabSwitchOnAudioEnd()`);
       tabSwitchOnAudioEnd();
       setShouldSwitchTab(false);
+      console.log(`✅ [RadioMessagesView] setActiveTab completato @ ${new Date().toISOString()}`);
     }
   }, [shouldSwitchTab, isAudioPlaying, tabSwitchOnAudioEnd]);
 

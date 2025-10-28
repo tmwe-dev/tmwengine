@@ -91,7 +91,8 @@ export const useTabSwitching = ({
 
   // 🎯 Quando audio finisce, passa al PRIMO messaggio NON VISTO
   const handleAudioEnd = useCallback(() => {
-    console.log(`🎵 [handleAudioEnd] CHIAMATO`);
+    const timestamp = new Date().toISOString();
+    console.log(`🎵 [handleAudioEnd] CHIAMATO @ ${timestamp}`);
     console.log(`   - unseenMessagesQueue:`, unseenMessagesQueue);
     console.log(`   - unseenMessagesQueue.length:`, unseenMessagesQueue.length);
     console.log(`   - activeTab:`, activeTab);
@@ -103,10 +104,12 @@ export const useTabSwitching = ({
       const nextMessage = messages.find((m) => m.id === nextMessageId);
 
       if (nextMessage) {
-        console.log(`✅ Prossimo messaggio dalla coda: ${nextMessage.sender_name}`);
+        console.log(`✅ [handleAudioEnd] Prossimo dalla coda: ${nextMessage.sender_name} (${nextMessageId.substring(0, 8)})`);
+        console.log(`   - Cambio activeTab @ ${new Date().toISOString()}`);
         setActiveTab(nextMessageId);
         seenMessagesRef.current.add(nextMessageId);
         setUnseenMessagesQueue((prev) => prev.slice(1)); // Rimuovi dalla coda
+        console.log(`   - activeTab CAMBIATO @ ${new Date().toISOString()}`);
       }
     } else {
       // Nessun messaggio in coda: passa al successivo nell'ordine
@@ -114,11 +117,13 @@ export const useTabSwitching = ({
       const nextMessage = messages[currentIndex + 1];
 
       if (nextMessage) {
-        console.log(`✅ Prossimo messaggio sequenziale: ${nextMessage.sender_name}`);
+        console.log(`✅ [handleAudioEnd] Prossimo sequenziale: ${nextMessage.sender_name} (${nextMessage.id.substring(0, 8)})`);
+        console.log(`   - Cambio activeTab @ ${new Date().toISOString()}`);
         setActiveTab(nextMessage.id);
         seenMessagesRef.current.add(nextMessage.id);
+        console.log(`   - activeTab CAMBIATO @ ${new Date().toISOString()}`);
       } else {
-        console.log(`⏹️ Nessun altro messaggio da mostrare`);
+        console.log(`⏹️ [handleAudioEnd] Nessun altro messaggio da mostrare`);
       }
     }
   }, [unseenMessagesQueue, messages, activeTab]);

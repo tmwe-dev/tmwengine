@@ -60,7 +60,7 @@ export const RadioCarouselAudioPlayerWrapper = ({
   // Visualizzazione ESTESA
   return (
     <div className={cn(
-      "fixed top-8 left-[27.5%] z-50 max-h-[100px] max-w-2xl w-[45%] border-2 border-purple-400/40 bg-black/95 backdrop-blur-lg rounded-xl shadow-[0_0_40px_rgba(168,85,247,0.3)] relative overflow-hidden",
+      "fixed bottom-8 left-[27.5%] z-50 max-h-[100px] max-w-2xl w-[45%] border-2 border-purple-400/40 bg-black/95 backdrop-blur-lg rounded-xl shadow-[0_0_40px_rgba(168,85,247,0.3)] relative overflow-hidden",
       className
     )}>
       {/* Bottone minimize */}

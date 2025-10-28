@@ -94,15 +94,15 @@ export const RadioAudioPlayerMini = ({
       <button
         onClick={togglePlay}
         disabled={!isAudioEnabled}
-        className="w-10 h-10 rounded-full bg-purple-500/20 hover:bg-purple-500/30 
+        className="w-8 h-8 rounded-full bg-purple-500/20 hover:bg-purple-500/30 
                    flex items-center justify-center transition-all 
                    border border-purple-400/30 disabled:opacity-50"
         aria-label={isPlaying ? 'Pause' : 'Play'}
       >
         {isPlaying ? (
-          <Pause className="w-5 h-5 text-purple-300" fill="currentColor" />
+          <Pause className="w-4 h-4 text-purple-300" fill="currentColor" />
         ) : (
-          <Play className="w-5 h-5 text-purple-300" fill="currentColor" />
+          <Play className="w-4 h-4 text-purple-300" fill="currentColor" />
         )}
       </button>
 

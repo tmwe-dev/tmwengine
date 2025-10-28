@@ -121,6 +121,26 @@ export const RadioAudioPlayer = ({
     isAudioEnabledRef.current = isAudioEnabled;
   }, [onPlayStart, onPlayEnd, onPlayingChange, onTimeUpdate, autoPlay, canAutoPlay, isAudioEnabled]);
 
+  // ✅ NUOVO: Monitora canAutoPlay per avviare audio quando il messaggio diventa attivo
+  useEffect(() => {
+    if (!audioRef.current || !canAutoPlay || !isAudioEnabled) return;
+    
+    // Se canAutoPlay diventa true E l'audio non è già in riproduzione
+    if (canAutoPlay && audioRef.current.paused && !hasStartedRef.current) {
+      console.log(`🎬 [RadioAudioPlayer] canAutoPlay trigger: ${messageId.substring(0,8)}`);
+      
+      audioRef.current.play()
+        .then(() => {
+          console.log(`▶️ [RadioAudioPlayer] Autoplay START (triggered by canAutoPlay): ${messageId.substring(0,8)}`);
+          setIsPlaying(true);
+          onPlayingChangeRef.current?.(true);
+          onPlayStartRef.current?.(messageId);
+          hasStartedRef.current = true;
+        })
+        .catch(err => console.warn('⚠️ Autoplay bloccato:', err));
+    }
+  }, [canAutoPlay, isAudioEnabled, messageId]);
+
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = isMuted ? 0 : volume;

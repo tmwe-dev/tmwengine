@@ -1198,7 +1198,6 @@ const RadioChatContent = () => {
               {/* Carousel 3D */}
               <div className="absolute inset-0 z-10">
                 <RadioCarousel3D 
-                  key={currentConversationId || 'no-conversation'}
                   messages={messages}
                   activeMessageId={activeMessageId}
                   zoom={carouselZoom}

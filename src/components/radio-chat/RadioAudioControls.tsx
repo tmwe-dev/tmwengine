@@ -111,7 +111,7 @@ export const RadioAudioControls = ({
       }
 
       const { error: orchError } = await supabase.functions.invoke(
-        'chat-laboratory-orchestrator',
+        'radio-chat-orchestrator',
         {
           body: {
             conversationId,
@@ -151,9 +151,17 @@ export const RadioAudioControls = ({
 
   return (
     <div className="fixed bottom-24 left-4 z-50 
-                    bg-background/80 backdrop-blur-xl 
-                    border border-border/50 rounded-xl 
-                    shadow-2xl p-4 min-w-[320px] max-w-[400px]">
+                    bg-black/95 backdrop-blur-lg 
+                    border-2 border-purple-400/40 
+                    rounded-xl shadow-[0_0_30px_rgba(168,85,247,0.25)]
+                    p-4 min-w-[320px] max-w-[400px]
+                    relative overflow-hidden">
+      
+      {/* Gradient overlay simile alle card */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-cyan-500/10 pointer-events-none" />
+      
+      {/* Contenuto con z-index relativo */}
+      <div className="relative z-10">
       
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -258,6 +266,8 @@ export const RadioAudioControls = ({
           />
         )}
       </div>
+      
+      </div> {/* Chiusura contenuto z-10 */}
     </div>
   );
 };

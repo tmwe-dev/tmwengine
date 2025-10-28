@@ -77,7 +77,7 @@ const RadioChat = () => {
   });
   
   const [debugPopupOpen, setDebugPopupOpen] = useState(false);
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'conversations' | 'settings'>('conversations'); // ✅ Tab selector
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'conversations' | 'settings'>('settings'); // ✅ Tab selector - opens on Settings by default
   const [showAudioControls, setShowAudioControls] = useState(false); // 🎤 Audio controls popup
   
   const { toast } = useToast();

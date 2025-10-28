@@ -153,7 +153,6 @@ export const RadioAudioControls = ({
 
   return (
     <div className={cn(
-      "fixed bottom-8 z-[60]",
       "w-[45%] max-w-2xl",
       "bg-black/95 backdrop-blur-lg",
       "border-2 border-purple-400/40",
@@ -161,10 +160,7 @@ export const RadioAudioControls = ({
       "h-[56px] px-3 py-2",
       "flex items-center gap-2",
       "relative overflow-hidden",
-      "transition-all duration-300",
-      isPlayerExpanded 
-        ? "left-[calc(27.5%+45%+0.5rem)]"
-        : "left-[calc(27.5%+96px+0.5rem)]"
+      "transition-all duration-300"
     )}>
       
       {/* Gradient overlay solo lilla */}

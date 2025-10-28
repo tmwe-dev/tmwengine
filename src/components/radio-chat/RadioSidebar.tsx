@@ -7,6 +7,7 @@ import { RadioStrategySelector } from './RadioStrategySelector';
 import { RadioParticipantSelector } from './RadioParticipantSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 
 interface RadioParticipant {
   id: string;
@@ -25,6 +26,8 @@ interface RadioSidebarProps {
   onAutoAdvanceChange?: (enabled: boolean) => void;
   participants: RadioParticipant[];
   onToggleParticipant: (id: string) => void;
+  carouselZoom?: number;
+  onCarouselZoomChange?: (zoom: number) => void;
 }
 
 export function RadioSidebar({ 
@@ -36,7 +39,9 @@ export function RadioSidebar({
   isAutoAdvanceEnabled = true,
   onAutoAdvanceChange,
   participants,
-  onToggleParticipant
+  onToggleParticipant,
+  carouselZoom = 1.0,
+  onCarouselZoomChange
 }: RadioSidebarProps) {
   return (
     <>
@@ -104,6 +109,30 @@ export function RadioSidebar({
                     Messages
                   </Button>
                 </div>
+
+                {/* Carousel Zoom Control */}
+                {viewMode === 'carousel' && (
+                  <div className="p-4 border-b">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium">Carousel Zoom</label>
+                      <span className="text-xs text-muted-foreground">
+                        {Math.round(carouselZoom * 100)}%
+                      </span>
+                    </div>
+                    <Slider
+                      value={[carouselZoom]}
+                      onValueChange={([val]) => onCarouselZoomChange?.(val)}
+                      min={0.7}
+                      max={1.3}
+                      step={0.05}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                      <span>70%</span>
+                      <span>130%</span>
+                    </div>
+                  </div>
+                )}
 
                 <RadioVoiceSelector 
                   conversationId={conversationId}

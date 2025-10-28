@@ -58,6 +58,13 @@ const RadioChat = () => {
     const saved = localStorage.getItem('radio-auto-advance');
     return saved ? JSON.parse(saved) : true;
   });
+  
+  // Persist carousel zoom in localStorage
+  const [carouselZoom, setCarouselZoom] = useState(() => {
+    const saved = localStorage.getItem('radio-carousel-zoom');
+    return saved ? parseFloat(saved) : 1.0; // Default 100%
+  });
+  
   const [debugPopupOpen, setDebugPopupOpen] = useState(false);
   
   const { toast } = useToast();
@@ -243,6 +250,15 @@ const RadioChat = () => {
   useEffect(() => {
     localStorage.setItem('radio-view-mode', viewMode);
   }, [viewMode]);
+  
+  // Persist carousel zoom changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('radio-carousel-zoom', carouselZoom.toString());
+  }, [carouselZoom]);
+  
+  const handleZoomChange = (zoom: number) => {
+    setCarouselZoom(zoom);
+  };
   
   // Calculate AI messages
   const aiMessages = messages.filter(m => m.sender_type !== 'human');
@@ -643,6 +659,8 @@ const RadioChat = () => {
           onAutoAdvanceChange={setIsAutoAdvanceEnabled}
           participants={participants}
           onToggleParticipant={handleToggleParticipant}
+          carouselZoom={carouselZoom}
+          onCarouselZoomChange={handleZoomChange}
         />
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger
@@ -709,6 +727,7 @@ const RadioChat = () => {
                 <RadioCarousel3D 
                   messages={messages}
                   activeMessageId={activeMessageId}
+                  zoom={carouselZoom}
                 />
               </div>
 

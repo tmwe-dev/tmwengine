@@ -6,6 +6,7 @@ import { RadioMessage } from '@/types/radio';
 interface RadioCarousel3DProps {
   messages: RadioMessage[];
   activeMessageId: string;
+  zoom?: number;
 }
 
 const createTextTexture = (message: RadioMessage, renderer?: THREE.WebGLRenderer): THREE.CanvasTexture => {
@@ -168,7 +169,8 @@ const createEmptyTexture = (): THREE.CanvasTexture => {
 
 export const RadioCarousel3D = ({
   messages, 
-  activeMessageId
+  activeMessageId,
+  zoom = 1.0
 }: RadioCarousel3DProps) => {
   const MAX_SLOTS = 8; // Numero massimo di pagine nel carosello
   
@@ -193,8 +195,8 @@ export const RadioCarousel3D = ({
           0.1,
           1000
         );
-    camera.position.set(0, 0.35, 13.5); // Camera leggermente sopra il centro per bilanciare visibilità
-    camera.lookAt(0, 0.82, 0); // Guarda esattamente al centro delle card (elimina spazio sopra)
+    camera.position.set(0, 0.35 * zoom, 13.5 * zoom); // Camera leggermente sopra il centro per bilanciare visibilità
+    camera.lookAt(0, 0.82 * zoom, 0); // Guarda esattamente al centro delle card (elimina spazio sopra)
 
     const renderer = new THREE.WebGLRenderer({ 
       alpha: true, 
@@ -305,15 +307,15 @@ export const RadioCarousel3D = ({
         return;
       }
 
-      console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili`);
+      console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili (zoom: ${zoom})`);
       
       const group = groupRef.current;
-      const radius = 7.8; // Radius leggermente ridotto per card più contenute
+      const radius = 7.8 * zoom; // Radius leggermente ridotto per card più contenute
       const angleStep = (Math.PI * 2) / MAX_SLOTS;
       
       for (let i = 0; i < MAX_SLOTS; i++) {
         const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
-        const geometry = new THREE.PlaneGeometry(4.83 * scaleFactor, 7.04 * scaleFactor); // Aumentato del 5% per dimensioni ottimali (~72% viewport)
+        const geometry = new THREE.PlaneGeometry(4.83 * scaleFactor * zoom, 7.04 * scaleFactor * zoom); // Aumentato del 5% per dimensioni ottimali (~72% viewport)
         const material = new THREE.MeshBasicMaterial({
           side: THREE.DoubleSide, 
           transparent: true,
@@ -325,7 +327,7 @@ export const RadioCarousel3D = ({
         const angle = -(i * angleStep) + Math.PI;
         mesh.position.set(
           Math.cos(angle) * radius, 
-          0.82, // Inclinazione ridotta a ~6° (da 10.87°)
+          0.82 * zoom, // Inclinazione ridotta a ~6° (da 10.87°)
           Math.sin(angle) * radius
         );
         mesh.lookAt(new THREE.Vector3(0, 0, 0));
@@ -415,7 +417,6 @@ export const RadioCarousel3D = ({
     if (activeIndex === -1) return;
 
     const targetAngle = -(activeIndex / MAX_SLOTS) * Math.PI * 2 + Math.PI / 2;
-    const radius = 7.8;
     gsap.to(groupRef.current.rotation, {
       y: targetAngle,
       duration: 1.2,

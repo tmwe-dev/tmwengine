@@ -335,11 +335,11 @@ const RadioChatContent = () => {
       setCurrentConversationId(newConv.id);
       
       // 3️⃣ Pulisce messaggi e UI (come ChatLaboratory)
-      setMessages([]);
+      setActiveMessageId(''); // ← PRIMA resetta il messaggio attivo
+      setMessages([]); // ← POI svuota i messaggi
       setInputValue('');
       setInputVisible(false);
       setMessageViewVisible(false);
-      setActiveMessageId('');
       
       // 4️⃣ Carica dati (come ChatLaboratory)
       loadCachedPrompts(newConv.id);

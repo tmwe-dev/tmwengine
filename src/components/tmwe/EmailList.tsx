@@ -174,7 +174,18 @@ export const EmailList = ({
       }
     };
   }, [handleObserver, emails.length]);
-  if (loading && !isDownloading) {
+
+  console.log('📧 EmailList render:', {
+    loading,
+    isDownloading,
+    emailsLength: emails?.length,
+    filteredEmailsLength: filteredEmails?.length,
+    showingLoading: loading && !isDownloading && (!emails || emails.length === 0),
+    showingEmptyState: !emails || emails.length === 0
+  });
+
+  // ✅ Solo mostrar loading si NO hay emails para mostrar
+  if (loading && !isDownloading && (!emails || emails.length === 0)) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="animate-spin rounded-full border-4 border-primary border-t-transparent" />

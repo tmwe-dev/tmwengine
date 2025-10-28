@@ -42,7 +42,11 @@ const fetchApi = async (endpoint: string, data: any) => {
     console.log('✅ Email Search API Response:', { 
       handler: data.handler,
       success: responseData?.success,
-      dataKeys: responseData?.data ? Object.keys(responseData.data) : 'no data object',
+      hasEmails: !!responseData?.emails,
+      hasMessages: !!responseData?.messages,
+      hasData: !!responseData?.data,
+      emailsCount: responseData?.emails?.length || 0,
+      allKeys: responseData ? Object.keys(responseData) : 'no response',
       duration: `${duration.toFixed(2)}ms`
     });
     

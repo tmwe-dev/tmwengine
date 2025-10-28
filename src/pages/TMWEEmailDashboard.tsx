@@ -365,9 +365,26 @@ const EmailDashboard = () => {
     },
   });
 
+  console.log('🔍 messagesData structure:', {
+    hasPages: !!messagesData?.pages,
+    pagesCount: messagesData?.pages?.length,
+    messagesLoading,
+    messagesError: !!messagesError
+  });
+
   const emailsFromPages = (messagesData?.pages || []).flatMap(page => {
-    console.log('📦 API Response Structure:', page);
-    const messages = page?.messages || page?.data || [];
+    console.log('📦 API Response Structure:', {
+      pageKeys: page ? Object.keys(page) : 'null',
+      hasEmails: !!page?.emails,
+      hasMessages: !!page?.messages,
+      hasData: !!page?.data,
+      emailsLength: page?.emails?.length,
+      messagesLength: page?.messages?.length,
+      dataLength: page?.data?.length
+    });
+    
+    // ✅ CORRECCIÓN: Priorizar page.emails (estructura correcta del API)
+    const messages = page?.emails || page?.messages || page?.data || [];
     
     if (!Array.isArray(messages)) {
       console.warn('⚠️ Messages is not an array:', messages);
@@ -421,6 +438,15 @@ const EmailDashboard = () => {
   const emails = selectedSender 
     ? emailsToUse.filter(email => email.from === selectedSender)
     : emailsToUse;
+
+  console.log('📬 Emails ready for render:', {
+    emailsFromPagesCount: emailsFromPages.length,
+    emailsToUseCount: emailsToUse.length,
+    filteredEmailsCount: emails.length,
+    messagesLoading,
+    hasPages: !!messagesData?.pages,
+    selectedSender
+  });
 
   const handleSync = () => {
     console.log('🚀 Starting REAL email download from API...');
@@ -672,7 +698,7 @@ const EmailDashboard = () => {
             emails={emails}
             selectedEmailId={selectedEmailId}
             onEmailSelect={handleEmailSelect}
-            loading={messagesLoading}
+            loading={messagesLoading && emails.length === 0}
             onLoadMore={fetchNextPage}
             hasMore={hasNextPage}
             isLoadingMore={isFetchingNextPage}

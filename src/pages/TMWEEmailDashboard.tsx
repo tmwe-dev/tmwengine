@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { emailMessageApi, emailSyncApi, emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api'; // ✅ NEW: Email Search RPC
 import { EmailHeader } from '@/components/tmwe/EmailHeader';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
@@ -195,7 +196,7 @@ const EmailDashboard = () => {
   const dbEmailCount = syncStatus?.dbTotal || 0;
   const missingEmailCount = syncStatus?.missing || 0;
 
-  // Query per le email - USA SEMPRE L'API TMWE (non Supabase)
+  // Query per le email - USA EMAIL SEARCH RPC per performance (~10x più veloce)
   const { 
     data: messagesData,
     isLoading: messagesLoading,
@@ -204,18 +205,40 @@ const EmailDashboard = () => {
     isFetchingNextPage,
   } = useInfiniteQuery({
     queryKey: ['messages', selectedFolder, searchQuery],
-    queryFn: async ({ pageParam = 0 }) => {
-      // USA SEMPRE L'API TMWE (Supabase solo per backup)
-      return searchQuery 
-        ? emailMessageApi.searchMessages({ query: searchQuery, folder: selectedFolder })
-        : emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, offset: pageParam });  // ✅ Usa offset
+    queryFn: async ({ pageParam = 1 }) => {
+      // ✅ PERFORMANCE BOOST: Usa /email_search RPC (RabbitMQ + Elasticsearch)
+      if (searchQuery) {
+        // Full-text search con Elasticsearch
+        return emailSearchApi.searchEmails({ 
+          query: searchQuery, 
+          search_folder: selectedFolder,
+          page: pageParam,
+          limit: 30
+        });
+      } else {
+        // Usa get_emails_metadata (solo metadata, ~10x più veloce)
+        return emailSearchApi.getEmailsMetadata({ 
+          folder: selectedFolder, 
+          page: pageParam,
+          limit: 30
+        });
+      }
     },
     getNextPageParam: (lastPage, allPages) => {
-      const messages = lastPage?.messages || [];
-      if (messages.length === 0 || messages.length < 30) return undefined;
-      return allPages.length * 30;
+      const pagination = lastPage?.pagination;
+      if (!pagination) {
+        // Fallback to old behavior
+        const messages = lastPage?.messages || [];
+        if (messages.length === 0 || messages.length < 30) return undefined;
+        return allPages.length + 1;
+      }
+      
+      const currentPage = pagination.page || allPages.length;
+      const totalPages = pagination.pages || Math.ceil((pagination.total || 0) / (pagination.limit || 30));
+      
+      return currentPage < totalPages ? currentPage + 1 : undefined;
     },
-    initialPageParam: 0,
+    initialPageParam: 1,
   });
 
 
@@ -254,12 +277,31 @@ const EmailDashboard = () => {
     // Access header data correctly from the TMWE API response structure
     const header = msg.header || msg;
 
+    // ✅ UPDATED: Handle EmailAddress type conversion for backward compatibility
+    const convertToString = (addr: any): string => {
+      if (typeof addr === 'string') return addr;
+      if (addr && typeof addr === 'object') {
+        return addr.email || addr.name || 'Unknown';
+      }
+      return 'Unknown';
+    };
+
+    const convertToArray = (addrs: any): string[] => {
+      if (Array.isArray(addrs)) {
+        return addrs.map(convertToString);
+      }
+      if (addrs) {
+        return [convertToString(addrs)];
+      }
+      return [];
+    };
+
     return {
       id: String(header.uid || msg.uid || msg.id || selectedEmailId),
       subject: header.subject || '(No Subject)',
-      from: header.from || 'Unknown',
-      to: header.to ? (Array.isArray(header.to) ? header.to : [header.to]) : [],
-      cc: header.cc ? (Array.isArray(header.cc) ? header.cc : [header.cc]) : [],
+      from: convertToString(header.from),
+      to: convertToArray(header.to),
+      cc: convertToArray(header.cc),
       date: header.date || new Date().toISOString(),
       body: msg.body_html || msg.body_plain || msg.body_text || msg.body || '<p>No content available</p>',
       attachments: msg.attachments || [],
@@ -286,10 +328,15 @@ const EmailDashboard = () => {
     }
     
     return messages.map((msg: any) => {
+      // ✅ UPDATED: Handle EmailAddress type from API
+      const fromAddress = typeof msg.from === 'object' 
+        ? msg.from.email || msg.from.name || 'Unknown'
+        : msg.from || 'Unknown';
+
       return {
         id: String(msg.uid || msg.id),
         subject: msg.subject || '(No Subject)',
-        from: typeof msg.from === 'object' ? msg.from.email : msg.from,
+        from: fromAddress,
         preview: '',
         date: msg.date,
         read: msg.is_read === true || msg.seen === 1,
@@ -322,12 +369,25 @@ const EmailDashboard = () => {
 
   const handleDelete = () => {
     if (selectedEmailId) {
-      deleteMutation.mutate([selectedEmailId]);
+      // ✅ UPDATED: Use moveToTrash instead of permanent delete (according to API spec)
+      emailMessageApi.moveToTrash(selectedEmailId)
+        .then(() => {
+          toast.success('Email moved to trash');
+          setSelectedEmailId(null);
+          queryClient.invalidateQueries({ queryKey: ['messages'] });
+        })
+        .catch(() => toast.error('Failed to move email to trash'));
     }
   };
 
   const handleBulkDelete = (emailIds: string[]) => {
-    deleteMutation.mutate(emailIds);
+    // ✅ UPDATED: Use moveMessagesToTrash instead of permanent delete
+    emailMessageApi.moveMessagesToTrash(emailIds)
+      .then(() => {
+        toast.success(`${emailIds.length} emails moved to trash`);
+        queryClient.invalidateQueries({ queryKey: ['messages'] });
+      })
+      .catch(() => toast.error('Failed to move emails to trash'));
   };
 
   const handleBulkArchive = (emailIds: string[]) => {

@@ -446,22 +446,32 @@ export const emailSyncApi = {
 import { chunkArray } from './utils/array-utils';
 
 export const emailMessageApi = {
-  // ✅ STEP 2: Ottimizzato - usa offset + format:html di default
+  // ✅ UPDATED: Complete parameters according to API spec
   getMessages: (params: {
     folder?: string;
-    offset?: number;  // ✅ Preferisci offset invece di page (più veloce)
-    limit?: number;   // ✅ Default 50 (ottimale secondo benchmark)
-    format?: 'text' | 'html' | 'both';  // ✅ Default 'html' (evita 'both' che è lento)
-    sort?: string;
+    page?: number;
+    offset?: number;
+    limit?: number;
+    sort?: 'date' | 'from' | 'subject' | 'size';
     order?: 'ASC' | 'DESC';
+    include_attachments?: boolean;  // ✅ NEW
+    format?: 'text' | 'html' | 'both';
+    filter?: {                      // ✅ NEW
+      unread_only?: boolean;
+      flagged_only?: boolean;
+      has_attachments?: boolean;
+    };
   }) => fetchApi('/email_message', { 
     handler: 'get_messages', 
     folder: params.folder || 'INBOX',
     offset: params.offset || 0,
     limit: params.limit || 50,
-    format: params.format || 'html',  // ✅ Evita 'both' per performance
+    format: params.format || 'html',
+    include_attachments: params.include_attachments || false,  // ✅ NEW
+    ...(params.page && { page: params.page }),
     ...(params.sort && { sort: params.sort }),
-    ...(params.order && { order: params.order })
+    ...(params.order && { order: params.order }),
+    ...(params.filter && { filter: params.filter })  // ✅ NEW
   }),
 
   getMessage: (uid: string, markAsRead: boolean = true) => {
@@ -470,7 +480,7 @@ export const emailMessageApi = {
     return fetchApi('/email_message', { handler: 'get_message', uid: uidInt, mark_as_read: markAsRead });
   },
   
-  // ✅ OTTIMIZZAZIONE 4: Batch intelligente per mark as read
+  // ✅ OTTIMIZZAZIONE 4: Batch intelligente per mark as read (mantiene backward compatibility)
   markAsRead: async (messageIds: string[]) => {
     // Mantieni UIDs come stringhe (secondo documentazione TMWE API)
     const uids = messageIds;
@@ -494,6 +504,71 @@ export const emailMessageApi = {
       handler: 'mark_messages',
       uids: uids,
       action: 'read'
+    });
+  },
+
+  // ✅ NEW: Generalized mark_messages with all actions according to API spec
+  markMessages: async (
+    messageIds: string[], 
+    action: 'read' | 'unread' | 'flagged' | 'unflagged'
+  ) => {
+    const uids = messageIds;
+    
+    if (uids.length > 50) {
+      const batches = chunkArray(uids, 50);
+      const results = await Promise.all(
+        batches.map(batch => 
+          fetchApi('/email_message', {
+            handler: 'mark_messages',
+            uids: batch,
+            action
+          })
+        )
+      );
+      return results.flat();
+    }
+    
+    return fetchApi('/email_message', {
+      handler: 'mark_messages',
+      uids: uids,
+      action
+    });
+  },
+
+  // ✅ NEW: Move single message to trash (according to API spec)
+  moveToTrash: (uid: string) => {
+    const uidInt = parseInt(uid, 10);
+    if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
+    return fetchApi('/email_message', { 
+      handler: 'move_to_trash', 
+      uid: uidInt 
+    });
+  },
+
+  // ✅ NEW: Batch move messages to trash (according to API spec)
+  moveMessagesToTrash: async (uids: string[]) => {
+    const uidInts = uids.map(uid => {
+      const uidInt = parseInt(uid, 10);
+      if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
+      return uidInt;
+    });
+    
+    if (uidInts.length > 50) {
+      const batches = chunkArray(uidInts, 50);
+      const results = await Promise.all(
+        batches.map(batch => 
+          fetchApi('/email_message', {
+            handler: 'move_messages_to_trash',
+            uids: batch
+          })
+        )
+      );
+      return results.flat();
+    }
+    
+    return fetchApi('/email_message', {
+      handler: 'move_messages_to_trash',
+      uids: uidInts
     });
   },
 

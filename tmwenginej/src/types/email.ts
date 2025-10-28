@@ -1,3 +1,9 @@
+// EmailAddress type according to TMWE API spec
+export interface EmailAddress {
+  name: string;
+  email: string;
+}
+
 export interface EmailAccount {
   id: string;
   account_name: string;
@@ -18,13 +24,14 @@ export interface EmailFolder {
   total_count?: number;
 }
 
+// Updated to use EmailAddress objects according to API spec
 export interface EmailMessage {
   id: string;
   subject: string;
-  from: string;
-  to: string[];
-  cc?: string[];
-  bcc?: string[];
+  from: EmailAddress;  // ✅ UPDATED: was string
+  to: EmailAddress[];  // ✅ UPDATED: was string[]
+  cc?: EmailAddress[]; // ✅ UPDATED: was string[]
+  bcc?: EmailAddress[];
   date: string;
   preview?: string;
   body?: string;
@@ -42,6 +49,14 @@ export interface EmailAttachment {
   size: string;
   content_type: string;
   content_id?: string;
+}
+
+// Pagination type according to TMWE API spec
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
 }
 
 export interface SyncStatus {

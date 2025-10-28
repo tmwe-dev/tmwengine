@@ -161,10 +161,10 @@ export const RadioAudioControls = ({
       "flex items-center gap-2",
       "relative overflow-hidden",
       "transition-all duration-300",
-      // Posizionamento condizionale
+      // Posizionamento condizionale - sempre affiancato a destra del player
       isPlayerExpanded 
-        ? "bottom-[96px] left-[27.5%] w-[45%]" // Sotto il player espanso
-        : "bottom-8 left-[calc(50%+22.5%+0.5rem)]" // Affiancato al mini player
+        ? "bottom-8 left-[calc(27.5%+45%+0.5rem)]" // Affiancato al player expanded
+        : "bottom-8 left-[calc(27.5%+96px+0.5rem)]" // Affiancato al player mini
     )}>
       
       {/* Gradient overlay solo lilla */}

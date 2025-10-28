@@ -175,10 +175,10 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
     throw new Error('Nessuna chiave API configurata');
   }
 
-  // Fetch Radio Chat settings (or create if not exists)
+  // ⚡ LIVELLO 1: Fetch solo campi necessari per Radio Chat (5 campi invece di 10)
   let { data: barModeSettings, error: settingsError } = await supabaseClient
     .from('chat_laboratory_bar_mode')
-    .select('mode, selected_topic, active_kb_id, voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms, turn_strategy, cognitive_buffers')
+    .select('voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms')
     .eq('conversation_id', conversationId)
     .maybeSingle();
 
@@ -194,35 +194,26 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
         agent_interaction_mode: 'consultation',
         conversation_style: 'colleagues',
         conversation_pace: 'normal',
-        pause_between_turns_ms: 800,
-        turn_strategy: 'SMART_PRIORITY',
-        cognitive_buffers: []
+        pause_between_turns_ms: 800
       })
-      .select()
+      .select('voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms')
       .single();
 
     if (createError) {
       console.warn('⚠️ Impossibile creare configurazione, uso defaults:', createError);
-      // Fallback ai defaults
+      // Fallback ai defaults (solo campi necessari)
       barModeSettings = {
-        mode: 'radio',
-        selected_topic: null,
-        active_kb_id: null,
         voice_enabled: true,
         conversation_pace: 'normal',
         agent_interaction_mode: 'consultation',
         conversation_style: 'colleagues',
-        pause_between_turns_ms: 800,
-        turn_strategy: 'SMART_PRIORITY',
-        cognitive_buffers: []
+        pause_between_turns_ms: 800
       };
     } else {
       barModeSettings = newSettings;
     }
   }
 
-  const selectedTopic = barModeSettings.selected_topic;
-  const activeKbId = barModeSettings.active_kb_id;
   const voiceEnabled = barModeSettings.voice_enabled ?? true;
   const agentMode = barModeSettings.agent_interaction_mode || 'consultation';
   const conversationStyle = barModeSettings.conversation_style || 'colleagues';
@@ -276,8 +267,6 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
     openaiConfig,
     LOVABLE_API_KEY,
     barModeSettings: {
-      selectedTopic,
-      activeKbId,
       voiceEnabled,
       agentMode,
       conversationStyle,

@@ -12,7 +12,7 @@ export interface PromptParams {
   previousResponses: any[];
   wasCalledDirectly: boolean;
   lastResponse?: any;
-  styleSections?: Map<string, string>;
+  styleSections?: Map<string, string> | Record<string, string>;
   dynamicWordLimit?: string;
   conversationPersonality?: string | null; // ✅ NUOVO: Personalità assegnata alla conversazione
 }
@@ -60,11 +60,19 @@ export function buildSystemPrompt(params: PromptParams): string {
   // Style injection from DB (con fallback a hardcoded per retrocompatibilità)
   let styleInstructions = '';
   
-  if (styleSections && styleSections.has(conversationStyle)) {
-    // Usa stile dal database
-    styleInstructions = styleSections.get(conversationStyle) || '';
-    console.log(`✅ Usando stile DB: ${conversationStyle}`);
-  } else {
+  if (styleSections) {
+    // ⚡ LIVELLO 2: Support both Map and plain object (for client-sent prompts)
+    const styleValue = styleSections instanceof Map 
+      ? styleSections.get(conversationStyle)
+      : styleSections[conversationStyle];
+    
+    if (styleValue) {
+      styleInstructions = styleValue;
+      console.log(`✅ Usando stile DB: ${conversationStyle}`);
+    }
+  }
+  
+  if (!styleInstructions) {
     // Fallback a hardcoded (per retrocompatibilità durante migrazione)
     console.warn(`⚠️ Stile '${conversationStyle}' non trovato in DB, uso fallback hardcoded`);
     

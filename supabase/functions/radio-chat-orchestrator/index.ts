@@ -25,8 +25,8 @@ serve(async (req) => {
   }
 
   try {
-    const { conversationId, userMessage, participants } = await req.json();
-    console.log('📻 Radio Chat Orchestrator riceve:', { conversationId, userMessage, participants });
+    const { conversationId, userMessage, participants, cachedPrompts } = await req.json();
+    console.log('📻 Radio Chat Orchestrator riceve:', { conversationId, userMessage, participants, hasPrompts: !!cachedPrompts });
 
     // ============ VALIDATION: Check participants ============
     if (!participants || participants.length === 0) {
@@ -61,8 +61,22 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // ============ LOAD CONFIGURATIONS ============
-    const config = await loadBarModeConfig(supabaseClient, conversationId);
+    // ============ ⚡ LIVELLO 1: PARALLELIZZAZIONE LOAD CONFIGURATIONS ============
+    const loadTasks = [
+      loadBarModeConfig(supabaseClient, conversationId),
+      loadConversationData(supabaseClient, conversationId)
+    ];
+    
+    // ⚡ LIVELLO 2: Skip getCachedPrompts se prompt arrivano dal client
+    if (!cachedPrompts) {
+      loadTasks.push(getCachedPrompts(supabaseClient, conversationId));
+    }
+    
+    const results = await Promise.all(loadTasks);
+    const config = results[0];
+    const conversationData = results[1];
+    const dbCachedPrompts = results[2] || null;
+    
     const { 
       anthropicConfig, 
       openaiConfig, 
@@ -87,9 +101,6 @@ serve(async (req) => {
       pauseBetweenTurnsMs,
       voiceEnabled
     });
-
-    // ============ LOAD CONVERSATION DATA ============
-    const conversationData = await loadConversationData(supabaseClient, conversationId);
     
     // Check if paused
     if (conversationData.isPaused) {
@@ -108,6 +119,15 @@ serve(async (req) => {
       );
     }
 
+    // ⚡ LIVELLO 2: Usa prompt dal client se disponibili, altrimenti usa cached
+    const finalCachedPrompts = cachedPrompts || dbCachedPrompts;
+    
+    if (cachedPrompts) {
+      console.log('⚡ [LIVELLO 2] Usando prompt dal CLIENT (skip DB query)');
+    } else {
+      console.log('📦 [DB] Caricati prompt dal database');
+    }
+    
     const { recentMessages, cumulativeSummary } = conversationData;
     
     // FIX 5: DIAGNOSTICA SUMMARY
@@ -120,12 +140,10 @@ serve(async (req) => {
       summaryPreview: cumulativeSummary ? cumulativeSummary.substring(0, 100) + '...' : 'NULL'
     });
 
-    // ============ LOAD CACHED PROMPTS ============
-    // ✅ Fix 3B: Pass conversationId to load conversation-specific prompt
-    const cachedPrompts = await getCachedPrompts(supabaseClient, conversationId);
-    const globalSystemPrompt = cachedPrompts.globalPrompt;
-    const baseContent = cachedPrompts.baseSections;
-    console.log(`📦 Prompts cached caricati (BASE: ${baseContent.length} chars)`);
+    // ============ USE FINAL CACHED PROMPTS (client or DB) ============
+    const globalSystemPrompt = finalCachedPrompts.globalPrompt;
+    const baseContent = finalCachedPrompts.baseSections;
+    console.log(`📦 Prompts caricati (BASE: ${baseContent.length} chars)`);
 
     // ============ FORMAT HISTORY MESSAGES ============
     const historyMessages = formatHistoryMessages(recentMessages);
@@ -203,8 +221,10 @@ serve(async (req) => {
         console.log(`📝 Context include: messaggio utente + ${allResponses.length} risposte precedenti`);
 
         // ============ BUILD SYSTEM PROMPT ============
-        // Recupera la personalità dal cache usando il nome dell'agente
-        const agentPersonality = cachedPrompts.agentPersonalities.get(currentAgent.name.toLowerCase()) || '';
+        // ⚡ LIVELLO 2: Support both Map and plain object (for client-sent prompts)
+        const agentPersonality = finalCachedPrompts.agentPersonalities instanceof Map
+          ? finalCachedPrompts.agentPersonalities.get(currentAgent.name.toLowerCase()) || ''
+          : finalCachedPrompts.agentPersonalities[currentAgent.name.toLowerCase()] || '';
         
         const systemPrompt = buildSystemPrompt({
           globalPrompt: globalSystemPrompt,
@@ -214,8 +234,8 @@ serve(async (req) => {
           agentMode: agentMode,
           previousResponses: allResponses,
           wasCalledDirectly: isDirectCall,
-          styleSections: cachedPrompts.conversationStyles,
-          conversationPersonality: cachedPrompts.conversationPersonality
+          styleSections: finalCachedPrompts.conversationStyles,
+          conversationPersonality: finalCachedPrompts.conversationPersonality
         });
 
         // ============ BUILD CONVERSATION HISTORY ============

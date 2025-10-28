@@ -44,6 +44,9 @@ const RadioChat = () => {
   const [messages, setMessages] = useState<RadioMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   
+  // ⚡ LIVELLO 2: Cache prompts client-side
+  const [cachedPrompts, setCachedPrompts] = useState<any>(null);
+  
   // ✅ Fix 2: Persist viewMode in localStorage
   const [viewMode, setViewMode] = useState<'carousel' | 'messages'>(() => {
     const saved = localStorage.getItem('radio-view-mode');
@@ -234,12 +237,130 @@ const RadioChat = () => {
       console.log('✅ [RadioChat] Created new conversation:', newConv.id);
       setCurrentConversationId(newConv.id);
       setMessages([]); // ✅ Start empty
+      
+      // ⚡ LIVELLO 2: Carica prompt all'apertura conversazione
+      loadCachedPrompts(newConv.id);
     };
     
     if (currentUser) {
       createNewConversation();
     }
   }, [currentUser]);
+  
+  // ⚡ LIVELLO 2: Load prompts client-side (save 300-500ms per message)
+  const loadCachedPrompts = async (conversationId: string) => {
+    console.log('⚡ [LIVELLO 2] Caricamento prompt dal DB (una sola volta)...');
+    
+    try {
+      // Load conversation-specific prompt
+      const { data: conv } = await supabase
+        .from('chat_laboratory_conversations')
+        .select('composed_prompt_id, system_prompt_id, personality_section_id')
+        .eq('id', conversationId)
+        .single();
+      
+      let conversationPrompt: string | null = null;
+      let conversationPersonality: string | null = null;
+      
+      // Check for composed prompt
+      if (conv?.composed_prompt_id) {
+        const { data: composedPrompt } = await supabase
+          .from('chat_laboratory_composed_prompts')
+          .select('content')
+          .eq('id', conv.composed_prompt_id)
+          .single();
+        
+        if (composedPrompt?.content) {
+          conversationPrompt = composedPrompt.content;
+        }
+      }
+      // Otherwise check for system prompt
+      else if (conv?.system_prompt_id) {
+        const { data: specificPrompt } = await supabase
+          .from('chat_laboratory_system_prompts')
+          .select('contenuto')
+          .eq('id', conv.system_prompt_id)
+          .single();
+        
+        if (specificPrompt?.contenuto) {
+          conversationPrompt = specificPrompt.contenuto;
+        }
+      }
+      
+      // Load conversation-specific personality
+      if (conv?.personality_section_id) {
+        const { data: personalitySection } = await supabase
+          .from('chat_laboratory_prompt_sections')
+          .select('content')
+          .eq('id', conv.personality_section_id)
+          .single();
+        
+        if (personalitySection?.content) {
+          conversationPersonality = personalitySection.content;
+        }
+      }
+      
+      // Load global prompts
+      const [globalData, baseData, personalityData, styleData, orchestratorData] = await Promise.all([
+        supabase.from('chat_laboratory_system_prompts')
+          .select('contenuto')
+          .eq('attivo', true)
+          .limit(1)
+          .maybeSingle(),
+        
+        supabase.from('chat_laboratory_prompt_sections')
+          .select('content')
+          .eq('section_type', 'BASE')
+          .eq('is_active', true)
+          .order('order_priority', { ascending: true }),
+        
+        supabase.from('chat_laboratory_prompt_sections')
+          .select('section_name, content')
+          .eq('section_type', 'AGENT_PERSONALITY')
+          .eq('is_active', true),
+        
+        supabase.from('chat_laboratory_prompt_sections')
+          .select('section_name, content')
+          .eq('section_type', 'CONVERSATION_STYLE')
+          .eq('is_active', true),
+        
+        supabase.from('chat_laboratory_prompt_sections')
+          .select('content')
+          .eq('section_type', 'ORCHESTRATOR_RULES')
+          .eq('is_active', true)
+          .maybeSingle()
+      ]);
+      
+      // Build agentPersonalities and conversationStyles as objects (not Map)
+      const agentPersonalities: Record<string, string> = {};
+      personalityData.data?.forEach((p: any) => {
+        agentPersonalities[p.section_name.toLowerCase()] = p.content;
+      });
+      
+      const conversationStyles: Record<string, string> = {};
+      styleData.data?.forEach((s: any) => {
+        conversationStyles[s.section_name.toLowerCase()] = s.content;
+      });
+      
+      const prompts = {
+        globalPrompt: conversationPrompt || globalData.data?.contenuto || 'Sei un assistente AI intelligente che partecipa a discussioni costruttive in un bar virtuale.',
+        baseSections: baseData.data?.map((s: any) => s.content).join('\n\n') || '',
+        agentPersonalities,
+        conversationStyles,
+        orchestratorRules: orchestratorData.data?.content || 'Leggi l\'ultimo messaggio. Se contiene una DOMANDA o RICHIESTA verso altri, rispondi TRUE. Altrimenti FALSE.',
+        conversationPersonality,
+        timestamp: Date.now()
+      };
+      
+      setCachedPrompts(prompts);
+      console.log('✅ [LIVELLO 2] Prompt caricati nel client:', {
+        globalPromptLength: prompts.globalPrompt.length,
+        agentPersonalitiesCount: Object.keys(prompts.agentPersonalities).length
+      });
+    } catch (error) {
+      console.error('❌ [LIVELLO 2] Errore caricamento prompt:', error);
+    }
+  };
   
   // Persist auto-advance changes to localStorage
   useEffect(() => {
@@ -477,13 +598,21 @@ const RadioChat = () => {
       
       console.log('🎯 Calling radio-chat-orchestrator with participants:', activeParticipants);
       
+      // ⚡ LIVELLO 2: Include cached prompts in request body (if available)
+      const requestBody: any = {
+        conversationId: convId,
+        userMessage: messageToSend,
+        participants: activeParticipants
+      };
+      
+      if (cachedPrompts) {
+        requestBody.cachedPrompts = cachedPrompts;
+        console.log('⚡ [LIVELLO 2] Invio prompt dal client (skip DB query)');
+      }
+      
       // Create orchestrator promise with timeout
       const orchestratorPromise = supabase.functions.invoke('radio-chat-orchestrator', {
-        body: {
-          conversationId: convId,
-          userMessage: messageToSend,
-          participants: activeParticipants
-        }
+        body: requestBody
       });
 
       const timeoutPromise = new Promise((_, reject) => 

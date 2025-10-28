@@ -1056,7 +1056,7 @@ const RadioChatContent = () => {
         
         {/* Dual Sidebar: Conversations + Settings */}
         <div className={cn(
-          "fixed left-0 top-0 h-full w-[320px] bg-transparent border-r border-border/40 z-50 transition-transform duration-300",
+          "fixed left-0 top-24 md:top-28 h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] w-[320px] bg-transparent border-r border-border/40 z-50 transition-transform duration-300",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}>
           {/* Tab Navigation */}

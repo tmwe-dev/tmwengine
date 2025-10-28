@@ -146,17 +146,22 @@ export const RadioAudioControls = ({
         requestBody.cachedPrompts = cachedPrompts;
       }
 
-      const { error: orchError } = await supabase.functions.invoke(
-        'radio-chat-orchestrator',
-        {
+      // ⚡ Chiama orchestratore con timeout (come handleSend in RadioChat)
+      try {
+        const orchestratorPromise = supabase.functions.invoke('radio-chat-orchestrator', {
           body: requestBody
-        }
-      );
+        });
 
-      if (orchError) {
-        toast.error('Errore elaborazione risposta');
-      } else {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout')), 90000)
+        );
+
+        await Promise.race([orchestratorPromise, timeoutPromise]);
+        
         toast.success('Messaggio vocale inviato agli agenti');
+      } catch (error) {
+        console.error('Error calling orchestrator:', error);
+        toast.error('Errore elaborazione risposta');
       }
     }
   };

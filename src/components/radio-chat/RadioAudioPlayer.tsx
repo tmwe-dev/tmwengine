@@ -190,12 +190,12 @@ export const RadioAudioPlayer = ({
   if (!audioUrl || audioUrl.trim() === '') return null;
 
   return (
-    <div className="flex items-center gap-4 px-2 py-2">
+    <div className="flex items-center gap-3 px-2 py-2">
       {/* Play/Pause Button */}
       <button
         onClick={togglePlay}
         disabled={!isAudioEnabled}
-        className="shrink-0 w-9 h-9 rounded-full bg-purple-500/20 hover:bg-purple-500/30 flex items-center justify-center transition-all border border-purple-400/30 disabled:opacity-50"
+        className="shrink-0 w-8 h-8 rounded-full bg-purple-500/20 hover:bg-purple-500/30 flex items-center justify-center transition-all border border-purple-400/30 disabled:opacity-50"
         aria-label={isPlaying ? 'Pause' : 'Play'}
       >
         {isPlaying ? (

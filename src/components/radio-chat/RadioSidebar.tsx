@@ -64,7 +64,7 @@ export function RadioSidebar({
             <h2 className="text-lg font-semibold">Radio Chat Settings</h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
+              className="p-2 rounded-lg hover:bg-transparent transition-colors"
             >
               <X className="w-5 h-5" />
             </button>

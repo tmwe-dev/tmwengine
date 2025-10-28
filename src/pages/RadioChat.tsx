@@ -257,7 +257,10 @@ const RadioChat = () => {
   }, [carouselZoom]);
   
   const handleZoomChange = (zoom: number) => {
-    setCarouselZoom(zoom);
+    // Inverti zoom: slider alto → carousel grande, slider basso → carousel piccolo
+    const invertedZoom = 2.0 - zoom;
+    console.log(`🔄 Zoom slider: ${zoom.toFixed(2)} → carousel: ${invertedZoom.toFixed(2)}`);
+    setCarouselZoom(invertedZoom);
   };
   
   // Calculate AI messages

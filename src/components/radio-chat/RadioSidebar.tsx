@@ -60,7 +60,7 @@ export function RadioSidebar({
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 border-b bg-background">
+          <div className="flex items-center justify-between p-4 border-b bg-transparent">
             <h2 className="text-lg font-semibold">Radio Chat Settings</h2>
             <button
               onClick={onClose}

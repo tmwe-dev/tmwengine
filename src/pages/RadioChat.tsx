@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Keyboard, FileText } from 'lucide-react';
+import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Keyboard, FileText, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
@@ -13,6 +13,7 @@ import { RadioSidebarTrigger } from '@/components/radio-chat/RadioSidebarTrigger
 import { RadioParticipantIcon } from '@/components/radio-chat/RadioParticipantIcon';
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
 import { RadioCarouselAudioPlayerWrapper } from '@/components/radio-chat/RadioCarouselAudioPlayerWrapper';
+import { RadioAudioControls } from '@/components/radio-chat/RadioAudioControls';
 import { useRadioAudioPlayback } from '@/hooks/useRadioAudioPlayback';
 import { useAudioPreference } from '@/hooks/useAudioPreference';
 import { RadioMessage } from '@/types/radio';
@@ -76,8 +77,21 @@ const RadioChat = () => {
   
   const [debugPopupOpen, setDebugPopupOpen] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<'conversations' | 'settings'>('conversations'); // ✅ Tab selector
+  const [showAudioControls, setShowAudioControls] = useState(false); // 🎤 Audio controls popup
   
   const { toast } = useToast();
+  
+  // Hotkey Ctrl+M per toggle audio controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'm') {
+        e.preventDefault();
+        setShowAudioControls(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   
   // Hooks audio dedicati per Radio Chat
   const { 

@@ -153,7 +153,7 @@ export const RadioAudioControls = ({
 
   return (
     <div className={cn(
-      "w-[45%] max-w-2xl",
+      "w-full max-w-3xl",
       "bg-black/95 backdrop-blur-lg",
       "border-2 border-purple-400/40",
       "rounded-xl shadow-[0_0_30px_rgba(168,85,247,0.25)]",

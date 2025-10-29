@@ -217,28 +217,41 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     setProgress(0);
     setStats({ total: 0, downloaded: 0, failed: 0, skipped: 0 });
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) {
-        throw new Error('User not authenticated');
-      }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) {
+      toast({
+        title: '❌ Errore autenticazione',
+        description: 'Utente non autenticato',
+        variant: 'destructive',
+      });
+      setIsDownloading(false);
+      return;
+    }
 
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('tmwe_email')
+      .eq('user_id', user.id)
+      .single();
 
-      if (!profile?.tmwe_email) {
-        throw new Error('Email TMWE non configurato nel profilo');
-      }
+    if (!profile?.tmwe_email) {
+      toast({
+        title: '❌ Email TMWE non configurato',
+        description: 'Configura l\'email TMWE nel profilo',
+        variant: 'destructive',
+      });
+      setIsDownloading(false);
+      return;
+    }
 
-      let globalDownloaded = 0;
-      let globalFailed = 0;
-      let globalSkipped = 0;
-      let globalTotal = 0;
+    let globalDownloaded = 0;
+    let globalFailed = 0;
+    let globalSkipped = 0;
+    let globalTotal = 0;
 
-      for (const folder of selectedFolders) {
+    for (const folder of selectedFolders) {
+      try {
+        console.log(`📂 Inizio download cartella: ${folder}`);
         setCurrentFolder(`📂 ${folder}: recupero lista...`);
         
         const uidListResponse = await emailMessageApi.getMessages({
@@ -255,6 +268,8 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
           console.log(`📂 ${folder}: nessuna email trovata`);
           continue;
         }
+
+        console.log(`📂 ${folder}: trovate ${uidList.length} email da processare`);
 
         for (let i = 0; i < uidList.length; i++) {
           const uidInfo = uidList[i];
@@ -336,39 +351,43 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
           const progressPercent = ((globalDownloaded + globalFailed + globalSkipped) / globalTotal) * 100;
           setProgress(Math.round(progressPercent));
         }
+        
+        console.log(`✅ Cartella ${folder} completata: ${globalDownloaded} scaricate, ${globalSkipped} saltate, ${globalFailed} errori`);
+        
+      } catch (error) {
+        console.error(`❌ Errore durante il download della cartella ${folder}:`, error);
+        toast({
+          title: `⚠️ Errore cartella ${folder}`,
+          description: 'Continuando con la prossima cartella...',
+          variant: 'default',
+        });
+        // Continua con la prossima cartella
+        continue;
       }
-
-      setProgress(100);
-      setCurrentFolder('Completato!');
-
-      const downloadStats = {
-        totalDownloaded: globalDownloaded,
-        folders: selectedFolders,
-        dateRange: {
-          from: new Date(),
-          to: new Date(),
-        },
-      };
-
-      toast({
-        title: '✅ Download completato',
-        description: `${globalDownloaded} email salvate, ${globalSkipped} duplicate saltate, ${globalFailed} errori`,
-      });
-
-      onDownloadComplete?.(downloadStats);
-
-    } catch (error: any) {
-      console.error('[FunEmailDownloader] Error:', error);
-      toast({
-        title: '❌ Errore durante il download',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDownloading(false);
-      setProgress(0);
-      setCurrentFolder('');
     }
+
+    setProgress(100);
+    setCurrentFolder('Completato!');
+
+    const downloadStats = {
+      totalDownloaded: globalDownloaded,
+      folders: selectedFolders,
+      dateRange: {
+        from: new Date(),
+        to: new Date(),
+      },
+    };
+
+    toast({
+      title: '✅ Download completato',
+      description: `${globalDownloaded} email salvate, ${globalSkipped} duplicate saltate, ${globalFailed} errori`,
+    });
+
+    onDownloadComplete?.(downloadStats);
+
+    setIsDownloading(false);
+    setProgress(0);
+    setCurrentFolder('');
   };
 
   const selectedEmailsCount = getSelectedEmailsCount();

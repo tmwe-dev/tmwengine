@@ -211,8 +211,10 @@ const FunEmail = () => {
             <div className="p-6">
               <EmailIntegrityChecker 
                 onRequestDownload={(folderNames) => {
+                  console.log('🔍 [FunEmail] Received folders from Integrity:', folderNames);
                   setCurrentView('quick');
                   setPreSelectedFolders(folderNames);
+                  console.log('🔍 [FunEmail] Set preSelectedFolders:', folderNames);
                 }}
               />
             </div>

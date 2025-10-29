@@ -287,6 +287,7 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
               <Button
                 onClick={() => {
                   if (onRequestDownload) {
+                    console.log('🔍 [IntegrityCheck] Passing folders to Quick:', selectedFolders);
                     onRequestDownload(selectedFolders);
                     toast.success('🚀 Redirect a Quick Download', {
                       description: `Preparazione download di ${selectedFolders.length} cartelle...`

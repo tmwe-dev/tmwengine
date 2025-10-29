@@ -45,6 +45,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('🔍 [QuickDownload] Received preSelectedFolders prop:', preSelectedFolders);
     loadQuickFolders();
   }, []);
 
@@ -63,13 +64,26 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       if (quickResponse.error) throw quickResponse.error;
 
       const quickFoldersList = quickResponse.data?.data || [];
-      const quickMapped = quickFoldersList.map((f: any) => ({
-        name: f.name || f,
-        display: f.display_name || f.name || f,
-        selected: preSelectedFolders.length > 0 
-          ? preSelectedFolders.includes(f.name || f)
-          : (f.name === 'INBOX' || f === 'INBOX')
-      }));
+      
+      // ✅ FIX 2: Normalizza confronto case-insensitive + trim
+      const quickMapped = quickFoldersList.map((f: any) => {
+        const folderName = f.name || f;
+        const normalizedName = (folderName || '').trim().toLowerCase();
+        
+        return {
+          name: folderName,  // ✅ Mantieni nome originale
+          display: f.display_name || folderName,
+          selected: preSelectedFolders.length > 0 
+            ? preSelectedFolders.some(pre => 
+                (pre || '').trim().toLowerCase() === normalizedName  // ✅ Confronto normalizzato
+              )
+            : (normalizedName === 'inbox')  // ✅ Anche default normalizzato
+        };
+      });
+
+      console.log('🔍 [QuickDownload] preSelectedFolders:', preSelectedFolders);
+      console.log('🔍 [QuickDownload] Server folders:', quickFoldersList.map((f: any) => f.name || f));
+      console.log('🔍 [QuickDownload] Mapped with selection:', quickMapped.filter(f => f.selected).map(f => f.name));
 
       setQuickFolders(quickMapped);
       
@@ -135,7 +149,18 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const startQuickDownload = async () => {
     const quickSelectedFolders = quickFolders.filter(f => f.selected);
     
-    if (quickSelectedFolders.length === 0) {
+    // ✅ FIX 1: Se abbiamo preSelectedFolders, usali direttamente (bypass UI)
+    const foldersToSync = preSelectedFolders.length > 0 
+      ? preSelectedFolders  // ✅ Usa nomi da Verifica (già corretti)
+      : quickSelectedFolders.map(f => f.name);  // ✅ Usa selezione UI
+    
+    console.log('🚀 [QuickDownload] STARTING SYNC');
+    console.log('🚀 [QuickDownload] foldersToSync:', foldersToSync);
+    console.log('🚀 [QuickDownload] Source:', preSelectedFolders.length > 0 ? 'preSelected' : 'UI selection');
+    console.log('🚀 [QuickDownload] preSelectedFolders:', preSelectedFolders);
+    console.log('🚀 [QuickDownload] quickSelectedFolders:', quickSelectedFolders.map(f => f.name));
+    
+    if (foldersToSync.length === 0) {
       toast({
         title: '⚠️ Attenzione',
         description: 'Seleziona almeno una cartella',
@@ -159,7 +184,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       }
 
       const newQuickSyncer = new QuickEmailSyncer({
-        folders: quickSelectedFolders.map(f => f.name),
+        folders: foldersToSync,  // ✅ Usa foldersToSync invece di quickSelectedFolders.map()
         userEmail: profile.tmwe_email,
         batchSize: 15,
         maxRetries: 2,
@@ -384,10 +409,23 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
           className="w-full"
           size="lg"
           onClick={startQuickDownload}
-          disabled={isQuickLoading || quickFolders.filter(f => f.selected).length === 0}
+          disabled={
+            isQuickLoading ||  // ✅ FIX 3: Cartelle ancora in caricamento
+            quickProgress?.isRunning ||  // ✅ Download già attivo
+            (preSelectedFolders.length === 0 && quickFolders.filter(f => f.selected).length === 0)  // ✅ Nessuna selezione
+          }
         >
-          <Download className="h-5 w-5 mr-2" />
-          Avvia Quick Download
+          {isQuickLoading ? (
+            <>
+              <Download className="h-5 w-5 mr-2 animate-spin" />
+              Caricamento cartelle...
+            </>
+          ) : (
+            <>
+              <Download className="h-5 w-5 mr-2" />
+              Avvia Quick Download
+            </>
+          )}
         </Button>
       )}
     </div>

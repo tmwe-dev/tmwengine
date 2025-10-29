@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { Download, Loader2, Folder, CheckSquare, Square, Pause, Play } from 'lucide-react';
+import { Download, Loader2, Folder, CheckSquare, Square, Pause, Play, Search } from 'lucide-react';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+import { EmailGapResults } from './EmailGapResults';
 
 interface FunEmailDownloaderProps {
   onDownloadComplete?: (stats: {
@@ -43,6 +44,10 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
   const shouldStop = useRef(false);
   const isPaused = useRef(false);
   const [pauseState, setPauseState] = useState(false);
+  
+  // Gap checker states
+  const [isCheckingGaps, setIsCheckingGaps] = useState(false);
+  const [gapResults, setGapResults] = useState<any[]>([]);
 
   const fetchWithTimeout = async <T,>(
     promise: Promise<T>,
@@ -179,6 +184,91 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
       variant: "destructive"
     });
     console.log('🛑 Download fermato definitivamente');
+  };
+
+  const handleCheckGaps = async () => {
+    if (selectedFolders.length === 0) {
+      toast({
+        title: '⚠️ Nessuna cartella selezionata',
+        description: 'Seleziona almeno una cartella da verificare',
+        variant: 'default',
+      });
+      return;
+    }
+
+    setIsCheckingGaps(true);
+    setGapResults([]);
+
+    try {
+      console.log('🔍 Avvio verifica gap per cartelle:', selectedFolders);
+      
+      const { data, error } = await supabase.functions.invoke('tmwe-email-gap-checker', {
+        body: {
+          folders: selectedFolders,
+          check_all_db_folders: false,
+        },
+      });
+
+      if (error) {
+        console.error('Errore verifica gap:', error);
+        throw error;
+      }
+
+      console.log('✅ Gap check completato:', data);
+      setGapResults(data.results || []);
+
+      const totalGaps = data.total_gaps || 0;
+      const foldersWithGaps = data.folders_with_gaps || 0;
+
+      if (totalGaps === 0) {
+        toast({
+          title: '✅ Tutte le cartelle sono sincronizzate',
+          description: `${selectedFolders.length} cartelle verificate, nessuna email mancante`,
+        });
+      } else {
+        toast({
+          title: `⚠️ Trovate ${totalGaps} email mancanti`,
+          description: `${foldersWithGaps} cartelle necessitano sincronizzazione`,
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Errore verifica gap:', error);
+      toast({
+        title: '❌ Errore verifica gap',
+        description: error.message || 'Impossibile verificare le email mancanti',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCheckingGaps(false);
+    }
+  };
+
+  const handleSyncSingleFolder = async (folder: string) => {
+    toast({
+      title: '📥 Avvio sincronizzazione',
+      description: `Sincronizzazione cartella ${folder} in corso...`,
+    });
+
+    // Reset refs e states per sincronizzazione singola
+    shouldStop.current = false;
+    isPaused.current = false;
+    setPauseState(false);
+    
+    // Salva cartelle selezionate originali
+    const originalFolders = [...selectedFolders];
+    
+    // Imposta temporaneamente solo la cartella da sincronizzare
+    setSelectedFolders([folder]);
+    
+    // Chiudi pannello gap results
+    setGapResults([]);
+    
+    // Avvia download standard
+    await startDownload();
+    
+    // Ripristina cartelle selezionate originali
+    setSelectedFolders(originalFolders);
   };
 
 
@@ -579,15 +669,36 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         </div>
 
         {!isDownloading ? (
-          <Button
-            onClick={startDownload}
-            disabled={selectedFolders.length === 0}
-            className="w-full"
-            size="lg"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Prepara Email per AI ({selectedFolders.length} {selectedFolders.length === 1 ? 'cartella' : 'cartelle'})
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={startDownload}
+              disabled={selectedFolders.length === 0}
+              className="flex-1"
+              size="lg"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Prepara Email ({selectedFolders.length})
+            </Button>
+            <Button
+              onClick={handleCheckGaps}
+              disabled={selectedFolders.length === 0 || isCheckingGaps}
+              variant="outline"
+              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+              size="lg"
+            >
+              {isCheckingGaps ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifica...
+                </>
+              ) : (
+                <>
+                  <Search className="mr-2 h-4 w-4" />
+                  Verifica Gap
+                </>
+              )}
+            </Button>
+          </div>
         ) : (
           <div className="flex gap-2">
             {pauseState ? (
@@ -656,10 +767,19 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
           </div>
         )}
 
+        {gapResults.length > 0 && (
+          <EmailGapResults
+            results={gapResults}
+            onSyncGap={handleSyncSingleFolder}
+            onClose={() => setGapResults([])}
+          />
+        )}
+
         <div className="text-xs text-muted-foreground space-y-1 bg-muted/50 p-3 rounded">
           <p>📥 Scarica email complete dal server TMWE</p>
           <p>💾 Salva: oggetto, body (text + html), allegati</p>
           <p>🔄 Salta automaticamente email già scaricate</p>
+          <p>🔍 Verifica Gap: controlla email mancanti senza scaricare</p>
           <p>📊 Backup sincronizzato con stato dettagliato</p>
         </div>
       </CardContent>

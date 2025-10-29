@@ -61,7 +61,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate }: Quic
 
       if (quickResponse.error) throw quickResponse.error;
 
-      const quickFoldersList = quickResponse.data?.data?.folders || [];
+      const quickFoldersList = quickResponse.data?.data || [];
       const quickMapped = quickFoldersList.map((f: any) => ({
         name: f.name || f,
         display: f.display_name || f.name || f,

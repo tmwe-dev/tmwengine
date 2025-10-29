@@ -18,7 +18,7 @@ export const useGlobalEmailCount = () => {
 
   // Calcola il totale sommando i messaggi di tutte le cartelle
   const totalCount = folders?.reduce((sum, folder) => {
-    const count = folder.messages || folder.message_count || 0;
+    const count = folder.total_messages || folder.messages || folder.message_count || 0;
     return sum + count;
   }, 0) || 0;
 
@@ -28,8 +28,8 @@ export const useGlobalEmailCount = () => {
       totalFolders: folders.length,
       totalEmails: totalCount,
       folderBreakdown: folders.map(f => ({
-        name: f.name,
-        messages: f.messages || f.message_count || 0
+        name: f.folder_name || f.name,
+        messages: f.total_messages || f.messages || f.message_count || 0
       }))
     });
   }

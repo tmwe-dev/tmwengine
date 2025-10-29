@@ -22,6 +22,7 @@ const FunEmail = () => {
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick' | 'integrity'>('list');
+  const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
     folders: [] as { name: string; count: number }[],
@@ -196,8 +197,10 @@ const FunEmail = () => {
           ) : currentView === 'quick' ? (
             <div className="p-6">
               <QuickEmailDownloader
+                preSelectedFolders={preSelectedFolders}
                 onDownloadComplete={(stats) => {
                   console.log('✅ Quick download completato:', stats);
+                  setPreSelectedFolders([]);
                 }}
                 onStatsUpdate={(stats) => {
                   console.log('📊 Stats aggiornate:', stats);
@@ -206,7 +209,12 @@ const FunEmail = () => {
             </div>
           ) : currentView === 'integrity' ? (
             <div className="p-6">
-              <EmailIntegrityChecker />
+              <EmailIntegrityChecker 
+                onRequestDownload={(folderNames) => {
+                  setCurrentView('quick');
+                  setPreSelectedFolders(folderNames);
+                }}
+              />
             </div>
           ) : null}
         </div>

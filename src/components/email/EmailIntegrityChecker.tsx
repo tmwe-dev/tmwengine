@@ -6,9 +6,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, CloudDownload, Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { QuickEmailSyncer } from '@/lib/email-sync-quick';
 
 interface FolderComparison {
   folderName: string;
@@ -18,8 +18,20 @@ interface FolderComparison {
   syncPercentage: number;
 }
 
-export const EmailIntegrityChecker = () => {
-  const [isReDownloading, setIsReDownloading] = useState<string | null>(null);
+interface EmailIntegrityCheckerProps {
+  onRequestDownload?: (folderNames: string[]) => void;
+}
+
+export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheckerProps) => {
+  const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
+
+  const toggleFolderSelection = (folderName: string) => {
+    setSelectedFolders(prev => 
+      prev.includes(folderName)
+        ? prev.filter(f => f !== folderName)
+        : [...prev, folderName]
+    );
+  };
 
   const { data: comparisons, isLoading, refetch, isRefetching, error, isSuccess } = useQuery<FolderComparison[], Error>({
     queryKey: ['email-integrity-check'],
@@ -124,44 +136,6 @@ export const EmailIntegrityChecker = () => {
     }
   }, [isSuccess, comparisons]);
 
-  const handleReDownload = async (folderName: string) => {
-    try {
-      setIsReDownloading(folderName);
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non autenticato');
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
-
-      toast.info(`Download in corso per ${folderName}...`);
-
-      const syncer = new QuickEmailSyncer({
-        folders: [folderName],
-        userEmail: profile.tmwe_email,
-        onComplete: (stats) => {
-          toast.success(`${stats.totalDownloaded} email scaricate da ${folderName}`);
-          refetch();
-          setIsReDownloading(null);
-        },
-        onError: (error) => {
-          toast.error(`Errore download ${folderName}: ${error.message}`);
-          setIsReDownloading(null);
-        }
-      });
-
-      await syncer.start();
-    } catch (error: any) {
-      toast.error(`Errore: ${error.message}`);
-      setIsReDownloading(null);
-    }
-  };
-
   const totalServer = comparisons?.reduce((sum, c) => sum + c.serverCount, 0) || 0;
   const totalDB = comparisons?.reduce((sum, c) => sum + c.dbCount, 0) || 0;
   const totalMissing = comparisons?.reduce((sum, c) => sum + c.missing, 0) || 0;
@@ -233,56 +207,105 @@ export const EmailIntegrityChecker = () => {
             </p>
           </div>
         ) : comparisons && comparisons.length > 0 ? (
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cartella</TableHead>
-                  <TableHead className="text-right">Server</TableHead>
-                  <TableHead className="text-right">DB Locale</TableHead>
-                  <TableHead className="text-right">Mancanti</TableHead>
-                  <TableHead className="text-center">% Sync</TableHead>
-                  <TableHead className="text-center">Azione</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {comparisons.map(comp => (
-                  <TableRow key={comp.folderName}>
-                    <TableCell className="font-medium">{comp.folderName}</TableCell>
-                    <TableCell className="text-right">{comp.serverCount}</TableCell>
-                    <TableCell className="text-right">{comp.dbCount}</TableCell>
-                    <TableCell className={`text-right ${comp.missing > 0 ? 'text-destructive font-semibold' : 'text-green-500'}`}>
-                      {comp.missing}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={comp.syncPercentage === 100 ? 'default' : 'secondary'}>
-                        {comp.syncPercentage}%
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {comp.missing > 0 ? (
-                        <Button
-                          size="sm"
-                          onClick={() => handleReDownload(comp.folderName)}
-                          disabled={isReDownloading === comp.folderName}
-                          variant="outline"
-                        >
-                          {isReDownloading === comp.folderName ? (
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          ) : (
-                            <CloudDownload className="h-3 w-3 mr-1" />
-                          )}
-                          Scarica {comp.missing}
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-green-500">✓ Completo</span>
-                      )}
-                    </TableCell>
+          <>
+            {/* Bottoni Controllo Selezione */}
+            <div className="flex gap-2 mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const allWithMissing = comparisons
+                    .filter(c => c.missing > 0)
+                    .map(c => c.folderName);
+                  setSelectedFolders(allWithMissing);
+                }}
+              >
+                ✅ Seleziona tutte con email mancanti
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedFolders([])}
+                disabled={selectedFolders.length === 0}
+              >
+                ❌ Deseleziona tutto
+              </Button>
+            </div>
+
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cartella</TableHead>
+                    <TableHead className="text-right">Server</TableHead>
+                    <TableHead className="text-right">DB Locale</TableHead>
+                    <TableHead className="text-right">Mancanti</TableHead>
+                    <TableHead className="text-center">% Sync</TableHead>
+                    <TableHead className="text-center">Seleziona</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {comparisons.map(comp => (
+                    <TableRow key={comp.folderName}>
+                      <TableCell className="font-medium">{comp.folderName}</TableCell>
+                      <TableCell className="text-right">{comp.serverCount}</TableCell>
+                      <TableCell className="text-right">{comp.dbCount}</TableCell>
+                      <TableCell className={`text-right ${comp.missing > 0 ? 'text-destructive font-semibold' : 'text-green-500'}`}>
+                        {comp.missing}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={comp.syncPercentage === 100 ? 'default' : 'secondary'}>
+                          {comp.syncPercentage}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {comp.missing > 0 ? (
+                          <Checkbox
+                            checked={selectedFolders.includes(comp.folderName)}
+                            onCheckedChange={() => toggleFolderSelection(comp.folderName)}
+                          />
+                        ) : (
+                          <span className="text-xs text-green-500">✓ Completo</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Bottone Conferma */}
+            <div className="mt-6 flex items-center justify-between border-t pt-4">
+              <div className="text-sm text-muted-foreground">
+                {selectedFolders.length > 0 
+                  ? `${selectedFolders.length} cartelle selezionate`
+                  : 'Seleziona le cartelle da scaricare con i checkbox'
+                }
+              </div>
+              
+              <Button
+                onClick={() => {
+                  if (onRequestDownload) {
+                    onRequestDownload(selectedFolders);
+                    toast.success('🚀 Redirect a Quick Download', {
+                      description: `Preparazione download di ${selectedFolders.length} cartelle...`
+                    });
+                  }
+                }}
+                disabled={selectedFolders.length === 0}
+                size="lg"
+                className="gap-2"
+              >
+                <span>🚀 Vai a Quick Download</span>
+                {selectedFolders.length > 0 && (
+                  <span className="bg-primary-foreground text-primary rounded-full px-2 py-0.5 text-xs font-bold">
+                    {selectedFolders.length}
+                  </span>
+                )}
+              </Button>
+            </div>
+          </>
         ) : (
           <p className="text-center text-muted-foreground py-8">
             Nessuna cartella trovata.

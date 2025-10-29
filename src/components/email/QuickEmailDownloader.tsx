@@ -28,6 +28,7 @@ import { QuickEmailSyncer, QuickSyncProgress, QuickSyncStats } from '@/lib/email
 interface QuickEmailDownloaderProps {
   onDownloadComplete?: (stats: QuickSyncStats) => void;
   onStatsUpdate?: (stats: Record<string, number>) => void;
+  preSelectedFolders?: string[];
 }
 
 interface FolderQuickOption {
@@ -36,7 +37,7 @@ interface FolderQuickOption {
   selected: boolean;
 }
 
-export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate }: QuickEmailDownloaderProps) {
+export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSelectedFolders = [] }: QuickEmailDownloaderProps) {
   const [quickFolders, setQuickFolders] = useState<FolderQuickOption[]>([]);
   const [quickProgress, setQuickProgress] = useState<QuickSyncProgress | null>(null);
   const [quickSyncer, setQuickSyncer] = useState<QuickEmailSyncer | null>(null);
@@ -65,7 +66,9 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate }: Quic
       const quickMapped = quickFoldersList.map((f: any) => ({
         name: f.name || f,
         display: f.display_name || f.name || f,
-        selected: f.name === 'INBOX' || f === 'INBOX'
+        selected: preSelectedFolders.length > 0 
+          ? preSelectedFolders.includes(f.name || f)
+          : (f.name === 'INBOX' || f === 'INBOX')
       }));
 
       setQuickFolders(quickMapped);

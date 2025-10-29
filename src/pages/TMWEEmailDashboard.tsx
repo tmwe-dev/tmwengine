@@ -122,7 +122,7 @@ const EmailDashboard = () => {
   // Mark email as read
   const handleMarkAsRead = async (emailId: string) => {
     try {
-      await emailMessageApi.getMessage(emailId, true);
+      await emailMessageApi.getMessage(emailId, undefined, true);
       queryClient.invalidateQueries({ queryKey: ['messages'] });
     } catch (error) {
       console.error('Error marking email as read:', error);

@@ -474,10 +474,15 @@ export const emailMessageApi = {
     ...(params.filter && { filter: params.filter })  // ✅ NEW
   }),
 
-  getMessage: (uid: string, markAsRead: boolean = true) => {
+  getMessage: (uid: string, folder?: string, markAsRead: boolean = true) => {
     const uidInt = parseInt(uid, 10);
     if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
-    return fetchApi('/email_message', { handler: 'get_message', uid: uidInt, mark_as_read: markAsRead });
+    return fetchApi('/email_message', { 
+      handler: 'get_message', 
+      uid: uidInt, 
+      folder: folder || 'INBOX',
+      mark_as_read: markAsRead 
+    });
   },
   
   // ✅ OTTIMIZZAZIONE 4: Batch intelligente per mark as read (mantiene backward compatibility)

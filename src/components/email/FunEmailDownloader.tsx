@@ -286,6 +286,10 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         );
         
         const uidList = uidListResponse?.messages || [];
+        
+        console.log(`📂 ${folder}: API ha restituito ${uidList.length} UID`);
+        console.log(`   Primi 5 UID:`, uidList.slice(0, 5).map(u => u.uid));
+        
         globalTotal += uidList.length;
         setStats(prev => ({ ...prev, total: globalTotal }));
         
@@ -309,13 +313,15 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
           
           try {
             const email = await fetchWithTimeout(
-              emailMessageApi.getMessage(uid, false),
+              emailMessageApi.getMessage(uid, folder, false),
               30000,
               `Timeout recupero email ${folder}/${uid}`
             );
             
+            console.log(`   ✅ Scaricata ${folder}/${uid}: ${email?.subject?.substring(0, 30) || 'no subject'}`);
+            
             if (!email) {
-              console.warn(`Email ${folder}/${uid} non trovata`);
+              console.warn(`⚠️ Email ${folder}/${uid} non trovata`);
               globalFailed++;
               setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
               continue;
@@ -440,16 +446,24 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
       <CardContent className="pt-6 space-y-4">
         {isDownloading && (
           <div className="flex items-center justify-center gap-6 mb-4">
-            <div className="text-2xl font-bold text-primary">
-              {stats.downloaded}
+            <div className="flex flex-col items-center">
+              <div className="text-3xl font-bold text-blue-600">
+                {stats.total - stats.downloaded - stats.failed - stats.skipped}
+              </div>
+              <div className="text-xs text-muted-foreground">da scaricare</div>
             </div>
+            
             <img 
               src={emailFolderGif} 
               alt="Downloading" 
-              className="w-10 h-10"
+              className="w-20 h-20"
             />
-            <div className="text-2xl font-bold text-primary">
-              {stats.downloaded}
+            
+            <div className="flex flex-col items-center">
+              <div className="text-3xl font-bold text-green-600">
+                {stats.downloaded}
+              </div>
+              <div className="text-xs text-muted-foreground">scaricate</div>
             </div>
           </div>
         )}
@@ -494,7 +508,16 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
                       <span className="text-muted-foreground text-[10px]">
                         ({folder.total_messages || folder.messages || folder.message_count || 0} sul server
                         {downloadedCounts[folderName] !== undefined && (
-                          <> | <span className="text-green-600 font-medium">{downloadedCounts[folderName]} scaricate</span></>
+                          <>
+                            {' | '}
+                            <span className="text-green-600 font-medium">
+                              {downloadedCounts[folderName]} scaricate
+                            </span>
+                            {' | '}
+                            <span className="text-blue-600 font-medium">
+                              {Math.max(0, (folder.total_messages || folder.messages || folder.message_count || 0) - downloadedCounts[folderName])} da scaricare
+                            </span>
+                          </>
                         )}
                         {downloadedCounts[folderName] > 0 && 
                          downloadedCounts[folderName] >= (folder.total_messages || folder.messages || folder.message_count || 0) && (

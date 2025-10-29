@@ -211,7 +211,7 @@ export const useEmailDownload = () => {
                       // Aggiorna progresso cartella corrente
                       setCurrentFolderProgress({ current: emailIndex, total: uidList.length });
                       
-                      const fullEmail = await emailMessageApi.getMessage(uid, false);
+                      const fullEmail = await emailMessageApi.getMessage(uid, folderName, false);
                       return fullEmail;
                     } catch (error) {
                       console.error(`❌ ${folderName}: errore scaricamento UID ${uid}:`, error);

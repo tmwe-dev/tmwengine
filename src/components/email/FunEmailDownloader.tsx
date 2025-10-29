@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { Download, Loader2, Folder, CheckSquare, Square } from 'lucide-react';
+import { Download, Loader2, Folder, CheckSquare, Square, Pause, Play } from 'lucide-react';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 
@@ -40,6 +40,8 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
   });
   const { toast } = useToast();
   const shouldStop = useRef(false);
+  const isPaused = useRef(false);
+  const [pauseState, setPauseState] = useState(false);
 
   const fetchWithTimeout = async <T,>(
     promise: Promise<T>,
@@ -146,6 +148,38 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     }
   };
 
+  const pauseDownload = () => {
+    isPaused.current = true;
+    setPauseState(true);
+    toast({
+      title: "⏸️ Download in pausa",
+      description: "Il processo è stato messo in pausa. Clicca 'Riprendi' per continuare.",
+    });
+    console.log('⏸️ Download messo in pausa');
+  };
+
+  const resumeDownload = () => {
+    isPaused.current = false;
+    setPauseState(false);
+    toast({
+      title: "▶️ Download ripreso",
+      description: "Il download è ripreso da dove era stato interrotto.",
+    });
+    console.log('▶️ Download ripreso');
+  };
+
+  const stopDownload = () => {
+    shouldStop.current = true;
+    isPaused.current = false;
+    setPauseState(false);
+    toast({
+      title: "🛑 Download fermato",
+      description: "Il processo di download è stato terminato.",
+      variant: "destructive"
+    });
+    console.log('🛑 Download fermato definitivamente');
+  };
+
 
   const startDownload = async () => {
     if (selectedFolders.length === 0) {
@@ -158,6 +192,8 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     }
 
     shouldStop.current = false;
+    isPaused.current = false;
+    setPauseState(false);
     setIsDownloading(true);
     setProgress(0);
     setStats({ total: 0, downloaded: 0, failed: 0, skipped: 0 });
@@ -210,7 +246,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
             limit: 2000,
             offset: 0,
           }),
-          60000,
+          20000,
           `Timeout recupero UID per cartella ${folder}`
         );
         
@@ -274,6 +310,13 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
             console.log('⏸️ Download fermato dall\'utente');
             break;
           }
+
+          while (isPaused.current) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (shouldStop.current) break;
+          }
+
+          if (shouldStop.current) break;
 
           const uidInfo = uidsToDownload[i];
           const uid = String(uidInfo.uid);
@@ -408,7 +451,14 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     <Card>
       <CardContent className="pt-6 space-y-4">
         {isDownloading && (
-          <div className="flex items-center justify-center gap-6 mb-4">
+          <div className="relative flex items-center justify-center gap-6 mb-4">
+            {pauseState && (
+              <div className="absolute top-0 right-0 bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                <Pause className="h-3 w-3" />
+                IN PAUSA
+              </div>
+            )}
+            
             <div className="flex flex-col items-center">
               <div className="text-3xl font-bold text-blue-600">
                 {stats.total - stats.downloaded - stats.failed - stats.skipped}
@@ -480,24 +530,62 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
           </p>
         </div>
 
-        <Button
-          onClick={startDownload}
-          disabled={isDownloading || selectedFolders.length === 0}
-          className="w-full"
-          size="lg"
-        >
-          {isDownloading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Scaricamento in corso...
-            </>
-          ) : (
-            <>
-              <Download className="mr-2 h-4 w-4" />
-              Prepara Email per AI ({selectedFolders.length} {selectedFolders.length === 1 ? 'cartella' : 'cartelle'})
-            </>
-          )}
-        </Button>
+        {!isDownloading ? (
+          <Button
+            onClick={startDownload}
+            disabled={selectedFolders.length === 0}
+            className="w-full"
+            size="lg"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Prepara Email per AI ({selectedFolders.length} {selectedFolders.length === 1 ? 'cartella' : 'cartelle'})
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            {pauseState ? (
+              <>
+                <Button
+                  onClick={resumeDownload}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  size="lg"
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Riprendi Download
+                </Button>
+                <Button
+                  onClick={stopDownload}
+                  variant="destructive"
+                  className="flex-1"
+                  size="lg"
+                >
+                  <Square className="mr-2 h-4 w-4" />
+                  Ferma Definitivamente
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={pauseDownload}
+                  variant="outline"
+                  className="flex-1"
+                  size="lg"
+                >
+                  <Pause className="mr-2 h-4 w-4" />
+                  Pausa
+                </Button>
+                <Button
+                  onClick={stopDownload}
+                  variant="destructive"
+                  className="flex-1"
+                  size="lg"
+                >
+                  <Square className="mr-2 h-4 w-4" />
+                  Ferma
+                </Button>
+              </>
+            )}
+          </div>
+        )}
 
         {isDownloading && (
           <div className="space-y-2">

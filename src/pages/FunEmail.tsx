@@ -63,20 +63,11 @@ const FunEmail = () => {
   });
 
   return (
-    <PageLayout gradient={true}>
-      <div className="relative w-full min-h-screen">
-        {/* Hamburger Button - sempre visibile */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="fixed top-4 left-4 z-30 bg-background border shadow-md hover:bg-accent"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-
-        {/* Toggle Views */}
-        <div className="fixed top-4 left-20 z-30 flex gap-2">
+    <PageLayout 
+      gradient={true}
+      title="Fun Email"
+      actions={
+        <div className="flex gap-2">
           <Button
             variant={currentView === 'list' ? 'default' : 'outline'}
             size="sm"
@@ -92,6 +83,18 @@ const FunEmail = () => {
             FUN
           </Button>
         </div>
+      }
+    >
+      <div className="relative w-full min-h-screen">
+        {/* Hamburger Button - sempre visibile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="fixed top-4 left-4 z-30 bg-background border shadow-md hover:bg-accent"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
 
         {/* Content - condizionale in base alla view */}
         <div className="w-full pl-16">

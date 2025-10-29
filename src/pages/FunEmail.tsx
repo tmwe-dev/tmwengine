@@ -7,7 +7,7 @@ import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { X, Menu } from 'lucide-react';
-import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+import { supabase } from '@/integrations/supabase/client';
 import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
 import { FunEmailChat } from '@/components/email/FunEmailChat';
@@ -25,7 +25,7 @@ const FunEmail = () => {
     folders: [] as { name: string; server: number; db: number }[],
   });
 
-  // Query email per la cartella selezionata
+  // ✅ Query email dal DB locale per la cartella selezionata
   const {
     data: messagesData,
     isLoading: messagesLoading,
@@ -33,43 +33,67 @@ const FunEmail = () => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['messages', selectedFolder],
+    queryKey: ['fun-email-messages', selectedFolder],
     queryFn: async ({ pageParam = 1 }) => {
-      return emailSearchApi.getEmailsMetadata({
-        folder: selectedFolder,
-        page: pageParam,
-        limit: 30,
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Non autenticato');
+      
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
+      
+      const { data, error } = await supabase
+        .from('email_messages')
+        .select('*')
+        .eq('user_email', profile.tmwe_email)
+        .eq('cartella', selectedFolder)
+        .eq('sync_status', 'fun_email_backup')
+        .order('data_ricezione', { ascending: false })
+        .range((pageParam - 1) * 30, pageParam * 30 - 1);
+      
+      if (error) throw error;
+      
+      return {
+        emails: data?.map(email => ({
+          id: String(email.id),
+          subject: email.subject || '(No Subject)',
+          from: email.from_email || '',
+          preview: (typeof email.body_text === 'string' ? email.body_text.substring(0, 150) : ''),
+          date: email.data_ricezione,
+          read: email.stato === 'letto',
+          starred: Array.isArray(email.flags) ? email.flags.includes('\\Flagged') : false,
+          hasAttachments: Array.isArray(email.attachments) ? email.attachments.length > 0 : false,
+        })) || [],
+        pagination: { page: pageParam, pages: 999, total: data?.length || 0 }
+      };
     },
-    getNextPageParam: (lastPage) => {
-      const pagination = lastPage?.pagination;
-      if (!pagination || pagination.page >= pagination.pages) return undefined;
-      return pagination.page + 1;
+    getNextPageParam: (lastPage, pages) => {
+      if (lastPage.emails.length < 30) return undefined;
+      return pages.length + 1;
     },
     initialPageParam: 1,
   });
 
   // Trasforma dati per EmailList
-  const emails = messagesData?.pages?.flatMap(page =>
-    page?.emails?.map(email => ({
-      id: String(email.id),
-      subject: email.subject || '(No Subject)',
-      from: email.from?.email || email.from?.name || '',
-      preview: email.text_preview || '',
-      date: new Date(email.date).toISOString(),
-      read: email.is_seen,
-      starred: email.is_flagged,
-      hasAttachments: email.has_attachments,
-    })) || []
-  ) || [];
+  const emails = messagesData?.pages?.flatMap(page => page?.emails || []) || [];
 
-  // Query dettaglio email quando selezionato
-  const { data: emailDetailResponse } = useQuery({
-    queryKey: ['email-detail', selectedEmailId],
-    queryFn: () => emailSearchApi.getEmailDetail({
-      email_id: Number(selectedEmailId),
-      include_body: true,
-    }),
+  // ✅ Query dettaglio email dal DB locale quando selezionato
+  const { data: emailDetail } = useQuery({
+    queryKey: ['fun-email-detail', selectedEmailId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('email_messages')
+        .select('*')
+        .eq('id', selectedEmailId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
     enabled: !!selectedEmailId,
   });
 
@@ -174,7 +198,7 @@ const FunEmail = () => {
       </div>
 
       {/* Dettaglio Email (Overlay) */}
-      {selectedEmailId && emailDetailResponse?.email && (
+      {selectedEmailId && emailDetail && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
           <div className="fixed inset-4 z-50 bg-background border rounded-lg shadow-lg overflow-auto">
             <div className="sticky top-0 z-10 bg-background border-b p-4 flex justify-end">
@@ -188,14 +212,14 @@ const FunEmail = () => {
             </div>
             <EmailDetail
               email={{
-                id: emailDetailResponse.email.id,
-                subject: emailDetailResponse.email.subject || '(No Subject)',
-                from: emailDetailResponse.email.from?.email || '',
-                to: emailDetailResponse.email.to?.map((t: any) => t.email || t.name) || [],
-                cc: emailDetailResponse.email.cc?.map((c: any) => c.email || c.name) || [],
-                date: emailDetailResponse.email.date,
-                body: emailDetailResponse.email.html_body || emailDetailResponse.email.text_body || '',
-                attachments: emailDetailResponse.email.attachments || [],
+                id: emailDetail.id,
+                subject: emailDetail.subject || '(No Subject)',
+                from: emailDetail.from_email || '',
+                to: (typeof emailDetail.to_email === 'string' ? emailDetail.to_email.split(',') : []),
+                cc: (typeof emailDetail.cc_email === 'string' ? emailDetail.cc_email.split(',') : []),
+                date: emailDetail.data_ricezione,
+                body: (typeof emailDetail.body_html === 'string' ? emailDetail.body_html : (typeof emailDetail.body_text === 'string' ? emailDetail.body_text : '')),
+                attachments: Array.isArray(emailDetail.attachments) ? emailDetail.attachments : [],
               }}
               onReply={() => {}}
               onReplyAll={() => {}}

@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { Download, Loader2, Folder, CheckSquare, Square } from 'lucide-react';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
@@ -25,6 +26,7 @@ interface FunEmailDownloaderProps {
 }
 
 export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEmailDownloaderProps) => {
+  const queryClient = useQueryClient();
   const [isDownloading, setIsDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentFolder, setCurrentFolder] = useState('');
@@ -370,7 +372,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
               attachments: email.attachments || [],
               provider_id: '00000000-0000-0000-0000-000000000000',
               user_email: profile.tmwe_email,
-              sync_status: 'sincronizzato',
+              sync_status: 'fun_email_backup',
             });
 
             if (!insertError) {
@@ -393,6 +395,26 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         }
         
         console.log(`✅ Cartella ${folder} completata: ${globalDownloaded} scaricate, ${globalSkipped} saltate, ${globalFailed} errori`);
+        
+        // ✅ Ricarica conteggi DB aggiornati dopo ogni cartella
+        await loadDownloadedCounts();
+        
+        // ✅ Notifica stats aggiornate al padre
+        const totalDB = Object.values(downloadedCounts).reduce((sum, count) => sum + count, 0);
+        const totalServer = Object.values(folderServerCounts).reduce((sum, count) => sum + count, 0);
+        
+        onStatsUpdate?.({
+          totalServer,
+          totalDB,
+          folders: availableFolders.map(f => {
+            const folderName = f.folder_name || f.name;
+            return {
+              name: folderName,
+              server: folderServerCounts[folderName] || 0,
+              db: downloadedCounts[folderName] || 0,
+            };
+          }),
+        });
         
       } catch (folderError: any) {
         console.error(`❌ Errore cartella ${folder}:`, folderError.message || folderError);
@@ -433,6 +455,9 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     });
 
     onDownloadComplete?.(downloadStats);
+    
+    // ✅ Invalida cache per aggiornare FunEmailQuickStats
+    queryClient.invalidateQueries({ queryKey: ['fun-email-quick-stats'] });
 
     setIsDownloading(false);
     setProgress(0);

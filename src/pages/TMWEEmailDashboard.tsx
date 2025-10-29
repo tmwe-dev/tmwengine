@@ -36,9 +36,7 @@ import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { EmailSyncMonitor } from '@/components/email/EmailSyncMonitor';
-import { DirectAPIDownloadDialog } from '@/components/tmwe/DirectAPIDownloadDialog';
 import { EmailSyncStatus } from '@/components/tmwe/EmailSyncStatus';
-import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useEmailSync } from '@/lib/email-sync';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,7 +63,6 @@ const EmailDashboard = () => {
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [syncMonitorOpen, setSyncMonitorOpen] = useState(false);
-  const [directDownloadOpen, setDirectDownloadOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const openAIChat = () => {
@@ -165,15 +162,9 @@ const EmailDashboard = () => {
     staleTime: 5 * 60 * 1000, // Cache 5 minuti
   });
 
-  // Email download hook
-  const {
-    isDownloading,
-    downloadedCount,
-    downloadError,
-    startDownload,
-    currentFolder,
-    totalToDownload,
-  } = useEmailDownload();
+  // Download status (semplificato - rimuovere se non necessario)
+  const isDownloading = false;
+  const downloadedCount = 0;
 
   // === SYNC STATUS: confronto API vs DB ===
   const { data: syncStatus } = useQuery({
@@ -458,10 +449,8 @@ const EmailDashboard = () => {
     selectedSender
   });
 
-  const handleSync = () => {
-    console.log('🚀 Starting REAL email download from API...');
-    toast.info('Avvio download email da tutte le cartelle...');
-    startDownload(queryClient);
+  const handleSync = async () => {
+    toast.info('Usa la pagina Fun Email per scaricare email');
   };
 
   const handleDelete = () => {
@@ -597,19 +586,18 @@ const EmailDashboard = () => {
           setSyncMonitorOpen(true);
         }}
         onOpenDirectDownload={() => {
-          console.log('📥 Opening direct download!');
-          setDirectDownloadOpen(true);
+          toast.info('Usa la pagina Fun Email per scaricare email');
         }}
         downloadProgressComponent={
           <EmailDownloadProgress
             totalEmails={globalEmailCount || 0}
-            currentFolder={currentFolder}
-            totalToDownload={totalToDownload}
+            currentFolder=""
+            totalToDownload={0}
             onDownloadComplete={() => {}}
-            onStartDownload={() => startDownload(queryClient)}
+            onStartDownload={handleSync}
             isDownloading={isDownloading}
             downloadedCount={downloadedCount}
-            downloadError={downloadError}
+            downloadError={null}
           />
         }
       />
@@ -618,7 +606,7 @@ const EmailDashboard = () => {
       <div className="px-4 py-2 border-b bg-background/50">
         <EmailSyncStatus 
           selectedFolder={selectedFolder}
-          onStartSync={() => setDirectDownloadOpen(true)}
+          onStartSync={handleSync}
           isDownloading={isDownloading}
         />
       </div>
@@ -807,11 +795,6 @@ const EmailDashboard = () => {
           />
         </DialogContent>
       </Dialog>
-
-      <DirectAPIDownloadDialog 
-        open={directDownloadOpen}
-        onOpenChange={setDirectDownloadOpen}
-      />
     </div>
   );
 };

@@ -397,23 +397,22 @@ serve(async (req) => {
 
         const msgData = messageData.result || messageData;
 
-        // 🔍 DEBUG: Log completo struttura API
-        console.log('🔍 DEBUG messageData completo:', JSON.stringify(messageData, null, 2));
-        console.log('🔍 DEBUG msgData.from:', msgData.from);
-        console.log('🔍 DEBUG msgData tipo from:', typeof msgData.from);
-        console.log('🔍 DEBUG emailInfo.from:', emailInfo.from);
-        console.log('🔍 DEBUG msgData keys:', Object.keys(msgData));
-
         // Inserisci nel database
         const { error: insertError } = await supabase
           .from('email_messages')
           .insert({
             message_id: uid,
             subject: msgData.subject || emailInfo.subject || 'Senza oggetto',
-            from_email: msgData.from || emailInfo.from || '',
-            to_email: msgData.to || '',
-            cc_email: msgData.cc,
-            bcc_email: msgData.bcc,
+            from_email: msgData.from?.email || emailInfo.from?.email || '',
+            to_email: Array.isArray(msgData.to) 
+              ? msgData.to.map(addr => addr.email).join(', ') 
+              : '',
+            cc_email: Array.isArray(msgData.cc) 
+              ? msgData.cc.map(addr => addr.email).join(', ') 
+              : null,
+            bcc_email: Array.isArray(msgData.bcc) 
+              ? msgData.bcc.map(addr => addr.email).join(', ') 
+              : null,
             data_ricezione: new Date(msgData.date || emailInfo.date || Date.now()).toISOString(),
             cartella: folder_name,
             provider_id: providerData.id,

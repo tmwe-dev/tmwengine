@@ -11,6 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Download, Folder, CheckSquare, Square, Pause, Play } from 'lucide-react';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+import { EmailFolderComparisonDialog } from './EmailFolderComparisonDialog';
 
 interface FunEmailDownloaderProps {
   onDownloadComplete?: (stats: {
@@ -42,6 +43,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
   const shouldStop = useRef(false);
   const isPaused = useRef(false);
   const [pauseState, setPauseState] = useState(false);
+  const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
 
   const fetchWithTimeout = async <T,>(
     promise: Promise<T>,
@@ -530,15 +532,25 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         </div>
 
         {!isDownloading ? (
-          <Button
-            onClick={startDownload}
-            disabled={selectedFolders.length === 0}
-            className="w-full"
-            size="lg"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Prepara Email ({selectedFolders.length})
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={startDownload}
+              disabled={selectedFolders.length === 0}
+              className="flex-1"
+              size="lg"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Prepara Email ({selectedFolders.length})
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setComparisonDialogOpen(true)}
+              disabled={loadingFolders}
+              size="lg"
+            >
+              🔍 Verifica
+            </Button>
+          </div>
         ) : (
           <div className="flex gap-2">
             {pauseState ? (
@@ -614,6 +626,19 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
           <p>📊 Backup sincronizzato con stato dettagliato</p>
         </div>
       </CardContent>
+      
+      <EmailFolderComparisonDialog
+        open={comparisonDialogOpen}
+        onOpenChange={setComparisonDialogOpen}
+        onSelectFolder={(folderName) => {
+          setSelectedFolders([folderName]);
+          setComparisonDialogOpen(false);
+          toast({
+            title: `📬 Cartella selezionata`,
+            description: `${folderName} pronta per il download`
+          });
+        }}
+      />
     </Card>
   );
 };

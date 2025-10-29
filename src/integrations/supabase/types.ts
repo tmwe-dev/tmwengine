@@ -2594,6 +2594,7 @@ export type Database = {
           colore: string | null
           created_at: string
           descrizione: string | null
+          icon: string | null
           id: string
           nome_gruppo: string
           updated_at: string
@@ -2602,6 +2603,7 @@ export type Database = {
           colore?: string | null
           created_at?: string
           descrizione?: string | null
+          icon?: string | null
           id?: string
           nome_gruppo: string
           updated_at?: string
@@ -2610,6 +2612,7 @@ export type Database = {
           colore?: string | null
           created_at?: string
           descrizione?: string | null
+          icon?: string | null
           id?: string
           nome_gruppo?: string
           updated_at?: string

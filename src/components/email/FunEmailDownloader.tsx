@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import emailFolderGif from '@/assets/email-folder-unscreen.gif';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,6 +40,20 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     skipped: 0,
   });
   const { toast } = useToast();
+  const shouldStop = useRef(false);
+
+  const fetchWithTimeout = async <T,>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    errorMessage: string
+  ): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+      )
+    ]);
+  };
 
   // Carica conteggio email già scaricate per cartella
   const loadDownloadedCounts = async () => {
@@ -213,6 +228,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
       return;
     }
 
+    shouldStop.current = false;
     setIsDownloading(true);
     setProgress(0);
     setStats({ total: 0, downloaded: 0, failed: 0, skipped: 0 });
@@ -250,15 +266,24 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     let globalTotal = 0;
 
     for (const folder of selectedFolders) {
+      if (shouldStop.current) {
+        console.log('⏸️ Download fermato dall\'utente');
+        break;
+      }
+
       try {
         console.log(`📂 Inizio download cartella: ${folder}`);
         setCurrentFolder(`📂 ${folder}: recupero lista...`);
         
-        const uidListResponse = await emailMessageApi.getMessages({
-          folder: folder,
-          limit: 2000,
-          offset: 0,
-        });
+        const uidListResponse = await fetchWithTimeout(
+          emailMessageApi.getMessages({
+            folder: folder,
+            limit: 2000,
+            offset: 0,
+          }),
+          60000,
+          `Timeout recupero UID per cartella ${folder}`
+        );
         
         const uidList = uidListResponse?.messages || [];
         globalTotal += uidList.length;
@@ -272,13 +297,22 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         console.log(`📂 ${folder}: trovate ${uidList.length} email da processare`);
 
         for (let i = 0; i < uidList.length; i++) {
+          if (shouldStop.current) {
+            console.log('⏸️ Download fermato dall\'utente');
+            break;
+          }
+
           const uidInfo = uidList[i];
           const uid = String(uidInfo.uid);
           
           setCurrentFolder(`📂 ${folder}: ${i + 1}/${uidList.length}`);
           
           try {
-            const email = await emailMessageApi.getMessage(uid, false);
+            const email = await fetchWithTimeout(
+              emailMessageApi.getMessage(uid, false),
+              30000,
+              `Timeout recupero email ${folder}/${uid}`
+            );
             
             if (!email) {
               console.warn(`Email ${folder}/${uid} non trovata`);
@@ -354,14 +388,23 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         
         console.log(`✅ Cartella ${folder} completata: ${globalDownloaded} scaricate, ${globalSkipped} saltate, ${globalFailed} errori`);
         
-      } catch (error) {
-        console.error(`❌ Errore durante il download della cartella ${folder}:`, error);
-        toast({
-          title: `⚠️ Errore cartella ${folder}`,
-          description: 'Continuando con la prossima cartella...',
-          variant: 'default',
-        });
-        // Continua con la prossima cartella
+      } catch (folderError: any) {
+        console.error(`❌ Errore cartella ${folder}:`, folderError.message || folderError);
+        
+        if (folderError.message?.includes('Timeout')) {
+          toast({
+            title: `⏱️ Timeout cartella ${folder}`,
+            description: 'La cartella richiede troppo tempo. Continuo con la prossima...',
+            variant: 'default',
+          });
+        } else {
+          toast({
+            title: `⚠️ Errore cartella ${folder}`,
+            description: folderError.message || 'Continuando con la prossima cartella...',
+            variant: 'default',
+          });
+        }
+        
         continue;
       }
     }
@@ -395,6 +438,21 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
+        {isDownloading && (
+          <div className="flex items-center justify-center gap-6 mb-4">
+            <div className="text-2xl font-bold text-primary">
+              {stats.downloaded}
+            </div>
+            <img 
+              src={emailFolderGif} 
+              alt="Downloading" 
+              className="w-10 h-10"
+            />
+            <div className="text-2xl font-bold text-primary">
+              {stats.downloaded}
+            </div>
+          </div>
+        )}
         <div className="space-y-2">
           <div className="flex items-center justify-between mb-2">
             <Label className="text-sm font-medium flex items-center gap-2">

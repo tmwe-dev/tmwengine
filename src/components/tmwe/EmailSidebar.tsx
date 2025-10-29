@@ -290,8 +290,9 @@ export const EmailSidebar = ({
     const isSelected = selectedFolder === node.fullPath;
     
     // Get folder data if this is a real folder (not just a parent path)
-    const folder = node.folder;
-    const unseenCount = folder ? (folder.unread_messages || folder.unseen || 0) : 0;
+      const folder = node.folder;
+      const totalCount = folder ? (folder.total_messages || 0) : 0;
+      const unseenCount = folder ? (folder.unread_messages || folder.unseen || 0) : 0;
     
     // Use filled icon for subfolders, outline for main folders
     const Icon = isSubfolder ? FolderOpen : getFolderIcon(node.name);
@@ -340,18 +341,13 @@ export const EmailSidebar = ({
                 isSelected ? "text-purple-300 font-semibold" : ""
               )}>
                 {node.name}
+                {totalCount > 0 && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    ({totalCount})
+                  </span>
+                )}
               </span>
             </div>
-            {unseenCount > 0 && (
-              <Badge variant="secondary" className={cn(
-                "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border",
-                isSelected
-                  ? "border-purple-400 bg-purple-500/20 text-purple-300"
-                  : "border-gray-500 text-gray-200"
-              )}>
-                {unseenCount}
-              </Badge>
-            )}
           </Button>
         </div>
         

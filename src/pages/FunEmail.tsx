@@ -14,12 +14,13 @@ import { FunEmailChat } from '@/components/email/FunEmailChat';
 import { FunEmailGlobalStats } from '@/components/email/FunEmailGlobalStats';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { EmailManagementTab } from '@/components/email/EmailManagementTab';
+import { QuickEmailDownloader } from '@/components/email/QuickEmailDownloader';
 
 const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management'>('list');
+  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick'>('list');
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
     folders: [] as { name: string; count: number }[],
@@ -124,6 +125,13 @@ const FunEmail = () => {
             >
               Management
             </Button>
+            <Button
+              variant={currentView === 'quick' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setCurrentView('quick')}
+            >
+              ⚡ Quick
+            </Button>
           </div>
         }
     >
@@ -175,9 +183,20 @@ const FunEmail = () => {
                 </Card>
               </div>
             </div>
-          ) : (
+          ) : currentView === 'management' ? (
             <EmailManagementTab />
-          )}
+          ) : currentView === 'quick' ? (
+            <div className="p-6">
+              <QuickEmailDownloader
+                onDownloadComplete={(stats) => {
+                  console.log('✅ Quick download completato:', stats);
+                }}
+                onStatsUpdate={(stats) => {
+                  console.log('📊 Stats aggiornate:', stats);
+                }}
+              />
+            </div>
+          ) : null}
         </div>
 
         {/* Sidebar Overlay */}

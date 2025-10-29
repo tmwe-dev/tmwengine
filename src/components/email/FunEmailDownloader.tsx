@@ -329,8 +329,10 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
               continue;
             }
 
-            // Check duplicati
-            const messageId = String(email.message_id || email.uid || `msg-${Date.now()}-${Math.random()}`);
+            // Check duplicati usando identificatore stabile (folder/uid)
+            const uid_stable = String(uid);
+            const messageId = `${folder}/${uid_stable}`;
+            
             const { data: existing } = await supabase
               .from('email_messages')
               .select('id')
@@ -339,6 +341,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
               .maybeSingle();
             
             if (existing) {
+              console.log(`   ⏭️ SKIP duplicato: ${messageId}`);
               globalSkipped++;
               setStats(prev => ({ ...prev, skipped: prev.skipped + 1 }));
               continue;

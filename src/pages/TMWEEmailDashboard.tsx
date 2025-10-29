@@ -396,10 +396,10 @@ const EmailDashboard = () => {
     }
     
     return messages.map((msg: any) => {
-      // ✅ CORRECTED: Prioritize name over email for better readability
-      const fromAddress = typeof msg.from === 'object' 
-        ? msg.from.name || msg.from.email || 'Unknown'
-        : msg.from || 'Unknown';
+      // ✅ CORRECTED: Use from_name and from_email from API response
+      const fromAddress = msg.from_name || msg.from_email || 
+                         (typeof msg.from === 'object' ? (msg.from.name || msg.from.email) : msg.from) || 
+                         'Unknown';
 
       // ✅ CORRECTED: Populate preview field from multiple possible sources
       const preview = msg.preview || 

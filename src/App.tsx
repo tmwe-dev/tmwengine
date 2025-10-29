@@ -59,6 +59,7 @@ import DesignLab from "./pages/DesignLab";
 import DesignLabDashboard from "./pages/DesignLabDashboard";
 import DesignLabScanner from "./pages/DesignLabScanner";
 import PromptSystemManager from "./pages/PromptSystemManager";
+import FunEmail from "./pages/FunEmail";
 
 const queryClient = new QueryClient();
 
@@ -277,6 +278,13 @@ const App = () => {
                     <TMWEEmailDashboard />
                   </CRMLayout>
                 </IntegratedAuthGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/funnemail" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <FunEmail />
+                </CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/email-senders" element={

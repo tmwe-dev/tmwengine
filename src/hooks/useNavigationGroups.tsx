@@ -85,6 +85,7 @@ export const useNavigationGroups = () => {
       icon: Mail,
       items: [
         { name: 'Email Dashboard', href: '/email-manager', icon: Mail },
+        { name: 'Fun Email', href: '/funnemail', icon: Sparkles },
         { name: t('nav.emailCampaigns'), href: '/email-campagne', icon: Mail },
       ]
     },

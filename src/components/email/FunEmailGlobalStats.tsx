@@ -26,7 +26,7 @@ export const FunEmailGlobalStats = ({ totalDB, folders }: FunEmailGlobalStatsPro
               <Folder className="h-4 w-4" />
               <span className="text-xs font-medium">Per Cartella</span>
             </div>
-            <div className="space-y-1 max-h-48 overflow-y-auto">
+            <div className="space-y-1 max-h-[400px] overflow-y-auto">
               {folders.map((folder) => (
                 <div key={folder.name} className="flex justify-between items-center text-sm py-1 px-2 hover:bg-muted/50 rounded">
                   <span className="truncate flex-1">{folder.name}</span>

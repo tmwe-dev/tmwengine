@@ -66,15 +66,17 @@ const queryClient = new QueryClient();
 // Blocca navigazione trackpad a livello browser
 const usePreventTrackpadNavigation = () => {
   useEffect(() => {
-    // 🔒 BLOCCO 1: Eventi wheel (trackpad swipe)
-    const preventNavigation = (e: WheelEvent) => {
-      // Blocca QUALSIASI movimento orizzontale (anche minimo)
-      if (e.deltaX !== 0) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('🚫 Wheel navigation blocked:', e.deltaX);
-      }
-    };
+  // 🔒 BLOCCO 1: Eventi wheel (trackpad swipe) - solo swipe forte
+  const preventNavigation = (e: WheelEvent) => {
+    const HORIZONTAL_THRESHOLD = 50;
+    // Blocca SOLO swipe orizzontale forte (back/forward browser)
+    if (Math.abs(e.deltaX) > HORIZONTAL_THRESHOLD && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🚫 Browser navigation blocked (strong horizontal swipe):', e.deltaX);
+    }
+    // ✅ Permetti scroll verticale e orizzontale leggero
+  };
 
     // 🔒 BLOCCO 2: Eventi touch (gesti multi-touch)
     const preventTouchNavigation = (e: TouchEvent) => {
@@ -96,8 +98,8 @@ const usePreventTrackpadNavigation = () => {
       window.history.pushState(null, '', window.location.href);
     };
 
-    // Attach ALL listeners con {passive: false} e capture: true
-    window.addEventListener('wheel', preventNavigation, { passive: false, capture: true });
+    // Attach listeners - NON usare capture per permettere scroll nei componenti figli
+    window.addEventListener('wheel', preventNavigation, { passive: false });
     window.addEventListener('touchmove', preventTouchNavigation, { passive: false, capture: true });
     window.addEventListener('touchstart', preventTouchNavigation, { passive: false, capture: true });
     

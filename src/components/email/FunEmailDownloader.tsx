@@ -200,21 +200,41 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     setGapResults([]);
 
     try {
-      console.log('🔍 Avvio verifica gap per cartelle:', selectedFolders);
+      console.log('🔍 [Gap Checker] Avvio verifica gap');
+      console.log('🔍 [Gap Checker] Cartelle selezionate:', selectedFolders);
+      
+      const requestBody = {
+        folders: selectedFolders,
+        check_all_db_folders: false,
+      };
+      console.log('🔍 [Gap Checker] Request body:', JSON.stringify(requestBody, null, 2));
       
       const { data, error } = await supabase.functions.invoke('tmwe-email-gap-checker', {
-        body: {
-          folders: selectedFolders,
-          check_all_db_folders: false,
-        },
+        body: requestBody,
       });
 
+      console.log('🔍 [Gap Checker] Raw response:', { data, error });
+
       if (error) {
-        console.error('Errore verifica gap:', error);
-        throw error;
+        console.error('❌ [Gap Checker] Edge function error:', error);
+        console.error('❌ [Gap Checker] Error details:', JSON.stringify(error, null, 2));
+        throw new Error(error.message || 'Edge function invocation failed');
       }
 
-      console.log('✅ Gap check completato:', data);
+      if (!data) {
+        throw new Error('Nessuna risposta dalla funzione di verifica');
+      }
+
+      if (!data.success) {
+        console.error('❌ [Gap Checker] Function returned success=false:', data.error);
+        throw new Error(data.error || 'Verifica fallita');
+      }
+
+      console.log('✅ [Gap Checker] Verifica completata con successo');
+      console.log('✅ [Gap Checker] Results:', JSON.stringify(data.results, null, 2));
+      console.log('✅ [Gap Checker] Total gaps:', data.total_gaps);
+      console.log('✅ [Gap Checker] Folders with gaps:', data.folders_with_gaps);
+      
       setGapResults(data.results || []);
 
       const totalGaps = data.total_gaps || 0;
@@ -233,7 +253,8 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
       }
 
     } catch (error: any) {
-      console.error('Errore verifica gap:', error);
+      console.error('❌ [Gap Checker] Fatal error:', error);
+      console.error('❌ [Gap Checker] Error stack:', error.stack);
       toast({
         title: '❌ Errore verifica gap',
         description: error.message || 'Impossibile verificare le email mancanti',

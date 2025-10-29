@@ -31,6 +31,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
   const [selectedFolders, setSelectedFolders] = useState<string[]>(['INBOX']);
   const [loadingFolders, setLoadingFolders] = useState(false);
   const [downloadedCounts, setDownloadedCounts] = useState<Record<string, number>>({});
+  const [folderServerCounts, setFolderServerCounts] = useState<Record<string, number>>({});
   const [stats, setStats] = useState({
     total: 0,
     downloaded: 0,
@@ -104,14 +105,19 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         
         setAvailableFolders(folders);
         
+        // 💾 Salva i contatori server per cartella nello state
+        const serverCounts: Record<string, number> = {};
+        folders.forEach(f => {
+          const folderName = f.folder_name || f.name;
+          serverCounts[folderName] = f.total_messages || f.messages || f.message_count || 0;
+        });
+        setFolderServerCounts(serverCounts);
+        
         // ✅ Carica anche i conteggi dal DB
         await loadDownloadedCounts();
         
         // Calcola totali globali
-        const totalServer = folders.reduce((sum, f) => {
-          const count = f.total_messages || f.messages || f.message_count || 0;
-          return sum + count;
-        }, 0);
+        const totalServer = Object.values(serverCounts).reduce((sum, count) => sum + count, 0);
 
         // Attendi che downloadedCounts sia aggiornato
         const { data: { user } } = await supabase.auth.getUser();
@@ -189,22 +195,11 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
 
   // Calcola quante email da scaricare ci sono nelle cartelle selezionate (server - DB)
   const getSelectedEmailsCount = () => {
-    console.log('🔢 Calcolo email selezionate, downloadedCounts:', downloadedCounts);
-    
     return selectedFolders.reduce((total, folderName) => {
-      const folder = availableFolders.find(f => 
-        (f.folder_name || f.name) === folderName
-      );
-      if (folder) {
-        const serverCount = folder.total_messages || folder.messages || folder.message_count || 0;
-        const dbCount = downloadedCounts[folderName] || 0;
-        const remaining = Math.max(0, serverCount - dbCount);
-        
-        console.log(`  📁 ${folderName}: ${serverCount} server - ${dbCount} DB = ${remaining} da scaricare`);
-        
-        return total + remaining;
-      }
-      return total;
+      const serverCount = folderServerCounts[folderName] || 0;
+      const dbCount = downloadedCounts[folderName] || 0;
+      const remaining = Math.max(0, serverCount - dbCount);
+      return total + remaining;
     }, 0);
   };
 

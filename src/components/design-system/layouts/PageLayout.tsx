@@ -45,7 +45,7 @@ export function PageLayout({
       {(title || description || actions) && (
         <div
           className={cn(
-            'border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60',
+            'border-b',
             gradient && 'bg-gradient-to-br from-background via-background to-muted/20',
             headerClassName
           )}
@@ -53,9 +53,6 @@ export function PageLayout({
           <div className="container py-6 space-y-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="space-y-1">
-                {title && (
-                  <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-                )}
                 {description && (
                   <p className="text-muted-foreground">{description}</p>
                 )}

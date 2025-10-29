@@ -20,9 +20,8 @@ const FunEmail = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'list' | 'fun'>('list');
   const [globalStats, setGlobalStats] = useState({
-    totalServer: 0,
     totalDB: 0,
-    folders: [] as { name: string; server: number; db: number }[],
+    folders: [] as { name: string; count: number }[],
   });
 
   // ✅ Query email dal DB locale per la cartella selezionata
@@ -148,8 +147,8 @@ const FunEmail = () => {
               {/* COLONNA SINISTRA: Stats Globali + Downloader + Quick Stats */}
               <div className="lg:col-span-1 space-y-4">
                 <FunEmailGlobalStats
-                  totalServer={globalStats.totalServer}
                   totalDB={globalStats.totalDB}
+                  folders={globalStats.folders}
                 />
                 <FunEmailDownloader onStatsUpdate={setGlobalStats} />
                 <FunEmailQuickStats />

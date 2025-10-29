@@ -19,9 +19,8 @@ interface FunEmailDownloaderProps {
     dateRange: { from: Date; to: Date };
   }) => void;
   onStatsUpdate?: (stats: {
-    totalServer: number;
     totalDB: number;
-    folders: { name: string; server: number; db: number }[];
+    folders: { name: string; count: number }[];
   }) => void;
 }
 
@@ -33,8 +32,6 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
   const [availableFolders, setAvailableFolders] = useState<any[]>([]);
   const [selectedFolders, setSelectedFolders] = useState<string[]>(['INBOX']);
   const [loadingFolders, setLoadingFolders] = useState(false);
-  const [downloadedCounts, setDownloadedCounts] = useState<Record<string, number>>({});
-  const [folderServerCounts, setFolderServerCounts] = useState<Record<string, number>>({});
   const [stats, setStats] = useState({
     total: 0,
     downloaded: 0,
@@ -57,8 +54,8 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     ]);
   };
 
-  // Carica conteggio email già scaricate per cartella
-  const loadDownloadedCounts = async () => {
+  // Carica conteggio email dal DB e notifica stats al componente padre
+  const loadAndUpdateStats = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -71,10 +68,12 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
 
       if (!profile?.tmwe_email) return;
 
+      // Query per contare email per cartella dal DB
       const { data, error } = await supabase
         .from('email_messages')
         .select('cartella')
-        .eq('user_email', profile.tmwe_email);
+        .eq('user_email', profile.tmwe_email)
+        .eq('sync_status', 'fun_email_backup');
 
       if (error) {
         console.error('Errore caricamento conteggi DB:', error);
@@ -88,8 +87,16 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         counts[folder] = (counts[folder] || 0) + 1;
       });
 
-      console.log('📊 Email già scaricate per cartella:', counts);
-      setDownloadedCounts(counts);
+      const totalDB = Object.values(counts).reduce((sum, count) => sum + count, 0);
+
+      console.log('📊 Email nel DB per cartella:', counts);
+      console.log('📊 Totale DB:', totalDB);
+
+      // Notifica al padre con dati accurati dal DB
+      onStatsUpdate?.({
+        totalDB,
+        folders: Object.entries(counts).map(([name, count]) => ({ name, count })),
+      });
     } catch (error) {
       console.error('Errore conteggio email DB:', error);
     }
@@ -102,82 +109,11 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         const response = await emailSearchApi.getFolders();
         const folders = response.folders || [];
         
-        // 🔍 LOGGING DETTAGLIATO PER DEBUG
-        console.log('🔍 RAW API Response:', JSON.stringify(response, null, 2));
-        console.log('📂 Folders array:', JSON.stringify(folders, null, 2));
-        
-        // Log dettagliato per ogni cartella
-        folders.forEach((folder: any) => {
-          const folderName = folder.folder_name || folder.name;
-          console.log(`📁 ${folderName}:`, {
-            allKeys: Object.keys(folder),
-            total_messages: folder.total_messages,
-            messages: folder.messages,
-            message_count: folder.message_count,
-            count: folder.count,
-            total: folder.total,
-            rawFolder: folder
-          });
-        });
-        
+        console.log('📂 Cartelle disponibili:', folders.length);
         setAvailableFolders(folders);
         
-        // 💾 Salva i contatori server per cartella nello state
-        const serverCounts: Record<string, number> = {};
-        folders.forEach(f => {
-          const folderName = f.folder_name || f.name;
-          serverCounts[folderName] = f.total_messages || f.messages || f.message_count || 0;
-        });
-        setFolderServerCounts(serverCounts);
-        
-        // ✅ Carica anche i conteggi dal DB
-        await loadDownloadedCounts();
-        
-        // Calcola totali globali
-        const totalServer = Object.values(serverCounts).reduce((sum, count) => sum + count, 0);
-
-        // Attendi che downloadedCounts sia aggiornato
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('tmwe_email')
-            .eq('user_id', user.id)
-            .single();
-
-          if (profile?.tmwe_email) {
-            const { data } = await supabase
-              .from('email_messages')
-              .select('cartella')
-              .eq('user_email', profile.tmwe_email);
-
-            const counts: Record<string, number> = {};
-            data?.forEach((row) => {
-              const folder = row.cartella || 'Unknown';
-              counts[folder] = (counts[folder] || 0) + 1;
-            });
-
-            const totalDB = Object.values(counts).reduce((sum, count) => sum + count, 0);
-
-            console.log('🌍 Totali globali:', { totalServer, totalDB });
-
-            // Notifica al padre
-            onStatsUpdate?.({
-              totalServer,
-              totalDB,
-              folders: folders.map(f => {
-                const folderName = f.folder_name || f.name;
-                return {
-                  name: folderName,
-                  server: f.total_messages || f.messages || f.message_count || 0,
-                  db: counts[folderName] || 0,
-                };
-              }),
-            });
-          }
-        }
-        
-        console.log('📂 Cartelle caricate:', folders.length);
+        // Carica stats dal DB
+        await loadAndUpdateStats();
       } catch (error) {
         console.error('Errore caricamento cartelle:', error);
         toast({
@@ -210,15 +146,6 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     }
   };
 
-  // Calcola quante email da scaricare ci sono nelle cartelle selezionate (server - DB)
-  const getSelectedEmailsCount = () => {
-    return selectedFolders.reduce((total, folderName) => {
-      const serverCount = folderServerCounts[folderName] || 0;
-      const dbCount = downloadedCounts[folderName] || 0;
-      const remaining = Math.max(0, serverCount - dbCount);
-      return total + remaining;
-    }, 0);
-  };
 
   const startDownload = async () => {
     if (selectedFolders.length === 0) {
@@ -399,25 +326,8 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         
         console.log(`✅ Cartella ${folder} completata: ${globalDownloaded} scaricate, ${globalSkipped} saltate, ${globalFailed} errori`);
         
-        // ✅ Ricarica conteggi DB aggiornati dopo ogni cartella
-        await loadDownloadedCounts();
-        
-        // ✅ Notifica stats aggiornate al padre
-        const totalDB = Object.values(downloadedCounts).reduce((sum, count) => sum + count, 0);
-        const totalServer = Object.values(folderServerCounts).reduce((sum, count) => sum + count, 0);
-        
-        onStatsUpdate?.({
-          totalServer,
-          totalDB,
-          folders: availableFolders.map(f => {
-            const folderName = f.folder_name || f.name;
-            return {
-              name: folderName,
-              server: folderServerCounts[folderName] || 0,
-              db: downloadedCounts[folderName] || 0,
-            };
-          }),
-        });
+        // ✅ Ricarica stats aggiornate dal DB dopo ogni cartella
+        await loadAndUpdateStats();
         
       } catch (folderError: any) {
         console.error(`❌ Errore cartella ${folder}:`, folderError.message || folderError);
@@ -459,15 +369,14 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
 
     onDownloadComplete?.(downloadStats);
     
-    // ✅ Invalida cache per aggiornare FunEmailQuickStats
+    // ✅ Invalida cache per aggiornare FunEmailQuickStats e stats finali
     queryClient.invalidateQueries({ queryKey: ['fun-email-quick-stats'] });
+    await loadAndUpdateStats();
 
     setIsDownloading(false);
     setProgress(0);
     setCurrentFolder('');
   };
-
-  const selectedEmailsCount = getSelectedEmailsCount();
 
   return (
     <Card>
@@ -533,25 +442,6 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
                     >
                       {isSelected ? <CheckSquare className="h-3 w-3" /> : <Square className="h-3 w-3" />}
                       {folderName}
-                      <span className="text-muted-foreground text-[10px]">
-                        ({folder.total_messages || folder.messages || folder.message_count || 0} sul server
-                        {downloadedCounts[folderName] !== undefined && (
-                          <>
-                            {' | '}
-                            <span className="text-green-600 font-medium">
-                              {downloadedCounts[folderName]} scaricate
-                            </span>
-                            {' | '}
-                            <span className="text-blue-600 font-medium">
-                              {Math.max(0, (folder.total_messages || folder.messages || folder.message_count || 0) - downloadedCounts[folderName])} da scaricare
-                            </span>
-                          </>
-                        )}
-                        {downloadedCounts[folderName] > 0 && 
-                         downloadedCounts[folderName] >= (folder.total_messages || folder.messages || folder.message_count || 0) && (
-                          <span className="ml-1 text-green-600">✓</span>
-                        )})
-                      </span>
                     </Label>
                   </div>
                 );
@@ -560,7 +450,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
           )}
           
           <p className="text-xs text-muted-foreground">
-            {selectedFolders.length} cartelle selezionate • {selectedEmailsCount.toLocaleString()} email da scaricare
+            {selectedFolders.length} {selectedFolders.length === 1 ? 'cartella selezionata' : 'cartelle selezionate'}
           </p>
         </div>
 
@@ -578,7 +468,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
           ) : (
             <>
               <Download className="mr-2 h-4 w-4" />
-              Prepara Email per AI ({selectedFolders.length} cartelle • {selectedEmailsCount.toLocaleString()} email)
+              Prepara Email per AI ({selectedFolders.length} {selectedFolders.length === 1 ? 'cartella' : 'cartelle'})
             </>
           )}
         </Button>

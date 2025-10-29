@@ -187,6 +187,20 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     }
   };
 
+  // Calcola quante email totali ci sono nelle cartelle selezionate
+  const getSelectedEmailsCount = () => {
+    return selectedFolders.reduce((total, folderName) => {
+      const folder = availableFolders.find(f => 
+        (f.folder_name || f.name) === folderName
+      );
+      if (folder) {
+        const count = folder.total_messages || folder.messages || folder.message_count || 0;
+        return total + count;
+      }
+      return total;
+    }, 0);
+  };
+
   const startDownload = async () => {
     if (selectedFolders.length === 0) {
       toast({
@@ -355,6 +369,8 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     }
   };
 
+  const selectedEmailsCount = getSelectedEmailsCount();
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
@@ -414,7 +430,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
           )}
           
           <p className="text-xs text-muted-foreground">
-            {selectedFolders.length} cartelle selezionate
+            {selectedFolders.length} cartelle selezionate • {selectedEmailsCount.toLocaleString()} email da scaricare
           </p>
         </div>
 
@@ -432,7 +448,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
           ) : (
             <>
               <Download className="mr-2 h-4 w-4" />
-              Prepara Email per AI ({selectedFolders.length} cartelle)
+              Prepara Email per AI ({selectedFolders.length} cartelle • {selectedEmailsCount.toLocaleString()} email)
             </>
           )}
         </Button>

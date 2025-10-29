@@ -29,7 +29,7 @@ export interface QuickSyncOptions {
   userEmail: string;
   batchSize?: number; // default 15
   maxRetries?: number; // default 2
-  timeout?: number; // default 10000ms
+  timeout?: number; // default 30000ms (30s per email grandi con allegati)
   onProgress?: (progress: QuickSyncProgress) => void;
   onComplete?: (stats: QuickSyncStats) => void;
   onError?: (error: Error) => void;
@@ -47,11 +47,11 @@ export interface QuickSyncStats {
 // ==================== UTILITY FUNCTIONS ====================
 
 /**
- * Fetch con timeout ridotto (10s invece di 30s)
+ * Fetch con timeout esteso (30s per email grandi con allegati)
  */
 async function quickFetchWithTimeout<T>(
   promise: Promise<T>,
-  timeoutMs: number = 10000
+  timeoutMs: number = 30000
 ): Promise<T> {
   let timeoutId: NodeJS.Timeout;
   
@@ -160,7 +160,7 @@ async function checkQuickDuplicates(
 async function downloadQuickSingleEmail(
   uid: string, 
   folderName: string,
-  timeout: number = 8000
+  timeout: number = 30000
 ) {
     console.log(`📥 [downloadQuickSingleEmail] ==================`);
     console.log(`📥 UID: ${uid}`);
@@ -193,7 +193,7 @@ async function downloadQuickBatch(
   folderName: string,
   batchSize: number = 15,
   maxRetries: number = 2,
-  timeout: number = 10000
+  timeout: number = 30000
 ): Promise<Array<{ uid: string; data: any; error?: string }>> {
   const results: Array<{ uid: string; data: any; error?: string }> = [];
 
@@ -313,7 +313,7 @@ export class QuickEmailSyncer {
     this.options = {
       batchSize: 15,      // Download 15 email in parallelo
       maxRetries: 2,      // Max 2 retry per email
-      timeout: 8000,      // 8s timeout (ridotto da 10s)
+      timeout: 30000,     // 30s timeout per email grandi con allegati
       onProgress: () => {},
       onComplete: () => {},
       onError: () => {},

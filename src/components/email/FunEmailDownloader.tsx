@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Loader2 } from 'lucide-react';
+import { authenticateWithJWT } from '@/lib/tmwe-api-integrated';
 
 interface FunEmailDownloaderProps {
   onDownloadComplete?: (stats: {
@@ -41,26 +42,99 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
         throw new Error('Email TMWE non configurato nel profilo');
       }
 
-      // Call the sync master edge function
-      // The edge function will use OAuth token from email_provider_credenziali
-      setCurrentFolder('Inizializzazione...');
+      // Step 1: Authenticate with JWT (uses hardcoded OAuth credentials)
+      setCurrentFolder('Autenticazione TMWE...');
+      setProgress(5);
+      
+      const authenticated = await authenticateWithJWT();
+      if (!authenticated) {
+        throw new Error('Autenticazione TMWE fallita');
+      }
+
+      // Step 2: Get email UIDs from INBOX via tmwe-api-proxy
+      setCurrentFolder('Recupero lista email...');
       setProgress(10);
 
-      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
+      const { data: uidsResponse, error: uidsError } = await supabase.functions.invoke('tmwe-api-proxy', {
         body: {
-          mode: 'incremental',
-          folder_name: 'INBOX',
-          max_emails: 2000,
-        },
+          endpoint: '/email_message',
+          data: {
+            handler: 'get_messages',
+            folder: 'INBOX',
+            limit: 2000,
+            format: 'text'
+          }
+        }
       });
 
-      if (error) throw error;
+      if (uidsError) throw uidsError;
+
+      const uids = uidsResponse?.data?.messages || [];
+      if (uids.length === 0) {
+        throw new Error('Nessuna email trovata in INBOX');
+      }
+
+      // Step 3: Download each email and save to DB
+      let downloadedCount = 0;
+      const totalEmails = Math.min(uids.length, 2000);
+
+      for (let i = 0; i < totalEmails; i++) {
+        const uid = uids[i];
+        setCurrentFolder(`Email ${i + 1}/${totalEmails}...`);
+        
+        // Get full email content
+        const { data: emailResponse, error: emailError } = await supabase.functions.invoke('tmwe-api-proxy', {
+          body: {
+            endpoint: '/email_message',
+            data: {
+              handler: 'get_message',
+              uid: uid,
+              format: 'both'
+            }
+          }
+        });
+
+        if (emailError) {
+          console.error(`Error downloading email ${uid}:`, emailError);
+          continue;
+        }
+
+        const email = emailResponse?.data;
+        if (!email) continue;
+
+        // Save to email_messages with sync_status='fun_email_backup'
+        const { error: insertError } = await supabase.from('email_messages').insert({
+          message_id: email.message_id || `uid-${uid}`,
+          subject: email.subject || '(No Subject)',
+          from_email: email.from?.email || 'unknown@unknown.com',
+          to_email: email.to?.[0]?.email || profile.tmwe_email,
+          cc_email: email.cc?.map((c: any) => c.email).join(', ') || null,
+          body_text: email.text_body || '',
+          body_html: email.html_body || '',
+          cartella: 'INBOX',
+          direzione: 'in',
+          stato: 'received',
+          sync_status: 'fun_email_backup',
+          user_email: profile.tmwe_email,
+          data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
+          flags: { seen: email.seen || false },
+          attachments: email.attachments || [],
+        } as any);
+
+        if (!insertError) {
+          downloadedCount++;
+        }
+
+        // Update progress: 10% auth + 90% download
+        const downloadProgress = 10 + ((i + 1) / totalEmails) * 90;
+        setProgress(Math.round(downloadProgress));
+      }
 
       setProgress(100);
       setCurrentFolder('Completato!');
 
       const stats = {
-        totalDownloaded: data?.emails_downloaded || 0,
+        totalDownloaded: downloadedCount,
         folders: ['INBOX'],
         dateRange: {
           from: new Date(),
@@ -68,16 +142,9 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
         },
       };
 
-      // Mark downloaded emails as fun_email_backup
-      await supabase
-        .from('email_messages')
-        .update({ sync_status: 'fun_email_backup' })
-        .eq('user_email', profile.tmwe_email)
-        .is('sync_status', null);
-
       toast({
         title: '✅ Download completato',
-        description: `${stats.totalDownloaded} email scaricate e pronte per l'analisi AI`,
+        description: `${downloadedCount} email scaricate e pronte per l'analisi AI`,
       });
 
       onDownloadComplete?.(stats);

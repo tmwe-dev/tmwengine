@@ -15,12 +15,13 @@ import { FunEmailGlobalStats } from '@/components/email/FunEmailGlobalStats';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { EmailManagementTab } from '@/components/email/EmailManagementTab';
 import { QuickEmailDownloader } from '@/components/email/QuickEmailDownloader';
+import { EmailIntegrityChecker } from '@/components/email/EmailIntegrityChecker';
 
 const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick'>('list');
+  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick' | 'integrity'>('list');
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
     folders: [] as { name: string; count: number }[],
@@ -132,6 +133,13 @@ const FunEmail = () => {
             >
               ⚡ Quick
             </Button>
+            <Button
+              variant={currentView === 'integrity' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setCurrentView('integrity')}
+            >
+              🔍 Verifica
+            </Button>
           </div>
         }
     >
@@ -195,6 +203,10 @@ const FunEmail = () => {
                   console.log('📊 Stats aggiornate:', stats);
                 }}
               />
+            </div>
+          ) : currentView === 'integrity' ? (
+            <div className="p-6">
+              <EmailIntegrityChecker />
             </div>
           ) : null}
         </div>

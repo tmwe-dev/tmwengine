@@ -408,6 +408,12 @@ export class QuickEmailSyncer {
       // 1. Get UIDs
       const uids = await getQuickFolderUids(folderName, this.options.timeout);
       this.progress.currentFolderTotal = uids.length;
+      
+      // ⚠️ Warning per cartelle molto grandi
+      if (uids.length > 2000) {
+        console.warn(`⚠️ ${folderName}: ${uids.length} email totali - cartella molto grande`);
+      }
+      
       this.notifyProgress();
 
       if (uids.length === 0) {
@@ -417,13 +423,11 @@ export class QuickEmailSyncer {
 
       // 2. Check duplicati con batch ottimizzato
       const existing = await checkQuickDuplicates(uids, userEmail, folderName);
-      let newUids = uids.filter(uid => !existing.has(uid));
+      const newUids = uids.filter(uid => !existing.has(uid));
       
-      // 2b. Limita cartelle molto grandi (opzionale)
-      const MAX_PER_FOLDER = 1000;
-      if (newUids.length > MAX_PER_FOLDER) {
-        console.warn(`📦 ${folderName} limitata a ${MAX_PER_FOLDER}/${newUids.length} email`);
-        newUids = newUids.slice(0, MAX_PER_FOLDER);
+      // ✅ SOLUZIONE D: Warning informativi per cartelle grandi (nessun limite)
+      if (newUids.length > 1000) {
+        console.warn(`📦 ${folderName} contiene ${newUids.length} nuove email - download potrebbe richiedere tempo`);
       }
       
       const skippedCount = uids.length - newUids.length;
@@ -496,6 +500,13 @@ export class QuickEmailSyncer {
   private updateSpeed() {
     const elapsed = (Date.now() - this.startTime) / 1000;
     this.progress.currentSpeed = elapsed > 0 ? this.progress.downloadedCount / elapsed : 0;
+    
+    // ✅ Stima tempo rimanente più accurata basata su velocità media
+    const totalEmails = this.progress.downloadedCount + this.progress.skippedCount + this.progress.failedCount;
+    const emailsRemaining = this.progress.currentFolderTotal - totalEmails;
+    const avgSpeed = this.progress.currentSpeed || 1;
+    const estimatedSeconds = avgSpeed > 0 ? emailsRemaining / avgSpeed : 0;
+    this.progress.estimatedTimeRemaining = Math.max(0, estimatedSeconds);
     
     const remaining = this.progress.totalFolders - this.progress.completedFolders;
     if (this.progress.currentSpeed > 0 && remaining > 0) {

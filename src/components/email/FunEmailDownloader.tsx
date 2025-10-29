@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, Folder, CheckSquare, Square } from 'lucide-react';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 
 interface FunEmailDownloaderProps {
   onDownloadComplete?: (stats: {
@@ -19,11 +22,61 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
   const [isDownloading, setIsDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentFolder, setCurrentFolder] = useState('');
+  const [availableFolders, setAvailableFolders] = useState<any[]>([]);
+  const [selectedFolders, setSelectedFolders] = useState<string[]>(['INBOX']);
+  const [loadingFolders, setLoadingFolders] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    downloaded: 0,
+    failed: 0,
+    skipped: 0,
+  });
   const { toast } = useToast();
 
+  useEffect(() => {
+    const loadFolders = async () => {
+      setLoadingFolders(true);
+      try {
+        const response = await emailSearchApi.getFolders();
+        const folders = response.folders || [];
+        setAvailableFolders(folders);
+        console.log('📂 Cartelle disponibili:', folders.map((f: any) => f.folder_name || f.name));
+      } catch (error) {
+        console.error('Errore caricamento cartelle:', error);
+        toast({
+          title: '⚠️ Impossibile caricare cartelle',
+          description: 'Verrà usata solo INBOX',
+          variant: 'default',
+        });
+      } finally {
+        setLoadingFolders(false);
+      }
+    };
+    
+    loadFolders();
+  }, [toast]);
+
+  const toggleFolder = (folderName: string) => {
+    setSelectedFolders(prev => 
+      prev.includes(folderName)
+        ? prev.filter(f => f !== folderName)
+        : [...prev, folderName]
+    );
+  };
+
   const startDownload = async () => {
+    if (selectedFolders.length === 0) {
+      toast({
+        title: '⚠️ Nessuna cartella selezionata',
+        description: 'Seleziona almeno una cartella da scaricare',
+        variant: 'default',
+      });
+      return;
+    }
+
     setIsDownloading(true);
     setProgress(0);
+    setStats({ total: 0, downloaded: 0, failed: 0, skipped: 0 });
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -31,7 +84,6 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
         throw new Error('User not authenticated');
       }
 
-      // Get user's TMWE email
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('tmwe_email')
@@ -42,89 +94,117 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
         throw new Error('Email TMWE non configurato nel profilo');
       }
 
-      // Step 1: Get email UIDs from INBOX (auto-auth via emailMessageApi)
-      setCurrentFolder('Recupero lista email...');
-      setProgress(10);
+      let globalDownloaded = 0;
+      let globalFailed = 0;
+      let globalSkipped = 0;
+      let globalTotal = 0;
 
-      const uidListResponse = await emailMessageApi.getMessages({
-        folder: 'INBOX',
-        limit: 2000,
-        offset: 0,
-      });
-
-      const uidList = uidListResponse?.messages || [];
-      if (uidList.length === 0) {
-        throw new Error('Nessuna email trovata in INBOX');
-      }
-
-      // Step 2: Download each email and save to DB
-      let downloadedCount = 0;
-      const totalEmails = uidList.length;
-
-      for (let i = 0; i < totalEmails; i++) {
-        const uidInfo = uidList[i];
-        const uid = String(uidInfo.uid);
+      for (const folder of selectedFolders) {
+        setCurrentFolder(`📂 ${folder}: recupero lista...`);
         
-        setCurrentFolder(`Email ${i + 1}/${totalEmails}...`);
+        const uidListResponse = await emailMessageApi.getMessages({
+          folder: folder,
+          limit: 2000,
+          offset: 0,
+        });
         
-        // Get full email content (auto-auth via emailMessageApi)
-        const email = await emailMessageApi.getMessage(uid, false);
+        const uidList = uidListResponse?.messages || [];
+        globalTotal += uidList.length;
+        setStats(prev => ({ ...prev, total: globalTotal }));
         
-        if (!email) {
-          console.warn(`Email ${uid} non trovata`);
+        if (uidList.length === 0) {
+          console.log(`📂 ${folder}: nessuna email trovata`);
           continue;
         }
 
-        // Parse date with same logic as useEmailDownload
-        let isoDate = new Date().toISOString();
-        if (email.date) {
+        for (let i = 0; i < uidList.length; i++) {
+          const uidInfo = uidList[i];
+          const uid = String(uidInfo.uid);
+          
+          setCurrentFolder(`📂 ${folder}: ${i + 1}/${uidList.length}`);
+          
           try {
-            isoDate = new Date(email.date).toISOString();
-          } catch (e) {
-            console.error('Error parsing date:', email.date);
+            const email = await emailMessageApi.getMessage(uid, false);
+            
+            if (!email) {
+              console.warn(`Email ${folder}/${uid} non trovata`);
+              globalFailed++;
+              setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
+              continue;
+            }
+
+            // Check duplicati
+            const messageId = String(email.message_id || email.uid || `msg-${Date.now()}-${Math.random()}`);
+            const { data: existing } = await supabase
+              .from('email_messages')
+              .select('id')
+              .eq('message_id', messageId)
+              .eq('user_email', profile.tmwe_email)
+              .maybeSingle();
+            
+            if (existing) {
+              globalSkipped++;
+              setStats(prev => ({ ...prev, skipped: prev.skipped + 1 }));
+              continue;
+            }
+
+            let isoDate = new Date().toISOString();
+            if (email.date) {
+              try {
+                isoDate = new Date(email.date).toISOString();
+              } catch (e) {
+                console.error('Error parsing date:', email.date);
+              }
+            }
+
+            const { error: insertError } = await supabase.from('email_messages').insert({
+              message_id: messageId,
+              from_email: email.from?.address || email.from || email.from_email || '',
+              to_email: Array.isArray(email.to) 
+                ? email.to.map((t: any) => t.address || t).join(',')
+                : email.to || email.to_email || '',
+              cc_email: email.cc || email.cc_email || null,
+              bcc_email: email.bcc || email.bcc_email || null,
+              subject: email.subject || '',
+              body_text: email.body_text || email.text || '',
+              body_html: email.body_html || email.html || '',
+              data_ricezione: isoDate,
+              cartella: folder,
+              direzione: 'inbound',
+              stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
+              flags: email.flags || [],
+              attachments: email.attachments || [],
+              provider_id: '00000000-0000-0000-0000-000000000000',
+              user_email: profile.tmwe_email,
+              sync_status: 'sincronizzato',
+            });
+
+            if (!insertError) {
+              globalDownloaded++;
+              setStats(prev => ({ ...prev, downloaded: prev.downloaded + 1 }));
+            } else {
+              console.error(`Errore inserimento ${folder}/${uid}:`, insertError);
+              globalFailed++;
+              setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
+            }
+
+          } catch (error) {
+            console.error(`Errore download ${folder}/${uid}:`, error);
+            globalFailed++;
+            setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
           }
+
+          const progressPercent = ((globalDownloaded + globalFailed + globalSkipped) / globalTotal) * 100;
+          setProgress(Math.round(progressPercent));
         }
-
-        // Save to email_messages with sync_status='fun_email_backup'
-        const { error: insertError } = await supabase.from('email_messages').insert({
-          message_id: String(email.message_id || email.uid || `msg-${Date.now()}-${Math.random()}`),
-          from_email: email.from?.address || email.from || email.from_email || '',
-          to_email: Array.isArray(email.to) 
-            ? email.to.map((t: any) => t.address || t).join(',')
-            : email.to || email.to_email || '',
-          cc_email: email.cc || email.cc_email || null,
-          bcc_email: email.bcc || email.bcc_email || null,
-          subject: email.subject || '',
-          body_text: email.body_text || email.text || '',
-          body_html: email.body_html || email.html || '',
-          data_ricezione: isoDate,
-          cartella: 'INBOX',
-          direzione: 'inbound',
-          stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
-          flags: email.flags || [],
-          attachments: email.attachments || [],
-          provider_id: '00000000-0000-0000-0000-000000000000',
-          user_email: profile.tmwe_email,
-          sync_status: 'fun_email_backup',
-        });
-
-        if (!insertError) {
-          downloadedCount++;
-        } else {
-          console.error(`Errore inserimento email ${uid}:`, insertError);
-        }
-
-        // Update progress: 10% initial + 90% download
-        const downloadProgress = 10 + ((i + 1) / totalEmails) * 90;
-        setProgress(Math.round(downloadProgress));
       }
 
       setProgress(100);
       setCurrentFolder('Completato!');
 
-      const stats = {
-        totalDownloaded: downloadedCount,
-        folders: ['INBOX'],
+      const downloadStats = {
+        totalDownloaded: globalDownloaded,
+        folders: selectedFolders,
         dateRange: {
           from: new Date(),
           to: new Date(),
@@ -133,10 +213,10 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
 
       toast({
         title: '✅ Download completato',
-        description: `${downloadedCount} email scaricate e pronte per l'analisi AI`,
+        description: `${globalDownloaded} email salvate, ${globalSkipped} duplicate saltate, ${globalFailed} errori`,
       });
 
-      onDownloadComplete?.(stats);
+      onDownloadComplete?.(downloadStats);
 
     } catch (error: any) {
       console.error('[FunEmailDownloader] Error:', error);
@@ -155,40 +235,94 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
-        <div className="flex flex-col gap-2">
-          <Button
-            onClick={startDownload}
-            disabled={isDownloading}
-            className="w-full"
-            size="lg"
-          >
-            {isDownloading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Scaricamento in corso...
-              </>
-            ) : (
-              <>
-                <Download className="mr-2 h-4 w-4" />
-                Prepara Email per AI
-              </>
-            )}
-          </Button>
-
-          {isDownloading && (
-            <div className="space-y-2">
-              <Progress value={progress} className="w-full" />
-              <p className="text-xs text-muted-foreground text-center">
-                {currentFolder}
-              </p>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium flex items-center gap-2">
+            <Folder className="h-4 w-4" />
+            Seleziona cartelle da scaricare
+          </Label>
+          
+          {loadingFolders ? (
+            <div className="text-xs text-muted-foreground">Caricamento cartelle...</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded p-2">
+              {availableFolders.map((folder) => {
+                const folderName = folder.folder_name || folder.name;
+                const isSelected = selectedFolders.includes(folderName);
+                
+                return (
+                  <div key={folderName} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`folder-${folderName}`}
+                      checked={isSelected}
+                      onCheckedChange={() => toggleFolder(folderName)}
+                      disabled={isDownloading}
+                    />
+                    <Label
+                      htmlFor={`folder-${folderName}`}
+                      className="text-xs cursor-pointer flex items-center gap-1"
+                    >
+                      {isSelected ? <CheckSquare className="h-3 w-3" /> : <Square className="h-3 w-3" />}
+                      {folderName}
+                      <span className="text-muted-foreground">
+                        ({folder.total_messages || folder.messages || 0})
+                      </span>
+                    </Label>
+                  </div>
+                );
+              })}
             </div>
           )}
+          
+          <p className="text-xs text-muted-foreground">
+            {selectedFolders.length} cartelle selezionate
+          </p>
         </div>
 
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p>📥 Scarica email da TMWE server</p>
-          <p>💾 Salva come backup locale</p>
-          <p>🤖 Prepara per analisi AI</p>
+        <Button
+          onClick={startDownload}
+          disabled={isDownloading || selectedFolders.length === 0}
+          className="w-full"
+          size="lg"
+        >
+          {isDownloading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Scaricamento in corso...
+            </>
+          ) : (
+            <>
+              <Download className="mr-2 h-4 w-4" />
+              Prepara Email per AI ({selectedFolders.length} cartelle)
+            </>
+          )}
+        </Button>
+
+        {isDownloading && (
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs font-medium">
+              <span>{currentFolder}</span>
+              <span>{stats.downloaded + stats.failed + stats.skipped}/{stats.total}</span>
+            </div>
+            <Progress value={progress} className="w-full" />
+            <div className="grid grid-cols-3 gap-2 text-xs text-center">
+              <div className="text-green-600 font-medium">
+                ✅ {stats.downloaded} salvate
+              </div>
+              <div className="text-yellow-600 font-medium">
+                ⏭️ {stats.skipped} duplicate
+              </div>
+              <div className="text-red-600 font-medium">
+                ❌ {stats.failed} errori
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="text-xs text-muted-foreground space-y-1 bg-muted/50 p-3 rounded">
+          <p>📥 Scarica email complete dal server TMWE</p>
+          <p>💾 Salva: oggetto, body (text + html), allegati</p>
+          <p>🔄 Salta automaticamente email già scaricate</p>
+          <p>📊 Backup sincronizzato con stato dettagliato</p>
         </div>
       </CardContent>
     </Card>

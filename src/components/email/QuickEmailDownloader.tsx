@@ -218,7 +218,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         userEmail: profile.tmwe_email,
         batchSize: 15,
         maxRetries: 2,
-        timeout: 30000,  // 30s per email grandi con allegati
+        timeout: 60000,  // ✅ 60s per email grandi con allegati
         onProgress: (progress) => {
           setQuickProgress(progress);
         },

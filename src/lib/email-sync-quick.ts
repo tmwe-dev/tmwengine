@@ -29,7 +29,7 @@ export interface QuickSyncOptions {
   userEmail: string;
   batchSize?: number; // default 15
   maxRetries?: number; // default 2
-  timeout?: number; // default 30000ms (30s per email grandi con allegati)
+  timeout?: number; // default 60000ms (60s per email grandi con allegati)
   onProgress?: (progress: QuickSyncProgress) => void;
   onComplete?: (stats: QuickSyncStats) => void;
   onError?: (error: Error) => void;
@@ -47,11 +47,11 @@ export interface QuickSyncStats {
 // ==================== UTILITY FUNCTIONS ====================
 
 /**
- * Fetch con timeout esteso (30s per email grandi con allegati)
+ * Fetch con timeout esteso (60s per email grandi con allegati)
  */
 async function quickFetchWithTimeout<T>(
   promise: Promise<T>,
-  timeoutMs: number = 30000
+  timeoutMs: number = 60000
 ): Promise<T> {
   let timeoutId: NodeJS.Timeout;
   
@@ -88,29 +88,27 @@ async function getQuickTmweConfig(userId: string) {
 }
 
 /**
- * Ottiene lista UID da cartella (con timeout ridotto)
+ * Ottiene lista UID da cartella (SENZA timeout - lascia completare naturalmente)
  */
-async function getQuickFolderUids(folderName: string, timeout: number = 8000): Promise<string[]> {
+async function getQuickFolderUids(folderName: string): Promise<string[]> {
   console.log(`🔍 [getQuickFolderUids] ==================`);
   console.log(`🔍 Folder richiesta: "${folderName}"`);
   console.log(`🔍 Folder length: ${folderName.length}`);
   console.log(`🔍 Folder bytes: ${Array.from(folderName).map(c => c.charCodeAt(0)).join(',')}`);
   console.log(`🔍 ==================`);
   
-  const response = await quickFetchWithTimeout(
-    supabase.functions.invoke('tmwe-api-proxy', {
-      body: {
-        endpoint: '/email_message',
-        data: { 
-          handler: 'get_messages',
-          folder: folderName,
-          limit: 2000,
-          offset: 0
-        }
+  // ✅ RIMOSSO timeout - cartelle grandi possono richiedere tempo
+  const response = await supabase.functions.invoke('tmwe-api-proxy', {
+    body: {
+      endpoint: '/email_message',
+      data: { 
+        handler: 'get_messages',
+        folder: folderName,
+        limit: 2000,
+        offset: 0
       }
-    }),
-    timeout
-  );
+    }
+  });
 
   if (response.error) throw new Error(`UID fetch error: ${response.error.message}`);
   
@@ -155,12 +153,12 @@ async function checkQuickDuplicates(
 }
 
 /**
- * Download singola email (timeout ridotto a 8s)
+ * Download singola email (timeout 60s per email grandi con allegati)
  */
 async function downloadQuickSingleEmail(
   uid: string, 
   folderName: string,
-  timeout: number = 30000
+  timeout: number = 60000
 ) {
     console.log(`📥 [downloadQuickSingleEmail] ==================`);
     console.log(`📥 UID: ${uid}`);
@@ -179,25 +177,25 @@ async function downloadQuickSingleEmail(
       return email;
       
     } catch (error: any) {
-      console.error(`❌ [downloadQuickSingleEmail] ERRORE:`, error);
-      console.error(`❌ UID: ${uid}, Folder: "${folderName}"`);
+      console.error(`⚠️ [downloadQuickSingleEmail] Timeout/errore ${folderName}/${uid}:`, error.message);
       throw error;
     }
 }
 
 /**
- * Download batch di email in parallelo (核心優化)
+ * Download batch di email in parallelo con gestione resiliente errori
+ * Se un'email fallisce dopo tutti i retry → SKIPPA e continua
  */
 async function downloadQuickBatch(
   uids: string[],
   folderName: string,
   batchSize: number = 15,
   maxRetries: number = 2,
-  timeout: number = 30000
+  timeout: number = 60000
 ): Promise<Array<{ uid: string; data: any; error?: string }>> {
   const results: Array<{ uid: string; data: any; error?: string }> = [];
 
-  // Download in parallelo
+  // Download in parallelo con retry e backoff esponenziale
   const downloadPromises = uids.map(async (uid) => {
     let lastError: string | undefined;
     
@@ -208,11 +206,14 @@ async function downloadQuickBatch(
       } catch (error: any) {
         lastError = error.message;
         if (retry < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms retry delay
+          // ✅ Backoff esponenziale: 1s, 2s
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retry + 1)));
         }
       }
     }
     
+    // ✅ Dopo tutti i retry, marca come failed ma NON bloccare il batch
+    console.warn(`⚠️ Email ${folderName}/${uid} skippata dopo ${maxRetries} retry: ${lastError}`);
     return { uid, data: null, error: lastError };
   });
 
@@ -313,7 +314,7 @@ export class QuickEmailSyncer {
     this.options = {
       batchSize: 15,      // Download 15 email in parallelo
       maxRetries: 2,      // Max 2 retry per email
-      timeout: 30000,     // 30s timeout per email grandi con allegati
+      timeout: 60000,     // ✅ 60s timeout per email grandi con allegati
       onProgress: () => {},
       onComplete: () => {},
       onError: () => {},
@@ -390,15 +391,8 @@ export class QuickEmailSyncer {
   }
 
   private async syncQuickFolder(folderName: string, userEmail: string) {
-    const FOLDER_TIMEOUT = 10 * 60 * 1000; // 10 minuti MAX per cartella
-    
-    // Wrapper con timeout globale
-    return Promise.race([
-      this._syncFolderLogic(folderName, userEmail),
-      new Promise<void>((_, reject) => 
-        setTimeout(() => reject(new Error(`⏱️ Timeout cartella ${folderName} dopo 10 minuti`)), FOLDER_TIMEOUT)
-      )
-    ]);
+    // ✅ RIMOSSO timeout globale - lascia completare naturalmente
+    return this._syncFolderLogic(folderName, userEmail);
   }
 
   private async _syncFolderLogic(folderName: string, userEmail: string) {
@@ -410,8 +404,8 @@ export class QuickEmailSyncer {
     const folderStartTime = Date.now();
 
     try {
-      // 1. Get UIDs
-      const uids = await getQuickFolderUids(folderName, this.options.timeout);
+      // 1. Get UIDs (senza timeout)
+      const uids = await getQuickFolderUids(folderName);
       this.progress.currentFolderTotal = uids.length;
       
       // ⚠️ Warning per cartelle molto grandi
@@ -450,11 +444,7 @@ export class QuickEmailSyncer {
       for (let i = 0; i < newUids.length; i += this.options.batchSize) {
         if (this.shouldStop) break;
         
-        // Check timeout cartella (9 minuti per sicurezza)
-        if (Date.now() - folderStartTime > 9 * 60 * 1000) {
-          console.warn(`⏱️ Timeout soft per ${folderName}, interrompo...`);
-          break;
-        }
+        // ✅ RIMOSSO timeout soft - lascia completare
         
         // Pause handling
         while (this.isPaused && !this.shouldStop) {

@@ -189,6 +189,8 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
 
   // Calcola quante email da scaricare ci sono nelle cartelle selezionate (server - DB)
   const getSelectedEmailsCount = () => {
+    console.log('🔢 Calcolo email selezionate, downloadedCounts:', downloadedCounts);
+    
     return selectedFolders.reduce((total, folderName) => {
       const folder = availableFolders.find(f => 
         (f.folder_name || f.name) === folderName
@@ -196,7 +198,10 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
       if (folder) {
         const serverCount = folder.total_messages || folder.messages || folder.message_count || 0;
         const dbCount = downloadedCounts[folderName] || 0;
-        const remaining = Math.max(0, serverCount - dbCount); // ✅ Sottrae quelle già scaricate
+        const remaining = Math.max(0, serverCount - dbCount);
+        
+        console.log(`  📁 ${folderName}: ${serverCount} server - ${dbCount} DB = ${remaining} da scaricare`);
+        
         return total + remaining;
       }
       return total;

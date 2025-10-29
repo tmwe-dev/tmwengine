@@ -83,8 +83,7 @@ serve(async (req) => {
       throw new Error('Errore nella creazione del log');
     }
 
-    // Analizza la struttura del file
-    const lines = fileContent.split('\n').filter((line: string) => line.trim());
+    // Analizza la struttura del file (riusa lines già dichiarato alla linea 49)
     const dataRows = lines.slice(1);
     const totalRows = dataRows.length;
 

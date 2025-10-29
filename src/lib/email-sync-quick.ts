@@ -5,6 +5,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { emailMessageApi } from "@/lib/tmwe-api-integrated";
 
 // ==================== TYPES ====================
 
@@ -161,42 +162,27 @@ async function downloadQuickSingleEmail(
   folderName: string,
   timeout: number = 8000
 ) {
-    const uidInt = parseInt(uid, 10);
-    if (isNaN(uidInt)) {
-      throw new Error(`UID invalido: ${uid}`);
-    }
-
     console.log(`📥 [downloadQuickSingleEmail] ==================`);
-    console.log(`📥 UID: ${uidInt}`);
+    console.log(`📥 UID: ${uid}`);
     console.log(`📥 Folder: "${folderName}"`);
     console.log(`📥 Folder length: ${folderName.length}`);
     console.log(`📥 ==================`);
 
-    const response = await quickFetchWithTimeout(
-      supabase.functions.invoke('tmwe-api-proxy', {
-        body: {
-          endpoint: '/email_message',
-          data: {
-            handler: 'get_message',
-            uid: uidInt,
-            folder: folderName,
-            mark_as_read: false
-          }
-        }
-      }),
-      timeout
-    );
+    try {
+      // ✅ USA LA STESSA FUNZIONE DI FunEmailDownloader (include ensureValidToken + optimizationFlags)
+      const email = await quickFetchWithTimeout(
+        emailMessageApi.getMessage(uid, folderName, false),
+        timeout
+      );
 
-  if (response.error) {
-    console.error(`❌ [downloadQuickSingleEmail] ERRORE:`, response.error);
-    console.error(`❌ UID: ${uidInt}, Folder: "${folderName}"`);
-    throw new Error(`Download error: ${response.error.message}`);
-  }
-  
-  console.log(`✅ [downloadQuickSingleEmail] Success - UID ${uidInt} from "${folderName}"`);
-  
-  // La response ha la struttura: { data: emailData }
-  return response.data;
+      console.log(`✅ [downloadQuickSingleEmail] Success - UID ${uid} from "${folderName}"`);
+      return email;
+      
+    } catch (error: any) {
+      console.error(`❌ [downloadQuickSingleEmail] ERRORE:`, error);
+      console.error(`❌ UID: ${uid}, Folder: "${folderName}"`);
+      throw error;
+    }
 }
 
 /**

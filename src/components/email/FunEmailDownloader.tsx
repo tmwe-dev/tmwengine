@@ -39,8 +39,27 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
       try {
         const response = await emailSearchApi.getFolders();
         const folders = response.folders || [];
+        
+        // 🔍 LOGGING DETTAGLIATO PER DEBUG
+        console.log('🔍 RAW API Response:', JSON.stringify(response, null, 2));
+        console.log('📂 Folders array:', JSON.stringify(folders, null, 2));
+        
+        // Log dettagliato per ogni cartella
+        folders.forEach((folder: any) => {
+          const folderName = folder.folder_name || folder.name;
+          console.log(`📁 ${folderName}:`, {
+            allKeys: Object.keys(folder),
+            total_messages: folder.total_messages,
+            messages: folder.messages,
+            message_count: folder.message_count,
+            count: folder.count,
+            total: folder.total,
+            rawFolder: folder
+          });
+        });
+        
         setAvailableFolders(folders);
-        console.log('📂 Cartelle disponibili:', folders.map((f: any) => f.folder_name || f.name));
+        console.log('📂 Cartelle caricate:', folders.length);
       } catch (error) {
         console.error('Errore caricamento cartelle:', error);
         toast({
@@ -264,7 +283,7 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
                       {isSelected ? <CheckSquare className="h-3 w-3" /> : <Square className="h-3 w-3" />}
                       {folderName}
                       <span className="text-muted-foreground">
-                        ({folder.total_messages || folder.messages || 0})
+                        ({folder.total_messages || folder.messages || folder.message_count || 0})
                       </span>
                     </Label>
                   </div>

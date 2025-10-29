@@ -77,11 +77,7 @@ const FunEmail = () => {
   });
 
   return (
-    <PageLayout
-      title="Fun Email"
-      description="Interfaccia semplificata per gestione email"
-      gradient={true}
-    >
+    <PageLayout gradient={true}>
       <div className="space-y-4">
         {/* Dropdown Cartelle */}
         <div className="flex items-center gap-2">

@@ -8,6 +8,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -25,12 +30,14 @@ import {
   Trash2, 
   Archive,
   Folder,
+  FolderOpen,
   RefreshCw,
   Settings,
-  Plus,
   FolderPlus,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
@@ -90,6 +97,7 @@ export const EmailSidebar = ({
   const [folderError, setFolderError] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -214,74 +222,149 @@ export const EmailSidebar = ({
 
   console.log('📁 Valid folders:', validFolders.length, 'of', folders.length);
   
-  // Separate system folders from custom folders
-  const systemFolderNames = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk'];
-  const systemFolders = validFolders.filter((f: any) => {
-    const folderName = f.name || f.folder_name || f.path;
-    return systemFolderNames.includes(folderName);
-  });
-  const customFolders = validFolders.filter((f: any) => {
-    const folderName = f.name || f.folder_name || f.path;
-    return !systemFolderNames.includes(folderName);
-  });
+  // Organize folders hierarchically
+  interface FolderNode {
+    folder: any;
+    name: string;
+    fullPath: string;
+    children: FolderNode[];
+    level: number;
+  }
 
-  const renderFolder = (folder: any) => {
-    // ✅ Normalizar nombre de carpeta
-    const folderName = folder.name || folder.folder_name || folder.path || 'Unknown';
+  const buildFolderTree = (folders: any[]): FolderNode[] => {
+    const tree: FolderNode[] = [];
+    const map = new Map<string, FolderNode>();
+
+    folders.forEach((folder: any) => {
+      const fullPath = folder.name || folder.folder_name || folder.path;
+      const parts = fullPath.split('/');
+      
+      parts.forEach((part, index) => {
+        const currentPath = parts.slice(0, index + 1).join('/');
+        
+        if (!map.has(currentPath)) {
+          const node: FolderNode = {
+            folder: index === parts.length - 1 ? folder : null,
+            name: part,
+            fullPath: currentPath,
+            children: [],
+            level: index,
+          };
+          
+          map.set(currentPath, node);
+          
+          if (index === 0) {
+            tree.push(node);
+          } else {
+            const parentPath = parts.slice(0, index).join('/');
+            const parent = map.get(parentPath);
+            if (parent) {
+              parent.children.push(node);
+            }
+          }
+        }
+      });
+    });
+
+    return tree;
+  };
+
+  const folderTree = buildFolderTree(validFolders);
+
+  const toggleFolder = (folderPath: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(folderPath)) {
+        next.delete(folderPath);
+      } else {
+        next.add(folderPath);
+      }
+      return next;
+    });
+  };
+
+  const renderFolderNode = (node: FolderNode, isSubfolder = false): React.ReactNode => {
+    const hasChildren = node.children.length > 0;
+    const isExpanded = expandedFolders.has(node.fullPath);
+    const isSelected = selectedFolder === node.fullPath;
     
-    const Icon = getFolderIcon(folderName);
-    // Support both API formats: unread_messages (OpenAPI spec) and unseen (current API)
-    const unseenCount = folder.unread_messages || folder.unseen || 0;
-    const totalMessages = folder.total_messages || folder.messages || 0;
-    const indent = folderName.split('/').length - 1;
+    // Get folder data if this is a real folder (not just a parent path)
+    const folder = node.folder;
+    const unseenCount = folder ? (folder.unread_messages || folder.unseen || 0) : 0;
+    
+    // Use filled icon for subfolders, outline for main folders
+    const Icon = isSubfolder ? FolderOpen : getFolderIcon(node.name);
     
     return (
-      <Button
-        key={folder.id || folderName}
-        variant={selectedFolder === folderName ? 'secondary' : 'ghost'}
-        className={cn(
-          'relative w-full group transition-all duration-200 overflow-hidden',
-          isCollapsed ? 'justify-center px-2' : 'justify-between',
-          selectedFolder === folderName && 'bg-email-selected text-primary-foreground',
-          'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left',
-          selectedFolder === folderName 
-            ? 'after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent'
-            : 'after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent',
-          'hover:bg-transparent',
-          'hover:after:animate-line-bounce'
-        )}
-        style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
-        onClick={() => onFolderSelect(folderName)}
-        title={isCollapsed ? `${folderName} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
-      >
-        <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
-          <Icon className={cn(
-            "h-4 w-4 flex-shrink-0 transition-all duration-200",
-            "group-hover:scale-105 group-hover:animate-wiggle",
-            selectedFolder === folderName ? "text-purple-400 scale-110" : "scale-100",
-            isCollapsed ? "" : "mr-3"
-          )} />
-          {!isCollapsed && (
-            <span className={cn(
-              "truncate transition-transform duration-200",
-              "group-hover:scale-110",
-              selectedFolder === folderName ? "text-purple-300 font-semibold scale-110" : "scale-100"
-            )}>
-              {folderName}
-            </span>
+      <div key={node.fullPath}>
+        <div className="flex items-center w-full">
+          {hasChildren && !isCollapsed && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-6 p-0 hover:bg-transparent"
+              onClick={() => toggleFolder(node.fullPath)}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
+            </Button>
           )}
+          <Button
+            variant={isSelected ? 'secondary' : 'ghost'}
+            className={cn(
+              'relative flex-1 group transition-all duration-200 overflow-hidden',
+              isCollapsed ? 'justify-center px-2' : 'justify-between',
+              isSelected && 'bg-email-selected text-primary-foreground',
+              'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left',
+              isSelected 
+                ? 'after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent'
+                : 'after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent',
+              'hover:bg-transparent',
+              'hover:after:animate-line-bounce',
+              !hasChildren && !isCollapsed && 'ml-6'
+            )}
+            style={{ paddingLeft: isCollapsed ? undefined : `${12 + node.level * 16}px` }}
+            onClick={() => folder && onFolderSelect(node.fullPath)}
+            title={isCollapsed ? `${node.name} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
+          >
+            <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
+              <Icon className={cn(
+                "h-4 w-4 flex-shrink-0 transition-all duration-200",
+                "group-hover:scale-105",
+                isSelected ? "text-purple-400 scale-110" : "scale-100",
+                isCollapsed ? "" : "mr-3"
+              )} />
+              {!isCollapsed && (
+                <span className={cn(
+                  "truncate transition-transform duration-200",
+                  isSelected ? "text-purple-300 font-semibold" : ""
+                )}>
+                  {node.name}
+                </span>
+              )}
+            </div>
+            {!isCollapsed && unseenCount > 0 && (
+              <Badge variant="secondary" className={cn(
+                "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border",
+                isSelected
+                  ? "text-purple-300 border-purple-300" 
+                  : "text-white border-white"
+              )}>
+                {unseenCount}
+              </Badge>
+            )}
+          </Button>
         </div>
-        {!isCollapsed && unseenCount > 0 && (
-          <Badge variant="secondary" className={cn(
-            "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border",
-            selectedFolder === folderName
-              ? "text-purple-300 border-purple-300" 
-              : "text-white border-white"
-          )}>
-            {unseenCount}
-          </Badge>
+        
+        {hasChildren && isExpanded && !isCollapsed && (
+          <div className="ml-2">
+            {node.children.map(child => renderFolderNode(child, true))}
+          </div>
         )}
-      </Button>
+      </div>
     );
   };
 
@@ -313,72 +396,34 @@ export const EmailSidebar = ({
             </div>
           ) : (
             <>
-              {systemFolders.length > 0 && (
-                <>
-                  {systemFolders.map(renderFolder)}
-                </>
-              )}
-
-              {customFolders.length > 0 && (
-                <>
-                  <Separator className="my-2" />
-                  {!isCollapsed && (
-                    <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center justify-between">
-                      <span>Folders</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0"
-                        onClick={() => setIsCreateDialogOpen(true)}
-                      >
-                        <FolderPlus className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  )}
-                  {isCollapsed && (
-                    <div className="px-2 py-1 flex justify-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => setIsCreateDialogOpen(true)}
-                        title="Nuova Carpeta"
-                      >
-                        <FolderPlus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                  {customFolders.map(renderFolder)}
-                </>
-              )}
+              {folderTree.map(node => renderFolderNode(node))}
               
-              {customFolders.length === 0 && (
-                <>
-                  <Separator className="my-2" />
-                  <div className="px-2 py-1">
-                    {isCollapsed ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full p-2"
-                        onClick={() => setIsCreateDialogOpen(true)}
-                        title="Nuova Carpeta"
-                      >
-                        <FolderPlus className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => setIsCreateDialogOpen(true)}
-                      >
-                        <FolderPlus className="mr-2 h-4 w-4" />
-                        Nueva Carpeta
-                      </Button>
-                    )}
-                  </div>
-                </>
+              <Separator className="my-2" />
+              {!isCollapsed && (
+                <div className="px-2 py-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setIsCreateDialogOpen(true)}
+                  >
+                    <FolderPlus className="mr-2 h-4 w-4" />
+                    Nueva Carpeta
+                  </Button>
+                </div>
+              )}
+              {isCollapsed && (
+                <div className="px-2 py-1 flex justify-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    title="Nuova Carpeta"
+                  >
+                    <FolderPlus className="h-4 w-4" />
+                  </Button>
+                </div>
               )}
               
               {folders.length === 0 && !isLoading && (

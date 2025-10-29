@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Loader2 } from 'lucide-react';
-import { authenticateWithJWT } from '@/lib/tmwe-api-integrated';
+import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 
 interface FunEmailDownloaderProps {
   onDownloadComplete?: (stats: {
@@ -42,90 +42,79 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
         throw new Error('Email TMWE non configurato nel profilo');
       }
 
-      // Step 1: Authenticate with JWT (uses hardcoded OAuth credentials)
-      setCurrentFolder('Autenticazione TMWE...');
-      setProgress(5);
-      
-      const authenticated = await authenticateWithJWT();
-      if (!authenticated) {
-        throw new Error('Autenticazione TMWE fallita');
-      }
-
-      // Step 2: Get email UIDs from INBOX via tmwe-api-proxy
+      // Step 1: Get email UIDs from INBOX (auto-auth via emailMessageApi)
       setCurrentFolder('Recupero lista email...');
       setProgress(10);
 
-      const { data: uidsResponse, error: uidsError } = await supabase.functions.invoke('tmwe-api-proxy', {
-        body: {
-          endpoint: '/email_message',
-          data: {
-            handler: 'get_messages',
-            folder: 'INBOX',
-            limit: 2000,
-            format: 'text'
-          }
-        }
+      const uidListResponse = await emailMessageApi.getMessages({
+        folder: 'INBOX',
+        limit: 2000,
+        offset: 0,
       });
 
-      if (uidsError) throw uidsError;
-
-      const uids = uidsResponse?.data?.messages || [];
-      if (uids.length === 0) {
+      const uidList = uidListResponse?.messages || [];
+      if (uidList.length === 0) {
         throw new Error('Nessuna email trovata in INBOX');
       }
 
-      // Step 3: Download each email and save to DB
+      // Step 2: Download each email and save to DB
       let downloadedCount = 0;
-      const totalEmails = Math.min(uids.length, 2000);
+      const totalEmails = uidList.length;
 
       for (let i = 0; i < totalEmails; i++) {
-        const uid = uids[i];
+        const uidInfo = uidList[i];
+        const uid = String(uidInfo.uid);
+        
         setCurrentFolder(`Email ${i + 1}/${totalEmails}...`);
         
-        // Get full email content
-        const { data: emailResponse, error: emailError } = await supabase.functions.invoke('tmwe-api-proxy', {
-          body: {
-            endpoint: '/email_message',
-            data: {
-              handler: 'get_message',
-              uid: uid,
-              format: 'both'
-            }
-          }
-        });
-
-        if (emailError) {
-          console.error(`Error downloading email ${uid}:`, emailError);
+        // Get full email content (auto-auth via emailMessageApi)
+        const email = await emailMessageApi.getMessage(uid, false);
+        
+        if (!email) {
+          console.warn(`Email ${uid} non trovata`);
           continue;
         }
 
-        const email = emailResponse?.data;
-        if (!email) continue;
+        // Parse date with same logic as useEmailDownload
+        let isoDate = new Date().toISOString();
+        if (email.date) {
+          try {
+            isoDate = new Date(email.date).toISOString();
+          } catch (e) {
+            console.error('Error parsing date:', email.date);
+          }
+        }
 
         // Save to email_messages with sync_status='fun_email_backup'
         const { error: insertError } = await supabase.from('email_messages').insert({
-          message_id: email.message_id || `uid-${uid}`,
-          subject: email.subject || '(No Subject)',
-          from_email: email.from?.email || 'unknown@unknown.com',
-          to_email: email.to?.[0]?.email || profile.tmwe_email,
-          cc_email: email.cc?.map((c: any) => c.email).join(', ') || null,
-          body_text: email.text_body || '',
-          body_html: email.html_body || '',
+          message_id: String(email.message_id || email.uid || `msg-${Date.now()}-${Math.random()}`),
+          from_email: email.from?.address || email.from || email.from_email || '',
+          to_email: Array.isArray(email.to) 
+            ? email.to.map((t: any) => t.address || t).join(',')
+            : email.to || email.to_email || '',
+          cc_email: email.cc || email.cc_email || null,
+          bcc_email: email.bcc || email.bcc_email || null,
+          subject: email.subject || '',
+          body_text: email.body_text || email.text || '',
+          body_html: email.body_html || email.html || '',
+          data_ricezione: isoDate,
           cartella: 'INBOX',
-          direzione: 'in',
-          stato: 'received',
-          sync_status: 'fun_email_backup',
-          user_email: profile.tmwe_email,
-          data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
-          flags: { seen: email.seen || false },
+          direzione: 'inbound',
+          stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
+          flags: email.flags || [],
           attachments: email.attachments || [],
-        } as any);
+          provider_id: '00000000-0000-0000-0000-000000000000',
+          user_email: profile.tmwe_email,
+          sync_status: 'fun_email_backup',
+        });
 
         if (!insertError) {
           downloadedCount++;
+        } else {
+          console.error(`Errore inserimento email ${uid}:`, insertError);
         }
 
-        // Update progress: 10% auth + 90% download
+        // Update progress: 10% initial + 90% download
         const downloadProgress = 10 + ((i + 1) / totalEmails) * 90;
         setProgress(Math.round(downloadProgress));
       }

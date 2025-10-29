@@ -167,6 +167,7 @@ async function downloadQuickSingleEmail(
           data: {
             handler: 'get_message',
             uid: uidInt,
+            folder: folderName,
             mark_as_read: false
           }
         }

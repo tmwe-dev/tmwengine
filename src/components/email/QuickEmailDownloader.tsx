@@ -24,6 +24,7 @@ import {
   Gauge
 } from 'lucide-react';
 import { QuickEmailSyncer, QuickSyncProgress, QuickSyncStats } from '@/lib/email-sync-quick';
+import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 
 interface QuickEmailDownloaderProps {
   onDownloadComplete?: (stats: QuickSyncStats) => void;
@@ -52,18 +53,15 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const loadQuickFolders = async () => {
     setIsQuickLoading(true);
       try {
-        const quickResponse = await supabase.functions.invoke('tmwe-api-proxy', {
-          body: {
-            endpoint: '/email_folder',
-            data: { 
-              handler: 'get_folders'
-            }
-          }
+        // ✅ USA STESSA API DI EmailIntegrityChecker
+        const quickResponse = await emailFolderApi.getFolders({ 
+          include_counts: false,
+          skipCache: false
         });
 
-      if (quickResponse.error) throw quickResponse.error;
-
-      const quickFoldersList = quickResponse.data?.data || [];
+      const quickFoldersList = Array.isArray(quickResponse) 
+        ? quickResponse 
+        : (quickResponse?.folders || quickResponse?.data || []);
       
       // ✅ FIX 2: Normalizza confronto case-insensitive + trim
       const quickMapped = quickFoldersList.map((f: any) => {

@@ -414,7 +414,8 @@ const EmailDashboard = () => {
         subject: msg.subject || '(No Subject)',
         from: fromAddress,
         preview: preview,
-        date: msg.date,
+        // ✅ Convertir fecha UTC a zona horaria local del cliente
+        date: msg.date ? new Date(msg.date).toISOString() : new Date().toISOString(),
         read: msg.is_read === true || msg.seen === 1 || msg.read === true,
         starred: msg.is_flagged === true || msg.flagged === 1 || msg.starred === true,
         hasAttachments: !!(
@@ -438,6 +439,15 @@ const EmailDashboard = () => {
   const emails = selectedSender 
     ? emailsToUse.filter(email => email.from === selectedSender)
     : emailsToUse;
+
+  // Logging de conversión de fechas
+  if (emailsFromPages.length > 0 && emailsFromPages[0].date) {
+    console.log('📅 Date conversion:', {
+      original: messagesData?.pages?.[0]?.emails?.[0]?.date,
+      converted: emailsFromPages[0].date,
+      localString: new Date(emailsFromPages[0].date).toLocaleString('it-IT')
+    });
+  }
 
   console.log('📬 Emails ready for render:', {
     emailsFromPagesCount: emailsFromPages.length,

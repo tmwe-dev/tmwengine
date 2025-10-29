@@ -316,7 +316,24 @@ export const EmailList = ({
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground">
                     {email.date && !isNaN(new Date(email.date).getTime()) 
-                      ? formatDistanceToNow(new Date(email.date), { addSuffix: true, locale: it })
+                      ? (() => {
+                          const emailDate = new Date(email.date);
+                          const now = new Date();
+                          const diffInHours = Math.abs(now.getTime() - emailDate.getTime()) / 36e5;
+                          
+                          // Si es de hoy, mostrar "hace X tiempo"
+                          if (diffInHours < 24) {
+                            return formatDistanceToNow(emailDate, { addSuffix: true, locale: it });
+                          }
+                          // Si es reciente (menos de 7 días), mostrar "hace X días"
+                          else if (diffInHours < 168) {
+                            return formatDistanceToNow(emailDate, { addSuffix: true, locale: it });
+                          }
+                          // Si es más antiguo, mostrar fecha completa
+                          else {
+                            return format(emailDate, 'dd MMM yyyy, HH:mm', { locale: it });
+                          }
+                        })()
                       : 'Data non disponibile'}
                   </span>
                 </div>
@@ -439,7 +456,24 @@ export const EmailList = ({
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground">
                     {email.date && !isNaN(new Date(email.date).getTime()) 
-                      ? format(new Date(email.date), 'dd MMM', { locale: it })
+                      ? (() => {
+                          const emailDate = new Date(email.date);
+                          const now = new Date();
+                          const diffInHours = Math.abs(now.getTime() - emailDate.getTime()) / 36e5;
+                          
+                          // Si es de hoy, mostrar "hace X tiempo"
+                          if (diffInHours < 24) {
+                            return formatDistanceToNow(emailDate, { addSuffix: true, locale: it });
+                          }
+                          // Si es reciente (menos de 7 días), mostrar "hace X días"
+                          else if (diffInHours < 168) {
+                            return formatDistanceToNow(emailDate, { addSuffix: true, locale: it });
+                          }
+                          // Si es más antiguo, mostrar fecha completa
+                          else {
+                            return format(emailDate, 'dd MMM yyyy, HH:mm', { locale: it });
+                          }
+                        })()
                       : 'Data non disponibile'}
                   </span>
                 </div>

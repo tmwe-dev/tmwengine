@@ -53,15 +53,36 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const loadQuickFolders = async () => {
     setIsQuickLoading(true);
       try {
+        console.log('📂 [loadQuickFolders] ========== FOLDER LOADING START ==========');
+        console.log('📂 Calling emailFolderApi.getFolders()...');
+        
         // ✅ USA STESSA API DI EmailIntegrityChecker
         const quickResponse = await emailFolderApi.getFolders({ 
           include_counts: false,
           skipCache: false
         });
 
+      console.log('📂 [loadQuickFolders] RAW API RESPONSE:', JSON.stringify(quickResponse, null, 2));
+      console.log('📂 [loadQuickFolders] Response type:', typeof quickResponse);
+      console.log('📂 [loadQuickFolders] Is Array?', Array.isArray(quickResponse));
+
       const quickFoldersList = Array.isArray(quickResponse) 
         ? quickResponse 
         : (quickResponse?.folders || quickResponse?.data || []);
+      
+      console.log('📂 [loadQuickFolders] Extracted folders list:', quickFoldersList);
+      console.log('📂 [loadQuickFolders] Folders count:', quickFoldersList.length);
+      
+      // Log each folder with details
+      quickFoldersList.forEach((f: any, idx: number) => {
+        const folderName = String(f.name || f);
+        console.log(`📂 [loadQuickFolders] Folder ${idx + 1}:`);
+        console.log(`   Raw object:`, f);
+        console.log(`   Name: "${folderName}"`);
+        console.log(`   Display: "${f.display_name || folderName}"`);
+        console.log(`   Length: ${folderName.length}`);
+        console.log(`   Bytes: [${Array.from(folderName).map((c: string) => c.charCodeAt(0)).join(',')}]`);
+      });
       
       // ✅ FIX 2: Normalizza confronto case-insensitive + trim
       const quickMapped = quickFoldersList.map((f: any) => {
@@ -82,6 +103,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       console.log('🔍 [QuickDownload] preSelectedFolders:', preSelectedFolders);
       console.log('🔍 [QuickDownload] Server folders:', quickFoldersList.map((f: any) => f.name || f));
       console.log('🔍 [QuickDownload] Mapped with selection:', quickMapped.filter(f => f.selected).map(f => f.name));
+      console.log('📂 [loadQuickFolders] ========== FOLDER LOADING COMPLETE ==========');
 
       setQuickFolders(quickMapped);
       

@@ -282,3 +282,6 @@ verify_jwt = true
 [functions.radio-chat-orchestrator]
 verify_jwt = true
 
+[functions.fun-email-ai-analysis]
+verify_jwt = true
+

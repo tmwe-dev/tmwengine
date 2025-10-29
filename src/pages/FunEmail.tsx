@@ -5,8 +5,13 @@ import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { X, Menu } from 'lucide-react';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
+import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
+import { FunEmailChat } from '@/components/email/FunEmailChat';
+import { PagePromptManager } from '@/components/ai/PagePromptManager';
 
 const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
@@ -109,8 +114,25 @@ const FunEmail = () => {
               isLoadingMore={isFetchingNextPage}
             />
           ) : (
-            <div className="flex items-center justify-center h-screen">
-              <p className="text-muted-foreground">Visualizzazione FUN (vuota)</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+              {/* COLONNA SINISTRA: Downloader + Quick Stats */}
+              <div className="lg:col-span-1 space-y-4">
+                <FunEmailDownloader />
+                <FunEmailQuickStats />
+              </div>
+
+              {/* COLONNA DESTRA: Chat AI */}
+              <div className="lg:col-span-2">
+                <Card className="h-[calc(100vh-12rem)]">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>AI Email Assistant</CardTitle>
+                    <PagePromptManager pageRoute="/funnemail" />
+                  </CardHeader>
+                  <CardContent className="h-[calc(100%-5rem)] overflow-hidden">
+                    <FunEmailChat />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
         </div>

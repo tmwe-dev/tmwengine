@@ -217,28 +217,69 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         const uidList = uidListResponse?.messages || [];
         
         console.log(`📂 ${folder}: API ha restituito ${uidList.length} UID`);
-        console.log(`   Primi 5 UID:`, uidList.slice(0, 5).map(u => u.uid));
-        
-        globalTotal += uidList.length;
-        setStats(prev => ({ ...prev, total: globalTotal }));
         
         if (uidList.length === 0) {
           console.log(`📂 ${folder}: nessuna email trovata`);
           continue;
         }
 
-        console.log(`📂 ${folder}: trovate ${uidList.length} email da processare`);
+        // ✅ PRE-FILTRAGGIO BATCH: verifica quali email esistono già nel DB
+        const expectedMessageIds = uidList.map(u => `${folder}/${String(u.uid)}`);
+        
+        // Batch query per trovare email già presenti (massimo 1000 alla volta)
+        const batchSize = 1000;
+        const existingSet = new Set<string>();
+        
+        for (let i = 0; i < expectedMessageIds.length; i += batchSize) {
+          const batch = expectedMessageIds.slice(i, i + batchSize);
+          
+          const { data: existingMessages } = await supabase
+            .from('email_messages')
+            .select('message_id')
+            .eq('user_email', profile.tmwe_email)
+            .in('message_id', batch);
+          
+          existingMessages?.forEach(m => existingSet.add(m.message_id));
+        }
+        
+        // Filtra solo UID da scaricare (non presenti nel DB)
+        const uidsToDownload = uidList.filter(u => {
+          const messageId = `${folder}/${String(u.uid)}`;
+          return !existingSet.has(messageId);
+        });
+        
+        const alreadyPresentCount = uidList.length - uidsToDownload.length;
+        
+        console.log(`📂 ${folder}: ${uidsToDownload.length} nuove email da scaricare`);
+        console.log(`📂 ${folder}: ${alreadyPresentCount} già presenti (saltate in batch)`);
+        
+        // Aggiorna conteggi globali considerando solo email da scaricare
+        globalTotal += uidsToDownload.length;
+        globalSkipped += alreadyPresentCount;
+        setStats(prev => ({ 
+          ...prev, 
+          total: globalTotal,
+          skipped: globalSkipped 
+        }));
 
-        for (let i = 0; i < uidList.length; i++) {
+        if (uidsToDownload.length === 0) {
+          console.log(`📂 ${folder}: tutte le ${uidList.length} email già presenti nel DB`);
+          continue;
+        }
+
+        console.log(`📂 ${folder}: inizio download ${uidsToDownload.length} nuove email...`);
+
+        for (let i = 0; i < uidsToDownload.length; i++) {
           if (shouldStop.current) {
             console.log('⏸️ Download fermato dall\'utente');
             break;
           }
 
-          const uidInfo = uidList[i];
+          const uidInfo = uidsToDownload[i];
           const uid = String(uidInfo.uid);
+          const messageId = `${folder}/${uid}`;
           
-          setCurrentFolder(`📂 ${folder}: ${i + 1}/${uidList.length}`);
+          setCurrentFolder(`📂 ${folder}: ${i + 1}/${uidsToDownload.length} nuove`);
           
           try {
             const email = await fetchWithTimeout(
@@ -247,8 +288,6 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
               `Timeout recupero email ${folder}/${uid}`
             );
             
-            console.log(`   ✅ Scaricata ${folder}/${uid}: ${email?.subject?.substring(0, 30) || 'no subject'}`);
-            
             if (!email) {
               console.warn(`⚠️ Email ${folder}/${uid} non trovata`);
               globalFailed++;
@@ -256,24 +295,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
               continue;
             }
 
-            // Check duplicati usando identificatore stabile (folder/uid)
-            const uid_stable = String(uid);
-            const messageId = `${folder}/${uid_stable}`;
-            
-            const { data: existing } = await supabase
-              .from('email_messages')
-              .select('id')
-              .eq('message_id', messageId)
-              .eq('user_email', profile.tmwe_email)
-              .maybeSingle();
-            
-            if (existing) {
-              console.log(`   ⏭️ SKIP duplicato: ${messageId}`);
-              globalSkipped++;
-              setStats(prev => ({ ...prev, skipped: prev.skipped + 1 }));
-              continue;
-            }
-
+            // Preparazione data ISO
             let isoDate = new Date().toISOString();
             if (email.date) {
               try {
@@ -306,6 +328,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
             });
 
             if (!insertError) {
+              console.log(`   ✅ Salvata ${folder}/${uid}: ${email.subject?.substring(0, 30)}`);
               globalDownloaded++;
               setStats(prev => ({ ...prev, downloaded: prev.downloaded + 1 }));
             } else {
@@ -320,11 +343,14 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
             setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
           }
 
-          const progressPercent = ((globalDownloaded + globalFailed + globalSkipped) / globalTotal) * 100;
+          const progressPercent = ((globalDownloaded + globalFailed) / globalTotal) * 100;
           setProgress(Math.round(progressPercent));
         }
         
-        console.log(`✅ Cartella ${folder} completata: ${globalDownloaded} scaricate, ${globalSkipped} saltate, ${globalFailed} errori`);
+        console.log(`✅ Cartella ${folder} completata:`);
+        console.log(`   ${uidsToDownload.length} nuove scaricate`);
+        console.log(`   ${alreadyPresentCount} già presenti (saltate in batch)`);
+        if (globalFailed > 0) console.log(`   ${globalFailed} errori`);
         
         // ✅ Ricarica stats aggiornate dal DB dopo ogni cartella
         await loadAndUpdateStats();

@@ -397,6 +397,13 @@ serve(async (req) => {
 
         const msgData = messageData.result || messageData;
 
+        // 🔍 DEBUG: Log completo struttura API
+        console.log('🔍 DEBUG messageData completo:', JSON.stringify(messageData, null, 2));
+        console.log('🔍 DEBUG msgData.from:', msgData.from);
+        console.log('🔍 DEBUG msgData tipo from:', typeof msgData.from);
+        console.log('🔍 DEBUG emailInfo.from:', emailInfo.from);
+        console.log('🔍 DEBUG msgData keys:', Object.keys(msgData));
+
         // Inserisci nel database
         const { error: insertError } = await supabase
           .from('email_messages')

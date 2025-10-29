@@ -13,12 +13,13 @@ import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
 import { FunEmailChat } from '@/components/email/FunEmailChat';
 import { FunEmailGlobalStats } from '@/components/email/FunEmailGlobalStats';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { EmailManagementTab } from '@/components/email/EmailManagementTab';
 
 const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'list' | 'fun'>('list');
+  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management'>('list');
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
     folders: [] as { name: string; count: number }[],
@@ -100,24 +101,31 @@ const FunEmail = () => {
     <PageLayout 
       gradient={true}
       title="Fun Email"
-      actions={
-        <div className="flex gap-2">
-          <Button
-            variant={currentView === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setCurrentView('list')}
-          >
-            Lista
-          </Button>
-          <Button
-            variant={currentView === 'fun' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setCurrentView('fun')}
-          >
-            FUN
-          </Button>
-        </div>
-      }
+        actions={
+          <div className="flex gap-2">
+            <Button
+              variant={currentView === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setCurrentView('list')}
+            >
+              Lista
+            </Button>
+            <Button
+              variant={currentView === 'fun' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setCurrentView('fun')}
+            >
+              FUN
+            </Button>
+            <Button
+              variant={currentView === 'management' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setCurrentView('management')}
+            >
+              Management
+            </Button>
+          </div>
+        }
     >
       <div className="relative w-full min-h-screen">
         {/* Hamburger Button - sempre visibile */}
@@ -142,7 +150,7 @@ const FunEmail = () => {
               hasMore={hasNextPage}
               isLoadingMore={isFetchingNextPage}
             />
-          ) : (
+          ) : currentView === 'fun' ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
               {/* COLONNA SINISTRA: Stats Globali + Downloader + Quick Stats */}
               <div className="lg:col-span-1 space-y-4">
@@ -167,6 +175,8 @@ const FunEmail = () => {
                 </Card>
               </div>
             </div>
+          ) : (
+            <EmailManagementTab />
           )}
         </div>
 

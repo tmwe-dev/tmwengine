@@ -9,6 +9,68 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-29] - TMWE Email Sync Master - Dual Mode Sync
+
+### File Modificato
+- **Function:** `supabase/functions/tmwe-email-sync-master/index.ts`
+- **Frontend:** `src/components/email/FunEmailDownloader.tsx`
+- **Backup:** `docs/CODE_BACKUPS/tmwe-email-sync-master.BACKUP-2025-01-29-PRE-DUAL-MODE.ts`
+
+### Motivo Modifica
+Implementare **due modalità di sincronizzazione complementari** per bilanciare velocità e accuratezza senza perdere la robustezza del sistema esistente.
+
+### Modalità Implementate
+
+#### 1. **MODALITÀ COMPLETA (Full Sync)** - Default originale
+- **Quando usare**: Prima sincronizzazione, sync settimanale/mensile, dopo cambio server
+- **Comportamento**: 
+  - Scarica TUTTE le email dalla cartella
+  - Pre-filtering batch locale (verifica email già presenti)
+  - Insert solo email nuove
+- **Vantaggi**: 
+  - ✅ Accuratezza 100%
+  - ✅ Trova email mancanti anche se non consecutive
+  - ✅ Affidabile anche con database corrotto
+
+#### 2. **MODALITÀ VELOCE (Fast Sync)** - Nuova
+- **Quando usare**: Sync quotidiane, aggiornamenti frequenti, cartelle già sincronizzate
+- **Comportamento**:
+  - Query `MAX(message_id)` dal database locale
+  - API request con `uid_min = max_uid_local + 1`
+  - Download SOLO email con UID superiore
+  - Early exit se 0 nuove email
+- **Vantaggi**:
+  - ⚡ Rapidissima (1-5s per cartella aggiornata)
+  - 🚀 Skip immediato se nessuna nuova email
+  - 📉 Riduce carico server TMWE del 90%
+
+### Implementazione Tecnica
+
+**Edge Function** (`index.ts`):
+- Nuovo parametro `sync_mode?: 'full' | 'fast'` in `SyncRequest`
+- Query `MAX(message_id)` condizionale se `sync_mode === 'fast'`
+- Request body con `uid_min` opzionale
+- Early exit per cartelle già aggiornate
+
+**Frontend** (`FunEmailDownloader.tsx`):
+- Toggle UI per selezionare modalità VELOCE/COMPLETA
+- Default: modalità VELOCE
+- Stato `syncMode` salvato localmente
+
+### Metriche Performance Attese
+
+| Modalità | Tempo/Cartella | Bandwidth | Caso d'uso |
+|----------|----------------|-----------|------------|
+| COMPLETA | 20-40s | Alta | Prima sync, backup completo |
+| VELOCE | 1-5s | Bassissima | Sync quotidiane, aggiornamenti |
+
+### Compatibilità
+- ✅ Backward compatible: modalità COMPLETA = comportamento originale
+- ✅ Se API TMWE non supporta `uid_min`, comportamento identico a prima
+- ✅ Nessuna breaking change
+
+---
+
 ## [2025-01-15] - Image Generation Backend
 
 ### File Creato

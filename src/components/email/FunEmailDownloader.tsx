@@ -32,6 +32,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
   const [availableFolders, setAvailableFolders] = useState<any[]>([]);
   const [selectedFolders, setSelectedFolders] = useState<string[]>(['INBOX']);
   const [loadingFolders, setLoadingFolders] = useState(false);
+  const [syncMode, setSyncMode] = useState<'full' | 'fast'>('fast');
   const [stats, setStats] = useState({
     total: 0,
     downloaded: 0,
@@ -480,6 +481,53 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
             </div>
           </div>
         )}
+        {/* Toggle modalità sync */}
+        <div className="p-4 rounded-lg border bg-gradient-to-r from-primary/5 to-secondary/5">
+          <label className="flex items-center justify-between cursor-pointer">
+            <div className="flex-1">
+              <div className="font-semibold text-sm mb-1">
+                {syncMode === 'fast' ? '⚡ Modalità VELOCE (Incrementale)' : '🔍 Modalità COMPLETA (Profonda)'}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {syncMode === 'fast' 
+                  ? 'Scarica solo email nuove (basata su UID). Perfetta per sync frequenti.'
+                  : 'Verifica tutte le email e scarica solo quelle mancanti. Più lenta ma accurata al 100%.'
+                }
+              </div>
+            </div>
+            <div className="ml-4">
+              <button
+                onClick={() => setSyncMode(syncMode === 'fast' ? 'full' : 'fast')}
+                disabled={isDownloading}
+                type="button"
+                className={`
+                  relative inline-flex h-8 w-14 items-center rounded-full transition-colors
+                  ${syncMode === 'fast' ? 'bg-green-500' : 'bg-blue-500'}
+                  ${isDownloading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}
+              >
+                <span
+                  className={`
+                    inline-block h-6 w-6 transform rounded-full bg-white transition-transform
+                    ${syncMode === 'fast' ? 'translate-x-7' : 'translate-x-1'}
+                  `}
+                />
+              </button>
+            </div>
+          </label>
+          
+          <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <span className="font-semibold">⚡ VELOCE:</span>
+              <span>~5-10s per cartella aggiornata</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-semibold">🔍 COMPLETA:</span>
+              <span>~20-40s per cartella</span>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-2">
           <div className="flex items-center justify-between mb-2">
             <Label className="text-sm font-medium flex items-center gap-2">

@@ -8,7 +8,6 @@ const corsHeaders = {
 
 interface SyncRequest {
   mode?: 'auto' | 'initial' | 'incremental' | 'continuous';
-  sync_mode?: 'full' | 'fast';
   folder_name?: string;
   max_emails?: number;
   force_full?: boolean;
@@ -36,7 +35,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { mode = 'auto', sync_mode = 'full', folder_name = 'INBOX', max_emails = 0, force_full = false }: SyncRequest = await req.json();
+    const { mode = 'auto', folder_name = 'INBOX', max_emails = 0, force_full = false }: SyncRequest = await req.json();
 
     console.log('🚀 TMWE Email Sync Master - Modalità:', mode);
     console.log('🆔 Request ID:', crypto.randomUUID());
@@ -137,33 +136,7 @@ serve(async (req) => {
     }
 
     const maxBatches = Math.ceil(targetEmails / batchSize);
-    console.log(`📋 Parametri: modalità=${actualMode}, sync_mode=${sync_mode}, batch=${batchSize}, target=${targetEmails}, maxBatches=${maxBatches}`);
-
-    // Query MAX UID locale se modalità FAST
-    let maxUidLocal = 0;
-    if (sync_mode === 'fast') {
-      console.log(`🚀 Modalità VELOCE: query MAX UID locale per ${folder_name}...`);
-      const { data: maxUidData, error: maxUidError } = await supabase
-        .from('email_messages')
-        .select('message_id')
-        .eq('cartella', folder_name)
-        .order('message_id', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      if (maxUidError) {
-        console.error(`❌ Errore query MAX UID: ${maxUidError.message}`);
-        console.log(`⚠️ Fallback a modalità FULL`);
-      } else {
-        maxUidLocal = maxUidData ? parseInt(maxUidData.message_id) : 0;
-        console.log(`📊 MAX UID locale: ${maxUidLocal}`);
-        if (maxUidLocal > 0) {
-          console.log(`🎯 Richiederò solo email con UID > ${maxUidLocal}`);
-        } else {
-          console.log(`📭 Nessuna email locale, sync completa`);
-        }
-      }
-    }
+    console.log(`📋 Parametri: modalità=${actualMode}, batch=${batchSize}, target=${targetEmails}, maxBatches=${maxBatches}`);
 
     // Crea log di sincronizzazione
     const { data: syncLog, error: syncLogError } = await supabase
@@ -200,7 +173,7 @@ serve(async (req) => {
         // Aggiungi parametro state per evitare cache
         const listUrl = `${baseUrl}/app.php?action=email_message&state=${timestampMs}`;
         
-        const requestBody: any = {
+        const requestBody = {
           handler: 'get_messages',
           folder: folder_name,
           limit: listBatchSize,
@@ -208,12 +181,6 @@ serve(async (req) => {
           include_attachments: true,
           format: 'text'
         };
-
-        // Se modalità FAST e abbiamo UID locale, aggiungi filtro uid_min
-        if (sync_mode === 'fast' && maxUidLocal > 0) {
-          requestBody.uid_min = maxUidLocal + 1;
-          console.log(`🚀 Sync VELOCE: uid_min=${requestBody.uid_min}`);
-        }
         
         console.log(`\n`);
         console.log(`========== NUOVA CHIAMATA API TMWE ==========`);
@@ -324,11 +291,7 @@ serve(async (req) => {
         const emails = listData.messages || [];
         
         if (emails.length === 0) {
-          if (sync_mode === 'fast' && maxUidLocal > 0) {
-            console.log(`✅ Cartella ${folder_name} già aggiornata (max UID: ${maxUidLocal})`);
-          } else {
-            console.log(`✅ Fine lista UID a offset ${listOffset}`);
-          }
+          console.log(`✅ Fine lista UID a offset ${listOffset}`);
           hasMore = false;
           break;
         }
@@ -527,17 +490,18 @@ serve(async (req) => {
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
+      status: 200,
     });
 
   } catch (error) {
-    console.error('❌ ERRORE SYNC MASTER:', error);
+    console.error('❌ ERRORE FATALE:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Errore sconosciuto'
+      error: error.message,
+      message: 'Sync fallita: ' + error.message
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500
+      status: 500,
     });
   }
 });

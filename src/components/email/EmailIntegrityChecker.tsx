@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
@@ -41,13 +41,26 @@ export const EmailIntegrityChecker = () => {
 
       if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
 
-      // 1. Fetch conteggi server
-      console.log('🔍 [IntegrityCheck] Fetching folders from server...');
-      const serverFoldersResponse = await emailSearchApi.getFolders();
+      // 1. Fetch conteggi server (usando emailFolderApi più affidabile)
+      console.log('🔍 [IntegrityCheck] Fetching folders from server via emailFolderApi...');
+      const serverFoldersResponse = await emailFolderApi.getFolders({ 
+        include_counts: true,  // Include conteggi messaggi per cartella
+        skipCache: true        // Salta cache per dati freschi
+      });
       console.log('🔍 [IntegrityCheck] Server folders response:', serverFoldersResponse);
+      console.log('🔍 [IntegrityCheck] Response keys:', Object.keys(serverFoldersResponse || {}));
       
-      const serverFolders = serverFoldersResponse.data || [];
+      // La risposta potrebbe avere folders, data, o essere direttamente un array
+      const serverFolders = serverFoldersResponse.folders 
+        || serverFoldersResponse.data 
+        || (Array.isArray(serverFoldersResponse) ? serverFoldersResponse : []);
+      
+      console.log('🔍 [IntegrityCheck] Extracted server folders:', serverFolders);
       console.log('🔍 [IntegrityCheck] Server folders count:', serverFolders.length);
+      
+      if (serverFolders.length > 0) {
+        console.log('🔍 [IntegrityCheck] First folder structure:', serverFolders[0]);
+      }
 
       // 2. Fetch conteggi DB locale
       console.log('🔍 [IntegrityCheck] Fetching DB counts...');
@@ -65,14 +78,20 @@ export const EmailIntegrityChecker = () => {
       }, {});
 
       // 3. Confronta e crea risultati
-      const results: FolderComparison[] = serverFolders.map(folder => {
-        const serverCount = folder.messages || 0;
-        const dbCount = dbCountsMap[folder.name] || 0;
+      const results: FolderComparison[] = serverFolders.map((folder: any) => {
+        // emailFolderApi restituisce: { name, display_name?, total_count?, message_count?, unread_count? }
+        const folderName = folder.name || folder.folder;
+        const serverCount = folder.message_count || folder.total_count || folder.messages || folder.count || folder.total || 0;
+        const dbCount = dbCountsMap[folderName] || 0;
         const missing = Math.max(0, serverCount - dbCount);
-        const syncPercentage = serverCount > 0 ? Math.round((dbCount / serverCount) * 100) : 100;
+        const syncPercentage = serverCount > 0 
+          ? Math.round((dbCount / serverCount) * 100) 
+          : 100;
+
+        console.log(`🔍 [IntegrityCheck] Folder "${folderName}": server=${serverCount}, db=${dbCount}, missing=${missing}`);
 
         return {
-          folderName: folder.name,
+          folderName,
           serverCount,
           dbCount,
           missing,

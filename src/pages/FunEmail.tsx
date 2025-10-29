@@ -12,6 +12,7 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<'list' | 'fun'>('list');
 
   // Query email per la cartella selezionata
   const {
@@ -74,17 +75,41 @@ const FunEmail = () => {
           <Menu className="h-5 w-5" />
         </Button>
 
-        {/* Email List - occupa tutto lo spazio disponibile */}
+        {/* Toggle Views */}
+        <div className="fixed top-4 left-20 z-30 flex gap-2">
+          <Button
+            variant={currentView === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setCurrentView('list')}
+          >
+            Lista
+          </Button>
+          <Button
+            variant={currentView === 'fun' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setCurrentView('fun')}
+          >
+            FUN
+          </Button>
+        </div>
+
+        {/* Content - condizionale in base alla view */}
         <div className="w-full pl-16">
-          <EmailList
-            emails={emails}
-            selectedEmailId={selectedEmailId}
-            onEmailSelect={setSelectedEmailId}
-            loading={messagesLoading}
-            onLoadMore={() => hasNextPage && fetchNextPage()}
-            hasMore={hasNextPage}
-            isLoadingMore={isFetchingNextPage}
-          />
+          {currentView === 'list' ? (
+            <EmailList
+              emails={emails}
+              selectedEmailId={selectedEmailId}
+              onEmailSelect={setSelectedEmailId}
+              loading={messagesLoading}
+              onLoadMore={() => hasNextPage && fetchNextPage()}
+              hasMore={hasNextPage}
+              isLoadingMore={isFetchingNextPage}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-screen">
+              <p className="text-muted-foreground">Visualizzazione FUN (vuota)</p>
+            </div>
+          )}
         </div>
 
         {/* Sidebar Overlay */}

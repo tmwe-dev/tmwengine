@@ -16,9 +16,14 @@ interface FunEmailDownloaderProps {
     folders: string[];
     dateRange: { from: Date; to: Date };
   }) => void;
+  onStatsUpdate?: (stats: {
+    totalServer: number;
+    totalDB: number;
+    folders: { name: string; server: number; db: number }[];
+  }) => void;
 }
 
-export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderProps) => {
+export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEmailDownloaderProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentFolder, setCurrentFolder] = useState('');
@@ -102,6 +107,53 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
         // ✅ Carica anche i conteggi dal DB
         await loadDownloadedCounts();
         
+        // Calcola totali globali
+        const totalServer = folders.reduce((sum, f) => {
+          const count = f.total_messages || f.messages || f.message_count || 0;
+          return sum + count;
+        }, 0);
+
+        // Attendi che downloadedCounts sia aggiornato
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('tmwe_email')
+            .eq('user_id', user.id)
+            .single();
+
+          if (profile?.tmwe_email) {
+            const { data } = await supabase
+              .from('email_messages')
+              .select('cartella')
+              .eq('user_email', profile.tmwe_email);
+
+            const counts: Record<string, number> = {};
+            data?.forEach((row) => {
+              const folder = row.cartella || 'Unknown';
+              counts[folder] = (counts[folder] || 0) + 1;
+            });
+
+            const totalDB = Object.values(counts).reduce((sum, count) => sum + count, 0);
+
+            console.log('🌍 Totali globali:', { totalServer, totalDB });
+
+            // Notifica al padre
+            onStatsUpdate?.({
+              totalServer,
+              totalDB,
+              folders: folders.map(f => {
+                const folderName = f.folder_name || f.name;
+                return {
+                  name: folderName,
+                  server: f.total_messages || f.messages || f.message_count || 0,
+                  db: counts[folderName] || 0,
+                };
+              }),
+            });
+          }
+        }
+        
         console.log('📂 Cartelle caricate:', folders.length);
       } catch (error) {
         console.error('Errore caricamento cartelle:', error);
@@ -124,6 +176,15 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
         ? prev.filter(f => f !== folderName)
         : [...prev, folderName]
     );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedFolders.length === availableFolders.length) {
+      setSelectedFolders([]);
+    } else {
+      const allFolderNames = availableFolders.map(f => f.folder_name || f.name);
+      setSelectedFolders(allFolderNames);
+    }
   };
 
   const startDownload = async () => {
@@ -298,10 +359,20 @@ export const FunEmailDownloader = ({ onDownloadComplete }: FunEmailDownloaderPro
     <Card>
       <CardContent className="pt-6 space-y-4">
         <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <Folder className="h-4 w-4" />
-            Seleziona cartelle da scaricare
-          </Label>
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Folder className="h-4 w-4" />
+              Seleziona cartelle da scaricare
+            </Label>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleSelectAll}
+              disabled={isDownloading || loadingFolders}
+            >
+              {selectedFolders.length === availableFolders.length ? 'Deseleziona Tutte' : 'Seleziona Tutte'}
+            </Button>
+          </div>
           
           {loadingFolders ? (
             <div className="text-xs text-muted-foreground">Caricamento cartelle...</div>

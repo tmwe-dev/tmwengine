@@ -11,6 +11,7 @@ import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
 import { FunEmailChat } from '@/components/email/FunEmailChat';
+import { FunEmailGlobalStats } from '@/components/email/FunEmailGlobalStats';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 
 const FunEmail = () => {
@@ -18,6 +19,11 @@ const FunEmail = () => {
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'list' | 'fun'>('list');
+  const [globalStats, setGlobalStats] = useState({
+    totalServer: 0,
+    totalDB: 0,
+    folders: [] as { name: string; server: number; db: number }[],
+  });
 
   // Query email per la cartella selezionata
   const {
@@ -115,9 +121,13 @@ const FunEmail = () => {
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
-              {/* COLONNA SINISTRA: Downloader + Quick Stats */}
+              {/* COLONNA SINISTRA: Stats Globali + Downloader + Quick Stats */}
               <div className="lg:col-span-1 space-y-4">
-                <FunEmailDownloader />
+                <FunEmailGlobalStats
+                  totalServer={globalStats.totalServer}
+                  totalDB={globalStats.totalDB}
+                />
+                <FunEmailDownloader onStatsUpdate={setGlobalStats} />
                 <FunEmailQuickStats />
               </div>
 

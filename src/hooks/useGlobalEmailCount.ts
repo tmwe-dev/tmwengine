@@ -10,7 +10,7 @@ export const useGlobalEmailCount = () => {
     queryKey: ['global-email-count'],
     queryFn: async () => {
       const response = await emailSearchApi.getFolders();
-      return response.data || [];
+      return response.folders || [];
     },
     staleTime: 5 * 60 * 1000, // 5 minuti
     gcTime: 10 * 60 * 1000, // 10 minuti

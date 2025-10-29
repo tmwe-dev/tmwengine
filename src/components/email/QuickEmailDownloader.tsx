@@ -181,6 +181,16 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         throw new Error('Email TMWE non configurata');
       }
 
+      console.log('🚀 [QuickDownload] ========== SYNC START ==========');
+      console.log('🚀 Selected folders:', foldersToSync);
+      foldersToSync.forEach((name, idx) => {
+        console.log(`🚀 Folder ${idx + 1}:`);
+        console.log(`   Name: "${name}"`);
+        console.log(`   Length: ${name.length}`);
+        console.log(`   Bytes: ${Array.from(name).map(c => c.charCodeAt(0)).join(',')}`);
+      });
+      console.log('🚀 ==============================================');
+
       const newQuickSyncer = new QuickEmailSyncer({
         folders: foldersToSync,  // ✅ Usa foldersToSync invece di quickSelectedFolders.map()
         userEmail: profile.tmwe_email,

@@ -90,6 +90,12 @@ async function getQuickTmweConfig(userId: string) {
  * Ottiene lista UID da cartella (con timeout ridotto)
  */
 async function getQuickFolderUids(folderName: string, timeout: number = 8000): Promise<string[]> {
+  console.log(`🔍 [getQuickFolderUids] ==================`);
+  console.log(`🔍 Folder richiesta: "${folderName}"`);
+  console.log(`🔍 Folder length: ${folderName.length}`);
+  console.log(`🔍 Folder bytes: ${Array.from(folderName).map(c => c.charCodeAt(0)).join(',')}`);
+  console.log(`🔍 ==================`);
+  
   const response = await quickFetchWithTimeout(
     supabase.functions.invoke('tmwe-api-proxy', {
       body: {
@@ -160,6 +166,12 @@ async function downloadQuickSingleEmail(
       throw new Error(`UID invalido: ${uid}`);
     }
 
+    console.log(`📥 [downloadQuickSingleEmail] ==================`);
+    console.log(`📥 UID: ${uidInt}`);
+    console.log(`📥 Folder: "${folderName}"`);
+    console.log(`📥 Folder length: ${folderName.length}`);
+    console.log(`📥 ==================`);
+
     const response = await quickFetchWithTimeout(
       supabase.functions.invoke('tmwe-api-proxy', {
         body: {
@@ -175,7 +187,13 @@ async function downloadQuickSingleEmail(
       timeout
     );
 
-  if (response.error) throw new Error(`Download error: ${response.error.message}`);
+  if (response.error) {
+    console.error(`❌ [downloadQuickSingleEmail] ERRORE:`, response.error);
+    console.error(`❌ UID: ${uidInt}, Folder: "${folderName}"`);
+    throw new Error(`Download error: ${response.error.message}`);
+  }
+  
+  console.log(`✅ [downloadQuickSingleEmail] Success - UID ${uidInt} from "${folderName}"`);
   
   // La response ha la struttura: { data: emailData }
   return response.data;

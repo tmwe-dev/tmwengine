@@ -105,10 +105,18 @@ async function getQuickFolderUids(folderName: string, timeout: number = 8000): P
 
 /**
  * Check duplicati ottimizzato con batch piccoli (200 invece di 1000)
+ * Genera message_id come folder/uid per il check
  */
-async function checkQuickDuplicates(messageIds: string[], userEmail: string): Promise<Set<string>> {
+async function checkQuickDuplicates(
+  uids: string[], 
+  userEmail: string, 
+  folderName: string
+): Promise<Set<string>> {
   const SMALL_BATCH = 200; // Batch più piccolo per query più veloce
-  const existingIds = new Set<string>();
+  const existingUids = new Set<string>();
+  
+  // Genera message_id attesi: folder/uid
+  const messageIds = uids.map(uid => `${folderName}/${uid}`);
 
   for (let i = 0; i < messageIds.length; i += SMALL_BATCH) {
     const batch = messageIds.slice(i, i + SMALL_BATCH);
@@ -119,19 +127,23 @@ async function checkQuickDuplicates(messageIds: string[], userEmail: string): Pr
       .eq('user_email', userEmail)
       .in('message_id', batch);
 
-    data?.forEach(row => existingIds.add(row.message_id));
+    data?.forEach(row => {
+      // Estrai UID dal message_id (folder/uid -> uid)
+      const uid = row.message_id.split('/').pop();
+      if (uid) existingUids.add(uid);
+    });
   }
 
-  return existingIds;
+  return existingUids;
 }
 
 /**
- * Download singola email (timeout ridotto a 10s)
+ * Download singola email (timeout ridotto a 8s)
  */
 async function downloadQuickSingleEmail(
   uid: string, 
   folderName: string,
-  timeout: number = 10000
+  timeout: number = 8000
 ) {
     const uidInt = parseInt(uid, 10);
     if (isNaN(uidInt)) {
@@ -153,7 +165,9 @@ async function downloadQuickSingleEmail(
     );
 
   if (response.error) throw new Error(`Download error: ${response.error.message}`);
-  return response.data?.data;
+  
+  // La response ha la struttura: { data: emailData }
+  return response.data;
 }
 
 /**
@@ -196,40 +210,58 @@ async function downloadQuickBatch(
 /**
  * Insert batch di email nel DB (invece di uno alla volta)
  */
-async function insertQuickBatch(emails: any[], userEmail: string, folderName: string): Promise<{ success: number; failed: number }> {
+async function insertQuickBatch(
+  emails: Array<{ uid: string; data: any }>, 
+  userEmail: string, 
+  folderName: string
+): Promise<{ success: number; failed: number }> {
   if (emails.length === 0) return { success: 0, failed: 0 };
 
-  const records = emails.map(email => {
-    const fromAddr = typeof email.from === 'string' ? email.from : (email.from?.email || 'unknown@unknown.com');
-    const toAddr = Array.isArray(email.to) && email.to.length > 0
-      ? (typeof email.to[0] === 'string' ? email.to[0] : (email.to[0]?.email || 'unknown@unknown.com'))
-      : 'unknown@unknown.com';
+  const records = emails.map(({ uid, data: email }) => {
+    // Parse from/to fields
+    const fromEmail = email.from?.address || email.from || '';
+    const toEmail = Array.isArray(email.to) 
+      ? email.to.map((t: any) => t.address || t).join(',')
+      : email.to || '';
+    
+    // Parse date
+    let isoDate = new Date().toISOString();
+    if (email.date) {
+      try {
+        isoDate = new Date(email.date).toISOString();
+      } catch (e) {
+        console.error('Error parsing date:', email.date);
+      }
+    }
     
     return {
-      message_id: email.id || `quick-${Date.now()}-${Math.random()}`,
+      message_id: `${folderName}/${uid}`,
       user_email: userEmail,
-      from_email: fromAddr,
-      to_email: toAddr,
+      from_email: fromEmail,
+      to_email: toEmail,
+      cc_email: email.cc || null,
+      bcc_email: email.bcc || null,
       subject: email.subject || '',
-      body_text: email.body || '',
-      body_html: email.body || '',
-      data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
+      body_text: email.body_text || email.text || '',
+      body_html: email.body_html || email.html || '',
+      data_ricezione: isoDate,
       cartella: folderName,
       attachments: email.attachments || [],
-      direzione: 'received',
-      provider_id: 'tmwe_quick',
-      stato: email.read ? 'read' : 'unread',
+      flags: email.flags || [],
+      direzione: 'inbound',
+      provider_id: '00000000-0000-0000-0000-000000000000',
+      stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
       sync_status: 'fun_email_backup',
     };
   });
 
-  // Insert con ON CONFLICT per gestire duplicati automaticamente
+  // Batch insert
   const { error } = await supabase
     .from('email_messages')
-    .upsert(records, { onConflict: 'message_id', ignoreDuplicates: true });
+    .insert(records);
 
   if (error) {
-    console.warn(`⚠️ Quick insert error:`, error);
+    console.warn(`⚠️ Quick insert batch error:`, error);
     return { success: 0, failed: records.length };
   }
 
@@ -248,9 +280,9 @@ export class QuickEmailSyncer {
 
   constructor(options: QuickSyncOptions) {
     this.options = {
-      batchSize: 15,
-      maxRetries: 2,
-      timeout: 10000,
+      batchSize: 15,      // Download 15 email in parallelo
+      maxRetries: 2,      // Max 2 retry per email
+      timeout: 8000,      // 8s timeout (ridotto da 10s)
       onProgress: () => {},
       onComplete: () => {},
       onError: () => {},
@@ -333,7 +365,7 @@ export class QuickEmailSyncer {
       }
 
       // 2. Check duplicati con batch ottimizzato
-      const existing = await checkQuickDuplicates(uids, userEmail);
+      const existing = await checkQuickDuplicates(uids, userEmail, folderName);
       const newUids = uids.filter(uid => !existing.has(uid));
       
       const skippedCount = uids.length - newUids.length;
@@ -366,10 +398,7 @@ export class QuickEmailSyncer {
         );
 
         // 4. Insert batch in DB
-        const successfulEmails = batchResults
-          .filter(r => r.data && !r.error)
-          .map(r => r.data);
-
+        const successfulEmails = batchResults.filter(r => r.data && !r.error);
         const failedEmails = batchResults.filter(r => r.error);
 
         if (successfulEmails.length > 0) {

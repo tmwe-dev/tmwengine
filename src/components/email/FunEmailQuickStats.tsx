@@ -18,16 +18,17 @@ export const FunEmailQuickStats = () => {
 
       if (error) throw error;
 
-      // Get folder breakdown - usa aggregazione RPC per evitare limite 1000
-      const { data: folderData } = await supabase.rpc('get_email_folder_counts', {
-        p_user_email: user.email,
-        p_sync_status: 'fun_email_backup'
-      });
+      // Get folder breakdown - aggregazione client-side (limite 1000 record Supabase)
+      const { data: folderData } = await supabase
+        .from('email_messages')
+        .select('cartella')
+        .eq('user_email', user.email)
+        .eq('sync_status', 'fun_email_backup');
 
-      const folderCounts = folderData?.reduce((acc: any, row: any) => {
-        acc[row.cartella] = row.count;
+      const folderCounts = (folderData || []).reduce((acc: Record<string, number>, row: { cartella: string }) => {
+        acc[row.cartella] = (acc[row.cartella] || 0) + 1;
         return acc;
-      }, {}) || {};
+      }, {});
 
       return {
         total: count || 0,

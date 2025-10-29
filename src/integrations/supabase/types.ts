@@ -5129,6 +5129,13 @@ export type Database = {
         Args: { activity_data: Json }
         Returns: undefined
       }
+      get_email_folder_counts: {
+        Args: { p_sync_status: string; p_user_email: string }
+        Returns: {
+          cartella: string
+          count: number
+        }[]
+      }
       get_or_create_private_room: {
         Args: { user1_id: string; user2_id: string }
         Returns: string

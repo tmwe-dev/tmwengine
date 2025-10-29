@@ -8,10 +8,13 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { Download, Folder, CheckSquare, Square, Pause, Play } from 'lucide-react';
+import { Download, Folder, CheckSquare, Square, Pause, Play, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { EmailFolderComparisonDialog } from './EmailFolderComparisonDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FunEmailDownloaderProps {
   onDownloadComplete?: (stats: {
@@ -44,6 +47,18 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
   const isPaused = useRef(false);
   const [pauseState, setPauseState] = useState(false);
   const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
+  
+  // Stati per l'analisi pre-download
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisReport, setAnalysisReport] = useState<FolderAnalysis[] | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+interface FolderAnalysis {
+  folder: string;
+  totalServer: number;
+  alreadyLocal: number;
+  newToDownload: number;
+}
 
   const fetchWithTimeout = async <T,>(
     promise: Promise<T>,
@@ -180,6 +195,147 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
       variant: "destructive"
     });
     console.log('🛑 Download fermato definitivamente');
+  };
+
+  // Analizza cartelle selezionate PRIMA del download
+  const analyzeDownload = async () => {
+    if (selectedFolders.length === 0) {
+      toast({
+        title: '⚠️ Nessuna cartella selezionata',
+        description: 'Seleziona almeno una cartella da analizzare',
+        variant: 'default',
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAnalysisReport(null);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast({
+          title: '❌ Errore autenticazione',
+          description: 'Utente non autenticato',
+          variant: 'destructive',
+        });
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.tmwe_email) {
+        toast({
+          title: '❌ Email TMWE non configurato',
+          description: 'Configura l\'email TMWE nel profilo',
+          variant: 'destructive',
+        });
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const report: FolderAnalysis[] = [];
+
+      console.log('🔍 Inizio analisi pre-download...');
+
+      for (const folder of selectedFolders) {
+        console.log(`🔍 Analizzo cartella: ${folder}...`);
+        
+        try {
+          // Recupera lista UID dal server
+          const uidListResponse = await fetchWithTimeout(
+            emailMessageApi.getMessages({
+              folder: folder,
+              limit: 2000,
+              offset: 0,
+            }),
+            20000,
+            `Timeout recupero UID per cartella ${folder}`
+          );
+
+          const uidList = uidListResponse?.messages || [];
+          const totalServer = uidList.length;
+
+          if (totalServer === 0) {
+            report.push({
+              folder,
+              totalServer: 0,
+              alreadyLocal: 0,
+              newToDownload: 0
+            });
+            continue;
+          }
+
+          // Costruisci expectedMessageIds
+          const expectedMessageIds = uidList.map(u => `${folder}/${String(u.uid)}`);
+
+          // Batch query per verificare esistenti nel DB
+          const batchSize = 1000;
+          const existingSet = new Set<string>();
+
+          for (let i = 0; i < expectedMessageIds.length; i += batchSize) {
+            const batch = expectedMessageIds.slice(i, i + batchSize);
+
+            const { data: existingMessages } = await supabase
+              .from('email_messages')
+              .select('message_id')
+              .eq('user_email', profile.tmwe_email)
+              .in('message_id', batch);
+
+            existingMessages?.forEach(m => existingSet.add(m.message_id));
+          }
+
+          const alreadyLocal = existingSet.size;
+          const newToDownload = totalServer - alreadyLocal;
+
+          report.push({
+            folder,
+            totalServer,
+            alreadyLocal,
+            newToDownload
+          });
+
+          console.log(`✅ ${folder}: ${newToDownload} nuove / ${totalServer} totali`);
+
+        } catch (folderError: any) {
+          console.error(`❌ Errore analisi cartella ${folder}:`, folderError);
+          
+          // In caso di errore, aggiungi comunque al report con valori 0
+          report.push({
+            folder,
+            totalServer: 0,
+            alreadyLocal: 0,
+            newToDownload: 0
+          });
+        }
+      }
+
+      setAnalysisReport(report);
+      setShowConfirmDialog(true);
+      
+      console.log('✅ Analisi completata:', report);
+
+    } catch (error) {
+      console.error('❌ Errore durante analisi:', error);
+      toast({
+        title: '❌ Errore analisi',
+        description: 'Impossibile completare l\'analisi pre-download',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Conferma e avvia download
+  const confirmAndStartDownload = () => {
+    setShowConfirmDialog(false);
+    startDownload();
   };
 
   const startDownload = async () => {
@@ -534,18 +690,27 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         {!isDownloading ? (
           <div className="flex gap-2">
             <Button
-              onClick={startDownload}
-              disabled={selectedFolders.length === 0}
+              onClick={analyzeDownload}
+              disabled={selectedFolders.length === 0 || isAnalyzing}
               className="flex-1"
               size="lg"
             >
-              <Download className="mr-2 h-4 w-4" />
-              Prepara Email ({selectedFolders.length})
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analisi in corso...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Analizza e Scarica ({selectedFolders.length})
+                </>
+              )}
             </Button>
             <Button
               variant="outline"
               onClick={() => setComparisonDialogOpen(true)}
-              disabled={loadingFolders}
+              disabled={loadingFolders || isAnalyzing}
               size="lg"
             >
               🔍 Verifica
@@ -639,6 +804,119 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
           });
         }}
       />
+
+      {/* Dialog di conferma con report pre-download */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Analisi Pre-Download Completata
+            </DialogTitle>
+            <DialogDescription>
+              Ecco cosa verrà scaricato. Conferma per procedere con il download.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Tabella dettagliata per cartella */}
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cartella</TableHead>
+                    <TableHead className="text-right">Sul Server</TableHead>
+                    <TableHead className="text-right">Già Scaricate</TableHead>
+                    <TableHead className="text-right font-bold">Nuove da Scaricare</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {analysisReport?.map((folderData) => (
+                    <TableRow key={folderData.folder}>
+                      <TableCell className="font-medium">
+                        📂 {folderData.folder}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {folderData.totalServer}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {folderData.alreadyLocal}
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-primary">
+                        {folderData.newToDownload > 0 ? (
+                          <span className="text-green-600">
+                            {folderData.newToDownload}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">0</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Riepilogo totale */}
+            <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Totale email nuove da scaricare:</span>
+                <span className="text-3xl font-bold text-primary">
+                  {analysisReport?.reduce((sum, f) => sum + f.newToDownload, 0) || 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Tempo stimato:</span>
+                <span className="font-medium">
+                  ~{Math.ceil((analysisReport?.reduce((sum, f) => sum + f.newToDownload, 0) || 0) * 0.5 / 60)} minuti
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Già presenti (saltate):</span>
+                <span className="font-medium text-yellow-600">
+                  {analysisReport?.reduce((sum, f) => sum + f.alreadyLocal, 0) || 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Warning se numero alto */}
+            {(analysisReport?.reduce((sum, f) => sum + f.newToDownload, 0) || 0) > 500 && (
+              <Alert className="border-yellow-500/50 bg-yellow-500/10">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-sm">
+                  <strong>Download di grandi dimensioni.</strong> Assicurati di avere una connessione stabile e tempo sufficiente.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Info se nessuna email da scaricare */}
+            {(analysisReport?.reduce((sum, f) => sum + f.newToDownload, 0) || 0) === 0 && (
+              <Alert className="border-green-500/50 bg-green-500/10">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-sm">
+                  <strong>Tutte le email sono già state scaricate!</strong> Non ci sono nuove email da scaricare dalle cartelle selezionate.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowConfirmDialog(false)}
+            >
+              Annulla
+            </Button>
+            <Button 
+              onClick={confirmAndStartDownload}
+              disabled={(analysisReport?.reduce((sum, f) => sum + f.newToDownload, 0) || 0) === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Conferma e Scarica
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

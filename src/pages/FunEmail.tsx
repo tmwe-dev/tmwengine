@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { PageLayout } from '@/components/design-system';
-import { SplitLayout } from '@/components/design-system/layouts/SplitLayout';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, Menu } from 'lucide-react';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 
 const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Query email per la cartella selezionata
   const {
@@ -63,16 +63,19 @@ const FunEmail = () => {
 
   return (
     <PageLayout gradient={true}>
-      <SplitLayout
-        left={
-          <EmailSidebar
-            selectedFolder={selectedFolder}
-            onFolderSelect={setSelectedFolder}
-            onCompose={() => {}}
-            onSync={() => {}}
-          />
-        }
-        right={
+      <div className="relative w-full min-h-screen">
+        {/* Hamburger Button - sempre visibile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="fixed top-4 left-4 z-30 bg-background border shadow-md hover:bg-accent"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
+        {/* Email List - occupa tutto lo spazio disponibile */}
+        <div className="w-full pl-16">
           <EmailList
             emails={emails}
             selectedEmailId={selectedEmailId}
@@ -82,11 +85,33 @@ const FunEmail = () => {
             hasMore={hasNextPage}
             isLoadingMore={isFetchingNextPage}
           />
-        }
-        ratio="1/4"
-        gap="md"
-        verticalOnMobile={true}
-      />
+        </div>
+
+        {/* Sidebar Overlay */}
+        {sidebarOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+              onClick={() => setSidebarOpen(false)}
+            />
+            
+            {/* Sidebar */}
+            <div className="fixed top-0 left-0 h-full w-80 bg-background border-r z-50 shadow-2xl overflow-y-auto">
+              <EmailSidebar
+                selectedFolder={selectedFolder}
+                onFolderSelect={(folder) => {
+                  setSelectedFolder(folder);
+                  setSidebarOpen(false);
+                }}
+                onCompose={() => {}}
+                onSync={() => {}}
+                onClose={() => setSidebarOpen(false)}
+              />
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Dettaglio Email (Overlay) */}
       {selectedEmailId && emailDetailResponse?.email && (

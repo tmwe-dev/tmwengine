@@ -49,6 +49,7 @@ interface EmailSidebarProps {
   onCompose: () => void;
   onSync: () => void;
   dbEmailCount?: number;
+  onClose?: () => void;
 }
 
 const folderIcons: Record<string, any> = {
@@ -89,13 +90,13 @@ export const EmailSidebar = ({
   onFolderSelect, 
   onCompose,
   onSync,
-  dbEmailCount = 0
+  dbEmailCount = 0,
+  onClose
 }: EmailSidebarProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isSyncPrefsOpen, setIsSyncPrefsOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [folderError, setFolderError] = useState('');
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const { toast } = useToast();
@@ -298,7 +299,7 @@ export const EmailSidebar = ({
     return (
       <div key={node.fullPath}>
         <div className="flex items-center w-full">
-          {hasChildren && !isCollapsed && (
+          {hasChildren && (
             <Button
               variant="ghost"
               size="sm"
@@ -315,8 +316,7 @@ export const EmailSidebar = ({
           <Button
             variant={isSelected ? 'secondary' : 'ghost'}
             className={cn(
-              'relative flex-1 group transition-all duration-200 overflow-hidden',
-              isCollapsed ? 'justify-center px-2' : 'justify-between',
+              'relative flex-1 group transition-all duration-200 overflow-hidden justify-between',
               isSelected && 'bg-email-selected text-primary-foreground',
               'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left',
               isSelected 
@@ -324,34 +324,30 @@ export const EmailSidebar = ({
                 : 'after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent',
               'hover:bg-transparent',
               'hover:after:animate-line-bounce',
-              !hasChildren && !isCollapsed && 'ml-6'
+              !hasChildren && 'ml-6'
             )}
-            style={{ paddingLeft: isCollapsed ? undefined : `${12 + node.level * 16}px` }}
+            style={{ paddingLeft: `${12 + node.level * 16}px` }}
             onClick={() => folder && onFolderSelect(node.fullPath)}
-            title={isCollapsed ? `${node.name} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
           >
-            <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
+            <div className="flex items-center min-w-0">
               <Icon className={cn(
-                "h-4 w-4 flex-shrink-0 transition-all duration-200",
+                "h-4 w-4 flex-shrink-0 transition-all duration-200 mr-3",
                 "group-hover:scale-105",
-                isSelected ? "text-purple-400 scale-110" : "scale-100",
-                isCollapsed ? "" : "mr-3"
+                isSelected ? "text-purple-400 scale-110" : "scale-100"
               )} />
-              {!isCollapsed && (
-                <span className={cn(
-                  "truncate transition-transform duration-200",
-                  isSelected ? "text-purple-300 font-semibold" : ""
-                )}>
-                  {node.name}
-                </span>
-              )}
+              <span className={cn(
+                "truncate transition-transform duration-200",
+                isSelected ? "text-purple-300 font-semibold" : ""
+              )}>
+                {node.name}
+              </span>
             </div>
-            {!isCollapsed && unseenCount > 0 && (
+            {unseenCount > 0 && (
               <Badge variant="secondary" className={cn(
                 "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border",
                 isSelected
-                  ? "text-purple-300 border-purple-300" 
-                  : "text-white border-white"
+                  ? "border-purple-400 bg-purple-500/20 text-purple-300"
+                  : "border-gray-500 text-gray-200"
               )}>
                 {unseenCount}
               </Badge>
@@ -359,7 +355,7 @@ export const EmailSidebar = ({
           </Button>
         </div>
         
-        {hasChildren && isExpanded && !isCollapsed && (
+        {hasChildren && isExpanded && (
           <div className="ml-2">
             {node.children.map(child => renderFolderNode(child, true))}
           </div>
@@ -369,20 +365,22 @@ export const EmailSidebar = ({
   };
 
   return (
-    <div className={cn(
-      "flex h-full flex-col border-r bg-card-transparent transition-all duration-300",
-      isCollapsed ? "w-16 flex-shrink-0" : "w-64 max-w-[30vw] sm:flex-shrink-0"
-    )}>
-      <div className="p-2 flex justify-end">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          title={isCollapsed ? "Espandi sidebar" : "Riduci sidebar"}
-        >
-          {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </Button>
-      </div>
+    <div className="flex h-full flex-col bg-card-transparent">
+      {onClose && (
+        <>
+          <div className="p-4 flex items-center justify-between border-b">
+            <h2 className="text-lg font-semibold">Cartelle Email</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              title="Chiudi sidebar"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          </div>
+        </>
+      )}
       <Separator />
 
       <ScrollArea className="flex-1 px-2">
@@ -399,32 +397,17 @@ export const EmailSidebar = ({
               {folderTree.map(node => renderFolderNode(node))}
               
               <Separator className="my-2" />
-              {!isCollapsed && (
-                <div className="px-2 py-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setIsCreateDialogOpen(true)}
-                  >
-                    <FolderPlus className="mr-2 h-4 w-4" />
-                    Nueva Carpeta
-                  </Button>
-                </div>
-              )}
-              {isCollapsed && (
-                <div className="px-2 py-1 flex justify-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => setIsCreateDialogOpen(true)}
-                    title="Nuova Carpeta"
-                  >
-                    <FolderPlus className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
+              <div className="px-2 py-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setIsCreateDialogOpen(true)}
+                >
+                  <FolderPlus className="mr-2 h-4 w-4" />
+                  Nueva Carpeta
+                </Button>
+              </div>
               
               {folders.length === 0 && !isLoading && (
                 <div className="px-4 py-8 text-center text-sm text-muted-foreground">
@@ -448,20 +431,17 @@ export const EmailSidebar = ({
       <Separator />
 
       <div className="p-2 space-y-2">
-        {!isCollapsed && (
-          <div className="px-3 py-2 text-xs text-muted-foreground flex items-center justify-start">
-            <span>Email nel DB: {dbEmailCount}</span>
-          </div>
-        )}
+        <div className="px-3 py-2 text-xs text-muted-foreground flex items-center justify-start">
+          <span>Email nel DB: {dbEmailCount}</span>
+        </div>
         <Button 
           variant="ghost" 
-          className={cn("w-full", isCollapsed ? "justify-center px-2" : "justify-start")} 
+          className="w-full justify-start" 
           size="sm"
           onClick={() => setIsSyncPrefsOpen(true)}
-          title={isCollapsed ? "Impostazioni Sync" : undefined}
         >
-          <Settings className={cn("h-4 w-4", isCollapsed ? "" : "mr-3")} />
-          {!isCollapsed && "Impostazioni Sync"}
+          <Settings className="h-4 w-4 mr-3" />
+          Impostazioni Sync
         </Button>
       </div>
 

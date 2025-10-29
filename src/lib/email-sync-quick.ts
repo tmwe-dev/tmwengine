@@ -52,10 +52,20 @@ async function quickFetchWithTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number = 10000
 ): Promise<T> {
+  let timeoutId: NodeJS.Timeout;
+  
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('Quick timeout')), timeoutMs);
+    timeoutId = setTimeout(() => reject(new Error('Quick timeout')), timeoutMs);
   });
-  return Promise.race([promise, timeoutPromise]);
+  
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutId!);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId!);
+    throw error;
+  }
 }
 
 /**
@@ -255,17 +265,33 @@ async function insertQuickBatch(
     };
   });
 
-  // Batch insert
+  // TENTATIVO 1: Batch insert
   const { error } = await supabase
     .from('email_messages')
     .insert(records);
 
-  if (error) {
-    console.warn(`⚠️ Quick insert batch error:`, error);
-    return { success: 0, failed: records.length };
+  if (!error) {
+    return { success: records.length, failed: 0 };
   }
 
-  return { success: records.length, failed: 0 };
+  // TENTATIVO 2: Fallback a inserimenti singoli
+  console.warn(`⚠️ Batch insert fallito, provo singolarmente per ${records.length} email...`);
+  let successCount = 0;
+  
+  for (const record of records) {
+    const { error: singleError } = await supabase
+      .from('email_messages')
+      .insert([record]);
+    
+    if (!singleError) {
+      successCount++;
+    }
+  }
+  
+  return { 
+    success: successCount, 
+    failed: records.length - successCount 
+  };
 }
 
 // ==================== MAIN SYNC FUNCTION ====================
@@ -333,8 +359,19 @@ export class QuickEmailSyncer {
       for (const folder of this.options.folders) {
         if (this.shouldStop) break;
         
-        await this.syncQuickFolder(folder, this.options.userEmail);
-        this.progress.completedFolders++;
+        try {
+          await this.syncQuickFolder(folder, this.options.userEmail);
+          this.progress.completedFolders++;
+        } catch (error: any) {
+          // Non bloccare tutto, logga e continua con la prossima cartella
+          console.error(`⚠️ Cartella ${folder} saltata:`, error.message);
+          this.stats.folderStats[folder] = { 
+            downloaded: 0, 
+            skipped: 0, 
+            failed: this.progress.currentFolderTotal || 0
+          };
+          this.progress.completedFolders++;
+        }
       }
 
       this.finalize();
@@ -348,10 +385,24 @@ export class QuickEmailSyncer {
   }
 
   private async syncQuickFolder(folderName: string, userEmail: string) {
+    const FOLDER_TIMEOUT = 10 * 60 * 1000; // 10 minuti MAX per cartella
+    
+    // Wrapper con timeout globale
+    return Promise.race([
+      this._syncFolderLogic(folderName, userEmail),
+      new Promise<void>((_, reject) => 
+        setTimeout(() => reject(new Error(`⏱️ Timeout cartella ${folderName} dopo 10 minuti`)), FOLDER_TIMEOUT)
+      )
+    ]);
+  }
+
+  private async _syncFolderLogic(folderName: string, userEmail: string) {
     console.log(`\n📂 Quick sync folder: ${folderName}`);
     this.progress.currentFolder = folderName;
     this.progress.currentFolderProgress = 0;
     this.stats.folderStats[folderName] = { downloaded: 0, skipped: 0, failed: 0 };
+    
+    const folderStartTime = Date.now();
 
     try {
       // 1. Get UIDs
@@ -366,7 +417,14 @@ export class QuickEmailSyncer {
 
       // 2. Check duplicati con batch ottimizzato
       const existing = await checkQuickDuplicates(uids, userEmail, folderName);
-      const newUids = uids.filter(uid => !existing.has(uid));
+      let newUids = uids.filter(uid => !existing.has(uid));
+      
+      // 2b. Limita cartelle molto grandi (opzionale)
+      const MAX_PER_FOLDER = 1000;
+      if (newUids.length > MAX_PER_FOLDER) {
+        console.warn(`📦 ${folderName} limitata a ${MAX_PER_FOLDER}/${newUids.length} email`);
+        newUids = newUids.slice(0, MAX_PER_FOLDER);
+      }
       
       const skippedCount = uids.length - newUids.length;
       this.progress.skippedCount += skippedCount;
@@ -382,6 +440,12 @@ export class QuickEmailSyncer {
       // 3. Download in batch paralleli
       for (let i = 0; i < newUids.length; i += this.options.batchSize) {
         if (this.shouldStop) break;
+        
+        // Check timeout cartella (9 minuti per sicurezza)
+        if (Date.now() - folderStartTime > 9 * 60 * 1000) {
+          console.warn(`⏱️ Timeout soft per ${folderName}, interrompo...`);
+          break;
+        }
         
         // Pause handling
         while (this.isPaused && !this.shouldStop) {
@@ -399,17 +463,23 @@ export class QuickEmailSyncer {
 
         // 4. Insert batch in DB
         const successfulEmails = batchResults.filter(r => r.data && !r.error);
-        const failedEmails = batchResults.filter(r => r.error);
+        const failedDownloads = batchResults.filter(r => r.error);
 
         if (successfulEmails.length > 0) {
           const insertResult = await insertQuickBatch(successfulEmails, userEmail, folderName);
+          
+          // Conteggio corretto: usa SOLO i risultati dell'insert
           this.progress.downloadedCount += insertResult.success;
+          this.progress.failedCount += insertResult.failed; // Errori DB
+          
           this.stats.folderStats[folderName].downloaded += insertResult.success;
+          this.stats.folderStats[folderName].failed += insertResult.failed;
         }
 
-        if (failedEmails.length > 0) {
-          this.progress.failedCount += failedEmails.length;
-          this.stats.folderStats[folderName].failed += failedEmails.length;
+        // Errori di DOWNLOAD (non di insert)
+        if (failedDownloads.length > 0) {
+          this.progress.failedCount += failedDownloads.length;
+          this.stats.folderStats[folderName].failed += failedDownloads.length;
         }
 
         this.progress.currentFolderProgress = Math.min(i + batch.length, newUids.length);

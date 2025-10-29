@@ -83,9 +83,13 @@ async function getQuickFolderUids(folderName: string, timeout: number = 8000): P
   const response = await quickFetchWithTimeout(
     supabase.functions.invoke('tmwe-api-proxy', {
       body: {
-        endpoint: '/email/get_uids',
-        method: 'POST',
-        data: { folder_name: folderName }
+        endpoint: '/email_message',
+        data: { 
+          handler: 'get_messages',
+          folder: folderName,
+          limit: 2000,
+          offset: 0
+        }
       }
     }),
     timeout
@@ -93,7 +97,8 @@ async function getQuickFolderUids(folderName: string, timeout: number = 8000): P
 
   if (response.error) throw new Error(`UID fetch error: ${response.error.message}`);
   
-  const uids = response.data?.data?.uids || [];
+  const messages = response.data?.messages || [];
+  const uids = messages.map((msg: any) => String(msg.uid));
   console.log(`📬 Quick: ${folderName} ha ${uids.length} UID`);
   return uids;
 }
@@ -128,20 +133,24 @@ async function downloadQuickSingleEmail(
   folderName: string,
   timeout: number = 10000
 ) {
-  const response = await quickFetchWithTimeout(
-    supabase.functions.invoke('tmwe-api-proxy', {
-      body: {
-        endpoint: '/email/get_message',
-        method: 'POST',
-        data: {
-          folder_name: folderName,
-          uid: uid,
-          include_body: true
+    const uidInt = parseInt(uid, 10);
+    if (isNaN(uidInt)) {
+      throw new Error(`UID invalido: ${uid}`);
+    }
+
+    const response = await quickFetchWithTimeout(
+      supabase.functions.invoke('tmwe-api-proxy', {
+        body: {
+          endpoint: '/email_message',
+          data: {
+            handler: 'get_message',
+            uid: uidInt,
+            mark_as_read: false
+          }
         }
-      }
-    }),
-    timeout
-  );
+      }),
+      timeout
+    );
 
   if (response.error) throw new Error(`Download error: ${response.error.message}`);
   return response.data?.data;

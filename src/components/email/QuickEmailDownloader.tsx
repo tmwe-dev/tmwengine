@@ -49,14 +49,15 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate }: Quic
 
   const loadQuickFolders = async () => {
     setIsQuickLoading(true);
-    try {
-      const quickResponse = await supabase.functions.invoke('tmwe-api-proxy', {
-        body: {
-          endpoint: '/email/get_folders',
-          method: 'POST',
-          data: { include_counts: false }
-        }
-      });
+      try {
+        const quickResponse = await supabase.functions.invoke('tmwe-api-proxy', {
+          body: {
+            endpoint: '/email_folder',
+            data: { 
+              handler: 'get_folders'
+            }
+          }
+        });
 
       if (quickResponse.error) throw quickResponse.error;
 

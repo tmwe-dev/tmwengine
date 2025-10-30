@@ -153,15 +153,17 @@ const FunEmail = () => {
         }
     >
       <div className="relative w-full min-h-screen">
-        {/* Hamburger Button - sempre visibile */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="fixed top-4 left-4 z-30 bg-background border shadow-md hover:bg-accent"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
+        {/* Hamburger Button - nascosto in vista management */}
+        {currentView !== 'management' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="fixed top-4 left-4 z-30 bg-background border shadow-md hover:bg-accent"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
 
         {/* Content - condizionale in base alla view */}
         <div className="w-full pl-16">

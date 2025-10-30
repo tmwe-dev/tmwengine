@@ -41,6 +41,9 @@ serve(async (req) => {
     console.log('🆔 Request ID:', crypto.randomUUID());
     console.log('⏰ Timestamp:', new Date().toISOString());
 
+    // Variabile per salvare l'email utente (fuori dallo scope del blocco if)
+    let userEmail: string | undefined;
+
     // Recupera token OAuth da environment o user_tmwe_credentials
     console.log('🔍 Cerco token TMWE_OAUTH_TOKEN in environment...');
     let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
@@ -63,6 +66,9 @@ serve(async (req) => {
       }
       
       console.log('👤 Utente autenticato:', user.email);
+      
+      // Salva l'email utente per usarla dopo
+      userEmail = user.email;
       
       // Cerca il token OAuth in user_tmwe_credentials
       const { data: credentials, error: credErr } = await supabase
@@ -440,7 +446,7 @@ serve(async (req) => {
           .from('email_messages')
           .insert({
             message_id: uid,
-            user_email: user.email,
+            user_email: userEmail || '',
             subject: msgData.subject || emailInfo.subject || 'Senza oggetto',
             from_email: msgData.from?.email || emailInfo.from?.email || '',
             to_email: Array.isArray(msgData.to) 

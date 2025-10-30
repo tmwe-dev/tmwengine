@@ -62,6 +62,38 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     });
   }, [quickFolders, preSelectedFolders]);
 
+  // 🔧 FIX 2: Sincronizza selezione quando le cartelle vengono caricate
+  useEffect(() => {
+    if (quickFolders.length === 0 || preSelectedFolders.length === 0) return;
+
+    console.log('🔄 [QuickDownload] Re-syncing folder selection...');
+    console.log('   preSelectedFolders:', preSelectedFolders);
+    console.log('   quickFolders count:', quickFolders.length);
+
+    const updatedFolders = quickFolders.map(folder => {
+      const normalizedFolderName = (folder.name || '').trim().toLowerCase();
+      const shouldBeSelected = preSelectedFolders.some(pre => 
+        (pre || '').trim().toLowerCase() === normalizedFolderName
+      );
+
+      if (shouldBeSelected && !folder.selected) {
+        console.log(`   ✅ Selecting folder: "${folder.name}"`);
+      }
+
+      return {
+        ...folder,
+        selected: shouldBeSelected
+      };
+    });
+
+    const selectedCount = updatedFolders.filter(f => f.selected).length;
+    console.log(`🔄 [QuickDownload] Re-sync complete: ${selectedCount} folders selected`);
+
+    if (selectedCount !== quickFolders.filter(f => f.selected).length) {
+      setQuickFolders(updatedFolders);
+    }
+  }, [quickFolders.length, preSelectedFolders]);
+
   const loadQuickFolders = async () => {
     setIsQuickLoading(true);
       try {

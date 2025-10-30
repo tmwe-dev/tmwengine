@@ -410,6 +410,9 @@ export function EmailManagementTab() {
         return newMap;
       });
 
+      // ✅ Aggiorna le GroupDropZone per mostrare immediatamente il nuovo mittente
+      await loadData();
+
     } catch (error: any) {
       console.error('❌ Errore classificazione:', error);
       toast({

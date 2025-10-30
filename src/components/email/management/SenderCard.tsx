@@ -27,7 +27,7 @@ export function SenderCard({ sender, isDragging }: FunEmailSenderCardProps) {
   } : {};
 
   return (
-    <div ref={setNodeRef} style={style} className="snap-start">
+    <div ref={setNodeRef} style={style} className={cn("snap-start", dragActive && "opacity-0")}>
       <Card className={cn(
         "cursor-grab active:cursor-grabbing border-l-4",
         sender.emailCount > 50 && "border-l-orange-500",

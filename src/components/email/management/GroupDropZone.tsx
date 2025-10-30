@@ -35,6 +35,28 @@ export function GroupDropZone({
 
   useEffect(() => {
     loadRules();
+
+    // ✅ Real-time subscription per aggiornare quando vengono aggiunte nuove rules
+    const channel = supabase
+      .channel(`group-rules-${group.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'email_sender_rules',
+          filter: `group_id=eq.${group.id}`
+        },
+        () => {
+          console.log('🔄 Nuova rule aggiunta, ricarico...');
+          loadRules();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [group.id]);
 
   const loadRules = async () => {
@@ -88,9 +110,10 @@ export function GroupDropZone({
     <div 
       ref={setNodeRef} 
       className={cn(
+        "transition-all flex-shrink-0",
         isExpanded 
           ? "h-[80vh] w-[60vw]" 
-          : "h-[40vh] w-[20vw] min-w-[320px] max-w-[450px]"
+          : "h-[45vh] w-full"
       )}
     >
       <Card 
@@ -178,28 +201,28 @@ export function GroupDropZone({
               )}
             </div>
           </div>
-          <div className="absolute bottom-3 left-3 text-white font-bold text-lg">
+          <div className="absolute bottom-3 left-3 text-white font-bold text-2xl drop-shadow-lg">
             {rules.length}
           </div>
         </CardHeader>
 
         {/* Contenuto card - Solo ultimo mittente */}
-        <CardContent className="flex-1 flex items-center justify-center">
+        <CardContent className="flex-1 flex items-center justify-center p-6">
           {loading ? (
-            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+            <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
           ) : rules.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center space-y-2">
-              <div className="text-4xl opacity-50">{group.icon}</div>
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-col items-center justify-center text-center space-y-3">
+              <div className="text-5xl opacity-50">{group.icon}</div>
+              <p className="text-sm text-muted-foreground px-4">
                 Trascina qui i mittenti per classificarli
               </p>
             </div>
           ) : (
-            <div className="text-center">
-              <div className="font-semibold text-lg mb-1">
+            <div className="text-center w-full space-y-2">
+              <div className="font-bold text-2xl truncate px-4">
                 {funEmailExtractCompanyName(rules[0].sender_email)}
               </div>
-              <div className="text-sm text-muted-foreground truncate max-w-full px-4">
+              <div className="text-base text-muted-foreground truncate px-4">
                 {rules[0].sender_email}
               </div>
             </div>

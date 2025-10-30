@@ -43,17 +43,17 @@ export function EmailGridContainer({
 
   return (
     <div 
-      className="fixed z-5 overflow-y-auto" 
+      className="h-full w-full overflow-y-auto"
       style={{ 
-        left: '460px',
-        top: '140px',
-        right: '24px',
-        bottom: '24px'
+        paddingLeft: '460px',
+        paddingTop: '140px',
+        paddingRight: '24px',
+        paddingBottom: '24px'
       }}
     >
-      {/* Cards prioritarie - 3 colonne fisse */}
+      {/* Cards prioritarie - Grid responsive */}
       {priorityGroups.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
           {priorityGroups.map(group => (
             <GroupDropZone
               key={group.id}
@@ -64,8 +64,8 @@ export function EmailGridContainer({
         </div>
       )}
       
-      {/* Altre cards - flex wrap */}
-      <div className="flex flex-wrap gap-4 pb-4">
+      {/* Altre cards - Grid responsive */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 pb-4">
         {otherGroups.map(group => (
           <GroupDropZone
             key={group.id}

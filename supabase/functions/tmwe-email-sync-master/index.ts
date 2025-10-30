@@ -430,6 +430,7 @@ serve(async (req) => {
           .from('email_messages')
           .insert({
             message_id: uid,
+            user_email: user.email,
             subject: msgData.subject || emailInfo.subject || 'Senza oggetto',
             from_email: msgData.from?.email || emailInfo.from?.email || '',
             to_email: Array.isArray(msgData.to) 

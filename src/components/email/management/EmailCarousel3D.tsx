@@ -259,17 +259,7 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
       }}
       className="w-full h-full overflow-visible"
       style={{ position: 'relative' }}
-    >
-      {/* Aree cliccabili sopra il canvas */}
-      <div
-        onClick={handlePrev}
-        className="absolute left-0 top-0 bottom-0 w-1/3 cursor-pointer hover:bg-white/5 transition-colors z-10"
-      />
-      <div
-        onClick={handleNext}
-        className="absolute right-0 top-0 bottom-0 w-1/3 cursor-pointer hover:bg-white/5 transition-colors z-10"
-      />
-    </div>
+    />
   );
 };
 

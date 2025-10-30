@@ -16,12 +16,13 @@ import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { EmailManagementTab } from '@/components/email/EmailManagementTab';
 import { QuickEmailDownloader } from '@/components/email/QuickEmailDownloader';
 import { EmailIntegrityChecker } from '@/components/email/EmailIntegrityChecker';
+import { TmweBackendDebugger } from '@/components/email/TmweBackendDebugger';
 
 const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick' | 'integrity'>('list');
+  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick' | 'integrity' | 'debug'>('list');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
@@ -141,6 +142,13 @@ const FunEmail = () => {
             >
               🔍 Verifica
             </Button>
+            <Button
+              variant={currentView === 'debug' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setCurrentView('debug')}
+            >
+              🐛 Debug
+            </Button>
           </div>
         }
     >
@@ -217,6 +225,10 @@ const FunEmail = () => {
                   console.log('🔍 [FunEmail] Set preSelectedFolders:', folderNames);
                 }}
               />
+            </div>
+          ) : currentView === 'debug' ? (
+            <div className="p-6 max-w-4xl mx-auto">
+              <TmweBackendDebugger />
             </div>
           ) : null}
         </div>

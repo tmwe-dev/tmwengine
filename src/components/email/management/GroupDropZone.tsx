@@ -6,7 +6,8 @@ import { useDroppable } from '@dnd-kit/core';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Settings, Trash2, AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Settings, Trash2, AlertCircle, ZoomIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -78,10 +79,10 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
   }
 
   return (
-    <div ref={setNodeRef} className="h-full">
+    <div ref={setNodeRef} className="h-[20vh] w-[15vw] min-w-[280px] max-w-[380px]">
       <Card 
         className={cn(
-          "max-h-[20vh] min-h-[180px] transition-all border-2 flex flex-col overflow-hidden",
+          "h-full transition-all border-2 flex flex-col overflow-hidden",
           isOver && "border-primary bg-primary/5 shadow-2xl scale-105 ring-4 ring-primary/20"
         )}
         style={{ 
@@ -90,9 +91,9 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
         }}
       >
         <CardHeader 
-          className="pb-3 border-b flex-shrink-0 bg-gradient-to-br" 
+          className="pb-3 border-b flex-shrink-0 relative bg-gradient-to-r" 
           style={{ 
-            backgroundImage: `linear-gradient(to bottom right, ${group.colore}1A, ${group.colore}0D)` 
+            backgroundImage: `linear-gradient(to right, ${group.colore}59, ${group.colore}00)` 
           }}
         >
           <div className="flex items-center justify-between">
@@ -107,23 +108,69 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
                 )}
               </div>
             </div>
-            {onEditGroup && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-7 w-7"
-                onClick={() => onEditGroup(group)}
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            )}
+            <div className="flex gap-1">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7"
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <span className="text-2xl">{group.icon || '📁'}</span>
+                      {group.nome_gruppo}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-2 mt-4">
+                    {rules.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">Nessun mittente classificato</p>
+                    ) : (
+                      rules.map(rule => (
+                        <div
+                          key={rule.id}
+                          className="flex items-center justify-between p-3 bg-muted/40 rounded-md hover:bg-muted/60 transition-colors group"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-base">{rule.sender_name}</div>
+                            <div className="text-sm text-muted-foreground">{rule.sender_email}</div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleRemoveRule(rule.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+              {onEditGroup && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7"
+                  onClick={() => onEditGroup(group)}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
           <Badge 
             variant="secondary" 
-            className="w-fit mt-2"
-            style={{ backgroundColor: `${group.colore}30` }}
+            className="absolute top-3 right-3 h-8 w-8 flex items-center justify-center rounded-md font-bold text-white"
+            style={{ backgroundColor: group.colore }}
           >
-            {rules.length} {rules.length === 1 ? 'mittente' : 'mittenti'}
+            {rules.length}
           </Badge>
         </CardHeader>
 

@@ -24,7 +24,7 @@ export function EmailGridContainer({
         bottom: '24px'
       }}
     >
-      <div className="grid grid-cols-2 gap-4 pb-4">
+      <div className="flex flex-wrap gap-4 pb-4">
         {groups.map(group => (
           <GroupDropZone
             key={group.id}

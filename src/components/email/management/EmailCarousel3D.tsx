@@ -45,7 +45,6 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
       1000
     );
     camera.position.set(0, 0.3, 13.5); // IDENTICO a Radio
-    camera.lookAt(0, 0.3, 0);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ 
@@ -53,7 +52,7 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
       antialias: true 
     });
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(window.devicePixelRatio);
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -71,11 +70,34 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
     groupRef.current = group;
 
     // Animation loop
+    let frameCount = 0;
     const animate = () => {
       animationFrameRef.current = requestAnimationFrame(animate);
+      
+      // Debug: conta mesh visibili ogni 60 frame
+      if (frameCount % 60 === 0 && groupRef.current) {
+        const visibleMeshes = groupRef.current.children.filter((child) => {
+          if (!(child instanceof THREE.Mesh)) return false;
+          const mat = child.material as THREE.MeshBasicMaterial;
+          return mat.opacity > 0 && mat.visible !== false;
+        });
+        console.log(`🎬 Frame ${frameCount}: ${visibleMeshes.length}/${groupRef.current.children.length} mesh visibili`);
+      }
+      frameCount++;
+      
       renderer.render(scene, camera);
     };
     animate();
+
+    // Window resize handler
+    const handleResize = () => {
+      if (!containerRef.current || !camera || !renderer) return;
+      camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+    };
+    window.addEventListener('resize', handleResize);
 
     // ResizeObserver per gestire resize container
     const resizeObserver = new ResizeObserver(() => {
@@ -112,10 +134,10 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
 
-        // Dimensioni ridotte al 50% rispetto a Radio
+        // Dimensioni identiche a Radio
         const geometry = new THREE.PlaneGeometry(
-          (4.83 * scaleFactor) * 0.5,
-          (7.04 * scaleFactor) * 0.5
+          4.83 * scaleFactor,
+          7.04 * scaleFactor
         );
 
         const material = new THREE.MeshBasicMaterial({
@@ -146,6 +168,7 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
       console.log('🧹 EmailCarousel3D unmounting');
       hasInitializedSlotsRef.current = false;
       resizeObserver.disconnect();
+      window.removeEventListener('resize', handleResize);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -188,7 +211,7 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
       console.log(`  🔍 Slot ${i}: ✅ per categoria: ${category.nome_gruppo}`);
 
       const senders = assignedSenders.get(category.id) || [];
-      const newTexture = createCategoryTexture(category, senders);
+      const newTexture = createCategoryTexture(category, senders, rendererRef.current || undefined);
       const material = slotMesh.material as THREE.MeshBasicMaterial;
 
       if (material.map) material.map.dispose();

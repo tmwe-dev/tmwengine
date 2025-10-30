@@ -4,7 +4,8 @@ import { SenderAnalysis } from '@/types/email-management';
 
 export const createCategoryTexture = (
   group: EmailSenderGroup,
-  assignedSenders: SenderAnalysis[] = []
+  assignedSenders: SenderAnalysis[] = [],
+  renderer?: THREE.WebGLRenderer
 ): THREE.CanvasTexture => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -80,7 +81,7 @@ export const createCategoryTexture = (
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
-  texture.anisotropy = 4;
+  texture.anisotropy = renderer?.capabilities.getMaxAnisotropy() || 4;
   texture.needsUpdate = true;
 
   return texture;

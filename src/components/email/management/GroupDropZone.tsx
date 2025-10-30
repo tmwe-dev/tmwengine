@@ -167,7 +167,7 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
           </div>
           <Badge 
             variant="secondary" 
-            className="absolute top-3 right-3 h-8 w-8 flex items-center justify-center rounded-md font-bold text-white"
+            className="absolute top-3 left-3 h-8 w-8 flex items-center justify-center rounded-md font-bold text-white"
             style={{ backgroundColor: group.colore }}
           >
             {rules.length}

@@ -228,7 +228,7 @@ export const EmailCarousel3D = ({
     groupRef.current = group;
 
     // ✅ CRITICO: Posizione iniziale camera (FISSA, non dipende da zoom)
-    camera.position.set(0, 0, 13.5);
+    camera.position.set(0, 0.3, 13.5);
 
     // Animation loop
     let frameCount = 0;
@@ -349,7 +349,7 @@ export const EmailCarousel3D = ({
       
       for (let i = 0; i < MAX_SLOTS; i++) {
         const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
-        const geometry = new THREE.PlaneGeometry(1.61 * scaleFactor, 2.35 * scaleFactor);
+        const geometry = new THREE.PlaneGeometry(4.83 * scaleFactor, 7.04 * scaleFactor);
         const material = new THREE.MeshBasicMaterial({
           side: THREE.DoubleSide, 
           transparent: true,
@@ -360,7 +360,7 @@ export const EmailCarousel3D = ({
         const angle = -(i * angleStep) + Math.PI;
       mesh.position.set(
         Math.cos(angle) * radius, 
-        0,
+        0.82,
         Math.sin(angle) * radius
       );
         mesh.lookAt(new THREE.Vector3(0, 0, 0));

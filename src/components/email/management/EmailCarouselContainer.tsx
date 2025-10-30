@@ -33,7 +33,7 @@ export function EmailCarouselContainer({
         categories={categories}
         assignedSenders={assignedSenders}
         activeCategoryId={activeCategoryId}
-        zoom={zoom}
+        zoom={1.04}
       />
     </div>
   );

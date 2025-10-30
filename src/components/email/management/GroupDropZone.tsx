@@ -113,7 +113,7 @@ export function GroupDropZone({
         "transition-all flex-shrink-0",
         isExpanded 
           ? "h-[80vh] w-[60vw]" 
-          : "h-[45vh] w-full"
+          : "h-[22vh] w-full"
       )}
     >
       <Card 
@@ -144,65 +144,67 @@ export function GroupDropZone({
                 )}
               </div>
             </div>
-            <div className="flex gap-1">
-              <Dialog>
-                <DialogTrigger asChild>
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex gap-1">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7"
+                    >
+                      <ZoomIn className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <span className="text-2xl">{group.icon || '📁'}</span>
+                        {group.nome_gruppo}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-2 mt-4">
+                      {rules.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-8">Nessun mittente classificato</p>
+                      ) : (
+                        rules.map(rule => (
+                          <div
+                            key={rule.id}
+                            className="flex items-center justify-between p-3 bg-muted/40 rounded-md hover:bg-muted/60 transition-colors group"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-base">{rule.sender_name}</div>
+                              <div className="text-sm text-muted-foreground">{rule.sender_email}</div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleRemoveRule(rule.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                {onEditGroup && (
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     className="h-7 w-7"
+                    onClick={() => onEditGroup(group)}
                   >
-                    <ZoomIn className="h-4 w-4" />
+                    <Settings className="h-4 w-4" />
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <span className="text-2xl">{group.icon || '📁'}</span>
-                      {group.nome_gruppo}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-2 mt-4">
-                    {rules.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8">Nessun mittente classificato</p>
-                    ) : (
-                      rules.map(rule => (
-                        <div
-                          key={rule.id}
-                          className="flex items-center justify-between p-3 bg-muted/40 rounded-md hover:bg-muted/60 transition-colors group"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-base">{rule.sender_name}</div>
-                            <div className="text-sm text-muted-foreground">{rule.sender_email}</div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleRemoveRule(rule.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-              {onEditGroup && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-7 w-7"
-                  onClick={() => onEditGroup(group)}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-              )}
+                )}
+              </div>
+              <div className="text-white font-bold text-lg drop-shadow-lg">
+                {rules.length}
+              </div>
             </div>
-          </div>
-          <div className="absolute bottom-3 left-3 text-white font-bold text-2xl drop-shadow-lg">
-            {rules.length}
           </div>
         </CardHeader>
 
@@ -218,7 +220,12 @@ export function GroupDropZone({
               </p>
             </div>
           ) : (
-            <div className="text-center w-full space-y-2">
+            <div className="text-center w-full space-y-2 relative">
+              <div className="absolute -top-2 left-4">
+                <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full">
+                  Last
+                </span>
+              </div>
               <div className="font-bold text-2xl truncate px-4">
                 {funEmailExtractCompanyName(rules[0].sender_email)}
               </div>

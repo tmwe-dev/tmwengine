@@ -234,39 +234,59 @@ async function insertQuickBatch(
   if (emails.length === 0) return { success: 0, failed: 0 };
 
   const records = emails.map(({ uid, data: email }) => {
-    // Parse from/to fields
-    const fromEmail = email.from?.address || email.from || '';
-    const toEmail = Array.isArray(email.to) 
-      ? email.to.map((t: any) => t.address || t).join(',')
-      : email.to || '';
+    // ✅ Unwrap: email.data contiene la risposta TMWE API
+    const rawData = email?.data || email;
+    const header = rawData.header || rawData;
+
+    // ✅ From: estrai da header.from.address
+    const fromEmail = header.from?.address || header.from || '';
     
-    // Parse date
+    // ✅ Subject: estrai da header.subject
+    const subject = header.subject || '';
+    
+    // ✅ To: array di EmailAddress, estrai .address da ognuno
+    const toEmail = Array.isArray(header.to)
+      ? header.to.map((t: any) => t?.address || t).filter(Boolean).join(',')
+      : header.to?.address || header.to || '';
+    
+    // ✅ CC: stessa logica
+    const ccEmail = header.cc
+      ? (Array.isArray(header.cc)
+          ? header.cc.map((c: any) => c?.address || c).filter(Boolean).join(',')
+          : header.cc?.address || header.cc)
+      : null;
+    
+    // ✅ Date: estrai da header.date
     let isoDate = new Date().toISOString();
-    if (email.date) {
+    if (header.date) {
       try {
-        isoDate = new Date(email.date).toISOString();
+        isoDate = new Date(header.date).toISOString();
       } catch (e) {
-        console.error('Error parsing date:', email.date);
+        console.error('❌ Error parsing date:', header.date);
       }
     }
     
+    // ✅ Body: estrai da rawData (NON da header)
+    const bodyText = rawData.body_text || rawData.text || '';
+    const bodyHtml = rawData.body_html || rawData.html || '';
+
     return {
       message_id: `${folderName}/${uid}`,
       user_email: userEmail,
       from_email: fromEmail,
       to_email: toEmail,
-      cc_email: email.cc || null,
-      bcc_email: email.bcc || null,
-      subject: email.subject || '',
-      body_text: email.body_text || email.text || '',
-      body_html: email.body_html || email.html || '',
+      cc_email: ccEmail,
+      bcc_email: null,
+      subject: subject,
+      body_text: bodyText,
+      body_html: bodyHtml,
       data_ricezione: isoDate,
       cartella: folderName,
-      attachments: email.attachments || [],
-      flags: email.flags || [],
+      attachments: rawData.attachments || [],
+      flags: rawData.flags || [],
       direzione: 'inbound',
       provider_id: '00000000-0000-0000-0000-000000000000',
-      stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
+      stato: rawData.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
       sync_status: 'fun_email_backup',
     };
   });

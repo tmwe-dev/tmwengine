@@ -21,6 +21,8 @@ export function EmailManagementTab() {
   const [senders, setSenders] = useState<SenderAnalysis[]>([]);
   const [groups, setGroups] = useState<EmailSenderGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{ synced: number; total: number } | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterByAttachments, setFilterByAttachments] = useState(false);
@@ -126,6 +128,49 @@ export function EmailManagementTab() {
     }
   };
 
+  const handleSync = async () => {
+    setIsSyncing(true);
+    setSyncProgress(null);
+    
+    try {
+      toast({
+        title: '🔄 Sincronizzazione avviata',
+        description: 'Download email in corso...',
+      });
+
+      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
+        body: {
+          mode: 'incremental',
+          folder_name: 'INBOX',
+          max_emails: 50,
+        }
+      });
+
+      if (error) throw error;
+
+      console.log('✅ Sync completato:', data);
+
+      toast({
+        title: '✅ Sincronizzazione completata',
+        description: `${data?.synced_count || 0} nuove email sincronizzate`,
+      });
+
+      // Ricarica i dati dopo sync
+      await loadData();
+
+    } catch (error: any) {
+      console.error('❌ Errore sync:', error);
+      toast({
+        title: '❌ Errore sincronizzazione',
+        description: error.message || 'Impossibile sincronizzare le email',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSyncing(false);
+      setSyncProgress(null);
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveDragId(null);
@@ -203,7 +248,15 @@ export function EmailManagementTab() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={loadData} disabled={isLoading}>
+          <Button 
+            variant="default" 
+            onClick={handleSync} 
+            disabled={isSyncing || isLoading}
+          >
+            <RefreshCw className={cn("h-4 w-4 mr-2", isSyncing && "animate-spin")} />
+            {isSyncing ? 'Sincronizzazione...' : 'Sincronizza Email'}
+          </Button>
+          <Button variant="outline" onClick={loadData} disabled={isLoading || isSyncing}>
             <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
             Aggiorna
           </Button>

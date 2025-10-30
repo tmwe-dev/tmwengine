@@ -2,13 +2,13 @@
  * Sidebar Email Management - Lista mittenti da classificare
  */
 
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Search, Filter, Plus } from 'lucide-react';
 import { SenderCard } from './SenderCard';
 import type { SenderAnalysis } from '@/types/email-management';
+import { cn } from '@/lib/utils';
 
 interface EmailSidebarProps {
   senders: SenderAnalysis[];
@@ -37,8 +37,15 @@ export function EmailSidebar({
 }: EmailSidebarProps) {
   return (
     <div className="fixed left-6 top-20 w-80 z-20" style={{ height: 'calc(100vh - 100px)' }}>
-      <Card className="h-full flex flex-col">
-        <div className="p-4 border-b flex-shrink-0">
+      <div className="h-full flex flex-col">
+        {/* Header con stile glassmorphism carousel */}
+        <div className={cn(
+          "relative p-4 mb-4 rounded-lg flex-shrink-0",
+          "backdrop-blur-md",
+          "bg-gradient-to-br from-blue-500/10 via-blue-600/5 to-blue-700/10",
+          "border border-blue-500/20",
+          "shadow-lg"
+        )}>
           <h3 className="font-semibold mb-3 flex items-center justify-between">
             <span>📮 Da Classificare ({filteredSenders.length})</span>
             {senders.length !== filteredSenders.length && (
@@ -50,7 +57,7 @@ export function EmailSidebar({
           
           {/* Carousel Zoom Control - Solo quando carousel è attivo */}
           {viewMode === 'carousel' && (
-            <div className="mb-4 pb-4 border-b">
+            <div className="mb-4 pb-4 border-b border-blue-400/20">
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium">Zoom Carousel</label>
                 <span className="text-xs text-muted-foreground">
@@ -72,7 +79,7 @@ export function EmailSidebar({
             </div>
           )}
           
-          <div className="relative">
+          <div className="relative mb-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Cerca mittente..."
@@ -82,28 +89,31 @@ export function EmailSidebar({
             />
           </div>
           
-          <Button
-            variant={filterByAttachments ? "default" : "outline"}
-            size="sm"
-            className="w-full mt-2"
-            onClick={() => setFilterByAttachments(!filterByAttachments)}
-          >
-            <Filter className="h-3 w-3 mr-2" />
-            Solo con allegati
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full mt-2"
-            onClick={onCreateCategory}
-          >
-            <Plus className="h-3 w-3 mr-2" />
-            Nuova Categoria
-          </Button>
+          <div className="space-y-2">
+            <Button
+              variant={filterByAttachments ? "default" : "outline"}
+              size="sm"
+              className="w-full"
+              onClick={() => setFilterByAttachments(!filterByAttachments)}
+            >
+              <Filter className="h-3 w-3 mr-2" />
+              Solo con allegati
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={onCreateCategory}
+            >
+              <Plus className="h-3 w-3 mr-2" />
+              Nuova Categoria
+            </Button>
+          </div>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {/* Lista indirizzi con sfondo trasparente */}
+        <div className="flex-1 overflow-y-auto px-4 space-y-3 bg-transparent">
           {filteredSenders.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-sm">
@@ -119,7 +129,7 @@ export function EmailSidebar({
             ))
           )}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

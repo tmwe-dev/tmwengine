@@ -466,12 +466,12 @@ export function EmailManagementTab() {
               </Card>
             </div>
 
-            <div className="col-span-8 overflow-visible relative min-h-screen">
+            <div className="col-span-8 overflow-visible relative h-full">
               <EmailCarousel3D
                 categories={groups}
                 assignedSenders={assignedSenders}
                 activeCategoryId={activeCategoryId}
-                zoom={0.5}
+                zoom={0.3}
               />
             </div>
           </div>

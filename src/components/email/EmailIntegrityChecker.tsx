@@ -381,6 +381,18 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
   const totalDB = allFolders.reduce((sum, c) => sum + c.directDbCount, 0);
   const totalMissing = allFolders.reduce((sum, c) => sum + c.missing, 0);
 
+  // Debug gerarchia
+  console.log('🌳 [HIERARCHY DEBUG]', {
+    totalFolders: allFolders.length,
+    rootFolders: comparisons?.length || 0,
+    foldersByLevel: {
+      level0: allFolders.filter(f => f.level === 0).map(f => f.folderName),
+      level1: allFolders.filter(f => f.level === 1).map(f => f.folderName),
+      level2: allFolders.filter(f => f.level === 2).map(f => f.folderName),
+    },
+    expandedFolders,
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -473,6 +485,31 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
               >
                 ❌ Deseleziona tutto
               </Button>
+            </div>
+
+            {/* Legenda TreeView */}
+            <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-primary/20">
+              <div className="text-sm text-muted-foreground flex items-center gap-4 flex-wrap">
+                <span className="font-semibold text-foreground">Legenda:</span>
+                <span className="flex items-center gap-1">
+                  📂 = Cartella principale
+                </span>
+                <span className="flex items-center gap-1">
+                  📁 = Sottocartella
+                </span>
+                <span className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-primary/20 rounded border border-primary/40" />
+                  = Livello 0
+                </span>
+                <span className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-secondary/30 rounded border border-primary/40" />
+                  = Livello 1
+                </span>
+                <span className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-secondary/20 rounded border border-primary/30" />
+                  = Livello 2+
+                </span>
+              </div>
             </div>
 
             <div className="border rounded-lg">
@@ -583,9 +620,11 @@ const FolderRow = ({
   return (
     <>
       <TableRow className={`
-        ${folder.level > 0 ? 'bg-muted/30' : ''}
-        ${folder.level === 1 ? 'border-l-2 border-primary/50' : ''}
-        ${folder.level === 2 ? 'border-l-2 border-primary/30 bg-muted/50' : ''}
+        ${folder.level === 0 ? 'bg-primary/10 font-semibold border-l-4 border-primary' : ''}
+        ${folder.level === 1 ? 'bg-secondary/30 border-l-4 border-primary/60' : ''}
+        ${folder.level === 2 ? 'bg-secondary/20 border-l-4 border-primary/40' : ''}
+        ${folder.level > 2 ? 'bg-secondary/10 border-l-4 border-primary/30' : ''}
+        hover:bg-accent/50 transition-colors
       `}>
         {/* Lucchetto */}
         <TableCell className="text-center">
@@ -606,15 +645,35 @@ const FolderRow = ({
         {/* Nome Cartella con Indentazione + TreeView */}
         <TableCell className="font-medium">
           <div 
-            className="flex items-center gap-2"
-            style={{ paddingLeft: `${folder.level * 24}px` }}
+            className="flex items-center gap-2 relative"
+            style={{ paddingLeft: `${folder.level * 48}px` }}
           >
+            {/* Linea verticale di connessione per sottocartelle */}
+            {folder.level > 0 && (
+              <div 
+                className="absolute left-0 top-0 bottom-0 w-px bg-primary/40"
+                style={{ left: `${(folder.level - 1) * 48 + 20}px` }}
+              />
+            )}
+            
+            {/* Linea orizzontale per sottocartelle */}
+            {folder.level > 0 && (
+              <div 
+                className="absolute h-px bg-primary/40"
+                style={{ 
+                  left: `${(folder.level - 1) * 48 + 20}px`,
+                  top: '50%',
+                  width: '24px'
+                }}
+              />
+            )}
+            
             {hasChildren && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => onToggleExpand(folder.folderName)}
-                className="h-6 w-6"
+                className="h-6 w-6 relative z-10"
               >
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4" />
@@ -624,21 +683,24 @@ const FolderRow = ({
               </Button>
             )}
             
-            {!hasChildren && folder.level > 0 && (
-              <span className="text-muted-foreground text-xs mr-2">└─ 📁</span>
+            {/* Icona cartella con simbolo tree-like per foglie */}
+            {hasChildren ? (
+              <span className="text-xl relative z-10">
+                {isExpanded ? '📂' : '📁'}
+              </span>
+            ) : (
+              <span className="text-base text-muted-foreground relative z-10">
+                {folder.level > 0 ? '└─ 📄' : '📄'}
+              </span>
             )}
             
-            {hasChildren && (
-              <span className="mr-1">📂</span>
-            )}
-            
-            <span className={hasChildren ? 'font-semibold' : undefined}>
+            <span className={hasChildren ? 'font-bold text-base' : 'font-normal'}>
               {folder.displayName}
             </span>
             
             {hasChildren && (
-              <Badge variant="outline" className="text-xs">
-                {folder.children.length} sub
+              <Badge variant="secondary" className="text-xs ml-2">
+                {folder.children.length} sottocartelle
               </Badge>
             )}
           </div>

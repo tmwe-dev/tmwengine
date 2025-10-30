@@ -51,8 +51,6 @@ export async function saveSyncPreferences(
       excluded_folders: preferences.excluded_folders || [],
       included_folders: preferences.included_folders || [],
       updated_at: new Date().toISOString(),
-    }, {
-      onConflict: 'user_email'  // ✅ FIX: specifica colonna per risolvere conflitti
     });
 
   if (error) {

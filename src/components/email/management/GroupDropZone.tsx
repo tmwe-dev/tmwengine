@@ -29,6 +29,39 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
 
   useEffect(() => {
     loadRules();
+
+    // Real-time subscription per INSERT su email_sender_rules
+    const channel = supabase
+      .channel(`group-rules-${group.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'email_sender_rules',
+          filter: `group_id=eq.${group.id}`
+        },
+        () => {
+          loadRules();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'email_sender_rules',
+          filter: `group_id=eq.${group.id}`
+        },
+        () => {
+          loadRules();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [group.id]);
 
   const loadRules = async () => {
@@ -64,8 +97,8 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
       
       if (error) throw error;
       
-      loadRules();
-      onRefresh();
+      // Aggiornamento automatico via subscription real-time
+      // Non chiamiamo onRefresh() per non chiudere il dialog
     } catch (error) {
       console.error('Error removing rule:', error);
     }
@@ -100,7 +133,9 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
             <div className="flex items-center gap-2">
               <span className="text-2xl">{group.icon || '📁'}</span>
               <div>
-                <CardTitle className="text-base">{group.nome_gruppo}</CardTitle>
+                <CardTitle className="text-base">
+                  {group.nome_gruppo} <span className="text-red-500">{rules.length}</span>
+                </CardTitle>
                 {group.descrizione && (
                   <CardDescription className="text-xs mt-1">
                     {group.descrizione}
@@ -165,16 +200,9 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
               )}
             </div>
           </div>
-          <Badge 
-            variant="secondary" 
-            className="absolute top-3 left-3 h-8 w-8 flex items-center justify-center rounded-md font-bold text-white"
-            style={{ backgroundColor: group.colore }}
-          >
-            {rules.length}
-          </Badge>
         </CardHeader>
 
-        <CardContent className="pt-4 flex-1 overflow-hidden flex flex-col">
+        <CardContent className="pt-4 flex-1 overflow-hidden flex flex-col items-center justify-center">
           {isOver && rules.length === 0 && (
             <div className="text-center py-12 animate-pulse">
               <div className="text-5xl mb-3">👇</div>
@@ -185,36 +213,17 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
           )}
 
           {!isOver && rules.length === 0 && !loading && (
-            <div className="text-center py-8 text-muted-foreground flex-1 flex flex-col items-center justify-center">
-              <AlertCircle className="h-8 w-8 mb-2 opacity-50" />
+            <div className="text-center py-8 text-muted-foreground">
+              <AlertCircle className="h-8 w-8 mb-2 opacity-50 mx-auto" />
               <p className="text-xs">Nessun mittente classificato</p>
               <p className="text-xs mt-1">Trascina qui le email</p>
             </div>
           )}
 
-          {rules.length > 0 && (
-            <div className="space-y-2 overflow-y-auto flex-1">
-              {rules.map(rule => (
-                <div
-                  key={rule.id}
-                  className="flex items-center justify-between p-2 bg-muted/40 rounded-md text-sm hover:bg-muted/60 transition-colors group"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{rule.sender_name}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {rule.sender_email}
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleRemoveRule(rule.id)}
-                  >
-                    <Trash2 className="h-3 w-3 text-destructive" />
-                  </Button>
-                </div>
-              ))}
+          {!isOver && rules.length > 0 && (
+            <div className="text-center">
+              <div className="font-bold text-xl mb-1">{rules[0].sender_name}</div>
+              <div className="text-sm text-muted-foreground">{rules[0].sender_email}</div>
             </div>
           )}
         </CardContent>

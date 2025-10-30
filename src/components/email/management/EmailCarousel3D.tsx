@@ -1,10 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { EmailCarousel3DProps } from '@/types/email-carousel';
 import { createCategoryTexture, createEmptyTexture } from '@/lib/email-carousel-texture';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDroppable } from '@dnd-kit/core';
 
 const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
@@ -17,11 +15,12 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const carouselGroupRef = useRef<THREE.Group | null>(null);
-  const slotsRef = useRef<THREE.Mesh[]>([]);
+  const groupRef = useRef<THREE.Group | null>(null);
+  const meshesRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const animationFrameRef = useRef<number | null>(null);
+  const hasInitializedSlotsRef = useRef(false);
+  const renderedCategoriesRef = useRef<Set<string>>(new Set());
 
-  const [currentIndex, setCurrentIndex] = useState(0);
   const MAX_SLOTS = 8;
 
   // Droppable per il canvas
@@ -29,34 +28,32 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
     id: 'email-carousel-canvas',
   });
 
-  // Inizializzazione Three.js
+  // 1️⃣ INIZIALIZZAZIONE SCENE (solo al mount)
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Setup scene
+    console.log('🎡 Inizializzazione EmailCarousel3D...');
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a0a);
     sceneRef.current = scene;
 
-    // Setup camera
     const camera = new THREE.PerspectiveCamera(
       45,
       containerRef.current.clientWidth / containerRef.current.clientHeight,
       0.1,
       1000
     );
-    camera.position.set(0, 0, 18);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(0, 0.15, 8); // Ridotto da 13.5 a 8 (60%)
+    camera.lookAt(0, 0.15, 0);
     cameraRef.current = camera;
 
-    // Setup renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Setup lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
@@ -64,35 +61,9 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
 
-    // Carousel group
-    const carouselGroup = new THREE.Group();
-    scene.add(carouselGroup);
-    carouselGroupRef.current = carouselGroup;
-
-    // Create slots
-    const radius = 7.8;
-    const angleStep = (Math.PI * 2) / MAX_SLOTS;
-
-    for (let i = 0; i < MAX_SLOTS; i++) {
-      const angle = i * angleStep;
-      const x = Math.sin(angle) * radius;
-      const z = Math.cos(angle) * radius;
-
-      const geometry = new THREE.PlaneGeometry(4, 5.5);
-      const material = new THREE.MeshStandardMaterial({
-        map: createEmptyTexture(),
-        side: THREE.DoubleSide,
-        transparent: false,
-      });
-
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(x, 0, z);
-      mesh.lookAt(0, 0, 0);
-      mesh.visible = false;
-
-      carouselGroup.add(mesh);
-      slotsRef.current.push(mesh);
-    }
+    const group = new THREE.Group();
+    scene.add(group);
+    groupRef.current = group;
 
     // Animation loop
     const animate = () => {
@@ -101,18 +72,73 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
     };
     animate();
 
-    // Resize handler
-    const handleResize = () => {
+    // ResizeObserver per gestire resize container
+    const resizeObserver = new ResizeObserver(() => {
       if (!containerRef.current || !camera || !renderer) return;
       camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    });
+
+    resizeObserver.observe(containerRef.current);
+
+    // Polling per creazione slot
+    const checkAndInit = () => {
+      if (!groupRef.current) {
+        console.log('⏳ groupRef non pronto, riprovo...');
+        requestAnimationFrame(checkAndInit);
+        return;
+      }
+
+      if (hasInitializedSlotsRef.current) {
+        console.log('✅ Slot già inizializzati, skip');
+        return;
+      }
+
+      console.log('🎡 Creazione carosello con 8 slot');
+
+      const radius = 5; // Ridotto da 7.8 a 5 (64%)
+      const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
+
+      for (let i = 0; i < MAX_SLOTS; i++) {
+        const angle = (i / MAX_SLOTS) * Math.PI * 2 - Math.PI / 2;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+
+        // Dimensioni ridotte al 50%
+        const geometry = new THREE.PlaneGeometry(
+          (4.83 * scaleFactor) * 0.5,
+          (7.04 * scaleFactor) * 0.5
+        );
+
+        const material = new THREE.MeshBasicMaterial({
+          map: createEmptyTexture(),
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, 0, z);
+        mesh.lookAt(0, 0, 0);
+
+        groupRef.current.add(mesh);
+        meshesRef.current.set(`slot_${i}`, mesh);
+        console.log(`  📍 Slot ${i} creato a posizione:`, mesh.position.toArray());
+      }
+
+      hasInitializedSlotsRef.current = true;
+      renderedCategoriesRef.current.clear();
+      console.log(`✅ Carosello creato, meshesRef.size: ${meshesRef.current.size}`);
     };
 
-    window.addEventListener('resize', handleResize);
+    console.log('🚀 Avvio polling per groupRef...');
+    requestAnimationFrame(checkAndInit);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      console.log('🧹 EmailCarousel3D unmounting');
+      hasInitializedSlotsRef.current = false;
+      resizeObserver.disconnect();
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -122,88 +148,117 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
     };
   }, []);
 
-  // Popola le card con le categorie
+  // 2️⃣ POPOLAZIONE CATEGORIE
   useEffect(() => {
-    if (!rendererRef.current || categories.length === 0) return;
+    console.log('📝 useEffect categorie - categories:', categories.length, 'meshesRef:', meshesRef.current.size);
 
-    categories.forEach((category, index) => {
-      if (index >= MAX_SLOTS) return;
+    if (!groupRef.current || meshesRef.current.size === 0) {
+      console.log('⏸️ Gruppo o slot non pronti, skip popolazione');
+      return;
+    }
 
-      const mesh = slotsRef.current[index];
-      const senders = assignedSenders.get(category.id) || [];
-      const texture = createCategoryTexture(category, senders);
+    console.log(`📝 Riempimento ${categories.length} categorie`);
 
-      if (mesh.material instanceof THREE.MeshStandardMaterial) {
-        mesh.material.map = texture;
-        mesh.material.needsUpdate = true;
+    categories.forEach((category, i) => {
+      if (renderedCategoriesRef.current.has(category.id)) {
+        console.log(`  ⏭️ Categoria ${category.nome_gruppo} già renderizzata, skip`);
+        return;
       }
-      mesh.visible = true;
+
+      if (i >= MAX_SLOTS) {
+        console.log(`  ⚠️ Troppe categorie (${categories.length}), max ${MAX_SLOTS}`);
+        return;
+      }
+
+      const slotKey = `slot_${i}`;
+      const slotMesh = meshesRef.current.get(slotKey);
+
+      if (!slotMesh) {
+        console.log(`  ❌ Slot ${i} non trovato`);
+        return;
+      }
+
+      console.log(`  🔍 Slot ${i}: ✅ per categoria: ${category.nome_gruppo}`);
+
+      const senders = assignedSenders.get(category.id) || [];
+      const newTexture = createCategoryTexture(category, senders);
+      const material = slotMesh.material as THREE.MeshBasicMaterial;
+
+      if (material.map) material.map.dispose();
+
+      material.map = newTexture;
+      material.opacity = 1;
+      material.needsUpdate = true;
+
+      console.log(`  ✅ Slot ${i} riempito (opacity: 1)`);
+
+      renderedCategoriesRef.current.add(category.id);
     });
   }, [categories, assignedSenders]);
 
-  // Rotazione verso categoria attiva
+  // 3️⃣ ROTAZIONE VERSO CATEGORIA ATTIVA
   useEffect(() => {
-    if (!carouselGroupRef.current || !activeCategoryId) return;
+    if (!groupRef.current || !activeCategoryId) return;
 
     const activeIndex = categories.findIndex((cat) => cat.id === activeCategoryId);
     if (activeIndex === -1) return;
 
-    const angleStep = (Math.PI * 2) / MAX_SLOTS;
-    const targetRotation = -activeIndex * angleStep;
-
-    gsap.to(carouselGroupRef.current.rotation, {
-      y: targetRotation,
-      duration: 0.8,
-      ease: 'power2.out',
+    const targetAngle = -(activeIndex / MAX_SLOTS) * Math.PI * 2 + Math.PI / 2;
+    gsap.to(groupRef.current.rotation, {
+      y: targetAngle,
+      duration: 1.2,
+      ease: 'power2.inOut',
     });
-
-    setCurrentIndex(activeIndex);
   }, [activeCategoryId, categories]);
 
-  // Effetto glow quando isOver
+  // 4️⃣ EFFETTO GLOW QUANDO isOver
   useEffect(() => {
-    if (!slotsRef.current[currentIndex]) return;
+    if (!activeCategoryId || meshesRef.current.size === 0) return;
 
-    const mesh = slotsRef.current[currentIndex];
+    const activeIndex = categories.findIndex((cat) => cat.id === activeCategoryId);
+    if (activeIndex === -1) return;
+
+    const slotKey = `slot_${activeIndex}`;
+    const mesh = meshesRef.current.get(slotKey);
+    if (!mesh) return;
+
     if (isOver) {
       gsap.to(mesh.scale, { x: 1.1, y: 1.1, z: 1.1, duration: 0.3 });
     } else {
       gsap.to(mesh.scale, { x: 1, y: 1, z: 1, duration: 0.3 });
     }
-  }, [isOver, currentIndex]);
+  }, [isOver, activeCategoryId, categories]);
 
+  // Handler per aree cliccabili
   const handlePrev = () => {
     if (categories.length === 0) return;
+    const currentIndex = categories.findIndex((cat) => cat.id === activeCategoryId);
     const newIndex = (currentIndex - 1 + categories.length) % categories.length;
     onRotate?.(categories[newIndex].id);
   };
 
   const handleNext = () => {
     if (categories.length === 0) return;
+    const currentIndex = categories.findIndex((cat) => cat.id === activeCategoryId);
     const newIndex = (currentIndex + 1) % categories.length;
     onRotate?.(categories[newIndex].id);
   };
 
   return (
-    <div className="relative h-full w-full flex flex-col">
-      <div ref={setNodeRef} className="flex-1 relative">
-        <div ref={containerRef} className="w-full h-full" />
-      </div>
-
-      {/* Controlli */}
-      <div className="flex items-center justify-center gap-4 mt-4">
-        <Button variant="outline" size="icon" onClick={handlePrev}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-
-        <div className="text-sm text-muted-foreground">
-          {categories[currentIndex]?.nome_gruppo || 'Nessuna categoria'}
-        </div>
-
-        <Button variant="outline" size="icon" onClick={handleNext}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+    <div ref={setNodeRef} className="relative h-full w-full">
+      <div ref={containerRef} className="w-full h-full" />
+      
+      {/* Aree cliccabili sinistra/destra */}
+      <div
+        onClick={handlePrev}
+        className="absolute left-0 top-0 bottom-0 w-1/3 cursor-pointer hover:bg-white/5 transition-colors"
+        style={{ zIndex: 10 }}
+      />
+      <div
+        onClick={handleNext}
+        className="absolute right-0 top-0 bottom-0 w-1/3 cursor-pointer hover:bg-white/5 transition-colors"
+        style={{ zIndex: 10 }}
+      />
     </div>
   );
 };

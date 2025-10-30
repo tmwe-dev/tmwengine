@@ -105,9 +105,10 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
 
       const radius = 7.8; // IDENTICO a Radio
       const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
+      const angleStep = (Math.PI * 2) / MAX_SLOTS;
 
       for (let i = 0; i < MAX_SLOTS; i++) {
-        const angle = (i / MAX_SLOTS) * Math.PI * 2 - Math.PI / 2;
+        const angle = -(i * angleStep) + Math.PI; // IDENTICO a Radio
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
 
@@ -251,19 +252,22 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
   };
 
   return (
-    <div ref={setNodeRef} className="relative h-full w-full">
-      <div ref={containerRef} className="w-full h-full" />
-      
-      {/* Aree cliccabili sinistra/destra */}
+    <div 
+      ref={(node) => {
+        containerRef.current = node;
+        setNodeRef(node);
+      }}
+      className="w-full h-full overflow-visible"
+      style={{ position: 'relative' }}
+    >
+      {/* Aree cliccabili sopra il canvas */}
       <div
         onClick={handlePrev}
-        className="absolute left-0 top-0 bottom-0 w-1/3 cursor-pointer hover:bg-white/5 transition-colors"
-        style={{ zIndex: 10 }}
+        className="absolute left-0 top-0 bottom-0 w-1/3 cursor-pointer hover:bg-white/5 transition-colors z-10"
       />
       <div
         onClick={handleNext}
-        className="absolute right-0 top-0 bottom-0 w-1/3 cursor-pointer hover:bg-white/5 transition-colors"
-        style={{ zIndex: 10 }}
+        className="absolute right-0 top-0 bottom-0 w-1/3 cursor-pointer hover:bg-white/5 transition-colors z-10"
       />
     </div>
   );

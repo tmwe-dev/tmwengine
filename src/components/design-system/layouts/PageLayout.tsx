@@ -50,7 +50,7 @@ export function PageLayout({
             headerClassName
           )}
         >
-          <div className="container py-6 space-y-4">
+          <div className="container space-y-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="space-y-1">
                 {description && (

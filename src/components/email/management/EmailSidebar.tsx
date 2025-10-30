@@ -112,8 +112,8 @@ export function EmailSidebar({
           </div>
         </div>
         
-        {/* Lista indirizzi con sfondo trasparente */}
-        <div className="flex-1 overflow-y-auto px-4 space-y-3 bg-transparent">
+        {/* Lista indirizzi con sfondo trasparente e scroll snap */}
+        <div className="flex-1 overflow-y-auto px-4 space-y-3 bg-transparent snap-y snap-proximity" style={{ perspective: '1000px' }}>
           {filteredSenders.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-sm">

@@ -26,9 +26,11 @@ export function SenderCard({ sender, isDragging }: FunEmailSenderCardProps) {
   } : { opacity: 1 };
 
   return (
-    <div ref={setNodeRef} style={style} className="transition-all">
+    <div ref={setNodeRef} style={style} className="transition-all snap-start">
       <Card className={cn(
-        "hover:shadow-lg transition-shadow cursor-grab active:cursor-grabbing border-l-4",
+        "cursor-grab active:cursor-grabbing border-l-4",
+        "transition-all duration-200",
+        "hover:shadow-lg hover:scale-105 hover:-translate-y-1",
         isDragging && "rotate-2 scale-105 shadow-2xl",
         sender.emailCount > 50 && "border-l-orange-500",
         sender.emailCount > 100 && "border-l-red-500"

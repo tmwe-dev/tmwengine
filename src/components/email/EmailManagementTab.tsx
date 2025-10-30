@@ -457,6 +457,13 @@ export function EmailManagementTab() {
         onRefresh={loadData}
         isSyncing={isSyncing}
         isLoading={isLoading}
+        senders={senders}
+        onSendersUpdate={(updatedSenders) => {
+          setSenders(prev => prev.map(s => {
+            const updated = updatedSenders.find(u => u.email === s.email);
+            return updated ? { ...s, companyName: updated.companyName } : s;
+          }));
+        }}
       />
       
       <DndContext

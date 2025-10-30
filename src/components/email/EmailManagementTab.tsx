@@ -54,7 +54,20 @@ export function EmailManagementTab() {
   const [viewMode, setViewMode] = useState<'grid' | 'carousel'>('grid');
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [assignedSenders, setAssignedSenders] = useState<Map<string, SenderAnalysis[]>>(new Map());
+  
+  // Persist carousel zoom in localStorage
+  const [carouselZoom, setCarouselZoom] = useState(() => {
+    const saved = localStorage.getItem('email-carousel-zoom');
+    return saved ? parseFloat(saved) : 1.0;
+  });
+  
   const { toast } = useToast();
+
+  // Handler per salvare zoom in localStorage
+  const handleZoomChange = (zoom: number) => {
+    setCarouselZoom(zoom);
+    localStorage.setItem('email-carousel-zoom', zoom.toString());
+  };
 
   useEffect(() => {
     loadData();
@@ -331,6 +344,9 @@ export function EmailManagementTab() {
           filterByAttachments={filterByAttachments}
           setFilterByAttachments={setFilterByAttachments}
           filteredSenders={filteredSenders}
+          viewMode={viewMode}
+          carouselZoom={carouselZoom}
+          onCarouselZoomChange={handleZoomChange}
         />
         
         {/* Area principale condizionale */}
@@ -344,7 +360,7 @@ export function EmailManagementTab() {
             categories={groups}
             assignedSenders={assignedSenders}
             activeCategoryId={activeCategoryId}
-            zoom={0.8}
+            zoom={carouselZoom}
           />
         )}
 

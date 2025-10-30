@@ -5,6 +5,7 @@
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { Search, Filter } from 'lucide-react';
 import { SenderCard } from './SenderCard';
 import type { SenderAnalysis } from '@/types/email-management';
@@ -16,6 +17,9 @@ interface EmailSidebarProps {
   filterByAttachments: boolean;
   setFilterByAttachments: (filter: boolean) => void;
   filteredSenders: SenderAnalysis[];
+  viewMode?: 'grid' | 'carousel';
+  carouselZoom?: number;
+  onCarouselZoomChange?: (zoom: number) => void;
 }
 
 export function EmailSidebar({
@@ -25,6 +29,9 @@ export function EmailSidebar({
   filterByAttachments,
   setFilterByAttachments,
   filteredSenders,
+  viewMode,
+  carouselZoom = 1.0,
+  onCarouselZoomChange,
 }: EmailSidebarProps) {
   return (
     <div className="fixed left-6 top-32 w-80 z-20" style={{ height: 'calc(100vh - 180px)' }}>
@@ -38,6 +45,30 @@ export function EmailSidebar({
               </span>
             )}
           </h3>
+          
+          {/* Carousel Zoom Control - Solo quando carousel è attivo */}
+          {viewMode === 'carousel' && (
+            <div className="mb-4 pb-4 border-b">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Zoom Carousel</label>
+                <span className="text-xs text-muted-foreground">
+                  {Math.round(carouselZoom * 100)}%
+                </span>
+              </div>
+              <Slider
+                value={[carouselZoom]}
+                onValueChange={([val]) => onCarouselZoomChange?.(val)}
+                min={0.5}
+                max={2.0}
+                step={0.01}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>50%</span>
+                <span>200%</span>
+              </div>
+            </div>
+          )}
           
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

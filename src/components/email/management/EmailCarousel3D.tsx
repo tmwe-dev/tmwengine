@@ -9,7 +9,8 @@ export const EmailCarousel3D = ({
   categories, 
   assignedSenders,
   activeCategoryId,
-  onRotate
+  onRotate,
+  zoom = 1.0
 }: EmailCarousel3DProps) => {
   const MAX_SLOTS = 8; // Numero massimo di pagine nel carosello
   
@@ -123,6 +124,19 @@ export const EmailCarousel3D = ({
     return () => resizeObserver.disconnect();
   }, []);
 
+  // 📷 ZOOM FLUIDO con FOV (ultra-light, zero geometry recalc)
+  useEffect(() => {
+    if (!cameraRef.current) return;
+    
+    const baseFOV = 50; // Field of View base in gradi
+    const newFOV = baseFOV / zoom; // zoom=1.3 → FOV=38° (più vicino), zoom=0.5 → FOV=100° (più lontano)
+    
+    cameraRef.current.fov = newFOV;
+    cameraRef.current.updateProjectionMatrix();
+    
+    console.log(`📷 Zoom ${zoom.toFixed(2)} → FOV ${newFOV.toFixed(1)}° (fluido)`);
+  }, [zoom]);
+
   // 1️⃣ INIZIALIZZAZIONE SLOT (aspetta che groupRef sia pronto) - GEOMETRIA FISSA
   useEffect(() => {
     let attemptCount = 0;
@@ -193,6 +207,8 @@ export const EmailCarousel3D = ({
       hasInitializedSlotsRef.current = false;
     };
   }, []); // ← Init solo una volta al mount
+
+  // 🔄 REMOVED: No more geometry updates on zoom change (FOV handles it)
 
   // 2️⃣ POPOLAZIONE CATEGORIE (si attiva quando arrivano nuove categorie)
   useEffect(() => {

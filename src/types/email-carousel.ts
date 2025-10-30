@@ -13,4 +13,5 @@ export interface EmailCarousel3DProps {
   activeCategoryId: string | null;
   onRotate?: (categoryId: string) => void;
   onDrop?: (categoryId: string, senderId: string) => void;
+  zoom?: number;
 }

@@ -73,6 +73,16 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
   };
 
   const handlePerfectSync = async () => {
+    console.log('🚀 [PerfectSync] Button clicked!');
+    console.log('🚀 [PerfectSync] Selected folders:', selectedFolders);
+    console.log('🚀 [PerfectSync] isPerfectSyncing:', isPerfectSyncing);
+    
+    if (selectedFolders.length === 0) {
+      console.error('❌ [PerfectSync] No folders selected!');
+      toast.error('Nessuna cartella selezionata');
+      return;
+    }
+    
     setIsPerfectSyncing(true);
     
     try {
@@ -86,6 +96,7 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
       
       for (const folder of selectedFolders) {
         console.log(`⚡ [PerfectSync] Syncing ${folder}...`);
+        console.log(`⚡ [PerfectSync] Invoking tmwe-email-sync-master for ${folder}...`);
         
         const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
           body: {
@@ -94,6 +105,8 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
             max_emails: 5000
           }
         });
+        
+        console.log(`📥 [PerfectSync] Response for ${folder}:`, { data, error });
         
         if (error) {
           console.error(`❌ [PerfectSync] Error syncing ${folder}:`, error);
@@ -212,6 +225,16 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
       });
 
       console.log('🔍 [IntegrityCheck] Results:', results);
+      
+      // Ordina gerarchicamente: prima root, poi sottocartelle
+      results.sort((a, b) => {
+        const aLevel = (a.folderName.match(/\//g) || []).length;
+        const bLevel = (b.folderName.match(/\//g) || []).length;
+        
+        if (aLevel !== bLevel) return aLevel - bLevel;
+        return a.folderName.localeCompare(b.folderName);
+      });
+      
       return results;
     },
     enabled: true,
@@ -364,23 +387,35 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {comparisons.map(comp => (
-                    <TableRow key={comp.folderName}>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggleLock(comp.folderName)}
-                          className="h-8 w-8"
-                        >
-                          {excludedFolders.includes(comp.folderName) ? (
-                            <Lock className="h-4 w-4 text-destructive" />
-                          ) : (
-                            <LockOpen className="h-4 w-4 text-green-500" />
-                          )}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="font-medium">{comp.folderName}</TableCell>
+                  {comparisons.map(comp => {
+                    const isSubfolder = comp.folderName.includes('/');
+                    const level = (comp.folderName.match(/\//g) || []).length;
+                    
+                    return (
+                      <TableRow 
+                        key={comp.folderName}
+                        className={`${isSubfolder ? 'bg-purple-100 dark:bg-purple-900/20' : ''} hover:bg-accent/50 transition-colors`}
+                      >
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleLock(comp.folderName)}
+                            className="h-8 w-8"
+                          >
+                            {excludedFolders.includes(comp.folderName) ? (
+                              <Lock className="h-4 w-4 text-destructive" />
+                            ) : (
+                              <LockOpen className="h-4 w-4 text-green-500" />
+                            )}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <div style={{ paddingLeft: `${level * 20}px` }} className="flex items-center gap-2">
+                            {level > 0 && <span className="text-muted-foreground text-xs">└─</span>}
+                            {comp.folderName}
+                          </div>
+                        </TableCell>
                       <TableCell className="text-right">{comp.serverCount}</TableCell>
                       <TableCell className="text-right">{comp.dbCount}</TableCell>
                       <TableCell className={`text-right ${comp.missing > 0 ? 'text-destructive font-semibold' : 'text-green-500'}`}>
@@ -406,7 +441,8 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  );
+                  })}
                 </TableBody>
               </Table>
             </div>

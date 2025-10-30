@@ -430,13 +430,17 @@ serve(async (req) => {
         }
 
         const msgData = messageData.result || messageData;
+        
+        // Estrai header se presente nella struttura data.header
+        const header = msgData.data?.header || msgData;
 
         // 🔍 LOGGING COMPLETO PER DEBUG
         console.log(`\n📧 ===== EMAIL ${uid} - STRUTTURA COMPLETA =====`);
         console.log(`📦 msgData COMPLETO:`, JSON.stringify(msgData, null, 2));
+        console.log(`📦 header estratto:`, JSON.stringify(header, null, 2));
         console.log(`📦 emailInfo COMPLETO:`, JSON.stringify(emailInfo, null, 2));
-        console.log(`📦 msgData.from tipo:`, typeof msgData.from);
-        console.log(`📦 msgData.from valore:`, msgData.from);
+        console.log(`📦 header.from tipo:`, typeof header.from);
+        console.log(`📦 header.from valore:`, header.from);
         console.log(`📦 emailInfo.from tipo:`, typeof emailInfo.from);
         console.log(`📦 emailInfo.from valore:`, emailInfo.from);
         console.log(`========================================\n`);
@@ -447,27 +451,27 @@ serve(async (req) => {
           .insert({
             message_id: uid,
             user_email: userEmail || '',
-            subject: msgData.subject || emailInfo.subject || 'Senza oggetto',
-            from_email: msgData.from?.email || emailInfo.from?.email || '',
-            to_email: Array.isArray(msgData.to) 
-              ? msgData.to.map(addr => addr.email).join(', ') 
+            subject: header.subject || emailInfo.subject || 'Senza oggetto',
+            from_email: header.from || emailInfo.from || '',
+            to_email: Array.isArray(header.to) 
+              ? header.to.map(addr => typeof addr === 'string' ? addr : addr.email).join(', ') 
               : '',
-            cc_email: Array.isArray(msgData.cc) 
-              ? msgData.cc.map(addr => addr.email).join(', ') 
+            cc_email: Array.isArray(header.cc) 
+              ? header.cc.map(addr => typeof addr === 'string' ? addr : addr.email).join(', ') 
               : null,
-            bcc_email: Array.isArray(msgData.bcc) 
-              ? msgData.bcc.map(addr => addr.email).join(', ') 
+            bcc_email: Array.isArray(header.bcc) 
+              ? header.bcc.map(addr => typeof addr === 'string' ? addr : addr.email).join(', ') 
               : null,
-            data_ricezione: new Date(msgData.date || emailInfo.date || Date.now()).toISOString(),
+            data_ricezione: new Date(header.date || emailInfo.date || Date.now()).toISOString(),
             cartella: folder_name,
             provider_id: providerData.id,
-            flags: { seen: msgData.seen, flagged: msgData.flagged },
+            flags: { seen: header.seen, flagged: header.flagged },
             direzione: 'inbound',
-            stato: msgData.seen ? 'letto' : 'nuovo',
-            body_text: msgData.body || msgData.body_text || 'Contenuto da recuperare',
-            body_html: msgData.body_html,
-            attachments: msgData.attachments || [],
-            data_invio: new Date(msgData.date || emailInfo.date || Date.now()).toISOString()
+            stato: header.seen ? 'letto' : 'nuovo',
+            body_text: msgData.data?.body_plain || msgData.body || 'Contenuto da recuperare',
+            body_html: msgData.data?.body_html || null,
+            attachments: msgData.data?.attachments || header.attachments || [],
+            data_invio: new Date(header.date || emailInfo.date || Date.now()).toISOString()
           });
 
         if (!insertError) {

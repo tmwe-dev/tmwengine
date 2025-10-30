@@ -19,6 +19,7 @@ import { EmailManagementToolbar } from './management/EmailManagementToolbar';
 import { EmailSidebar } from './management/EmailSidebar';
 import { EmailCarouselContainer } from './management/EmailCarouselContainer';
 import { EmailGridContainer } from './management/EmailGridContainer';
+import { CreateCategoryDialog } from './management/CreateCategoryDialog';
 
 // Collisione personalizzata 80%
 const carousel80PercentCollision: CollisionDetection = (args) => {
@@ -53,6 +54,7 @@ export function EmailManagementTab() {
   const [viewMode, setViewMode] = useState<'grid' | 'carousel'>('grid');
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [assignedSenders, setAssignedSenders] = useState<Map<string, SenderAnalysis[]>>(new Map());
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   
   // Persist carousel zoom in localStorage
   const [carouselZoom, setCarouselZoom] = useState(() => {
@@ -87,6 +89,86 @@ export function EmailManagementTab() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  // Real-time subscription per nuove categorie
+  useEffect(() => {
+    const channel = supabase
+      .channel('email-groups-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'email_sender_groups'
+        },
+        (payload) => {
+          console.log('🆕 Nuova categoria creata:', payload.new);
+          const newGroup = payload.new as EmailSenderGroup;
+          setGroups(prev => {
+            // Evita duplicati
+            if (prev.some(g => g.id === newGroup.id)) return prev;
+            return [...prev, newGroup];
+          });
+          setActiveCategoryId(newGroup.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Real-time subscription per nuove regole di assegnazione
+  useEffect(() => {
+    const channel = supabase
+      .channel('email-rules-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'email_sender_rules'
+        },
+        async (payload) => {
+          console.log('🔗 Nuova regola assegnazione:', payload.new);
+          const rule = payload.new as { sender_email: string; group_id: string; user_id: string };
+          
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user || rule.user_id !== user.id) return;
+
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('tmwe_email')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (profile?.tmwe_email) {
+            const analysis = await analyzeSenders(profile.tmwe_email);
+            const sender = analysis.find(s => s.email === rule.sender_email);
+            
+            if (sender) {
+              setAssignedSenders(prev => {
+                const newMap = new Map(prev);
+                const existing = newMap.get(rule.group_id) || [];
+                // Evita duplicati
+                if (existing.some(s => s.email === sender.email)) return prev;
+                newMap.set(rule.group_id, [...existing, sender]);
+                return newMap;
+              });
+
+              // Rimuovi da mittenti non classificati se presente
+              setSenders(prev => prev.filter(s => s.email !== rule.sender_email));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadData = async () => {
@@ -249,6 +331,40 @@ export function EmailManagementTab() {
     }
   };
 
+  const handleCreateCategory = async (categoryData: {
+    nome_gruppo: string;
+    descrizione?: string;
+    colore: string;
+    icon: string;
+  }) => {
+    try {
+      const { data, error } = await supabase
+        .from('email_sender_groups')
+        .insert(categoryData)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Update local state (real-time lo farà anche, ma per feedback immediato)
+      setGroups(prev => [...prev, data]);
+      setActiveCategoryId(data.id);
+      
+      toast({
+        title: '✅ Categoria creata',
+        description: `${data.nome_gruppo} aggiunta al carousel`,
+      });
+    } catch (error: any) {
+      console.error('❌ Errore creazione categoria:', error);
+      toast({
+        title: '❌ Errore',
+        description: 'Impossibile creare la categoria',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveDragId(null);
@@ -360,6 +476,7 @@ export function EmailManagementTab() {
           viewMode={viewMode}
           carouselZoom={carouselZoom}
           onCarouselZoomChange={handleZoomChange}
+          onCreateCategory={() => setShowCreateDialog(true)}
         />
         
         {/* Area principale condizionale */}
@@ -390,6 +507,14 @@ export function EmailManagementTab() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Dialog creazione categoria */}
+      <CreateCategoryDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSubmit={handleCreateCategory}
+        existingNames={groups.map(g => g.nome_gruppo)}
+      />
     </div>
   );
 }

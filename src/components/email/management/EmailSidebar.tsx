@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Plus } from 'lucide-react';
 import { SenderCard } from './SenderCard';
 import type { SenderAnalysis } from '@/types/email-management';
 
@@ -20,6 +20,7 @@ interface EmailSidebarProps {
   viewMode?: 'grid' | 'carousel';
   carouselZoom?: number;
   onCarouselZoomChange?: (zoom: number) => void;
+  onCreateCategory?: () => void;
 }
 
 export function EmailSidebar({
@@ -32,6 +33,7 @@ export function EmailSidebar({
   viewMode,
   carouselZoom = 1.0,
   onCarouselZoomChange,
+  onCreateCategory,
 }: EmailSidebarProps) {
   return (
     <div className="fixed left-6 top-20 w-80 z-20" style={{ height: 'calc(100vh - 100px)' }}>
@@ -88,6 +90,16 @@ export function EmailSidebar({
           >
             <Filter className="h-3 w-3 mr-2" />
             Solo con allegati
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full mt-2"
+            onClick={onCreateCategory}
+          >
+            <Plus className="h-3 w-3 mr-2" />
+            Nuova Categoria
           </Button>
         </div>
         

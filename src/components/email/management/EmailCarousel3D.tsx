@@ -141,12 +141,20 @@ export const EmailCarousel3D = ({
     ctx.fillText(`Mittenti: ${senders.length}`, 40, y);
     y += lineHeight + 10;
 
-    // Mostra i primi 10 mittenti
+    // Mostra i primi 10 mittenti con nome in grassetto
     const maxSenders = 10;
     senders.slice(0, maxSenders).forEach((sender, i) => {
-      const senderText = `• ${sender.email}`;
-      ctx.fillText(senderText, 40, y);
-      y += lineHeight;
+      // Nome società in grassetto (bianco)
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`• ${sender.companyName}`, 40, y);
+      y += 28;
+      
+      // Email sottostante in corsivo (grigio chiaro)
+      ctx.font = 'italic 18px sans-serif';
+      ctx.fillStyle = '#cccccc';
+      ctx.fillText(`  ${sender.email}`, 40, y);
+      y += lineHeight + 8;
     });
 
     if (senders.length > maxSenders) {

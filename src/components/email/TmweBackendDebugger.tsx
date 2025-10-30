@@ -10,8 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
-import { Bug, Send, Loader2 } from 'lucide-react';
+import { Bug, Send, Loader2, Info } from 'lucide-react';
 
 export function TmweBackendDebugger() {
   const [folder, setFolder] = useState('lette');
@@ -26,6 +27,36 @@ export function TmweBackendDebugger() {
     setResponse(null);
 
     try {
+      // 🔒 Verifica e forza refresh sessione
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        setError('❌ Non sei autenticato. Fai login con TMWE OAuth prima di usare il debugger.');
+        console.error('🔐 Session error:', sessionError);
+        return;
+      }
+
+      // 🔄 Forza refresh se il token sta per scadere
+      const expiresAt = session.expires_at || 0;
+      const now = Math.floor(Date.now() / 1000);
+      const timeUntilExpiry = expiresAt - now;
+
+      console.log('🔐 [TMWE Debug] Token status:', {
+        expiresAt: new Date(expiresAt * 1000).toLocaleString(),
+        timeUntilExpiry: `${Math.floor(timeUntilExpiry / 60)} minuti`,
+        needsRefresh: timeUntilExpiry < 300
+      });
+
+      if (timeUntilExpiry < 300) {
+        console.log('🔄 [TMWE Debug] Refreshing token...');
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          setError(`❌ Errore refresh token: ${refreshError.message}. Fai logout/login.`);
+          return;
+        }
+      }
+
+      // 🧪 Chiama edge function
       console.log('🧪 [TMWE Debug] Testing get_message:', { folder, uid });
       
       const { data, error: fnError } = await supabase.functions.invoke('tmwe-api-proxy', {
@@ -40,17 +71,23 @@ export function TmweBackendDebugger() {
       });
 
       if (fnError) {
-        setError(`Edge Function Error: ${fnError.message}`);
+        setError(`❌ Edge Function Error: ${fnError.message}`);
         console.error('❌ [TMWE Debug] Edge function error:', fnError);
         return;
       }
 
+      if (data && !data.success) {
+        setError(`⚠️ TMWE API ha risposto ma l'operazione è fallita: ${data.errors?.join(', ')}`);
+        console.warn('⚠️ [TMWE Debug] TMWE API error:', data.errors);
+      } else {
+        console.log('✅ [TMWE Debug] Success:', data);
+      }
+
       setResponse(data);
-      console.log('✅ [TMWE Debug] Response:', data);
 
     } catch (err: any) {
-      setError(`Exception: ${err.message}`);
-      console.error('❌ [TMWE Debug] Exception:', err);
+      setError(`💥 Exception: ${err.message}`);
+      console.error('💥 [TMWE Debug] Exception:', err);
     } finally {
       setIsLoading(false);
     }
@@ -62,6 +99,36 @@ export function TmweBackendDebugger() {
     setResponse(null);
 
     try {
+      // 🔒 Verifica e forza refresh sessione
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        setError('❌ Non sei autenticato. Fai login con TMWE OAuth prima di usare il debugger.');
+        console.error('🔐 Session error:', sessionError);
+        return;
+      }
+
+      // 🔄 Forza refresh se il token sta per scadere
+      const expiresAt = session.expires_at || 0;
+      const now = Math.floor(Date.now() / 1000);
+      const timeUntilExpiry = expiresAt - now;
+
+      console.log('🔐 [TMWE Debug] Token status:', {
+        expiresAt: new Date(expiresAt * 1000).toLocaleString(),
+        timeUntilExpiry: `${Math.floor(timeUntilExpiry / 60)} minuti`,
+        needsRefresh: timeUntilExpiry < 300
+      });
+
+      if (timeUntilExpiry < 300) {
+        console.log('🔄 [TMWE Debug] Refreshing token...');
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          setError(`❌ Errore refresh token: ${refreshError.message}. Fai logout/login.`);
+          return;
+        }
+      }
+
+      // 🧪 Chiama edge function
       console.log('🧪 [TMWE Debug] Testing get_messages:', { folder });
       
       const { data, error: fnError } = await supabase.functions.invoke('tmwe-api-proxy', {
@@ -77,17 +144,23 @@ export function TmweBackendDebugger() {
       });
 
       if (fnError) {
-        setError(`Edge Function Error: ${fnError.message}`);
+        setError(`❌ Edge Function Error: ${fnError.message}`);
         console.error('❌ [TMWE Debug] Edge function error:', fnError);
         return;
       }
 
+      if (data && !data.success) {
+        setError(`⚠️ TMWE API ha risposto ma l'operazione è fallita: ${data.errors?.join(', ')}`);
+        console.warn('⚠️ [TMWE Debug] TMWE API error:', data.errors);
+      } else {
+        console.log('✅ [TMWE Debug] Success:', data);
+      }
+
       setResponse(data);
-      console.log('✅ [TMWE Debug] Response:', data);
 
     } catch (err: any) {
-      setError(`Exception: ${err.message}`);
-      console.error('❌ [TMWE Debug] Exception:', err);
+      setError(`💥 Exception: ${err.message}`);
+      console.error('💥 [TMWE Debug] Exception:', err);
     } finally {
       setIsLoading(false);
     }
@@ -102,6 +175,16 @@ export function TmweBackendDebugger() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Auth Status Alert */}
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>🔐 Autenticazione Richiesta</AlertTitle>
+          <AlertDescription>
+            Assicurati di essere loggato con TMWE OAuth prima di usare il debugger.
+            Se vedi errori 401/403, fai logout e login di nuovo.
+          </AlertDescription>
+        </Alert>
+
         {/* Input Controls */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">

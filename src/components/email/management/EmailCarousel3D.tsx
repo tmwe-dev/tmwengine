@@ -44,8 +44,8 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
       0.1,
       1000
     );
-    camera.position.set(0, 0.15, 8); // Ridotto da 13.5 a 8 (60%)
-    camera.lookAt(0, 0.15, 0);
+    camera.position.set(0, 0, 4); // Camera più vicina per card più piccole
+    camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -54,12 +54,14 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
+    
+    console.log('💡 Luci configurate - ambient: 1.2, directional: 1.5');
 
     const group = new THREE.Group();
     scene.add(group);
@@ -97,7 +99,7 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
 
       console.log('🎡 Creazione carosello con 8 slot');
 
-      const radius = 5; // Ridotto da 7.8 a 5 (64%)
+      const radius = 3; // Ridotto ulteriormente per visibilità
       const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
 
       for (let i = 0; i < MAX_SLOTS; i++) {
@@ -105,17 +107,17 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
 
-        // Dimensioni ridotte al 50%
+        // Dimensioni ridotte al 35% per migliore visibilità
         const geometry = new THREE.PlaneGeometry(
-          (4.83 * scaleFactor) * 0.5,
-          (7.04 * scaleFactor) * 0.5
+          (4.83 * scaleFactor) * 0.35,
+          (7.04 * scaleFactor) * 0.35
         );
 
         const material = new THREE.MeshBasicMaterial({
           map: createEmptyTexture(),
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: 0,
+          opacity: 1, // Visibile da subito per debug
         });
 
         const mesh = new THREE.Mesh(geometry, material);

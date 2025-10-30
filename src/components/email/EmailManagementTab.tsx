@@ -347,9 +347,9 @@ export function EmailManagementTab() {
         onDragCancel={() => setActiveDragId(null)}
       >
         {viewMode === 'grid' ? (
-          <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden">
-          <div className="col-span-4 flex flex-col overflow-hidden">
-            <Card className="h-full flex flex-col overflow-hidden">
+          <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden items-start">
+          <div className="col-span-4 flex flex-col">
+            <Card className="flex flex-col overflow-hidden" style={{ maxHeight: '70vh' }}>
               <div className="p-4 border-b flex-shrink-0">
                 <h3 className="font-semibold mb-3 flex items-center justify-between">
                   <span>📮 Da Classificare ({filteredSenders.length})</span>
@@ -413,9 +413,9 @@ export function EmailManagementTab() {
           </div>
         </div>
         ) : (
-          <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden pt-4">
-            <div className="col-span-4 flex flex-col overflow-hidden">
-              <Card className="h-full flex flex-col overflow-hidden">
+          <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden items-start">
+            <div className="col-span-4 flex flex-col">
+              <Card className="flex flex-col overflow-hidden" style={{ maxHeight: '70vh' }}>
                 <div className="p-4 border-b flex-shrink-0">
                   <h3 className="font-semibold mb-3 flex items-center justify-between">
                     <span>📮 Da Classificare ({filteredSenders.length})</span>

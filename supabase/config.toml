@@ -1,8 +1,5 @@
 project_id = "dlldkrzoxvjxpgkkttxu"
 
-[functions.classify-email-domain]
-verify_jwt = false
-
 [api]
 enabled = true
 port = 54321

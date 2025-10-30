@@ -3,11 +3,8 @@
  */
 
 import { IconButton } from '@/components/design-system/buttons/IconButton';
-import { RefreshCw, LayoutGrid, Box, Sparkles, Loader2 } from 'lucide-react';
+import { RefreshCw, LayoutGrid, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { useAIOptimization } from '@/hooks/useAIOptimization';
-import { toast } from 'sonner';
 
 interface EmailManagementToolbarProps {
   viewMode: 'grid' | 'carousel';
@@ -16,8 +13,6 @@ interface EmailManagementToolbarProps {
   onRefresh: () => void;
   isSyncing: boolean;
   isLoading: boolean;
-  senders?: Array<{ email: string; companyName: string; isClassified?: boolean }>;
-  onSendersUpdate?: (senders: Array<{ email: string; companyName: string }>) => void;
 }
 
 export function EmailManagementToolbar({
@@ -27,40 +22,7 @@ export function EmailManagementToolbar({
   onRefresh,
   isSyncing,
   isLoading,
-  senders = [],
-  onSendersUpdate,
 }: EmailManagementToolbarProps) {
-  const { optimizeSenderNames, isOptimizing, progress } = useAIOptimization();
-
-  const handleAIOptimize = async () => {
-    if (!onSendersUpdate) return;
-    
-    const unclassifiedSenders = senders.filter(s => !s.isClassified);
-    
-    if (unclassifiedSenders.length === 0) {
-      toast.info('Nessun mittente da ottimizzare');
-      return;
-    }
-
-    toast.info(`🤖 Ottimizzazione AI avviata per ${unclassifiedSenders.length} mittenti`);
-
-    try {
-      const optimizedMap = await optimizeSenderNames(unclassifiedSenders);
-
-      // Aggiorna nomi nella UI
-      const updatedSenders = senders.map(s => {
-        const newName = optimizedMap.get(s.email);
-        return newName ? { ...s, companyName: newName } : s;
-      });
-
-      onSendersUpdate(updatedSenders);
-
-      toast.success(`✅ ${optimizedMap.size} nomi migliorati con AI`);
-    } catch (error) {
-      console.error('AI optimization error:', error);
-      toast.error('❌ Errore durante ottimizzazione AI');
-    }
-  };
   return (
     <div className="fixed top-2 left-6 z-10 flex items-center gap-2">
       {/* Titolo estratto da EmailManagementHeader */}
@@ -101,27 +63,6 @@ export function EmailManagementToolbar({
         disabled={isLoading || isSyncing}
         className={cn(isLoading && "animate-spin")}
       />
-      
-      {/* AI Optimize Button */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleAIOptimize}
-        disabled={isOptimizing || isLoading || isSyncing || !onSendersUpdate}
-        className="gap-2 h-9 px-3"
-      >
-        {isOptimizing ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {progress ? `${progress.checked}/${progress.total}` : 'Analyzing...'}
-          </>
-        ) : (
-          <>
-            <Sparkles className="h-4 w-4" />
-            AI Optimize
-          </>
-        )}
-      </Button>
     </div>
   );
 }

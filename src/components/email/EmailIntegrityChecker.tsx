@@ -239,21 +239,29 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
         const folderMap = new Map<string, FolderComparison>();
         const rootFolders: FolderComparison[] = [];
         
-        // Prima passata: crea tutti i nodi
+        // HELPER: Inferisce gerarchia dal path della cartella
+        const inferHierarchy = (folderName: string) => {
+          const parts = folderName.split('/').filter(p => p.length > 0);
+          return {
+            level: parts.length - 1,
+            parentPath: parts.length > 1 ? parts.slice(0, -1).join('/') : null,
+            displayName: parts[parts.length - 1] || folderName
+          };
+        };
+        
+        // Prima passata: crea tutti i nodi con gerarchia inferita
         folders.forEach((folder: any) => {
-          const folderName = folder.name || folder.folder;
-          const level = folder.level || 0;
-          const parentPath = folder.parent || null;
-          const displayName = folder.display_name || folderName.split('/').pop() || folderName;
+          const folderName = folder.name || folder.folder || folder.full_name;
+          const hierarchy = inferHierarchy(folderName); // ✅ Calcolo gerarchia da path
           
           const directServerCount = folder.message_count || folder.total_count || folder.messages || folder.count || folder.total || 0;
           const directDbCount = dbCountsMap[folderName] || 0;
           
           const node: FolderComparison = {
             folderName,
-            displayName,
-            level,
-            parentPath,
+            displayName: hierarchy.displayName,
+            level: hierarchy.level,
+            parentPath: hierarchy.parentPath,
             hasChildren: false,
             children: [],
             directServerCount,
@@ -264,17 +272,20 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
             syncPercentage: 0
           };
           
+          console.log(`🌳 [BuildHierarchy] Created node "${folderName}" → level=${hierarchy.level}, parent=${hierarchy.parentPath}, display="${hierarchy.displayName}"`);
           folderMap.set(folderName, node);
         });
         
         // Seconda passata: collega padri e figli
-        folderMap.forEach((node, key) => {
+        folderMap.forEach((node) => {
           if (node.parentPath && folderMap.has(node.parentPath)) {
             const parent = folderMap.get(node.parentPath)!;
             parent.children.push(node);
             parent.hasChildren = true;
+            console.log(`🌳 [BuildHierarchy] Linked "${node.folderName}" as child of "${node.parentPath}"`);
           } else if (node.level === 0) {
             rootFolders.push(node);
+            console.log(`🌳 [BuildHierarchy] Added "${node.folderName}" as root folder`);
           }
         });
         
@@ -296,10 +307,21 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
             ? Math.round((node.dbCount / node.serverCount) * 100) 
             : 100;
           
-          console.log(`🔍 [Hierarchy] "${node.folderName}" (L${node.level}): server=${node.serverCount} (direct=${node.directServerCount}), db=${node.dbCount}, missing=${node.missing}`);
+          console.log(`🌳 [Totals] "${node.displayName}" (L${node.level}, parent=${node.parentPath}): server=${node.serverCount} (direct=${node.directServerCount}), db=${node.dbCount}, missing=${node.missing}, children=${node.children.length}`);
         };
         
         rootFolders.forEach(calculateTotals);
+        
+        console.log('🌳 [HIERARCHY FINAL]', {
+          rootFolders: rootFolders.length,
+          rootNames: rootFolders.map(f => f.folderName),
+          folderStructure: rootFolders.map(f => ({
+            name: f.folderName,
+            level: f.level,
+            children: f.children.length,
+            childrenNames: f.children.map(c => c.displayName)
+          }))
+        });
         
         return rootFolders;
       };

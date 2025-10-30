@@ -232,13 +232,13 @@ export const emailMessageApi = {
     order?: 'ASC' | 'DESC';
   }) => fetchApi('/email_message', { handler: 'get_messages', ...params }),
 
-  getMessage: (uid: string, markAsRead: boolean = true) => {
+  getMessage: (uid: string, folder?: string, markAsRead: boolean = true) => {
     // Convert string UID to integer for API
     const uidInt = parseInt(uid, 10);
     if (isNaN(uidInt)) {
       throw new Error(`Invalid UID: ${uid}`);
     }
-    return fetchApi('/email_message', { handler: 'get_message', uid: uidInt, mark_as_read: markAsRead });
+    return fetchApi('/email_message', { handler: 'get_message', uid: uidInt, folder: folder || 'INBOX', mark_as_read: markAsRead });
   },
 
   searchMessages: (params: {

@@ -69,6 +69,23 @@ export function EmailManagementTab() {
     localStorage.setItem('email-carousel-zoom', zoom.toString());
   };
 
+  // Navigazione manuale carousel (clone Radio Chat)
+  const handlePrevCategory = () => {
+    if (groups.length === 0) return;
+    
+    const currentIndex = groups.findIndex(g => g.id === activeCategoryId);
+    const newIndex = (currentIndex - 1 + groups.length) % groups.length;
+    setActiveCategoryId(groups[newIndex].id);
+  };
+
+  const handleNextCategory = () => {
+    if (groups.length === 0) return;
+    
+    const currentIndex = groups.findIndex(g => g.id === activeCategoryId);
+    const newIndex = (currentIndex + 1) % groups.length;
+    setActiveCategoryId(groups[newIndex].id);
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -361,6 +378,8 @@ export function EmailManagementTab() {
             assignedSenders={assignedSenders}
             activeCategoryId={activeCategoryId}
             zoom={carouselZoom}
+            onPrevious={handlePrevCategory}
+            onNext={handleNextCategory}
           />
         )}
 

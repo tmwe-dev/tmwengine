@@ -10,6 +10,8 @@ interface EmailCarouselContainerProps {
   assignedSenders: Map<string, SenderAnalysis[]>;
   activeCategoryId: string | null;
   zoom: number;
+  onPrevious: () => void;
+  onNext: () => void;
 }
 
 export function EmailCarouselContainer({
@@ -17,6 +19,8 @@ export function EmailCarouselContainer({
   assignedSenders,
   activeCategoryId,
   zoom,
+  onPrevious,
+  onNext,
 }: EmailCarouselContainerProps) {
   return (
     <div 
@@ -35,6 +39,25 @@ export function EmailCarouselContainer({
         activeCategoryId={activeCategoryId}
         zoom={zoom}
       />
+      
+      {/* Aree cliccabili invisibili (clone Radio Chat) */}
+      {categories.length > 1 && (
+        <>
+          {/* Area sinistra - vai indietro */}
+          <button
+            onClick={onPrevious}
+            className="absolute left-0 top-0 bottom-0 w-1/4 z-20 cursor-pointer group"
+            aria-label="Categoria precedente"
+          />
+          
+          {/* Area destra - vai avanti */}
+          <button
+            onClick={onNext}
+            className="absolute right-0 top-0 bottom-0 w-1/4 z-20 cursor-pointer group"
+            aria-label="Categoria successiva"
+          />
+        </>
+      )}
     </div>
   );
 }

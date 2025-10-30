@@ -173,7 +173,15 @@ async function downloadQuickSingleEmail(
         timeout
       );
 
-      console.log(`✅ [downloadQuickSingleEmail] Success - UID ${uid} from "${folderName}"`);
+      // ✅ LOG: Verifica struttura ricevuta per debug
+      console.log(`✅ [downloadQuickSingleEmail] Success - UID ${uid}:`, {
+        hasHeader: !!email.header,
+        hasFrom: !!(email.header?.from || email.from),
+        hasSubject: !!(email.header?.subject || email.subject),
+        fromAddress: email.header?.from?.address || email.from?.address || 'MISSING',
+        subject: (email.header?.subject || email.subject || 'NO SUBJECT').substring(0, 50)
+      });
+      
       return email;
       
     } catch (error: any) {
@@ -234,20 +242,61 @@ async function insertQuickBatch(
   if (emails.length === 0) return { success: 0, failed: 0 };
 
   const records = emails.map(({ uid, data: email }) => {
-    // Parse from/to fields
-    const fromEmail = email.from?.address || email.from || '';
-    const toEmail = Array.isArray(email.to) 
-      ? email.to.map((t: any) => t.address || t).join(',')
-      : email.to || '';
+    // ✅ PARSING ROBUSTO: Gestisce email.header (struttura TMWE API) o campi diretti
+    const header = email.header || email;
     
-    // Parse date
-    let isoDate = new Date().toISOString();
-    if (email.date) {
-      try {
-        isoDate = new Date(email.date).toISOString();
-      } catch (e) {
-        console.error('Error parsing date:', email.date);
+    // ✅ From: Cerca in header.from.address → email.from.address → fallback
+    const fromEmail = 
+      header.from?.address || 
+      email.from?.address || 
+      header.from || 
+      email.from || 
+      '';
+    
+    // ✅ To: Gestisci array di EmailAddress (può contenere {address, name} o stringhe)
+    const toEmail = (() => {
+      const toField = header.to || email.to;
+      if (Array.isArray(toField)) {
+        return toField.map((t: any) => t?.address || t).filter(Boolean).join(',');
       }
+      return toField?.address || toField || '';
+    })();
+    
+    // ✅ CC: Stessa logica di To
+    const ccEmail = (() => {
+      const ccField = header.cc || email.cc;
+      if (Array.isArray(ccField)) {
+        return ccField.map((c: any) => c?.address || c).filter(Boolean).join(',');
+      }
+      return ccField?.address || ccField || null;
+    })();
+    
+    // ✅ Subject: Cerca in header.subject → email.subject
+    const subject = header.subject || email.subject || '';
+    
+    // ✅ Date: Cerca in header.date → email.date
+    let isoDate = new Date().toISOString();
+    const dateField = header.date || email.date;
+    if (dateField) {
+      try {
+        isoDate = new Date(dateField).toISOString();
+      } catch (e) {
+        console.error('Error parsing date:', dateField);
+      }
+    }
+    
+    // ✅ Body: text e html
+    const bodyText = email.body_text || email.text || '';
+    const bodyHtml = email.body_html || email.html || '';
+    
+    // ✅ VALIDAZIONE: Verifica che i campi critici non siano vuoti
+    if (!fromEmail || !subject) {
+      console.warn(`⚠️ Email incompleta skippata: ${folderName}/${uid}`, {
+        fromEmail: fromEmail || 'MISSING',
+        subject: subject || 'MISSING',
+        hasHeader: !!email.header
+      });
+      return null; // Skippa questa email incompleta
     }
     
     return {
@@ -255,11 +304,11 @@ async function insertQuickBatch(
       user_email: userEmail,
       from_email: fromEmail,
       to_email: toEmail,
-      cc_email: email.cc || null,
-      bcc_email: email.bcc || null,
-      subject: email.subject || '',
-      body_text: email.body_text || email.text || '',
-      body_html: email.body_html || email.html || '',
+      cc_email: ccEmail,
+      bcc_email: null, // BCC non disponibile via IMAP
+      subject: subject,
+      body_text: bodyText,
+      body_html: bodyHtml,
       data_ricezione: isoDate,
       cartella: folderName,
       attachments: email.attachments || [],
@@ -269,7 +318,7 @@ async function insertQuickBatch(
       stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
       sync_status: 'fun_email_backup',
     };
-  });
+  }).filter(Boolean); // ✅ Rimuove i null (email incomplete)
 
   // TENTATIVO 1: Batch insert
   const { error } = await supabase

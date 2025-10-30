@@ -34,6 +34,8 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
+    console.log('🔍 Fetching conversation:', conversationId);
+
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabaseClient
       .from('chat_laboratory_conversations')
@@ -41,7 +43,16 @@ serve(async (req) => {
       .eq('id', conversationId)
       .single();
 
-    if (convError) throw convError;
+    if (convError) {
+      console.error('❌ Error fetching conversation:', convError);
+      throw convError;
+    }
+
+    console.log('✅ Conversation found:', {
+      conversationId,
+      last_message_summarized: conversation?.last_message_summarized,
+      economy_mode: conversation?.economy_mode
+    });
 
     // Fetch messages
     const { data: messages, error: msgError } = await supabaseClient
@@ -50,12 +61,28 @@ serve(async (req) => {
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
-    if (msgError) throw msgError;
+    console.log('📊 Messages query result:', {
+      messagesCount: messages?.length || 0,
+      hasError: !!msgError,
+      errorDetails: msgError?.message
+    });
+
+    if (msgError) {
+      console.error('❌ Error fetching messages:', msgError);
+      throw msgError;
+    }
 
     if (!messages || messages.length === 0) {
+      console.warn('⚠️ No messages found for conversation:', conversationId);
       return new Response(
-        JSON.stringify({ error: 'No messages found' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: true,
+          message: 'No messages to summarize yet. Please try again after the conversation has more messages.',
+          chunks: [],
+          finalSummary: '',
+          messagesSummarized: 0
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

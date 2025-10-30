@@ -429,6 +429,14 @@ const RadioChatContent = () => {
 
       if (error) throw error;
 
+      if (data.messagesSummarized === 0) {
+        toast({
+          title: "ℹ️ Nessun messaggio da riassumere",
+          description: data.message || "La conversazione non ha abbastanza messaggi per generare un riassunto",
+        });
+        return;
+      }
+
       toast({
         title: "✅ Riassunto generato",
         description: `${data.messagesSummarized} messaggi analizzati`,

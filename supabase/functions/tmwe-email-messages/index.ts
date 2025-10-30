@@ -123,6 +123,21 @@ serve(async (req) => {
     const result = await response.json();
     console.log('TMWE API Response received');
 
+    // Parse email headers correctly for get_message/get_messages operations
+    if (requestData.handler === 'get_message' || requestData.handler === 'get_messages') {
+      const msgData = result.result || result;
+      if (msgData.data?.header) {
+        // Estrai header se presente nella struttura data.header
+        const header = msgData.data.header;
+        console.log('📧 Header estratto:', JSON.stringify(header, null, 2));
+        
+        // Normalizza la struttura per il frontend
+        if (!result.result) {
+          result.result = msgData;
+        }
+      }
+    }
+
     // If it's a send operation, log it to the database
     const writeOperations = ['send_message', 'reply_message', 'forward_message', 'delete_messages', 'move_messages', 'mark_messages'];
     const isWriteOperation = writeOperations.includes(requestData.handler);

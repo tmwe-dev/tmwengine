@@ -1,0 +1,82 @@
+/**
+ * Sidebar Email Management - Lista mittenti da classificare
+ */
+
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Search, Filter } from 'lucide-react';
+import { SenderCard } from './SenderCard';
+import type { SenderAnalysis } from '@/types/email-management';
+
+interface EmailSidebarProps {
+  senders: SenderAnalysis[];
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  filterByAttachments: boolean;
+  setFilterByAttachments: (filter: boolean) => void;
+  filteredSenders: SenderAnalysis[];
+}
+
+export function EmailSidebar({
+  senders,
+  searchQuery,
+  setSearchQuery,
+  filterByAttachments,
+  setFilterByAttachments,
+  filteredSenders,
+}: EmailSidebarProps) {
+  return (
+    <div className="fixed left-6 top-32 w-80 z-20" style={{ height: 'calc(100vh - 180px)' }}>
+      <Card className="h-full flex flex-col overflow-hidden">
+        <div className="p-4 border-b flex-shrink-0">
+          <h3 className="font-semibold mb-3 flex items-center justify-between">
+            <span>📮 Da Classificare ({filteredSenders.length})</span>
+            {senders.length !== filteredSenders.length && (
+              <span className="text-xs text-muted-foreground">
+                {senders.length} totali
+              </span>
+            )}
+          </h3>
+          
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cerca mittente..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          
+          <Button
+            variant={filterByAttachments ? "default" : "outline"}
+            size="sm"
+            className="w-full mt-2"
+            onClick={() => setFilterByAttachments(!filterByAttachments)}
+          >
+            <Filter className="h-3 w-3 mr-2" />
+            Solo con allegati
+          </Button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          {filteredSenders.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-sm">
+                {senders.length === 0 
+                  ? '🎉 Tutti i mittenti sono stati classificati!'
+                  : '🔍 Nessun mittente trovato con questi filtri'
+                }
+              </p>
+            </div>
+          ) : (
+            filteredSenders.map(sender => (
+              <SenderCard key={sender.email} sender={sender} />
+            ))
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}

@@ -12,11 +12,14 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { analyzeSenders } from '@/lib/email-sender-analyzer';
 import { SenderCard } from './management/SenderCard';
-import { GroupDropZone } from './management/GroupDropZone';
 import type { EmailSenderGroup, SenderAnalysis } from '@/types/email-management';
 import { DEFAULT_GROUPS as PREDEFINED_GROUPS } from '@/types/email-management';
 import { cn } from '@/lib/utils';
-import { EmailCarousel3D } from './management/EmailCarousel3D';
+import { EmailManagementHeader } from './management/EmailManagementHeader';
+import { EmailManagementToolbar } from './management/EmailManagementToolbar';
+import { EmailSidebar } from './management/EmailSidebar';
+import { EmailCarouselContainer } from './management/EmailCarouselContainer';
+import { EmailGridContainer } from './management/EmailGridContainer';
 
 // Collisione personalizzata 80%
 const carousel80PercentCollision: CollisionDetection = (args) => {
@@ -300,181 +303,49 @@ export function EmailManagementTab() {
   }
 
   return (
-    <div className="h-full p-6 flex flex-col">
-      <div className="flex items-center justify-between mb-6 flex-shrink-0">
-        <div>
-          <h2 className="text-2xl font-bold">📬 Email Management</h2>
-          <p className="text-sm text-muted-foreground">
-            Classifica i mittenti trascinandoli nei gruppi
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('grid')}
-          >
-            <LayoutGrid className="h-4 w-4 mr-2" />
-            Griglia
-          </Button>
-          <Button
-            variant={viewMode === 'carousel' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('carousel')}
-          >
-            <Box className="h-4 w-4 mr-2" />
-            Carousel 3D
-          </Button>
-          <Button 
-            variant="default" 
-            onClick={handleSync} 
-            disabled={isSyncing || isLoading}
-          >
-            <RefreshCw className={cn("h-4 w-4 mr-2", isSyncing && "animate-spin")} />
-            {isSyncing ? 'Sincronizzazione...' : 'Sincronizza Email'}
-          </Button>
-          <Button variant="outline" onClick={loadData} disabled={isLoading || isSyncing}>
-            <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-            Aggiorna
-          </Button>
-        </div>
-      </div>
-
+    <div className="relative h-full w-full">
+      {/* Header fisso top-left */}
+      <EmailManagementHeader />
+      
+      {/* Toolbar fisso top-right */}
+      <EmailManagementToolbar
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onSync={handleSync}
+        onRefresh={loadData}
+        isSyncing={isSyncing}
+        isLoading={isLoading}
+      />
+      
       <DndContext
         collisionDetection={viewMode === 'carousel' ? carousel80PercentCollision : closestCenter}
         onDragEnd={handleDragEnd}
         onDragStart={(e) => setActiveDragId(e.active.id as string)}
         onDragCancel={() => setActiveDragId(null)}
       >
+        {/* Sidebar fisso left */}
+        <EmailSidebar
+          senders={senders}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          filterByAttachments={filterByAttachments}
+          setFilterByAttachments={setFilterByAttachments}
+          filteredSenders={filteredSenders}
+        />
+        
+        {/* Area principale condizionale */}
         {viewMode === 'grid' ? (
-          <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden items-start">
-          <div className="col-span-4 flex flex-col">
-            <Card className="flex flex-col overflow-hidden" style={{ maxHeight: '70vh' }}>
-              <div className="p-4 border-b flex-shrink-0">
-                <h3 className="font-semibold mb-3 flex items-center justify-between">
-                  <span>📮 Da Classificare ({filteredSenders.length})</span>
-                  {senders.length !== filteredSenders.length && (
-                    <span className="text-xs text-muted-foreground">
-                      {senders.length} totali
-                    </span>
-                  )}
-                </h3>
-                
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Cerca mittente..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                
-                <Button
-                  variant={filterByAttachments ? "default" : "outline"}
-                  size="sm"
-                  className="w-full mt-2"
-                  onClick={() => setFilterByAttachments(!filterByAttachments)}
-                >
-                  <Filter className="h-3 w-3 mr-2" />
-                  Solo con allegati
-                </Button>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                {filteredSenders.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <p className="text-sm">
-                      {senders.length === 0 
-                        ? '🎉 Tutti i mittenti sono stati classificati!'
-                        : '🔍 Nessun mittente trovato con questi filtri'
-                      }
-                    </p>
-                  </div>
-                ) : (
-                  filteredSenders.map(sender => (
-                    <SenderCard key={sender.email} sender={sender} />
-                  ))
-                )}
-              </div>
-            </Card>
-          </div>
-
-          <div className="col-span-8 overflow-y-auto">
-            <div className="grid grid-cols-2 gap-4 pb-4">
-              {groups.map(group => (
-                <GroupDropZone
-                  key={group.id}
-                  group={group}
-                  onRefresh={loadData}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+          <EmailGridContainer
+            groups={groups}
+            onRefresh={loadData}
+          />
         ) : (
-          <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden items-start">
-            <div className="col-span-4 flex flex-col">
-              <Card className="flex flex-col overflow-hidden" style={{ maxHeight: '70vh' }}>
-                <div className="p-4 border-b flex-shrink-0">
-                  <h3 className="font-semibold mb-3 flex items-center justify-between">
-                    <span>📮 Da Classificare ({filteredSenders.length})</span>
-                    {senders.length !== filteredSenders.length && (
-                      <span className="text-xs text-muted-foreground">
-                        {senders.length} totali
-                      </span>
-                    )}
-                  </h3>
-                  
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Cerca mittente..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  
-                  <Button
-                    variant={filterByAttachments ? "default" : "outline"}
-                    size="sm"
-                    className="w-full mt-2"
-                    onClick={() => setFilterByAttachments(!filterByAttachments)}
-                  >
-                    <Filter className="h-3 w-3 mr-2" />
-                    Solo con allegati
-                  </Button>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                  {filteredSenders.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <p className="text-sm">
-                        {senders.length === 0 
-                          ? '🎉 Tutti i mittenti sono stati classificati!'
-                          : '🔍 Nessun mittente trovato con questi filtri'
-                        }
-                      </p>
-                    </div>
-                  ) : (
-                    filteredSenders.map(sender => (
-                      <SenderCard key={sender.email} sender={sender} />
-                    ))
-                  )}
-                </div>
-              </Card>
-            </div>
-
-            <div className="col-span-8 overflow-visible relative" style={{ minHeight: '600px', height: '100%' }}>
-              <EmailCarousel3D
-                categories={groups}
-                assignedSenders={assignedSenders}
-                activeCategoryId={activeCategoryId}
-                zoom={0.8}
-              />
-            </div>
-          </div>
+          <EmailCarouselContainer
+            categories={groups}
+            assignedSenders={assignedSenders}
+            activeCategoryId={activeCategoryId}
+            zoom={0.8}
+          />
         )}
 
         <DragOverlay dropAnimation={null}>

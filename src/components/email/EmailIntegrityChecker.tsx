@@ -347,6 +347,18 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
     loadPreferences();
   }, [userEmail]);
 
+  // Auto-espandi tutte le cartelle con figli quando comparisons è disponibile
+  useEffect(() => {
+    if (comparisons && comparisons.length > 0) {
+      const allFoldersToExpand = allFolders
+        .filter(f => f.hasChildren)
+        .map(f => f.folderName);
+      
+      setExpandedFolders(allFoldersToExpand);
+      console.log('🌳 [TreeView] Auto-expanded folders:', allFoldersToExpand);
+    }
+  }, [comparisons]);
+
   // Funzione helper: appiattisci albero per ottenere tutte le cartelle
   const flattenFolders = (folders: FolderComparison[]): FolderComparison[] => {
     const result: FolderComparison[] = [];
@@ -570,7 +582,11 @@ const FolderRow = ({
   
   return (
     <>
-      <TableRow className={folder.level > 0 ? 'bg-muted/30' : undefined}>
+      <TableRow className={`
+        ${folder.level > 0 ? 'bg-muted/30' : ''}
+        ${folder.level === 1 ? 'border-l-2 border-primary/50' : ''}
+        ${folder.level === 2 ? 'border-l-2 border-primary/30 bg-muted/50' : ''}
+      `}>
         {/* Lucchetto */}
         <TableCell className="text-center">
           <Button
@@ -609,7 +625,11 @@ const FolderRow = ({
             )}
             
             {!hasChildren && folder.level > 0 && (
-              <span className="text-muted-foreground text-xs mr-2">└─</span>
+              <span className="text-muted-foreground text-xs mr-2">└─ 📁</span>
+            )}
+            
+            {hasChildren && (
+              <span className="mr-1">📂</span>
             )}
             
             <span className={hasChildren ? 'font-semibold' : undefined}>

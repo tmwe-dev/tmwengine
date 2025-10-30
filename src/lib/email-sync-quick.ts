@@ -173,21 +173,14 @@ async function downloadQuickSingleEmail(
         timeout
       );
 
-      // 🔍 DEBUG: Log struttura completa
-      console.log(`✅ [downloadQuickSingleEmail] Success - UID ${uid}:`, {
-        hasData: !!email.data,
-        hasDataData: !!email.data?.data,
-        hasHeader: !!email.data?.header || !!email.data?.data?.header,
-        topLevelKeys: email.data ? Object.keys(email.data) : 'NO DATA',
-        dataKeys: email.data?.data ? Object.keys(email.data.data) : 'N/A',
-        headerKeys: email.data?.header ? Object.keys(email.data.header) : 
-                    email.data?.data?.header ? Object.keys(email.data.data.header) : 'N/A'
-      });
-      
-      console.log(`📦 [downloadQuickSingleEmail] RAW EMAIL STRUCTURE UID ${uid}:`, 
-        JSON.stringify(email.data, null, 2)
-      );
+      // 🚫 BLOCCO: Non passare email con errori API
+      if (!email || !email.data || email.data.success === false || email.data.errors) {
+        console.error(`❌ [downloadQuickSingleEmail] TMWE API failed for ${folderName}/${uid}:`, 
+          email?.data?.errors || 'No data received');
+        return null;
+      }
 
+      console.log(`✅ [downloadQuickSingleEmail] Success - UID ${uid} from "${folderName}"`);
       return email;
       
     } catch (error: any) {
@@ -247,29 +240,21 @@ async function insertQuickBatch(
 ): Promise<{ success: number; failed: number }> {
   if (emails.length === 0) return { success: 0, failed: 0 };
 
-  // 🔍 DEBUG: Log prima email per capire struttura
-  if (emails.length > 0) {
-    const firstEmail = emails[0];
-    console.log(`📧 [insertQuickBatch] First email inspection - UID ${firstEmail.uid}:`, {
-      hasData: !!firstEmail.data,
-      hasDataData: !!firstEmail.data?.data,
-      hasHeader: !!firstEmail.data?.header || !!firstEmail.data?.data?.header,
-      topLevelKeys: firstEmail.data ? Object.keys(firstEmail.data) : 'NO DATA'
-    });
-    
-    console.log(`🔎 [insertQuickBatch] FROM field attempts:`, {
-      'email.data?.data?.header?.from': firstEmail.data?.data?.header?.from,
-      'email.data?.header?.from': firstEmail.data?.header?.from,
-      'email.data?.from': firstEmail.data?.from,
-      'email.from': (firstEmail as any).from
-    });
-    
-    console.log(`📦 [insertQuickBatch] RAW EMAIL FULL:`, 
-      JSON.stringify(firstEmail.data, null, 2)
-    );
+  // 🚫 FILTRO FINALE: Doppia sicurezza contro email con errori API
+  const validEmailsForInsert = emails.filter(({ data: email }) => {
+    if (!email || email.success === false || email.errors) {
+      console.warn(`⚠️ [insertQuickBatch] Skipping failed email (should not reach here)`);
+      return false;
+    }
+    return true;
+  });
+
+  if (validEmailsForInsert.length === 0) {
+    console.error(`❌ [insertQuickBatch] All emails were invalid/failed`);
+    return { success: 0, failed: emails.length };
   }
 
-  const records = emails.map(({ uid, data: email }) => {
+  const records = validEmailsForInsert.map(({ uid, data: email }) => {
     // ✅ Unwrap: email.data contiene la risposta TMWE API
     const rawData = email?.data || email;
     const header = rawData.header || rawData;
@@ -517,8 +502,18 @@ export class QuickEmailSyncer {
         );
 
         // 4. Insert batch in DB
-        const successfulEmails = batchResults.filter(r => r.data && !r.error);
-        const failedDownloads = batchResults.filter(r => r.error);
+        // 🚫 FILTRO: Rimuovi email con success: false dall'API
+        const successfulEmails = batchResults.filter(r => 
+          r.data && 
+          !r.error && 
+          r.data.success !== false && 
+          !r.data.errors
+        );
+        const failedDownloads = batchResults.filter(r => 
+          r.error || 
+          r.data?.success === false || 
+          r.data?.errors
+        );
 
         if (successfulEmails.length > 0) {
           const insertResult = await insertQuickBatch(successfulEmails, userEmail, folderName);

@@ -57,6 +57,15 @@ serve(async (req) => {
     const requestData: TMWEEmailMessageRequest = await req.json();
     console.log('TMWE Email Messages request:', { handler: requestData.handler });
 
+    // 📨 LOGGING: Dettagli richiesta completa
+    console.log('📨 [tmwe-email-messages] Request details:', {
+      handler: requestData.handler,
+      uid: requestData.uid,
+      folder: requestData.folder,
+      include_attachments: requestData.include_attachments,
+      format: requestData.format
+    });
+
     // Usa l'OAuth token dall'environment o dal database
     let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
     
@@ -122,6 +131,21 @@ serve(async (req) => {
 
     const result = await response.json();
     console.log('TMWE API Response received');
+
+    // 📥 LOGGING: Risposta TMWE API
+    console.log('📥 [tmwe-email-messages] TMWE API Response:', {
+      success: result.success,
+      hasErrors: !!result.errors,
+      errors: result.errors,
+      hasResult: !!result.result,
+      hasData: !!result.data,
+      resultKeys: result.result ? Object.keys(result.result) : 'N/A'
+    });
+
+    // ❌ Log completo solo se fallisce
+    if (result.success === false) {
+      console.error('❌ [tmwe-email-messages] TMWE API FAILED:', JSON.stringify(result, null, 2));
+    }
 
     // Parse email headers correctly for get_message/get_messages operations
     if (requestData.handler === 'get_message' || requestData.handler === 'get_messages') {

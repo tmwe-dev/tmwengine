@@ -220,12 +220,18 @@ const FunEmail = () => {
           ) : currentView === 'integrity' ? (
             <div className="p-6">
               <EmailIntegrityChecker 
-                onRequestDownload={(folderNames) => {
-                  console.log('🔍 [FunEmail] Received folders from Integrity:', folderNames);
-                  setCurrentView('quick');
-                  setPreSelectedFolders(folderNames);
-                  console.log('🔍 [FunEmail] Set preSelectedFolders:', folderNames);
-                }}
+            onRequestDownload={(folderNames) => {
+              console.log('🎯 [FunEmail] Pre-selecting folders FIRST:', folderNames);
+              
+              // ✅ Step 1: Setta folders PRIMA
+              setPreSelectedFolders(folderNames);
+              
+              // ✅ Step 2: Delay per propagazione state
+              setTimeout(() => {
+                console.log('🎯 [FunEmail] Now switching to Quick Download view');
+                setCurrentView('quick');
+              }, 50);
+            }}
               />
             </div>
           ) : currentView === 'debug' ? (

@@ -259,23 +259,31 @@ async function insertQuickBatch(
     const rawData = email?.data || email;
     const header = rawData.header || rawData;
 
-    // ✅ From: estrai da header.from.address
-    const fromEmail = header.from?.address || header.from || '';
+    // ✅ From: stringa diretta (NON oggetto con .address)
+    const fromEmail = header.from || '';
     
     // ✅ Subject: estrai da header.subject
     const subject = header.subject || '';
     
-    // ✅ To: array di EmailAddress, estrai .address da ognuno
+    // ✅ To: array di {email, name}, estrai .email (NON .address)
     const toEmail = Array.isArray(header.to)
-      ? header.to.map((t: any) => t?.address || t).filter(Boolean).join(',')
-      : header.to?.address || header.to || '';
+      ? header.to.map((addr: any) => typeof addr === 'string' ? addr : addr?.email).filter(Boolean).join(', ')
+      : '';
     
-    // ✅ CC: stessa logica
-    const ccEmail = header.cc
-      ? (Array.isArray(header.cc)
-          ? header.cc.map((c: any) => c?.address || c).filter(Boolean).join(',')
-          : header.cc?.address || header.cc)
+    // ✅ CC: stessa logica con .email
+    const ccEmail = Array.isArray(header.cc)
+      ? header.cc.map((addr: any) => typeof addr === 'string' ? addr : addr?.email).filter(Boolean).join(', ')
       : null;
+    
+    // 🛡️ VALIDAZIONE CRITICA: salta email malformate
+    if (!fromEmail || !toEmail) {
+      console.error(`❌ [insertQuickBatch] Email UID ${uid} ha campi vuoti:`, {
+        fromEmail,
+        toEmail,
+        subject
+      });
+      return null; // Salta questa email ritornando null
+    }
     
     // ✅ Date: estrai da header.date
     let isoDate = new Date().toISOString();
@@ -310,7 +318,13 @@ async function insertQuickBatch(
       stato: rawData.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
       sync_status: 'fun_email_backup',
     };
-  });
+  }).filter(Boolean); // ✅ Rimuove i null (email invalide)
+
+  // 🛡️ Controllo: se tutti gli email sono stati filtrati
+  if (records.length === 0) {
+    console.error(`❌ [insertQuickBatch] Tutte le email erano invalide dopo validazione`);
+    return { success: 0, failed: validEmailsForInsert.length };
+  }
 
   // TENTATIVO 1: Batch insert
   const { error } = await supabase

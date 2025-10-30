@@ -228,7 +228,7 @@ export const EmailCarousel3D = ({
     groupRef.current = group;
 
     // ✅ CRITICO: Posizione iniziale camera (FISSA, non dipende da zoom)
-    camera.position.set(0, 0, 13.5);
+    camera.position.set(0, 1.5, 13.5);
 
     // Animation loop
     let frameCount = 0;

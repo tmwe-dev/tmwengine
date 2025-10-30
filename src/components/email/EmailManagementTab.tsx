@@ -413,7 +413,7 @@ export function EmailManagementTab() {
           </div>
         </div>
         ) : (
-          <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden">
+          <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden pt-4">
             <div className="col-span-4 flex flex-col overflow-hidden">
               <Card className="h-full flex flex-col overflow-hidden">
                 <div className="p-4 border-b flex-shrink-0">
@@ -466,12 +466,12 @@ export function EmailManagementTab() {
               </Card>
             </div>
 
-            <div className="col-span-8 overflow-visible relative h-full">
+            <div className="col-span-8 overflow-visible relative" style={{ minHeight: '800px', height: '100%' }}>
               <EmailCarousel3D
                 categories={groups}
                 assignedSenders={assignedSenders}
                 activeCategoryId={activeCategoryId}
-                zoom={0.3}
+                zoom={0.8}
               />
             </div>
           </div>

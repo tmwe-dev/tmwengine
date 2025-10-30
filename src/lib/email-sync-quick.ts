@@ -233,30 +233,7 @@ async function insertQuickBatch(
 ): Promise<{ success: number; failed: number }> {
   if (emails.length === 0) return { success: 0, failed: 0 };
 
-  // ✅ FIX CRITICO: Filtra email vuote/incomplete PRIMA di costruire i record
-  const validEmails = emails.filter(({ uid, data: email }) => {
-    // Verifica che l'email abbia almeno from_email o subject popolati
-    const hasFrom = email?.from?.address || email?.from;
-    const hasSubject = email?.subject;
-    
-    if (!hasFrom && !hasSubject) {
-      console.warn(`⚠️ Email ${folderName}/${uid} SCARTATA: from_email e subject vuoti (API error)`);
-      return false;
-    }
-    
-    return true;
-  });
-
-  const skippedCount = emails.length - validEmails.length;
-  if (skippedCount > 0) {
-    console.warn(`⚠️ ${skippedCount} email scartate perché incomplete (API errors)`);
-  }
-
-  if (validEmails.length === 0) {
-    return { success: 0, failed: emails.length };
-  }
-
-  const records = validEmails.map(({ uid, data: email }) => {
+  const records = emails.map(({ uid, data: email }) => {
     // Parse from/to fields
     const fromEmail = email.from?.address || email.from || '';
     const toEmail = Array.isArray(email.to) 

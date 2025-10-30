@@ -1,15 +1,176 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { gsap } from 'gsap';
-import { EmailCarousel3DProps } from '@/types/email-carousel';
-import { createCategoryTexture, createEmptyTexture } from '@/lib/email-carousel-texture';
 import type { EmailSenderGroup, SenderAnalysis } from '@/types/email-management';
+
+interface EmailCarousel3DProps {
+  categories: EmailSenderGroup[];
+  assignedSenders: Map<string, SenderAnalysis[]>;
+  activeCategoryId: string;
+  zoom?: number;
+}
+
+const createTextTexture = (category: EmailSenderGroup, assignedSenders: SenderAnalysis[], renderer?: THREE.WebGLRenderer): THREE.CanvasTexture => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d')!;
+
+  const DPR = window.devicePixelRatio || 2;
+
+  // Misure reali ad alta risoluzione (PIÙ PICCOLE = PIÙ NITIDE)
+  const W = 800;
+  const H = 1100;
+
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  ctx.scale(DPR, DPR); // Fondamentale per font nitidi
+
+  // Configurazione colori per ogni tipo di categoria
+  const gradientConfig = {
+    work: { 
+      from: 'rgba(59, 130, 246, 0.1)',    // blue-500/10
+      to: 'rgba(37, 99, 235, 0.05)',      // blue-600/5
+      border: 'rgba(59, 130, 246, 0.2)',  // blue-500/20
+      title: '#1e40af',                    // blue-800
+      badge: '#2563eb'                     // blue-600
+    },
+    personal: { 
+      from: 'rgba(34, 197, 94, 0.1)',     // green-500/10
+      to: 'rgba(22, 163, 74, 0.05)',      // green-600/5
+      border: 'rgba(34, 197, 94, 0.2)',   // green-500/20
+      title: '#166534',                    // green-800
+      badge: '#16a34a'                     // green-600
+    },
+    marketing: { 
+      from: 'rgba(6, 182, 212, 0.1)',     // cyan-500/10
+      to: 'rgba(8, 145, 178, 0.05)',      // cyan-600/5
+      border: 'rgba(6, 182, 212, 0.2)',   // cyan-500/20
+      title: '#155e75',                    // cyan-800
+      badge: '#0891b2'                     // cyan-600
+    },
+    spam: { 
+      from: 'rgba(168, 85, 247, 0.1)',    // purple-500/10
+      to: 'rgba(147, 51, 234, 0.05)',     // purple-600/5
+      border: 'rgba(168, 85, 247, 0.2)',  // purple-500/20
+      title: '#6b21a8',                    // purple-800
+      badge: '#9333ea'                     // purple-600
+    }
+  };
+
+  const categoryType = category.id as 'work' | 'personal' | 'marketing' | 'spam';
+  const colors = gradientConfig[categoryType] || gradientConfig.work;
+
+  // Background gradiente diagonale (come nelle card)
+  const gradient = ctx.createLinearGradient(0, 0, W, H);
+  gradient.addColorStop(0, colors.from);
+  gradient.addColorStop(1, colors.to);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+
+  // Bordo colorato
+  ctx.strokeStyle = colors.border;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(1.5, 1.5, W - 3, H - 3);
+
+  // Specchia orizzontalmente
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.translate(-W, 0);
+
+  // Badge tipo categoria (top-right corner, ma specchiato diventa top-left)
+  const badgeText = category.nome_gruppo.toUpperCase();
+  const badgePadding = 12;
+  const badgeHeight = 32;
+  ctx.font = 'bold 18px sans-serif';
+  const badgeWidth = ctx.measureText(badgeText).width + badgePadding * 2;
+
+  // Badge background
+  ctx.fillStyle = colors.badge;
+  ctx.fillRect(20, 20, badgeWidth, badgeHeight);
+
+  // Badge text
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.fillText(badgeText, 20 + badgeWidth/2, 20 + badgeHeight/2 + 6);
+
+  // Titolo (nome categoria) con colore del brand
+  ctx.fillStyle = colors.title;
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(category.nome_gruppo, W / 2, 80);
+
+  // Lista senders
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '22px sans-serif';
+  ctx.textAlign = 'left';
+
+  const lineHeight = 32;
+  let y = 140;
+  ctx.fillText(`Mittenti: ${assignedSenders.length}`, 40, y);
+  y += lineHeight + 10;
+
+  // Mostra i primi 10 mittenti
+  const maxSenders = 10;
+  assignedSenders.slice(0, maxSenders).forEach((sender, i) => {
+    const senderText = `• ${sender.email}`;
+    ctx.fillText(senderText, 40, y);
+    y += lineHeight;
+  });
+
+  if (assignedSenders.length > maxSenders) {
+    y += 10;
+    ctx.fillStyle = '#cccccc';
+    ctx.fillText(`... e altri ${assignedSenders.length - maxSenders}`, 40, y);
+  }
+
+  ctx.restore();
+
+  // Texture con filtering ottimale
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  
+  // Anisotropic filtering
+  if (renderer) {
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  } else {
+    texture.anisotropy = 4; // Fallback
+  }
+  
+  console.log("🎨 createTextTexture() OPTIMIZED:", {
+    category: category.nome_gruppo,
+    canvasSize: `${canvas.width}x${canvas.height}`,
+    logicalSize: `${W}x${H}`,
+    DPR: DPR,
+    anisotropy: texture.anisotropy
+  });
+  
+  return texture;
+};
+
+const createEmptyTexture = (): THREE.CanvasTexture => {
+  const canvas = document.createElement('canvas');
+  const DPR = window.devicePixelRatio || 2;
+  const W = 800;
+  const H = 1100;
+  
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  const ctx = canvas.getContext('2d')!;
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  
+  return texture;
+};
 
 export const EmailCarousel3D = ({
   categories, 
   assignedSenders,
   activeCategoryId,
-  onRotate,
   zoom = 1.0
 }: EmailCarousel3DProps) => {
   const MAX_SLOTS = 8; // Numero massimo di pagine nel carosello
@@ -210,6 +371,7 @@ export const EmailCarousel3D = ({
 
   // 🔄 REMOVED: No more geometry updates on zoom change (FOV handles it)
 
+
   // 2️⃣ POPOLAZIONE CATEGORIE (si attiva quando arrivano nuove categorie)
   useEffect(() => {
     console.log('📝 useEffect categorie - categories:', categories.length, 'meshesRef:', meshesRef.current.size, 'groupReady:', !!groupRef.current);
@@ -222,14 +384,14 @@ export const EmailCarousel3D = ({
     console.log(`📝 Tentativo di riempire ${categories.length} categorie, meshesRef.size: ${meshesRef.current.size}`);
     
     categories.forEach((category, i) => {
-      // Skip se già renderizzata
+      // Skip se già renderizzato
       if (renderedCategoriesRef.current.has(category.id)) {
         console.log(`  ⏭️ Categoria ${category.id} (${category.nome_gruppo}) già renderizzata, skip`);
         return;
       }
       
       if (i >= MAX_SLOTS) {
-        console.log(`  ⚠️ Troppe categorie (${categories.length}), max ${MAX_SLOTS}`);
+        console.log(`  ⚠️ Troppi categorie (${categories.length}), max ${MAX_SLOTS}`);
         return;
       }
       
@@ -244,7 +406,7 @@ export const EmailCarousel3D = ({
       console.log(`  🔍 Slot ${i}: ✅ trovato per categoria: ${category.nome_gruppo}`);
       
       const senders = assignedSenders.get(category.id) || [];
-      const newTexture = createCategoryTexture(category, senders, rendererRef.current || undefined);
+      const newTexture = createTextTexture(category, senders, rendererRef.current || undefined);
       const material = slotMesh.material as THREE.MeshBasicMaterial;
       
       // Rilascia vecchia texture

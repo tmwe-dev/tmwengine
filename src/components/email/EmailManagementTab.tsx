@@ -471,7 +471,7 @@ export function EmailManagementTab() {
                 categories={groups}
                 assignedSenders={assignedSenders}
                 activeCategoryId={activeCategoryId}
-                onRotate={setActiveCategoryId}
+                zoom={1.0}
               />
             </div>
           </div>

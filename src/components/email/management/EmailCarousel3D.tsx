@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { EmailCarousel3DProps } from '@/types/email-carousel';
 import { createCategoryTexture, createEmptyTexture } from '@/lib/email-carousel-texture';
+import type { EmailSenderGroup, SenderAnalysis } from '@/types/email-management';
 
 export const EmailCarousel3D = ({
   categories, 

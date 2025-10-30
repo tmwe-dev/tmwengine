@@ -7,16 +7,24 @@ import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RefreshCw, Loader2, Lock, LockOpen, Zap } from 'lucide-react';
+import { RefreshCw, Loader2, Lock, LockOpen, Zap, ChevronRight, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { getSyncPreferences, saveSyncPreferences } from '@/lib/email-sync-preferences';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface FolderComparison {
   folderName: string;
+  displayName: string;
+  level: number;
+  parentPath: string | null;
+  hasChildren: boolean;
+  children: FolderComparison[];
   serverCount: number;
   dbCount: number;
   missing: number;
   syncPercentage: number;
+  directServerCount: number;  // Conteggio solo cartella (senza figli)
+  directDbCount: number;       // Conteggio solo cartella (senza figli)
 }
 
 interface EmailIntegrityCheckerProps {
@@ -28,27 +36,63 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
   const [excludedFolders, setExcludedFolders] = useState<string[]>([]);
   const [isPerfectSyncing, setIsPerfectSyncing] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-
-  const toggleFolderSelection = (folderName: string) => {
-    setSelectedFolders(prev => 
+  const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
+  
+  // Toggle expand/collapse cartella
+  const toggleExpand = (folderName: string) => {
+    setExpandedFolders(prev => 
       prev.includes(folderName)
         ? prev.filter(f => f !== folderName)
         : [...prev, folderName]
     );
   };
+  
+  // Ottieni tutti i figli (ricorsivo) di una cartella
+  const getAllChildren = (folder: FolderComparison, allFolders: FolderComparison[]): string[] => {
+    const children: string[] = [];
+    folder.children.forEach(child => {
+      children.push(child.folderName);
+      children.push(...getAllChildren(child, allFolders));
+    });
+    return children;
+  };
 
-  const toggleLock = async (folderName: string) => {
+  // Selezione CASCATA: selezionare padre → auto-seleziona tutti i figli
+  const toggleFolderSelection = (folder: FolderComparison, allFolders: FolderComparison[]) => {
+    const children = getAllChildren(folder, allFolders);
+    const allToToggle = [folder.folderName, ...children];
+    
+    setSelectedFolders(prev => {
+      const isSelected = prev.includes(folder.folderName);
+      
+      if (isSelected) {
+        // Deseleziona padre e tutti i figli
+        return prev.filter(f => !allToToggle.includes(f));
+      } else {
+        // Seleziona padre e tutti i figli (escludi bloccati)
+        const toAdd = allToToggle.filter(f => !excludedFolders.includes(f));
+        return [...prev, ...toAdd];
+      }
+    });
+  };
+
+  // Lucchetto CASCATA: bloccare padre → blocca anche tutti i figli
+  const toggleLock = async (folder: FolderComparison, allFolders: FolderComparison[]) => {
     if (!userEmail) return;
     
-    const newExcluded = excludedFolders.includes(folderName)
-      ? excludedFolders.filter(f => f !== folderName)
-      : [...excludedFolders, folderName];
+    const children = getAllChildren(folder, allFolders);
+    const allToLock = [folder.folderName, ...children];
+    const isLocked = excludedFolders.includes(folder.folderName);
+    
+    const newExcluded = isLocked
+      ? excludedFolders.filter(f => !allToLock.includes(f))  // Sblocca padre + figli
+      : [...excludedFolders, ...allToLock];                   // Blocca padre + figli
     
     setExcludedFolders(newExcluded);
     
-    // Se cartella era selezionata, rimuovila
-    if (selectedFolders.includes(folderName)) {
-      setSelectedFolders(prev => prev.filter(f => f !== folderName));
+    // Rimuovi dalla selezione se erano selezionate
+    if (!isLocked) {
+      setSelectedFolders(prev => prev.filter(f => !allToLock.includes(f)));
     }
     
     try {
@@ -58,9 +102,9 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
       });
       
       toast.success(
-        excludedFolders.includes(folderName)
-          ? `🔓 ${folderName} sbloccata`
-          : `🔒 ${folderName} bloccata`
+        isLocked
+          ? `🔓 ${folder.folderName} sbloccata (+ ${children.length} sottocartelle)`
+          : `🔒 ${folder.folderName} bloccata (+ ${children.length} sottocartelle)`
       );
     } catch (error: any) {
       console.error('Error saving lock preference:', error);
@@ -153,11 +197,12 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
       // Salva email per uso nel toggleLock
       setUserEmail(profile.tmwe_email);
 
-      // 1. Fetch conteggi server (usando emailFolderApi più affidabile)
+      // 1. Fetch conteggi server con GERARCHIA
       console.log('🔍 [IntegrityCheck] Fetching folders from server via emailFolderApi...');
       const serverFoldersResponse = await emailFolderApi.getFolders({ 
-        include_counts: true,  // Include conteggi messaggi per cartella
-        skipCache: true        // Salta cache per dati freschi
+        include_counts: true,
+        include_hierarchy: true,  // ✅ ATTIVA GERARCHIA
+        skipCache: true
       });
       console.log('🔍 [IntegrityCheck] Server folders response:', serverFoldersResponse);
       console.log('🔍 [IntegrityCheck] Response keys:', Object.keys(serverFoldersResponse || {}));
@@ -189,30 +234,79 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
         return acc;
       }, {});
 
-      // 3. Confronta e crea risultati
-      const results: FolderComparison[] = serverFolders.map((folder: any) => {
-        // emailFolderApi restituisce: { name, display_name?, total_count?, message_count?, unread_count? }
-        const folderName = folder.name || folder.folder;
-        const serverCount = folder.message_count || folder.total_count || folder.messages || folder.count || folder.total || 0;
-        const dbCount = dbCountsMap[folderName] || 0;
-        const missing = Math.max(0, serverCount - dbCount);
-        const syncPercentage = serverCount > 0 
-          ? Math.round((dbCount / serverCount) * 100) 
-          : 100;
-
-        console.log(`🔍 [IntegrityCheck] Folder "${folderName}": server=${serverCount}, db=${dbCount}, missing=${missing}`);
-
-        return {
-          folderName,
-          serverCount,
-          dbCount,
-          missing,
-          syncPercentage
+      // 3. Costruisci gerarchia e confronta
+      const buildHierarchy = (folders: any[]): FolderComparison[] => {
+        const folderMap = new Map<string, FolderComparison>();
+        const rootFolders: FolderComparison[] = [];
+        
+        // Prima passata: crea tutti i nodi
+        folders.forEach((folder: any) => {
+          const folderName = folder.name || folder.folder;
+          const level = folder.level || 0;
+          const parentPath = folder.parent || null;
+          const displayName = folder.display_name || folderName.split('/').pop() || folderName;
+          
+          const directServerCount = folder.message_count || folder.total_count || folder.messages || folder.count || folder.total || 0;
+          const directDbCount = dbCountsMap[folderName] || 0;
+          
+          const node: FolderComparison = {
+            folderName,
+            displayName,
+            level,
+            parentPath,
+            hasChildren: false,
+            children: [],
+            directServerCount,
+            directDbCount,
+            serverCount: directServerCount,  // Sarà aggiornato con somma figli
+            dbCount: directDbCount,          // Sarà aggiornato con somma figli
+            missing: 0,
+            syncPercentage: 0
+          };
+          
+          folderMap.set(folderName, node);
+        });
+        
+        // Seconda passata: collega padri e figli
+        folderMap.forEach((node, key) => {
+          if (node.parentPath && folderMap.has(node.parentPath)) {
+            const parent = folderMap.get(node.parentPath)!;
+            parent.children.push(node);
+            parent.hasChildren = true;
+          } else if (node.level === 0) {
+            rootFolders.push(node);
+          }
+        });
+        
+        // Terza passata: calcola conteggi sommati (bottom-up)
+        const calculateTotals = (node: FolderComparison): void => {
+          if (node.children.length > 0) {
+            node.children.forEach(calculateTotals);
+            
+            // Somma conteggi figli
+            const childrenServerSum = node.children.reduce((sum, child) => sum + child.serverCount, 0);
+            const childrenDbSum = node.children.reduce((sum, child) => sum + child.dbCount, 0);
+            
+            node.serverCount = node.directServerCount + childrenServerSum;
+            node.dbCount = node.directDbCount + childrenDbSum;
+          }
+          
+          node.missing = Math.max(0, node.serverCount - node.dbCount);
+          node.syncPercentage = node.serverCount > 0 
+            ? Math.round((node.dbCount / node.serverCount) * 100) 
+            : 100;
+          
+          console.log(`🔍 [Hierarchy] "${node.folderName}" (L${node.level}): server=${node.serverCount} (direct=${node.directServerCount}), db=${node.dbCount}, missing=${node.missing}`);
         };
-      });
-
-      console.log('🔍 [IntegrityCheck] Results:', results);
-      return results;
+        
+        rootFolders.forEach(calculateTotals);
+        
+        return rootFolders;
+      };
+      
+      const hierarchicalResults = buildHierarchy(serverFolders);
+      console.log('🔍 [IntegrityCheck] Hierarchical results:', hierarchicalResults);
+      return hierarchicalResults;
     },
     enabled: true,
     refetchInterval: false,
@@ -253,9 +347,27 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
     loadPreferences();
   }, [userEmail]);
 
-  const totalServer = comparisons?.reduce((sum, c) => sum + c.serverCount, 0) || 0;
-  const totalDB = comparisons?.reduce((sum, c) => sum + c.dbCount, 0) || 0;
-  const totalMissing = comparisons?.reduce((sum, c) => sum + c.missing, 0) || 0;
+  // Funzione helper: appiattisci albero per ottenere tutte le cartelle
+  const flattenFolders = (folders: FolderComparison[]): FolderComparison[] => {
+    const result: FolderComparison[] = [];
+    
+    const traverse = (nodes: FolderComparison[]) => {
+      nodes.forEach(node => {
+        result.push(node);
+        if (node.children.length > 0) {
+          traverse(node.children);
+        }
+      });
+    };
+    
+    traverse(folders);
+    return result;
+  };
+
+  const allFolders = comparisons ? flattenFolders(comparisons) : [];
+  const totalServer = allFolders.reduce((sum, c) => sum + c.directServerCount, 0);
+  const totalDB = allFolders.reduce((sum, c) => sum + c.directDbCount, 0);
+  const totalMissing = allFolders.reduce((sum, c) => sum + c.missing, 0);
 
   return (
     <Card>
@@ -331,10 +443,11 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  const allWithMissing = comparisons
+                  // Seleziona tutte le cartelle con missing > 0 (escluse quelle bloccate)
+                  const toSelect = allFolders
                     .filter(c => c.missing > 0 && !excludedFolders.includes(c.folderName))
                     .map(c => c.folderName);
-                  setSelectedFolders(allWithMissing);
+                  setSelectedFolders(toSelect);
                 }}
               >
                 ✅ Seleziona tutte con email mancanti
@@ -364,48 +477,18 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {comparisons.map(comp => (
-                    <TableRow key={comp.folderName}>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggleLock(comp.folderName)}
-                          className="h-8 w-8"
-                        >
-                          {excludedFolders.includes(comp.folderName) ? (
-                            <Lock className="h-4 w-4 text-destructive" />
-                          ) : (
-                            <LockOpen className="h-4 w-4 text-green-500" />
-                          )}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="font-medium">{comp.folderName}</TableCell>
-                      <TableCell className="text-right">{comp.serverCount}</TableCell>
-                      <TableCell className="text-right">{comp.dbCount}</TableCell>
-                      <TableCell className={`text-right ${comp.missing > 0 ? 'text-destructive font-semibold' : 'text-green-500'}`}>
-                        {comp.missing}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={comp.syncPercentage === 100 ? 'default' : 'secondary'}>
-                          {comp.syncPercentage}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {comp.missing > 0 ? (
-                          excludedFolders.includes(comp.folderName) ? (
-                            <span className="text-xs text-muted-foreground">🔒 Bloccata</span>
-                          ) : (
-                            <Checkbox
-                              checked={selectedFolders.includes(comp.folderName)}
-                              onCheckedChange={() => toggleFolderSelection(comp.folderName)}
-                            />
-                          )
-                        ) : (
-                          <span className="text-xs text-green-500">✓ Completo</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
+                  {comparisons.map(rootFolder => (
+                    <FolderRow
+                      key={rootFolder.folderName}
+                      folder={rootFolder}
+                      allFolders={allFolders}
+                      selectedFolders={selectedFolders}
+                      excludedFolders={excludedFolders}
+                      expandedFolders={expandedFolders}
+                      onToggleExpand={toggleExpand}
+                      onToggleLock={toggleLock}
+                      onToggleSelection={toggleFolderSelection}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -452,5 +535,162 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
         )}
       </CardContent>
     </Card>
+  );
+};
+
+// ============================================================================
+// COMPONENTE RICORSIVO: FolderRow (TreeView)
+// ============================================================================
+
+interface FolderRowProps {
+  folder: FolderComparison;
+  allFolders: FolderComparison[];
+  selectedFolders: string[];
+  excludedFolders: string[];
+  expandedFolders: string[];
+  onToggleExpand: (folderName: string) => void;
+  onToggleLock: (folder: FolderComparison, allFolders: FolderComparison[]) => void;
+  onToggleSelection: (folder: FolderComparison, allFolders: FolderComparison[]) => void;
+}
+
+const FolderRow = ({
+  folder,
+  allFolders,
+  selectedFolders,
+  excludedFolders,
+  expandedFolders,
+  onToggleExpand,
+  onToggleLock,
+  onToggleSelection
+}: FolderRowProps) => {
+  const isExpanded = expandedFolders.includes(folder.folderName);
+  const isLocked = excludedFolders.includes(folder.folderName);
+  const isSelected = selectedFolders.includes(folder.folderName);
+  const hasChildren = folder.children.length > 0;
+  
+  return (
+    <>
+      <TableRow className={folder.level > 0 ? 'bg-muted/30' : undefined}>
+        {/* Lucchetto */}
+        <TableCell className="text-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onToggleLock(folder, allFolders)}
+            className="h-8 w-8"
+          >
+            {isLocked ? (
+              <Lock className="h-4 w-4 text-destructive" />
+            ) : (
+              <LockOpen className="h-4 w-4 text-green-500" />
+            )}
+          </Button>
+        </TableCell>
+        
+        {/* Nome Cartella con Indentazione + TreeView */}
+        <TableCell className="font-medium">
+          <div 
+            className="flex items-center gap-2"
+            style={{ paddingLeft: `${folder.level * 24}px` }}
+          >
+            {hasChildren && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onToggleExpand(folder.folderName)}
+                className="h-6 w-6"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            
+            {!hasChildren && folder.level > 0 && (
+              <span className="text-muted-foreground text-xs mr-2">└─</span>
+            )}
+            
+            <span className={hasChildren ? 'font-semibold' : undefined}>
+              {folder.displayName}
+            </span>
+            
+            {hasChildren && (
+              <Badge variant="outline" className="text-xs">
+                {folder.children.length} sub
+              </Badge>
+            )}
+          </div>
+        </TableCell>
+        
+        {/* Server */}
+        <TableCell className="text-right">
+          <div className="flex flex-col items-end">
+            <span className="font-semibold">{folder.serverCount}</span>
+            {hasChildren && folder.directServerCount > 0 && (
+              <span className="text-xs text-muted-foreground">
+                ({folder.directServerCount} direct)
+              </span>
+            )}
+          </div>
+        </TableCell>
+        
+        {/* DB Locale */}
+        <TableCell className="text-right">
+          <div className="flex flex-col items-end">
+            <span className="font-semibold">{folder.dbCount}</span>
+            {hasChildren && folder.directDbCount > 0 && (
+              <span className="text-xs text-muted-foreground">
+                ({folder.directDbCount} direct)
+              </span>
+            )}
+          </div>
+        </TableCell>
+        
+        {/* Mancanti */}
+        <TableCell className={`text-right ${folder.missing > 0 ? 'text-destructive font-semibold' : 'text-green-500'}`}>
+          {folder.missing}
+        </TableCell>
+        
+        {/* % Sync */}
+        <TableCell className="text-center">
+          <Badge variant={folder.syncPercentage === 100 ? 'default' : 'secondary'}>
+            {folder.syncPercentage}%
+          </Badge>
+        </TableCell>
+        
+        {/* Checkbox */}
+        <TableCell className="text-center">
+          {folder.missing > 0 ? (
+            isLocked ? (
+              <span className="text-xs text-muted-foreground">🔒 Bloccata</span>
+            ) : (
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => onToggleSelection(folder, allFolders)}
+              />
+            )
+          ) : (
+            <span className="text-xs text-green-500">✓ Completo</span>
+          )}
+        </TableCell>
+      </TableRow>
+      
+      {/* Render Figli (ricorsivo) */}
+      {isExpanded && hasChildren && folder.children.map(child => (
+        <FolderRow
+          key={child.folderName}
+          folder={child}
+          allFolders={allFolders}
+          selectedFolders={selectedFolders}
+          excludedFolders={excludedFolders}
+          expandedFolders={expandedFolders}
+          onToggleExpand={onToggleExpand}
+          onToggleLock={onToggleLock}
+          onToggleSelection={onToggleSelection}
+        />
+      ))}
+    </>
   );
 };

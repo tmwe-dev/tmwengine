@@ -134,7 +134,7 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
               <span className="text-2xl">{group.icon || '📁'}</span>
               <div>
                 <CardTitle className="text-base">
-                  {group.nome_gruppo} <span className="text-red-500">{rules.length}</span>
+                  {group.nome_gruppo} <span className="text-red-500 ml-1.5">{rules.length}</span>
                 </CardTitle>
                 {group.descrizione && (
                   <CardDescription className="text-xs mt-1">

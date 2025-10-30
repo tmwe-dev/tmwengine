@@ -17,9 +17,15 @@ interface FunEmailGroupDropZoneProps {
   group: EmailSenderGroup;
   onRefresh: () => void;
   onEditGroup?: (group: EmailSenderGroup) => void;
+  isExpanded?: boolean;
 }
 
-export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDropZoneProps) {
+export function GroupDropZone({ 
+  group, 
+  onRefresh, 
+  onEditGroup,
+  isExpanded = false,
+}: FunEmailGroupDropZoneProps) {
   const [rules, setRules] = useState<(EmailSenderRule & { sender_name?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -79,7 +85,14 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
   }
 
   return (
-    <div ref={setNodeRef} className="h-[20vh] w-[15vw] min-w-[280px] max-w-[380px]">
+    <div 
+      ref={setNodeRef} 
+      className={cn(
+        isExpanded 
+          ? "h-[80vh] w-[60vw]" 
+          : "h-[40vh] w-[20vw] min-w-[320px] max-w-[450px]"
+      )}
+    >
       <Card 
         className={cn(
           "h-full transition-all border-2 flex flex-col overflow-hidden",
@@ -165,56 +178,30 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
               )}
             </div>
           </div>
-          <Badge 
-            variant="secondary" 
-            className="absolute top-3 left-3 h-8 w-8 flex items-center justify-center rounded-md font-bold text-white"
-            style={{ backgroundColor: group.colore }}
-          >
+          <div className="absolute bottom-3 left-3 text-white font-bold text-lg">
             {rules.length}
-          </Badge>
+          </div>
         </CardHeader>
 
-        <CardContent className="pt-4 flex-1 overflow-hidden flex flex-col">
-          {isOver && rules.length === 0 && (
-            <div className="text-center py-12 animate-pulse">
-              <div className="text-5xl mb-3">👇</div>
-              <p className="text-sm font-medium text-primary">
-                Rilascia qui per classificare
+        {/* Contenuto card - Solo ultimo mittente */}
+        <CardContent className="flex-1 flex items-center justify-center">
+          {loading ? (
+            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+          ) : rules.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center space-y-2">
+              <div className="text-4xl opacity-50">{group.icon}</div>
+              <p className="text-sm text-muted-foreground">
+                Trascina qui i mittenti per classificarli
               </p>
             </div>
-          )}
-
-          {!isOver && rules.length === 0 && !loading && (
-            <div className="text-center py-8 text-muted-foreground flex-1 flex flex-col items-center justify-center">
-              <AlertCircle className="h-8 w-8 mb-2 opacity-50" />
-              <p className="text-xs">Nessun mittente classificato</p>
-              <p className="text-xs mt-1">Trascina qui le email</p>
-            </div>
-          )}
-
-          {rules.length > 0 && (
-            <div className="space-y-2 overflow-y-auto flex-1">
-              {rules.map(rule => (
-                <div
-                  key={rule.id}
-                  className="flex items-center justify-between p-2 bg-muted/40 rounded-md text-sm hover:bg-muted/60 transition-colors group"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{rule.sender_name}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {rule.sender_email}
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleRemoveRule(rule.id)}
-                  >
-                    <Trash2 className="h-3 w-3 text-destructive" />
-                  </Button>
-                </div>
-              ))}
+          ) : (
+            <div className="text-center">
+              <div className="font-semibold text-lg mb-1">
+                {funEmailExtractCompanyName(rules[0].sender_email)}
+              </div>
+              <div className="text-sm text-muted-foreground truncate max-w-full px-4">
+                {rules[0].sender_email}
+              </div>
             </div>
           )}
         </CardContent>

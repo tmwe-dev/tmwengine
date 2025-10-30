@@ -212,14 +212,6 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
             </div>
           )}
 
-          {!isOver && rules.length === 0 && !loading && (
-            <div className="text-center py-8 text-muted-foreground">
-              <AlertCircle className="h-8 w-8 mb-2 opacity-50 mx-auto" />
-              <p className="text-xs">Nessun mittente classificato</p>
-              <p className="text-xs mt-1">Trascina qui le email</p>
-            </div>
-          )}
-
           {!isOver && rules.length > 0 && (
             <div className="text-center">
               <div className="font-bold text-xl mb-1">{rules[0].sender_name}</div>

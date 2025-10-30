@@ -16,7 +16,7 @@ import { GroupDropZone } from './management/GroupDropZone';
 import type { EmailSenderGroup, SenderAnalysis } from '@/types/email-management';
 import { DEFAULT_GROUPS as PREDEFINED_GROUPS } from '@/types/email-management';
 import { cn } from '@/lib/utils';
-import EmailCarousel3D from './management/EmailCarousel3D';
+import { EmailCarousel3D } from './management/EmailCarousel3D';
 
 // Collisione personalizzata 80%
 const carousel80PercentCollision: CollisionDetection = (args) => {

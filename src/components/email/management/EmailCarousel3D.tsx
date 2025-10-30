@@ -1,78 +1,70 @@
-import React, { useRef, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import gsap from 'gsap';
+import { gsap } from 'gsap';
 import { EmailCarousel3DProps } from '@/types/email-carousel';
 import { createCategoryTexture, createEmptyTexture } from '@/lib/email-carousel-texture';
-import { useDroppable } from '@dnd-kit/core';
 
-const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
-  categories,
+export const EmailCarousel3D = ({
+  categories, 
   assignedSenders,
   activeCategoryId,
-  onRotate,
-}) => {
+  onRotate
+}: EmailCarousel3DProps) => {
+  const MAX_SLOTS = 8; // Numero massimo di pagine nel carosello
+  
   const containerRef = useRef<HTMLDivElement>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const groupRef = useRef<THREE.Group | null>(null);
   const meshesRef = useRef<Map<string, THREE.Mesh>>(new Map());
-  const animationFrameRef = useRef<number | null>(null);
-  const hasInitializedSlotsRef = useRef(false);
   const renderedCategoriesRef = useRef<Set<string>>(new Set());
+  const hasInitializedSlotsRef = useRef(false);
 
-  const MAX_SLOTS = 8;
-
-  // Droppable per il canvas
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'email-carousel-canvas',
-  });
-
-  // 1️⃣ INIZIALIZZAZIONE SCENE (solo al mount)
+  // Initialize Three.js scene
   useEffect(() => {
     if (!containerRef.current) return;
 
-    console.log('🎡 Inizializzazione EmailCarousel3D...');
-
     const scene = new THREE.Scene();
-    sceneRef.current = scene;
+        const fov = window.innerWidth < 768 ? 62 : 67; // FOV leggermente ridotto per card più contenute
+        const camera = new THREE.PerspectiveCamera(
+          fov,
+          containerRef.current.clientWidth / containerRef.current.clientHeight,
+          0.1,
+          1000
+        );
 
-    const fov = window.innerWidth < 768 ? 62 : 67; // FOV dinamico come Radio
-    const camera = new THREE.PerspectiveCamera(
-      fov,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1,
-      1000
-    );
-    camera.position.set(0, 0.3, 13.5); // IDENTICO a Radio
-    cameraRef.current = camera;
-
-    const renderer = new THREE.WebGLRenderer({ 
-      alpha: true, // Trasparenza per sfondo
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true, 
       antialias: true 
     });
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(window.devicePixelRatio); // ✅ CRITICO per HD
     containerRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
 
+    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
-
+    
     const pointLight = new THREE.PointLight(0x8b5cf6, 1, 100);
     pointLight.position.set(0, 0, 5);
     scene.add(pointLight);
-    
-    console.log('💡 Luci configurate - ambient: 0.6, point: 0x8b5cf6');
 
     const group = new THREE.Group();
     scene.add(group);
+
+    sceneRef.current = scene;
+    cameraRef.current = camera;
+    rendererRef.current = renderer;
     groupRef.current = group;
+
+    // ✅ CRITICO: Posizione iniziale camera (FISSA, non dipende da zoom)
+    camera.position.set(0, 0.3, 13.5);
 
     // Animation loop
     let frameCount = 0;
     const animate = () => {
-      animationFrameRef.current = requestAnimationFrame(animate);
+      requestAnimationFrame(animate);
       
       // Debug: conta mesh visibili ogni 60 frame
       if (frameCount % 60 === 0 && groupRef.current) {
@@ -89,201 +81,198 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
     };
     animate();
 
-    // Window resize handler
+    // Resize handler
     const handleResize = () => {
       if (!containerRef.current || !camera || !renderer) return;
       camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setPixelRatio(window.devicePixelRatio); // ✅ Mantieni HD su resize
     };
     window.addEventListener('resize', handleResize);
 
-    // ResizeObserver per gestire resize container
-    const resizeObserver = new ResizeObserver(() => {
-      if (!containerRef.current || !camera || !renderer) return;
-      camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-      renderer.setPixelRatio(window.devicePixelRatio); // Mantieni HD su resize
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      renderer.dispose();
+      containerRef.current?.removeChild(renderer.domElement);
+    };
+  }, []);
+
+  // ResizeObserver for container changes (sidebar open/close)
+  useEffect(() => {
+    if (!containerRef.current || !cameraRef.current || !rendererRef.current) return;
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        
+        if (cameraRef.current && rendererRef.current) {
+          cameraRef.current.aspect = width / height;
+          cameraRef.current.updateProjectionMatrix();
+          rendererRef.current.setSize(width, height);
+          rendererRef.current.setPixelRatio(window.devicePixelRatio); // ✅ Mantieni HD su resize
+          
+          console.log('📐 Canvas resized:', { width, height });
+        }
+      }
     });
-
+    
     resizeObserver.observe(containerRef.current);
+    
+    return () => resizeObserver.disconnect();
+  }, []);
 
-    // Polling per creazione slot
+  // 1️⃣ INIZIALIZZAZIONE SLOT (aspetta che groupRef sia pronto) - GEOMETRIA FISSA
+  useEffect(() => {
+    let attemptCount = 0;
+    const MAX_ATTEMPTS = 10;
+
     const checkAndInit = () => {
+      console.log(`🔍 Tentativo ${attemptCount + 1}/${MAX_ATTEMPTS} - groupRef:`, !!groupRef.current, 'hasInit:', hasInitializedSlotsRef.current);
+      
       if (!groupRef.current) {
-        console.log('⏳ groupRef non pronto, riprovo...');
-        requestAnimationFrame(checkAndInit);
+        attemptCount++;
+        if (attemptCount < MAX_ATTEMPTS) {
+          console.log('⏳ groupRef ancora null, ritento al prossimo frame...');
+          requestAnimationFrame(checkAndInit);
+        } else {
+          console.error('❌ groupRef non pronto dopo 10 tentativi');
+        }
         return;
       }
 
       if (hasInitializedSlotsRef.current) {
-        console.log('✅ Slot già inizializzati, skip');
+        console.log('⏭️ Slot già inizializzati, skip re-init (update in-place gestito da altro useEffect)');
         return;
       }
 
-      console.log('🎡 Creazione carosello con 8 slot');
-
-      const radius = 7.8; // IDENTICO a Radio
-      const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
+      console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili (geometria fissa)`);
+      
+      const group = groupRef.current;
+      const radius = 7.8; // ✅ FISSO (no zoom scaling)
       const angleStep = (Math.PI * 2) / MAX_SLOTS;
-
+      
       for (let i = 0; i < MAX_SLOTS; i++) {
-        const angle = -(i * angleStep) + Math.PI; // IDENTICO a Radio
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
-
-        // Dimensioni identiche a Radio
-        const geometry = new THREE.PlaneGeometry(
-          4.83 * scaleFactor,
-          7.04 * scaleFactor
-        );
-
+        const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
+        const geometry = new THREE.PlaneGeometry(4.83 * scaleFactor, 7.04 * scaleFactor); // ✅ FISSO
         const material = new THREE.MeshBasicMaterial({
-          map: createEmptyTexture(),
-          side: THREE.DoubleSide,
+          side: THREE.DoubleSide, 
           transparent: true,
-          opacity: 0, // Invisibile inizialmente, fade-in su populate
+          opacity: 0 // Invisibile inizialmente
         });
-
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(x, 0.82, z); // Y=0.82 come Radio
-        mesh.lookAt(0, 0, 0);
 
-        groupRef.current.add(mesh);
+        // Posizionamento fisso - senso ANTIORARIO
+        const angle = -(i * angleStep) + Math.PI;
+        mesh.position.set(
+          Math.cos(angle) * radius, 
+          0.82, // ✅ FISSO (no zoom scaling)
+          Math.sin(angle) * radius
+        );
+        mesh.lookAt(new THREE.Vector3(0, 0, 0));
+        
+        group.add(mesh);
         meshesRef.current.set(`slot_${i}`, mesh);
         console.log(`  📍 Slot ${i} creato a posizione:`, mesh.position.toArray());
       }
-
+      
       hasInitializedSlotsRef.current = true;
-      renderedCategoriesRef.current.clear();
+      renderedCategoriesRef.current.clear(); // Reset categorie renderizzate
       console.log(`✅ Carosello creato, meshesRef.size: ${meshesRef.current.size}`);
+      console.log(`✅ groupRef.current.children.length: ${groupRef.current.children.length}`);
     };
 
+    // Lancia il controllo asincrono
     console.log('🚀 Avvio polling per groupRef...');
     requestAnimationFrame(checkAndInit);
-
+    
+    // Cleanup: resetta flag quando componente viene smontato
     return () => {
-      console.log('🧹 EmailCarousel3D unmounting');
+      console.log('🧹 EmailCarousel3D unmounting, reset hasInitializedSlotsRef');
       hasInitializedSlotsRef.current = false;
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', handleResize);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (rendererRef.current) {
-        rendererRef.current.dispose();
-      }
     };
-  }, []);
+  }, []); // ← Init solo una volta al mount
 
-  // 2️⃣ POPOLAZIONE CATEGORIE
+  // 2️⃣ POPOLAZIONE CATEGORIE (si attiva quando arrivano nuove categorie)
   useEffect(() => {
-    console.log('📝 useEffect categorie - categories:', categories.length, 'meshesRef:', meshesRef.current.size);
-
+    console.log('📝 useEffect categorie - categories:', categories.length, 'meshesRef:', meshesRef.current.size, 'groupReady:', !!groupRef.current);
+    
     if (!groupRef.current || meshesRef.current.size === 0) {
-      console.log('⏸️ Gruppo o slot non pronti, skip popolazione');
+      console.log('⏸️ Gruppo o slot non pronti, skip popolazione categorie');
       return;
     }
-
-    console.log(`📝 Riempimento ${categories.length} categorie`);
-
+    
+    console.log(`📝 Tentativo di riempire ${categories.length} categorie, meshesRef.size: ${meshesRef.current.size}`);
+    
     categories.forEach((category, i) => {
+      // Skip se già renderizzata
       if (renderedCategoriesRef.current.has(category.id)) {
-        console.log(`  ⏭️ Categoria ${category.nome_gruppo} già renderizzata, skip`);
+        console.log(`  ⏭️ Categoria ${category.id} (${category.nome_gruppo}) già renderizzata, skip`);
         return;
       }
-
+      
       if (i >= MAX_SLOTS) {
         console.log(`  ⚠️ Troppe categorie (${categories.length}), max ${MAX_SLOTS}`);
         return;
       }
-
+      
       const slotKey = `slot_${i}`;
       const slotMesh = meshesRef.current.get(slotKey);
-
+      
       if (!slotMesh) {
-        console.log(`  ❌ Slot ${i} non trovato`);
+        console.log(`  ❌ Slot ${i} non trovato in meshesRef`);
         return;
       }
-
-      console.log(`  🔍 Slot ${i}: ✅ per categoria: ${category.nome_gruppo}`);
-
+      
+      console.log(`  🔍 Slot ${i}: ✅ trovato per categoria: ${category.nome_gruppo}`);
+      
       const senders = assignedSenders.get(category.id) || [];
       const newTexture = createCategoryTexture(category, senders, rendererRef.current || undefined);
       const material = slotMesh.material as THREE.MeshBasicMaterial;
-
+      
+      // Rilascia vecchia texture
       if (material.map) material.map.dispose();
-
+      
       material.map = newTexture;
       material.opacity = 1;
       material.needsUpdate = true;
-
-      console.log(`  ✅ Slot ${i} riempito (opacity: 1)`);
-
+      
+      console.log(`  ✅ Slot ${i} riempito e reso visibile (opacity: 1)`);
+      console.log(`    🔎 Material:`, {
+        opacity: material.opacity,
+        transparent: material.transparent,
+        map: !!material.map,
+        visible: slotMesh.visible,
+        side: material.side,
+      });
+      console.log(`    📍 Posizione:`, slotMesh.position.toArray());
+      console.log(`    🔄 Rotazione:`, slotMesh.rotation.toArray());
+      
       renderedCategoriesRef.current.add(category.id);
     });
-  }, [categories, assignedSenders]);
+  }, [categories, assignedSenders]); // ← Dipende da categories e assignedSenders
 
-  // 3️⃣ ROTAZIONE VERSO CATEGORIA ATTIVA
+  // Rotate to active category
   useEffect(() => {
     if (!groupRef.current || !activeCategoryId) return;
 
-    const activeIndex = categories.findIndex((cat) => cat.id === activeCategoryId);
+    const activeIndex = categories.findIndex(cat => cat.id === activeCategoryId);
+    
     if (activeIndex === -1) return;
 
     const targetAngle = -(activeIndex / MAX_SLOTS) * Math.PI * 2 + Math.PI / 2;
     gsap.to(groupRef.current.rotation, {
       y: targetAngle,
       duration: 1.2,
-      ease: 'power2.inOut',
+      ease: 'power2.inOut'
     });
   }, [activeCategoryId, categories]);
 
-  // 4️⃣ EFFETTO GLOW QUANDO isOver
-  useEffect(() => {
-    if (!activeCategoryId || meshesRef.current.size === 0) return;
-
-    const activeIndex = categories.findIndex((cat) => cat.id === activeCategoryId);
-    if (activeIndex === -1) return;
-
-    const slotKey = `slot_${activeIndex}`;
-    const mesh = meshesRef.current.get(slotKey);
-    if (!mesh) return;
-
-    if (isOver) {
-      gsap.to(mesh.scale, { x: 1.1, y: 1.1, z: 1.1, duration: 0.3 });
-    } else {
-      gsap.to(mesh.scale, { x: 1, y: 1, z: 1, duration: 0.3 });
-    }
-  }, [isOver, activeCategoryId, categories]);
-
-  // Handler per aree cliccabili
-  const handlePrev = () => {
-    if (categories.length === 0) return;
-    const currentIndex = categories.findIndex((cat) => cat.id === activeCategoryId);
-    const newIndex = (currentIndex - 1 + categories.length) % categories.length;
-    onRotate?.(categories[newIndex].id);
-  };
-
-  const handleNext = () => {
-    if (categories.length === 0) return;
-    const currentIndex = categories.findIndex((cat) => cat.id === activeCategoryId);
-    const newIndex = (currentIndex + 1) % categories.length;
-    onRotate?.(categories[newIndex].id);
-  };
-
   return (
     <div 
-      ref={(node) => {
-        containerRef.current = node;
-        setNodeRef(node);
-      }}
+      ref={containerRef} 
       className="w-full h-full overflow-visible"
       style={{ position: 'relative' }}
     />
   );
 };
-
-export default EmailCarousel3D;

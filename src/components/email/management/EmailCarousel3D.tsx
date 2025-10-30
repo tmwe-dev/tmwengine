@@ -310,7 +310,7 @@ export const EmailCarousel3D = ({
     console.log(`📷 Zoom ${zoom.toFixed(2)} → FOV ${newFOV.toFixed(1)}° (fluido)`);
   }, [zoom]);
 
-  // 1️⃣ INIZIALIZZAZIONE SLOT (aspetta che groupRef sia pronto) - GEOMETRIA FISSA
+  // 1️⃣ INIZIALIZZAZIONE SLOT + POPOLAZIONE IMMEDIATA (come RadioCarousel3D)
   useEffect(() => {
     let attemptCount = 0;
     const MAX_ATTEMPTS = 10;
@@ -329,32 +329,38 @@ export const EmailCarousel3D = ({
         return;
       }
 
-      if (hasInitializedSlotsRef.current) {
-        console.log('⏭️ Slot già inizializzati, skip re-init (update in-place gestito da altro useEffect)');
-        return;
-      }
-
       console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili (geometria fissa)`);
       
       const group = groupRef.current;
-      const radius = 7.8; // ✅ FISSO (no zoom scaling)
+      const radius = 7.8;
       const angleStep = (Math.PI * 2) / MAX_SLOTS;
+      
+      // Rimuovi vecchi slot se esistono
+      meshesRef.current.forEach((mesh) => {
+        if (mesh.material) {
+          const mat = mesh.material as THREE.MeshBasicMaterial;
+          if (mat.map) mat.map.dispose();
+          mat.dispose();
+        }
+        mesh.geometry.dispose();
+      });
+      meshesRef.current.clear();
+      group.children.length = 0;
       
       for (let i = 0; i < MAX_SLOTS; i++) {
         const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
-        const geometry = new THREE.PlaneGeometry(4.83 * scaleFactor, 7.04 * scaleFactor); // ✅ FISSO
+        const geometry = new THREE.PlaneGeometry(4.83 * scaleFactor, 7.04 * scaleFactor);
         const material = new THREE.MeshBasicMaterial({
           side: THREE.DoubleSide, 
           transparent: true,
-          opacity: 0 // Invisibile inizialmente
+          opacity: 0
         });
         const mesh = new THREE.Mesh(geometry, material);
 
-        // Posizionamento fisso - senso ANTIORARIO
         const angle = -(i * angleStep) + Math.PI;
         mesh.position.set(
           Math.cos(angle) * radius, 
-          0.82, // ✅ FISSO (no zoom scaling)
+          0.82,
           Math.sin(angle) * radius
         );
         mesh.lookAt(new THREE.Vector3(0, 0, 0));
@@ -365,9 +371,48 @@ export const EmailCarousel3D = ({
       }
       
       hasInitializedSlotsRef.current = true;
-      renderedCategoriesRef.current.clear(); // Reset categorie renderizzate
+      renderedCategoriesRef.current.clear();
       console.log(`✅ Carosello creato, meshesRef.size: ${meshesRef.current.size}`);
       console.log(`✅ groupRef.current.children.length: ${groupRef.current.children.length}`);
+
+      // 🔥 POPOLAZIONE IMMEDIATA (come RadioCarousel3D)
+      console.log(`📝 Tentativo di riempire ${categories.length} categorie, meshesRef.size: ${meshesRef.current.size}`);
+
+      categories.forEach((category, i) => {
+        if (renderedCategoriesRef.current.has(category.id)) {
+          console.log(`  ⏭️ Categoria ${category.id} già renderizzata, skip`);
+          return;
+        }
+        
+        if (i >= MAX_SLOTS) {
+          console.log(`  ⚠️ Troppe categorie (${categories.length}), max ${MAX_SLOTS}`);
+          return;
+        }
+        
+        const slotKey = `slot_${i}`;
+        const slotMesh = meshesRef.current.get(slotKey);
+        
+        if (!slotMesh) {
+          console.log(`  ❌ Slot ${i} non trovato in meshesRef`);
+          return;
+        }
+        
+        console.log(`  🔍 Slot ${i}: ✅ trovato per categoria: ${category.nome_gruppo}`);
+        
+        const newTexture = createTextTextureInternal(category, rendererRef.current || undefined);
+        const material = slotMesh.material as THREE.MeshBasicMaterial;
+        
+        if (material.map) material.map.dispose();
+        
+        material.map = newTexture;
+        material.opacity = 1;
+        console.log('🚨 OPACITY SET TO 1 - material.opacity:', material.opacity);
+        material.needsUpdate = true;
+        
+        console.log(`  ✅ Slot ${i} riempito e reso visibile (opacity: 1)`);
+        
+        renderedCategoriesRef.current.add(category.id);
+      });
     };
 
     // Lancia il controllo asincrono
@@ -379,70 +424,9 @@ export const EmailCarousel3D = ({
       console.log('🧹 EmailCarousel3D unmounting, reset hasInitializedSlotsRef');
       hasInitializedSlotsRef.current = false;
     };
-  }, []); // ← Init solo una volta al mount
+  }, [categories, assignedSenders]); // ← Re-init quando cambiano categorie
 
   // 🔄 REMOVED: No more geometry updates on zoom change (FOV handles it)
-
-
-  // 2️⃣ POPOLAZIONE CATEGORIE (si attiva quando arrivano nuove categorie)
-  useEffect(() => {
-    console.log('📝 useEffect categorie - categories:', categories.length, 'meshesRef:', meshesRef.current.size, 'groupReady:', !!groupRef.current);
-    
-    if (!groupRef.current || meshesRef.current.size === 0) {
-      console.log('⏸️ Gruppo o slot non pronti, skip popolazione categorie');
-      return;
-    }
-    
-    console.log(`📝 Tentativo di riempire ${categories.length} categorie, meshesRef.size: ${meshesRef.current.size}`);
-    console.log('🚨 useEffect POPOLAZIONE - START', { categoriesLength: categories.length });
-    
-    categories.forEach((category, i) => {
-      // Skip se già renderizzato
-      if (renderedCategoriesRef.current.has(category.id)) {
-        console.log(`  ⏭️ Categoria ${category.id} (${category.nome_gruppo}) già renderizzata, skip`);
-        return;
-      }
-      
-      if (i >= MAX_SLOTS) {
-        console.log(`  ⚠️ Troppi categorie (${categories.length}), max ${MAX_SLOTS}`);
-        return;
-      }
-      
-      const slotKey = `slot_${i}`;
-      const slotMesh = meshesRef.current.get(slotKey);
-      
-      if (!slotMesh) {
-        console.log(`  ❌ Slot ${i} non trovato in meshesRef`);
-        return;
-      }
-      
-      console.log(`  🔍 Slot ${i}: ✅ trovato per categoria: ${category.nome_gruppo}`);
-      
-      const newTexture = createTextTextureInternal(category, rendererRef.current || undefined);
-      const material = slotMesh.material as THREE.MeshBasicMaterial;
-      
-      // Rilascia vecchia texture
-      if (material.map) material.map.dispose();
-      
-      material.map = newTexture;
-      material.opacity = 1;
-      console.log('🚨 OPACITY SET TO 1 - material.opacity:', material.opacity);
-      material.needsUpdate = true;
-      
-      console.log(`  ✅ Slot ${i} riempito e reso visibile (opacity: 1)`);
-      console.log(`    🔎 Material:`, {
-        opacity: material.opacity,
-        transparent: material.transparent,
-        map: !!material.map,
-        visible: slotMesh.visible,
-        side: material.side,
-      });
-      console.log(`    📍 Posizione:`, slotMesh.position.toArray());
-      console.log(`    🔄 Rotazione:`, slotMesh.rotation.toArray());
-      
-      renderedCategoriesRef.current.add(category.id);
-    });
-  }, [categories, assignedSenders]); // ← Dipende da categories e assignedSenders
 
   // Rotate to active category
   useEffect(() => {

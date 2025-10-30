@@ -24,7 +24,10 @@ import {
   Gauge
 } from 'lucide-react';
 import { QuickEmailSyncer, QuickSyncProgress, QuickSyncStats } from '@/lib/email-sync-quick';
+import { QuickEmailSyncerTurbo } from '@/lib/email-sync-quick-turbo';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface QuickEmailDownloaderProps {
   onDownloadComplete?: (stats: QuickSyncStats) => void;
@@ -41,8 +44,9 @@ interface FolderQuickOption {
 export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSelectedFolders = [] }: QuickEmailDownloaderProps) {
   const [quickFolders, setQuickFolders] = useState<FolderQuickOption[]>([]);
   const [quickProgress, setQuickProgress] = useState<QuickSyncProgress | null>(null);
-  const [quickSyncer, setQuickSyncer] = useState<QuickEmailSyncer | null>(null);
+  const [quickSyncer, setQuickSyncer] = useState<QuickEmailSyncer | QuickEmailSyncerTurbo | null>(null);
   const [isQuickLoading, setIsQuickLoading] = useState(true);
+  const [isTurboMode, setIsTurboMode] = useState(true); // ✨ Default: TURBO attivo
   const { toast } = useToast();
 
   useEffect(() => {
@@ -274,9 +278,10 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
           setQuickProgress(progress);
         },
         onComplete: (stats) => {
+          const cacheInfo = stats.cacheHits ? ` (${stats.cacheHits} da cache)` : '';
           toast({
-            title: '✅ Download completato!',
-            description: `${stats.totalDownloaded} email scaricate in ${Math.round(stats.totalTime)}s (${stats.avgSpeed.toFixed(1)} email/s)`,
+            title: `✅ Download ${isTurboMode ? 'TURBO' : ''} completato!`,
+            description: `${stats.totalDownloaded} email scaricate in ${Math.round(stats.totalTime)}s (${stats.avgSpeed.toFixed(1)} email/s)${cacheInfo}`,
           });
           setQuickSyncer(null);
           setQuickProgress(null);
@@ -338,13 +343,33 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
   return (
     <div className="space-y-4">
-      {/* Header con badge QUICK */}
-      <div className="flex items-center gap-3">
-        <Zap className="h-6 w-6 text-yellow-500" />
-        <h3 className="text-lg font-semibold">Quick Download (Parallelo)</h3>
-        <Badge variant="default" className="bg-yellow-500">
-          10x più veloce
-        </Badge>
+      {/* Header con badge QUICK + Toggle TURBO */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Zap className="h-6 w-6 text-yellow-500" />
+          <h3 className="text-lg font-semibold">Quick Download (Parallelo)</h3>
+          <Badge variant="default" className="bg-yellow-500">
+            {isTurboMode ? '⚡ TURBO' : '10x più veloce'}
+          </Badge>
+        </div>
+        
+        {/* ✨ Toggle TURBO Mode */}
+        <div className="flex items-center gap-3">
+          <Label htmlFor="turbo-mode" className="text-sm font-medium">
+            Modalità TURBO
+          </Label>
+          <Switch 
+            id="turbo-mode"
+            checked={isTurboMode}
+            onCheckedChange={setIsTurboMode}
+            disabled={quickProgress?.isRunning}
+          />
+          {isTurboMode && (
+            <Badge variant="outline" className="text-xs">
+              Cache + Batch 25
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Progress Card (visible solo durante download) */}

@@ -50,6 +50,18 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     loadQuickFolders();
   }, []);
 
+  // 🔍 DEBUG: Monitora stato reale di preSelectedFolders e quickFolders
+  useEffect(() => {
+    console.log('🔍 DEBUG COMPLETO QuickDownloader:', {
+      preSelectedFolders,
+      quickFolders: quickFolders.map(f => ({ 
+        name: f.name, 
+        selected: f.selected 
+      })),
+      timestamp: new Date().toISOString()
+    });
+  }, [quickFolders, preSelectedFolders]);
+
   const loadQuickFolders = async () => {
     setIsQuickLoading(true);
       try {

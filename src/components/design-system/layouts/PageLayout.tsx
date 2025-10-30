@@ -50,15 +50,13 @@ export function PageLayout({
             headerClassName
           )}
         >
-          <div className="container space-y-4">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-1">
-                {description && (
-                  <p className="text-muted-foreground">{description}</p>
-                )}
-              </div>
-              {actions && <div className="flex items-center gap-2">{actions}</div>}
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              {description && (
+                <p className="text-muted-foreground">{description}</p>
+              )}
             </div>
+            {actions && <div className="flex items-center gap-2">{actions}</div>}
           </div>
         </div>
       )}

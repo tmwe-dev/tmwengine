@@ -471,7 +471,7 @@ export function EmailManagementTab() {
                 categories={groups}
                 assignedSenders={assignedSenders}
                 activeCategoryId={activeCategoryId}
-                zoom={0.3}
+                zoom={5.0}
               />
             </div>
           </div>

@@ -15,7 +15,6 @@ import { SenderCard } from './management/SenderCard';
 import type { EmailSenderGroup, SenderAnalysis } from '@/types/email-management';
 import { DEFAULT_GROUPS as PREDEFINED_GROUPS } from '@/types/email-management';
 import { cn } from '@/lib/utils';
-import { EmailManagementHeader } from './management/EmailManagementHeader';
 import { EmailManagementToolbar } from './management/EmailManagementToolbar';
 import { EmailSidebar } from './management/EmailSidebar';
 import { EmailCarouselContainer } from './management/EmailCarouselContainer';
@@ -334,10 +333,7 @@ export function EmailManagementTab() {
 
   return (
     <div className="relative h-full w-full">
-      {/* Header fisso top-left */}
-      <EmailManagementHeader />
-      
-      {/* Toolbar fisso top-right */}
+      {/* Toolbar unificata */}
       <EmailManagementToolbar
         viewMode={viewMode}
         setViewMode={setViewMode}

@@ -24,7 +24,17 @@ export function EmailManagementToolbar({
   isLoading,
 }: EmailManagementToolbarProps) {
   return (
-    <div className="fixed top-2 left-[400px] z-10 flex gap-1">
+    <div className="fixed top-2 left-[400px] z-10 flex items-center gap-2">
+      {/* Titolo estratto da EmailManagementHeader */}
+      <div className="flex items-center gap-2 mr-4">
+        <span className="text-lg font-bold">📬</span>
+        <span className="text-sm font-semibold">Email Management</span>
+      </div>
+      
+      {/* Separatore visivo */}
+      <div className="h-6 w-px bg-border" />
+      
+      {/* Icone funzionali */}
       <IconButton
         icon={LayoutGrid}
         tooltip="Vista Griglia"

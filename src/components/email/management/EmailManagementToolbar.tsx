@@ -24,7 +24,7 @@ export function EmailManagementToolbar({
   isLoading,
 }: EmailManagementToolbarProps) {
   return (
-    <div className="fixed top-2 left-[400px] z-10 flex items-center gap-2">
+    <div className="fixed top-2 left-6 z-10 flex items-center gap-2">
       {/* Titolo estratto da EmailManagementHeader */}
       <div className="flex items-center gap-2 mr-4">
         <span className="text-lg font-bold">📬</span>

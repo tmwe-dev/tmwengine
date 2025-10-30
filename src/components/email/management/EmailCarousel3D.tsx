@@ -235,8 +235,14 @@ export const EmailCarousel3D = ({
     const animate = () => {
       requestAnimationFrame(animate);
       
-      // Debug: conta mesh visibili ogni 60 frame
+      // Debug: conta mesh visibili ogni 60 frame + dettagli opacity
       if (frameCount % 60 === 0 && groupRef.current) {
+        groupRef.current.children.forEach((child, idx) => {
+          if (child instanceof THREE.Mesh) {
+            const mat = child.material as THREE.MeshBasicMaterial;
+            console.log(`🚨 Mesh ${idx}: opacity=${mat.opacity}, visible=${child.visible}, map=${!!mat.map}, transparent=${mat.transparent}`);
+          }
+        });
         const visibleMeshes = groupRef.current.children.filter((child) => {
           if (!(child instanceof THREE.Mesh)) return false;
           const mat = child.material as THREE.MeshBasicMaterial;
@@ -388,6 +394,7 @@ export const EmailCarousel3D = ({
     }
     
     console.log(`📝 Tentativo di riempire ${categories.length} categorie, meshesRef.size: ${meshesRef.current.size}`);
+    console.log('🚨 useEffect POPOLAZIONE - START', { categoriesLength: categories.length });
     
     categories.forEach((category, i) => {
       // Skip se già renderizzato
@@ -419,6 +426,7 @@ export const EmailCarousel3D = ({
       
       material.map = newTexture;
       material.opacity = 1;
+      console.log('🚨 OPACITY SET TO 1 - material.opacity:', material.opacity);
       material.needsUpdate = true;
       
       console.log(`  ✅ Slot ${i} riempito e reso visibile (opacity: 1)`);

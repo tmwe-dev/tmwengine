@@ -466,7 +466,7 @@ export function EmailManagementTab() {
               </Card>
             </div>
 
-            <div className="col-span-8 overflow-visible relative h-full">
+            <div className="col-span-8 overflow-visible relative min-h-screen">
               <EmailCarousel3D
                 categories={groups}
                 assignedSenders={assignedSenders}

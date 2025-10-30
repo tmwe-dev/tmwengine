@@ -99,19 +99,13 @@ export function EmailSidebar({
           {/* Riga compatta: Dropdown + Plus + Filter */}
           <div className="flex gap-2 items-center">
             <Select 
-              value={activeCategoryId || 'all'} 
+              value={activeCategoryId || undefined} 
               onValueChange={onCategorySelect}
             >
               <SelectTrigger className="flex-1 h-9">
                 <SelectValue placeholder="📂 Categoria" />
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
-                <SelectItem value="all">
-                  <span className="flex items-center gap-2">
-                    <span>📂</span>
-                    <span>Tutti i Gruppi</span>
-                  </span>
-                </SelectItem>
                 {groups.map(group => (
                   <SelectItem key={group.id} value={group.id}>
                     <span className="flex items-center gap-2">

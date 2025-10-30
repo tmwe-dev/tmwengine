@@ -52,7 +52,7 @@ export function EmailManagementTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterByAttachments, setFilterByAttachments] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'carousel'>('grid');
-  const [activeCategoryId, setActiveCategoryId] = useState<string | null>('all');
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [assignedSenders, setAssignedSenders] = useState<Map<string, SenderAnalysis[]>>(new Map());
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   
@@ -208,6 +208,11 @@ export function EmailManagementTab() {
 
       setGroups(groupsData);
       console.log(`📁 Caricati ${groupsData.length} gruppi`);
+
+      // Imposta prima categoria come attiva
+      if (groupsData.length > 0 && !activeCategoryId) {
+        setActiveCategoryId(groupsData[0].id);
+      }
 
       const analysis = await analyzeSenders(profile.tmwe_email);
       const unclassified = analysis.filter(s => !s.isClassified);
@@ -482,7 +487,6 @@ export function EmailManagementTab() {
           <EmailGridContainer
             groups={groups}
             onRefresh={loadData}
-            selectedGroupId={activeCategoryId}
           />
         ) : (
           <EmailCarouselContainer

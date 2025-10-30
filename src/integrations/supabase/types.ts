@@ -5129,6 +5129,14 @@ export type Database = {
           last_seen: string
         }[]
       }
+      bulk_insert_emails_turbo_v2: {
+        Args: { p_records: Json }
+        Returns: {
+          execution_time_ms: number
+          inserted_count: number
+          skipped_count: number
+        }[]
+      }
       check_elevenlabs_quota: {
         Args: { p_characters: number; p_user_id: string }
         Returns: Json

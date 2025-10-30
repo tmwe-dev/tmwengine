@@ -43,21 +43,13 @@ export function PageLayout({
   const content = (
     <div className={cn('min-h-screen w-full', className)}>
       {(title || description || actions) && (
-        <div
-          className={cn(
-            'border-b',
-            gradient && 'bg-gradient-to-br from-background via-background to-muted/20',
-            headerClassName
-          )}
-        >
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1">
-              {description && (
-                <p className="text-muted-foreground">{description}</p>
-              )}
-            </div>
-            {actions && <div className="flex items-center gap-2">{actions}</div>}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            {description && (
+              <p className="text-muted-foreground">{description}</p>
+            )}
           </div>
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
       )}
       

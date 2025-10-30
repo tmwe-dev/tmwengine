@@ -363,7 +363,7 @@ const ensureValidToken = async (): Promise<string | null> => {
 
 // 🚀 CONFIGURAZIONE OTTIMALE DI PRODUZIONE
 const OPTIMAL_CONFIG = {
-  enableLogging: false,
+  enableLogging: true, // ✅ ATTIVATO per diagnosticare get_message
   useDoubleSerializat: false,
   useSequentialExecution: false,
   useTextResponse: false,

@@ -21,16 +21,15 @@ export function SenderCard({ sender, isDragging }: FunEmailSenderCardProps) {
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    opacity: dragActive ? 0.5 : 1,
-  } : { opacity: 1 };
+    position: 'fixed' as const,
+    zIndex: 1000,
+    pointerEvents: 'none' as const,
+  } : {};
 
   return (
-    <div ref={setNodeRef} style={style} className="transition-all snap-start">
+    <div ref={setNodeRef} style={style} className="snap-start">
       <Card className={cn(
         "cursor-grab active:cursor-grabbing border-l-4",
-        "transition-all duration-200",
-        "hover:shadow-lg hover:scale-105 hover:-translate-y-1",
-        isDragging && "rotate-2 scale-105 shadow-2xl",
         sender.emailCount > 50 && "border-l-orange-500",
         sender.emailCount > 100 && "border-l-red-500"
       )}>

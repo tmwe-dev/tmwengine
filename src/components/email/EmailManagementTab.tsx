@@ -457,9 +457,6 @@ export function EmailManagementTab() {
         onRefresh={loadData}
         isSyncing={isSyncing}
         isLoading={isLoading}
-        groups={groups}
-        activeCategoryId={activeCategoryId}
-        onCategorySelect={setActiveCategoryId}
       />
       
       <DndContext
@@ -480,6 +477,9 @@ export function EmailManagementTab() {
           carouselZoom={carouselZoom}
           onCarouselZoomChange={handleZoomChange}
           onCreateCategory={() => setShowCreateDialog(true)}
+          groups={groups}
+          activeCategoryId={activeCategoryId}
+          onCategorySelect={setActiveCategoryId}
         />
         
         {/* Area principale condizionale */}

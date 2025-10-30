@@ -7,8 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Search, Filter, Plus } from 'lucide-react';
 import { SenderCard } from './SenderCard';
-import type { SenderAnalysis } from '@/types/email-management';
+import type { SenderAnalysis, EmailSenderGroup } from '@/types/email-management';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EmailSidebarProps {
   senders: SenderAnalysis[];
@@ -21,6 +28,9 @@ interface EmailSidebarProps {
   carouselZoom?: number;
   onCarouselZoomChange?: (zoom: number) => void;
   onCreateCategory?: () => void;
+  groups: EmailSenderGroup[];
+  activeCategoryId: string | null;
+  onCategorySelect: (categoryId: string) => void;
 }
 
 export function EmailSidebar({
@@ -34,6 +44,9 @@ export function EmailSidebar({
   carouselZoom = 1.0,
   onCarouselZoomChange,
   onCreateCategory,
+  groups,
+  activeCategoryId,
+  onCategorySelect,
 }: EmailSidebarProps) {
   return (
     <div className="fixed left-6 top-20 z-20" style={{ width: '416px', height: 'calc(100vh - 80px)' }}>
@@ -73,7 +86,7 @@ export function EmailSidebar({
             </div>
           )}
           
-          <div className="relative mb-2">
+          <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Cerca mittente..."
@@ -83,25 +96,43 @@ export function EmailSidebar({
             />
           </div>
           
-          <div className="space-y-2">
-            <Button
-              variant={filterByAttachments ? "default" : "outline"}
-              size="sm"
-              className="w-full"
-              onClick={() => setFilterByAttachments(!filterByAttachments)}
+          {/* Riga compatta: Dropdown + Plus + Filter */}
+          <div className="flex gap-2 items-center">
+            <Select 
+              value={activeCategoryId || undefined} 
+              onValueChange={onCategorySelect}
             >
-              <Filter className="h-3 w-3 mr-2" />
-              Solo con allegati
-            </Button>
+              <SelectTrigger className="flex-1 h-9">
+                <SelectValue placeholder="📂 Categoria" />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                {groups.map(group => (
+                  <SelectItem key={group.id} value={group.id}>
+                    <span className="flex items-center gap-2">
+                      <span>{group.icon}</span>
+                      <span>{group.nome_gruppo}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
             <Button
               variant="outline"
               size="sm"
-              className="w-full"
+              className="h-9 w-9 flex-shrink-0 p-0"
               onClick={onCreateCategory}
             >
-              <Plus className="h-3 w-3 mr-2" />
-              Nuova Categoria
+              <Plus className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant={filterByAttachments ? "default" : "outline"}
+              size="sm"
+              className="h-9 w-9 flex-shrink-0 p-0"
+              onClick={() => setFilterByAttachments(!filterByAttachments)}
+            >
+              <Filter className="h-4 w-4" />
             </Button>
           </div>
         </div>

@@ -18,7 +18,7 @@ export function EmailGridContainer({
     <div 
       className="fixed z-5 overflow-y-auto" 
       style={{ 
-        left: '400px',
+        left: '460px',
         top: '140px',
         right: '24px',
         bottom: '24px'

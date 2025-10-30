@@ -81,7 +81,7 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
     <div ref={setNodeRef} className="h-full">
       <Card 
         className={cn(
-          "h-full transition-all border-2 flex flex-col",
+          "max-h-[20vh] min-h-[180px] transition-all border-2 flex flex-col overflow-hidden",
           isOver && "border-primary bg-primary/5 shadow-2xl scale-105 ring-4 ring-primary/20"
         )}
         style={{ 

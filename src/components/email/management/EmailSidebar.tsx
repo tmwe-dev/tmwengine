@@ -36,16 +36,10 @@ export function EmailSidebar({
   onCreateCategory,
 }: EmailSidebarProps) {
   return (
-    <div className="fixed left-6 top-20 w-80 z-20" style={{ height: 'calc(100vh - 100px)' }}>
+    <div className="fixed left-6 top-20 z-20" style={{ width: '416px', height: 'calc(100vh - 80px)' }}>
       <div className="h-full flex flex-col">
-        {/* Header con stile glassmorphism carousel */}
-        <div className={cn(
-          "relative p-4 mb-4 rounded-lg flex-shrink-0",
-          "backdrop-blur-md",
-          "bg-gradient-to-br from-blue-500/10 via-blue-600/5 to-blue-700/10",
-          "border border-blue-500/20",
-          "shadow-lg"
-        )}>
+        {/* Header semplificato */}
+        <div className="p-4 mb-4 flex-shrink-0">
           <h3 className="font-semibold mb-3 flex items-center justify-between">
             <span>📮 Da Classificare ({filteredSenders.length})</span>
             {senders.length !== filteredSenders.length && (
@@ -112,8 +106,8 @@ export function EmailSidebar({
           </div>
         </div>
         
-        {/* Lista indirizzi con sfondo trasparente e scroll snap */}
-        <div className="flex-1 overflow-y-auto px-4 space-y-3 bg-transparent snap-y snap-proximity" style={{ perspective: '1000px' }}>
+        {/* Lista indirizzi */}
+        <div className="flex-1 overflow-y-auto px-4 space-y-4">
           {filteredSenders.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-sm">

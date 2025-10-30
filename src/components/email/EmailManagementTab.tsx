@@ -457,6 +457,9 @@ export function EmailManagementTab() {
         onRefresh={loadData}
         isSyncing={isSyncing}
         isLoading={isLoading}
+        groups={groups}
+        activeCategoryId={activeCategoryId}
+        onCategorySelect={setActiveCategoryId}
       />
       
       <DndContext

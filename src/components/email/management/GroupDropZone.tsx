@@ -90,8 +90,10 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
         }}
       >
         <CardHeader 
-          className="pb-3 border-b flex-shrink-0" 
-          style={{ backgroundColor: `${group.colore}20` }}
+          className="pb-3 border-b flex-shrink-0 bg-gradient-to-br" 
+          style={{ 
+            backgroundImage: `linear-gradient(to bottom right, ${group.colore}1A, ${group.colore}0D)` 
+          }}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

@@ -5119,6 +5119,16 @@ export type Database = {
       }
     }
     Functions: {
+      analyze_senders_aggregated: {
+        Args: { p_user_email: string }
+        Returns: {
+          email_count: number
+          first_seen: string
+          from_email: string
+          has_attachments: boolean
+          last_seen: string
+        }[]
+      }
       check_elevenlabs_quota: {
         Args: { p_characters: number; p_user_id: string }
         Returns: Json

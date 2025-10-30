@@ -46,21 +46,20 @@ export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[
   console.log('🔍 Analisi mittenti per:', userEmail);
   
   try {
-    const { data: emails, error: emailError } = await supabase
-      .from('email_messages')
-      .select('from_email, subject, data_ricezione, attachments')
-      .eq('user_email', userEmail)
-      .eq('sync_status', 'fun_email_backup')
-      .order('data_ricezione', { ascending: false });
+    // Usa aggregazione lato DB invece di scaricare tutte le email
+    const { data: senderStats, error: emailError } = await supabase
+      .rpc('analyze_senders_aggregated', { 
+        p_user_email: userEmail 
+      });
     
     if (emailError) throw emailError;
     
-    if (!emails || emails.length === 0) {
-      console.warn('⚠️ Nessuna email trovata nel DB');
+    if (!senderStats || senderStats.length === 0) {
+      console.warn('⚠️ Nessun mittente trovato nel DB');
       return [];
     }
     
-    console.log(`📧 Trovate ${emails.length} email nel DB`);
+    console.log(`📧 Trovati ${senderStats.length} mittenti unici nel DB`);
     
     const { data: rules, error: rulesError } = await supabase
       .from('email_sender_rules')
@@ -78,80 +77,26 @@ export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[
       }
     });
     
-    const senderMap = new Map<string, {
-      emails: any[];
-      firstSeen: Date;
-      lastSeen: Date;
-    }>();
-    
-    emails.forEach(email => {
-      const sender = (email.from_email || '').toLowerCase().trim();
-      if (!sender || !sender.includes('@')) return;
+    // Mappa i risultati aggregati dal DB direttamente in SenderAnalysis
+    const analyses: SenderAnalysis[] = senderStats.map(stat => {
+      const domain = extractDomain(stat.from_email);
+      const companyName = extractCompanyName(stat.from_email);
+      const currentGroup = rulesMap.get(stat.from_email.toLowerCase());
       
-      if (!senderMap.has(sender)) {
-        senderMap.set(sender, {
-          emails: [],
-          firstSeen: new Date(email.data_ricezione),
-          lastSeen: new Date(email.data_ricezione),
-        });
-      }
-      
-      const senderData = senderMap.get(sender)!;
-      senderData.emails.push(email);
-      
-      const date = new Date(email.data_ricezione);
-      if (date < senderData.firstSeen) senderData.firstSeen = date;
-      if (date > senderData.lastSeen) senderData.lastSeen = date;
-    });
-    
-    console.log(`👥 Trovati ${senderMap.size} mittenti unici`);
-    
-    const analyses: SenderAnalysis[] = [];
-    
-    for (const [email, data] of senderMap.entries()) {
-      const domain = extractDomain(email);
-      const companyName = extractCompanyName(email);
-      
-      const hasAttachments = data.emails.some(e => 
-        Array.isArray(e.attachments) && e.attachments.length > 0
-      );
-      
-      const avgSubjectLength = Math.round(
-        data.emails.reduce((sum, e) => sum + ((e.subject || '').length), 0) / data.emails.length
-      );
-      
-      const allWords = data.emails
-        .flatMap(e => (e.subject || '').toLowerCase().split(/\s+/))
-        .filter(w => w.length > 3 && !['the', 'and', 'for', 'with', 'from'].includes(w));
-      
-      const wordCounts: Record<string, number> = {};
-      allWords.forEach(word => {
-        wordCounts[word] = (wordCounts[word] || 0) + 1;
-      });
-      
-      const topKeywords = Object.entries(wordCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([word]) => word);
-      
-      const currentGroup = rulesMap.get(email);
-      
-      analyses.push({
-        email,
+      return {
+        email: stat.from_email,
         domain,
         companyName,
-        emailCount: data.emails.length,
-        firstSeen: data.firstSeen.toISOString(),
-        lastSeen: data.lastSeen.toISOString(),
-        hasAttachments,
-        topSubjectKeywords: topKeywords,
-        avgSubjectLength,
+        emailCount: Number(stat.email_count),
+        firstSeen: new Date(stat.first_seen).toISOString(),
+        lastSeen: new Date(stat.last_seen).toISOString(),
+        hasAttachments: stat.has_attachments,
+        topSubjectKeywords: [], // Rimosso: troppo pesante da calcolare
+        avgSubjectLength: 0,    // Rimosso: non necessario
         isClassified: !!currentGroup,
         currentGroup,
-      });
-    }
-    
-    analyses.sort((a, b) => b.emailCount - a.emailCount);
+      };
+    });
     
     console.log(`✅ Analisi completata: ${analyses.length} mittenti`);
     console.log(`📊 Classificati: ${analyses.filter(a => a.isClassified).length}`);

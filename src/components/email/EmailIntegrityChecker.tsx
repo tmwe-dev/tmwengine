@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RefreshCw, Loader2, Lock, LockOpen, Zap } from 'lucide-react';
+import { RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getSyncPreferences, saveSyncPreferences } from '@/lib/email-sync-preferences';
 
 interface FolderComparison {
   folderName: string;
@@ -25,9 +24,6 @@ interface EmailIntegrityCheckerProps {
 
 export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheckerProps) => {
   const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
-  const [excludedFolders, setExcludedFolders] = useState<string[]>([]);
-  const [isPerfectSyncing, setIsPerfectSyncing] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   const toggleFolderSelection = (folderName: string) => {
     setSelectedFolders(prev => 
@@ -35,112 +31,6 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
         ? prev.filter(f => f !== folderName)
         : [...prev, folderName]
     );
-  };
-
-  const toggleLock = async (folderName: string) => {
-    if (!userEmail) return;
-    
-    const newExcluded = excludedFolders.includes(folderName)
-      ? excludedFolders.filter(f => f !== folderName)
-      : [...excludedFolders, folderName];
-    
-    setExcludedFolders(newExcluded);
-    
-    // Se cartella era selezionata, rimuovila
-    if (selectedFolders.includes(folderName)) {
-      setSelectedFolders(prev => prev.filter(f => f !== folderName));
-    }
-    
-    try {
-      await saveSyncPreferences(userEmail, {
-        excluded_folders: newExcluded,
-        included_folders: []
-      });
-      
-      toast.success(
-        excludedFolders.includes(folderName)
-          ? `🔓 ${folderName} sbloccata`
-          : `🔒 ${folderName} bloccata`
-      );
-    } catch (error: any) {
-      console.error('Error saving lock preference:', error);
-      toast.error('Errore salvataggio preferenze', {
-        description: error.message
-      });
-      // Rollback
-      setExcludedFolders(excludedFolders);
-    }
-  };
-
-  const handlePerfectSync = async () => {
-    console.log('🚀 [PerfectSync] Button clicked!');
-    console.log('🚀 [PerfectSync] Selected folders:', selectedFolders);
-    console.log('🚀 [PerfectSync] isPerfectSyncing:', isPerfectSyncing);
-    
-    if (selectedFolders.length === 0) {
-      console.error('❌ [PerfectSync] No folders selected!');
-      toast.error('Nessuna cartella selezionata');
-      return;
-    }
-    
-    setIsPerfectSyncing(true);
-    
-    try {
-      toast.info(`🚀 Perfect Sync avviata`, {
-        description: `Sincronizzazione di ${selectedFolders.length} cartelle...`
-      });
-      
-      let totalSynced = 0;
-      let successCount = 0;
-      let errorCount = 0;
-      
-      for (const folder of selectedFolders) {
-        console.log(`⚡ [PerfectSync] Syncing ${folder}...`);
-        console.log(`⚡ [PerfectSync] Invoking tmwe-email-sync-master for ${folder}...`);
-        
-        const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
-          body: {
-            mode: 'incremental',
-            folder_name: folder,
-            max_emails: 5000
-          }
-        });
-        
-        console.log(`📥 [PerfectSync] Response for ${folder}:`, { data, error });
-        
-        if (error) {
-          console.error(`❌ [PerfectSync] Error syncing ${folder}:`, error);
-          errorCount++;
-          toast.error(`Errore sync ${folder}`, {
-            description: error.message
-          });
-          continue;
-        }
-        
-        const synced = data?.emails_downloaded || data?.synced_count || 0;
-        totalSynced += synced;
-        successCount++;
-        console.log(`✅ [PerfectSync] ${folder}: ${synced} email scaricate`);
-      }
-      
-      toast.success('✅ Perfect Sync completata!', {
-        description: `${totalSynced} email scaricate in ${successCount} cartelle${errorCount > 0 ? ` (${errorCount} errori)` : ''}`
-      });
-      
-      // Refresh tabella
-      refetch();
-      
-      // Reset selezione
-      setSelectedFolders([]);
-      
-    } catch (error: any) {
-      console.error('❌ [PerfectSync] Fatal error:', error);
-      toast.error('Errore Perfect Sync', {
-        description: error.message
-      });
-    } finally {
-      setIsPerfectSyncing(false);
-    }
   };
 
   const { data: comparisons, isLoading, refetch, isRefetching, error, isSuccess } = useQuery<FolderComparison[], Error>({
@@ -162,9 +52,6 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
       console.log('🔍 [IntegrityCheck] Profile email:', profile?.tmwe_email);
 
       if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
-
-      // Salva email per uso nel toggleLock
-      setUserEmail(profile.tmwe_email);
 
       // 1. Fetch conteggi server (usando emailFolderApi più affidabile)
       console.log('🔍 [IntegrityCheck] Fetching folders from server via emailFolderApi...');
@@ -225,16 +112,6 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
       });
 
       console.log('🔍 [IntegrityCheck] Results:', results);
-      
-      // Ordina gerarchicamente: prima root, poi sottocartelle
-      results.sort((a, b) => {
-        const aLevel = (a.folderName.match(/\//g) || []).length;
-        const bLevel = (b.folderName.match(/\//g) || []).length;
-        
-        if (aLevel !== bLevel) return aLevel - bLevel;
-        return a.folderName.localeCompare(b.folderName);
-      });
-      
       return results;
     },
     enabled: true,
@@ -258,23 +135,6 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
       toast.success('Verifica completata');
     }
   }, [isSuccess, comparisons]);
-
-  // Carica preferenze sincronizzazione
-  useEffect(() => {
-    const loadPreferences = async () => {
-      if (!userEmail) return;
-      
-      try {
-        const prefs = await getSyncPreferences(userEmail);
-        setExcludedFolders(prefs.excluded_folders);
-        console.log('🔒 [IntegrityCheck] Loaded excluded folders:', prefs.excluded_folders);
-      } catch (error) {
-        console.error('Error loading sync preferences:', error);
-      }
-    };
-    
-    loadPreferences();
-  }, [userEmail]);
 
   const totalServer = comparisons?.reduce((sum, c) => sum + c.serverCount, 0) || 0;
   const totalDB = comparisons?.reduce((sum, c) => sum + c.dbCount, 0) || 0;
@@ -355,7 +215,7 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
                 size="sm"
                 onClick={() => {
                   const allWithMissing = comparisons
-                    .filter(c => c.missing > 0 && !excludedFolders.includes(c.folderName))
+                    .filter(c => c.missing > 0)
                     .map(c => c.folderName);
                   setSelectedFolders(allWithMissing);
                 }}
@@ -377,7 +237,6 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12 text-center">🔒</TableHead>
                     <TableHead>Cartella</TableHead>
                     <TableHead className="text-right">Server</TableHead>
                     <TableHead className="text-right">DB Locale</TableHead>
@@ -387,35 +246,9 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {comparisons.map(comp => {
-                    const isSubfolder = comp.folderName.includes('/');
-                    const level = (comp.folderName.match(/\//g) || []).length;
-                    
-                    return (
-                      <TableRow 
-                        key={comp.folderName}
-                        className={`${isSubfolder ? 'bg-purple-100 dark:bg-purple-900/20' : ''} hover:bg-accent/50 transition-colors`}
-                      >
-                        <TableCell className="text-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => toggleLock(comp.folderName)}
-                            className="h-8 w-8"
-                          >
-                            {excludedFolders.includes(comp.folderName) ? (
-                              <Lock className="h-4 w-4 text-destructive" />
-                            ) : (
-                              <LockOpen className="h-4 w-4 text-green-500" />
-                            )}
-                          </Button>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          <div style={{ paddingLeft: `${level * 20}px` }} className="flex items-center gap-2">
-                            {level > 0 && <span className="text-muted-foreground text-xs">└─</span>}
-                            {comp.folderName}
-                          </div>
-                        </TableCell>
+                  {comparisons.map(comp => (
+                    <TableRow key={comp.folderName}>
+                      <TableCell className="font-medium">{comp.folderName}</TableCell>
                       <TableCell className="text-right">{comp.serverCount}</TableCell>
                       <TableCell className="text-right">{comp.dbCount}</TableCell>
                       <TableCell className={`text-right ${comp.missing > 0 ? 'text-destructive font-semibold' : 'text-green-500'}`}>
@@ -428,21 +261,16 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
                       </TableCell>
                       <TableCell className="text-center">
                         {comp.missing > 0 ? (
-                          excludedFolders.includes(comp.folderName) ? (
-                            <span className="text-xs text-muted-foreground">🔒 Bloccata</span>
-                          ) : (
-                            <Checkbox
-                              checked={selectedFolders.includes(comp.folderName)}
-                              onCheckedChange={() => toggleFolderSelection(comp.folderName)}
-                            />
-                          )
+                          <Checkbox
+                            checked={selectedFolders.includes(comp.folderName)}
+                            onCheckedChange={() => toggleFolderSelection(comp.folderName)}
+                          />
                         ) : (
                           <span className="text-xs text-green-500">✓ Completo</span>
                         )}
                       </TableCell>
                     </TableRow>
-                  );
-                  })}
+                  ))}
                 </TableBody>
               </Table>
             </div>
@@ -457,26 +285,24 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
               </div>
               
               <Button
-                onClick={handlePerfectSync}
-                disabled={selectedFolders.length === 0 || isPerfectSyncing}
+                onClick={() => {
+                  if (onRequestDownload) {
+                    console.log('🔍 [IntegrityCheck] Passing folders to Quick:', selectedFolders);
+                    onRequestDownload(selectedFolders);
+                    toast.success('🚀 Redirect a Quick Download', {
+                      description: `Preparazione download di ${selectedFolders.length} cartelle...`
+                    });
+                  }
+                }}
+                disabled={selectedFolders.length === 0}
                 size="lg"
                 className="gap-2"
               >
-                {isPerfectSyncing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Sincronizzazione...</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-4 w-4" />
-                    <span>Perfect Sync</span>
-                    {selectedFolders.length > 0 && (
-                      <span className="bg-primary-foreground text-primary rounded-full px-2 py-0.5 text-xs font-bold">
-                        {selectedFolders.length}
-                      </span>
-                    )}
-                  </>
+                <span>🚀 Vai a Quick Download</span>
+                {selectedFolders.length > 0 && (
+                  <span className="bg-primary-foreground text-primary rounded-full px-2 py-0.5 text-xs font-bold">
+                    {selectedFolders.length}
+                  </span>
                 )}
               </Button>
             </div>

@@ -35,11 +35,11 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
     console.log('🎡 Inizializzazione EmailCarousel3D...');
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0a);
     sceneRef.current = scene;
 
+    const fov = window.innerWidth < 768 ? 62 : 67; // FOV dinamico come Radio
     const camera = new THREE.PerspectiveCamera(
-      45,
+      fov,
       containerRef.current.clientWidth / containerRef.current.clientHeight,
       0.1,
       1000
@@ -48,7 +48,10 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
     camera.lookAt(0, 0.3, 0);
     cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ 
+      alpha: true, // Trasparenza per sfondo
+      antialias: true 
+    });
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     containerRef.current.appendChild(renderer.domElement);
@@ -80,6 +83,7 @@ const EmailCarousel3D: React.FC<EmailCarousel3DProps> = ({
       camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+      renderer.setPixelRatio(window.devicePixelRatio); // Mantieni HD su resize
     });
 
     resizeObserver.observe(containerRef.current);

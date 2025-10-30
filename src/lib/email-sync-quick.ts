@@ -173,7 +173,21 @@ async function downloadQuickSingleEmail(
         timeout
       );
 
-      console.log(`✅ [downloadQuickSingleEmail] Success - UID ${uid} from "${folderName}"`);
+      // 🔍 DEBUG: Log struttura completa
+      console.log(`✅ [downloadQuickSingleEmail] Success - UID ${uid}:`, {
+        hasData: !!email.data,
+        hasDataData: !!email.data?.data,
+        hasHeader: !!email.data?.header || !!email.data?.data?.header,
+        topLevelKeys: email.data ? Object.keys(email.data) : 'NO DATA',
+        dataKeys: email.data?.data ? Object.keys(email.data.data) : 'N/A',
+        headerKeys: email.data?.header ? Object.keys(email.data.header) : 
+                    email.data?.data?.header ? Object.keys(email.data.data.header) : 'N/A'
+      });
+      
+      console.log(`📦 [downloadQuickSingleEmail] RAW EMAIL STRUCTURE UID ${uid}:`, 
+        JSON.stringify(email.data, null, 2)
+      );
+
       return email;
       
     } catch (error: any) {
@@ -232,6 +246,28 @@ async function insertQuickBatch(
   folderName: string
 ): Promise<{ success: number; failed: number }> {
   if (emails.length === 0) return { success: 0, failed: 0 };
+
+  // 🔍 DEBUG: Log prima email per capire struttura
+  if (emails.length > 0) {
+    const firstEmail = emails[0];
+    console.log(`📧 [insertQuickBatch] First email inspection - UID ${firstEmail.uid}:`, {
+      hasData: !!firstEmail.data,
+      hasDataData: !!firstEmail.data?.data,
+      hasHeader: !!firstEmail.data?.header || !!firstEmail.data?.data?.header,
+      topLevelKeys: firstEmail.data ? Object.keys(firstEmail.data) : 'NO DATA'
+    });
+    
+    console.log(`🔎 [insertQuickBatch] FROM field attempts:`, {
+      'email.data?.data?.header?.from': firstEmail.data?.data?.header?.from,
+      'email.data?.header?.from': firstEmail.data?.header?.from,
+      'email.data?.from': firstEmail.data?.from,
+      'email.from': (firstEmail as any).from
+    });
+    
+    console.log(`📦 [insertQuickBatch] RAW EMAIL FULL:`, 
+      JSON.stringify(firstEmail.data, null, 2)
+    );
+  }
 
   const records = emails.map(({ uid, data: email }) => {
     // ✅ Unwrap: email.data contiene la risposta TMWE API

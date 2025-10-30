@@ -2,7 +2,7 @@
  * Toolbar Email Management - Pulsanti controllo view e sync
  */
 
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/design-system/buttons/IconButton';
 import { RefreshCw, LayoutGrid, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -24,35 +24,35 @@ export function EmailManagementToolbar({
   isLoading,
 }: EmailManagementToolbarProps) {
   return (
-    <div className="fixed top-6 right-6 z-10 flex gap-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-2 rounded-lg border shadow-lg">
-      <Button
-        variant={viewMode === 'grid' ? 'default' : 'outline'}
-        size="sm"
+    <div className="fixed top-2 right-6 z-10 flex gap-1">
+      <IconButton
+        icon={LayoutGrid}
+        tooltip="Vista Griglia"
+        variant={viewMode === 'grid' ? 'default' : 'ghost'}
         onClick={() => setViewMode('grid')}
-      >
-        <LayoutGrid className="h-4 w-4 mr-2" />
-        Griglia
-      </Button>
-      <Button
-        variant={viewMode === 'carousel' ? 'default' : 'outline'}
-        size="sm"
+      />
+      <IconButton
+        icon={Box}
+        tooltip="Carousel 3D"
+        variant={viewMode === 'carousel' ? 'default' : 'ghost'}
         onClick={() => setViewMode('carousel')}
-      >
-        <Box className="h-4 w-4 mr-2" />
-        Carousel 3D
-      </Button>
-      <Button 
-        variant="default" 
-        onClick={onSync} 
+      />
+      <IconButton
+        icon={RefreshCw}
+        tooltip={isSyncing ? 'Sincronizzazione...' : 'Sincronizza Email'}
+        variant="default"
+        onClick={onSync}
         disabled={isSyncing || isLoading}
-      >
-        <RefreshCw className={cn("h-4 w-4 mr-2", isSyncing && "animate-spin")} />
-        {isSyncing ? 'Sincronizzazione...' : 'Sincronizza Email'}
-      </Button>
-      <Button variant="outline" onClick={onRefresh} disabled={isLoading || isSyncing}>
-        <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-        Aggiorna
-      </Button>
+        className={cn(isSyncing && "animate-spin")}
+      />
+      <IconButton
+        icon={RefreshCw}
+        tooltip="Aggiorna"
+        variant="ghost"
+        onClick={onRefresh}
+        disabled={isLoading || isSyncing}
+        className={cn(isLoading && "animate-spin")}
+      />
     </div>
   );
 }

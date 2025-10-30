@@ -33,43 +33,43 @@ export function SenderCard({ sender, isDragging }: FunEmailSenderCardProps) {
         sender.emailCount > 50 && "border-l-orange-500",
         sender.emailCount > 100 && "border-l-red-500"
       )}>
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
             <div {...listeners} {...attributes} className="mt-1 cursor-grab active:cursor-grabbing">
-              <GripVertical className="h-5 w-5 text-muted-foreground hover:text-primary" />
+              <GripVertical className="h-7 w-7 text-muted-foreground hover:text-primary" />
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-base truncate mb-1">
+              <div className="font-semibold text-xl truncate mb-2">
                 {sender.companyName}
               </div>
               
-              <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mb-2">
-                <Mail className="h-3 w-3 flex-shrink-0" />
+              <div className="text-sm text-muted-foreground truncate flex items-center gap-1 mb-3">
+                <Mail className="h-4 w-4 flex-shrink-0" />
                 {sender.email}
               </div>
 
-              <div className="flex gap-2 flex-wrap mb-2">
-                <Badge variant="secondary" className="text-xs font-bold">
+              <div className="flex gap-2 flex-wrap mb-3">
+                <Badge variant="secondary" className="text-sm font-bold">
                   {sender.emailCount} email
                 </Badge>
                 
                 {sender.hasAttachments && (
-                  <Badge variant="outline" className="text-xs">
-                    <Paperclip className="h-3 w-3 mr-1" />
+                  <Badge variant="outline" className="text-sm">
+                    <Paperclip className="h-4 w-4 mr-1" />
                     Allegati
                   </Badge>
                 )}
                 
-                <Badge variant="outline" className="text-xs">
-                  <Calendar className="h-3 w-3 mr-1" />
+                <Badge variant="outline" className="text-sm">
+                  <Calendar className="h-4 w-4 mr-1" />
                   {new Date(sender.lastSeen).toLocaleDateString('it-IT')}
                 </Badge>
               </div>
 
               {sender.topSubjectKeywords.length > 0 && (
-                <div className="text-xs text-muted-foreground flex items-start gap-1">
-                  <TrendingUp className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-muted-foreground flex items-start gap-1">
+                  <TrendingUp className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <span className="truncate">
                     {sender.topSubjectKeywords.slice(0, 3).join(', ')}
                   </span>

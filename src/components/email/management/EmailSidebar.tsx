@@ -34,8 +34,8 @@ export function EmailSidebar({
   onCarouselZoomChange,
 }: EmailSidebarProps) {
   return (
-    <div className="fixed left-6 top-32 w-80 z-20" style={{ height: 'calc(100vh - 180px)' }}>
-      <Card className="h-full flex flex-col overflow-hidden">
+    <div className="fixed left-6 top-20 w-80 z-20" style={{ height: 'calc(100vh - 100px)' }}>
+      <Card className="h-full flex flex-col">
         <div className="p-4 border-b flex-shrink-0">
           <h3 className="font-semibold mb-3 flex items-center justify-between">
             <span>📮 Da Classificare ({filteredSenders.length})</span>
@@ -91,7 +91,7 @@ export function EmailSidebar({
           </Button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {filteredSenders.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-sm">

@@ -24,7 +24,7 @@ export function EmailManagementToolbar({
   isLoading,
 }: EmailManagementToolbarProps) {
   return (
-    <div className="fixed top-2 right-6 z-10 flex gap-1">
+    <div className="fixed top-2 left-[400px] z-10 flex gap-1">
       <IconButton
         icon={LayoutGrid}
         tooltip="Vista Griglia"

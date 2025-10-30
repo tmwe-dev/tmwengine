@@ -3,11 +3,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverlay, closestCenter, CollisionDetection } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { RefreshCw, Plus, Search, Filter, Loader2 } from 'lucide-react';
+import { RefreshCw, Plus, Search, Filter, Loader2, LayoutGrid, Box } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { analyzeSenders } from '@/lib/email-sender-analyzer';
@@ -16,6 +16,28 @@ import { GroupDropZone } from './management/GroupDropZone';
 import type { EmailSenderGroup, SenderAnalysis } from '@/types/email-management';
 import { DEFAULT_GROUPS as PREDEFINED_GROUPS } from '@/types/email-management';
 import { cn } from '@/lib/utils';
+import EmailCarousel3D from './management/EmailCarousel3D';
+
+// Collisione personalizzata 80%
+const carousel80PercentCollision: CollisionDetection = (args) => {
+  const { droppableContainers, collisionRect } = args;
+  if (!collisionRect) return [];
+
+  const collisions = Array.from(droppableContainers).map((container) => {
+    const rect = container.rect.current;
+    if (!rect) return null;
+
+    const overlapX = Math.max(0, Math.min(collisionRect.right, rect.right) - Math.max(collisionRect.left, rect.left));
+    const overlapY = Math.max(0, Math.min(collisionRect.bottom, rect.bottom) - Math.max(collisionRect.top, rect.top));
+    const overlapArea = overlapX * overlapY;
+    const draggableArea = collisionRect.width * collisionRect.height;
+    const overlapPercentage = (overlapArea / draggableArea) * 100;
+
+    return overlapPercentage >= 80 ? { id: container.id, data: { percentage: overlapPercentage } } : null;
+  }).filter(Boolean) as { id: string | number; data: { percentage: number } }[];
+
+  return collisions;
+};
 
 export function EmailManagementTab() {
   const [senders, setSenders] = useState<SenderAnalysis[]>([]);
@@ -26,6 +48,9 @@ export function EmailManagementTab() {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterByAttachments, setFilterByAttachments] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'carousel'>('grid');
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const [assignedSenders, setAssignedSenders] = useState<Map<string, SenderAnalysis[]>>(new Map());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -70,9 +95,30 @@ export function EmailManagementTab() {
       setGroups(groupsData);
       console.log(`📁 Caricati ${groupsData.length} gruppi`);
 
+      // Imposta prima categoria come attiva
+      if (groupsData.length > 0 && !activeCategoryId) {
+        setActiveCategoryId(groupsData[0].id);
+      }
+
       const analysis = await analyzeSenders(profile.tmwe_email);
       const unclassified = analysis.filter(s => !s.isClassified);
       setSenders(unclassified);
+
+      // Carica mittenti assegnati per gruppo via email_sender_rules
+      const { data: rulesData } = await supabase
+        .from('email_sender_rules')
+        .select('sender_email, group_id')
+        .eq('user_id', user.id);
+
+      const sendersMap = new Map<string, SenderAnalysis[]>();
+      for (const group of groupsData) {
+        const groupRules = rulesData?.filter(r => r.group_id === group.id) || [];
+        const groupSenders = analysis.filter(s => 
+          groupRules.some(r => r.sender_email === s.email)
+        );
+        sendersMap.set(group.id, groupSenders);
+      }
+      setAssignedSenders(sendersMap);
       
       console.log(`👥 Mittenti non classificati: ${unclassified.length} / ${analysis.length}`);
 
@@ -180,7 +226,14 @@ export function EmailManagementTab() {
     const sender = senders.find(s => s.email === active.id);
     if (!sender) return;
 
-    const targetGroup = groups.find(g => g.id === over.id);
+    // Determina gruppo target: da drop zone o da carousel
+    let targetGroup: EmailSenderGroup | undefined;
+    if (over.id === 'email-carousel-canvas' && viewMode === 'carousel' && activeCategoryId) {
+      targetGroup = groups.find(g => g.id === activeCategoryId);
+    } else {
+      targetGroup = groups.find(g => g.id === over.id);
+    }
+    
     if (!targetGroup) return;
 
     console.log(`📧 Classificazione: ${sender.email} → ${targetGroup.nome_gruppo}`);
@@ -205,6 +258,14 @@ export function EmailManagementTab() {
       });
 
       setSenders(prev => prev.filter(s => s.email !== sender.email));
+
+      // Aggiorna assignedSenders per carousel
+      setAssignedSenders(prev => {
+        const newMap = new Map(prev);
+        const existing = newMap.get(targetGroup.id) || [];
+        newMap.set(targetGroup.id, [...existing, sender]);
+        return newMap;
+      });
 
     } catch (error: any) {
       console.error('❌ Errore classificazione:', error);
@@ -248,6 +309,22 @@ export function EmailManagementTab() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+          >
+            <LayoutGrid className="h-4 w-4 mr-2" />
+            Griglia
+          </Button>
+          <Button
+            variant={viewMode === 'carousel' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('carousel')}
+          >
+            <Box className="h-4 w-4 mr-2" />
+            Carousel 3D
+          </Button>
           <Button 
             variant="default" 
             onClick={handleSync} 
@@ -264,12 +341,13 @@ export function EmailManagementTab() {
       </div>
 
       <DndContext
-        collisionDetection={closestCenter}
+        collisionDetection={viewMode === 'carousel' ? carousel80PercentCollision : closestCenter}
         onDragEnd={handleDragEnd}
         onDragStart={(e) => setActiveDragId(e.active.id as string)}
         onDragCancel={() => setActiveDragId(null)}
       >
-        <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden">
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden">
           <div className="col-span-4 flex flex-col overflow-hidden">
             <Card className="h-full flex flex-col overflow-hidden">
               <div className="p-4 border-b flex-shrink-0">
@@ -334,6 +412,70 @@ export function EmailManagementTab() {
             </div>
           </div>
         </div>
+        ) : (
+          <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden">
+            <div className="col-span-4 flex flex-col overflow-hidden">
+              <Card className="h-full flex flex-col overflow-hidden">
+                <div className="p-4 border-b flex-shrink-0">
+                  <h3 className="font-semibold mb-3 flex items-center justify-between">
+                    <span>📮 Da Classificare ({filteredSenders.length})</span>
+                    {senders.length !== filteredSenders.length && (
+                      <span className="text-xs text-muted-foreground">
+                        {senders.length} totali
+                      </span>
+                    )}
+                  </h3>
+                  
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Cerca mittente..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  
+                  <Button
+                    variant={filterByAttachments ? "default" : "outline"}
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={() => setFilterByAttachments(!filterByAttachments)}
+                  >
+                    <Filter className="h-3 w-3 mr-2" />
+                    Solo con allegati
+                  </Button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  {filteredSenders.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <p className="text-sm">
+                        {senders.length === 0 
+                          ? '🎉 Tutti i mittenti sono stati classificati!'
+                          : '🔍 Nessun mittente trovato con questi filtri'
+                        }
+                      </p>
+                    </div>
+                  ) : (
+                    filteredSenders.map(sender => (
+                      <SenderCard key={sender.email} sender={sender} />
+                    ))
+                  )}
+                </div>
+              </Card>
+            </div>
+
+            <div className="col-span-8 overflow-hidden">
+              <EmailCarousel3D
+                categories={groups}
+                assignedSenders={assignedSenders}
+                activeCategoryId={activeCategoryId}
+                onRotate={setActiveCategoryId}
+              />
+            </div>
+          </div>
+        )}
 
         <DragOverlay dropAnimation={null}>
           {activeDragId ? (

@@ -466,7 +466,7 @@ export function EmailManagementTab() {
               </Card>
             </div>
 
-            <div className="col-span-8 overflow-visible relative" style={{ minHeight: '800px', height: '100%' }}>
+            <div className="col-span-8 overflow-visible relative" style={{ minHeight: '600px', height: '100%' }}>
               <EmailCarousel3D
                 categories={groups}
                 assignedSenders={assignedSenders}

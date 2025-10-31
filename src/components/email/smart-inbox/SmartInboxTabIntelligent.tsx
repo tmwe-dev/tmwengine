@@ -180,7 +180,7 @@ export const SmartInboxTabIntelligent = () => {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-7xl mx-auto w-full gap-6">
+    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] max-w-7xl mx-auto w-full gap-4">
       <SmartInboxHeaderIntelligent
         categories={categoryStats}
         selectedCategory={selectedCategory}
@@ -194,9 +194,9 @@ export const SmartInboxTabIntelligent = () => {
       />
       
       {/* Split Layout: Lista + Dettaglio */}
-      <div className="flex-1 flex gap-6 overflow-hidden">
-        {/* Colonna sinistra: Lista (1/3) */}
-        <div className="w-1/3 flex flex-col">
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden">
+        {/* Colonna sinistra: Lista (mobile full, desktop 1/3) */}
+        <div className="w-full lg:w-1/3 flex flex-col min-h-[300px] lg:min-h-0">
           <SmartEmailListIntelligent
             emails={classifiedEmails}
             onEmailClick={setSelectedEmail}
@@ -206,8 +206,8 @@ export const SmartInboxTabIntelligent = () => {
           />
         </div>
         
-        {/* Colonna destra: Dettaglio (2/3) */}
-        <div className="flex-1 flex flex-col">
+        {/* Colonna destra: Dettaglio (mobile conditional, desktop always visible) */}
+        <div className={`w-full lg:flex-1 flex flex-col ${selectedEmail ? 'block' : 'hidden lg:flex'}`}>
           {selectedEmail ? (
             <SmartEmailDetailPanel
               classifiedEmail={selectedEmail}

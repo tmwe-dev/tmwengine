@@ -46,9 +46,9 @@ export const SmartInboxHeaderIntelligent = ({
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 space-y-4 shrink-0">
       {/* Header principale */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h2 className="text-2xl font-bold flex items-center gap-3">
-          <span className="text-4xl">🧠</span>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="text-xl lg:text-2xl font-bold flex items-center gap-2">
+          <span className="text-2xl lg:text-4xl">🧠</span>
           <span>Inbox Intelligente</span>
         </h2>
         
@@ -58,10 +58,10 @@ export const SmartInboxHeaderIntelligent = ({
           variant="outline"
           size="lg"
           disabled={isClassifying}
-          className="rounded-2xl bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 hover:scale-105 transition-all flex flex-col items-center gap-2 h-auto py-4 px-6"
+          className="rounded-2xl bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 hover:scale-105 transition-all flex flex-col items-center gap-1.5 h-auto py-3 px-4 lg:py-4 lg:px-6"
         >
-          <Sparkles className="h-8 w-8" />
-          <span className="font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica Nuove'}</span>
+          <Sparkles className="h-6 w-6 lg:h-8 lg:w-8" />
+          <span className="text-xs lg:text-sm font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica Nuove'}</span>
         </Button>
       </div>
       
@@ -114,20 +114,20 @@ export const SmartInboxHeaderIntelligent = ({
       )}
       
       {/* Badge Categorie - icone grandi */}
-      <ScrollArea className="w-full max-h-32">
-        <div className="flex gap-3 pb-2">
+      <div className="w-full overflow-x-auto">
+        <div className="flex gap-3 pb-2 min-w-max">
           {/* Badge "Tutte" */}
           <button
             onClick={() => onCategoryChange('all')}
-            className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all hover:scale-105 ${
+            className={`flex-shrink-0 flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all hover:scale-105 ${
               selectedCategory === 'all' 
                 ? 'bg-primary/20 backdrop-blur-md border-2 border-primary' 
                 : 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20'
             }`}
           >
-            <span className="text-3xl">📬</span>
-            <span className="text-sm font-semibold">Tutte</span>
-            <Badge className="rounded-full bg-white/20 backdrop-blur-md px-2 py-0.5">
+            <span className="text-2xl">📬</span>
+            <span className="text-xs font-semibold">Tutte</span>
+            <Badge className="rounded-full bg-white/20 backdrop-blur-md px-1.5 py-0.5 text-xs">
               {totalCount}
             </Badge>
           </button>
@@ -135,15 +135,15 @@ export const SmartInboxHeaderIntelligent = ({
           {/* Badge "Da Verificare" */}
           <button
             onClick={() => onCategoryChange('da-verificare')}
-            className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all hover:scale-105 ${
+            className={`flex-shrink-0 flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all hover:scale-105 ${
               selectedCategory === 'da-verificare' 
                 ? 'bg-orange-500/20 backdrop-blur-md border-2 border-orange-500' 
                 : 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20'
             }`}
           >
-            <span className="text-3xl">🔍</span>
-            <span className="text-sm font-semibold">Da Verificare</span>
-            <Badge className="rounded-full bg-orange-500/30 backdrop-blur-md px-2 py-0.5">
+            <span className="text-2xl">🔍</span>
+            <span className="text-xs font-semibold">Da Verificare</span>
+            <Badge className="rounded-full bg-orange-500/30 backdrop-blur-md px-1.5 py-0.5 text-xs">
               {unverifiedCount}
             </Badge>
           </button>
@@ -153,7 +153,7 @@ export const SmartInboxHeaderIntelligent = ({
             <button
               key={cat.id}
               onClick={() => onCategoryChange(cat.id)}
-              className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all hover:scale-105 ${
+              className={`flex-shrink-0 flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all hover:scale-105 ${
                 selectedCategory === cat.id
                   ? 'backdrop-blur-md border-2'
                   : 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20'
@@ -163,12 +163,12 @@ export const SmartInboxHeaderIntelligent = ({
                 borderColor: cat.color
               } : undefined}
             >
-              <span className="text-3xl">{cat.icon}</span>
-              <span className="text-sm font-semibold text-center leading-tight min-w-[80px]">
+              <span className="text-2xl">{cat.icon}</span>
+              <span className="text-xs font-semibold text-center leading-tight min-w-[70px]">
                 {cat.name}
               </span>
               <Badge 
-                className="rounded-full backdrop-blur-md px-2 py-0.5"
+                className="rounded-full backdrop-blur-md px-1.5 py-0.5 text-xs"
                 style={{ backgroundColor: `${cat.color}50` }}
               >
                 {cat.count}
@@ -176,7 +176,7 @@ export const SmartInboxHeaderIntelligent = ({
             </button>
           ))}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 };

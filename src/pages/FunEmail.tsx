@@ -108,7 +108,7 @@ const FunEmail = () => {
       gradient={true}
       title="Fun Email"
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant={currentView === 'list' ? 'default' : 'outline'}
               size="sm"
@@ -250,7 +250,7 @@ const FunEmail = () => {
               <TmweBackendDebugger />
             </div>
           ) : currentView === 'inbox' ? (
-            <GradientBackground variant="primary" intensity="medium" className="min-h-screen p-6">
+            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
               <SmartInboxTabIntelligent />
             </GradientBackground>
           ) : null}

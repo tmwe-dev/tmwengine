@@ -44,6 +44,29 @@ export function PageLayout({
 }: PageLayoutProps) {
   const content = (
     <div className={cn('min-h-screen w-full', className)}>
+      {(title || description || actions || headerUtilities) && (
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="space-y-1">
+              {title && (
+                typeof title === 'string' ? (
+                  <h1 className="text-3xl font-bold">{title}</h1>
+                ) : (
+                  title
+                )
+              )}
+              {description && <p className="text-muted-foreground">{description}</p>}
+            </div>
+            {headerUtilities && (
+              <div className="flex items-center gap-2">
+                {headerUtilities}
+              </div>
+            )}
+          </div>
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
+        </div>
+      )}
+      
       <div className={cn('container py-6', contentClassName)}>
         {children}
       </div>

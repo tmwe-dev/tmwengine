@@ -57,6 +57,7 @@ export function EmailManagementTab() {
   const [assignedSenders, setAssignedSenders] = useState<Map<string, SenderAnalysis[]>>(new Map());
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('count-desc');
+  const [lastUpdatedGroupId, setLastUpdatedGroupId] = useState<string | null>(null);
   
   // Persist carousel zoom in localStorage
   const [carouselZoom, setCarouselZoom] = useState(() => {
@@ -414,6 +415,9 @@ export function EmailManagementTab() {
         return newMap;
       });
 
+      // 4. 🆕 Evidenzia ultimo gruppo aggiornato
+      setLastUpdatedGroupId(targetGroup.id);
+
       toast({
         title: '✅ Classificato',
         description: `${sender.companyName} → ${targetGroup.nome_gruppo}`,
@@ -443,13 +447,35 @@ export function EmailManagementTab() {
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+    const { active, over, collisions } = event;
     setActiveDragId(null);
 
-    if (!over) return;
+    if (!over) {
+      console.log('🚫 Drop fuori da zona valida - card torna in lista');
+      return;
+    }
 
     const sender = senders.find(s => s.email === active.id);
     if (!sender) return;
+
+    // 🆕 VALIDAZIONE SOVRAPPOSIZIONE 70-80%
+    const collision = collisions?.find(c => c.id === over.id);
+    
+    if (collision?.data?.percentage !== undefined) {
+      const overlapPercentage = collision.data.percentage;
+      
+      if (overlapPercentage < 70) {
+        console.log(`🚫 Sovrapposizione insufficiente: ${overlapPercentage.toFixed(1)}% < 70%`);
+        toast({
+          title: '⚠️ Sovrapposizione insufficiente',
+          description: `Devi coprire almeno il 70% della card gruppo (hai coperto ${overlapPercentage.toFixed(0)}%)`,
+          variant: 'default',
+        });
+        return;
+      }
+      
+      console.log(`✅ Sovrapposizione valida: ${overlapPercentage.toFixed(1)}%`);
+    }
 
     // Caso 1: Drop su carousel
     if (over.id === 'email-carousel-canvas') {
@@ -546,6 +572,7 @@ export function EmailManagementTab() {
           <EmailGridContainer
             groups={groups}
             onRefresh={loadData}
+            lastUpdatedGroupId={lastUpdatedGroupId}
           />
         ) : (
           <EmailCarouselContainer

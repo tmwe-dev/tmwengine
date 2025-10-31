@@ -17,9 +17,10 @@ interface FunEmailGroupDropZoneProps {
   group: EmailSenderGroup;
   onRefresh: () => void;
   onEditGroup?: (group: EmailSenderGroup) => void;
+  isLastUpdated?: boolean;
 }
 
-export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDropZoneProps) {
+export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated }: FunEmailGroupDropZoneProps) {
   const [rules, setRules] = useState<(EmailSenderRule & { sender_name?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -116,10 +117,11 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
       <Card 
         className={cn(
           "h-full transition-all border-2 flex flex-col overflow-hidden",
-          isOver && "border-primary bg-primary/5 shadow-2xl scale-105 ring-4 ring-primary/20"
+          isOver && "border-primary bg-primary/5 shadow-2xl scale-105 ring-4 ring-primary/20",
+          isLastUpdated && "shadow-[0_4px_12px_rgba(0,0,0,0.15),_-2px_0_8px_rgba(0,0,0,0.1)] border-primary/70"
         )}
         style={{ 
-          borderColor: isOver ? group.colore : undefined,
+          borderColor: isOver ? group.colore : (isLastUpdated ? group.colore : undefined),
           backgroundColor: isOver ? `${group.colore}15` : undefined,
         }}
       >
@@ -213,9 +215,9 @@ export function GroupDropZone({ group, onRefresh, onEditGroup }: FunEmailGroupDr
           )}
 
           {!isOver && rules.length > 0 && (
-            <div className="text-center">
+            <div className="text-left w-full px-2">
               <div className="font-bold text-xl mb-1">{rules[0].sender_name}</div>
-              <div className="text-sm text-muted-foreground">{rules[0].sender_email}</div>
+              <div className="text-sm text-muted-foreground truncate">{rules[0].sender_email}</div>
             </div>
           )}
         </CardContent>

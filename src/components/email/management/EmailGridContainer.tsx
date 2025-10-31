@@ -8,11 +8,13 @@ import type { EmailSenderGroup } from '@/types/email-management';
 interface EmailGridContainerProps {
   groups: EmailSenderGroup[];
   onRefresh: () => void;
+  lastUpdatedGroupId?: string | null;
 }
 
 export function EmailGridContainer({
   groups,
   onRefresh,
+  lastUpdatedGroupId,
 }: EmailGridContainerProps) {
   return (
     <div className="flex-1 overflow-y-auto">
@@ -22,6 +24,7 @@ export function EmailGridContainer({
             key={group.id}
             group={group}
             onRefresh={onRefresh}
+            isLastUpdated={lastUpdatedGroupId === group.id}
           />
         ))}
       </div>

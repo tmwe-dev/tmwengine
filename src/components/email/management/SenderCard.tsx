@@ -20,17 +20,10 @@ export function SenderCard({ sender, isDragging, onDoubleClick }: FunEmailSender
     data: sender,
   });
 
-  // Se sto draggando e NON sono nel DragOverlay, nascondo la card originale
-  const shouldHide = dragActive && !isDragging;
-
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    position: 'fixed' as const,
-    zIndex: 1000,
-    pointerEvents: 'none' as const,
-    opacity: shouldHide ? 0 : 1,
-  } : {
-    opacity: shouldHide ? 0 : 1,
+  // ✅ Nasconde immediatamente la card originale durante il drag
+  const style = {
+    opacity: dragActive && !isDragging ? 0 : 1,
+    transition: 'opacity 0.15s ease-out'
   };
 
   return (

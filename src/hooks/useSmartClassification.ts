@@ -100,21 +100,17 @@ export const useSmartClassification = () => {
             
             // Fetch logo in background (non bloccante)
             const domain = extractDomain(fromEmail);
-            if (!domain) {
-              console.warn('⚠️ Invalid domain for:', fromEmail);
-            } else {
-              supabase.functions.invoke('fetch-company-logo', { 
-                body: { domain } 
-              }).then(({ data: logoData }) => {
-                if (logoData?.logo_url) {
-                  supabase
-                    .from('email_ai_classifications')
-                    .update({ sender_logo_url: logoData.logo_url })
-                    .eq('email_message_id', emailId)
-                    .then();
-                }
-              });
-            }
+            supabase.functions.invoke('fetch-company-logo', { 
+              body: { domain } 
+            }).then(({ data: logoData }) => {
+              if (logoData?.logo_url) {
+                supabase
+                  .from('email_ai_classifications')
+                  .update({ sender_logo_url: logoData.logo_url })
+                  .eq('email_message_id', emailId)
+                  .then();
+              }
+            });
           } else {
             errorCount++;
           }

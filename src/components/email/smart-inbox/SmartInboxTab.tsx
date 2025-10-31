@@ -7,7 +7,6 @@ import { SmartEmailDetail } from './SmartEmailDetail';
 import { useSmartClassification } from '@/hooks/useSmartClassification';
 import { CATEGORIES } from '@/lib/smart-inbox-utils';
 import { ClassifiedEmail, CategoryStats } from '@/types/smart-inbox';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export const SmartInboxTab = () => {
@@ -33,67 +32,55 @@ export const SmartInboxTab = () => {
   });
 
   // Fetch classified emails
-  const { data: classifiedEmails, isLoading, refetch, error } = useQuery({
+  const { data: classifiedEmails, isLoading, refetch } = useQuery({
     queryKey: ['smart-inbox-emails', selectedCategory, userData?.userEmail],
     enabled: !!userData?.userEmail,
     queryFn: async () => {
-      try {
-        let query = supabase
-          .from('email_ai_classifications')
-          .select(`
-            *,
-            email:email_messages!inner(
-              id,
-              subject,
-              from,
-              to,
-              body_text,
-              body_html,
-              data_ricezione,
-              read,
-              has_attachments
-            )
-          `)
-          .eq('user_email', userData!.userEmail)
-          .order('created_at', { ascending: false })
-          .limit(50);
-        
-        if (selectedCategory !== 'all') {
-          query = query.eq('category', selectedCategory);
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error('❌ Query error:', error);
-          throw error;
-        }
-        
-        // Filter results with NULL or malformed email
-        return (data || [])
-          .filter(item => item.email && (Array.isArray(item.email) ? item.email.length > 0 : true))
-          .map(item => ({
-            classification: {
-              id: item.id,
-              email_message_id: item.email_message_id,
-              user_email: item.user_email,
-              category: item.category,
-              confidence: item.confidence,
-              ai_summary: item.ai_summary,
-              keywords: item.keywords,
-              sender_email: item.sender_email,
-              sender_domain: item.sender_domain,
-              sender_logo_url: item.sender_logo_url,
-              created_at: item.created_at,
-              updated_at: item.updated_at
-            },
-            email: Array.isArray(item.email) ? item.email[0] : item.email
-          })) as ClassifiedEmail[];
-      } catch (err) {
-        console.error('❌ Smart Inbox query failed:', err);
-        toast.error('Errore caricamento email classificate');
-        return [];
+      let query = supabase
+        .from('email_ai_classifications')
+        .select(`
+          *,
+          email:email_messages!inner(
+            id,
+            subject,
+            from,
+            to,
+            body_text,
+            body_html,
+            data_ricezione,
+            read,
+            has_attachments
+          )
+        `)
+        .eq('user_email', userData!.userEmail)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (selectedCategory !== 'all') {
+        query = query.eq('category', selectedCategory);
       }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      return (data || []).map(item => ({
+        classification: {
+          id: item.id,
+          email_message_id: item.email_message_id,
+          user_email: item.user_email,
+          category: item.category,
+          confidence: item.confidence,
+          ai_summary: item.ai_summary,
+          keywords: item.keywords,
+          sender_email: item.sender_email,
+          sender_domain: item.sender_domain,
+          sender_logo_url: item.sender_logo_url,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        },
+        email: Array.isArray(item.email) ? item.email[0] : item.email
+      })) as ClassifiedEmail[];
     }
   });
 
@@ -160,15 +147,6 @@ export const SmartInboxTab = () => {
         isClassifying={isClassifying}
         classificationProgress={progress.total > 0 ? progress : undefined}
       />
-      
-      {error && (
-        <div className="p-4 text-center">
-          <p className="text-destructive">⚠️ Errore caricamento dati</p>
-          <Button onClick={() => refetch()} size="sm" variant="outline" className="mt-2">
-            Riprova
-          </Button>
-        </div>
-      )}
       
       <SmartEmailList
         emails={classifiedEmails || []}

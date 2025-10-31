@@ -16,7 +16,6 @@ import { useSmartClassificationIntelligent } from '@/hooks/useSmartClassificatio
 import { useEmailAIAutomation } from '@/hooks/useEmailAIAutomation';
 import { useEmailAIProcessor } from '@/hooks/useEmailAIProcessor';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
-import { generateEmailUid } from '@/lib/email-uid-utils';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
@@ -155,11 +154,7 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
         .eq('user_email', userEmail);
 
       const classifiedUids = new Set(existingClassifications?.map(c => c.email_uid) || []);
-      
-      const unclassifiedEmails = serverEmails.filter(e => {
-        const uid = generateEmailUid(e);
-        return uid && !classifiedUids.has(uid);
-      });
+      const unclassifiedEmails = serverEmails.filter(e => !classifiedUids.has(e.uid));
       
       console.log('🔍 [DEBUG] Email già classificate:', classifiedUids.size);
       console.log('🆕 [DEBUG] Email non classificate:', unclassifiedEmails.length);

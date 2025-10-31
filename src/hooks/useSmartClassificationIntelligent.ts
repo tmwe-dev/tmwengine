@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { extractDomain } from '@/lib/smart-inbox-utils';
-import { generateEmailUid } from '@/lib/email-uid-utils';
 import { EmailMetadata } from '@/types/smart-inbox';
 
 interface ClassificationProgress {
@@ -31,8 +30,10 @@ export const useSmartClassificationIntelligent = () => {
         const email = emails[i];
         
         try {
-          // Genera UID univoco usando funzione utility condivisa
-          const emailUid = generateEmailUid(email);
+          // Genera UID univoco usando elasticsearch_id o email_id come fallback
+          const emailUid = email.uid || 
+            email.elasticsearch_id || 
+            (email.email_id ? `email_${email.email_id}` : null);
 
           if (!emailUid) {
             console.error('Cannot generate UID for email:', email);
@@ -49,7 +50,6 @@ export const useSmartClassificationIntelligent = () => {
             .maybeSingle();
           
           if (existing && !forceCategory) {
-            console.log(`⏭️ Email già classificata, skip: ${emailUid}`);
             setProgress(p => ({ 
               ...p, 
               current: p.current + 1,

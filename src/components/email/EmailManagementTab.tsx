@@ -370,6 +370,78 @@ export function EmailManagementTab() {
     }
   };
 
+  // 🆕 FUNZIONE UNIFICATA PER CLASSIFICAZIONE (drag + doppio clic)
+  const handleClassifySender = async (sender: SenderAnalysis, targetGroupId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const targetGroup = groups.find(g => g.id === targetGroupId);
+    if (!targetGroup) {
+      console.error(`❌ Gruppo target non trovato: ${targetGroupId}`);
+      return;
+    }
+
+    try {
+      console.log(`🎯 Classificazione mittente: ${sender.email} → ${targetGroup.nome_gruppo}`);
+
+      // 1. Inserisci regola in email_sender_rules
+      const { error: ruleError } = await supabase
+        .from('email_sender_rules')
+        .insert({
+          user_id: user.id,
+          sender_email: sender.email,
+          group_id: targetGroup.id,
+        });
+
+      if (ruleError) {
+        console.error('❌ Errore inserimento regola:', ruleError);
+        toast({
+          title: '❌ Errore',
+          description: 'Impossibile classificare il mittente',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // 2. Aggiorna stato locale - RIMUOVI da senders
+      setSenders(prev => prev.filter(s => s.email !== sender.email));
+
+      // 3. Aggiorna assignedSenders Map
+      setAssignedSenders(prev => {
+        const newMap = new Map(prev);
+        const existing = newMap.get(targetGroup.id) || [];
+        newMap.set(targetGroup.id, [...existing, sender]);
+        return newMap;
+      });
+
+      toast({
+        title: '✅ Classificato',
+        description: `${sender.companyName} → ${targetGroup.nome_gruppo}`,
+      });
+
+    } catch (error: any) {
+      console.error('❌ Errore classificazione:', error);
+      toast({
+        title: '❌ Errore',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // 🆕 HANDLER DOPPIO CLIC
+  const handleDoubleClickSender = (sender: SenderAnalysis) => {
+    if (!activeCategoryId) {
+      toast({
+        title: '⚠️ Nessuna categoria attiva',
+        description: 'Seleziona una categoria nel carousel prima',
+        variant: 'destructive',
+      });
+      return;
+    }
+    handleClassifySender(sender, activeCategoryId);
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveDragId(null);
@@ -379,54 +451,20 @@ export function EmailManagementTab() {
     const sender = senders.find(s => s.email === active.id);
     if (!sender) return;
 
-    // Determina gruppo target: da drop zone o da carousel
-    let targetGroup: EmailSenderGroup | undefined;
-    if (over.id === 'email-carousel-canvas' && viewMode === 'carousel' && activeCategoryId) {
-      targetGroup = groups.find(g => g.id === activeCategoryId);
-    } else {
-      targetGroup = groups.find(g => g.id === over.id);
+    // Caso 1: Drop su carousel
+    if (over.id === 'email-carousel-canvas') {
+      if (!activeCategoryId) {
+        console.warn('⚠️ Nessuna categoria attiva nel carousel');
+        return;
+      }
+      handleClassifySender(sender, activeCategoryId);
+      return;
     }
     
-    if (!targetGroup) return;
-
-    console.log(`📧 Classificazione: ${sender.email} → ${targetGroup.nome_gruppo}`);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non autenticato');
-
-      const { error } = await supabase
-        .from('email_sender_rules')
-        .insert({
-          sender_email: sender.email,
-          group_id: targetGroup.id,
-          user_id: user.id,
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: '✅ Mittente classificato',
-        description: `${sender.companyName} → ${targetGroup.nome_gruppo}`,
-      });
-
-      setSenders(prev => prev.filter(s => s.email !== sender.email));
-
-      // Aggiorna assignedSenders per carousel
-      setAssignedSenders(prev => {
-        const newMap = new Map(prev);
-        const existing = newMap.get(targetGroup.id) || [];
-        newMap.set(targetGroup.id, [...existing, sender]);
-        return newMap;
-      });
-
-    } catch (error: any) {
-      console.error('❌ Errore classificazione:', error);
-      toast({
-        title: '❌ Errore',
-        description: 'Impossibile classificare il mittente',
-        variant: 'destructive',
-      });
+    // Caso 2: Drop su gruppo sidebar
+    const targetGroup = groups.find(g => g.id === over.id);
+    if (targetGroup) {
+      handleClassifySender(sender, targetGroup.id);
     }
   };
 
@@ -500,6 +538,7 @@ export function EmailManagementTab() {
           onRefresh={loadData}
           isSyncing={isSyncing}
           isLoading={isLoading}
+          onSenderDoubleClick={handleDoubleClickSender}
         />
         
         {/* Area principale condizionale */}

@@ -11,9 +11,10 @@ import type { SenderAnalysis } from '@/types/email-management';
 interface FunEmailSenderCardProps {
   sender: SenderAnalysis;
   isDragging?: boolean;
+  onDoubleClick?: (sender: SenderAnalysis) => void;
 }
 
-export function SenderCard({ sender, isDragging }: FunEmailSenderCardProps) {
+export function SenderCard({ sender, isDragging, onDoubleClick }: FunEmailSenderCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging: dragActive } = useDraggable({
     id: sender.email,
     data: sender,
@@ -34,11 +35,15 @@ export function SenderCard({ sender, isDragging }: FunEmailSenderCardProps) {
 
   return (
     <div ref={setNodeRef} style={style} className="snap-start">
-      <Card className={cn(
-        "cursor-grab active:cursor-grabbing border-l-4",
-        sender.emailCount > 50 && "border-l-orange-500",
-        sender.emailCount > 100 && "border-l-red-500"
-      )}>
+      <Card 
+        className={cn(
+          "cursor-grab active:cursor-grabbing border-l-4 transition-transform",
+          "hover:scale-[1.02]",
+          sender.emailCount > 50 && "border-l-orange-500",
+          sender.emailCount > 100 && "border-l-red-500"
+        )}
+        onDoubleClick={() => onDoubleClick?.(sender)}
+      >
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             {/* SINISTRA: Grip + Company + Email */}

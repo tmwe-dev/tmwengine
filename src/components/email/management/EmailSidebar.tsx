@@ -40,6 +40,7 @@ interface EmailSidebarProps {
   onRefresh: () => void;
   isSyncing: boolean;
   isLoading: boolean;
+  onSenderDoubleClick?: (sender: SenderAnalysis) => void;
 }
 
 export function EmailSidebar({
@@ -63,6 +64,7 @@ export function EmailSidebar({
   onRefresh,
   isSyncing,
   isLoading,
+  onSenderDoubleClick,
 }: EmailSidebarProps) {
   return (
     <div className="flex-shrink-0 w-[416px] z-20">
@@ -192,7 +194,11 @@ export function EmailSidebar({
             </div>
           ) : (
             filteredSenders.map(sender => (
-              <SenderCard key={sender.email} sender={sender} />
+              <SenderCard 
+                key={sender.email} 
+                sender={sender}
+                onDoubleClick={onSenderDoubleClick}
+              />
             ))
           )}
         </div>

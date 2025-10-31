@@ -293,3 +293,6 @@ verify_jwt = true
 [functions.fetch-company-logo]
 verify_jwt = true
 
+[functions.email-ai-manual-assistant]
+verify_jwt = true
+

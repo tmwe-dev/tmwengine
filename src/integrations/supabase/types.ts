@@ -2346,6 +2346,77 @@ export type Database = {
           },
         ]
       }
+      email_ai_execution_log: {
+        Row: {
+          ai_config_used: Json | null
+          ai_reasoning: string | null
+          ai_response: string | null
+          confidence: number | null
+          context_injected: Json | null
+          created_at: string
+          email_body_preview: string | null
+          email_subject: string | null
+          email_uid: string
+          error_message: string | null
+          executed_at: string | null
+          id: string
+          prompt_id: string | null
+          prompt_used: string
+          proposed_actions: Json | null
+          sender_email: string
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          ai_config_used?: Json | null
+          ai_reasoning?: string | null
+          ai_response?: string | null
+          confidence?: number | null
+          context_injected?: Json | null
+          created_at?: string
+          email_body_preview?: string | null
+          email_subject?: string | null
+          email_uid: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          prompt_id?: string | null
+          prompt_used: string
+          proposed_actions?: Json | null
+          sender_email: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          ai_config_used?: Json | null
+          ai_reasoning?: string | null
+          ai_response?: string | null
+          confidence?: number | null
+          context_injected?: Json | null
+          created_at?: string
+          email_body_preview?: string | null
+          email_subject?: string | null
+          email_uid?: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          prompt_id?: string | null
+          prompt_used?: string
+          proposed_actions?: Json | null
+          sender_email?: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_ai_execution_log_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "email_sender_ai_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_attachments: {
         Row: {
           created_at: string
@@ -2701,6 +2772,86 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      email_sender_ai_prompts: {
+        Row: {
+          ai_config_id: string | null
+          ai_prompt: string
+          base_action: string | null
+          base_action_params: Json | null
+          created_at: string
+          execution_count: number | null
+          failure_count: number | null
+          id: string
+          is_active: boolean | null
+          last_executed_at: string | null
+          priority: number | null
+          prompt_description: string | null
+          prompt_name: string | null
+          requires_confirmation: boolean
+          sender_email: string
+          success_count: number | null
+          updated_at: string
+          use_company_data: boolean | null
+          use_contact_aliases: boolean | null
+          use_email_templates: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          ai_config_id?: string | null
+          ai_prompt: string
+          base_action?: string | null
+          base_action_params?: Json | null
+          created_at?: string
+          execution_count?: number | null
+          failure_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          priority?: number | null
+          prompt_description?: string | null
+          prompt_name?: string | null
+          requires_confirmation?: boolean
+          sender_email: string
+          success_count?: number | null
+          updated_at?: string
+          use_company_data?: boolean | null
+          use_contact_aliases?: boolean | null
+          use_email_templates?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          ai_config_id?: string | null
+          ai_prompt?: string
+          base_action?: string | null
+          base_action_params?: Json | null
+          created_at?: string
+          execution_count?: number | null
+          failure_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          priority?: number | null
+          prompt_description?: string | null
+          prompt_name?: string | null
+          requires_confirmation?: boolean
+          sender_email?: string
+          success_count?: number | null
+          updated_at?: string
+          use_company_data?: boolean | null
+          use_contact_aliases?: boolean | null
+          use_email_templates?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sender_ai_prompts_ai_config_id_fkey"
+            columns: ["ai_config_id"]
+            isOneToOne: false
+            referencedRelation: "config_ai"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_sender_groups: {
         Row: {

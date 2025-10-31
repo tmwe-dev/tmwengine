@@ -68,7 +68,7 @@ export function EmailSidebar({
     <div className="fixed left-6 z-20" style={{ top: '126px', width: '416px', height: 'calc(100vh - 126px)' }}>
       <div className="h-full flex flex-col">
         {/* Header semplificato */}
-        <div className="p-4 mb-4 flex-shrink-0">
+        <div className="pt-2 px-4 pb-4 flex-shrink-0">
           <h3 className="font-semibold mb-3 flex items-center justify-between">
             <span>📮 Da Classificare ({filteredSenders.length})</span>
             {senders.length !== filteredSenders.length && (

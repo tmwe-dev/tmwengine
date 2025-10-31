@@ -27,7 +27,7 @@ export function EmailCarouselContainer({
       className="fixed z-5 overflow-visible" 
       style={{ 
         left: '400px',
-        top: '60px',
+        top: '126px',
         right: '24px',
         bottom: '24px',
         minHeight: '600px'

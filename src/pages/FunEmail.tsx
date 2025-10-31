@@ -20,6 +20,7 @@ import { EmailIntegrityChecker } from '@/components/email/EmailIntegrityChecker'
 import { TmweBackendDebugger } from '@/components/email/TmweBackendDebugger';
 import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartInboxTabIntelligent';
 import { GradientBackground } from '@/components/design-system';
+import { cn } from '@/lib/utils';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();
@@ -160,7 +161,10 @@ const FunEmail = () => {
         )}
 
         {/* Content - condizionale in base alla view */}
-        <div className="w-full pl-16">
+        <div className={cn(
+          "w-full",
+          !['management', 'quick-download', 'integrity', 'debugger'].includes(currentView) && "pl-16"
+        )}>
           {currentView === 'list' ? (
             <EmailList
               emails={emails}

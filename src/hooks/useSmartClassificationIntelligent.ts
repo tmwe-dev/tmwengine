@@ -72,6 +72,24 @@ export const useSmartClassificationIntelligent = () => {
             ...p, 
             currentEmail: email.subject || 'Email senza oggetto'
           }));
+
+          console.log('🔵 Starting classification:', {
+            emailUid,
+            subject: email.subject,
+            fromEmail,
+            hasBodyText: !!(email.body_preview || email.body_text)
+          });
+
+          // Get current session
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (!session) {
+            console.error('❌ No active session');
+            errorCount++;
+            continue;
+          }
+
+          console.log('✅ Session valid, calling edge function...');
           
           // Chiama Edge Function per classificazione intelligente
           const { data: classifyData, error: classifyError } = await supabase.functions.invoke(
@@ -88,9 +106,16 @@ export const useSmartClassificationIntelligent = () => {
               }
             }
           );
+
+          console.log('📨 Edge function response:', { 
+            hasData: !!classifyData, 
+            hasError: !!classifyError,
+            error: classifyError,
+            data: classifyData 
+          });
           
           if (classifyError) {
-            console.error('Classification error:', classifyError);
+            console.error('❌ Classification error:', classifyError);
             errorCount++;
             continue;
           }

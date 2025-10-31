@@ -211,14 +211,18 @@ const FunEmail = () => {
       <div className="relative w-full min-h-screen">
         {/* Hamburger Button - nascosto in modalità debug/admin e management */}
         {!['quick-download', 'integrity', 'debugger', 'management'].includes(currentView) && (
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="fixed top-4 left-4 z-30 bg-background border shadow-md hover:bg-accent"
+            className={cn(
+              "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
+              "bg-background/90 hover:bg-accent/90 border-r border-y border-border p-3 rounded-r-lg shadow-lg",
+              "transition-all duration-300",
+              sidebarOpen && "translate-x-80"
+            )}
+            aria-label="Toggle Menu"
           >
             <Menu className="h-5 w-5" />
-          </Button>
+          </button>
         )}
 
         {/* Content - condizionale in base alla view */}

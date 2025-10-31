@@ -53,21 +53,20 @@ export const SmartEmailListIntelligent = ({
   };
 
   return (
-    <div 
-      className="flex-1 flex flex-col bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden"
-      style={{ touchAction: 'pan-y' }}
-    >
+    <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden touch-pan-y">
       <ScrollArea className="h-full" hideScrollbar>
-        <div className="p-3 space-y-3 w-full">
-          {emails.map((classifiedEmail) => (
-            <SmartEmailCardIntelligent
-              key={classifiedEmail.classification.id}
-              classifiedEmail={classifiedEmail}
-              onClick={() => onEmailClick(classifiedEmail)}
-              isSelected={selectedEmails.has(classifiedEmail.email.uid)}
-              onToggleSelect={() => handleToggleSelection(classifiedEmail.email.uid)}
-            />
-          ))}
+        <div className="flex flex-col items-center p-3 w-full">
+          <div className="w-full max-w-5xl space-y-3">
+            {emails.map((classifiedEmail) => (
+              <SmartEmailCardIntelligent
+                key={classifiedEmail.classification.id}
+                classifiedEmail={classifiedEmail}
+                onClick={() => onEmailClick(classifiedEmail)}
+                isSelected={selectedEmails.has(classifiedEmail.email.uid)}
+                onToggleSelect={() => handleToggleSelection(classifiedEmail.email.uid)}
+              />
+            ))}
+          </div>
         </div>
       </ScrollArea>
     </div>

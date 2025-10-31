@@ -301,8 +301,6 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
         onArchive={handleArchiveSelected}
         onDelete={handleDeleteSelected}
         onMove={handleMoveSelected}
-        onEmailsRefresh={refetch}
-        userEmail={userEmail}
       />
       
       {/* 🆕 Layout 3 Colonne: Sidebar Categorie | Lista Email | Dettaglio */}

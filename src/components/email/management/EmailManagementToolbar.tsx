@@ -28,7 +28,6 @@ export function EmailManagementToolbar({
       {/* Titolo estratto da EmailManagementHeader */}
       <div className="flex items-center gap-2 mr-4">
         <span className="text-lg font-bold">📬</span>
-        <span className="text-sm font-semibold">Email Management</span>
       </div>
       
       {/* Separatore visivo */}

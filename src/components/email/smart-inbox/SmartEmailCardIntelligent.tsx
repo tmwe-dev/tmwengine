@@ -55,7 +55,7 @@ export const SmartEmailCardIntelligent = ({
       className={`p-0 overflow-hidden hover:scale-[1.01] hover:shadow-2xl hover:shadow-primary/30 hover:border-white/30 transition-all duration-300 ${isSelected ? 'ring-2 ring-primary' : ''}`}
     >
       {/* Header - Avatar + Nome + Badge Verifica */}
-      <div className="bg-gradient-to-r from-white/20 to-white/10 backdrop-blur-md p-3 sm:p-4 border-b border-white/10">
+      <div className="bg-gradient-to-r from-white/20 to-white/10 backdrop-blur-md p-3 border-b border-white/10">
         <div className="flex items-center gap-3">
           {/* Checkbox per selezione multipla */}
           <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -110,7 +110,7 @@ export const SmartEmailCardIntelligent = ({
       </div>
 
       {/* Body - Summary e Categoria */}
-      <div className="p-3 sm:p-4 bg-white/5 backdrop-blur-sm space-y-3" onClick={onClick}>
+      <div className="p-3 bg-white/5 backdrop-blur-sm space-y-3" onClick={onClick}>
         {/* Categoria Badge */}
         <Badge 
           className="rounded-full px-3 py-1.5 flex items-center gap-2 backdrop-blur-md border-2"
@@ -140,7 +140,7 @@ export const SmartEmailCardIntelligent = ({
 
       {/* Footer - Keywords */}
       {classification.keywords && classification.keywords.length > 0 && (
-        <div className="p-2 sm:p-3 bg-black/20 backdrop-blur-sm border-t border-white/10" onClick={onClick}>
+        <div className="p-2.5 bg-black/20 backdrop-blur-sm border-t border-white/10" onClick={onClick}>
           <div className="flex flex-wrap gap-2">
             {classification.keywords.slice(0, 3).map((keyword, idx) => (
               <Badge 

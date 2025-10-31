@@ -19,7 +19,7 @@ export function CategoriesVerticalSidebar({
   const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
 
   return (
-    <div className="w-[15%] max-w-[200px] min-w-[160px] flex-shrink-0 space-y-2 h-full overflow-y-auto">
+    <div className="w-[20%] min-w-[200px] flex-shrink-0 space-y-2 h-full overflow-y-auto">
       {/* Tutte */}
       <GlassCard
         blur="md"
@@ -88,7 +88,7 @@ export function CategoriesVerticalSidebar({
             boxShadow: `0 8px 32px ${cat.color}30`
           } : undefined}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-4">
             <span className="text-xl">{cat.icon}</span>
             <div className="flex-1 text-left">
               <div className="font-semibold text-xs leading-tight text-white">{cat.name}</div>

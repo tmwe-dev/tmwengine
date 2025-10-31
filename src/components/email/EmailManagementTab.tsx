@@ -20,6 +20,7 @@ import { EmailCarouselContainer } from './management/EmailCarouselContainer';
 import { EmailGridContainer } from './management/EmailGridContainer';
 import { CreateCategoryDialog } from './management/CreateCategoryDialog';
 import { SenderSortControls, SortOption } from './management/SenderSortControls';
+import { FloatingZoomControl } from './management/FloatingZoomControl';
 
 // Collisione personalizzata 80%
 const carousel80PercentCollision: CollisionDetection = (args) => {
@@ -526,6 +527,14 @@ export function EmailManagementTab() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Floating Zoom Control - Visibile solo in modalità carousel */}
+      {viewMode === 'carousel' && (
+        <FloatingZoomControl 
+          zoom={carouselZoom} 
+          onZoomChange={handleZoomChange} 
+        />
+      )}
 
       {/* Dialog creazione categoria */}
       <CreateCategoryDialog

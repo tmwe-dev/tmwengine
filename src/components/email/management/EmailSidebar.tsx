@@ -78,30 +78,6 @@ export function EmailSidebar({
             )}
           </h3>
           
-          {/* Carousel Zoom Control - Verticale a sinistra quando carousel è attivo */}
-          {viewMode === 'carousel' && (
-            <div className="flex items-start gap-3 mb-2 pb-2 border-l-2 border-blue-400/20 pl-3">
-              <div className="flex flex-col items-center gap-2 min-w-[40px]">
-                <span className="text-xs text-muted-foreground">200%</span>
-                <Slider
-                  value={[carouselZoom]}
-                  onValueChange={([val]) => onCarouselZoomChange?.(val)}
-                  min={0.5}
-                  max={2.0}
-                  step={0.01}
-                  orientation="vertical"
-                  className="h-[120px]"
-                />
-                <span className="text-xs text-muted-foreground">50%</span>
-              </div>
-              <div className="flex flex-col justify-center flex-1">
-                <label className="text-sm font-medium mb-1">Zoom Carousel</label>
-                <span className="text-xs text-muted-foreground">
-                  {Math.round(carouselZoom * 100)}%
-                </span>
-              </div>
-            </div>
-          )}
           
           <div className="relative mb-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

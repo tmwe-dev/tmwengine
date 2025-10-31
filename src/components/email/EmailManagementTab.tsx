@@ -471,7 +471,7 @@ export function EmailManagementTab() {
   }
 
   return (
-    <div className="flex h-full w-full gap-4 max-w-[1920px] mx-auto overflow-visible">
+    <div className="flex h-full w-full gap-4 max-w-[1920px] mx-auto">
       <DndContext
         collisionDetection={viewMode === 'carousel' ? carousel80PercentCollision : closestCenter}
         onDragEnd={handleDragEnd}

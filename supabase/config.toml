@@ -287,6 +287,9 @@ verify_jwt = true
 [functions.classify-email-content]
 verify_jwt = true
 
+[functions.classify-email-content-intelligent]
+verify_jwt = true
+
 [functions.fetch-company-logo]
 verify_jwt = true
 

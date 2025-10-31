@@ -9,12 +9,14 @@ interface EmailGridContainerProps {
   groups: EmailSenderGroup[];
   onRefresh: () => void;
   lastUpdatedGroupId?: string | null;
+  onRegisterGroupCallback?: (groupId: string, callback: (senderEmail: string) => void) => () => void;
 }
 
 export function EmailGridContainer({
   groups,
   onRefresh,
   lastUpdatedGroupId,
+  onRegisterGroupCallback,
 }: EmailGridContainerProps) {
   return (
     <div className="flex-1 overflow-y-auto">
@@ -25,6 +27,7 @@ export function EmailGridContainer({
             group={group}
             onRefresh={onRefresh}
             isLastUpdated={lastUpdatedGroupId === group.id}
+            onRegisterGroupCallback={onRegisterGroupCallback}
           />
         ))}
       </div>

@@ -18,9 +18,10 @@ interface FunEmailGroupDropZoneProps {
   onRefresh: () => void;
   onEditGroup?: (group: EmailSenderGroup) => void;
   isLastUpdated?: boolean;
+  onRegisterGroupCallback?: (groupId: string, callback: (senderEmail: string) => void) => () => void;
 }
 
-export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated }: FunEmailGroupDropZoneProps) {
+export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated, onRegisterGroupCallback }: FunEmailGroupDropZoneProps) {
   const [rules, setRules] = useState<(EmailSenderRule & { sender_name?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +32,16 @@ export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated }: 
   useEffect(() => {
     loadRules();
 
-    // Real-time subscription per INSERT su email_sender_rules
+    // 🆕 Registra callback per aggiornamento ottimistico
+    let unregister: (() => void) | undefined;
+    if (onRegisterGroupCallback) {
+      unregister = onRegisterGroupCallback(group.id, (senderEmail: string) => {
+        console.log(`🚀 Aggiornamento ottimistico card ${group.nome_gruppo}: ${senderEmail}`);
+        loadRules();
+      });
+    }
+
+    // Real-time subscription per INSERT su email_sender_rules (fallback)
     const channel = supabase
       .channel(`group-rules-${group.id}`)
       .on(
@@ -43,6 +53,7 @@ export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated }: 
           filter: `group_id=eq.${group.id}`
         },
         () => {
+          console.log(`📡 Real-time INSERT per gruppo ${group.nome_gruppo}`);
           loadRules();
         }
       )
@@ -61,9 +72,10 @@ export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated }: 
       .subscribe();
 
     return () => {
+      unregister?.();
       supabase.removeChannel(channel);
     };
-  }, [group.id]);
+  }, [group.id, onRegisterGroupCallback]);
 
   const loadRules = async () => {
     setLoading(true);

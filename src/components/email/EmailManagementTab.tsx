@@ -2,7 +2,7 @@
  * Tab Email Management - Sistema completamente isolato FunEmail
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, closestCenter, CollisionDetection } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -59,6 +59,10 @@ export function EmailManagementTab() {
   const [sortOption, setSortOption] = useState<SortOption>('count-desc');
   const [lastUpdatedGroupId, setLastUpdatedGroupId] = useState<string | null>(null);
   
+  // 🆕 Map callbacks per aggiornamento ottimistico card gruppi
+  const groupUpdateCallbacksRef = useRef<Map<string, (senderEmail: string) => void>>(new Map());
+  const groupUpdateCallbacks = groupUpdateCallbacksRef.current;
+  
   // Persist carousel zoom in localStorage
   const [carouselZoom, setCarouselZoom] = useState(() => {
     const saved = localStorage.getItem('email-carousel-zoom');
@@ -74,6 +78,12 @@ export function EmailManagementTab() {
   const handleZoomChange = (zoom: number) => {
     setCarouselZoom(zoom);
     localStorage.setItem('email-carousel-zoom', zoom.toString());
+  };
+
+  // 🆕 Registrazione callback per aggiornamento ottimistico gruppi
+  const registerGroupCallback = (groupId: string, callback: (senderEmail: string) => void) => {
+    groupUpdateCallbacks.set(groupId, callback);
+    return () => groupUpdateCallbacks.delete(groupId);
   };
 
   // Navigazione manuale carousel (clone Radio Chat)
@@ -418,8 +428,8 @@ export function EmailManagementTab() {
       // 4. 🆕 Evidenzia ultimo gruppo aggiornato
       setLastUpdatedGroupId(targetGroup.id);
 
-      // 5. 🆕 FORZA REFRESH IMMEDIATO dei gruppi (oltre al real-time)
-      loadData();
+      // 5. 🆕 Trigger aggiornamento ottimistico per la card specifica (NO reload pagina)
+      groupUpdateCallbacks.get(targetGroup.id)?.(sender.email);
 
       toast({
         title: '✅ Classificato',
@@ -570,6 +580,7 @@ export function EmailManagementTab() {
             groups={groups}
             onRefresh={loadData}
             lastUpdatedGroupId={lastUpdatedGroupId}
+            onRegisterGroupCallback={registerGroupCallback}
           />
         ) : (
           <EmailCarouselContainer

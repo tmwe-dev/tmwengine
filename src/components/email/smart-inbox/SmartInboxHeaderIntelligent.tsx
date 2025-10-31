@@ -174,15 +174,31 @@ export const SmartInboxHeaderIntelligent = ({
           {/* Badge "Da Verificare" */}
           <button
             onClick={() => onCategoryChange('da-verificare')}
-            className={`flex-shrink-0 flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all hover:scale-105 ${
+            className={`relative flex-shrink-0 flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all hover:scale-105 overflow-hidden ${
               selectedCategory === 'da-verificare' 
-                ? 'bg-orange-500/20 backdrop-blur-md border-2 border-orange-500' 
-                : 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20'
+                ? 'border-2 border-orange-500' 
+                : 'border border-white/20 hover:bg-white/20'
             }`}
+            style={{
+              background: selectedCategory === 'da-verificare' 
+                ? 'linear-gradient(135deg, rgba(255,154,0,0.3) 0%, rgba(255,154,0,0.1) 50%, rgba(255,154,0,0.25) 100%)'
+                : 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.12) 100%)',
+              backdropFilter: 'blur(16px) saturate(180%)',
+              boxShadow: selectedCategory === 'da-verificare'
+                ? '0 8px 32px rgba(255,154,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1)'
+                : '0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.1)',
+            }}
           >
-            <span className="text-2xl">🔍</span>
-            <span className="text-xs font-semibold">Da Verificare</span>
-            <Badge className="rounded-full bg-orange-500/30 backdrop-blur-md px-1.5 py-0.5 text-xs">
+            {/* Glossy reflection overlay */}
+            <div 
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 70%, rgba(0,0,0,0.1) 100%)',
+              }}
+            />
+            <span className="text-2xl relative z-10">🔍</span>
+            <span className="text-xs font-semibold relative z-10">Da Verificare</span>
+            <Badge className="rounded-full bg-orange-500/30 backdrop-blur-md px-1.5 py-0.5 text-xs relative z-10">
               {unverifiedCount}
             </Badge>
           </button>

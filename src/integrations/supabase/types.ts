@@ -2291,7 +2291,10 @@ export type Database = {
           confidence: number
           created_at: string | null
           email_message_id: string | null
+          email_uid: string | null
+          folder_name: string | null
           id: string
+          is_verified: boolean | null
           keywords: string[] | null
           sender_domain: string
           sender_email: string
@@ -2305,7 +2308,10 @@ export type Database = {
           confidence: number
           created_at?: string | null
           email_message_id?: string | null
+          email_uid?: string | null
+          folder_name?: string | null
           id?: string
+          is_verified?: boolean | null
           keywords?: string[] | null
           sender_domain: string
           sender_email: string
@@ -2319,7 +2325,10 @@ export type Database = {
           confidence?: number
           created_at?: string | null
           email_message_id?: string | null
+          email_uid?: string | null
+          folder_name?: string | null
           id?: string
+          is_verified?: boolean | null
           keywords?: string[] | null
           sender_domain?: string
           sender_email?: string

@@ -48,12 +48,12 @@ export const SmartEmailCard = ({ classifiedEmail, onClick }: SmartEmailCardProps
           </p>
           
           <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-            {classification.ai_summary || email.body_text?.substring(0, 120)}
+            {classification.ai_summary || email.body_preview?.substring(0, 120)}
           </p>
           
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground">
-              {formatDate(email.data_ricezione)}
+              {formatDate(email.date)}
             </span>
             {classification.keywords?.slice(0, 3).map(kw => (
               <Badge key={kw} variant="outline" className="text-xs">

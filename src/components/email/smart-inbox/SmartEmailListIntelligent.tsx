@@ -1,0 +1,70 @@
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { SmartEmailCardIntelligent } from './SmartEmailCardIntelligent';
+import { ClassifiedEmail } from '@/types/smart-inbox';
+
+interface SmartEmailListIntelligentProps {
+  emails: ClassifiedEmail[];
+  onEmailClick: (email: ClassifiedEmail) => void;
+  isLoading?: boolean;
+  selectedEmails: Set<string>;
+  onSelectionChange: (selected: Set<string>) => void;
+}
+
+export const SmartEmailListIntelligent = ({ 
+  emails, 
+  onEmailClick, 
+  isLoading,
+  selectedEmails,
+  onSelectionChange 
+}: SmartEmailListIntelligentProps) => {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center space-y-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Caricamento email...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (emails.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center space-y-3">
+          <div className="text-6xl">📭</div>
+          <h3 className="text-lg font-semibold">Nessuna email classificata</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            Clicca su "Classifica Nuove" per iniziare a categorizzare le tue email automaticamente con l'AI.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleToggleSelection = (uid: string) => {
+    const newSelection = new Set(selectedEmails);
+    if (newSelection.has(uid)) {
+      newSelection.delete(uid);
+    } else {
+      newSelection.add(uid);
+    }
+    onSelectionChange(newSelection);
+  };
+
+  return (
+    <ScrollArea className="flex-1">
+      <div className="p-4 space-y-3">
+        {emails.map((classifiedEmail) => (
+          <SmartEmailCardIntelligent
+            key={classifiedEmail.classification.id}
+            classifiedEmail={classifiedEmail}
+            onClick={() => onEmailClick(classifiedEmail)}
+            isSelected={selectedEmails.has(classifiedEmail.email.uid)}
+            onToggleSelect={() => handleToggleSelection(classifiedEmail.email.uid)}
+          />
+        ))}
+      </div>
+    </ScrollArea>
+  );
+};

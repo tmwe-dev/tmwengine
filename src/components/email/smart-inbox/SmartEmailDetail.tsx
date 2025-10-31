@@ -75,21 +75,14 @@ export const SmartEmailDetail = ({ classifiedEmail, open, onClose }: SmartEmailD
           
           <div>
             <label className="text-sm font-medium">Data:</label>
-            <p className="text-sm mt-1">{formatDate(email.data_ricezione)}</p>
+            <p className="text-sm mt-1">{formatDate(email.date)}</p>
           </div>
           
           <Separator />
           
           <div>
-            <label className="text-sm font-medium mb-2 block">Corpo Email:</label>
-            {email.body_html ? (
-              <div 
-                className="prose prose-sm max-w-none mt-2 text-sm"
-                dangerouslySetInnerHTML={{ __html: email.body_html }}
-              />
-            ) : (
-              <p className="text-sm whitespace-pre-wrap">{email.body_text}</p>
-            )}
+            <label className="text-sm font-medium mb-2 block">Anteprima:</label>
+            <p className="text-sm whitespace-pre-wrap">{email.body_preview || 'Nessun contenuto'}</p>
           </div>
         </div>
       </SheetContent>

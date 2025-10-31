@@ -1,0 +1,128 @@
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ClassifiedEmail } from '@/types/smart-inbox';
+import { extractCompanyName, extractInitials, getCategoryColor, getCategoryIcon, formatDate } from '@/lib/smart-inbox-utils';
+import { Paperclip, CheckCircle2, AlertCircle } from 'lucide-react';
+
+interface SmartEmailCardIntelligentProps {
+  classifiedEmail: ClassifiedEmail;
+  onClick: () => void;
+  isSelected: boolean;
+  onToggleSelect: () => void;
+}
+
+export const SmartEmailCardIntelligent = ({ 
+  classifiedEmail, 
+  onClick,
+  isSelected,
+  onToggleSelect 
+}: SmartEmailCardIntelligentProps) => {
+  const { classification, email } = classifiedEmail;
+  const categoryColor = getCategoryColor(classification.category);
+  const categoryIcon = getCategoryIcon(classification.category);
+  
+  const companyName = extractCompanyName(classification.sender_email);
+  const initials = extractInitials(classification.sender_email);
+
+  const isVerified = classification.is_verified && classification.confidence >= 80;
+  
+  return (
+    <Card 
+      className={`p-4 hover:shadow-md transition-shadow cursor-pointer ${isSelected ? 'ring-2 ring-primary' : ''}`}
+    >
+      <div className="flex gap-3">
+        {/* Checkbox per selezione multipla */}
+        <div className="flex-shrink-0 pt-1" onClick={(e) => e.stopPropagation()}>
+          <Checkbox 
+            checked={isSelected} 
+            onCheckedChange={onToggleSelect}
+          />
+        </div>
+
+        {/* Avatar mittente */}
+        <div className="flex-shrink-0" onClick={onClick}>
+          <Avatar className="h-10 w-10">
+            {classification.sender_logo_url ? (
+              <AvatarImage src={classification.sender_logo_url} alt={companyName} />
+            ) : null}
+            <AvatarFallback className="text-xs font-semibold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+
+        {/* Contenuto email */}
+        <div className="flex-1 min-w-0" onClick={onClick}>
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-semibold text-sm truncate">{companyName}</h3>
+                {isVerified ? (
+                  <Badge variant="outline" className="text-xs">
+                    <CheckCircle2 className="h-3 w-3 mr-1 text-green-600" />
+                    Verificata
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs">
+                    <AlertCircle className="h-3 w-3 mr-1 text-orange-500" />
+                    Da Verificare
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground truncate">
+                {classification.sender_email}
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {email.has_attachments && (
+                <Paperclip className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {formatDate(email.date)}
+              </span>
+            </div>
+          </div>
+
+          {/* Categoria */}
+          <Badge 
+            className="mb-2"
+            style={{ 
+              backgroundColor: categoryColor, 
+              color: 'white',
+              borderColor: categoryColor
+            }}
+          >
+            <span className="mr-1">{categoryIcon}</span>
+            {classification.category}
+            {classification.confidence < 100 && (
+              <span className="ml-1 text-xs opacity-80">
+                ({Math.round(classification.confidence)}%)
+              </span>
+            )}
+          </Badge>
+
+          {/* Riassunto AI */}
+          {classification.ai_summary && (
+            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+              {classification.ai_summary}
+            </p>
+          )}
+
+          {/* Keywords */}
+          {classification.keywords && classification.keywords.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {classification.keywords.slice(0, 3).map((keyword, idx) => (
+                <Badge key={idx} variant="secondary" className="text-xs">
+                  {keyword}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+};

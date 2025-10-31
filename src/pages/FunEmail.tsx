@@ -305,7 +305,7 @@ const FunEmail = () => {
               <TmweBackendDebugger />
             </div>
           ) : currentView === 'inbox' ? (
-            <div className="h-[calc(100vh-8rem)] p-2 relative z-0">
+            <div className="h-[calc(100vh-5rem)] pb-5 px-1 relative z-0">
               <SmartInboxTabIntelligent onOpenAISidebar={openAISidebarForSender} />
             </div>
           ) : null}

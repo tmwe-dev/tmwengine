@@ -209,12 +209,12 @@ const FunEmail = () => {
       actions={null}
     >
       <div className="relative w-full min-h-screen">
-        {/* Hamburger Button - nascosto in modalità debug/admin e management */}
-        {!['quick-download', 'integrity', 'debugger', 'management'].includes(currentView) && (
+        {/* Hamburger Button - visibile solo nelle view principali */}
+        {['list', 'fun', 'management', 'inbox'].includes(currentView) && (
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className={cn(
-              "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
+              "fixed left-0 top-1/2 -translate-y-1/2 z-[100]",
               "bg-background/90 hover:bg-accent/90 border-r border-y border-border p-3 rounded-r-lg shadow-lg",
               "transition-all duration-300",
               sidebarOpen && "translate-x-80"
@@ -227,8 +227,8 @@ const FunEmail = () => {
 
         {/* Content - condizionale in base alla view */}
         <div className={cn(
-          "w-full",
-          !['management', 'quick-download', 'integrity', 'debugger'].includes(currentView) && "pl-16"
+          "w-full min-h-screen relative",
+          ['list', 'fun', 'management', 'inbox'].includes(currentView) && "pl-16"
         )}>
           {currentView === 'list' ? (
             <EmailList
@@ -304,7 +304,7 @@ const FunEmail = () => {
               <TmweBackendDebugger />
             </div>
           ) : currentView === 'inbox' ? (
-            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
+            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4 relative z-0">
               <SmartInboxTabIntelligent onOpenAISidebar={openAISidebarForSender} />
             </GradientBackground>
           ) : null}

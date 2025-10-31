@@ -447,9 +447,10 @@ export function EmailManagementTab() {
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over, collisions } = event;
+    const { active, over } = event;
     setActiveDragId(null);
 
+    // ❌ CASO 1: Nessun target valido (drop fuori da tutto)
     if (!over) {
       console.log('🚫 Drop fuori da zona valida - card torna in lista');
       return;
@@ -462,39 +463,13 @@ export function EmailManagementTab() {
     const isCarouselDrop = over.id === 'email-carousel-canvas';
     const isGroupDrop = groups.some(g => g.id === over.id);
 
-    // ❌ Se rilasci nell'elenco mittenti o altra zona non valida → blocca
+    // ❌ CASO 2: Drop su zona non valida (lista mittenti, ecc.)
     if (!isCarouselDrop && !isGroupDrop) {
       console.log('🚫 Drop su zona non valida (probabilmente lista mittenti) - card torna in lista');
       return;
     }
 
-    // 🆕 VALIDAZIONE OVERLAP: Cerca collision SOLO per over.id (dove hai rilasciato)
-    const collision = collisions?.find(c => c.id === over.id);
-    
-    // Se c'è collision detection con percentuale, valida l'overlap
-    if (collision?.data?.percentage !== undefined) {
-      const overlapPercentage = collision.data.percentage;
-      
-      if (overlapPercentage < 70) {
-        console.log(`🚫 Sovrapposizione insufficiente al rilascio: ${overlapPercentage.toFixed(1)}% < 70%`);
-        toast({
-          title: '⚠️ Sovrapposizione insufficiente',
-          description: `Devi coprire almeno il 70% della card gruppo al momento del rilascio (hai coperto ${overlapPercentage.toFixed(0)}%)`,
-          variant: 'default',
-        });
-        return;
-      }
-      
-      console.log(`✅ Sovrapposizione valida al rilascio: ${overlapPercentage.toFixed(1)}%`);
-    } else {
-      // Se non c'è collision detection e non è il carousel, blocca
-      if (!isCarouselDrop) {
-        console.log('🚫 Nessuna collision detection valida - card torna in lista');
-        return;
-      }
-    }
-
-    // ✅ CASO 1: Drop su carousel (con categoria attiva)
+    // ✅ CASO 3: Drop su carousel (con categoria attiva)
     if (isCarouselDrop) {
       if (!activeCategoryId) {
         console.warn('⚠️ Nessuna categoria attiva nel carousel');
@@ -505,7 +480,7 @@ export function EmailManagementTab() {
       return;
     }
     
-    // ✅ CASO 2: Drop su gruppo sidebar (già validato overlap)
+    // ✅ CASO 4: Drop su gruppo sidebar (gruppo illuminato = over.id valido)
     const targetGroup = groups.find(g => g.id === over.id);
     if (targetGroup) {
       console.log(`✅ Classifico su gruppo sidebar - gruppo: ${targetGroup.nome_gruppo}`);

@@ -21,6 +21,7 @@ interface PageLayoutProps {
   title?: string;
   description?: string;
   actions?: React.ReactNode;
+  headerUtilities?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   headerClassName?: string;
@@ -33,6 +34,7 @@ export function PageLayout({
   title,
   description,
   actions,
+  headerUtilities,
   children,
   className,
   headerClassName,
@@ -42,11 +44,17 @@ export function PageLayout({
 }: PageLayoutProps) {
   const content = (
     <div className={cn('min-h-screen w-full', className)}>
-      {(title || description || actions) && (
+      {(title || description || actions || headerUtilities) && (
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
-            {description && (
-              <p className="text-muted-foreground">{description}</p>
+          <div className="flex items-center gap-3">
+            <div className="space-y-1">
+              {title && <h1 className="text-3xl font-bold">{title}</h1>}
+              {description && <p className="text-muted-foreground">{description}</p>}
+            </div>
+            {headerUtilities && (
+              <div className="flex items-center gap-2">
+                {headerUtilities}
+              </div>
             )}
           </div>
           {actions && <div className="flex items-center gap-2">{actions}</div>}

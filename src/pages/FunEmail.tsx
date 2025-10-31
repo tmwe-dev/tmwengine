@@ -6,7 +6,8 @@ import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { X, Menu, Brain } from 'lucide-react';
+import { X, Menu, Brain, Settings, Zap, SearchCheck, Bug } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
@@ -25,6 +26,7 @@ const FunEmail = () => {
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick' | 'integrity' | 'debug' | 'inbox'>('list');
+  const [debugMenuOpen, setDebugMenuOpen] = useState(false);
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
@@ -103,11 +105,69 @@ const FunEmail = () => {
     enabled: !!selectedEmailId,
   });
 
+  // Menu Debug/Admin separato
+  const DebugUtilitiesMenu = () => (
+    <Popover open={debugMenuOpen} onOpenChange={setDebugMenuOpen}>
+      <PopoverTrigger asChild>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="h-8 w-8"
+          title="Strumenti Debug/Admin"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-56 p-2">
+        <div className="space-y-1">
+          <Button
+            variant={currentView === 'quick' ? 'default' : 'ghost'}
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => {
+              setCurrentView('quick');
+              setDebugMenuOpen(false);
+            }}
+          >
+            <Zap className="mr-2 h-4 w-4" />
+            Quick Download
+          </Button>
+          <Button
+            variant={currentView === 'integrity' ? 'default' : 'ghost'}
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => {
+              setCurrentView('integrity');
+              setDebugMenuOpen(false);
+            }}
+          >
+            <SearchCheck className="mr-2 h-4 w-4" />
+            Verifica Integrità
+          </Button>
+          <Button
+            variant={currentView === 'debug' ? 'default' : 'ghost'}
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => {
+              setCurrentView('debug');
+              setDebugMenuOpen(false);
+            }}
+          >
+            <Bug className="mr-2 h-4 w-4" />
+            Backend Debugger
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+
   return (
     <PageLayout 
       gradient={true}
       title="Fun Email"
-        actions={
+      headerUtilities={<DebugUtilitiesMenu />}
+      actions={
+        !['quick', 'integrity', 'debug'].includes(currentView) ? (
           <div className="flex flex-wrap gap-2">
             <Button
               variant={currentView === 'list' ? 'default' : 'outline'}
@@ -131,27 +191,6 @@ const FunEmail = () => {
               Management
             </Button>
             <Button
-              variant={currentView === 'quick' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setCurrentView('quick')}
-            >
-              ⚡ Quick
-            </Button>
-            <Button
-              variant={currentView === 'integrity' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setCurrentView('integrity')}
-            >
-              🔍 Verifica
-            </Button>
-            <Button
-              variant={currentView === 'debug' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setCurrentView('debug')}
-            >
-              🐛 Debug
-            </Button>
-            <Button
               variant={currentView === 'inbox' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setCurrentView('inbox')}
@@ -161,11 +200,12 @@ const FunEmail = () => {
               Inbox AI
             </Button>
           </div>
-        }
+        ) : null
+      }
     >
       <div className="relative w-full min-h-screen">
-        {/* Hamburger Button - nascosto in vista management */}
-        {currentView !== 'management' && (
+        {/* Hamburger Button - nascosto in modalità debug/admin e management */}
+        {!['quick', 'integrity', 'debug', 'management'].includes(currentView) && (
           <Button
             variant="ghost"
             size="icon"

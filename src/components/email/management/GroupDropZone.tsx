@@ -11,6 +11,7 @@ import { Settings, Trash2, AlertCircle, ZoomIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import type { EmailSenderGroup, EmailSenderRule } from '@/types/email-management';
 
 interface FunEmailGroupDropZoneProps {
@@ -24,6 +25,7 @@ interface FunEmailGroupDropZoneProps {
 export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated, onRegisterGroupCallback }: FunEmailGroupDropZoneProps) {
   const [rules, setRules] = useState<(EmailSenderRule & { sender_name?: string })[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const { setNodeRef, isOver } = useDroppable({
     id: group.id,
@@ -101,19 +103,36 @@ export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated, on
     }
   };
 
-  const handleRemoveRule = async (ruleId: string) => {
+  const handleRemoveRule = async (ruleId: string, senderEmail: string, senderName: string) => {
     try {
+      console.log(`🗑️ Eliminazione associazione: ${senderEmail} da gruppo ${group.nome_gruppo}`);
+      
       const { error } = await supabase
         .from('email_sender_rules')
         .delete()
         .eq('id', ruleId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Errore eliminazione regola:', error);
+        throw error;
+      }
+      
+      console.log('✅ Associazione eliminata con successo');
+      
+      toast({
+        title: '✅ Associazione rimossa',
+        description: `${senderName} rimosso da ${group.nome_gruppo}`,
+      });
       
       // Aggiornamento automatico via subscription real-time
       // Non chiamiamo onRefresh() per non chiudere il dialog
-    } catch (error) {
-      console.error('Error removing rule:', error);
+    } catch (error: any) {
+      console.error('❌ Errore rimozione associazione:', error);
+      toast({
+        title: '❌ Errore',
+        description: error.message || 'Impossibile rimuovere l\'associazione',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -192,7 +211,7 @@ export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated, on
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleRemoveRule(rule.id)}
+                            onClick={() => handleRemoveRule(rule.id, rule.sender_email, rule.sender_name || rule.sender_email)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>

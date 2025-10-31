@@ -590,6 +590,10 @@ const EmailDashboard = () => {
         onOpenDirectDownload={() => {
           toast.info('Usa la pagina Fun Email per scaricare email');
         }}
+        onOpenSmartInbox={() => {
+          console.log('🧠 Opening Smart Inbox!');
+          setSmartInboxOpen(true);
+        }}
         downloadProgressComponent={
           <EmailDownloadProgress
             totalEmails={globalEmailCount || 0}

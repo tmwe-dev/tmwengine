@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { SmartInboxTab } from './SmartInboxTab';
+import { SmartInboxTabIntelligent } from './SmartInboxTabIntelligent';
 
 interface SmartInboxDialogProps {
   open: boolean;
@@ -14,7 +14,7 @@ export const SmartInboxDialog = ({ open, onOpenChange }: SmartInboxDialogProps) 
           <DialogTitle>✨ Inbox Intelligente</DialogTitle>
         </DialogHeader>
         {/* ✅ LAZY MOUNT: renderizza solo quando aperto */}
-        {open && <SmartInboxTab />}
+        {open && <SmartInboxTabIntelligent />}
       </DialogContent>
     </Dialog>
   );

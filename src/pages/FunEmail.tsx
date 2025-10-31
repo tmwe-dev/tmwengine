@@ -127,6 +127,7 @@ const FunEmail = () => {
   return (
     <PageLayout 
       gradient={true}
+      contentClassName="p-0 max-w-none"
       title={
         ['quick-download', 'integrity', 'debugger'].includes(currentView) ? (
           <Button

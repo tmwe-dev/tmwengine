@@ -8,6 +8,7 @@ interface EmailCarousel3DProps {
   assignedSenders: Map<string, SenderAnalysis[]>;
   activeCategoryId: string;
   zoom?: number;
+  verticalOffset?: number;
 }
 
 // createTextTexture ora è definito DENTRO il componente come createTextTextureInternal per accedere ad assignedSenders via closure
@@ -35,7 +36,8 @@ export const EmailCarousel3D = ({
   categories, 
   assignedSenders,
   activeCategoryId,
-  zoom = 1.0
+  zoom = 1.0,
+  verticalOffset = 0
 }: EmailCarousel3DProps) => {
   const MAX_SLOTS = 8; // Numero massimo di pagine nel carosello
   
@@ -317,6 +319,27 @@ export const EmailCarousel3D = ({
     
     console.log(`📷 Zoom ${zoom.toFixed(2)} → FOV ${newFOV.toFixed(1)}° (fluido)`);
   }, [zoom]);
+
+  // 📷 CONTROLLO POSIZIONE VERTICALE CAMERA
+  useEffect(() => {
+    if (!cameraRef.current) return;
+    
+    // Converti offset px in unità Three.js (1px ≈ 0.01 unità)
+    const cameraYOffset = -(verticalOffset || 0) * 0.01;
+    
+    // Posizione base Y = 0.3 (riga 239)
+    const baseY = 0.3;
+    const newY = baseY + cameraYOffset;
+    
+    // Smooth transition con GSAP
+    gsap.to(cameraRef.current.position, {
+      y: newY,
+      duration: 0.3,
+      ease: 'power2.out'
+    });
+    
+    console.log(`📷 Vertical offset ${verticalOffset}px → Camera Y ${newY.toFixed(2)}`);
+  }, [verticalOffset]);
 
   // 1️⃣ INIZIALIZZAZIONE SLOT + POPOLAZIONE IMMEDIATA (come RadioCarousel3D)
   useEffect(() => {

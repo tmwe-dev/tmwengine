@@ -26,14 +26,14 @@ export function EmailCarouselContainer({
 }: EmailCarouselContainerProps) {
   return (
     <div 
-      className="flex-1 overflow-visible relative min-h-[600px] transition-transform duration-300"
-      style={{ transform: `translateY(${verticalOffset}px)` }}
+      className="flex-1 overflow-visible relative min-h-[600px]"
     >
       <EmailCarousel3D
         categories={categories}
         assignedSenders={assignedSenders}
         activeCategoryId={activeCategoryId}
         zoom={zoom}
+        verticalOffset={verticalOffset}
       />
       
       {/* Aree cliccabili invisibili (clone Radio Chat) */}

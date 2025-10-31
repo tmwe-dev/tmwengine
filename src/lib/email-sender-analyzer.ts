@@ -46,20 +46,48 @@ export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[
   console.log('🔍 Analisi mittenti per:', userEmail);
   
   try {
-    // Usa aggregazione lato DB invece di scaricare tutte le email
-    const { data: senderStats, error: emailError } = await supabase
-      .rpc('analyze_senders_aggregated', { 
-        p_user_email: userEmail 
-      });
+    // ✅ Query diretta ottimizzata - solo campi essenziali
+    const { data: emailsData, error: emailError } = await supabase
+      .from('email_messages')
+      .select('from_email, data_ricezione')
+      .eq('user_email', userEmail)
+      .order('data_ricezione', { ascending: false })
+      .limit(5000); // Limita a 5000 email più recenti per evitare timeout
     
     if (emailError) throw emailError;
     
-    if (!senderStats || senderStats.length === 0) {
+    if (!emailsData || emailsData.length === 0) {
       console.warn('⚠️ Nessun mittente trovato nel DB');
       return [];
     }
     
-    console.log(`📧 Trovati ${senderStats.length} mittenti unici nel DB`);
+    // Aggrega i mittenti in memoria (molto più veloce che fare RPC pesanti)
+    const senderMap = new Map<string, {
+      count: number;
+      firstSeen: Date;
+      lastSeen: Date;
+    }>();
+    
+    emailsData.forEach(email => {
+      if (!email.from_email) return;
+      
+      const existing = senderMap.get(email.from_email);
+      const emailDate = new Date(email.data_ricezione);
+      
+      if (existing) {
+        existing.count++;
+        if (emailDate < existing.firstSeen) existing.firstSeen = emailDate;
+        if (emailDate > existing.lastSeen) existing.lastSeen = emailDate;
+      } else {
+        senderMap.set(email.from_email, {
+          count: 1,
+          firstSeen: emailDate,
+          lastSeen: emailDate
+        });
+      }
+    });
+    
+    console.log(`📧 Trovati ${senderMap.size} mittenti unici nel DB`);
     
     const { data: rules, error: rulesError } = await supabase
       .from('email_sender_rules')
@@ -77,22 +105,22 @@ export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[
       }
     });
     
-    // Mappa i risultati aggregati dal DB direttamente in SenderAnalysis
-    const analyses: SenderAnalysis[] = senderStats.map(stat => {
-      const domain = extractDomain(stat.from_email);
-      const companyName = extractCompanyName(stat.from_email);
-      const currentGroup = rulesMap.get(stat.from_email.toLowerCase());
+    // Mappa i mittenti aggregati in SenderAnalysis
+    const analyses: SenderAnalysis[] = Array.from(senderMap.entries()).map(([email, stats]) => {
+      const domain = extractDomain(email);
+      const companyName = extractCompanyName(email);
+      const currentGroup = rulesMap.get(email.toLowerCase());
       
       return {
-        email: stat.from_email,
+        email,
         domain,
         companyName,
-        emailCount: Number(stat.email_count),
-        firstSeen: new Date(stat.first_seen).toISOString(),
-        lastSeen: new Date(stat.last_seen).toISOString(),
-        hasAttachments: stat.has_attachments,
-        topSubjectKeywords: [], // Rimosso: troppo pesante da calcolare
-        avgSubjectLength: 0,    // Rimosso: non necessario
+        emailCount: stats.count,
+        firstSeen: stats.firstSeen.toISOString(),
+        lastSeen: stats.lastSeen.toISOString(),
+        hasAttachments: false, // Rimosso per performance
+        topSubjectKeywords: [],
+        avgSubjectLength: 0,
         isClassified: !!currentGroup,
         currentGroup,
       };

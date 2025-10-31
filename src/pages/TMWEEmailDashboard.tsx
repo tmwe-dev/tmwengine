@@ -37,7 +37,7 @@ import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { EmailSyncMonitor } from '@/components/email/EmailSyncMonitor';
 import { EmailSyncStatus } from '@/components/tmwe/EmailSyncStatus';
-import { SmartInboxTab } from '@/components/email/smart-inbox/SmartInboxTab';
+import { SmartInboxDialog } from '@/components/email/smart-inbox/SmartInboxDialog';
 import { useEmailSync } from '@/lib/email-sync';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -798,11 +798,10 @@ const EmailDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={smartInboxOpen} onOpenChange={setSmartInboxOpen}>
-        <DialogContent className="max-w-6xl h-[90vh] p-0">
-          <SmartInboxTab />
-        </DialogContent>
-      </Dialog>
+      <SmartInboxDialog 
+        open={smartInboxOpen} 
+        onOpenChange={setSmartInboxOpen}
+      />
     </div>
   );
 };

@@ -21,8 +21,8 @@ export const createCategoryTexture = (
 
   // Background con gradiente del colore del gruppo
   const gradient = ctx.createLinearGradient(0, 0, W, H);
-  gradient.addColorStop(0, group.colore + '33'); // 20% opacity
-  gradient.addColorStop(1, group.colore + '0A'); // 4% opacity
+  gradient.addColorStop(0, group.colore + '4D'); // 30% opacity
+  gradient.addColorStop(1, group.colore + '1F'); // 12% opacity
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, W, H);
 
@@ -35,16 +35,31 @@ export const createCategoryTexture = (
   ctx.fillStyle = group.colore;
   ctx.font = 'bold 48px sans-serif';
   ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
   ctx.fillText(group.icon + ' ' + group.nome_gruppo, W / 2, 80);
+  ctx.shadowColor = 'transparent'; // Reset shadow
 
   // Contatore mittenti
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 120px sans-serif';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetX = 3;
+  ctx.shadowOffsetY = 3;
   ctx.fillText(String(assignedSenders.length), W / 2, 250);
+  ctx.shadowColor = 'transparent'; // Reset shadow
 
   ctx.font = '24px sans-serif';
   ctx.fillStyle = '#a0a0a0';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetX = 1;
+  ctx.shadowOffsetY = 1;
   ctx.fillText('mittenti assegnati', W / 2, 290);
+  ctx.shadowColor = 'transparent'; // Reset shadow
 
   // Lista mittenti (scrollabile visualmente)
   ctx.font = '20px monospace';
@@ -53,15 +68,20 @@ export const createCategoryTexture = (
 
   const maxVisible = 15;
   assignedSenders.slice(0, maxVisible).forEach((sender) => {
-    // Nome mittente
+    // Nome mittente con shadow
     ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
     ctx.fillText(`• ${sender.companyName}`, 40, y);
 
-    // Contatore email
+    // Contatore email con shadow
     ctx.fillStyle = '#a0a0a0';
     ctx.textAlign = 'right';
     ctx.fillText(`${sender.emailCount} email`, W - 40, y);
     ctx.textAlign = 'left';
+    ctx.shadowColor = 'transparent'; // Reset shadow
 
     y += 40;
   });
@@ -70,11 +90,16 @@ export const createCategoryTexture = (
   if (assignedSenders.length > maxVisible) {
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
     ctx.fillText(
       `... e altri ${assignedSenders.length - maxVisible} mittenti`,
       W / 2,
       y + 20
     );
+    ctx.shadowColor = 'transparent'; // Reset shadow
   }
 
   // Crea texture

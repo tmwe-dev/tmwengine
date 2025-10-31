@@ -1,16 +1,13 @@
 export const CATEGORIES = [
-  { id: 'Fatture', name: 'Fatture', icon: '💰', color: '#3B82F6' },
-  { id: 'Bolle / Packing List', name: 'Bolle', icon: '📦', color: '#10B981' },
-  { id: 'Preventivi / Quotazioni', name: 'Preventivi', icon: '📊', color: '#F59E0B' },
+  { id: 'Fatture', name: 'Fatture', icon: '📄', color: '#3B82F6' },
+  { id: 'Bolle / Packing List', name: 'Bolle', icon: '📋', color: '#10B981' },
+  { id: 'Preventivi / Quotazioni', name: 'Preventivi', icon: '💰', color: '#F59E0B' },
   { id: 'Rate Aeree / Rate Navali', name: 'Rate', icon: '✈️', color: '#8B5CF6' },
-  { id: 'Documenti Spedizione', name: 'Documenti', icon: '📄', color: '#06B6D4' },
+  { id: 'Documenti Spedizione', name: 'Documenti', icon: '📦', color: '#06B6D4' },
   { id: 'Offerte di Lavoro', name: 'Lavoro', icon: '💼', color: '#EC4899' },
   { id: 'Marketing / Pubblicità', name: 'Marketing', icon: '📢', color: '#F43F5E' },
   { id: 'Spam / Non Rilevante', name: 'Spam', icon: '🚫', color: '#6B7280' }
 ];
-
-// 🆕 EXPORT categorie trasporti per utilizzo avanzato
-export { TRANSPORT_CATEGORIES, getTransportCategory, getTransportCategoryByName, getTransportCategoryColor, getTransportCategoryIcon } from './transport-categories';
 
 export const getCategoryColor = (category: string): string => {
   return CATEGORIES.find(c => c.id === category)?.color || '#6B7280';

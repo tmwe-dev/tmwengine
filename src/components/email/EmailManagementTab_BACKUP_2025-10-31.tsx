@@ -2,7 +2,7 @@
  * Tab Email Management - Sistema completamente isolato FunEmail
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, closestCenter, CollisionDetection } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -20,7 +20,6 @@ import { EmailSidebar } from './management/EmailSidebar';
 import { EmailCarouselContainer } from './management/EmailCarouselContainer';
 import { EmailGridContainer } from './management/EmailGridContainer';
 import { CreateCategoryDialog } from './management/CreateCategoryDialog';
-import { SenderSortControls, SortOption } from './management/SenderSortControls';
 
 // Collisione personalizzata 80%
 const carousel80PercentCollision: CollisionDetection = (args) => {
@@ -56,7 +55,6 @@ export function EmailManagementTab() {
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [assignedSenders, setAssignedSenders] = useState<Map<string, SenderAnalysis[]>>(new Map());
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [sortOption, setSortOption] = useState<SortOption>('count-desc');
   
   // Persist carousel zoom in localStorage
   const [carouselZoom, setCarouselZoom] = useState(() => {
@@ -437,24 +435,6 @@ export function EmailManagementTab() {
     return matchesSearch && matchesFilter;
   });
 
-  // 🆕 ORDINAMENTO MITTENTI (useMemo per performance)
-  const sortedSenders = useMemo(() => {
-    const sorted = [...filteredSenders];
-    
-    switch (sortOption) {
-      case 'name-asc':
-        return sorted.sort((a, b) => a.companyName.localeCompare(b.companyName));
-      case 'name-desc':
-        return sorted.sort((a, b) => b.companyName.localeCompare(a.companyName));
-      case 'count-asc':
-        return sorted.sort((a, b) => a.emailCount - b.emailCount);
-      case 'count-desc':
-        return sorted.sort((a, b) => b.emailCount - a.emailCount);
-      default:
-        return sorted;
-    }
-  }, [filteredSenders, sortOption]);
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -492,7 +472,7 @@ export function EmailManagementTab() {
           setSearchQuery={setSearchQuery}
           filterByAttachments={filterByAttachments}
           setFilterByAttachments={setFilterByAttachments}
-          filteredSenders={sortedSenders}
+          filteredSenders={filteredSenders}
           viewMode={viewMode}
           carouselZoom={carouselZoom}
           onCarouselZoomChange={handleZoomChange}
@@ -500,8 +480,6 @@ export function EmailManagementTab() {
           groups={groups}
           activeCategoryId={activeCategoryId}
           onCategorySelect={setActiveCategoryId}
-          sortOption={sortOption}
-          onSortChange={setSortOption}
         />
         
         {/* Area principale condizionale */}

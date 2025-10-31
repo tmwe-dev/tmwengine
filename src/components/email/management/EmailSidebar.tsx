@@ -8,6 +8,7 @@ import { Slider } from '@/components/ui/slider';
 import { Search, Filter, Plus } from 'lucide-react';
 import { SenderCard } from './SenderCard';
 import type { SenderAnalysis, EmailSenderGroup } from '@/types/email-management';
+import { SenderSortControls, SortOption } from './SenderSortControls';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -31,6 +32,8 @@ interface EmailSidebarProps {
   groups: EmailSenderGroup[];
   activeCategoryId: string | null;
   onCategorySelect: (categoryId: string) => void;
+  sortOption?: SortOption;
+  onSortChange?: (sort: SortOption) => void;
 }
 
 export function EmailSidebar({
@@ -47,6 +50,8 @@ export function EmailSidebar({
   groups,
   activeCategoryId,
   onCategorySelect,
+  sortOption = 'count-desc',
+  onSortChange,
 }: EmailSidebarProps) {
   return (
     <div className="fixed left-6 top-20 z-20" style={{ width: '416px', height: 'calc(100vh - 80px)' }}>
@@ -95,6 +100,16 @@ export function EmailSidebar({
               className="pl-9"
             />
           </div>
+          
+          {/* 🆕 SORT CONTROLS */}
+          {onSortChange && (
+            <div className="mb-3">
+              <SenderSortControls 
+                currentSort={sortOption}
+                onSortChange={onSortChange}
+              />
+            </div>
+          )}
           
           {/* Riga compatta: Dropdown + Plus + Filter */}
           <div className="flex gap-2 items-center">

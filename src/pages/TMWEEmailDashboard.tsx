@@ -196,7 +196,8 @@ const EmailDashboard = () => {
         .from('email_messages')
         .select('*', { count: 'exact', head: true })
         .eq('cartella', selectedFolder)
-        .eq('user_email', profile.tmwe_email);
+        .eq('user_email', profile.tmwe_email)
+        .limit(1);
 
       const missing = Math.max(0, apiTotal - (dbTotal || 0));
 
@@ -800,7 +801,7 @@ const EmailDashboard = () => {
 
       <Dialog open={smartInboxOpen} onOpenChange={setSmartInboxOpen}>
         <DialogContent className="max-w-6xl h-[90vh] p-0">
-          <SmartInboxTab />
+          {smartInboxOpen && <SmartInboxTab />}
         </DialogContent>
       </Dialog>
     </div>

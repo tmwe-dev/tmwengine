@@ -418,6 +418,9 @@ export function EmailManagementTab() {
       // 4. 🆕 Evidenzia ultimo gruppo aggiornato
       setLastUpdatedGroupId(targetGroup.id);
 
+      // 5. 🆕 FORZA REFRESH IMMEDIATO dei gruppi (oltre al real-time)
+      loadData();
+
       toast({
         title: '✅ Classificato',
         description: `${sender.companyName} → ${targetGroup.nome_gruppo}`,

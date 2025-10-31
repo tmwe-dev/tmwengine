@@ -10,6 +10,7 @@ interface EmailCarouselContainerProps {
   assignedSenders: Map<string, SenderAnalysis[]>;
   activeCategoryId: string | null;
   zoom: number;
+  verticalOffset?: number;
   onPrevious: () => void;
   onNext: () => void;
 }
@@ -19,11 +20,15 @@ export function EmailCarouselContainer({
   assignedSenders,
   activeCategoryId,
   zoom,
+  verticalOffset = 0,
   onPrevious,
   onNext,
 }: EmailCarouselContainerProps) {
   return (
-    <div className="flex-1 overflow-visible relative min-h-[600px]">
+    <div 
+      className="flex-1 overflow-visible relative min-h-[600px] transition-transform duration-300"
+      style={{ transform: `translateY(${verticalOffset}px)` }}
+    >
       <EmailCarousel3D
         categories={categories}
         assignedSenders={assignedSenders}

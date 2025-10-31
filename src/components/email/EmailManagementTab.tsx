@@ -63,6 +63,9 @@ export function EmailManagementTab() {
     const saved = localStorage.getItem('email-carousel-zoom');
     return saved ? parseFloat(saved) : 1.0;
   });
+
+  // Stato posizione verticale carousel
+  const [carouselVerticalOffset, setCarouselVerticalOffset] = useState(0);
   
   const { toast } = useToast();
 
@@ -511,6 +514,7 @@ export function EmailManagementTab() {
             assignedSenders={assignedSenders}
             activeCategoryId={activeCategoryId}
             zoom={carouselZoom}
+            verticalOffset={carouselVerticalOffset}
             onPrevious={handlePrevCategory}
             onNext={handleNextCategory}
           />
@@ -532,7 +536,9 @@ export function EmailManagementTab() {
       {viewMode === 'carousel' && (
         <FloatingZoomControl 
           zoom={carouselZoom} 
-          onZoomChange={handleZoomChange} 
+          onZoomChange={handleZoomChange}
+          verticalOffset={carouselVerticalOffset}
+          onVerticalOffsetChange={setCarouselVerticalOffset}
         />
       )}
 

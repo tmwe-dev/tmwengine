@@ -19,12 +19,18 @@ export function SenderCard({ sender, isDragging }: FunEmailSenderCardProps) {
     data: sender,
   });
 
+  // Se sto draggando e NON sono nel DragOverlay, nascondo la card originale
+  const shouldHide = dragActive && !isDragging;
+
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     position: 'fixed' as const,
     zIndex: 1000,
     pointerEvents: 'none' as const,
-  } : {};
+    opacity: shouldHide ? 0 : 1,
+  } : {
+    opacity: shouldHide ? 0 : 1,
+  };
 
   return (
     <div ref={setNodeRef} style={style} className="snap-start">

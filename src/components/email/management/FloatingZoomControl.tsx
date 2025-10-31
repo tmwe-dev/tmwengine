@@ -1,29 +1,43 @@
 /**
  * Floating Zoom Control - Galleggiante a destra della pagina
+ * Due slider: zoom carousel e posizione verticale carousel
  */
+import { useState } from 'react';
 import { Slider } from '@/components/ui/slider';
-import { ZoomIn, ZoomOut } from 'lucide-react';
 
 interface FloatingZoomControlProps {
   zoom: number;
   onZoomChange: (zoom: number) => void;
+  verticalOffset: number;
+  onVerticalOffsetChange: (offset: number) => void;
 }
 
-export function FloatingZoomControl({ zoom, onZoomChange }: FloatingZoomControlProps) {
+export function FloatingZoomControl({ 
+  zoom, 
+  onZoomChange,
+  verticalOffset,
+  onVerticalOffsetChange
+}: FloatingZoomControlProps) {
+  const [isActive, setIsActive] = useState(false);
+
   return (
     <div 
-      className="fixed right-6 top-1/2 -translate-y-1/2 z-50 bg-background/95 backdrop-blur-sm border-2 border-primary/30 rounded-xl p-4 shadow-2xl"
-      style={{ width: '80px' }}
+      className="fixed right-6 top-1/2 -translate-y-1/2 z-50 w-[60px] flex flex-col items-center gap-8"
+      onMouseEnter={() => setIsActive(true)}
+      onMouseLeave={() => setIsActive(false)}
     >
-      <div className="flex flex-col items-center gap-3">
-        {/* Icona Zoom In */}
-        <ZoomIn className="h-5 w-5 text-primary" />
+      {/* SLIDER 1: ZOOM */}
+      <div className="flex flex-col items-center">
+        {isActive && (
+          <div className="mb-2 px-2 py-1 bg-background/90 backdrop-blur-sm rounded border border-purple-500/50 animate-in fade-in duration-200">
+            <span className="text-xs font-bold text-purple-500">
+              {Math.round(zoom * 100)}%
+            </span>
+          </div>
+        )}
         
-        {/* Label 200% */}
-        <span className="text-xs font-semibold text-primary">200%</span>
-        
-        {/* Slider Verticale */}
         <Slider
+          minimal
           value={[zoom]}
           onValueChange={([val]) => onZoomChange(val)}
           min={0.5}
@@ -33,18 +47,38 @@ export function FloatingZoomControl({ zoom, onZoomChange }: FloatingZoomControlP
           className="h-[180px]"
         />
         
-        {/* Label 50% */}
-        <span className="text-xs font-semibold text-primary">50%</span>
+        {isActive && (
+          <span className="text-xs text-muted-foreground mt-2">Zoom</span>
+        )}
+      </div>
+
+      {/* SEPARATORE */}
+      <div className="w-8 h-px bg-border" />
+
+      {/* SLIDER 2: POSIZIONE VERTICALE */}
+      <div className="flex flex-col items-center">
+        {isActive && (
+          <div className="mb-2 px-2 py-1 bg-background/90 backdrop-blur-sm rounded border border-blue-500/50 animate-in fade-in duration-200">
+            <span className="text-xs font-bold text-blue-500">
+              {verticalOffset > 0 ? '+' : ''}{verticalOffset}px
+            </span>
+          </div>
+        )}
         
-        {/* Icona Zoom Out */}
-        <ZoomOut className="h-5 w-5 text-primary" />
+        <Slider
+          minimal
+          value={[verticalOffset]}
+          onValueChange={([val]) => onVerticalOffsetChange(val)}
+          min={-200}
+          max={200}
+          step={5}
+          orientation="vertical"
+          className="h-[180px]"
+        />
         
-        {/* Percentuale corrente */}
-        <div className="mt-2 pt-2 border-t border-primary/30">
-          <span className="text-sm font-bold text-primary">
-            {Math.round(zoom * 100)}%
-          </span>
-        </div>
+        {isActive && (
+          <span className="text-xs text-muted-foreground mt-2">Posizione</span>
+        )}
       </div>
     </div>
   );

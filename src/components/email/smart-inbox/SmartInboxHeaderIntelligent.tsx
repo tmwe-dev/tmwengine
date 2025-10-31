@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface SmartInboxHeaderIntelligentProps {
   categories: CategoryStats[];
@@ -41,7 +41,38 @@ export const SmartInboxHeaderIntelligent = ({
   onBulkClassify
 }: SmartInboxHeaderIntelligentProps) => {
   const [bulkCategory, setBulkCategory] = useState<string>('');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
+  
+  // Blocco navigazione browser durante scroll orizzontale
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const preventTouchNav = (e: TouchEvent) => {
+      // Blocca propagazione per impedire gesture browser
+      if (e.touches.length === 1) {
+        e.stopPropagation();
+      }
+    };
+
+    const preventWheel = (e: WheelEvent) => {
+      // Blocca wheel orizzontale per evitare "back gesture"
+      if (Math.abs(e.deltaX) > 5) {
+        e.stopPropagation();
+      }
+    };
+
+    container.addEventListener('touchstart', preventTouchNav, { passive: false });
+    container.addEventListener('touchmove', preventTouchNav, { passive: false });
+    container.addEventListener('wheel', preventWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', preventTouchNav);
+      container.removeEventListener('touchmove', preventTouchNav);
+      container.removeEventListener('wheel', preventWheel);
+    };
+  }, []);
   
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 space-y-4 shrink-0">
@@ -114,7 +145,15 @@ export const SmartInboxHeaderIntelligent = ({
       )}
       
       {/* Badge Categorie - icone grandi */}
-      <div className="w-full overflow-x-auto">
+      <div 
+        ref={scrollContainerRef}
+        className="w-full overflow-x-auto smart-inbox-categories-scroll"
+        style={{
+          overscrollBehaviorX: 'contain',
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-x',
+        }}
+      >
         <div className="flex gap-3 pb-2 min-w-max">
           {/* Badge "Tutte" */}
           <button

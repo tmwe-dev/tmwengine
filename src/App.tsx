@@ -66,9 +66,9 @@ const queryClient = new QueryClient();
 // Blocca navigazione trackpad a livello browser
 const usePreventTrackpadNavigation = () => {
   useEffect(() => {
-  // 🔒 BLOCCO 1: Eventi wheel (trackpad swipe) - solo swipe forte
+  // 🔒 BLOCCO 1: Eventi wheel (trackpad swipe) - soglia abbassata per bloccare anche swipe leggeri
   const preventNavigation = (e: WheelEvent) => {
-    const HORIZONTAL_THRESHOLD = 50;
+    const HORIZONTAL_THRESHOLD = 15; // Ridotto da 50 a 15 per intercettare anche swipe leggeri
     // Blocca SOLO swipe orizzontale forte (back/forward browser)
     if (Math.abs(e.deltaX) > HORIZONTAL_THRESHOLD && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
       e.preventDefault();

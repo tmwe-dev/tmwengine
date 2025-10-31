@@ -461,6 +461,23 @@ Tutti i colori DEVONO essere HSL.
     -webkit-overscroll-behavior-x: none;
   }
 
+  /* === BLOCCO NAVIGAZIONE BROWSER SU SCROLL ORIZZONTALE === */
+  /* Blocco specifico per tutti gli elementi con overflow-x */
+  [class*="overflow-x"] {
+    overscroll-behavior-x: none !important;
+    -webkit-overscroll-behavior-x: none !important;
+    touch-action: pan-x pan-y !important; /* Permette scroll ma non gestures */
+  }
+
+  /* Blocco specifico per container categorie Smart Inbox */
+  .smart-inbox-categories-scroll {
+    overscroll-behavior-x: contain !important;
+    -webkit-overscroll-behavior-x: contain !important;
+    touch-action: pan-x !important;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+  }
+
   /* === TIPOGRAFIA GLOBALE === */
   h1 {
     @apply text-3xl font-bold tracking-tight;

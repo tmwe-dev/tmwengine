@@ -53,18 +53,20 @@ export const SmartEmailListIntelligent = ({
   };
 
   return (
-    <ScrollArea className="flex-1">
-      <div className="p-4 space-y-3">
-        {emails.map((classifiedEmail) => (
-          <SmartEmailCardIntelligent
-            key={classifiedEmail.classification.id}
-            classifiedEmail={classifiedEmail}
-            onClick={() => onEmailClick(classifiedEmail)}
-            isSelected={selectedEmails.has(classifiedEmail.email.uid)}
-            onToggleSelect={() => handleToggleSelection(classifiedEmail.email.uid)}
-          />
-        ))}
-      </div>
-    </ScrollArea>
+    <div className="flex-1 flex flex-col h-full">
+      <ScrollArea className="flex-1 h-full">
+        <div className="p-4 space-y-3">
+          {emails.map((classifiedEmail) => (
+            <SmartEmailCardIntelligent
+              key={classifiedEmail.classification.id}
+              classifiedEmail={classifiedEmail}
+              onClick={() => onEmailClick(classifiedEmail)}
+              isSelected={selectedEmails.has(classifiedEmail.email.uid)}
+              onToggleSelect={() => handleToggleSelection(classifiedEmail.email.uid)}
+            />
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
   );
 };

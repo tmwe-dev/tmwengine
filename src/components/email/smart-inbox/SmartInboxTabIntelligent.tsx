@@ -43,7 +43,7 @@ export const SmartInboxTabIntelligent = () => {
       }
 
       if (selectedCategory === 'da-verificare') {
-        query = query.or('is_verified.eq.false,confidence.lt.80');
+        query = query.or('is_verified.eq.false,confidence.lt.0.8');
       }
 
       const { data, error } = await query;
@@ -100,7 +100,7 @@ export const SmartInboxTabIntelligent = () => {
 
   // Conta email da verificare
   const unverifiedCount = classifiedEmails.filter(
-    e => !e.classification.is_verified || e.classification.confidence < 80
+    e => !e.classification.is_verified || e.classification.confidence < 0.8
   ).length;
 
   const handleClassifyNew = async () => {

@@ -30,11 +30,22 @@ export const useSmartClassificationIntelligent = () => {
         const email = emails[i];
         
         try {
+          // Genera UID univoco usando elasticsearch_id o email_id come fallback
+          const emailUid = email.uid || 
+            email.elasticsearch_id || 
+            (email.email_id ? `email_${email.email_id}` : null);
+
+          if (!emailUid) {
+            console.error('Cannot generate UID for email:', email);
+            errorCount++;
+            continue;
+          }
+
           // Check se già classificata
           const { data: existing } = await supabase
             .from('email_ai_classifications')
             .select('id')
-            .eq('email_uid', email.uid)
+            .eq('email_uid', emailUid)
             .eq('user_email', userEmail)
             .maybeSingle();
           
@@ -47,12 +58,12 @@ export const useSmartClassificationIntelligent = () => {
             continue;
           }
 
-          const fromEmail = typeof email.from === 'object' && email.from !== null
-            ? email.from.email 
-            : String(email.from || '');
+          // Estrai from_email con supporto per diversi formati
+          const fromEmail = email.from_email || 
+            (typeof email.from === 'object' && email.from !== null ? email.from.email : String(email.from || ''));
 
           if (!fromEmail) {
-            console.error('Could not extract from email for:', email.uid);
+            console.error('Could not extract from email, uid:', emailUid);
             errorCount++;
             continue;
           }
@@ -67,10 +78,10 @@ export const useSmartClassificationIntelligent = () => {
             'classify-email-content-intelligent',
             {
               body: {
-                email_uid: email.uid,
-                folder_name: email.folder_name,
+                email_uid: emailUid,
+                folder_name: email.folder_name || email.folder || 'INBOX',
                 subject: email.subject || '',
-                body_text: email.body_preview || '',
+                body_text: email.body_preview || email.body_text || '',
                 from_email: fromEmail,
                 user_email: userEmail,
                 force_category: forceCategory || null
@@ -96,7 +107,7 @@ export const useSmartClassificationIntelligent = () => {
                 supabase
                   .from('email_ai_classifications')
                   .update({ sender_logo_url: logoData.logo_url })
-                  .eq('email_uid', email.uid)
+                  .eq('email_uid', emailUid)
                   .eq('user_email', userEmail)
                   .then();
               }

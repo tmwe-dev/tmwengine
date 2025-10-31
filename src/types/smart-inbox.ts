@@ -33,16 +33,20 @@ export interface ClassifiedEmail {
 }
 
 export interface EmailMetadata {
-  uid: string;
-  email_id: number; // ID numerico per API
+  uid?: string | null;
+  email_id?: number;
+  elasticsearch_id?: string;
+  from_email?: string;
   subject: string;
-  from: { name?: string; email: string };
+  from: { name?: string; email: string } | string;
   to: any[];
   date: string;
   read: boolean;
   has_attachments: boolean;
-  folder_name: string;
+  folder_name?: string;
+  folder?: string;
   body_preview?: string;
+  body_text?: string;
 }
 
 export interface CategoryStats {

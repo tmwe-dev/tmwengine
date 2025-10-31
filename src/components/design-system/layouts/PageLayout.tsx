@@ -67,7 +67,11 @@ export function PageLayout({
         </div>
       )}
       
-      <div className={cn('container py-6', contentClassName)}>
+      <div className={cn(
+        'container',
+        (title || description || actions || headerUtilities) ? 'py-6' : 'pt-0',
+        contentClassName
+      )}>
         {children}
       </div>
     </div>

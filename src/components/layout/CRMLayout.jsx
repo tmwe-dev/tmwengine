@@ -197,7 +197,7 @@ const CRMLayout = ({ children }) => {
           </Button>
 
           {/* Page Title */}
-          <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-4">
             {isMobile ? (
               <Home className="h-6 w-6 text-foreground" />
             ) : (
@@ -208,7 +208,7 @@ const CRMLayout = ({ children }) => {
                 
                 {/* FunEmail Tabs - visibili solo su /funnemail */}
                 {location.pathname === '/funnemail' && (
-                  <div className="flex items-center gap-1 ml-4">
+                  <div className="flex items-center gap-1">
                     <Button
                       variant={searchParams.get('tab') === 'list' || !searchParams.get('tab') ? 'default' : 'outline'}
                       size="sm"

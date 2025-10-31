@@ -7,6 +7,7 @@ interface RadioCarousel3DProps {
   messages: RadioMessage[];
   activeMessageId: string;
   zoom?: number;
+  verticalOffset?: number;
 }
 
 const createTextTexture = (message: RadioMessage, renderer?: THREE.WebGLRenderer): THREE.CanvasTexture => {
@@ -170,7 +171,8 @@ const createEmptyTexture = (): THREE.CanvasTexture => {
 export const RadioCarousel3D = ({
   messages, 
   activeMessageId,
-  zoom = 1.0
+  zoom = 1.0,
+  verticalOffset = 0
 }: RadioCarousel3DProps) => {
   const MAX_SLOTS = 8; // Numero massimo di pagine nel carosello
   
@@ -296,6 +298,24 @@ export const RadioCarousel3D = ({
     
     console.log(`📷 Zoom ${zoom.toFixed(2)} → FOV ${newFOV.toFixed(1)}° (fluido)`);
   }, [zoom]);
+
+  // 📷 VERTICAL CAMERA POSITION (smooth with GSAP)
+  useEffect(() => {
+    if (!cameraRef.current) return;
+    
+    // Converti offset da px a unità Three.js (inverti direzione per UX naturale)
+    const cameraYOffset = -(verticalOffset || 0) * 0.01;
+    const baseY = 0.3; // Posizione Y di default (vedi riga 224)
+    const newY = baseY + cameraYOffset;
+    
+    gsap.to(cameraRef.current.position, {
+      y: newY,
+      duration: 0.3,
+      ease: 'power2.out'
+    });
+    
+    console.log(`📷 Vertical offset ${verticalOffset}px → Camera Y ${newY.toFixed(2)}`);
+  }, [verticalOffset]);
 
   // 1️⃣ INIZIALIZZAZIONE SLOT (aspetta che groupRef sia pronto) - GEOMETRIA FISSA
   useEffect(() => {

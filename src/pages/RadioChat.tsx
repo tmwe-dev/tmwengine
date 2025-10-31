@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { debounce } from 'lodash';
 import { RadioAudioPlayerProvider } from '@/contexts/RadioAudioPlayerContext';
+import { FloatingZoomControl } from '@/components/email/management/FloatingZoomControl';
 
 // Import avatar assets
 import albertGif from '@/assets/albert-mining.gif';
@@ -81,6 +82,17 @@ const RadioChatContent = () => {
     const saved = localStorage.getItem('radio-carousel-zoom');
     return saved ? parseFloat(saved) : 1.0; // Default 100%
   });
+  
+  // Persist carousel vertical offset in localStorage
+  const [carouselVerticalOffset, setCarouselVerticalOffset] = useState(() => {
+    const saved = localStorage.getItem('radio-carousel-vertical-offset');
+    return saved ? parseFloat(saved) : 0; // Default 0px
+  });
+  
+  // Sync vertical offset to localStorage
+  useEffect(() => {
+    localStorage.setItem('radio-carousel-vertical-offset', carouselVerticalOffset.toString());
+  }, [carouselVerticalOffset]);
   
   const [debugPopupOpen, setDebugPopupOpen] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<'conversations' | 'settings'>('settings'); // ✅ Tab selector - opens on Settings by default
@@ -1200,8 +1212,17 @@ const RadioChatContent = () => {
                   messages={messages}
                   activeMessageId={activeMessageId}
                   zoom={carouselZoom}
+                  verticalOffset={carouselVerticalOffset}
                 />
               </div>
+              
+              {/* 🎛️ Controlli Zoom e Vertical Offset */}
+              <FloatingZoomControl
+                zoom={carouselZoom}
+                onZoomChange={setCarouselZoom}
+                verticalOffset={carouselVerticalOffset}
+                onVerticalOffsetChange={setCarouselVerticalOffset}
+              />
 
               {/* ✅ AREE CLICCABILI INVISIBILI (25% sinistra e destra) */}
               {aiMessages.length > 1 && (

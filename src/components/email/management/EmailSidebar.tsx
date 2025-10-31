@@ -5,11 +5,12 @@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Search, Filter, Plus } from 'lucide-react';
+import { Search, Filter, Plus, LayoutGrid, Box, RefreshCw } from 'lucide-react';
 import { SenderCard } from './SenderCard';
 import type { SenderAnalysis, EmailSenderGroup } from '@/types/email-management';
 import { SenderSortControls, SortOption } from './SenderSortControls';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@/components/design-system/buttons/IconButton';
 import {
   Select,
   SelectContent,
@@ -25,7 +26,8 @@ interface EmailSidebarProps {
   filterByAttachments: boolean;
   setFilterByAttachments: (filter: boolean) => void;
   filteredSenders: SenderAnalysis[];
-  viewMode?: 'grid' | 'carousel';
+  viewMode: 'grid' | 'carousel';
+  setViewMode: (mode: 'grid' | 'carousel') => void;
   carouselZoom?: number;
   onCarouselZoomChange?: (zoom: number) => void;
   onCreateCategory?: () => void;
@@ -34,6 +36,10 @@ interface EmailSidebarProps {
   onCategorySelect: (categoryId: string) => void;
   sortOption?: SortOption;
   onSortChange?: (sort: SortOption) => void;
+  onSync: () => void;
+  onRefresh: () => void;
+  isSyncing: boolean;
+  isLoading: boolean;
 }
 
 export function EmailSidebar({
@@ -44,6 +50,7 @@ export function EmailSidebar({
   setFilterByAttachments,
   filteredSenders,
   viewMode,
+  setViewMode,
   carouselZoom = 1.0,
   onCarouselZoomChange,
   onCreateCategory,
@@ -52,6 +59,10 @@ export function EmailSidebar({
   onCategorySelect,
   sortOption = 'count-desc',
   onSortChange,
+  onSync,
+  onRefresh,
+  isSyncing,
+  isLoading,
 }: EmailSidebarProps) {
   return (
     <div className="fixed left-6 top-20 z-20" style={{ width: '416px', height: 'calc(100vh - 80px)' }}>
@@ -101,7 +112,7 @@ export function EmailSidebar({
             />
           </div>
           
-          {/* Riga: Ordina + Pulsanti azioni */}
+          {/* Riga: Ordina + 4 IconButton toolbar */}
           <div className="flex gap-2 items-center justify-between mb-3">
             {onSortChange && (
               <SenderSortControls 
@@ -110,25 +121,61 @@ export function EmailSidebar({
               />
             )}
             
-            <div className="flex gap-2 items-center">
-              <Button
-                variant="outline"
+            <div className="flex gap-1 items-center">
+              <IconButton
+                icon={LayoutGrid}
+                tooltip="Vista Griglia"
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
-                className="h-9 w-9 flex-shrink-0 p-0"
-                onClick={onCreateCategory}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-              
-              <Button
-                variant={filterByAttachments ? "default" : "outline"}
+                onClick={() => setViewMode('grid')}
+              />
+              <IconButton
+                icon={Box}
+                tooltip="Carousel 3D"
+                variant={viewMode === 'carousel' ? 'default' : 'ghost'}
                 size="sm"
-                className="h-9 w-9 flex-shrink-0 p-0"
-                onClick={() => setFilterByAttachments(!filterByAttachments)}
-              >
-                <Filter className="h-4 w-4" />
-              </Button>
+                onClick={() => setViewMode('carousel')}
+              />
+              <IconButton
+                icon={RefreshCw}
+                tooltip={isSyncing ? 'Sincronizzazione...' : 'Sincronizza Email'}
+                variant="default"
+                size="sm"
+                onClick={onSync}
+                disabled={isSyncing || isLoading}
+                className={cn(isSyncing && "animate-spin")}
+              />
+              <IconButton
+                icon={RefreshCw}
+                tooltip="Aggiorna"
+                variant="ghost"
+                size="sm"
+                onClick={onRefresh}
+                disabled={isLoading || isSyncing}
+                className={cn(isLoading && "animate-spin")}
+              />
             </div>
+          </div>
+          
+          {/* Riga: Pulsanti azioni */}
+          <div className="flex gap-2 items-center justify-end mb-3">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 w-9 flex-shrink-0 p-0"
+              onClick={onCreateCategory}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant={filterByAttachments ? "default" : "outline"}
+              size="sm"
+              className="h-9 w-9 flex-shrink-0 p-0"
+              onClick={() => setFilterByAttachments(!filterByAttachments)}
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
           </div>
           
           {/* Dropdown categoria */}

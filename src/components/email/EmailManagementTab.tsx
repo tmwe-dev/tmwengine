@@ -15,7 +15,6 @@ import { SenderCard } from './management/SenderCard';
 import type { EmailSenderGroup, SenderAnalysis } from '@/types/email-management';
 import { DEFAULT_GROUPS as PREDEFINED_GROUPS } from '@/types/email-management';
 import { cn } from '@/lib/utils';
-import { EmailManagementToolbar } from './management/EmailManagementToolbar';
 import { EmailSidebar } from './management/EmailSidebar';
 import { EmailCarouselContainer } from './management/EmailCarouselContainer';
 import { EmailGridContainer } from './management/EmailGridContainer';
@@ -469,16 +468,6 @@ export function EmailManagementTab() {
 
   return (
     <div className="relative h-full w-full">
-      {/* Toolbar unificata */}
-      <EmailManagementToolbar
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        onSync={handleSync}
-        onRefresh={loadData}
-        isSyncing={isSyncing}
-        isLoading={isLoading}
-      />
-      
       <DndContext
         collisionDetection={viewMode === 'carousel' ? carousel80PercentCollision : closestCenter}
         onDragEnd={handleDragEnd}
@@ -494,6 +483,7 @@ export function EmailManagementTab() {
           setFilterByAttachments={setFilterByAttachments}
           filteredSenders={sortedSenders}
           viewMode={viewMode}
+          setViewMode={setViewMode}
           carouselZoom={carouselZoom}
           onCarouselZoomChange={handleZoomChange}
           onCreateCategory={() => setShowCreateDialog(true)}
@@ -502,6 +492,10 @@ export function EmailManagementTab() {
           onCategorySelect={setActiveCategoryId}
           sortOption={sortOption}
           onSortChange={setSortOption}
+          onSync={handleSync}
+          onRefresh={loadData}
+          isSyncing={isSyncing}
+          isLoading={isLoading}
         />
         
         {/* Area principale condizionale */}

@@ -32,13 +32,13 @@ export function FloatingZoomControl({
     >
       {/* SLIDER 1: ZOOM */}
       <div className="flex flex-col items-center">
-        {isActive && (
-          <div className="mb-1 px-1.5 py-0.5 bg-background/90 backdrop-blur-sm rounded border border-purple-500/50 animate-in fade-in duration-200">
-            <span className="text-[10px] font-bold text-purple-500">
-              {Math.round(zoom * 100)}%
-            </span>
-          </div>
-        )}
+        <div className={`mb-1 px-1.5 py-0.5 bg-background/90 backdrop-blur-sm rounded border border-purple-500/50 transition-opacity duration-200 ${
+          isActive ? 'opacity-100' : 'opacity-0'
+        }`}>
+          <span className="text-[10px] font-bold text-purple-500">
+            {Math.round(zoom * 100)}%
+          </span>
+        </div>
         
         <Slider
           minimal
@@ -51,9 +51,9 @@ export function FloatingZoomControl({
           className="h-[140px] w-1"
         />
         
-        {isActive && (
-          <span className="text-[10px] text-muted-foreground mt-1">Zoom</span>
-        )}
+        <span className={`text-[10px] text-muted-foreground mt-1 transition-opacity duration-200 ${
+          isActive ? 'opacity-100' : 'opacity-0'
+        }`}>Zoom</span>
       </div>
 
       {/* SEPARATORE */}
@@ -61,13 +61,13 @@ export function FloatingZoomControl({
 
       {/* SLIDER 2: POSIZIONE VERTICALE */}
       <div className="flex flex-col items-center">
-        {isActive && (
-          <div className="mb-1 px-1.5 py-0.5 bg-background/90 backdrop-blur-sm rounded border border-blue-500/50 animate-in fade-in duration-200">
-            <span className="text-[10px] font-bold text-blue-500">
-              {verticalOffset > 0 ? '+' : ''}{verticalOffset}px
-            </span>
-          </div>
-        )}
+        <div className={`mb-1 px-1.5 py-0.5 bg-background/90 backdrop-blur-sm rounded border border-blue-500/50 transition-opacity duration-200 ${
+          isActive ? 'opacity-100' : 'opacity-0'
+        }`}>
+          <span className="text-[10px] font-bold text-blue-500">
+            {verticalOffset > 0 ? '+' : ''}{verticalOffset}px
+          </span>
+        </div>
         
         <Slider
           minimal
@@ -80,9 +80,9 @@ export function FloatingZoomControl({
           className="h-[140px] w-1"
         />
         
-        {isActive && (
-          <span className="text-[10px] text-muted-foreground mt-1">Pos</span>
-        )}
+        <span className={`text-[10px] text-muted-foreground mt-1 transition-opacity duration-200 ${
+          isActive ? 'opacity-100' : 'opacity-0'
+        }`}>Pos</span>
       </div>
     </div>
   );

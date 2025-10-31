@@ -56,7 +56,11 @@ const RadioChatContent = () => {
   const [inputVisible, setInputVisible] = useState(false);
   const [messageViewVisible, setMessageViewVisible] = useState(false);
   const [messages, setMessages] = useState<RadioMessage[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  // ✅ Fix 2: Persist conversationId in localStorage
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(() => {
+    const saved = localStorage.getItem('radio-current-conversation-id');
+    return saved || null;
+  });
   const [conversations, setConversations] = useState<any[]>([]); // ✅ Lista chat
   
   // ⚡ LIVELLO 2: Cache prompts client-side
@@ -248,11 +252,27 @@ const RadioChatContent = () => {
     loadParticipants();
   }, [supabase]);
   
-  // ✅ Load conversations list on mount (Pattern ChatLaboratory)
-  // ❌ NO auto-restore da localStorage - come ChatLaboratory
+  // ✅ Save conversationId to localStorage when it changes
+  useEffect(() => {
+    if (currentConversationId) {
+      localStorage.setItem('radio-current-conversation-id', currentConversationId);
+    } else {
+      localStorage.removeItem('radio-current-conversation-id');
+    }
+  }, [currentConversationId]);
+  
+  // ✅ Load conversations list on mount and restore conversation
   useEffect(() => {
     if (currentUser?.id) {
       loadConversations();
+      
+      // Restore conversation from localStorage if exists
+      const savedConvId = localStorage.getItem('radio-current-conversation-id');
+      if (savedConvId) {
+        console.log('🔄 Restoring conversation from localStorage:', savedConvId);
+        loadMessages(savedConvId);
+        loadCachedPrompts(savedConvId);
+      }
     }
   }, [currentUser]);
   
@@ -1172,7 +1192,6 @@ const RadioChatContent = () => {
         )}
         isActive={showAudioControls}
         onClick={() => setShowAudioControls(!showAudioControls)}
-        disabled={!currentConversationId}
       />
 
       {/* Keyboard Icon - Above Hamburger */}

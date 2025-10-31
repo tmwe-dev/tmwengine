@@ -106,7 +106,7 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
       </div>
 
       {/* Contenuto scrollabile */}
-      <div className="flex-1 overflow-y-auto px-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <ScrollArea className="flex-1 px-6" hideScrollbar>
         <div className="space-y-3 py-3">
           {/* Stato classificazione */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -222,7 +222,7 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
             </div>
           )}
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 };

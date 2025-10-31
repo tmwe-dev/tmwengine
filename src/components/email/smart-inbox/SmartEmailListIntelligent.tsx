@@ -55,8 +55,9 @@ export const SmartEmailListIntelligent = ({
   return (
     <div 
       className="flex-1 flex flex-col bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden"
+      style={{ touchAction: 'pan-y' }}
     >
-      <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <ScrollArea className="h-full" hideScrollbar>
         <div className="p-3 space-y-3 w-full">
           {emails.map((classifiedEmail) => (
             <SmartEmailCardIntelligent
@@ -68,7 +69,7 @@ export const SmartEmailListIntelligent = ({
             />
           ))}
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 };

@@ -26,10 +26,10 @@ export function CategoriesVerticalSidebar({
         glossy={selectedCategory === 'all'}
         onClick={() => onCategoryChange('all')}
         className={cn(
-          "cursor-pointer transition-all duration-300 p-3 border",
+          "cursor-pointer transition-all duration-300 p-3",
           selectedCategory === 'all'
-            ? 'border-primary shadow-[2px_2px_4px_rgba(59,130,246,0.5)]'
-            : 'hover:bg-white/20 border-white/20 hover:border-white/30'
+            ? 'bg-primary/30 border-2 border-primary shadow-lg shadow-primary/30'
+            : 'bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30'
         )}
       >
         <div className="flex items-center gap-3">
@@ -49,10 +49,10 @@ export function CategoriesVerticalSidebar({
         glossy={selectedCategory === 'da-verificare'}
         onClick={() => onCategoryChange('da-verificare')}
         className={cn(
-          "cursor-pointer transition-all duration-300 p-3 border",
+          "cursor-pointer transition-all duration-300 p-3",
           selectedCategory === 'da-verificare'
-            ? 'border-orange-500 shadow-[2px_2px_4px_rgba(249,115,22,0.5)]'
-            : 'hover:bg-white/20 border-white/20 hover:border-white/30'
+            ? 'bg-orange-500/30 border-2 border-orange-500 shadow-lg shadow-orange-500/30'
+            : 'bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30'
         )}
       >
         <div className="flex items-center gap-3">
@@ -77,14 +77,15 @@ export function CategoriesVerticalSidebar({
           glossy={selectedCategory === cat.id}
           onClick={() => onCategoryChange(cat.id)}
           className={cn(
-            "cursor-pointer transition-all duration-300 p-3 border",
+            "cursor-pointer transition-all duration-300 p-3",
             selectedCategory === cat.id
-              ? ''
-              : 'hover:bg-white/20 border-white/20 hover:border-white/30'
+              ? 'border-2 shadow-lg'
+              : 'bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30'
           )}
           style={selectedCategory === cat.id ? {
+            backgroundColor: `${cat.color}30`,
             borderColor: cat.color,
-            boxShadow: `2px 2px 4px ${cat.color}80`
+            boxShadow: `0 8px 32px ${cat.color}30`
           } : undefined}
         >
           <div className="flex items-center justify-between gap-4">

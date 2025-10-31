@@ -18,6 +18,7 @@ interface AISidebarSliderProps {
   onClose: () => void;
   onToggle: () => void;
   senderEmail?: string | null;
+  sidebarOpen?: boolean;
   onPromptCreated?: (data: { prompt_name: string; system_prompt: string; sender_email?: string }) => void;
 }
 
@@ -26,6 +27,7 @@ export function AISidebarSlider({
   onClose,
   onToggle,
   senderEmail,
+  sidebarOpen = false,
   onPromptCreated 
 }: AISidebarSliderProps) {
   const { state, sendMessage, clearMessages } = useGlobalAICanvas();
@@ -199,7 +201,9 @@ export function AISidebarSlider({
         className={cn(
           "fixed left-0 top-[30%] -translate-y-1/2 z-[101]",
           "bg-primary/90 hover:bg-primary p-3 rounded-r-lg shadow-lg",
-          "transition-all duration-300"
+          "transition-all duration-300",
+          isOpen && "translate-x-[500px]",
+          !isOpen && sidebarOpen && "translate-x-80"
         )}
         aria-label="Toggle AI Assistant"
       >

@@ -2291,7 +2291,7 @@ export type Database = {
           confidence: number
           created_at: string | null
           email_message_id: string | null
-          email_uid: string | null
+          email_uid: string
           folder_name: string | null
           id: string
           is_verified: boolean | null
@@ -2308,7 +2308,7 @@ export type Database = {
           confidence: number
           created_at?: string | null
           email_message_id?: string | null
-          email_uid?: string | null
+          email_uid: string
           folder_name?: string | null
           id?: string
           is_verified?: boolean | null
@@ -2325,7 +2325,7 @@ export type Database = {
           confidence?: number
           created_at?: string | null
           email_message_id?: string | null
-          email_uid?: string | null
+          email_uid?: string
           folder_name?: string | null
           id?: string
           is_verified?: boolean | null

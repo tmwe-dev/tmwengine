@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ClassifiedEmail } from '@/types/smart-inbox';
 import { extractCompanyName, extractInitials, getCategoryColor, getCategoryIcon, formatDate } from '@/lib/smart-inbox-utils';
-import { Paperclip, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Paperclip, CheckCircle2, AlertCircle, Zap, ShoppingCart, FileText, Users, TrendingUp, AlertTriangle } from 'lucide-react';
 
 interface SmartEmailCardIntelligentProps {
   classifiedEmail: ClassifiedEmail;
@@ -13,7 +13,27 @@ interface SmartEmailCardIntelligentProps {
   onToggleSelect: () => void;
 }
 
-export const SmartEmailCardIntelligent = ({ 
+const getCategoryLucideIcon = (category: string) => {
+  const iconMap: Record<string, React.ReactNode> = {
+    'Fatture': <FileText className="h-4 w-4" />,
+    'E-commerce': <ShoppingCart className="h-4 w-4" />,
+    'Newsletter': <FileText className="h-4 w-4" />,
+    'Social': <Users className="h-4 w-4" />,
+    'Servizi': <Zap className="h-4 w-4" />,
+    'Marketing': <TrendingUp className="h-4 w-4" />,
+    'Marketing / Pubblicità': <TrendingUp className="h-4 w-4" />,
+    'Spam': <AlertTriangle className="h-4 w-4" />,
+    'Spam / Non Rilevante': <AlertTriangle className="h-4 w-4" />,
+    'Bolle / Packing List': <FileText className="h-4 w-4" />,
+    'Preventivi / Quotazioni': <FileText className="h-4 w-4" />,
+    'Rate Aeree / Rate Navali': <TrendingUp className="h-4 w-4" />,
+    'Documenti Spedizione': <FileText className="h-4 w-4" />,
+    'Offerte di Lavoro': <Users className="h-4 w-4" />,
+  };
+  return iconMap[category] || <FileText className="h-4 w-4" />;
+};
+
+export const SmartEmailCardIntelligent = ({
   classifiedEmail, 
   onClick,
   isSelected,
@@ -92,14 +112,15 @@ export const SmartEmailCardIntelligent = ({
 
           {/* Categoria */}
           <Badge 
-            className="mb-2 rounded-full px-3 py-1"
+            className="mb-2 rounded-full px-3 py-1.5 flex items-center gap-2"
             style={{ 
               backgroundColor: categoryColor, 
               color: 'white',
               borderColor: categoryColor
             }}
           >
-            <span className="mr-1.5 text-base">{categoryIcon}</span>
+            {getCategoryLucideIcon(classification.category)}
+            <span className="text-base">{categoryIcon}</span>
             <span className="font-semibold">{classification.category}</span>
             {classification.confidence < 100 && (
               <span className="ml-2 text-xs font-bold bg-white/20 px-1.5 py-0.5 rounded-full">

@@ -195,8 +195,8 @@ export const SmartInboxTabIntelligent = () => {
       
       {/* Split Layout: Lista + Dettaglio */}
       <div className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden">
-        {/* Colonna sinistra: Lista (mobile full, desktop 1/3) */}
-        <div className="w-full lg:w-1/3 flex flex-col min-h-[300px] lg:min-h-0">
+        {/* Colonna sinistra: Lista (mobile full, desktop 2/5) */}
+        <div className="w-full lg:w-2/5 flex flex-col min-h-[300px] lg:min-h-0">
           <SmartEmailListIntelligent
             emails={classifiedEmails}
             onEmailClick={setSelectedEmail}

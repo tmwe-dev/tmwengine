@@ -65,7 +65,7 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
   return (
     <div className="h-full flex flex-col bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 animate-fade-in">
       {/* Header con chiudi */}
-      <div className="shrink-0 p-6 border-b border-white/10 flex items-center gap-3">
+      <div className="shrink-0 px-6 py-3 border-b border-white/10 flex items-center gap-3">
         <Avatar className="h-12 w-12 border-2 border-white/20">
           {classification.sender_logo_url ? (
             <AvatarImage src={classification.sender_logo_url} alt={companyName} />
@@ -92,7 +92,7 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
 
       {/* Contenuto scrollabile */}
       <ScrollArea className="flex-1 px-6">
-        <div className="space-y-4 py-4">
+        <div className="space-y-3 py-3">
           {/* Stato classificazione */}
           <div className="flex items-center gap-2 flex-wrap">
             <Badge 
@@ -121,15 +121,15 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
 
           {/* Riassunto AI */}
           {classification.ai_summary && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
+            <details className="space-y-2" open>
+              <summary className="font-semibold text-sm flex items-center gap-2 cursor-pointer">
                 <span className="text-lg">📝</span>
                 Riassunto AI
-              </h3>
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-4 rounded-xl">
+              </summary>
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-3 rounded-xl mt-2">
                 <p className="text-sm">{classification.ai_summary}</p>
               </div>
-            </div>
+            </details>
           )}
 
           {/* Keywords */}
@@ -165,7 +165,7 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
           </div>
 
           {/* Corpo email */}
-          <div className="space-y-2">
+          <div className="space-y-2 flex-1">
             <h3 className="font-semibold text-sm flex items-center gap-2">
               Contenuto
               {isLoadingBody && <Loader2 className="h-4 w-4 animate-spin" />}

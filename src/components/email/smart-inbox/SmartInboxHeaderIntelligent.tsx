@@ -184,7 +184,7 @@ export const SmartInboxHeaderIntelligent = ({
           touchAction: 'pan-x',
         }}
       >
-        <div className="flex gap-3 pb-2 min-w-max">
+        <div className="flex gap-3 py-4 min-w-max">
           {/* Badge "Tutte" */}
           <button
             onClick={() => onCategoryChange('all')}

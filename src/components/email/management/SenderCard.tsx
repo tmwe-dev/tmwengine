@@ -36,6 +36,8 @@ export function SenderCard({ sender, isDragging, onDoubleClick }: FunEmailSender
   return (
     <div ref={setNodeRef} style={style} className="snap-start">
       <Card 
+        {...listeners}
+        {...attributes}
         className={cn(
           "cursor-grab active:cursor-grabbing border-l-4 transition-transform",
           "hover:scale-[1.02]",
@@ -48,9 +50,7 @@ export function SenderCard({ sender, isDragging, onDoubleClick }: FunEmailSender
           <div className="flex items-start justify-between gap-4">
             {/* SINISTRA: Grip + Company + Email */}
             <div className="flex items-start gap-3 flex-1 min-w-0">
-              <div {...listeners} {...attributes} className="mt-1 cursor-grab active:cursor-grabbing">
-                <GripVertical className="h-5 w-5 text-muted-foreground hover:text-primary" />
-              </div>
+              <GripVertical className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-lg truncate mb-1">
                   {sender.companyName}

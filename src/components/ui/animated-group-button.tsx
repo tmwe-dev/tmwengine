@@ -52,11 +52,14 @@ export const AnimatedGroupButton: React.FC<AnimatedGroupButtonProps> = ({
   return (
     <CollapsibleTrigger asChild>
       <Button
-        variant={isActive ? 'secondary' : 'ghost'}
+        variant="ghost"
         className={cn(
-          'relative w-full group transition-all duration-200 overflow-hidden',
+          'relative w-full group transition-all duration-200 overflow-hidden border',
           isCollapsed ? 'justify-center px-2' : 'justify-between',
-          isActive && 'bg-email-selected text-primary-foreground',
+          // Solo bordo + ombra quando attivo, nessun background
+          isActive 
+            ? `border-${colorScheme === 'primary' ? 'purple' : 'blue'}-500 shadow-[2px_2px_4px_rgba(${colorScheme === 'primary' ? '168,85,247' : '59,130,246'},0.5)]`
+            : 'border-transparent hover:border-white/30',
           // Linea animata in basso
           'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left',
           isActive ? lineGradientActive : lineGradientInactive,

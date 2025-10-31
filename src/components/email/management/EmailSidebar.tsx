@@ -65,7 +65,7 @@ export function EmailSidebar({
   isLoading,
 }: EmailSidebarProps) {
   return (
-    <div className="fixed left-6 top-20 z-20" style={{ width: '416px', height: 'calc(100vh - 80px)' }}>
+    <div className="fixed left-6 z-20" style={{ top: '142px', width: '416px', height: 'calc(100vh - 142px)' }}>
       <div className="h-full flex flex-col">
         {/* Header semplificato */}
         <div className="p-4 mb-4 flex-shrink-0">

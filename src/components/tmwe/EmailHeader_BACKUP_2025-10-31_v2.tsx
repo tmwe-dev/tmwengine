@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Mail, Menu, Settings2, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight, Brain } from 'lucide-react';
+import { Search, Plus, Mail, Menu, Settings2, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -138,22 +138,6 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
                     >
                       <Mail className="h-4 w-4 mr-1" />
                       {!isMobile && 'Scarica Email'}
-                    </Button>
-                  )}
-
-                  {/* Smart Inbox AI button */}
-                  {onOpenSmartInbox && (
-                    <Button 
-                      onClick={() => {
-                        console.log('🧠 Smart Inbox AI button clicked!');
-                        onOpenSmartInbox();
-                      }}
-                      size="sm"
-                      variant="secondary"
-                      title="Apri Inbox Intelligente"
-                    >
-                      <Brain className="h-4 w-4 mr-1" />
-                      {!isMobile && 'Inbox AI'}
                     </Button>
                   )}
 

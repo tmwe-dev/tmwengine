@@ -1,17 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sparkles, Check } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
+import { BulkActionsBar } from './BulkActionsBar';
 
 interface SmartInboxHeaderIntelligentProps {
   categories: CategoryStats[];
@@ -27,6 +20,9 @@ interface SmartInboxHeaderIntelligentProps {
   unverifiedCount: number;
   selectedCount: number;
   onBulkClassify: (category: string) => void;
+  onArchive: () => void;
+  onDelete: () => void;
+  onMove: (categoryId: string) => void;
 }
 
 export const SmartInboxHeaderIntelligent = ({
@@ -38,9 +34,11 @@ export const SmartInboxHeaderIntelligent = ({
   classificationProgress,
   unverifiedCount,
   selectedCount,
-  onBulkClassify
+  onBulkClassify,
+  onArchive,
+  onDelete,
+  onMove
 }: SmartInboxHeaderIntelligentProps) => {
-  const [bulkCategory, setBulkCategory] = useState<string>('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
   
@@ -126,37 +124,7 @@ export const SmartInboxHeaderIntelligent = ({
         </Button>
       </div>
       
-      {/* Bulk Actions Bar */}
-      {selectedCount > 0 && (
-        <div className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
-          <span className="text-sm font-semibold">{selectedCount} email selezionate</span>
-          <Select value={bulkCategory} onValueChange={setBulkCategory}>
-            <SelectTrigger className="w-[200px] rounded-xl bg-white/10 border-white/20">
-              <SelectValue placeholder="Scegli categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map(cat => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.icon} {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button 
-            size="sm" 
-            disabled={!bulkCategory}
-            onClick={() => {
-              onBulkClassify(bulkCategory);
-              setBulkCategory('');
-            }}
-            className="rounded-xl"
-          >
-            <Check className="h-4 w-4 mr-2" />
-            Classifica
-          </Button>
-        </div>
-      )}
-      
+      {/* Classification Progress Bar */}
       {isClassifying && classificationProgress && (
         <div className="space-y-2 p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
           <div className="flex items-center justify-between text-sm">
@@ -266,6 +234,16 @@ export const SmartInboxHeaderIntelligent = ({
           ))}
         </div>
       </div>
+
+      {/* 🆕 Barra Azioni Unificata sotto i badge */}
+      <BulkActionsBar
+        selectedCount={selectedCount}
+        categories={categories}
+        onArchive={onArchive}
+        onDelete={onDelete}
+        onMove={onMove}
+        onBulkClassify={onBulkClassify}
+      />
     </div>
   );
 };

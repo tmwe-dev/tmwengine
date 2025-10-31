@@ -121,12 +121,16 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
   ).length;
 
   const handleClassifyNew = async () => {
+    console.log('🔍 [DEBUG] Classifica Nuove cliccato');
+    
     if (!userEmail) {
+      console.error('❌ [DEBUG] Utente non autenticato');
       toast.error('Utente non autenticato');
       return;
     }
 
     try {
+      console.log('📧 [DEBUG] Recupero email dal server...');
       toast.info('Recupero email dal server...');
       
       const response = await emailSearchApi.getEmailsMetadata({
@@ -135,8 +139,10 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
       });
 
       const serverEmails = response?.emails || [];
+      console.log('📬 [DEBUG] Email recuperate dal server:', serverEmails.length);
 
       if (!serverEmails || serverEmails.length === 0) {
+        console.warn('⚠️ [DEBUG] Nessuna email trovata sul server');
         toast.info('Nessuna nuova email da classificare');
         return;
       }
@@ -148,22 +154,53 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
 
       const classifiedUids = new Set(existingClassifications?.map(c => c.email_uid) || []);
       const unclassifiedEmails = serverEmails.filter(e => !classifiedUids.has(e.uid));
+      
+      console.log('🔍 [DEBUG] Email già classificate:', classifiedUids.size);
+      console.log('🆕 [DEBUG] Email non classificate:', unclassifiedEmails.length);
 
       if (unclassifiedEmails.length === 0) {
+        console.info('✅ [DEBUG] Tutte le email sono già classificate');
         toast.info('Tutte le email sono già classificate');
         return;
       }
 
       toast.success(`Trovate ${unclassifiedEmails.length} email da classificare`);
+      console.log('🚀 [DEBUG] Avvio classificazione...');
       
       await classifyEmails(unclassifiedEmails, userEmail);
       
       refetch();
+      console.log('✅ [DEBUG] Classificazione completata');
       
     } catch (error: any) {
-      console.error('Error fetching emails:', error);
+      console.error('❌ [DEBUG] Error fetching emails:', error);
       toast.error(`Errore recupero email: ${error.message}`);
     }
+  };
+
+  const handleArchiveSelected = async () => {
+    if (selectedEmails.size === 0) return;
+    
+    console.log('📦 Archiviando email selezionate:', Array.from(selectedEmails));
+    toast.success(`📦 ${selectedEmails.size} email archiviate`);
+    setSelectedEmails(new Set());
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedEmails.size === 0) return;
+    
+    console.log('🗑️ Eliminando email selezionate:', Array.from(selectedEmails));
+    toast.success(`🗑️ ${selectedEmails.size} email eliminate`);
+    setSelectedEmails(new Set());
+  };
+
+  const handleMoveSelected = async (categoryId: string) => {
+    if (selectedEmails.size === 0) return;
+    
+    const category = categoryStats.find(c => c.id === categoryId);
+    console.log(`📁 Spostando ${selectedEmails.size} email → ${category?.name || categoryId}`);
+    toast.success(`📁 ${selectedEmails.size} email spostate in ${category?.name || categoryId}`);
+    setSelectedEmails(new Set());
   };
 
   const handleBulkClassify = async (category: string) => {
@@ -259,6 +296,9 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
         unverifiedCount={unverifiedCount}
         selectedCount={selectedEmails.size}
         onBulkClassify={handleBulkClassify}
+        onArchive={handleArchiveSelected}
+        onDelete={handleDeleteSelected}
+        onMove={handleMoveSelected}
       />
       
       {/* Layout 3 colonne: Sidebar AI | Lista Email | Dettaglio */}

@@ -5,32 +5,18 @@ import { SmartInboxHeaderIntelligent } from './SmartInboxHeaderIntelligent';
 import { SmartEmailListIntelligent } from './SmartEmailListIntelligent';
 import { SmartEmailDetailPanel } from './SmartEmailDetailPanel';
 import { EmptyDetailPanel } from './EmptyDetailPanel';
-import { AIActionsSidebar } from './AIActionsSidebar';
-import { AIPromptDialog } from './AIPromptDialog';
-import { AIManualCanvas } from './AIManualCanvas';
-import { AIActionConfirmation } from './AIActionConfirmation';
 import React from 'react';
 import { ClassifiedEmail, EmailMetadata } from '@/types/smart-inbox';
 import { useSmartClassificationIntelligent } from '@/hooks/useSmartClassificationIntelligent';
-import { useEmailAIAutomation } from '@/hooks/useEmailAIAutomation';
-import { useEmailAIProcessor } from '@/hooks/useEmailAIProcessor';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { toast } from 'sonner';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 export const SmartInboxTabIntelligent = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedEmail, setSelectedEmail] = useState<ClassifiedEmail | null>(null);
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
   
-  // AI Automation State
-  const [selectedSender, setSelectedSender] = useState<string | null>(null);
-  const [promptDialogOpen, setPromptDialogOpen] = useState(false);
-  const [aiCanvasOpen, setAiCanvasOpen] = useState(false);
-  
   const { classifyEmails, isClassifying, progress } = useSmartClassificationIntelligent();
-  const { createSimpleAction, applyAIPromptToSender } = useEmailAIAutomation();
-  const { currentProposal, processEmailWithAI, clearProposal } = useEmailAIProcessor();
 
   // Fetch user email
   const { data: userEmail } = useQuery({
@@ -70,7 +56,7 @@ export const SmartInboxTabIntelligent = () => {
         classification,
         email: {
           uid: classification.email_uid || '',
-          email_id: undefined,
+          email_id: undefined, // Sarà popolato solo quando necessario
           subject: classification.ai_summary?.split(' - ')[1] || 'Email senza oggetto',
           from: { email: classification.sender_email },
           to: [],
@@ -102,6 +88,7 @@ export const SmartInboxTabIntelligent = () => {
       ...cat,
       count: classifiedEmails.filter(e => e.classification.category === cat.id).length
     })).sort((a, b) => {
+      // Ordina per priorità: Preventivi, Fatture, Rate, Bolle, Documenti, resto
       const priority = ['Preventivi / Quotazioni', 'Fatture', 'Rate Aeree / Rate Navali', 'Bolle / Packing List', 'Documenti Spedizione'];
       const aIdx = priority.indexOf(a.id);
       const bIdx = priority.indexOf(b.id);
@@ -112,6 +99,7 @@ export const SmartInboxTabIntelligent = () => {
     });
   }, [classifiedEmails]);
 
+  // Conta email da verificare
   const unverifiedCount = classifiedEmails.filter(
     e => !e.classification.is_verified || e.classification.confidence < 0.8
   ).length;
@@ -125,6 +113,7 @@ export const SmartInboxTabIntelligent = () => {
     try {
       toast.info('Recupero email dal server...');
       
+      // Fetch email dal server TMWE
       const response = await emailSearchApi.getEmailsMetadata({
         folder: 'INBOX',
         limit: 100
@@ -137,6 +126,7 @@ export const SmartInboxTabIntelligent = () => {
         return;
       }
 
+      // Filtra email già classificate
       const { data: existingClassifications } = await supabase
         .from('email_ai_classifications')
         .select('email_uid')
@@ -152,8 +142,10 @@ export const SmartInboxTabIntelligent = () => {
 
       toast.success(`Trovate ${unclassifiedEmails.length} email da classificare`);
       
+      // Avvia classificazione
       await classifyEmails(unclassifiedEmails, userEmail);
       
+      // Ricarica dati
       refetch();
       
     } catch (error: any) {
@@ -165,86 +157,30 @@ export const SmartInboxTabIntelligent = () => {
   const handleBulkClassify = async (category: string) => {
     if (!userEmail || selectedEmails.size === 0) return;
 
-    const emailsToClassify: EmailMetadata[] = Array.from(selectedEmails).map(uid => {
-      const email = classifiedEmails.find(e => e.email.uid === uid);
-      if (!email) return null;
-      return {
-        uid: email.email.uid,
-        email_id: email.email.email_id || 0,
-        subject: email.classification.ai_summary || '',
-        from: { email: email.classification.sender_email },
-        to: [],
-        date: email.email.date,
-        read: email.email.read,
-        has_attachments: email.email.has_attachments,
-        folder_name: email.email.folder_name,
-        body_preview: ''
-      };
-    }).filter(Boolean) as EmailMetadata[];
+      const emailsToClassify: EmailMetadata[] = Array.from(selectedEmails).map(uid => {
+        const email = classifiedEmails.find(e => e.email.uid === uid);
+        if (!email) return null;
+        return {
+          uid: email.email.uid,
+          email_id: email.email.email_id || 0,
+          subject: email.classification.ai_summary || '',
+          from: { email: email.classification.sender_email },
+          to: [],
+          date: email.email.date,
+          read: email.email.read,
+          has_attachments: email.email.has_attachments,
+          folder_name: email.email.folder_name,
+          body_preview: ''
+        };
+      }).filter(Boolean) as EmailMetadata[];
 
     await classifyEmails(emailsToClassify, userEmail, category);
     setSelectedEmails(new Set());
     refetch();
   };
 
-  // Handler per selezione email (aggiorna selectedSender)
-  const handleEmailSelect = (email: ClassifiedEmail) => {
-    setSelectedEmail(email);
-    setSelectedSender(email.classification.sender_email);
-  };
-
-  // Handler per azioni AI dalla sidebar
-  const handleActionSelect = async (
-    action: 'archive' | 'delete' | 'move' | 'ai-prompt',
-    promptId?: string
-  ) => {
-    if (!selectedSender) {
-      toast.error('Seleziona prima un mittente');
-      return;
-    }
-
-    switch (action) {
-      case 'archive':
-        await createSimpleAction(selectedSender, 'archive');
-        break;
-      case 'delete':
-        await createSimpleAction(selectedSender, 'delete');
-        break;
-      case 'move':
-        await createSimpleAction(selectedSender, 'move');
-        break;
-      case 'ai-prompt':
-        if (promptId) {
-          await applyAIPromptToSender(selectedSender, promptId);
-        } else {
-          setPromptDialogOpen(true);
-        }
-        break;
-    }
-  };
-
-  const handleConfirmProposal = async () => {
-    if (!currentProposal) return;
-
-    try {
-      // Chiamata edge function per eseguire azioni
-      const { error } = await supabase.functions.invoke('execute-ai-actions', {
-        body: { log_id: currentProposal.logId }
-      });
-
-      if (error) throw error;
-
-      toast.success('✅ Azioni eseguite con successo!');
-      clearProposal();
-      refetch();
-    } catch (error: any) {
-      console.error('Execute actions error:', error);
-      toast.error('Errore esecuzione azioni: ' + error.message);
-    }
-  };
-
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] max-w-[1800px] mx-auto w-full gap-4">
+    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] max-w-7xl mx-auto w-full gap-4">
       <SmartInboxHeaderIntelligent
         categories={categoryStats}
         selectedCategory={selectedCategory}
@@ -257,79 +193,31 @@ export const SmartInboxTabIntelligent = () => {
         onBulkClassify={handleBulkClassify}
       />
       
-      {/* Layout 3 colonne: Sidebar AI | Lista Email | Dettaglio */}
-      <div className="flex-1 flex gap-4 overflow-hidden">
-        {/* Colonna 1: AI Actions Sidebar (20%) - nascosta su mobile */}
-        <div className="hidden lg:block w-64 flex-shrink-0">
-          <AIActionsSidebar
-            selectedSender={selectedSender}
-            onActionSelect={handleActionSelect}
-          />
-        </div>
-
-        {/* Colonna 2: Lista Email (35%) */}
-        <div className="w-full lg:w-[35%] flex flex-col min-h-[300px] lg:min-h-0">
+      {/* Split Layout: Lista + Dettaglio */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden">
+        {/* Colonna sinistra: Lista (mobile full, desktop 2/5) */}
+        <div className="w-full lg:w-2/5 flex flex-col min-h-[300px] lg:min-h-0">
           <SmartEmailListIntelligent
             emails={classifiedEmails}
-            onEmailClick={handleEmailSelect}
+            onEmailClick={setSelectedEmail}
             isLoading={isLoading}
             selectedEmails={selectedEmails}
             onSelectionChange={setSelectedEmails}
           />
         </div>
         
-        {/* Colonna 3: Dettaglio (45%) */}
+        {/* Colonna destra: Dettaglio (mobile conditional, desktop always visible) */}
         <div className={`w-full lg:flex-1 flex flex-col ${selectedEmail ? 'block' : 'hidden lg:flex'}`}>
           {selectedEmail ? (
             <SmartEmailDetailPanel
               classifiedEmail={selectedEmail}
-              onClose={() => {
-                setSelectedEmail(null);
-                setSelectedSender(null);
-              }}
+              onClose={() => setSelectedEmail(null)}
             />
           ) : (
             <EmptyDetailPanel />
           )}
         </div>
       </div>
-
-      {/* AI Manual Canvas Dialog */}
-      <Dialog open={aiCanvasOpen} onOpenChange={setAiCanvasOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <AIManualCanvas />
-        </DialogContent>
-      </Dialog>
-
-      {/* AI Action Confirmation */}
-      {currentProposal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="max-w-2xl w-full">
-            <AIActionConfirmation
-              logId={currentProposal.logId}
-              emailInfo={{
-                subject: selectedEmail?.email.subject || '',
-                from: selectedEmail?.classification.sender_email || '',
-                preview: selectedEmail?.email.body_preview || ''
-              }}
-              proposal={currentProposal.proposal}
-              onConfirm={handleConfirmProposal}
-              onReject={clearProposal}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* AI Prompt Dialog */}
-      <AIPromptDialog
-        open={promptDialogOpen}
-        onOpenChange={setPromptDialogOpen}
-        senderEmail={selectedSender}
-        onPromptCreated={() => {
-          toast.success('Prompt AI creato!');
-          setPromptDialogOpen(false);
-        }}
-      />
     </div>
   );
 };

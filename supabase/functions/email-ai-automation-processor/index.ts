@@ -1,5 +1,6 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,156 +8,185 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   try {
     const { email_uid, sender_email, email_subject, email_body } = await req.json();
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
+    if (!email_uid || !sender_email) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: email_uid, sender_email' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // 1. Cerca prompt AI attivi per questo sender
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Cerca prompt AI per questo mittente
     const { data: prompts, error: promptError } = await supabase
       .from('email_sender_ai_prompts')
-      .select('*, config_ai!inner(*)')
+      .select('*')
       .eq('sender_email', sender_email)
       .eq('is_active', true)
-      .order('priority', { ascending: true })
+      .order('priority', { ascending: false })
       .limit(1);
 
     if (promptError || !prompts || prompts.length === 0) {
+      console.log('No active AI prompt found for sender:', sender_email);
       return new Response(
-        JSON.stringify({ message: 'Nessun prompt configurato per questo sender' }),
+        JSON.stringify({ message: 'No automation configured for this sender' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const prompt = prompts[0];
-    const aiConfig = prompt.config_ai;
 
-    // 2. Costruisci context
-    let context: any = {};
+    // Recupera configurazione AI
+    const { data: aiConfig, error: configError } = await supabase
+      .from('config_ai')
+      .select('*')
+      .eq('id', prompt.ai_config_id)
+      .single();
 
-    if (prompt.use_contact_aliases) {
-      const { data: contact } = await supabase
-        .from('rubrica')
-        .select('nome, azienda, alias, company_alias')
-        .ilike('email', sender_email)
-        .single();
-      if (contact) {
-        context.contact = {
-          name: contact.alias || contact.nome,
-          company: contact.company_alias || contact.azienda,
-        };
-      }
+    if (configError || !aiConfig) {
+      console.error('AI config not found');
+      return new Response(
+        JSON.stringify({ error: 'AI configuration not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    if (prompt.use_email_templates) {
-      const { data: templates } = await supabase
-        .from('email_template')
-        .select('nome_template, oggetto, corpo')
-        .limit(5);
-      context.templates = templates || [];
-    }
+    // Costruisci context
+    const context = {
+      email_uid,
+      sender_email,
+      email_subject: email_subject || 'No subject',
+      email_body_preview: email_body?.substring(0, 500) || 'No body'
+    };
 
-    // 3. Chiama Lovable AI
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const systemPrompt = `${prompt.ai_prompt}
+    const aiProvider = aiConfig.provider || 'openai';
+    const model = aiConfig.model || 'gpt-4o-mini';
+    const apiKey = aiConfig.api_key || Deno.env.get('OPENAI_API_KEY');
 
-IMPORTANTE: Devi SEMPRE:
-1. Analizzare l'email ricevuta
-2. Spiegare il tuo ragionamento in dettaglio
-3. Proporre azioni specifiche
-4. Chiedere conferma all'utente
+    const systemPrompt = `Sei un assistente AI per automazione email.
 
-Context disponibile: ${JSON.stringify(context)}
+Analizza l'email ricevuta e segui queste istruzioni:
+${prompt.ai_prompt}
 
-Rispondi in JSON con questo formato:
+IMPORTANTE: 
+- Rispondi SEMPRE in formato JSON con questa struttura:
 {
-  "reasoning": "Spiegazione dettagliata della tua analisi",
   "actions": [
-    { "type": "archive|forward|reply|move_to_folder", "description": "Cosa farai", "params": {...} }
+    { "type": "archive|move_to_folder|forward|delete|reply|mark_urgent", "description": "...", "params": {} }
   ],
+  "reasoning": "Spiega il tuo ragionamento...",
   "confidence": 85
-}`;
+}
 
-    console.log('Calling AI with model:', aiConfig.modello);
+- confidence deve essere un numero tra 0-100
+- Spiega sempre il ragionamento dietro le azioni proposte`;
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: aiConfig.modello,
+        model: model,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Analizza questa email:\n\nOggetto: ${email_subject}\n\nCorpo:\n${email_body.substring(0, 2000)}` }
+          { 
+            role: 'user', 
+            content: `Email da analizzare:
+Mittente: ${sender_email}
+Oggetto: ${context.email_subject}
+Corpo: ${context.email_body_preview}`
+          }
         ],
-        response_format: { type: "json_object" },
-        temperature: 0.7,
+        temperature: 0.3,
+        max_tokens: 800,
       }),
     });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI error:', aiResponse.status, errorText);
-      throw new Error(`AI Gateway error: ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI API error:', response.status, errorText);
+      return new Response(
+        JSON.stringify({ error: `AI API error: ${response.status}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const aiData = await aiResponse.json();
-    const proposal = JSON.parse(aiData.choices[0].message.content);
+    const aiData = await response.json();
+    const aiResponseText = aiData.choices[0].message.content;
 
-    // 4. Salva log esecuzione
-    const { data: logEntry, error: logError } = await supabase
+    let proposal;
+    try {
+      proposal = JSON.parse(aiResponseText);
+    } catch (e) {
+      console.error('Failed to parse AI response as JSON:', aiResponseText);
+      return new Response(
+        JSON.stringify({ error: 'AI returned invalid JSON response' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Salva log
+    const { data: logData, error: logError } = await supabase
       .from('email_ai_execution_log')
       .insert({
         prompt_id: prompt.id,
-        email_uid,
-        sender_email,
+        email_uid: email_uid,
+        sender_email: sender_email,
         user_id: prompt.user_id,
-        email_subject,
-        email_body_preview: email_body.substring(0, 500),
+        email_subject: email_subject,
+        email_body_preview: context.email_body_preview,
         prompt_used: prompt.ai_prompt,
         context_injected: context,
-        ai_config_used: { provider: aiConfig.provider, model: aiConfig.modello },
-        ai_response: JSON.stringify(proposal),
+        ai_config_used: { provider: aiProvider, model: model },
+        ai_response: aiResponseText,
         ai_reasoning: proposal.reasoning,
         proposed_actions: proposal.actions,
-        confidence: proposal.confidence / 100,
-        status: prompt.requires_confirmation ? 'pending' : 'confirmed',
+        confidence: proposal.confidence || 0,
+        status: prompt.requires_confirmation ? 'pending' : 'executed',
       })
       .select()
       .single();
 
     if (logError) {
-      console.error('Log error:', logError);
+      console.error('Error saving execution log:', logError);
     }
 
-    // 5. Update statistiche prompt
-    await supabase
+    // Update stats
+    const { error: updateError } = await supabase
       .from('email_sender_ai_prompts')
-      .update({
-        execution_count: prompt.execution_count + 1,
-        last_executed_at: new Date().toISOString(),
+      .update({ 
+        execution_count: (prompt.execution_count || 0) + 1,
+        last_executed_at: new Date().toISOString()
       })
       .eq('id', prompt.id);
 
+    if (updateError) {
+      console.error('Error updating prompt stats:', updateError);
+    }
+
     return new Response(
       JSON.stringify({
-        log_id: logEntry?.id,
-        proposal,
+        success: true,
+        log_id: logData?.id,
         requires_confirmation: prompt.requires_confirmation,
-        prompt_name: prompt.prompt_name,
+        proposal: proposal
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

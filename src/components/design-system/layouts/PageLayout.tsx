@@ -45,8 +45,13 @@ export function PageLayout({
   const content = (
     <div className={cn('min-h-screen w-full', className)}>
       {(title || description || actions || headerUtilities) && (
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-6 py-4">
+          {actions && (
+            <div className="flex items-center justify-end gap-2 order-1 md:order-1">
+              {actions}
+            </div>
+          )}
+          <div className="flex items-center gap-3 order-2 md:order-2">
             <div className="space-y-1">
               {title && (
                 typeof title === 'string' ? (
@@ -57,13 +62,12 @@ export function PageLayout({
               )}
               {description && <p className="text-muted-foreground">{description}</p>}
             </div>
-            {headerUtilities && (
-              <div className="flex items-center gap-2">
-                {headerUtilities}
-              </div>
-            )}
           </div>
-          {actions && <div className="flex items-center gap-2">{actions}</div>}
+          {headerUtilities && (
+            <div className="flex items-center gap-2 order-3 md:order-3">
+              {headerUtilities}
+            </div>
+          )}
         </div>
       )}
       

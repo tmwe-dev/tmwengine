@@ -39,25 +39,16 @@ export function GlassCard({
   return (
     <div
       onClick={onClick}
-      style={style}
       className={cn(
-        'bg-white/8 border border-white/25 rounded-2xl shadow-inner backdrop-saturate-150',
-        blurClasses[blur],
-        gradient && 'bg-gradient-to-br from-white/20 to-white/5',
-        glossy && 'relative overflow-hidden',
+        'rounded-2xl border border-white/20',
         onClick && 'cursor-pointer',
         className
       )}
+      style={{
+        ...style,
+        background: 'linear-gradient(to right, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.4) 20%, transparent 40%)'
+      }}
     >
-      {glossy && (
-        <div 
-          className="absolute inset-0 pointer-events-none z-0"
-          style={{
-            background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5) 0%, transparent 50%)',
-            mixBlendMode: 'screen',
-          }}
-        />
-      )}
       {(title || description || headerAction) && (
         <div className="flex items-center justify-between p-4 border-b border-white/10 relative z-10">
           <div>

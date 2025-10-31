@@ -113,10 +113,12 @@ export const SmartInboxTabIntelligent = () => {
       toast.info('Recupero email dal server...');
       
       // Fetch email dal server TMWE
-      const serverEmails = await emailSearchApi.getEmailsMetadata({
+      const response = await emailSearchApi.getEmailsMetadata({
         folder: 'INBOX',
         limit: 100
       });
+
+      const serverEmails = response?.emails || [];
 
       if (!serverEmails || serverEmails.length === 0) {
         toast.info('Nessuna nuova email da classificare');

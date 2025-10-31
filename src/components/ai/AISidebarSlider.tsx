@@ -197,7 +197,7 @@ export function AISidebarSlider({
       <button
         onClick={onToggle}
         className={cn(
-          "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
+          "fixed left-0 top-[30%] -translate-y-1/2 z-[62]",
           "bg-primary/90 hover:bg-primary p-3 rounded-r-lg shadow-lg",
           "transition-all duration-300",
           isOpen && "translate-x-[500px]"

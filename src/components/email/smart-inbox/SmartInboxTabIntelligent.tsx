@@ -286,7 +286,7 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
   };
 
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] w-full gap-4">
+    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] w-full gap-2">
       {/* Header compatto - solo titolo + Classifica Nuove + Barra Azioni */}
       <SmartInboxHeaderIntelligent
         categories={categoryStats}

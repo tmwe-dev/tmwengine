@@ -305,7 +305,7 @@ const FunEmail = () => {
               <TmweBackendDebugger />
             </div>
           ) : currentView === 'inbox' ? (
-            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4 relative z-0">
+            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-2 relative z-0">
               <SmartInboxTabIntelligent onOpenAISidebar={openAISidebarForSender} />
             </GradientBackground>
           ) : null}

@@ -3,7 +3,7 @@ import { Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
 import { BulkActionsBar } from './BulkActionsBar';
-import { AIProviderSelector } from '@/components/chat-laboratory/AIProviderSelector';
+import { SmartAIParticipantSelector } from './SmartAIParticipantSelector';
 import { useState, useEffect } from 'react';
 
 interface SmartInboxHeaderIntelligentProps {
@@ -52,33 +52,31 @@ export const SmartInboxHeaderIntelligent = ({
   };
   
   return (
-    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 space-y-4 shrink-0">
-      {/* Header principale */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-xl lg:text-2xl font-bold flex items-center gap-2">
-          <span className="text-2xl lg:text-4xl">🧠</span>
+    <div className="space-y-2 shrink-0">
+      {/* Header compatto */}
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold flex items-center gap-2">
+          <span className="text-xl">🧠</span>
           <span>Inbox Intelligente</span>
         </h2>
         
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-          {/* Selettore AI Provider */}
-          <div className="min-w-[280px]">
-            <AIProviderSelector
-              selectedConfigId={selectedAiConfigId}
-              onConfigChange={handleAiConfigChange}
-            />
-          </div>
+        <div className="flex gap-3 items-center">
+          {/* 3 Icone AI */}
+          <SmartAIParticipantSelector
+            selectedConfigId={selectedAiConfigId}
+            onConfigChange={handleAiConfigChange}
+          />
           
-          {/* Pulsante Classifica Nuove - icona grande */}
+          {/* Pulsante Classifica - più compatto */}
           <Button 
             onClick={onClassifyNew}
             variant="outline"
-            size="lg"
+            size="sm"
             disabled={isClassifying}
-            className="rounded-2xl bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 hover:scale-105 transition-all flex flex-col items-center gap-1.5 h-auto py-3 px-4 lg:py-4 lg:px-6"
+            className="rounded-xl bg-white/10 hover:bg-white/20 transition-all flex items-center gap-2 h-10 px-4"
           >
-            <Sparkles className="h-6 w-6 lg:h-8 lg:w-8" />
-            <span className="text-xs lg:text-sm font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica Nuove'}</span>
+            <Sparkles className="h-4 w-4" />
+            <span className="text-xs font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica'}</span>
           </Button>
         </div>
       </div>

@@ -32,14 +32,24 @@ serve(async (req) => {
       );
     }
 
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Recupera configurazione AI attiva
+    const { data: aiConfig, error: configError } = await supabase
+      .from('config_ai')
+      .select('*')
+      .eq('attivo', true)
+      .order('provider', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (configError || !aiConfig) {
+      throw new Error('Nessuna configurazione AI attiva trovata');
+    }
+
+    console.log('🤖 Using AI config:', { provider: aiConfig.provider, model: aiConfig.modello });
 
     // Step 1: Verifica se mittente ha categoria predefinita nel DB backup
     let predefinedCategory = force_category;
@@ -87,70 +97,169 @@ Mittente: ${from_email}
 Oggetto: ${subject || 'Nessun oggetto'}
 Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
 
-      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${lovableApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
-          ],
-          tools: [{
-            type: 'function',
-            function: {
-              name: 'classify_email',
-              description: 'Classifica email in una categoria specifica',
-              parameters: {
-                type: 'object',
-                properties: {
-                  category: {
-                    type: 'string',
-                    enum: [
-                      'Fatture',
-                      'Bolle / Packing List',
-                      'Preventivi / Quotazioni',
-                      'Rate Aeree / Rate Navali',
-                      'Documenti Spedizione',
-                      'Offerte di Lavoro',
-                      'Marketing / Pubblicità',
-                      'Spam / Non Rilevante'
-                    ],
-                    description: 'Categoria email'
-                  },
-                  confidence: {
-                    type: 'number',
-                    description: 'Confidenza classificazione (0-100)'
-                  },
-                  summary: {
-                    type: 'string',
-                    description: 'Riassunto conciso email (max 100 parole)'
-                  },
-                  keywords: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    description: 'Keywords rilevanti (3-5)'
-                  }
-                },
-                required: ['category', 'confidence', 'summary', 'keywords']
+      const tools = [{
+        type: 'function',
+        function: {
+          name: 'classify_email',
+          description: 'Classifica email in una categoria specifica',
+          parameters: {
+            type: 'object',
+            properties: {
+              category: {
+                type: 'string',
+                enum: [
+                  'Fatture',
+                  'Bolle / Packing List',
+                  'Preventivi / Quotazioni',
+                  'Rate Aeree / Rate Navali',
+                  'Documenti Spedizione',
+                  'Offerte di Lavoro',
+                  'Marketing / Pubblicità',
+                  'Spam / Non Rilevante'
+                ],
+                description: 'Categoria email'
+              },
+              confidence: {
+                type: 'number',
+                description: 'Confidenza classificazione (0-100)'
+              },
+              summary: {
+                type: 'string',
+                description: 'Riassunto conciso email (max 100 parole)'
+              },
+              keywords: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Keywords rilevanti (3-5)'
               }
-            }
-          }],
-          tool_choice: { type: 'function', function: { name: 'classify_email' } },
-          temperature: 0.3
-        }),
-      });
+            },
+            required: ['category', 'confidence', 'summary', 'keywords']
+          }
+        }
+      }];
 
-      if (!aiResponse.ok) {
-        const errorText = await aiResponse.text();
-        console.error('❌ AI API Error:', aiResponse.status, errorText);
-        throw new Error(`AI API error: ${aiResponse.status} - ${errorText}`);
+      let aiData;
+
+      // Chiamata API in base al provider
+      if (aiConfig.provider === 'openai') {
+        // OpenAI diretto
+        const apiKey = aiConfig.api_key;
+        if (!apiKey) throw new Error('API key OpenAI mancante');
+
+        const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: aiConfig.modello,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            tools,
+            tool_choice: { type: 'function', function: { name: 'classify_email' } },
+          }),
+        });
+
+        if (!aiResponse.ok) {
+          const errorText = await aiResponse.text();
+          console.error('❌ OpenAI API Error:', aiResponse.status, errorText);
+          throw new Error(`OpenAI API error: ${aiResponse.status} - ${errorText}`);
+        }
+
+        aiData = await aiResponse.json();
+
+      } else if (aiConfig.provider === 'anthropic') {
+        // Anthropic Claude
+        const apiKey = aiConfig.api_key;
+        if (!apiKey) throw new Error('API key Anthropic mancante');
+
+        const aiResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: aiConfig.modello,
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: [
+              { role: 'user', content: userPrompt }
+            ],
+            tools: tools.map(t => ({
+              name: t.function.name,
+              description: t.function.description,
+              input_schema: t.function.parameters
+            })),
+            tool_choice: { type: 'tool', name: 'classify_email' }
+          }),
+        });
+
+        if (!aiResponse.ok) {
+          const errorText = await aiResponse.text();
+          console.error('❌ Anthropic API Error:', aiResponse.status, errorText);
+          throw new Error(`Anthropic API error: ${aiResponse.status} - ${errorText}`);
+        }
+
+        const claudeData = await aiResponse.json();
+        
+        // Converti formato Anthropic a OpenAI-like
+        const toolUse = claudeData.content?.find((c: any) => c.type === 'tool_use');
+        if (toolUse) {
+          aiData = {
+            choices: [{
+              message: {
+                tool_calls: [{
+                  function: {
+                    name: toolUse.name,
+                    arguments: JSON.stringify(toolUse.input)
+                  }
+                }]
+              }
+            }]
+          };
+        } else {
+          throw new Error('No tool use in Claude response');
+        }
+
+      } else if (aiConfig.provider === 'lovable' || aiConfig.provider === 'google') {
+        // Lovable AI Gateway (Gemini)
+        const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+        if (!lovableApiKey) throw new Error('LOVABLE_API_KEY non configurata');
+
+        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: aiConfig.modello,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            tools,
+            tool_choice: { type: 'function', function: { name: 'classify_email' } },
+          }),
+        });
+
+        if (!aiResponse.ok) {
+          const errorText = await aiResponse.text();
+          console.error('❌ Lovable AI Error:', aiResponse.status, errorText);
+          throw new Error(`Lovable AI error: ${aiResponse.status} - ${errorText}`);
+        }
+
+        aiData = await aiResponse.json();
+
+      } else {
+        throw new Error(`Provider non supportato: ${aiConfig.provider}`);
       }
 
-      const aiData = await aiResponse.json();
       console.log('✅ AI Response:', JSON.stringify(aiData));
 
       const toolCall = aiData.choices[0]?.message?.tool_calls?.[0];

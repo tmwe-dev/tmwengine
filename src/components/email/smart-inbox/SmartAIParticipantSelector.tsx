@@ -32,6 +32,7 @@ export function SmartAIParticipantSelector({
     chatgpt: { gif: albertGif, static: albertStatic, name: 'Albert' },
     gemini: { gif: pitagoraGif, static: pitagoraStatic, name: 'Pitagora' },
     google: { gif: pitagoraGif, static: pitagoraStatic, name: 'Pitagora' },
+    lovable: { gif: pitagoraGif, static: pitagoraStatic, name: 'Pitagora' },
     claude: { gif: archimedeGif, static: archimedeStatic, name: 'Archimede' },
     anthropic: { gif: archimedeGif, static: archimedeStatic, name: 'Archimede' }
   };
@@ -65,7 +66,7 @@ export function SmartAIParticipantSelector({
   }, {} as Record<string, AIConfig[]>);
 
   // Ordine preferenziale dei provider da mostrare
-  const providerOrder = ['openai', 'chatgpt', 'google', 'gemini', 'anthropic', 'claude'];
+  const providerOrder = ['openai', 'chatgpt', 'lovable', 'google', 'gemini', 'anthropic', 'claude'];
   
   return (
     <div className="flex gap-3 justify-center items-center">

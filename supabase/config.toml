@@ -296,3 +296,6 @@ verify_jwt = true
 [functions.email-ai-manual-assistant]
 verify_jwt = true
 
+[functions.email-ai-automation-processor]
+verify_jwt = true
+

@@ -20,9 +20,6 @@ serve(async (req) => {
       body_text, 
       from_email, 
       user_email,
-      email_id = null, // ID numerico email sul server
-      email_date = null, // Data originale email
-      has_attachments = false, // Flag allegati
       force_category = null // Categoria forzata dall'utente
     } = await req.json();
 
@@ -81,71 +78,7 @@ serve(async (req) => {
     if (!predefinedCategory) {
       console.log('🤖 Nessuna categoria predefinita, chiamo AI...');
 
-      // 🔄 CASCATA PROMPT UNIFICATA
-      let systemPrompt = '';
-      let customAiConfig = null;
-      let promptSource = 'hardcoded';
-
-      // 1️⃣ Cerca prompt specifico per mittente
-      const { data: senderPrompt } = await supabase
-        .from('email_sender_ai_prompts')
-        .select('ai_prompt, ai_config_id')
-        .eq('sender_email', from_email)
-        .eq('user_email', user_email)
-        .maybeSingle();
-
-      if (senderPrompt?.ai_prompt) {
-        systemPrompt = senderPrompt.ai_prompt;
-        promptSource = 'mittente';
-        
-        // Se mittente ha AI config custom, usalo
-        if (senderPrompt.ai_config_id) {
-          const { data: customConfig } = await supabase
-            .from('config_ai')
-            .select('*')
-            .eq('id', senderPrompt.ai_config_id)
-            .eq('attivo', true)
-            .maybeSingle();
-          
-          if (customConfig) {
-            customAiConfig = customConfig;
-          }
-        }
-      }
-
-      // 2️⃣ Fallback: Prompt globale pagina /funnemail
-      if (!systemPrompt) {
-        const { data: pagePrompt } = await supabase
-          .from('page_system_prompts')
-          .select('system_prompt')
-          .eq('page_route', '/funnemail')
-          .eq('attivo', true)
-          .maybeSingle();
-
-        if (pagePrompt?.system_prompt) {
-          systemPrompt = pagePrompt.system_prompt;
-          promptSource = 'pagina';
-        }
-      }
-
-      // 3️⃣ Fallback: Prompt Lab attivo
-      if (!systemPrompt) {
-        const { data: labPrompt } = await supabase
-          .from('chat_laboratory_system_prompts')
-          .select('contenuto')
-          .eq('attivo', true)
-          .limit(1)
-          .maybeSingle();
-
-        if (labPrompt?.contenuto) {
-          systemPrompt = labPrompt.contenuto;
-          promptSource = 'lab';
-        }
-      }
-
-      // 4️⃣ Fallback finale: Hardcoded
-      if (!systemPrompt) {
-        systemPrompt = `Sei un assistente AI specializzato nella classificazione automatica di email per un'azienda di trasporti e spedizioni internazionali.
+      const systemPrompt = `Sei un assistente AI specializzato nella classificazione automatica di email per un'azienda di trasporti e spedizioni internazionali.
 
 CATEGORIE DISPONIBILI:
 1. Fatture - Fatture, invoices, ricevute fiscali
@@ -157,14 +90,7 @@ CATEGORIE DISPONIBILI:
 7. Marketing / Pubblicità - Newsletter, promozioni, advertising
 8. Spam / Non Rilevante - Spam, phishing, contenuti irrilevanti
 
-Analizza il contenuto dell'email e classifica nella categoria più appropriata. Fornisci anche un riassunto conciso (max 50 parole, NO ripetizioni oggetto/mittente) e 3-5 keywords rilevanti.`;
-      }
-
-      // Usa AI config custom se disponibile, altrimenti quello di default
-      const finalAiConfig = customAiConfig || aiConfig;
-
-      console.log('📝 Prompt scelto da:', promptSource);
-      console.log('🤖 AI config usata:', finalAiConfig.provider, finalAiConfig.modello);
+Analizza il contenuto dell'email e classifica nella categoria più appropriata. Fornisci anche un riassunto conciso (max 100 parole) e 3-5 keywords rilevanti.`;
 
       const userPrompt = `Email da classificare:
 Mittente: ${from_email}
@@ -215,9 +141,9 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
       let aiData;
 
       // Chiamata API in base al provider
-      if (finalAiConfig.provider === 'openai') {
+      if (aiConfig.provider === 'openai') {
         // OpenAI diretto
-        const apiKey = finalAiConfig.api_key;
+        const apiKey = aiConfig.api_key;
         if (!apiKey) throw new Error('API key OpenAI mancante');
 
         const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -227,7 +153,7 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: finalAiConfig.modello,
+            model: aiConfig.modello,
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
@@ -245,9 +171,9 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
 
         aiData = await aiResponse.json();
 
-      } else if (finalAiConfig.provider === 'anthropic') {
+      } else if (aiConfig.provider === 'anthropic') {
         // Anthropic Claude
-        const apiKey = finalAiConfig.api_key;
+        const apiKey = aiConfig.api_key;
         if (!apiKey) throw new Error('API key Anthropic mancante');
 
         const aiResponse = await fetch('https://api.anthropic.com/v1/messages', {
@@ -258,7 +184,7 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: finalAiConfig.modello,
+            model: aiConfig.modello,
             max_tokens: 1024,
             system: systemPrompt,
             messages: [
@@ -300,7 +226,7 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
           throw new Error('No tool use in Claude response');
         }
 
-      } else if (finalAiConfig.provider === 'lovable' || finalAiConfig.provider === 'google') {
+      } else if (aiConfig.provider === 'lovable' || aiConfig.provider === 'google') {
         // Lovable AI Gateway (Gemini)
         const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
         if (!lovableApiKey) throw new Error('LOVABLE_API_KEY non configurata');
@@ -312,7 +238,7 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: finalAiConfig.modello,
+            model: aiConfig.modello,
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
@@ -331,7 +257,7 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
         aiData = await aiResponse.json();
 
       } else {
-        throw new Error(`Provider non supportato: ${finalAiConfig.provider}`);
+        throw new Error(`Provider non supportato: ${aiConfig.provider}`);
       }
 
       console.log('✅ AI Response:', JSON.stringify(aiData));
@@ -357,7 +283,7 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
     // Step 3: Estrai dominio mittente
     const senderDomain = from_email.split('@')[1]?.toLowerCase() || '';
 
-    // Step 4: Salva classificazione nel DB (con dati email completi)
+    // Step 4: Salva classificazione nel DB
     const { data: insertData, error: insertError } = await supabase
       .from('email_ai_classifications')
       .upsert({
@@ -372,12 +298,6 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
         keywords,
         is_verified: isVerified,
         sender_logo_url: null, // Sarà aggiornato in background
-        subject: subject || null, // Salva oggetto email
-        body_preview: body_text?.substring(0, 500) || null, // Anteprima corpo
-        body_text: body_text || null, // Corpo completo
-        email_id: email_id, // ID numerico email
-        email_date: email_date, // Data originale
-        has_attachments: has_attachments // Flag allegati
       }, {
         onConflict: 'email_uid,user_email',
         ignoreDuplicates: false

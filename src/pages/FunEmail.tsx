@@ -209,16 +209,15 @@ const FunEmail = () => {
       actions={null}
     >
       <div className="relative w-full min-h-screen">
-        {/* Hamburger Button - visibile solo nelle view principali */}
-        {['list', 'fun', 'management', 'inbox'].includes(currentView) && (
+        {/* Hamburger Button - nascosto in modalità debug/admin e management */}
+        {!['quick-download', 'integrity', 'debugger', 'management'].includes(currentView) && (
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className={cn(
-              "fixed left-0 top-1/2 -translate-y-1/2 z-[100]",
+              "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
               "bg-background/90 hover:bg-accent/90 border-r border-y border-border p-3 rounded-r-lg shadow-lg",
               "transition-all duration-300",
-              aiSidebarOpen && "translate-x-[500px]",
-              !aiSidebarOpen && sidebarOpen && "translate-x-80"
+              sidebarOpen && "translate-x-80"
             )}
             aria-label="Toggle Menu"
           >
@@ -228,8 +227,8 @@ const FunEmail = () => {
 
         {/* Content - condizionale in base alla view */}
         <div className={cn(
-          "w-full min-h-screen relative",
-          ['list', 'fun', 'management', 'inbox'].includes(currentView) && "pl-16"
+          "w-full",
+          !['management', 'quick-download', 'integrity', 'debugger'].includes(currentView) && "pl-16"
         )}>
           {currentView === 'list' ? (
             <EmailList
@@ -305,9 +304,9 @@ const FunEmail = () => {
               <TmweBackendDebugger />
             </div>
           ) : currentView === 'inbox' ? (
-            <div className="h-[calc(100vh-5rem)] pb-5 px-1 relative z-0">
+            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
               <SmartInboxTabIntelligent onOpenAISidebar={openAISidebarForSender} />
-            </div>
+            </GradientBackground>
           ) : null}
         </div>
 
@@ -378,7 +377,6 @@ const FunEmail = () => {
           onClose={() => setAiSidebarOpen(false)}
           onToggle={handleToggleAISidebar}
           senderEmail={selectedSenderForAI}
-          sidebarOpen={sidebarOpen}
           onPromptCreated={handlePromptCreatedGlobal}
         />
       )}

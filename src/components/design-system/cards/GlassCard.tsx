@@ -15,7 +15,6 @@ interface GlassCardProps {
   title?: string;
   description?: string;
   headerAction?: React.ReactNode;
-  style?: React.CSSProperties;
 }
 
 export function GlassCard({
@@ -27,8 +26,7 @@ export function GlassCard({
   onClick,
   title,
   description,
-  headerAction,
-  style
+  headerAction
 }: GlassCardProps) {
   const blurClasses = {
     sm: 'backdrop-blur-sm',
@@ -39,7 +37,6 @@ export function GlassCard({
   return (
     <div
       onClick={onClick}
-      style={style}
       className={cn(
         'bg-white/10 border border-white/20 rounded-2xl',
         blurClasses[blur],

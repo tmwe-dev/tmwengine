@@ -2361,70 +2361,52 @@ export type Database = {
       email_ai_classifications: {
         Row: {
           ai_summary: string | null
-          body_preview: string | null
-          body_text: string | null
           category: string
           confidence: number
           created_at: string | null
-          email_date: string | null
-          email_id: number | null
           email_message_id: string | null
           email_uid: string
           folder_name: string | null
-          has_attachments: boolean | null
           id: string
           is_verified: boolean | null
           keywords: string[] | null
           sender_domain: string
           sender_email: string
           sender_logo_url: string | null
-          subject: string | null
           updated_at: string | null
           user_email: string
         }
         Insert: {
           ai_summary?: string | null
-          body_preview?: string | null
-          body_text?: string | null
           category: string
           confidence: number
           created_at?: string | null
-          email_date?: string | null
-          email_id?: number | null
           email_message_id?: string | null
           email_uid: string
           folder_name?: string | null
-          has_attachments?: boolean | null
           id?: string
           is_verified?: boolean | null
           keywords?: string[] | null
           sender_domain: string
           sender_email: string
           sender_logo_url?: string | null
-          subject?: string | null
           updated_at?: string | null
           user_email: string
         }
         Update: {
           ai_summary?: string | null
-          body_preview?: string | null
-          body_text?: string | null
           category?: string
           confidence?: number
           created_at?: string | null
-          email_date?: string | null
-          email_id?: number | null
           email_message_id?: string | null
           email_uid?: string
           folder_name?: string | null
-          has_attachments?: boolean | null
           id?: string
           is_verified?: boolean | null
           keywords?: string[] | null
           sender_domain?: string
           sender_email?: string
           sender_logo_url?: string | null
-          subject?: string | null
           updated_at?: string | null
           user_email?: string
         }

@@ -70,20 +70,20 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
 
       if (error) throw error;
 
-      // Trasforma in ClassifiedEmail con dati reali dal DB
+      // Trasforma in ClassifiedEmail (email metadata sarà caricata on-demand)
       return (data || []).map(classification => ({
         classification,
         email: {
           uid: classification.email_uid || '',
-          email_id: classification.email_id || undefined, // ID numerico per fetch dettaglio
-          subject: classification.subject || 'Email senza oggetto', // Oggetto reale dal DB
+          email_id: undefined,
+          subject: classification.ai_summary?.split(' - ')[1] || 'Email senza oggetto',
           from: { email: classification.sender_email },
           to: [],
-          date: classification.email_date || classification.created_at, // Data email reale
+          date: classification.created_at,
           read: false,
-          has_attachments: classification.has_attachments || false, // Flag allegati reale
+          has_attachments: false,
           folder_name: classification.folder_name || 'INBOX',
-          body_preview: classification.body_preview || classification.ai_summary || undefined
+          body_preview: classification.ai_summary
         }
       } as ClassifiedEmail));
     },
@@ -286,7 +286,7 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
   };
 
   return (
-    <div className="flex flex-col h-full w-full gap-2">
+    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] max-w-[1800px] mx-auto w-full gap-4">
       {/* Header compatto - solo titolo + Classifica Nuove + Barra Azioni */}
       <SmartInboxHeaderIntelligent
         categories={categoryStats}
@@ -304,19 +304,17 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
       />
       
       {/* 🆕 Layout 3 Colonne: Sidebar Categorie | Lista Email | Dettaglio */}
-      <div className="flex-1 flex gap-3 2xl:gap-4 overflow-x-auto overflow-y-hidden">
+      <div className="flex-1 flex gap-4 overflow-hidden">
         {/* Colonna 1: Sidebar Categorie Verticale */}
-        <div className="hidden lg:block">
-          <CategoriesVerticalSidebar
-            categories={categoryStats}
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
-            unverifiedCount={unverifiedCount}
-          />
-        </div>
+        <CategoriesVerticalSidebar
+          categories={categoryStats}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          unverifiedCount={unverifiedCount}
+        />
 
-        {/* Colonna 2: Lista Email - responsive width */}
-        <div className="w-full lg:w-[45%] xl:w-[40%] 2xl:w-[35%] flex flex-col min-h-0 flex-shrink-0">
+        {/* Colonna 2: Lista Email (30% width) */}
+        <div className="w-[30%] flex flex-col min-h-0">
           <SmartEmailListIntelligent
             emails={classifiedEmails}
             onEmailClick={handleEmailSelect}
@@ -327,7 +325,7 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
         </div>
         
         {/* Colonna 3: Dettaglio Email (flex-1, prende tutto lo spazio restante) */}
-        <div className="flex-1 2xl:flex-[1.2] flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0">
           {selectedEmail ? (
             <SmartEmailDetailPanel
               classifiedEmail={selectedEmail}

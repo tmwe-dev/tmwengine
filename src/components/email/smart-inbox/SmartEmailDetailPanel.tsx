@@ -26,43 +26,28 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
     }
 
     const fetchEmailBody = async () => {
-      // Se abbiamo già body_text nel DB, usalo direttamente
-      if (classifiedEmail.classification.body_text) {
-        setEmailBody({
-          html: classifiedEmail.classification.body_text.includes('<') ? classifiedEmail.classification.body_text : undefined,
-          text: classifiedEmail.classification.body_text.includes('<') ? undefined : classifiedEmail.classification.body_text
-        });
-        setIsLoadingBody(false);
+      if (!classifiedEmail.email.email_id) {
+        console.error('email_id not available for fetching body');
         return;
       }
 
-      // Altrimenti prova a fare fetch dal server TMWE (solo se abbiamo email_id)
-      if (classifiedEmail.email.email_id) {
-        setIsLoadingBody(true);
-        try {
-          const detailData = await emailSearchApi.getEmailDetail({
-            email_id: classifiedEmail.email.email_id,
-            include_body: true
-          });
+      setIsLoadingBody(true);
+      try {
+        const detailData = await emailSearchApi.getEmailDetail({
+          email_id: classifiedEmail.email.email_id,
+          include_body: true
+        });
 
-          if (detailData) {
-            setEmailBody({
-              html: detailData.body_html,
-              text: detailData.body_text
-            });
-          }
-        } catch (error: any) {
-          console.error('Error fetching email body:', error);
-          // Fallback a body_preview se disponibile
-          const fallbackText = classifiedEmail.classification.body_preview || 'Contenuto non disponibile';
-          setEmailBody({ text: fallbackText });
-        } finally {
-          setIsLoadingBody(false);
+        if (detailData) {
+          setEmailBody({
+            html: detailData.body_html,
+            text: detailData.body_text
+          });
         }
-      } else {
-        // Nessun email_id disponibile, usa body_preview come fallback
-        const fallbackText = classifiedEmail.classification.body_preview || 'Contenuto non disponibile';
-        setEmailBody({ text: fallbackText });
+      } catch (error: any) {
+        console.error('Error fetching email body:', error);
+        toast.error('Errore caricamento corpo email');
+      } finally {
         setIsLoadingBody(false);
       }
     };
@@ -106,7 +91,7 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
       </div>
 
       {/* Contenuto scrollabile */}
-      <ScrollArea className="flex-1 px-6" hideScrollbar>
+      <ScrollArea className="flex-1 px-6">
         <div className="space-y-3 py-3">
           {/* Stato classificazione */}
           <div className="flex items-center gap-2 flex-wrap">

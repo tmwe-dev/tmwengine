@@ -142,19 +142,28 @@ serve(async (req) => {
 
       // 4️⃣ Fallback finale: Hardcoded
       if (!systemPrompt) {
-        systemPrompt = `Sei un assistente AI specializzato nella classificazione automatica di email per un'azienda di trasporti e spedizioni internazionali.
+        systemPrompt = `Analizza questa email di trasporto/logistica e classificala.
 
-CATEGORIE DISPONIBILI:
-1. Fatture - Fatture, invoices, ricevute fiscali
-2. Bolle / Packing List - DDT, bolle di accompagnamento, packing list
-3. Preventivi / Quotazioni - Richieste preventivo, quotazioni, offerte commerciali
-4. Rate Aeree / Rate Navali - Tariffe trasporto, rate shipping
-5. Documenti Spedizione - AWB, Bill of Lading, tracking, customs
-6. Offerte di Lavoro - Job posting, recruiting, carriere
-7. Marketing / Pubblicità - Newsletter, promozioni, advertising
-8. Spam / Non Rilevante - Spam, phishing, contenuti irrilevanti
+CATEGORIE: Fatture, Bolle/Packing List, Preventivi/Quotazioni, Rate Aeree/Rate Navali, Documenti Spedizione, Offerte di Lavoro, Marketing/Pubblicità, Spam/Non Rilevante
 
-Analizza il contenuto dell'email e classifica nella categoria più appropriata. Fornisci anche un riassunto conciso (max 50 parole, NO ripetizioni oggetto/mittente) e 3-5 keywords rilevanti.`;
+REGOLE RIASSUNTO (CRITICO):
+- MAX 50 parole
+- NO ripetizioni oggetto/mittente (già visibili in UI)
+- Focus su AZIONI/DATI: importi, scadenze, tracking, numeri documento
+- Vai DRITTO AL SODO
+
+ESEMPI:
+❌ "Email con oggetto invoice 251615 proveniente da..."
+✅ "Fattura N. 251615 - €1.234,56 - Scad. 15/12"
+
+❌ "Il mittente richiede un preventivo per spedizione..."
+✅ "RFQ #789 - Milano→NYC - 500kg - urgente entro 20/12"
+
+❌ "Contenuto vuoto, possibile allegato"
+✅ "Documento allegato - verifica AWB N. 12345"
+
+Ritorna categoria, summary conciso e actionable, keywords rilevanti.`;
+        promptSource = 'hardcoded';
       }
 
       // Usa AI config custom se disponibile, altrimenti quello di default

@@ -26,8 +26,16 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
     }
 
     const fetchEmailBody = async () => {
+      // Usa body_preview se disponibile
+      if (classifiedEmail.email.body_preview) {
+        setEmailBody({
+          text: classifiedEmail.email.body_preview
+        });
+      }
+
+      // Tenta recupero body completo se email_id disponibile
       if (!classifiedEmail.email.email_id) {
-        console.error('email_id not available for fetching body');
+        console.warn('⚠️ email_id non disponibile - mostro solo body_preview');
         return;
       }
 
@@ -45,7 +53,7 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
           });
         }
       } catch (error: any) {
-        console.error('Error fetching email body:', error);
+        console.error('❌ Error fetching email body:', error);
         toast.error('Errore caricamento corpo email');
       } finally {
         setIsLoadingBody(false);

@@ -78,8 +78,8 @@ export const SmartEmailCardIntelligent = ({
 
           {/* Nome e Email */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-base text-white truncate">{companyName}</h3>
-            <p className="text-xs text-white/70 truncate">
+            <h3 className="font-bold text-base text-gray-900 dark:text-white truncate">{companyName}</h3>
+            <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
               {classification.sender_email}
             </p>
           </div>
@@ -100,9 +100,9 @@ export const SmartEmailCardIntelligent = ({
           {/* Data e Allegati */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {email.has_attachments && (
-              <Paperclip className="h-4 w-4 text-white/60" />
+              <Paperclip className="h-4 w-4 text-gray-600 dark:text-gray-400" />
             )}
-            <span className="text-xs text-white/70 whitespace-nowrap">
+            <span className="text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
               {formatDate(email.date)}
             </span>
           </div>
@@ -117,7 +117,7 @@ export const SmartEmailCardIntelligent = ({
           style={{ 
             backgroundColor: `${categoryColor}80`,
             borderColor: `${categoryColor}`,
-            color: 'white'
+            color: '#1f2937'
           }}
         >
           {getCategoryLucideIcon(classification.category)}
@@ -132,7 +132,7 @@ export const SmartEmailCardIntelligent = ({
 
         {/* Riassunto AI */}
         {classification.ai_summary && (
-          <p className="text-sm text-white/80 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-gray-900 dark:text-gray-100 line-clamp-2 leading-relaxed">
             {classification.ai_summary}
           </p>
         )}
@@ -145,7 +145,7 @@ export const SmartEmailCardIntelligent = ({
             {classification.keywords.slice(0, 3).map((keyword, idx) => (
               <Badge 
                 key={idx} 
-                className="text-xs bg-white/20 backdrop-blur-md border border-white/20 text-white hover:bg-white/30"
+                className="text-xs bg-white/20 backdrop-blur-md border border-white/20 text-gray-900 dark:text-white hover:bg-white/30"
               >
                 {keyword}
               </Badge>

@@ -5,6 +5,8 @@ import { CategoryStats } from '@/types/smart-inbox';
 import { BulkActionsBar } from './BulkActionsBar';
 import { AIProviderSelector } from '@/components/chat-laboratory/AIProviderSelector';
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface SmartInboxHeaderIntelligentProps {
   categories: CategoryStats[];
@@ -23,6 +25,8 @@ interface SmartInboxHeaderIntelligentProps {
   onArchive: () => void;
   onDelete: () => void;
   onMove: (categoryId: string) => void;
+  onEmailsRefresh?: () => void;
+  userEmail?: string;
 }
 
 export const SmartInboxHeaderIntelligent = ({
@@ -37,7 +41,9 @@ export const SmartInboxHeaderIntelligent = ({
   onBulkClassify,
   onArchive,
   onDelete,
-  onMove
+  onMove,
+  onEmailsRefresh,
+  userEmail
 }: SmartInboxHeaderIntelligentProps) => {
   const [selectedAiConfigId, setSelectedAiConfigId] = useState<string | null>(null);
 
@@ -50,6 +56,27 @@ export const SmartInboxHeaderIntelligent = ({
     setSelectedAiConfigId(configId);
     localStorage.setItem('funnemail_ai_config', configId);
   };
+
+  const handleCleanupTests = async () => {
+    if (!userEmail) {
+      toast.error('Email utente non disponibile');
+      return;
+    }
+    
+    const { error } = await supabase
+      .from('email_ai_classifications')
+      .delete()
+      .eq('user_email', userEmail)
+      .eq('is_verified', false);
+    
+    if (error) {
+      console.error('❌ Errore pulizia test:', error);
+      toast.error('Errore durante la pulizia');
+    } else {
+      toast.success('🗑️ Test eliminati con successo');
+      if (onEmailsRefresh) onEmailsRefresh();
+    }
+  };
   
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 space-y-4 shrink-0">
@@ -60,7 +87,7 @@ export const SmartInboxHeaderIntelligent = ({
           <span>Inbox Intelligente</span>
         </h2>
         
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center flex-wrap">
           {/* Selettore AI Provider */}
           <div className="min-w-[280px]">
             <AIProviderSelector
@@ -79,6 +106,16 @@ export const SmartInboxHeaderIntelligent = ({
           >
             <Sparkles className="h-6 w-6 lg:h-8 lg:w-8" />
             <span className="text-xs lg:text-sm font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica Nuove'}</span>
+          </Button>
+
+          {/* Pulsante Pulisci Test */}
+          <Button 
+            onClick={handleCleanupTests}
+            variant="destructive"
+            size="sm"
+            className="gap-2"
+          >
+            🗑️ Pulisci Test
           </Button>
         </div>
       </div>

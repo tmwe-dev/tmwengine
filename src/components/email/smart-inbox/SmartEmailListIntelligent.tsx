@@ -54,11 +54,11 @@ export const SmartEmailListIntelligent = ({
 
   return (
     <div 
-      className="flex-1 flex flex-col bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden"
+      className="flex-1 flex flex-col bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10"
       style={{ touchAction: 'pan-y' }}
     >
       <ScrollArea className="h-full">
-        <div className="p-8 space-y-6 overflow-visible">
+        <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-5 lg:space-y-6 overflow-visible">
           {emails.map((classifiedEmail) => (
             <SmartEmailCardIntelligent
               key={classifiedEmail.classification.id}

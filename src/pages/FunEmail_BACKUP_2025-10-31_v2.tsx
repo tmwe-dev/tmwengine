@@ -6,7 +6,7 @@ import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { X, Menu, Brain } from 'lucide-react';
+import { X, Menu } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
@@ -17,14 +17,12 @@ import { EmailManagementTab } from '@/components/email/EmailManagementTab';
 import { QuickEmailDownloader } from '@/components/email/QuickEmailDownloader';
 import { EmailIntegrityChecker } from '@/components/email/EmailIntegrityChecker';
 import { TmweBackendDebugger } from '@/components/email/TmweBackendDebugger';
-import { SmartInboxDialog } from '@/components/email/smart-inbox/SmartInboxDialog';
 
 const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick' | 'integrity' | 'debug'>('list');
-  const [smartInboxOpen, setSmartInboxOpen] = useState(false);
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
@@ -150,15 +148,6 @@ const FunEmail = () => {
               onClick={() => setCurrentView('debug')}
             >
               🐛 Debug
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSmartInboxOpen(true)}
-              className="gap-1"
-            >
-              <Brain className="h-4 w-4" />
-              Inbox AI
             </Button>
           </div>
         }
@@ -311,12 +300,6 @@ const FunEmail = () => {
           </div>
         </div>
       )}
-
-      {/* Smart Inbox Dialog */}
-      <SmartInboxDialog 
-        open={smartInboxOpen} 
-        onOpenChange={setSmartInboxOpen} 
-      />
     </PageLayout>
   );
 };

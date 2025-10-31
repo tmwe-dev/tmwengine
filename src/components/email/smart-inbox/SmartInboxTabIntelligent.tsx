@@ -5,6 +5,7 @@ import { SmartInboxHeaderIntelligent } from './SmartInboxHeaderIntelligent';
 import { SmartEmailListIntelligent } from './SmartEmailListIntelligent';
 import { SmartEmailDetailPanel } from './SmartEmailDetailPanel';
 import { EmptyDetailPanel } from './EmptyDetailPanel';
+import { CategoriesVerticalSidebar } from './CategoriesVerticalSidebar';
 import { AIActionsSidebar } from './AIActionsSidebar';
 import { AIPromptDialog } from './AIPromptDialog';
 import { AIManualCanvas } from './AIManualCanvas';
@@ -286,6 +287,7 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
 
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] max-w-[1800px] mx-auto w-full gap-4">
+      {/* Header compatto - solo titolo + Classifica Nuove + Barra Azioni */}
       <SmartInboxHeaderIntelligent
         categories={categoryStats}
         selectedCategory={selectedCategory}
@@ -301,18 +303,18 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
         onMove={handleMoveSelected}
       />
       
-      {/* Layout 3 colonne: Sidebar AI | Lista Email | Dettaglio */}
+      {/* 🆕 Layout 3 Colonne: Sidebar Categorie | Lista Email | Dettaglio */}
       <div className="flex-1 flex gap-4 overflow-hidden">
-        {/* Colonna 1: AI Actions Sidebar (20%) - nascosta su mobile */}
-        <div className="hidden lg:block w-64 flex-shrink-0">
-          <AIActionsSidebar
-            selectedSender={selectedSender}
-            onActionSelect={handleActionSelect}
-          />
-        </div>
+        {/* Colonna 1: Sidebar Categorie Verticale */}
+        <CategoriesVerticalSidebar
+          categories={categoryStats}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          unverifiedCount={unverifiedCount}
+        />
 
-        {/* Colonna 2: Lista Email (35%) */}
-        <div className="w-full lg:w-[35%] flex flex-col min-h-[300px] lg:min-h-0">
+        {/* Colonna 2: Lista Email (30% width) */}
+        <div className="w-[30%] flex flex-col min-h-0">
           <SmartEmailListIntelligent
             emails={classifiedEmails}
             onEmailClick={handleEmailSelect}
@@ -322,8 +324,8 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
           />
         </div>
         
-        {/* Colonna 3: Dettaglio (45%) */}
-        <div className={`w-full lg:flex-1 flex flex-col ${selectedEmail ? 'block' : 'hidden lg:flex'}`}>
+        {/* Colonna 3: Dettaglio Email (flex-1, prende tutto lo spazio restante) */}
+        <div className="flex-1 flex flex-col min-h-0">
           {selectedEmail ? (
             <SmartEmailDetailPanel
               classifiedEmail={selectedEmail}

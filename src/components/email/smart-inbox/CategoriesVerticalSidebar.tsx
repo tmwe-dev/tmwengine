@@ -19,7 +19,7 @@ export function CategoriesVerticalSidebar({
   const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
 
   return (
-    <div className="w-[240px] flex-shrink-0 space-y-2 h-full overflow-y-auto">
+    <div className="w-[15%] max-w-[200px] min-w-[160px] flex-shrink-0 space-y-2 h-full overflow-y-auto">
       {/* Tutte */}
       <GlassCard
         blur="md"

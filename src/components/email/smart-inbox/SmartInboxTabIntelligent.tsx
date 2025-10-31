@@ -306,15 +306,17 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
       {/* 🆕 Layout 3 Colonne: Sidebar Categorie | Lista Email | Dettaglio */}
       <div className="flex-1 flex gap-4 overflow-hidden">
         {/* Colonna 1: Sidebar Categorie Verticale */}
-        <CategoriesVerticalSidebar
-          categories={categoryStats}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          unverifiedCount={unverifiedCount}
-        />
+        <div className="hidden lg:block">
+          <CategoriesVerticalSidebar
+            categories={categoryStats}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            unverifiedCount={unverifiedCount}
+          />
+        </div>
 
-        {/* Colonna 2: Lista Email (30% width) */}
-        <div className="w-[30%] flex flex-col min-h-0">
+        {/* Colonna 2: Lista Email - responsive width */}
+        <div className="w-full md:w-[50%] lg:w-[40%] flex flex-col min-h-0">
           <SmartEmailListIntelligent
             emails={classifiedEmails}
             onEmailClick={handleEmailSelect}

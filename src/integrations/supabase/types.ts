@@ -161,6 +161,80 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_prompt_library: {
+        Row: {
+          ai_config_id: string | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          default_actions: Json | null
+          id: string
+          is_public: boolean | null
+          last_used_at: string | null
+          prompt_description: string | null
+          prompt_name: string
+          requires_company_data: boolean | null
+          requires_contact_aliases: boolean | null
+          requires_email_templates: boolean | null
+          suggested_max_tokens: number | null
+          suggested_temperature: number | null
+          system_prompt: string
+          tags: string[] | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          ai_config_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          default_actions?: Json | null
+          id?: string
+          is_public?: boolean | null
+          last_used_at?: string | null
+          prompt_description?: string | null
+          prompt_name: string
+          requires_company_data?: boolean | null
+          requires_contact_aliases?: boolean | null
+          requires_email_templates?: boolean | null
+          suggested_max_tokens?: number | null
+          suggested_temperature?: number | null
+          system_prompt: string
+          tags?: string[] | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          ai_config_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          default_actions?: Json | null
+          id?: string
+          is_public?: boolean | null
+          last_used_at?: string | null
+          prompt_description?: string | null
+          prompt_name?: string
+          requires_company_data?: boolean | null
+          requires_contact_aliases?: boolean | null
+          requires_email_templates?: boolean | null
+          suggested_max_tokens?: number | null
+          suggested_temperature?: number | null
+          system_prompt?: string
+          tags?: string[] | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_prompt_library_ai_config_id_fkey"
+            columns: ["ai_config_id"]
+            isOneToOne: false
+            referencedRelation: "config_ai"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attivita: {
         Row: {
           assegnato_a: string | null
@@ -2346,6 +2420,47 @@ export type Database = {
           },
         ]
       }
+      email_ai_context_cache: {
+        Row: {
+          available_templates: Json | null
+          cached_at: string | null
+          company_data: Json | null
+          contact_aliases: Json | null
+          expires_at: string | null
+          id: string
+          rubrica_id: string | null
+          sender_email: string
+        }
+        Insert: {
+          available_templates?: Json | null
+          cached_at?: string | null
+          company_data?: Json | null
+          contact_aliases?: Json | null
+          expires_at?: string | null
+          id?: string
+          rubrica_id?: string | null
+          sender_email: string
+        }
+        Update: {
+          available_templates?: Json | null
+          cached_at?: string | null
+          company_data?: Json | null
+          contact_aliases?: Json | null
+          expires_at?: string | null
+          id?: string
+          rubrica_id?: string | null
+          sender_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_ai_context_cache_rubrica_id_fkey"
+            columns: ["rubrica_id"]
+            isOneToOne: false
+            referencedRelation: "rubrica"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_ai_execution_log: {
         Row: {
           ai_config_used: Json | null
@@ -2780,6 +2895,8 @@ export type Database = {
           base_action: string | null
           base_action_params: Json | null
           created_at: string
+          custom_actions: Json | null
+          custom_prompt_additions: string | null
           execution_count: number | null
           failure_count: number | null
           id: string
@@ -2787,6 +2904,7 @@ export type Database = {
           last_executed_at: string | null
           priority: number | null
           prompt_description: string | null
+          prompt_library_id: string | null
           prompt_name: string | null
           requires_confirmation: boolean
           sender_email: string
@@ -2803,6 +2921,8 @@ export type Database = {
           base_action?: string | null
           base_action_params?: Json | null
           created_at?: string
+          custom_actions?: Json | null
+          custom_prompt_additions?: string | null
           execution_count?: number | null
           failure_count?: number | null
           id?: string
@@ -2810,6 +2930,7 @@ export type Database = {
           last_executed_at?: string | null
           priority?: number | null
           prompt_description?: string | null
+          prompt_library_id?: string | null
           prompt_name?: string | null
           requires_confirmation?: boolean
           sender_email: string
@@ -2826,6 +2947,8 @@ export type Database = {
           base_action?: string | null
           base_action_params?: Json | null
           created_at?: string
+          custom_actions?: Json | null
+          custom_prompt_additions?: string | null
           execution_count?: number | null
           failure_count?: number | null
           id?: string
@@ -2833,6 +2956,7 @@ export type Database = {
           last_executed_at?: string | null
           priority?: number | null
           prompt_description?: string | null
+          prompt_library_id?: string | null
           prompt_name?: string | null
           requires_confirmation?: boolean
           sender_email?: string
@@ -2849,6 +2973,13 @@ export type Database = {
             columns: ["ai_config_id"]
             isOneToOne: false
             referencedRelation: "config_ai"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sender_ai_prompts_prompt_library_id_fkey"
+            columns: ["prompt_library_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_library"
             referencedColumns: ["id"]
           },
         ]
@@ -5477,6 +5608,10 @@ export type Database = {
       }
       increment_elevenlabs_usage: {
         Args: { p_characters: number; p_cost: number; p_user_id: string }
+        Returns: undefined
+      }
+      increment_prompt_library_usage: {
+        Args: { prompt_id: string }
         Returns: undefined
       }
       increment_token_count: {

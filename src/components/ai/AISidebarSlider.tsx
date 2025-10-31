@@ -16,13 +16,15 @@ import { AIPromptLibrarySelector } from './AIPromptLibrarySelector';
 interface AISidebarSliderProps {
   isOpen: boolean;
   onClose: () => void;
+  onToggle: () => void;
   senderEmail?: string | null;
   onPromptCreated?: (data: { prompt_name: string; system_prompt: string; sender_email?: string }) => void;
 }
 
 export function AISidebarSlider({ 
   isOpen, 
-  onClose, 
+  onClose,
+  onToggle,
   senderEmail,
   onPromptCreated 
 }: AISidebarSliderProps) {
@@ -193,7 +195,7 @@ export function AISidebarSlider({
 
       {/* Linguetta trigger (sempre visibile) */}
       <button
-        onClick={() => isOpen ? onClose() : onClose()}
+        onClick={onToggle}
         className={cn(
           "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
           "bg-primary/90 hover:bg-primary p-3 rounded-r-lg shadow-lg",

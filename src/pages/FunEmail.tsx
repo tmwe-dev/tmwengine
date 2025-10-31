@@ -21,6 +21,7 @@ import { TmweBackendDebugger } from '@/components/email/TmweBackendDebugger';
 import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartInboxTabIntelligent';
 import { GradientBackground } from '@/components/design-system';
 import { cn } from '@/lib/utils';
+import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();
@@ -34,6 +35,10 @@ const FunEmail = () => {
     totalDB: 0,
     folders: [] as { name: string; count: number }[],
   });
+  
+  // AI Sidebar globale state
+  const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
+  const [selectedSenderForAI, setSelectedSenderForAI] = useState<string | null>(null);
 
   // Sincronizza currentView con query param "view" dal CRMLayout
   useEffect(() => {
@@ -52,6 +57,12 @@ const FunEmail = () => {
       setCurrentView('list'); // Default
     }
   }, [searchParams]);
+
+  // Chiudi AI sidebar quando cambia tab
+  useEffect(() => {
+    setAiSidebarOpen(false);
+    setSelectedSenderForAI(null);
+  }, [currentView]);
 
   // ✅ Query email dal DB locale per la cartella selezionata
   const {
@@ -124,6 +135,56 @@ const FunEmail = () => {
     },
     enabled: !!selectedEmailId,
   });
+
+  // Handler AI Sidebar
+  const handleToggleAISidebar = () => {
+    setAiSidebarOpen(prev => !prev);
+  };
+
+  const openAISidebarForSender = (senderEmail: string) => {
+    setSelectedSenderForAI(senderEmail);
+    setAiSidebarOpen(true);
+  };
+
+  const handlePromptCreatedGlobal = async (promptData: {
+    prompt_name: string;
+    system_prompt: string;
+    sender_email?: string;
+  }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    try {
+      const { data: newPrompt, error } = await supabase
+        .from('ai_prompt_library')
+        .insert({
+          prompt_name: promptData.prompt_name,
+          system_prompt: promptData.system_prompt,
+          created_by: user.id,
+          is_public: false,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (promptData.sender_email && newPrompt) {
+        await supabase
+          .from('email_sender_ai_prompts')
+          .insert({
+            sender_email: promptData.sender_email,
+            ai_prompt: promptData.system_prompt,
+            prompt_library_id: newPrompt.id,
+            prompt_name: promptData.prompt_name,
+            user_id: user.id,
+          });
+      }
+
+      console.log('✅ Prompt salvato:', newPrompt);
+    } catch (error) {
+      console.error('❌ Errore salvataggio prompt:', error);
+    }
+  };
 
   return (
     <PageLayout 
@@ -202,7 +263,7 @@ const FunEmail = () => {
             </div>
           ) : currentView === 'management' ? (
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
-              <EmailManagementTab />
+              <EmailManagementTab onOpenAISidebar={openAISidebarForSender} />
             </GradientBackground>
           ) : currentView === 'quick-download' ? (
             <div className="p-6">
@@ -240,7 +301,7 @@ const FunEmail = () => {
             </div>
           ) : currentView === 'inbox' ? (
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
-              <SmartInboxTabIntelligent />
+              <SmartInboxTabIntelligent onOpenAISidebar={openAISidebarForSender} />
             </GradientBackground>
           ) : null}
         </div>
@@ -303,6 +364,17 @@ const FunEmail = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* AI Sidebar Globale - disponibile in tutte le view email */}
+      {!['quick-download', 'integrity', 'debugger'].includes(currentView) && (
+        <AISidebarSlider
+          isOpen={aiSidebarOpen}
+          onClose={() => setAiSidebarOpen(false)}
+          onToggle={handleToggleAISidebar}
+          senderEmail={selectedSenderForAI}
+          onPromptCreated={handlePromptCreatedGlobal}
+        />
       )}
 
     </PageLayout>

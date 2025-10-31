@@ -18,7 +18,11 @@ import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
-export const SmartInboxTabIntelligent = () => {
+interface SmartInboxTabIntelligentProps {
+  onOpenAISidebar?: (senderEmail: string) => void;
+}
+
+export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntelligentProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedEmail, setSelectedEmail] = useState<ClassifiedEmail | null>(null);
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());

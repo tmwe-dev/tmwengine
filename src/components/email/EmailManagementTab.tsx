@@ -69,7 +69,11 @@ const grid50PercentCollision: CollisionDetection = (args) => {
   return collisions;
 };
 
-export function EmailManagementTab() {
+interface EmailManagementTabProps {
+  onOpenAISidebar?: (senderEmail: string) => void;
+}
+
+export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps) {
   const [senders, setSenders] = useState<SenderAnalysis[]>([]);
   const [groups, setGroups] = useState<EmailSenderGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,8 +88,6 @@ export function EmailManagementTab() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('count-desc');
   const [lastUpdatedGroupId, setLastUpdatedGroupId] = useState<string | null>(null);
-  const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
-  const [selectedSenderForAI, setSelectedSenderForAI] = useState<string | null>(null);
   
   // 🆕 Map callbacks per aggiornamento ottimistico card gruppi
   const groupUpdateCallbacksRef = useRef<Map<string, (senderEmail: string) => void>>(new Map());
@@ -662,19 +664,6 @@ export function EmailManagementTab() {
         existingNames={groups.map(g => g.nome_gruppo)}
       />
 
-      {/* AI Sidebar Slider */}
-      <AISidebarSlider
-        isOpen={aiSidebarOpen}
-        onClose={() => setAiSidebarOpen(false)}
-        senderEmail={selectedSenderForAI}
-        onPromptCreated={async (data) => {
-          console.log('Prompt created:', data);
-          toast({
-            title: '✅ Prompt salvato',
-            description: `"${data.prompt_name}" disponibile nella library`,
-          });
-        }}
-      />
     </div>
   );
 }

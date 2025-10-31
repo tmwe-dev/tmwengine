@@ -512,6 +512,9 @@ export default function ImportTemplates() {
         toast.info(`${selectedCompanies.length - activeCompanies.length} contatti ignorati (flag attivo non presente)`);
       }
 
+      // Mappa per tracciare gli ID di rubrica dopo il trasferimento
+      let importedToRubricaMap = new Map<string, string>();
+
       // Se l'utente ha scelto di salvare in rubrica, trasferisci prima i contatti
       if (activityData.salva_in_rubrica) {
         try {
@@ -529,11 +532,11 @@ export default function ImportTemplates() {
             origine: 'import_multiple_activities'
           }));
 
-          // TODO: Fix types issue with rubrica table
-          // const { error: rubricaError } = await supabase
-          //   .from('rubrica')
-          //   .insert(contactsToTransfer);
-          const rubricaError = null; // Temporary - will be fixed when types are updated
+          // Inserisci i contatti in rubrica e recupera gli ID generati
+          const { data: insertedContacts, error: rubricaError } = await supabase
+            .from('rubrica')
+            .insert(contactsToTransfer)
+            .select('id, email');
 
           if (rubricaError) {
             console.error('Error transferring to rubrica:', rubricaError);
@@ -541,14 +544,20 @@ export default function ImportTemplates() {
             return;
           }
 
+          // Crea mappa: imported_contact_id -> rubrica_id
+          importedToRubricaMap = new Map<string, string>();
+          activeCompanies.forEach((company, index) => {
+            if (insertedContacts && insertedContacts[index]) {
+              importedToRubricaMap.set(company.id, insertedContacts[index].id);
+            }
+          });
+
           // Aggiorna lo stato dei record come trasferiti
           const recordIds = activeCompanies.map(c => c.id);
-          // TODO: Fix types issue with imported_contacts table
-          // const { error: updateError } = await supabase
-          //   .from('imported_contacts')
-          //   .update({ is_imported_to_rubrica: true })
-          //   .in('id', recordIds);
-          const updateError = null; // Temporary - will be fixed when types are updated
+          const { error: updateError } = await supabase
+            .from('imported_contacts')
+            .update({ is_imported_to_rubrica: true })
+            .in('id', recordIds);
 
           if (updateError) {
             console.error('Error updating import status:', updateError);
@@ -745,9 +754,12 @@ export default function ImportTemplates() {
 
         console.log('✅ Creating activity for company:', company.id, 'with description length:', descrizione.length);
 
+        // Usa l'ID della rubrica mappato (se trasferiti) o l'ID importato originale
+        const rubricaIdToUse = importedToRubricaMap?.get(company.id) || company.id;
+
         // Attività immediata - stato 'completata' solo se email inviata con successo
         activities.push({
-          rubrica_id: company.id,
+          rubrica_id: rubricaIdToUse,
           tipo: activityData.tipo,
           descrizione: descrizione,
           stato: (activityData.tipo === 'email' && emailSendResult === 'success') ? 'completata' : 'aperta',
@@ -772,7 +784,7 @@ export default function ImportTemplates() {
           const descrizioneFutura = `Chiamata programmata\n\nContatto: ${company.record.name || 'Non specificato'}\nTelefono: ${company.record.phone || company.record.cell || 'Non disponibile'}\nAzienda: ${company.record.company_name || ''}\n\nDa chiamare per: follow-up`;
 
           activities.push({
-            rubrica_id: company.id,
+            rubrica_id: rubricaIdToUse,
             tipo: 'chiamata',
             descrizione: descrizioneFutura,
             stato: 'aperta', // Attività da fare

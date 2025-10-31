@@ -26,8 +26,13 @@ export function EmailCarouselContainer({
 }: EmailCarouselContainerProps) {
   return (
     <div 
-      className="flex-1 overflow-visible relative min-h-[600px] transition-transform duration-300"
-      style={{ transform: `translateY(${verticalOffset}px)` }}
+      className="flex-1 overflow-visible relative transition-transform duration-300"
+      style={{ 
+        transform: `translateY(${verticalOffset}px)`,
+        paddingTop: verticalOffset < 0 ? `${Math.abs(verticalOffset)}px` : '0px',
+        paddingBottom: verticalOffset > 0 ? `${verticalOffset}px` : '0px',
+        minHeight: `${600 + Math.abs(verticalOffset)}px`
+      }}
     >
       <EmailCarousel3D
         categories={categories}

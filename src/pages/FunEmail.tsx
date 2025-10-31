@@ -216,8 +216,7 @@ const FunEmail = () => {
             className={cn(
               "fixed left-0 top-1/2 -translate-y-1/2 z-[100]",
               "bg-background/90 hover:bg-accent/90 border-r border-y border-border p-3 rounded-r-lg shadow-lg",
-              "transition-all duration-300",
-              sidebarOpen && "translate-x-80"
+              "transition-all duration-300"
             )}
             aria-label="Toggle Menu"
           >

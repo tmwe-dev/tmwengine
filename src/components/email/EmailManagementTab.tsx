@@ -460,10 +460,20 @@ export function EmailManagementTab() {
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+    const { active, over, delta } = event;
     setActiveDragId(null);
 
-    // ❌ CASO 1: Nessun target valido (drop fuori da tutto)
+    // 🆕 BLOCCO 1: Verifica se è stato un vero drag o solo un click
+    // Se delta.x e delta.y sono entrambi < 5px, è un click, non un drag
+    const dragDistance = Math.sqrt(delta.x ** 2 + delta.y ** 2);
+    const isClick = dragDistance < 5; // Threshold: 5px
+    
+    if (isClick) {
+      console.log('🚫 Click rilevato (non drag) - nessuna azione');
+      return;
+    }
+
+    // ❌ CASO 2: Nessun target valido (drop fuori da tutto)
     if (!over) {
       console.log('🚫 Drop fuori da zona valida - card torna in lista');
       return;

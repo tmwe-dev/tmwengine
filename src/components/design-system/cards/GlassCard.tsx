@@ -41,7 +41,7 @@ export function GlassCard({
       onClick={onClick}
       style={style}
       className={cn(
-        'bg-white/10 border border-white/20 rounded-2xl',
+        'bg-white/8 border border-white/25 rounded-2xl shadow-inner backdrop-saturate-150',
         blurClasses[blur],
         gradient && 'bg-gradient-to-br from-white/20 to-white/5',
         glossy && 'relative overflow-hidden',
@@ -53,8 +53,8 @@ export function GlassCard({
         <div 
           className="absolute inset-0 pointer-events-none z-0"
           style={{
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 40%)',
-            mixBlendMode: 'overlay',
+            background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5) 0%, transparent 50%)',
+            mixBlendMode: 'screen',
           }}
         />
       )}

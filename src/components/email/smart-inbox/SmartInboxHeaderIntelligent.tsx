@@ -174,30 +174,26 @@ export const SmartInboxHeaderIntelligent = ({
           {/* Badge "Da Verificare" */}
           <button
             onClick={() => onCategoryChange('da-verificare')}
-            className={`relative flex-shrink-0 flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all hover:scale-105 overflow-hidden ${
+            className={`relative flex-shrink-0 flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all hover:scale-105 ${
               selectedCategory === 'da-verificare' 
-                ? 'border-2 border-orange-500' 
-                : 'border border-white/20 hover:bg-white/20'
+                ? 'border-2' 
+                : 'border hover:bg-white/20'
             }`}
             style={{
+              borderColor: selectedCategory === 'da-verificare' 
+                ? 'rgba(255, 154, 0, 0.8)' 
+                : 'rgba(255, 255, 255, 0.5)',
               background: selectedCategory === 'da-verificare' 
-                ? 'linear-gradient(135deg, rgba(255,154,0,0.3) 0%, rgba(255,154,0,0.1) 50%, rgba(255,154,0,0.25) 100%)'
-                : 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.12) 100%)',
-              backdropFilter: 'blur(16px) saturate(180%)',
+                ? 'rgba(255, 154, 0, 0.30)'
+                : 'rgba(255, 255, 255, 0.30)',
+              backdropFilter: 'blur(8px) saturate(150%)',
               boxShadow: selectedCategory === 'da-verificare'
-                ? '0 8px 32px rgba(255,154,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1)'
-                : '0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.1)',
+                ? '0 4px 12px rgba(255, 154, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
+                : '0 2px 8px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
             }}
           >
-            {/* Glossy reflection overlay */}
-            <div 
-              className="absolute inset-0 rounded-2xl pointer-events-none"
-              style={{
-                background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 70%, rgba(0,0,0,0.1) 100%)',
-              }}
-            />
-            <span className="text-2xl relative z-10">🔍</span>
-            <span className="text-xs font-semibold relative z-10">Da Verificare</span>
+            <span className="text-2xl relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">🔍</span>
+            <span className="text-xs font-bold relative z-10 text-gray-900 dark:text-white">Da Verificare</span>
             <Badge className="rounded-full bg-orange-500/30 backdrop-blur-md px-1.5 py-0.5 text-xs relative z-10">
               {unverifiedCount}
             </Badge>

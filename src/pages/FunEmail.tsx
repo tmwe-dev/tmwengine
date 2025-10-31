@@ -6,7 +6,7 @@ import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { X, Menu, Brain, Settings, Zap, SearchCheck, Bug } from 'lucide-react';
+import { X, Menu, Brain, Settings, Zap, SearchCheck, Bug, ArrowLeft } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
@@ -164,7 +164,21 @@ const FunEmail = () => {
   return (
     <PageLayout 
       gradient={true}
-      title="Fun Email"
+      title={
+        ['quick', 'integrity', 'debug'].includes(currentView) ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCurrentView('list')}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Torna a Fun Email
+          </Button>
+        ) : (
+          "Fun Email"
+        )
+      }
       headerUtilities={<DebugUtilitiesMenu />}
       actions={
         !['quick', 'integrity', 'debug'].includes(currentView) ? (

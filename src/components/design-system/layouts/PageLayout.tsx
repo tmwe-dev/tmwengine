@@ -18,7 +18,7 @@ import { FadeIn } from '../animations/FadeIn';
  */
 
 interface PageLayoutProps {
-  title?: string;
+  title?: React.ReactNode;
   description?: string;
   actions?: React.ReactNode;
   headerUtilities?: React.ReactNode;
@@ -48,7 +48,13 @@ export function PageLayout({
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <div className="space-y-1">
-              {title && <h1 className="text-3xl font-bold">{title}</h1>}
+              {title && (
+                typeof title === 'string' ? (
+                  <h1 className="text-3xl font-bold">{title}</h1>
+                ) : (
+                  title
+                )
+              )}
               {description && <p className="text-muted-foreground">{description}</p>}
             </div>
             {headerUtilities && (

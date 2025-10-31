@@ -101,23 +101,43 @@ export function EmailSidebar({
             />
           </div>
           
-          {/* 🆕 SORT CONTROLS */}
-          {onSortChange && (
-            <div className="mb-3">
+          {/* Riga: Ordina + Pulsanti azioni */}
+          <div className="flex gap-2 items-center justify-between mb-3">
+            {onSortChange && (
               <SenderSortControls 
                 currentSort={sortOption}
                 onSortChange={onSortChange}
               />
+            )}
+            
+            <div className="flex gap-2 items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-9 flex-shrink-0 p-0"
+                onClick={onCreateCategory}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              
+              <Button
+                variant={filterByAttachments ? "default" : "outline"}
+                size="sm"
+                className="h-9 w-9 flex-shrink-0 p-0"
+                onClick={() => setFilterByAttachments(!filterByAttachments)}
+              >
+                <Filter className="h-4 w-4" />
+              </Button>
             </div>
-          )}
+          </div>
           
-          {/* Riga compatta: Dropdown + Plus + Filter */}
-          <div className="flex gap-2 items-center">
+          {/* Dropdown categoria */}
+          <div className="mb-3">
             <Select 
               value={activeCategoryId || undefined} 
               onValueChange={onCategorySelect}
             >
-              <SelectTrigger className="flex-1 h-9">
+              <SelectTrigger className="h-9">
                 <SelectValue placeholder="📂 Categoria" />
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
@@ -131,24 +151,6 @@ export function EmailSidebar({
                 ))}
               </SelectContent>
             </Select>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 w-9 flex-shrink-0 p-0"
-              onClick={onCreateCategory}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            
-            <Button
-              variant={filterByAttachments ? "default" : "outline"}
-              size="sm"
-              className="h-9 w-9 flex-shrink-0 p-0"
-              onClick={() => setFilterByAttachments(!filterByAttachments)}
-            >
-              <Filter className="h-4 w-4" />
-            </Button>
           </div>
         </div>
         

@@ -3,6 +3,8 @@ import { Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
 import { BulkActionsBar } from './BulkActionsBar';
+import { AIProviderSelector } from '@/components/chat-laboratory/AIProviderSelector';
+import { useState, useEffect } from 'react';
 
 interface SmartInboxHeaderIntelligentProps {
   categories: CategoryStats[];
@@ -37,6 +39,17 @@ export const SmartInboxHeaderIntelligent = ({
   onDelete,
   onMove
 }: SmartInboxHeaderIntelligentProps) => {
+  const [selectedAiConfigId, setSelectedAiConfigId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('funnemail_ai_config');
+    if (saved) setSelectedAiConfigId(saved);
+  }, []);
+
+  const handleAiConfigChange = (configId: string) => {
+    setSelectedAiConfigId(configId);
+    localStorage.setItem('funnemail_ai_config', configId);
+  };
   
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 space-y-4 shrink-0">
@@ -47,17 +60,27 @@ export const SmartInboxHeaderIntelligent = ({
           <span>Inbox Intelligente</span>
         </h2>
         
-        {/* Pulsante Classifica Nuove - icona grande */}
-        <Button 
-          onClick={onClassifyNew}
-          variant="outline"
-          size="lg"
-          disabled={isClassifying}
-          className="rounded-2xl bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 hover:scale-105 transition-all flex flex-col items-center gap-1.5 h-auto py-3 px-4 lg:py-4 lg:px-6"
-        >
-          <Sparkles className="h-6 w-6 lg:h-8 lg:w-8" />
-          <span className="text-xs lg:text-sm font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica Nuove'}</span>
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          {/* Selettore AI Provider */}
+          <div className="min-w-[280px]">
+            <AIProviderSelector
+              selectedConfigId={selectedAiConfigId}
+              onConfigChange={handleAiConfigChange}
+            />
+          </div>
+          
+          {/* Pulsante Classifica Nuove - icona grande */}
+          <Button 
+            onClick={onClassifyNew}
+            variant="outline"
+            size="lg"
+            disabled={isClassifying}
+            className="rounded-2xl bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 hover:scale-105 transition-all flex flex-col items-center gap-1.5 h-auto py-3 px-4 lg:py-4 lg:px-6"
+          >
+            <Sparkles className="h-6 w-6 lg:h-8 lg:w-8" />
+            <span className="text-xs lg:text-sm font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica Nuove'}</span>
+          </Button>
+        </div>
       </div>
       
       {/* Classification Progress Bar */}

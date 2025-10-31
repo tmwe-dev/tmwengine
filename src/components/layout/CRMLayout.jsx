@@ -38,7 +38,9 @@ import {
   User,
   Sparkles,
   Globe,
-  Bug
+  Bug,
+  Download,
+  CheckCircle2
  } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -201,7 +203,7 @@ const CRMLayout = ({ children }) => {
                 <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
                   {getCurrentPageTitle()}
                 </h1>
-                {/* TMWE Token Status + Debug Monitor */}
+                {/* TMWE Token Status + Debug Utilities */}
                 <div className="flex items-center gap-1 px-3">
                   <TokenKeyIndicator 
                     tokenCount={tmweToken ? 1 : 0}
@@ -223,6 +225,53 @@ const CRMLayout = ({ children }) => {
                     >
                       <Bug className="w-4 h-4" />
                     </Button>
+                  )}
+                  
+                  {/* Debug Utilities - Solo in FunEmail */}
+                  {location.pathname === '/funnemail' && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-0.5 h-6 w-6"
+                          title="Debug Utilities"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-56 bg-popover">
+                        <div className="space-y-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start"
+                            onClick={() => navigate('/funnemail?view=quick-download')}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Quick Download
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start"
+                            onClick={() => navigate('/funnemail?view=integrity')}
+                          >
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Verifica Integrità
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start"
+                            onClick={() => navigate('/funnemail?view=debugger')}
+                          >
+                            <Bug className="mr-2 h-4 w-4" />
+                            Backend Debugger
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   )}
                 </div>
               </>

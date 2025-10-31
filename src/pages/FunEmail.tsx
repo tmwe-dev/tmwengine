@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/components/design-system';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { X, Menu, Brain, Settings, Zap, SearchCheck, Bug, ArrowLeft } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { X, Menu, Brain, ArrowLeft, Bug } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
@@ -22,16 +22,25 @@ import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartIn
 import { GradientBackground } from '@/components/design-system';
 
 const FunEmail = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick' | 'integrity' | 'debug' | 'inbox'>('list');
-  const [debugMenuOpen, setDebugMenuOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick-download' | 'integrity' | 'debugger' | 'inbox'>('list');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
     folders: [] as { name: string; count: number }[],
   });
+
+  // Sincronizza currentView con query param "view" dal CRMLayout
+  useEffect(() => {
+    const viewParam = searchParams.get('view');
+    if (viewParam && ['quick-download', 'integrity', 'debugger'].includes(viewParam)) {
+      setCurrentView(viewParam as typeof currentView);
+    }
+  }, [searchParams]);
 
   // ✅ Query email dal DB locale per la cartella selezionata
   const {
@@ -105,71 +114,18 @@ const FunEmail = () => {
     enabled: !!selectedEmailId,
   });
 
-  // Menu Debug/Admin separato
-  const DebugUtilitiesMenu = () => (
-    <Popover open={debugMenuOpen} onOpenChange={setDebugMenuOpen}>
-      <PopoverTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="icon"
-          className="h-8 w-8"
-          title="Strumenti Debug/Admin"
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-56 p-2">
-        <div className="space-y-1">
-          <Button
-            variant={currentView === 'quick' ? 'default' : 'ghost'}
-            size="sm"
-            className="w-full justify-start"
-            onClick={() => {
-              setCurrentView('quick');
-              setDebugMenuOpen(false);
-            }}
-          >
-            <Zap className="mr-2 h-4 w-4" />
-            Quick Download
-          </Button>
-          <Button
-            variant={currentView === 'integrity' ? 'default' : 'ghost'}
-            size="sm"
-            className="w-full justify-start"
-            onClick={() => {
-              setCurrentView('integrity');
-              setDebugMenuOpen(false);
-            }}
-          >
-            <SearchCheck className="mr-2 h-4 w-4" />
-            Verifica Integrità
-          </Button>
-          <Button
-            variant={currentView === 'debug' ? 'default' : 'ghost'}
-            size="sm"
-            className="w-full justify-start"
-            onClick={() => {
-              setCurrentView('debug');
-              setDebugMenuOpen(false);
-            }}
-          >
-            <Bug className="mr-2 h-4 w-4" />
-            Backend Debugger
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-
   return (
     <PageLayout 
       gradient={true}
       title={
-        ['quick', 'integrity', 'debug'].includes(currentView) ? (
+        ['quick-download', 'integrity', 'debugger'].includes(currentView) ? (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setCurrentView('list')}
+            onClick={() => {
+              setCurrentView('list');
+              navigate('/funnemail');
+            }}
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -179,9 +135,8 @@ const FunEmail = () => {
           "Fun Email"
         )
       }
-      headerUtilities={<DebugUtilitiesMenu />}
       actions={
-        !['quick', 'integrity', 'debug'].includes(currentView) ? (
+        !['quick-download', 'integrity', 'debugger'].includes(currentView) ? (
           <div className="flex flex-wrap gap-2">
             <Button
               variant={currentView === 'list' ? 'default' : 'outline'}
@@ -219,7 +174,7 @@ const FunEmail = () => {
     >
       <div className="relative w-full min-h-screen">
         {/* Hamburger Button - nascosto in modalità debug/admin e management */}
-        {!['quick', 'integrity', 'debug', 'management'].includes(currentView) && (
+        {!['quick-download', 'integrity', 'debugger', 'management'].includes(currentView) && (
           <Button
             variant="ghost"
             size="icon"
@@ -269,7 +224,7 @@ const FunEmail = () => {
             </div>
           ) : currentView === 'management' ? (
             <EmailManagementTab />
-          ) : currentView === 'quick' ? (
+          ) : currentView === 'quick-download' ? (
             <div className="p-6">
               <QuickEmailDownloader
                 preSelectedFolders={preSelectedFolders}
@@ -294,12 +249,12 @@ const FunEmail = () => {
               // ✅ Step 2: Delay per propagazione state
               setTimeout(() => {
                 console.log('🎯 [FunEmail] Now switching to Quick Download view');
-                setCurrentView('quick');
+                setCurrentView('quick-download');
               }, 50);
             }}
               />
             </div>
-          ) : currentView === 'debug' ? (
+          ) : currentView === 'debugger' ? (
             <div className="p-6 max-w-4xl mx-auto">
               <TmweBackendDebugger />
             </div>

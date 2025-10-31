@@ -157,34 +157,14 @@ export function EmailSidebar({
             </div>
           </div>
           
-          {/* Riga: Pulsanti azioni */}
-          <div className="flex gap-2 items-center justify-end mb-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 w-9 flex-shrink-0 p-0"
-              onClick={onCreateCategory}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            
-            <Button
-              variant={filterByAttachments ? "default" : "outline"}
-              size="sm"
-              className="h-9 w-9 flex-shrink-0 p-0"
-              onClick={() => setFilterByAttachments(!filterByAttachments)}
-            >
-              <Filter className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {/* Dropdown categoria */}
-          <div className="mb-3">
+          {/* Riga compatta: Dropdown + Pulsanti azioni */}
+          <div className="flex gap-2 items-center justify-between mb-3">
+            {/* Dropdown categoria a sinistra */}
             <Select 
               value={activeCategoryId || undefined} 
               onValueChange={onCategorySelect}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 flex-1">
                 <SelectValue placeholder="📂 Categoria" />
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
@@ -198,6 +178,27 @@ export function EmailSidebar({
                 ))}
               </SelectContent>
             </Select>
+            
+            {/* Pulsanti a destra */}
+            <div className="flex gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-9 p-0"
+                onClick={onCreateCategory}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              
+              <Button
+                variant={filterByAttachments ? "default" : "outline"}
+                size="sm"
+                className="h-9 w-9 p-0"
+                onClick={() => setFilterByAttachments(!filterByAttachments)}
+              >
+                <Filter className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
         

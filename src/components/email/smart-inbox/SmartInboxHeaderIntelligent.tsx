@@ -44,47 +44,31 @@ export const SmartInboxHeaderIntelligent = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
   
-  // Blocco navigazione browser durante scroll orizzontale (solo edge swipe)
+  // Gestione scroll orizzontale touch (approccio semplice)
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    let startX = 0;
-    let startScrollLeft = 0;
-
     const handleTouchStart = (e: TouchEvent) => {
-      startX = e.touches[0].clientX;
-      startScrollLeft = container.scrollLeft;
+      const startX = e.touches[0].clientX;
+      (e.target as any)._startX = startX;
+      (e.target as any)._scrollLeft = container.scrollLeft;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      const deltaX = e.touches[0].clientX - startX;
-      const isAtStart = container.scrollLeft === 0;
-      const isAtEnd = container.scrollLeft >= container.scrollWidth - container.clientWidth;
-
-      // Blocca solo edge swipe (back/forward browser gesture)
-      if ((deltaX > 0 && isAtStart) || (deltaX < 0 && isAtEnd)) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      // Altrimenti permetti scroll normale
+      if (!(e.target as any)._startX) return;
+      
+      const x = e.touches[0].clientX;
+      const walk = ((e.target as any)._startX - x) * 2; // Moltiplicatore velocità
+      container.scrollLeft = (e.target as any)._scrollLeft + walk;
     };
 
-    const preventWheel = (e: WheelEvent) => {
-      // Blocca wheel orizzontale per evitare "back gesture"
-      if (Math.abs(e.deltaX) > 5) {
-        e.stopPropagation();
-      }
-    };
-
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('wheel', preventWheel, { passive: false });
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: true });
 
     return () => {
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('wheel', preventWheel);
     };
   }, []);
   

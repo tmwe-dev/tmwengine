@@ -21,7 +21,7 @@ const Slider = React.forwardRef<
       className={cn(
         "relative flex touch-none select-none",
         isVertical 
-          ? "h-full flex-col justify-center w-[20px]"
+          ? "h-full flex-col justify-center items-center w-[20px]"
           : "w-full items-center",
         className
       )}

@@ -1298,6 +1298,36 @@ export type Database = {
           },
         ]
       }
+      company_logos_cache: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          domain: string
+          fetch_attempts: number | null
+          id: string
+          last_fetched_at: string | null
+          logo_url: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          domain: string
+          fetch_attempts?: number | null
+          id?: string
+          last_fetched_at?: string | null
+          logo_url?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          domain?: string
+          fetch_attempts?: number | null
+          id?: string
+          last_fetched_at?: string | null
+          logo_url?: string | null
+        }
+        Relationships: []
+      }
       config_ai: {
         Row: {
           api_key: string
@@ -2232,6 +2262,59 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      email_ai_classifications: {
+        Row: {
+          ai_summary: string | null
+          category: string
+          confidence: number
+          created_at: string | null
+          email_message_id: string | null
+          id: string
+          keywords: string[] | null
+          sender_domain: string
+          sender_email: string
+          sender_logo_url: string | null
+          updated_at: string | null
+          user_email: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          category: string
+          confidence: number
+          created_at?: string | null
+          email_message_id?: string | null
+          id?: string
+          keywords?: string[] | null
+          sender_domain: string
+          sender_email: string
+          sender_logo_url?: string | null
+          updated_at?: string | null
+          user_email: string
+        }
+        Update: {
+          ai_summary?: string | null
+          category?: string
+          confidence?: number
+          created_at?: string | null
+          email_message_id?: string | null
+          id?: string
+          keywords?: string[] | null
+          sender_domain?: string
+          sender_email?: string
+          sender_logo_url?: string | null
+          updated_at?: string | null
+          user_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_ai_classifications_email_message_id_fkey"
+            columns: ["email_message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_attachments: {
         Row: {

@@ -284,3 +284,9 @@ verify_jwt = true
 [functions.tmwe-email-search-api]
 verify_jwt = true
 
+[functions.classify-email-content]
+verify_jwt = true
+
+[functions.fetch-company-logo]
+verify_jwt = true
+

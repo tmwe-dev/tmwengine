@@ -24,9 +24,10 @@ interface EmailHeaderProps {
   hasNext?: boolean;
   onOpenSyncMonitor?: () => void;
   onOpenDirectDownload?: () => void;
+  onOpenSmartInbox?: () => void;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext, onOpenSyncMonitor, onOpenDirectDownload }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext, onOpenSyncMonitor, onOpenDirectDownload, onOpenSmartInbox }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [emailCount, setEmailCount] = useState<number>(0);
   const [syncPopupOpen, setSyncPopupOpen] = useState(false);

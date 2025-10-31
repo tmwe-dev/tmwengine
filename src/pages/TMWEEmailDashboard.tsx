@@ -37,6 +37,7 @@ import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { EmailSyncMonitor } from '@/components/email/EmailSyncMonitor';
 import { EmailSyncStatus } from '@/components/tmwe/EmailSyncStatus';
+import { SmartInboxTab } from '@/components/email/smart-inbox/SmartInboxTab';
 import { useEmailSync } from '@/lib/email-sync';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,6 +64,7 @@ const EmailDashboard = () => {
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [syncMonitorOpen, setSyncMonitorOpen] = useState(false);
+  const [smartInboxOpen, setSmartInboxOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const openAIChat = () => {
@@ -793,6 +795,12 @@ const EmailDashboard = () => {
               setSyncMonitorOpen(false);
             }}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={smartInboxOpen} onOpenChange={setSmartInboxOpen}>
+        <DialogContent className="max-w-6xl h-[90vh] p-0">
+          <SmartInboxTab />
         </DialogContent>
       </Dialog>
     </div>

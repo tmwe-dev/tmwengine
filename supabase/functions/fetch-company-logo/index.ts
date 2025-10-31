@@ -1,109 +1,112 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// ============================================
+// EDGE FUNCTION: Recupero Automatico Logo Aziendale
+// Cerca logo via Clearbit/Google/Favicon e salva in cache
+// ============================================
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { corsHeaders } from '../_shared/cors.ts';
 
-serve(async (req) => {
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { domain } = await req.json();
-    
-    if (!domain) {
-      return new Response(
-        JSON.stringify({ error: 'Domain is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    console.log(`[fetch-company-logo] Ricerca logo per: ${domain}`);
+
+    if (!domain || typeof domain !== 'string') {
+      throw new Error('Domain parameter required');
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Check cache first
-    const { data: cached } = await supabase
-      .from('company_logos_cache')
+    // 🔍 CHECK: esiste già in cache?
+    const { data: existing } = await supabase
+      .from('company_logos')
       .select('*')
-      .eq('domain', domain)
-      .single();
+      .eq('domain', domain.toLowerCase())
+      .maybeSingle();
 
-    if (cached && cached.fetch_attempts < 3) {
-      // Cache hit
+    if (existing?.logo_url) {
+      console.log(`[fetch-company-logo] ✅ Cache hit: ${domain}`);
       return new Response(
-        JSON.stringify({
-          logo_url: cached.logo_url,
-          company_name: cached.company_name,
-          source: 'cache'
+        JSON.stringify({ 
+          success: true, 
+          logo_url: existing.logo_url,
+          source: 'cache' 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Try Clearbit Logo API
+    // 🌐 FETCH: Prova più provider
     let logoUrl: string | null = null;
     let source = 'not_found';
 
+    // 1️⃣ Clearbit Logo API (gratuito, no auth)
     try {
       const clearbitUrl = `https://logo.clearbit.com/${domain}`;
-      const clearbitResponse = await fetch(clearbitUrl, { 
+      const response = await fetch(clearbitUrl, { 
         method: 'HEAD',
-        redirect: 'follow'
+        redirect: 'follow' 
       });
-
-      if (clearbitResponse.ok) {
+      if (response.ok) {
         logoUrl = clearbitUrl;
         source = 'clearbit';
+        console.log(`[fetch-company-logo] ✅ Clearbit: ${logoUrl}`);
       }
     } catch (e) {
-      console.log("Clearbit failed, trying fallback");
+      console.log(`[fetch-company-logo] ⚠️ Clearbit failed: ${e}`);
     }
 
-    // Fallback to Google Favicon
+    // 2️⃣ Favicon fallback
     if (!logoUrl) {
       logoUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
       source = 'favicon';
+      console.log(`[fetch-company-logo] ℹ️ Fallback to favicon: ${logoUrl}`);
     }
 
-    // Extract company name from domain
-    const companyName = domain
-      .split('.')[0]
-      .replace(/^(mail|smtp|email|webmail)\./, '')
-      .split(/[_-]/)
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
-
-    // Save to cache
-    await supabase
-      .from('company_logos_cache')
+    // 💾 SAVE: Salva in cache
+    const { error: upsertError } = await supabase
+      .from('company_logos')
       .upsert({
-        domain,
+        domain: domain.toLowerCase(),
         logo_url: logoUrl,
-        company_name: companyName,
-        fetch_attempts: (cached?.fetch_attempts || 0) + 1,
-        last_fetched_at: new Date().toISOString()
+        fetched_at: new Date().toISOString()
       }, {
         onConflict: 'domain'
       });
 
+    if (upsertError) {
+      console.error(`[fetch-company-logo] ❌ Cache save error:`, upsertError);
+    } else {
+      console.log(`[fetch-company-logo] 💾 Salvato in cache: ${domain}`);
+    }
+
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
+        success: true, 
         logo_url: logoUrl,
-        company_name: companyName,
-        source
+        source 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error: any) {
-    console.error("Error:", error);
+  } catch (error) {
+    console.error('[fetch-company-logo] ❌ Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 });

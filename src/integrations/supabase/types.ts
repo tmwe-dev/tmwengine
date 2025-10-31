@@ -1298,6 +1298,27 @@ export type Database = {
           },
         ]
       }
+      company_logos: {
+        Row: {
+          created_at: string | null
+          domain: string
+          fetched_at: string | null
+          logo_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          domain: string
+          fetched_at?: string | null
+          logo_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          domain?: string
+          fetched_at?: string | null
+          logo_url?: string | null
+        }
+        Relationships: []
+      }
       company_logos_cache: {
         Row: {
           company_name: string | null

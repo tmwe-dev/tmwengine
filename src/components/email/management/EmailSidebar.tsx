@@ -78,26 +78,27 @@ export function EmailSidebar({
             )}
           </h3>
           
-          {/* Carousel Zoom Control - Solo quando carousel è attivo */}
+          {/* Carousel Zoom Control - Verticale a sinistra quando carousel è attivo */}
           {viewMode === 'carousel' && (
-            <div className="mb-2 pb-2 border-b border-blue-400/20">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium">Zoom Carousel</label>
+            <div className="flex items-start gap-3 mb-2 pb-2 border-l-2 border-blue-400/20 pl-3">
+              <div className="flex flex-col items-center gap-2 min-w-[40px]">
+                <span className="text-xs text-muted-foreground">200%</span>
+                <Slider
+                  value={[carouselZoom]}
+                  onValueChange={([val]) => onCarouselZoomChange?.(val)}
+                  min={0.5}
+                  max={2.0}
+                  step={0.01}
+                  orientation="vertical"
+                  className="h-[120px]"
+                />
+                <span className="text-xs text-muted-foreground">50%</span>
+              </div>
+              <div className="flex flex-col justify-center flex-1">
+                <label className="text-sm font-medium mb-1">Zoom Carousel</label>
                 <span className="text-xs text-muted-foreground">
                   {Math.round(carouselZoom * 100)}%
                 </span>
-              </div>
-              <Slider
-                value={[carouselZoom]}
-                onValueChange={([val]) => onCarouselZoomChange?.(val)}
-                min={0.5}
-                max={2.0}
-                step={0.01}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>50%</span>
-                <span>200%</span>
               </div>
             </div>
           )}

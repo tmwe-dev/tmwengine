@@ -22,8 +22,8 @@ import { CreateCategoryDialog } from './management/CreateCategoryDialog';
 import { SenderSortControls, SortOption } from './management/SenderSortControls';
 import { FloatingZoomControl } from './management/FloatingZoomControl';
 
-// Collisione personalizzata 80%
-const carousel80PercentCollision: CollisionDetection = (args) => {
+// Collisione personalizzata 70%
+const carousel70PercentCollision: CollisionDetection = (args) => {
   const { droppableContainers, collisionRect } = args;
   if (!collisionRect) return [];
 
@@ -37,7 +37,7 @@ const carousel80PercentCollision: CollisionDetection = (args) => {
     const draggableArea = collisionRect.width * collisionRect.height;
     const overlapPercentage = (overlapArea / draggableArea) * 100;
 
-    return overlapPercentage >= 80 ? { id: container.id, data: { percentage: overlapPercentage } } : null;
+    return overlapPercentage >= 70 ? { id: container.id, data: { percentage: overlapPercentage } } : null;
   }).filter(Boolean) as { id: string | number; data: { percentage: number } }[];
 
   return collisions;
@@ -556,7 +556,7 @@ export function EmailManagementTab() {
   return (
     <div className="flex h-full w-full gap-4 max-w-[1920px] mx-auto">
       <DndContext
-        collisionDetection={viewMode === 'carousel' ? carousel80PercentCollision : closestCenter}
+        collisionDetection={viewMode === 'carousel' ? carousel70PercentCollision : closestCenter}
         onDragEnd={handleDragEnd}
         onDragStart={(e) => setActiveDragId(e.active.id as string)}
         onDragCancel={() => setActiveDragId(null)}

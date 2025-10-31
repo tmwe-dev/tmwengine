@@ -304,7 +304,7 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
       />
       
       {/* 🆕 Layout 3 Colonne: Sidebar Categorie | Lista Email | Dettaglio */}
-      <div className="flex-1 flex gap-4 overflow-hidden">
+      <div className="flex-1 flex gap-4 md:gap-6 lg:gap-8 overflow-x-auto overflow-y-hidden">
         {/* Colonna 1: Sidebar Categorie Verticale */}
         <div className="hidden lg:block">
           <CategoriesVerticalSidebar
@@ -316,7 +316,7 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
         </div>
 
         {/* Colonna 2: Lista Email - responsive width */}
-        <div className="w-full md:w-[50%] lg:w-[40%] flex flex-col min-h-0">
+        <div className="w-full md:w-[45%] lg:w-[38%] xl:w-[35%] flex flex-col min-h-0 flex-shrink-0">
           <SmartEmailListIntelligent
             emails={classifiedEmails}
             onEmailClick={handleEmailSelect}

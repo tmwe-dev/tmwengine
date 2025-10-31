@@ -91,7 +91,7 @@ export const useSmartClassificationIntelligent = () => {
 
           console.log('✅ Session valid, calling edge function...');
           
-          // Chiama Edge Function per classificazione intelligente
+          // Chiama Edge Function per classificazione intelligente (con dati completi)
           const { data: classifyData, error: classifyError } = await supabase.functions.invoke(
             'classify-email-content-intelligent',
             {
@@ -102,6 +102,9 @@ export const useSmartClassificationIntelligent = () => {
                 body_text: email.body_preview || email.body_text || '',
                 from_email: fromEmail,
                 user_email: userEmail,
+                email_id: email.email_id || null, // ID numerico
+                email_date: email.date || null, // Data originale
+                has_attachments: email.has_attachments || false, // Flag allegati
                 force_category: forceCategory || null
               }
             }

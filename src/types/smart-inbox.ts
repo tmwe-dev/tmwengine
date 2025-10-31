@@ -12,6 +12,12 @@ export interface EmailClassification {
   sender_domain: string;
   sender_logo_url: string | null;
   is_verified: boolean; // Se classificazione verificata manualmente
+  subject?: string | null; // Oggetto email
+  body_preview?: string | null; // Anteprima corpo (500 caratteri)
+  body_text?: string | null; // Corpo completo
+  email_id?: number | null; // ID numerico email sul server
+  email_date?: string | null; // Data originale email
+  has_attachments?: boolean; // Flag allegati
   created_at: string;
   updated_at: string;
 }

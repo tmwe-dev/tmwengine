@@ -20,6 +20,9 @@ serve(async (req) => {
       body_text, 
       from_email, 
       user_email,
+      email_id = null, // ID numerico email sul server
+      email_date = null, // Data originale email
+      has_attachments = false, // Flag allegati
       force_category = null // Categoria forzata dall'utente
     } = await req.json();
 
@@ -354,7 +357,7 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
     // Step 3: Estrai dominio mittente
     const senderDomain = from_email.split('@')[1]?.toLowerCase() || '';
 
-    // Step 4: Salva classificazione nel DB
+    // Step 4: Salva classificazione nel DB (con dati email completi)
     const { data: insertData, error: insertError } = await supabase
       .from('email_ai_classifications')
       .upsert({
@@ -369,6 +372,12 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
         keywords,
         is_verified: isVerified,
         sender_logo_url: null, // Sarà aggiornato in background
+        subject: subject || null, // Salva oggetto email
+        body_preview: body_text?.substring(0, 500) || null, // Anteprima corpo
+        body_text: body_text || null, // Corpo completo
+        email_id: email_id, // ID numerico email
+        email_date: email_date, // Data originale
+        has_attachments: has_attachments // Flag allegati
       }, {
         onConflict: 'email_uid,user_email',
         ignoreDuplicates: false

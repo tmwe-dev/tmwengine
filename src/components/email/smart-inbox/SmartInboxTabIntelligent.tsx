@@ -70,20 +70,20 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
 
       if (error) throw error;
 
-      // Trasforma in ClassifiedEmail (email metadata sarà caricata on-demand)
+      // Trasforma in ClassifiedEmail con dati reali dal DB
       return (data || []).map(classification => ({
         classification,
         email: {
           uid: classification.email_uid || '',
-          email_id: undefined,
-          subject: classification.ai_summary?.split(' - ')[1] || 'Email senza oggetto',
+          email_id: classification.email_id || undefined, // ID numerico per fetch dettaglio
+          subject: classification.subject || 'Email senza oggetto', // Oggetto reale dal DB
           from: { email: classification.sender_email },
           to: [],
-          date: classification.created_at,
+          date: classification.email_date || classification.created_at, // Data email reale
           read: false,
-          has_attachments: false,
+          has_attachments: classification.has_attachments || false, // Flag allegati reale
           folder_name: classification.folder_name || 'INBOX',
-          body_preview: classification.ai_summary
+          body_preview: classification.body_preview || classification.ai_summary || undefined
         }
       } as ClassifiedEmail));
     },

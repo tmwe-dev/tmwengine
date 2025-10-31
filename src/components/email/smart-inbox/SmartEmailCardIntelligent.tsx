@@ -109,7 +109,7 @@ export const SmartEmailCardIntelligent = ({
         </div>
       </div>
 
-      {/* Body - Summary e Categoria */}
+      {/* Body - Oggetto, Summary e Categoria */}
       <div className="p-3 bg-white/5 backdrop-blur-sm space-y-3" onClick={onClick}>
         {/* Categoria Badge */}
         <Badge 
@@ -129,6 +129,13 @@ export const SmartEmailCardIntelligent = ({
             </span>
           )}
         </Badge>
+
+        {/* Oggetto Email (se disponibile e diverso da placeholder) */}
+        {email.subject && email.subject !== 'Email senza oggetto' && (
+          <h4 className="text-sm font-semibold text-white truncate">
+            {email.subject}
+          </h4>
+        )}
 
         {/* Riassunto AI */}
         {classification.ai_summary && (

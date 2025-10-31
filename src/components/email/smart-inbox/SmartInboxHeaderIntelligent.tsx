@@ -44,7 +44,7 @@ export const SmartInboxHeaderIntelligent = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
   
-  // Gestione scroll orizzontale touch (approccio semplice)
+  // Blocco back gesture durante scroll laterale
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -53,22 +53,54 @@ export const SmartInboxHeaderIntelligent = ({
       const startX = e.touches[0].clientX;
       (e.target as any)._startX = startX;
       (e.target as any)._scrollLeft = container.scrollLeft;
+      container.style.cursor = 'grabbing';
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (!(e.target as any)._startX) return;
       
       const x = e.touches[0].clientX;
-      const walk = ((e.target as any)._startX - x) * 2; // Moltiplicatore velocità
-      container.scrollLeft = (e.target as any)._scrollLeft + walk;
+      const startX = (e.target as any)._startX;
+      const startScrollLeft = (e.target as any)._scrollLeft;
+      const walk = (startX - x) * 2;
+      const newScrollLeft = startScrollLeft + walk;
+      
+      // Calcola limiti
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      const isAtStart = startScrollLeft === 0;
+      const isAtEnd = startScrollLeft >= maxScroll - 1;
+      
+      // Blocca browser navigation se stiamo scrollando dentro i limiti
+      // o se stiamo scrollando verso l'interno (non verso i bordi esterni)
+      const scrollingInward = 
+        (isAtStart && walk > 0) || // All'inizio, scrollo verso destra
+        (isAtEnd && walk < 0);     // Alla fine, scrollo verso sinistra
+      
+      const withinBounds = newScrollLeft >= 0 && newScrollLeft <= maxScroll;
+      
+      if (withinBounds || scrollingInward) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Applica scroll con clamp ai limiti
+        container.scrollLeft = Math.max(0, Math.min(newScrollLeft, maxScroll));
+      }
     };
 
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
-    container.addEventListener('touchmove', handleTouchMove, { passive: true });
+    const handleTouchEnd = () => {
+      delete (container as any)._startX;
+      delete (container as any)._scrollLeft;
+      container.style.cursor = 'grab';
+    };
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
     };
   }, []);
   

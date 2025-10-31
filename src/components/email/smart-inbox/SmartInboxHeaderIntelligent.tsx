@@ -44,16 +44,30 @@ export const SmartInboxHeaderIntelligent = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
   
-  // Blocco navigazione browser durante scroll orizzontale
+  // Blocco navigazione browser durante scroll orizzontale (solo edge swipe)
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    const preventTouchNav = (e: TouchEvent) => {
-      // Blocca propagazione per impedire gesture browser
-      if (e.touches.length === 1) {
+    let startX = 0;
+    let startScrollLeft = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      startX = e.touches[0].clientX;
+      startScrollLeft = container.scrollLeft;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const deltaX = e.touches[0].clientX - startX;
+      const isAtStart = container.scrollLeft === 0;
+      const isAtEnd = container.scrollLeft >= container.scrollWidth - container.clientWidth;
+
+      // Blocca solo edge swipe (back/forward browser gesture)
+      if ((deltaX > 0 && isAtStart) || (deltaX < 0 && isAtEnd)) {
+        e.preventDefault();
         e.stopPropagation();
       }
+      // Altrimenti permetti scroll normale
     };
 
     const preventWheel = (e: WheelEvent) => {
@@ -63,13 +77,13 @@ export const SmartInboxHeaderIntelligent = ({
       }
     };
 
-    container.addEventListener('touchstart', preventTouchNav, { passive: false });
-    container.addEventListener('touchmove', preventTouchNav, { passive: false });
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
     container.addEventListener('wheel', preventWheel, { passive: false });
 
     return () => {
-      container.removeEventListener('touchstart', preventTouchNav);
-      container.removeEventListener('touchmove', preventTouchNav);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('wheel', preventWheel);
     };
   }, []);
@@ -174,24 +188,32 @@ export const SmartInboxHeaderIntelligent = ({
           {/* Badge "Da Verificare" */}
           <button
             onClick={() => onCategoryChange('da-verificare')}
-            className={`relative flex-shrink-0 flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all hover:scale-105 ${
+            className={`relative flex-shrink-0 flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all hover:scale-105 overflow-hidden ${
               selectedCategory === 'da-verificare' 
                 ? 'border-2' 
                 : 'border hover:bg-white/20'
             }`}
             style={{
               borderColor: selectedCategory === 'da-verificare' 
-                ? 'rgba(255, 154, 0, 0.8)' 
-                : 'rgba(255, 255, 255, 0.5)',
+                ? 'rgba(255, 154, 0, 0.6)' 
+                : 'rgba(255, 255, 255, 0.4)',
               background: selectedCategory === 'da-verificare' 
-                ? 'rgba(255, 154, 0, 0.30)'
-                : 'rgba(255, 255, 255, 0.30)',
-              backdropFilter: 'blur(8px) saturate(150%)',
+                ? 'linear-gradient(135deg, rgba(255,154,0,0.25) 0%, rgba(255,154,0,0.15) 50%, rgba(255,154,0,0.20) 100%)'
+                : 'linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.15) 100%)',
+              backdropFilter: 'blur(16px) saturate(180%)',
               boxShadow: selectedCategory === 'da-verificare'
-                ? '0 4px 12px rgba(255, 154, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
-                : '0 2px 8px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+                ? '0 8px 32px rgba(255,154,0,0.3), inset 0 1px 2px rgba(255,255,255,0.6), inset 0 -1px 2px rgba(0,0,0,0.2)'
+                : '0 4px 16px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.4)',
             }}
           >
+            {/* Glossy shine overlay */}
+            <div 
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 70%, rgba(0,0,0,0.1) 100%)',
+                mixBlendMode: 'overlay',
+              }}
+            />
             <span className="text-2xl relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">🔍</span>
             <span className="text-xs font-bold relative z-10 text-gray-900 dark:text-white">Da Verificare</span>
             <Badge className="rounded-full bg-orange-500/30 backdrop-blur-md px-1.5 py-0.5 text-xs relative z-10">

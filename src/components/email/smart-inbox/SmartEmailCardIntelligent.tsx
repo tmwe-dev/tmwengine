@@ -32,6 +32,7 @@ export const SmartEmailCardIntelligent = ({
     <GlassCard 
       blur="md"
       gradient={true}
+      glossy={true}
       onClick={onClick}
       className={`p-4 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/20 transition-all duration-200 ${isSelected ? 'ring-2 ring-primary' : ''}`}
     >

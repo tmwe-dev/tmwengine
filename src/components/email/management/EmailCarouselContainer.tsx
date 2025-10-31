@@ -23,16 +23,7 @@ export function EmailCarouselContainer({
   onNext,
 }: EmailCarouselContainerProps) {
   return (
-    <div 
-      className="fixed z-5 overflow-visible" 
-      style={{ 
-        left: '400px',
-        top: '126px',
-        right: '24px',
-        bottom: '24px',
-        minHeight: '600px'
-      }}
-    >
+    <div className="flex-1 overflow-visible relative min-h-[600px]">
       <EmailCarousel3D
         categories={categories}
         assignedSenders={assignedSenders}

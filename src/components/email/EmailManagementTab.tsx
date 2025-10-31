@@ -467,14 +467,14 @@ export function EmailManagementTab() {
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="flex h-full w-full gap-4 max-w-[1920px] mx-auto">
       <DndContext
         collisionDetection={viewMode === 'carousel' ? carousel80PercentCollision : closestCenter}
         onDragEnd={handleDragEnd}
         onDragStart={(e) => setActiveDragId(e.active.id as string)}
         onDragCancel={() => setActiveDragId(null)}
       >
-        {/* Sidebar fisso left */}
+        {/* Sidebar - flex item */}
         <EmailSidebar
           senders={senders}
           searchQuery={searchQuery}

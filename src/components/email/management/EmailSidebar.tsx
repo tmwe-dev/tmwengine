@@ -65,11 +65,11 @@ export function EmailSidebar({
   isLoading,
 }: EmailSidebarProps) {
   return (
-    <div className="fixed left-6 z-20" style={{ top: '126px', width: '416px', height: 'calc(100vh - 126px)' }}>
+    <div className="flex-shrink-0 w-[416px] z-20">
       <div className="h-full flex flex-col">
         {/* Header semplificato */}
-        <div className="pt-2 px-4 pb-4 flex-shrink-0">
-          <h3 className="font-semibold mb-3 flex items-center justify-between">
+        <div className="px-4 pb-2 flex-shrink-0">
+          <h3 className="font-semibold mb-1 flex items-center justify-between">
             <span>📮 Da Classificare ({filteredSenders.length})</span>
             {senders.length !== filteredSenders.length && (
               <span className="text-xs text-muted-foreground">
@@ -80,7 +80,7 @@ export function EmailSidebar({
           
           {/* Carousel Zoom Control - Solo quando carousel è attivo */}
           {viewMode === 'carousel' && (
-            <div className="mb-4 pb-4 border-b border-blue-400/20">
+            <div className="mb-2 pb-2 border-b border-blue-400/20">
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium">Zoom Carousel</label>
                 <span className="text-xs text-muted-foreground">
@@ -102,7 +102,7 @@ export function EmailSidebar({
             </div>
           )}
           
-          <div className="relative mb-3">
+          <div className="relative mb-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Cerca mittente..."
@@ -113,7 +113,7 @@ export function EmailSidebar({
           </div>
           
           {/* Riga: Ordina + 4 IconButton toolbar */}
-          <div className="flex gap-2 items-center justify-between mb-3">
+          <div className="flex gap-2 items-center justify-between mb-2">
             {onSortChange && (
               <SenderSortControls 
                 currentSort={sortOption}
@@ -158,7 +158,7 @@ export function EmailSidebar({
           </div>
           
           {/* Riga compatta: Dropdown + Pulsanti azioni */}
-          <div className="flex gap-2 items-center justify-between mb-3">
+          <div className="flex gap-2 items-center justify-between mb-2">
             {/* Dropdown categoria a sinistra */}
             <Select 
               value={activeCategoryId || undefined} 

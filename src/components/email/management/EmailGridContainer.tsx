@@ -15,15 +15,7 @@ export function EmailGridContainer({
   onRefresh,
 }: EmailGridContainerProps) {
   return (
-    <div 
-      className="fixed z-5 overflow-y-auto" 
-      style={{ 
-        left: '460px',
-        top: '126px',
-        right: '24px',
-        bottom: '24px'
-      }}
-    >
+    <div className="flex-1 overflow-y-auto">
       <div className="flex flex-wrap gap-4 pb-4">
         {groups.map(group => (
           <GroupDropZone

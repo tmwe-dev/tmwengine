@@ -201,7 +201,9 @@ const FunEmail = () => {
               </div>
             </div>
           ) : currentView === 'management' ? (
-            <EmailManagementTab />
+            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
+              <EmailManagementTab />
+            </GradientBackground>
           ) : currentView === 'quick-download' ? (
             <div className="p-6">
               <QuickEmailDownloader

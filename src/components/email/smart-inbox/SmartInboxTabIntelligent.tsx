@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SmartInboxHeaderIntelligent } from './SmartInboxHeaderIntelligent';
 import { SmartEmailListIntelligent } from './SmartEmailListIntelligent';
-import { SmartEmailDetailIntelligent } from './SmartEmailDetailIntelligent';
+import { SmartEmailDetailPanel } from './SmartEmailDetailPanel';
+import { EmptyDetailPanel } from './EmptyDetailPanel';
 import React from 'react';
 import { ClassifiedEmail, EmailMetadata } from '@/types/smart-inbox';
 import { useSmartClassificationIntelligent } from '@/hooks/useSmartClassificationIntelligent';
@@ -179,7 +180,7 @@ export const SmartInboxTabIntelligent = () => {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-w-7xl mx-auto w-full gap-6">
       <SmartInboxHeaderIntelligent
         categories={categoryStats}
         selectedCategory={selectedCategory}
@@ -192,19 +193,31 @@ export const SmartInboxTabIntelligent = () => {
         onBulkClassify={handleBulkClassify}
       />
       
-      <SmartEmailListIntelligent
-        emails={classifiedEmails}
-        onEmailClick={setSelectedEmail}
-        isLoading={isLoading}
-        selectedEmails={selectedEmails}
-        onSelectionChange={setSelectedEmails}
-      />
-      
-      <SmartEmailDetailIntelligent
-        classifiedEmail={selectedEmail}
-        open={!!selectedEmail}
-        onClose={() => setSelectedEmail(null)}
-      />
+      {/* Split Layout: Lista + Dettaglio */}
+      <div className="flex-1 flex gap-6 overflow-hidden">
+        {/* Colonna sinistra: Lista (1/3) */}
+        <div className="w-1/3 flex flex-col">
+          <SmartEmailListIntelligent
+            emails={classifiedEmails}
+            onEmailClick={setSelectedEmail}
+            isLoading={isLoading}
+            selectedEmails={selectedEmails}
+            onSelectionChange={setSelectedEmails}
+          />
+        </div>
+        
+        {/* Colonna destra: Dettaglio (2/3) */}
+        <div className="flex-1 flex flex-col">
+          {selectedEmail ? (
+            <SmartEmailDetailPanel
+              classifiedEmail={selectedEmail}
+              onClose={() => setSelectedEmail(null)}
+            />
+          ) : (
+            <EmptyDetailPanel />
+          )}
+        </div>
+      </div>
     </div>
   );
 };

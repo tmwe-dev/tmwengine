@@ -1,36 +1,30 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 /**
  * GlassCard - Card con effetto glassmorphism
- * 
- * @example
- * ```tsx
- * <GlassCard title="Titolo" description="Descrizione">
- *   Contenuto
- * </GlassCard>
- * ```
  */
 
 interface GlassCardProps {
-  title?: string;
-  description?: string;
   children: React.ReactNode;
   className?: string;
-  headerAction?: React.ReactNode;
   blur?: 'sm' | 'md' | 'lg';
   gradient?: boolean;
+  onClick?: () => void;
+  title?: string;
+  description?: string;
+  headerAction?: React.ReactNode;
 }
 
 export function GlassCard({
-  title,
-  description,
   children,
   className,
-  headerAction,
   blur = 'md',
-  gradient = false
+  gradient = false,
+  onClick,
+  title,
+  description,
+  headerAction
 }: GlassCardProps) {
   const blurClasses = {
     sm: 'backdrop-blur-sm',
@@ -39,24 +33,28 @@ export function GlassCard({
   };
 
   return (
-    <Card
+    <div
+      onClick={onClick}
       className={cn(
-        'border border-white/10 bg-background/40',
+        'bg-white/10 border border-white/20 rounded-2xl',
         blurClasses[blur],
-        gradient && 'bg-gradient-to-br from-background/60 via-background/40 to-background/20',
+        gradient && 'bg-gradient-to-br from-white/20 to-white/5',
+        onClick && 'cursor-pointer',
         className
       )}
     >
       {(title || description || headerAction) && (
-        <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div>
-            {title && <CardTitle>{title}</CardTitle>}
-            {description && <CardDescription>{description}</CardDescription>}
+            {title && <h3 className="text-lg font-semibold">{title}</h3>}
+            {description && <p className="text-sm text-muted-foreground">{description}</p>}
           </div>
           {headerAction}
-        </CardHeader>
+        </div>
       )}
-      <CardContent>{children}</CardContent>
-    </Card>
+      <div className={title || description || headerAction ? 'p-4' : ''}>
+        {children}
+      </div>
+    </div>
   );
 }

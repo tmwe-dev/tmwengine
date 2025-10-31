@@ -17,14 +17,14 @@ import { EmailManagementTab } from '@/components/email/EmailManagementTab';
 import { QuickEmailDownloader } from '@/components/email/QuickEmailDownloader';
 import { EmailIntegrityChecker } from '@/components/email/EmailIntegrityChecker';
 import { TmweBackendDebugger } from '@/components/email/TmweBackendDebugger';
-import { SmartInboxDialog } from '@/components/email/smart-inbox/SmartInboxDialog';
+import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartInboxTabIntelligent';
+import { GradientBackground } from '@/components/design-system';
 
 const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick' | 'integrity' | 'debug'>('list');
-  const [smartInboxOpen, setSmartInboxOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick' | 'integrity' | 'debug' | 'inbox'>('list');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
@@ -152,9 +152,9 @@ const FunEmail = () => {
               🐛 Debug
             </Button>
             <Button
-              variant="outline"
+              variant={currentView === 'inbox' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setSmartInboxOpen(true)}
+              onClick={() => setCurrentView('inbox')}
               className="gap-1"
             >
               <Brain className="h-4 w-4" />
@@ -249,6 +249,10 @@ const FunEmail = () => {
             <div className="p-6 max-w-4xl mx-auto">
               <TmweBackendDebugger />
             </div>
+          ) : currentView === 'inbox' ? (
+            <GradientBackground variant="primary" intensity="medium" className="min-h-screen p-6">
+              <SmartInboxTabIntelligent />
+            </GradientBackground>
           ) : null}
         </div>
 
@@ -312,11 +316,6 @@ const FunEmail = () => {
         </div>
       )}
 
-      {/* Smart Inbox Dialog */}
-      <SmartInboxDialog 
-        open={smartInboxOpen} 
-        onOpenChange={setSmartInboxOpen} 
-      />
     </PageLayout>
   );
 };

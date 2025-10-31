@@ -19,8 +19,8 @@ export const SmartEmailListIntelligent = ({
 }: SmartEmailListIntelligentProps) => {
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center space-y-3">
+      <div className="flex-1 flex items-center justify-center bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
+        <div className="text-center space-y-3 p-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="text-muted-foreground">Caricamento email...</p>
         </div>
@@ -30,8 +30,8 @@ export const SmartEmailListIntelligent = ({
 
   if (emails.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center space-y-3">
+      <div className="flex-1 flex items-center justify-center bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
+        <div className="text-center space-y-3 p-8">
           <div className="text-6xl">📭</div>
           <h3 className="text-lg font-semibold">Nessuna email classificata</h3>
           <p className="text-sm text-muted-foreground max-w-md">
@@ -53,9 +53,9 @@ export const SmartEmailListIntelligent = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
       <ScrollArea className="h-full">
-        <div className="p-4 space-y-3">
+        <div className="p-6 space-y-4">
           {emails.map((classifiedEmail) => (
             <SmartEmailCardIntelligent
               key={classifiedEmail.classification.id}

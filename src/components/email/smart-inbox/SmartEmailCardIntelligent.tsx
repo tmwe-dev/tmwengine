@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/card';
+import { GlassCard } from '@/components/design-system/cards/GlassCard';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -29,8 +29,11 @@ export const SmartEmailCardIntelligent = ({
   const isVerified = classification.is_verified && classification.confidence >= 80;
   
   return (
-    <Card 
-      className={`p-4 hover:shadow-md transition-shadow cursor-pointer ${isSelected ? 'ring-2 ring-primary' : ''}`}
+    <GlassCard 
+      blur="md"
+      gradient={true}
+      onClick={onClick}
+      className={`p-4 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/20 transition-all duration-200 ${isSelected ? 'ring-2 ring-primary' : ''}`}
     >
       <div className="flex gap-3">
         {/* Checkbox per selezione multipla */}
@@ -43,7 +46,7 @@ export const SmartEmailCardIntelligent = ({
 
         {/* Avatar mittente */}
         <div className="flex-shrink-0" onClick={onClick}>
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-12 w-12 border-2 border-white/20">
             {classification.sender_logo_url ? (
               <AvatarImage src={classification.sender_logo_url} alt={companyName} />
             ) : null}
@@ -88,18 +91,18 @@ export const SmartEmailCardIntelligent = ({
 
           {/* Categoria */}
           <Badge 
-            className="mb-2"
+            className="mb-2 rounded-full px-3 py-1"
             style={{ 
               backgroundColor: categoryColor, 
               color: 'white',
               borderColor: categoryColor
             }}
           >
-            <span className="mr-1">{categoryIcon}</span>
-            {classification.category}
+            <span className="mr-1.5 text-base">{categoryIcon}</span>
+            <span className="font-semibold">{classification.category}</span>
             {classification.confidence < 100 && (
-              <span className="ml-1 text-xs opacity-80">
-                ({Math.round(classification.confidence)}%)
+              <span className="ml-2 text-xs font-bold bg-white/20 px-1.5 py-0.5 rounded-full">
+                {Math.round(classification.confidence)}%
               </span>
             )}
           </Badge>
@@ -123,6 +126,6 @@ export const SmartEmailCardIntelligent = ({
           )}
         </div>
       </div>
-    </Card>
+    </GlassCard>
   );
 };

@@ -44,29 +44,33 @@ export const SmartInboxHeaderIntelligent = ({
   const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
   
   return (
-    <div className="border-b p-4 space-y-3 bg-background shrink-0">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <span className="text-2xl">🧠</span>
-          Inbox Intelligente
+    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 space-y-4 shrink-0">
+      {/* Header principale */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <h2 className="text-2xl font-bold flex items-center gap-3">
+          <span className="text-4xl">🧠</span>
+          <span>Inbox Intelligente</span>
         </h2>
+        
+        {/* Pulsante Classifica Nuove - icona grande */}
         <Button 
           onClick={onClassifyNew}
           variant="outline"
-          size="sm"
+          size="lg"
           disabled={isClassifying}
+          className="rounded-2xl bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 hover:scale-105 transition-all flex flex-col items-center gap-2 h-auto py-4 px-6"
         >
-          <Sparkles className="h-4 w-4 mr-2" />
-          {isClassifying ? 'Classificazione...' : 'Classifica Nuove'}
+          <Sparkles className="h-8 w-8" />
+          <span className="font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica Nuove'}</span>
         </Button>
       </div>
       
       {/* Bulk Actions Bar */}
       {selectedCount > 0 && (
-        <div className="flex items-center gap-3 p-3 bg-accent rounded-lg">
-          <span className="text-sm font-medium">{selectedCount} email selezionate</span>
+        <div className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
+          <span className="text-sm font-semibold">{selectedCount} email selezionate</span>
           <Select value={bulkCategory} onValueChange={setBulkCategory}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[200px] rounded-xl bg-white/10 border-white/20">
               <SelectValue placeholder="Scegli categoria" />
             </SelectTrigger>
             <SelectContent>
@@ -84,6 +88,7 @@ export const SmartInboxHeaderIntelligent = ({
               onBulkClassify(bulkCategory);
               setBulkCategory('');
             }}
+            className="rounded-xl"
           >
             <Check className="h-4 w-4 mr-2" />
             Classifica
@@ -92,54 +97,83 @@ export const SmartInboxHeaderIntelligent = ({
       )}
       
       {isClassifying && classificationProgress && (
-        <div className="space-y-2">
+        <div className="space-y-2 p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
+            <span className="font-semibold">
               {classificationProgress.current} / {classificationProgress.total}
             </span>
-            <span className="text-muted-foreground truncate max-w-[200px]">
+            <span className="text-muted-foreground truncate max-w-[300px]">
               {classificationProgress.currentEmail}
             </span>
           </div>
           <Progress 
             value={(classificationProgress.current / classificationProgress.total) * 100} 
+            className="h-2 bg-white/20"
           />
         </div>
       )}
       
-      <ScrollArea className="w-full max-h-20">
-        <div className="flex gap-2 pb-2">
-          <Badge 
-            variant={selectedCategory === 'all' ? 'default' : 'outline'}
+      {/* Badge Categorie - icone grandi */}
+      <ScrollArea className="w-full max-h-32">
+        <div className="flex gap-3 pb-2">
+          {/* Badge "Tutte" */}
+          <button
             onClick={() => onCategoryChange('all')}
-            className="cursor-pointer hover:bg-accent transition-colors"
+            className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all hover:scale-105 ${
+              selectedCategory === 'all' 
+                ? 'bg-primary/20 backdrop-blur-md border-2 border-primary' 
+                : 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20'
+            }`}
           >
-            Tutte ({totalCount})
-          </Badge>
+            <span className="text-3xl">📬</span>
+            <span className="text-sm font-semibold">Tutte</span>
+            <Badge className="rounded-full bg-white/20 backdrop-blur-md px-2 py-0.5">
+              {totalCount}
+            </Badge>
+          </button>
           
-          <Badge 
-            variant={selectedCategory === 'da-verificare' ? 'default' : 'outline'}
+          {/* Badge "Da Verificare" */}
+          <button
             onClick={() => onCategoryChange('da-verificare')}
-            className="cursor-pointer hover:bg-accent transition-colors"
+            className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all hover:scale-105 ${
+              selectedCategory === 'da-verificare' 
+                ? 'bg-orange-500/20 backdrop-blur-md border-2 border-orange-500' 
+                : 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20'
+            }`}
           >
-            🔍 Da Verificare ({unverifiedCount})
-          </Badge>
+            <span className="text-3xl">🔍</span>
+            <span className="text-sm font-semibold">Da Verificare</span>
+            <Badge className="rounded-full bg-orange-500/30 backdrop-blur-md px-2 py-0.5">
+              {unverifiedCount}
+            </Badge>
+          </button>
           
+          {/* Badge Categorie */}
           {categories.map(cat => (
-            <Badge
+            <button
               key={cat.id}
-              variant={selectedCategory === cat.id ? 'default' : 'outline'}
-              className="cursor-pointer hover:bg-accent transition-colors whitespace-nowrap"
+              onClick={() => onCategoryChange(cat.id)}
+              className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all hover:scale-105 ${
+                selectedCategory === cat.id
+                  ? 'backdrop-blur-md border-2'
+                  : 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20'
+              }`}
               style={selectedCategory === cat.id ? { 
-                backgroundColor: cat.color,
-                color: 'white',
+                backgroundColor: `${cat.color}30`,
                 borderColor: cat.color
               } : undefined}
-              onClick={() => onCategoryChange(cat.id)}
             >
-              <span className="mr-1">{cat.icon}</span>
-              {cat.name} ({cat.count})
-            </Badge>
+              <span className="text-3xl">{cat.icon}</span>
+              <span className="text-sm font-semibold text-center leading-tight min-w-[80px]">
+                {cat.name}
+              </span>
+              <Badge 
+                className="rounded-full backdrop-blur-md px-2 py-0.5"
+                style={{ backgroundColor: `${cat.color}50` }}
+              >
+                {cat.count}
+              </Badge>
+            </button>
           ))}
         </div>
       </ScrollArea>

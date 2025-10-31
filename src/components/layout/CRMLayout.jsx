@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
@@ -40,7 +40,8 @@ import {
   Globe,
   Bug,
   Download,
-  CheckCircle2
+  CheckCircle2,
+  Brain
  } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -74,6 +75,7 @@ const CRMLayout = ({ children }) => {
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { userEmail, logout, userProfile } = useTMWEAuth();
   const { theme, setTheme, themes } = useTheme();
   const [tmweToken, setTmweToken] = useState(null);
@@ -203,6 +205,43 @@ const CRMLayout = ({ children }) => {
                 <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
                   {getCurrentPageTitle()}
                 </h1>
+                
+                {/* FunEmail Tabs - visibili solo su /funnemail */}
+                {location.pathname === '/funnemail' && (
+                  <div className="flex items-center gap-1 ml-4">
+                    <Button
+                      variant={searchParams.get('tab') === 'list' || !searchParams.get('tab') ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => navigate('/funnemail?tab=list')}
+                    >
+                      Lista
+                    </Button>
+                    <Button
+                      variant={searchParams.get('tab') === 'fun' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => navigate('/funnemail?tab=fun')}
+                    >
+                      FUN
+                    </Button>
+                    <Button
+                      variant={searchParams.get('tab') === 'management' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => navigate('/funnemail?tab=management')}
+                    >
+                      Management
+                    </Button>
+                    <Button
+                      variant={searchParams.get('tab') === 'inbox' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => navigate('/funnemail?tab=inbox')}
+                      className="gap-1"
+                    >
+                      <Brain className="h-4 w-4" />
+                      Inbox AI
+                    </Button>
+                  </div>
+                )}
+                
                 {/* TMWE Token Status + Debug Utilities */}
                 <div className="flex items-center gap-1 px-3">
                   <TokenKeyIndicator 

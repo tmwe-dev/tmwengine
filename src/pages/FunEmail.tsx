@@ -42,6 +42,16 @@ const FunEmail = () => {
     }
   }, [searchParams]);
 
+  // Sincronizza currentView con query param "tab" dal CRMLayout
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['list', 'fun', 'management', 'inbox'].includes(tabParam)) {
+      setCurrentView(tabParam as typeof currentView);
+    } else if (!tabParam && !searchParams.get('view')) {
+      setCurrentView('list'); // Default
+    }
+  }, [searchParams]);
+
   // ✅ Query email dal DB locale per la cartella selezionata
   const {
     data: messagesData,
@@ -124,53 +134,16 @@ const FunEmail = () => {
             size="sm"
             onClick={() => {
               setCurrentView('list');
-              navigate('/funnemail');
+              navigate('/funnemail?tab=list');
             }}
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
             Torna a Fun Email
           </Button>
-        ) : (
-          "Fun Email"
-        )
-      }
-      actions={
-        !['quick-download', 'integrity', 'debugger'].includes(currentView) ? (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={currentView === 'list' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setCurrentView('list')}
-            >
-              Lista
-            </Button>
-            <Button
-              variant={currentView === 'fun' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setCurrentView('fun')}
-            >
-              FUN
-            </Button>
-            <Button
-              variant={currentView === 'management' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setCurrentView('management')}
-            >
-              Management
-            </Button>
-            <Button
-              variant={currentView === 'inbox' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setCurrentView('inbox')}
-              className="gap-1"
-            >
-              <Brain className="h-4 w-4" />
-              Inbox AI
-            </Button>
-          </div>
         ) : null
       }
+      actions={null}
     >
       <div className="relative w-full min-h-screen">
         {/* Hamburger Button - nascosto in modalità debug/admin e management */}

@@ -346,9 +346,9 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       {/* Header con badge QUICK + Toggle TURBO */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Zap className="h-6 w-6 text-yellow-500" />
+          <Zap className="h-6 w-6 text-red-500" />
           <h3 className="text-lg font-semibold">Quick Download (Parallelo)</h3>
-          <Badge variant="default" className="bg-yellow-500">
+          <Badge variant="default" className={!isTurboMode ? 'bg-primary' : 'bg-yellow-500'}>
             {isTurboMode ? '⚡ TURBO' : '10x più veloce'}
           </Badge>
         </div>
@@ -364,7 +364,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
             onCheckedChange={setIsTurboMode}
             disabled={quickProgress?.isRunning}
           />
-          {isTurboMode && (
+          {!isTurboMode && (
             <Badge variant="outline" className="text-xs">
               Cache + Batch 25
             </Badge>

@@ -70,7 +70,7 @@ serve(async (req) => {
     }
 
     let category = predefinedCategory;
-    let confidence = 100;
+    let confidence = 1.0; // Confidence as decimal (0.0-1.0), not percentage
     let summary = '';
     let keywords: string[] = [];
 
@@ -269,7 +269,7 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
 
       const classification = JSON.parse(toolCall.function.arguments);
       category = classification.category;
-      confidence = classification.confidence;
+      confidence = classification.confidence / 100; // Convert from 0-100 to 0.0-1.0
       summary = classification.summary;
       keywords = classification.keywords;
 

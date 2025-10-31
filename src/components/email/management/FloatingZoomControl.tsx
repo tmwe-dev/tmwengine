@@ -22,7 +22,7 @@ export function FloatingZoomControl({
 
   return (
     <div 
-      className="fixed right-6 top-1/2 -translate-y-1/2 z-50 w-[60px] flex flex-col items-center gap-8"
+      className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-8"
       onMouseEnter={() => setIsActive(true)}
       onMouseLeave={() => setIsActive(false)}
     >

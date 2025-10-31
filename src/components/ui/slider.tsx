@@ -13,11 +13,18 @@ const Slider = React.forwardRef<
   const [isHovered, setIsHovered] = React.useState(false);
   
   const isActive = isDragging || isHovered;
+  const isVertical = props.orientation === 'vertical';
 
   return (
     <SliderPrimitive.Root
       ref={ref}
-      className={cn("relative flex w-full touch-none select-none items-center", className)}
+      className={cn(
+        "relative flex touch-none select-none",
+        isVertical 
+          ? "h-full flex-col justify-center w-[20px]"
+          : "w-full items-center",
+        className
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onPointerDown={() => setIsDragging(true)}
@@ -26,7 +33,8 @@ const Slider = React.forwardRef<
     >
       <SliderPrimitive.Track 
         className={cn(
-          "relative h-px w-full grow overflow-hidden rounded-full transition-opacity duration-200",
+          "relative grow overflow-hidden rounded-full transition-opacity duration-200",
+          isVertical ? "w-px h-full" : "h-px w-full",
           minimal 
             ? (isActive ? "bg-white/40 opacity-100" : "bg-transparent opacity-0")
             : "bg-secondary"
@@ -34,7 +42,8 @@ const Slider = React.forwardRef<
       >
         <SliderPrimitive.Range 
           className={cn(
-            "absolute h-full transition-colors duration-200",
+            "absolute transition-colors duration-200",
+            isVertical ? "w-full" : "h-full",
             minimal
               ? (isDragging ? "bg-purple-500" : isActive ? "bg-white/60" : "bg-transparent")
               : "bg-purple-500"

@@ -53,8 +53,8 @@ export const SmartEmailListIntelligent = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full">
-      <ScrollArea className="flex-1 h-full">
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <ScrollArea className="h-full">
         <div className="p-4 space-y-3">
           {emails.map((classifiedEmail) => (
             <SmartEmailCardIntelligent

@@ -9,8 +9,8 @@ interface SmartInboxDialogProps {
 export const SmartInboxDialog = ({ open, onOpenChange }: SmartInboxDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[90vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle>✨ Inbox Intelligente</DialogTitle>
         </DialogHeader>
         {/* ✅ LAZY MOUNT: renderizza solo quando aperto */}

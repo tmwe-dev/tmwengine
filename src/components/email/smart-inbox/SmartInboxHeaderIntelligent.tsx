@@ -44,7 +44,7 @@ export const SmartInboxHeaderIntelligent = ({
   const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
   
   return (
-    <div className="border-b p-4 space-y-3 bg-background">
+    <div className="border-b p-4 space-y-3 bg-background shrink-0">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold flex items-center gap-2">
           <span className="text-2xl">🧠</span>
@@ -107,7 +107,7 @@ export const SmartInboxHeaderIntelligent = ({
         </div>
       )}
       
-      <ScrollArea className="w-full">
+      <ScrollArea className="w-full max-h-20">
         <div className="flex gap-2 pb-2">
           <Badge 
             variant={selectedCategory === 'all' ? 'default' : 'outline'}

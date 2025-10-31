@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Archive, Trash, FolderInput, Check, ChevronDown } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
-import { BulkActionsBar } from './BulkActionsBar';
 import { SmartAIParticipantSelector } from './SmartAIParticipantSelector';
 import { useState, useEffect } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface SmartInboxHeaderIntelligentProps {
   categories: CategoryStats[];
@@ -40,6 +41,7 @@ export const SmartInboxHeaderIntelligent = ({
   onMove
 }: SmartInboxHeaderIntelligentProps) => {
   const [selectedAiConfigId, setSelectedAiConfigId] = useState<string | null>(null);
+  const [selectedCategoryForActions, setSelectedCategoryForActions] = useState<string>('');
 
   useEffect(() => {
     const saved = localStorage.getItem('funnemail_ai_config');
@@ -54,13 +56,78 @@ export const SmartInboxHeaderIntelligent = ({
   return (
     <div className="space-y-2 shrink-0">
       {/* Header compatto */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-bold flex items-center gap-2">
           <span className="text-xl">🧠</span>
           <span>Inbox Intelligente</span>
         </h2>
         
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-2 items-center">
+          {/* Dropdown Azioni Bulk (visibile solo se selectedCount > 0) */}
+          {selectedCount > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2 h-10">
+                  <span className="text-xs font-semibold">{selectedCount} selezionate</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 bg-card z-50">
+                {/* Select Categoria */}
+                <div className="p-2">
+                  <Select value={selectedCategoryForActions} onValueChange={setSelectedCategoryForActions}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Scegli categoria" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card z-50">
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <DropdownMenuSeparator />
+                
+                {/* Azioni */}
+                <DropdownMenuItem onClick={onArchive}>
+                  <Archive className="h-4 w-4 mr-2" />
+                  Archivia
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={onDelete}>
+                  <Trash className="h-4 w-4 mr-2" />
+                  Elimina
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem 
+                  onClick={() => selectedCategoryForActions && onMove(selectedCategoryForActions)}
+                  disabled={!selectedCategoryForActions}
+                >
+                  <FolderInput className="h-4 w-4 mr-2" />
+                  Sposta in categoria
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem 
+                  onClick={() => {
+                    if (selectedCategoryForActions) {
+                      onBulkClassify(selectedCategoryForActions);
+                      setSelectedCategoryForActions('');
+                    }
+                  }}
+                  disabled={!selectedCategoryForActions}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Applica Categoria
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          
           {/* 3 Icone AI */}
           <SmartAIParticipantSelector
             selectedConfigId={selectedAiConfigId}
@@ -98,16 +165,6 @@ export const SmartInboxHeaderIntelligent = ({
           />
         </div>
       )}
-
-      {/* 🆕 Barra Azioni Unificata sotto i badge */}
-      <BulkActionsBar
-        selectedCount={selectedCount}
-        categories={categories}
-        onArchive={onArchive}
-        onDelete={onDelete}
-        onMove={onMove}
-        onBulkClassify={onBulkClassify}
-      />
     </div>
   );
 };

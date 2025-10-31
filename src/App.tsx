@@ -8,6 +8,7 @@ import { TMWEAuthProvider } from "@/hooks/useTMWEAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { GlobalCallHandler } from "@/components/GlobalCallHandler";
 import { GlobalVideoCallHandler } from "@/components/GlobalVideoCallHandler";
+import { GlobalAICanvasProvider } from "@/contexts/GlobalAICanvasContext";
 import '@/i18n/config';
 
 import Auth from "./pages/Auth";
@@ -144,10 +145,11 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TMWEAuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+        <GlobalAICanvasProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
             <GlobalCallHandler>
               <GlobalVideoCallHandler />
               <Routes>
@@ -395,8 +397,9 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
             </GlobalCallHandler>
-        </BrowserRouter>
-      </TooltipProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </GlobalAICanvasProvider>
     </TMWEAuthProvider>
   </QueryClientProvider>
   );

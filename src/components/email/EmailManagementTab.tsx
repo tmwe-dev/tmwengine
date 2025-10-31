@@ -21,6 +21,7 @@ import { EmailGridContainer } from './management/EmailGridContainer';
 import { CreateCategoryDialog } from './management/CreateCategoryDialog';
 import { SenderSortControls, SortOption } from './management/SenderSortControls';
 import { FloatingZoomControl } from './management/FloatingZoomControl';
+import { AISidebarSlider } from '../ai/AISidebarSlider';
 
 // Collisione personalizzata 70%
 const carousel70PercentCollision: CollisionDetection = (args) => {
@@ -83,6 +84,8 @@ export function EmailManagementTab() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('count-desc');
   const [lastUpdatedGroupId, setLastUpdatedGroupId] = useState<string | null>(null);
+  const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
+  const [selectedSenderForAI, setSelectedSenderForAI] = useState<string | null>(null);
   
   // 🆕 Map callbacks per aggiornamento ottimistico card gruppi
   const groupUpdateCallbacksRef = useRef<Map<string, (senderEmail: string) => void>>(new Map());
@@ -657,6 +660,20 @@ export function EmailManagementTab() {
         onOpenChange={setShowCreateDialog}
         onSubmit={handleCreateCategory}
         existingNames={groups.map(g => g.nome_gruppo)}
+      />
+
+      {/* AI Sidebar Slider */}
+      <AISidebarSlider
+        isOpen={aiSidebarOpen}
+        onClose={() => setAiSidebarOpen(false)}
+        senderEmail={selectedSenderForAI}
+        onPromptCreated={async (data) => {
+          console.log('Prompt created:', data);
+          toast({
+            title: '✅ Prompt salvato',
+            description: `"${data.prompt_name}" disponibile nella library`,
+          });
+        }}
       />
     </div>
   );

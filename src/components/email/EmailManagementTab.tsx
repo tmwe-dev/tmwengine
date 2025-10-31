@@ -43,6 +43,31 @@ const carousel70PercentCollision: CollisionDetection = (args) => {
   return collisions;
 };
 
+// Collisione personalizzata 50% per Grid
+const grid50PercentCollision: CollisionDetection = (args) => {
+  const { droppableContainers, collisionRect } = args;
+  if (!collisionRect) return [];
+
+  const collisions = Array.from(droppableContainers).map((container) => {
+    const rect = container.rect.current;
+    if (!rect) return null;
+
+    // Calcola area di overlap tra card draggata e gruppo target
+    const overlapX = Math.max(0, Math.min(collisionRect.right, rect.right) - Math.max(collisionRect.left, rect.left));
+    const overlapY = Math.max(0, Math.min(collisionRect.bottom, rect.bottom) - Math.max(collisionRect.top, rect.top));
+    const overlapArea = overlapX * overlapY;
+    const draggableArea = collisionRect.width * collisionRect.height;
+    const overlapPercentage = (overlapArea / draggableArea) * 100;
+
+    console.log(`🎯 Collision check ${container.id}: ${overlapPercentage.toFixed(1)}% overlap`);
+
+    // 🆕 Richiedi almeno 50% di overlap per Grid
+    return overlapPercentage >= 50 ? { id: container.id, data: { percentage: overlapPercentage } } : null;
+  }).filter(Boolean) as { id: string | number; data: { percentage: number } }[];
+
+  return collisions;
+};
+
 export function EmailManagementTab() {
   const [senders, setSenders] = useState<SenderAnalysis[]>([]);
   const [groups, setGroups] = useState<EmailSenderGroup[]>([]);
@@ -554,7 +579,7 @@ export function EmailManagementTab() {
   return (
     <div className="flex h-full w-full gap-4 max-w-[1920px] mx-auto">
       <DndContext
-        collisionDetection={viewMode === 'carousel' ? carousel70PercentCollision : closestCenter}
+        collisionDetection={viewMode === 'carousel' ? carousel70PercentCollision : grid50PercentCollision}
         onDragEnd={handleDragEnd}
         onDragStart={(e) => setActiveDragId(e.active.id as string)}
         onDragCancel={() => setActiveDragId(null)}

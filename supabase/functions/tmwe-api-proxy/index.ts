@@ -368,15 +368,57 @@ serve(async (req) => {
         console.log('═══════════════════════════════════════════════════════');
       }
     } else {
-      // Ottimizzazione: usa .json() diretto
-      const responseJson = await tmweResponse.json();
-      responseData = responseJson;
+      // Ottimizzazione: usa .json() diretto con gestione errori robusta
+      try {
+        // Leggi prima come testo per verificare se è vuoto
+        const responseText = await tmweResponse.text();
+        
+        if (enableLogging) {
+          console.log('═══════════════════════════════════════════════════════');
+          console.log('📥 RISPOSTA TMWE API (Raw Text)');
+          console.log('═══════════════════════════════════════════════════════');
+          console.log('📊 Status:', tmweResponse.status, tmweResponse.statusText);
+          console.log('📦 Content-Type:', tmweResponse.headers.get('content-type'));
+          console.log('📦 Response length:', responseText.length);
+          console.log('📦 Response (primi 500 chars):', responseText.substring(0, 500));
+          console.log('═══════════════════════════════════════════════════════');
+        }
+        
+        // Verifica se la risposta è vuota
+        if (!responseText || responseText.trim().length === 0) {
+          if (enableLogging) {
+            console.error('⚠️ TMWE API ritornò risposta vuota');
+          }
+          responseData = { error: 'Empty response from TMWE API' };
+        } else {
+          // Prova a parsare come JSON
+          try {
+            responseData = JSON.parse(responseText);
+          } catch (parseError) {
+            if (enableLogging) {
+              console.error('⚠️ Risposta non è JSON valido, uso testo raw');
+              console.error('Parse error:', parseError.message);
+            }
+            // Se non è JSON, ritorna il testo raw
+            responseData = { 
+              error: 'Invalid JSON response',
+              raw: responseText.substring(0, 1000) // Primi 1000 chars
+            };
+          }
+        }
+      } catch (error) {
+        if (enableLogging) {
+          console.error('⚠️ Errore nel processamento della risposta:', error.message);
+        }
+        responseData = { 
+          error: 'Failed to process response',
+          details: error.message 
+        };
+      }
       
       if (enableLogging) {
         console.log('═══════════════════════════════════════════════════════');
-        console.log('📥 RISPOSTA TMWE API (JSON direct)');
-        console.log('═══════════════════════════════════════════════════════');
-        console.log('📊 Status:', tmweResponse.status, tmweResponse.statusText);
+        console.log('📥 RISPOSTA FINALE PROCESSATA');
         console.log('═══════════════════════════════════════════════════════');
       }
     }

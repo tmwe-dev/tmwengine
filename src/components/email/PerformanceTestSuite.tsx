@@ -18,7 +18,7 @@ import { Link } from 'react-router-dom';
 
 interface TestConfig {
   folder: string;
-  testType: 'single' | 'batch' | 'batch-compare' | 'metadata' | 'parallel';
+  testType: 'single' | 'batch' | 'batch-compare' | 'light-vs-full' | 'parallel';
   batchSize?: number;
   repetitions?: number;
   batchSizes?: number[]; // Per batch-compare
@@ -385,24 +385,25 @@ export function PerformanceTestSuite() {
         setIsRunning(false);
         return;
 
-      } else if (config.testType === 'metadata') {
-        // Test: Confronto get_messages vs get_emails_metadata
-        console.log('🧪 [PERF TEST] Starting Metadata Comparison Test');
+      } else if (config.testType === 'light-vs-full') {
+        // Test: Confronto get_messages light (no attachments) vs full (with attachments)
+        console.log('🧪 [PERF TEST] Starting Light vs Full Body Comparison Test');
 
-        // Test 1: get_messages (con body)
-        const withBodyStart = performance.now();
-        const { data: withBodyData, error: withBodyError } = await supabase.functions.invoke('tmwe-api-proxy', {
+        // Test 1: get_messages light (no attachments)
+        const lightStart = performance.now();
+        const { data: lightData, error: lightError } = await supabase.functions.invoke('tmwe-api-proxy', {
           body: {
             endpoint: '/email_message',
             data: {
               handler: 'get_messages',
               folder: config.folder,
               limit: config.batchSize || 25,
-              offset: 0
+              offset: 0,
+              include_attachments: false
             }
           }
         });
-        const withBodyTime = performance.now() - withBodyStart;
+        const lightTime = performance.now() - lightStart;
         totalApiCalls++;
 
         setProgress(50);
@@ -410,62 +411,63 @@ export function PerformanceTestSuite() {
         // Delay
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Test 2: get_emails_metadata (solo metadata)
-        const metadataStart = performance.now();
-        const { data: metadataData, error: metadataError } = await supabase.functions.invoke('tmwe-api-proxy', {
+        // Test 2: get_messages full (with attachments)
+        const fullStart = performance.now();
+        const { data: fullData, error: fullError } = await supabase.functions.invoke('tmwe-api-proxy', {
           body: {
             endpoint: '/email_message',
             data: {
-              handler: 'get_emails_metadata',
+              handler: 'get_messages',
               folder: config.folder,
               limit: config.batchSize || 25,
-              offset: 0
+              offset: 0,
+              include_attachments: true
             }
           }
         });
-        const metadataTime = performance.now() - metadataStart;
+        const fullTime = performance.now() - fullStart;
         totalApiCalls++;
 
         setProgress(100);
 
         const emailCount = config.batchSize || 25;
-        const speedup = withBodyTime / metadataTime;
+        const speedup = fullTime / lightTime;
 
-        const withBodyMetrics: TestMetrics = {
-          totalTime: Math.round(withBodyTime),
-          avgTimePerEmail: Math.round(withBodyTime / emailCount),
-          minTime: Math.round(withBodyTime),
-          maxTime: Math.round(withBodyTime),
-          throughput: Math.round((emailCount / withBodyTime) * 1000 * 100) / 100,
+        const lightMetrics: TestMetrics = {
+          totalTime: Math.round(lightTime),
+          avgTimePerEmail: Math.round(lightTime / emailCount),
+          minTime: Math.round(lightTime),
+          maxTime: Math.round(lightTime),
+          throughput: Math.round((emailCount / lightTime) * 1000 * 100) / 100,
           apiCalls: 1,
-          errors: withBodyError ? 1 : 0,
-          successRate: withBodyError ? 0 : 100
+          errors: lightError ? 1 : 0,
+          successRate: lightError ? 0 : 100
         };
 
-        const metadataMetrics: TestMetrics = {
-          totalTime: Math.round(metadataTime),
-          avgTimePerEmail: Math.round(metadataTime / emailCount),
-          minTime: Math.round(metadataTime),
-          maxTime: Math.round(metadataTime),
-          throughput: Math.round((emailCount / metadataTime) * 1000 * 100) / 100,
+        const fullMetrics: TestMetrics = {
+          totalTime: Math.round(fullTime),
+          avgTimePerEmail: Math.round(fullTime / emailCount),
+          minTime: Math.round(fullTime),
+          maxTime: Math.round(fullTime),
+          throughput: Math.round((emailCount / fullTime) * 1000 * 100) / 100,
           apiCalls: 1,
-          errors: metadataError ? 1 : 0,
-          successRate: metadataError ? 0 : 100
+          errors: fullError ? 1 : 0,
+          successRate: fullError ? 0 : 100
         };
 
         const testResult: TestResult = {
           config,
-          metrics: metadataMetrics, // Usa le metriche metadata come principali
+          metrics: lightMetrics, // Usa le metriche light come principali
           timestamp: new Date().toISOString(),
           recommendations: [
-            `🚀 Speedup: ${speedup.toFixed(2)}x più veloce con metadata API`,
-            `💡 Usa get_emails_metadata per liste email (non serve il body)`,
-            `📧 Usa get_message solo per visualizzazione dettaglio singola email`,
-            speedup > 3 ? '✅ Ottimo guadagno performance con metadata API' : '⚠️ Speedup limitato, verifica configurazione'
+            `🚀 Speedup: ${speedup.toFixed(2)}x più veloce senza attachments`,
+            `💡 Usa include_attachments=false per liste email (più leggero)`,
+            `📧 Usa include_attachments=true solo per visualizzazione dettaglio`,
+            speedup > 2 ? '✅ Ottimo guadagno performance con modalità light' : '⚠️ Speedup limitato, verifica configurazione'
           ],
           metadataComparison: {
-            withBody: withBodyMetrics,
-            metadataOnly: metadataMetrics
+            withBody: fullMetrics,
+            metadataOnly: lightMetrics
           }
         };
 
@@ -663,7 +665,7 @@ export function PerformanceTestSuite() {
                   <SelectItem value="single">📧 Single Email (with repeats)</SelectItem>
                   <SelectItem value="batch">📦 Batch Download</SelectItem>
                   <SelectItem value="batch-compare">📊 Batch Size Comparison</SelectItem>
-                  <SelectItem value="metadata">⚡ Metadata vs Full Body</SelectItem>
+                  <SelectItem value="light-vs-full">⚡ Light vs Full Body</SelectItem>
                   <SelectItem value="parallel">🔄 Parallel Download</SelectItem>
                 </SelectContent>
               </Select>
@@ -703,7 +705,7 @@ export function PerformanceTestSuite() {
             </div>
           )}
 
-          {(config.testType === 'batch' || config.testType === 'metadata') && (
+          {(config.testType === 'batch' || config.testType === 'light-vs-full') && (
             <div className="space-y-2">
               <Label>Batch Size</Label>
               <Input

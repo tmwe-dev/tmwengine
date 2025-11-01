@@ -19,16 +19,14 @@ interface AISidebarSliderProps {
   onToggle: () => void;
   senderEmail?: string | null;
   onPromptCreated?: (data: { prompt_name: string; system_prompt: string; sender_email?: string }) => void;
-  hideButton?: boolean;
 }
 
 export function AISidebarSlider({ 
   isOpen, 
-  onClose,
-  onToggle,
+  onClose, 
+  onToggle, 
   senderEmail,
-  onPromptCreated,
-  hideButton = false
+  onPromptCreated
 }: AISidebarSliderProps) {
   const { state, sendMessage, clearMessages } = useGlobalAICanvas();
   const [input, setInput] = useState('');
@@ -70,18 +68,23 @@ export function AISidebarSlider({
         />
       )}
 
-      {/* Sidebar scorrevole */}
-      <div className={cn(
-        "fixed left-0 top-0 h-screen w-[500px] bg-background/90 backdrop-blur-md border-r shadow-2xl z-[61]",
-        "transition-transform duration-300 ease-in-out flex flex-col",
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      {/* Sidebar principale */}
+      <aside
+        className={cn(
+          "fixed right-0 top-0 h-full w-[500px] z-50 backdrop-blur-lg transition-transform duration-300",
+          isOpen ? "translate-x-0" : "translate-x-full",
+          "border-l border-border/50 flex flex-col"
+        )}
+        style={{
+          background: 'linear-gradient(to left, hsl(var(--background)) 0%, transparent 100%)'
+        }}
+      >
         {/* Header */}
-        <div className="p-4 border-b flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between p-4 border-b border-border/50 shrink-0">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold text-lg">AI Assistant</h2>
-          </div>
+            AI Assistant
+          </h2>
           <div className="flex items-center gap-2">
             {senderEmail && (
               <Badge variant="outline" className="text-xs">
@@ -193,29 +196,8 @@ export function AISidebarSlider({
             <AIPromptLibrarySelector onSelect={handlePromptSelect} />
           </div>
         )}
-      </div>
+      </aside>
 
-      {/* Linguetta trigger (sempre visibile) */}
-      {!hideButton && (
-        <button
-          onClick={onToggle}
-          className={cn(
-            "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
-            "bg-primary/90 hover:bg-primary p-3 rounded-r-lg shadow-lg",
-            "transition-all duration-300",
-            isOpen && "translate-x-[500px]"
-          )}
-          aria-label="Toggle AI Assistant"
-        >
-          <Sparkles className="h-5 w-5 text-primary-foreground" />
-          <ChevronRight 
-            className={cn(
-              "h-4 w-4 text-primary-foreground transition-transform mt-1",
-              isOpen && "rotate-180"
-            )}
-          />
-        </button>
-      )}
     </>
   );
 }

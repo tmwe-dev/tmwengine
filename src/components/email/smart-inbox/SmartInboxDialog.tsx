@@ -14,7 +14,12 @@ export const SmartInboxDialog = ({ open, onOpenChange }: SmartInboxDialogProps) 
           <DialogTitle>✨ Inbox Intelligente</DialogTitle>
         </DialogHeader>
         {/* ✅ LAZY MOUNT: renderizza solo quando aperto */}
-        {open && <SmartInboxTabIntelligent />}
+        {open && (
+          <SmartInboxTabIntelligent 
+            categoriesOpen={false}
+            onCategoriesOpenChange={() => {}}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

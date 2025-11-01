@@ -7,7 +7,7 @@ import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { X, Menu, Brain, ArrowLeft, Bug } from 'lucide-react';
+import { X, Menu, Inbox, Sparkles, Brain, ArrowLeft, Bug } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
@@ -22,6 +22,8 @@ import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartIn
 import { GradientBackground } from '@/components/design-system';
 import { cn } from '@/lib/utils';
 import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
+import { UnifiedSidebarIcon } from '@/components/email/smart-inbox/UnifiedSidebarIcon';
+import { MenuSidebar } from '@/components/email/smart-inbox/MenuSidebar';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();
@@ -40,6 +42,11 @@ const FunEmail = () => {
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const [selectedSenderForAI, setSelectedSenderForAI] = useState<string | null>(null);
   const [categorySidebarOpen, setCategorySidebarOpen] = useState(false);
+  
+  // Unified sidebar states
+  const [menuSidebarOpen, setMenuSidebarOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [isNearLeftEdge, setIsNearLeftEdge] = useState(false);
 
   // Sincronizza currentView con query param "view" dal CRMLayout
   useEffect(() => {
@@ -64,6 +71,16 @@ const FunEmail = () => {
     setAiSidebarOpen(false);
     setSelectedSenderForAI(null);
   }, [currentView]);
+
+  // Proximity detection per icone sidebar (40px)
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setIsNearLeftEdge(e.clientX <= 40);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   // ✅ Query email dal DB locale per la cartella selezionata
   const {
@@ -147,6 +164,37 @@ const FunEmail = () => {
     setAiSidebarOpen(true);
   };
 
+  // Visibilità icone: mouse vicino O una sidebar aperta
+  const shouldShowIcons = isNearLeftEdge || menuSidebarOpen || aiSidebarOpen || categoriesOpen;
+
+  // Handler per gestire mutua esclusione sidebar
+  const handleToggleMenu = () => {
+    const newState = !menuSidebarOpen;
+    setMenuSidebarOpen(newState);
+    if (newState) {
+      setCategoriesOpen(false);
+      setAiSidebarOpen(false);
+    }
+  };
+
+  const handleToggleCategories = () => {
+    const newState = !categoriesOpen;
+    setCategoriesOpen(newState);
+    if (newState) {
+      setMenuSidebarOpen(false);
+      setAiSidebarOpen(false);
+    }
+  };
+
+  const handleToggleAI = () => {
+    const newState = !aiSidebarOpen;
+    setAiSidebarOpen(newState);
+    if (newState) {
+      setMenuSidebarOpen(false);
+      setCategoriesOpen(false);
+    }
+  };
+
   const handlePromptCreatedGlobal = async (promptData: {
     prompt_name: string;
     system_prompt: string;
@@ -210,8 +258,38 @@ const FunEmail = () => {
       actions={null}
     >
       <div className="relative w-full min-h-screen">
-        {/* Hamburger Button - nascosto in modalità debug/admin e management */}
-        {!['quick-download', 'integrity', 'debugger', 'management'].includes(currentView) && (
+        {/* Unified Sidebar Icons - Solo in view 'inbox' */}
+        {currentView === 'inbox' && (
+          <>
+            <UnifiedSidebarIcon
+              icon={Menu}
+              isActive={menuSidebarOpen}
+              onClick={handleToggleMenu}
+              position="top"
+              sidebarWidth={280}
+              shouldShow={shouldShowIcons}
+            />
+            <UnifiedSidebarIcon
+              icon={Inbox}
+              isActive={categoriesOpen}
+              onClick={handleToggleCategories}
+              position="middle"
+              sidebarWidth={280}
+              shouldShow={shouldShowIcons}
+            />
+            <UnifiedSidebarIcon
+              icon={Sparkles}
+              isActive={aiSidebarOpen}
+              onClick={handleToggleAI}
+              position="bottom"
+              sidebarWidth={500}
+              shouldShow={shouldShowIcons}
+            />
+          </>
+        )}
+
+        {/* Hamburger Button - Solo per altri view */}
+        {currentView !== 'inbox' && !['quick-download', 'integrity', 'debugger', 'management'].includes(currentView) && (
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className={cn(
@@ -224,6 +302,18 @@ const FunEmail = () => {
           >
             <Menu className="h-5 w-5" />
           </button>
+        )}
+        
+        {/* Menu Sidebar - Solo in inbox view */}
+        {currentView === 'inbox' && (
+          <MenuSidebar
+            isOpen={menuSidebarOpen}
+            onClose={() => setMenuSidebarOpen(false)}
+            selectedFolder={selectedFolder}
+            onFolderSelect={setSelectedFolder}
+            onSync={() => console.log('Sync')}
+            dbEmailCount={0}
+          />
         )}
 
         {/* Content - condizionale in base alla view */}
@@ -308,7 +398,8 @@ const FunEmail = () => {
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
               <SmartInboxTabIntelligent 
                 onOpenAISidebar={openAISidebarForSender}
-                onCategorySidebarChange={setCategorySidebarOpen}
+                categoriesOpen={categoriesOpen}
+                onCategoriesOpenChange={setCategoriesOpen}
               />
             </GradientBackground>
           ) : null}
@@ -379,10 +470,9 @@ const FunEmail = () => {
         <AISidebarSlider
           isOpen={aiSidebarOpen}
           onClose={() => setAiSidebarOpen(false)}
-          onToggle={handleToggleAISidebar}
+          onToggle={handleToggleAI}
           senderEmail={selectedSenderForAI}
           onPromptCreated={handlePromptCreatedGlobal}
-          hideButton={categorySidebarOpen}
         />
       )}
 

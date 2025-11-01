@@ -64,8 +64,8 @@ const fetchApi = async (endpoint: string, data: any) => {
 
 export const emailSearchApi = {
   /**
-   * Fast metadata-only query (MySQL, no body)
-   * ~10x faster than get_messages
+   * Fast metadata-only query (uses get_messages handler)
+   * Returns email list with metadata
    * Ideal for email lists
    */
   getEmailsMetadata: (params: {
@@ -78,12 +78,11 @@ export const emailSearchApi = {
     date_from?: string;
     date_to?: string;
     timeout?: number;
-  }) => fetchApi('/email_search', {
-    handler: 'get_emails_metadata',
+  }) => fetchApi('/email_message', {
+    handler: 'get_messages',
     folder: params.folder || 'INBOX',
-    page: params.page || 1,
     limit: params.limit || 50,
-    timeout: params.timeout || 10,
+    offset: ((params.page || 1) - 1) * (params.limit || 50),
     ...(params.is_seen !== undefined && { is_seen: params.is_seen }),
     ...(params.is_flagged !== undefined && { is_flagged: params.is_flagged }),
     ...(params.has_attachments !== undefined && { has_attachments: params.has_attachments }),

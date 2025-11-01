@@ -18,19 +18,15 @@ import { useEmailAIProcessor } from '@/hooks/useEmailAIProcessor';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
 
 interface SmartInboxTabIntelligentProps {
   onOpenAISidebar?: (senderEmail: string) => void;
-  onCategorySidebarChange?: (open: boolean) => void;
 }
 
-export const SmartInboxTabIntelligent = ({ onOpenAISidebar, onCategorySidebarChange }: SmartInboxTabIntelligentProps) => {
+export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntelligentProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedEmail, setSelectedEmail] = useState<ClassifiedEmail | null>(null);
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
-  const [sidebarLocked, setSidebarLocked] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // AI Automation State
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
@@ -124,11 +120,6 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar, onCategorySidebarCha
   const unverifiedCount = classifiedEmails.filter(
     e => !e.classification.is_verified || e.classification.confidence < 0.8
   ).length;
-
-  // Notifica FunEmail quando sidebar categorie si apre/chiude
-  React.useEffect(() => {
-    onCategorySidebarChange?.(sidebarOpen || sidebarLocked);
-  }, [sidebarOpen, sidebarLocked, onCategorySidebarChange]);
 
   const handleClassifyNew = async () => {
     console.log('🔍 [DEBUG] Classifica Nuove cliccato');
@@ -320,15 +311,10 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar, onCategorySidebarCha
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
           unverifiedCount={unverifiedCount}
-          onLockedChange={setSidebarLocked}
-          onOpenChange={setSidebarOpen}
         />
 
-        {/* Colonna 1: Lista Email (30% quando sidebar locked, 40% quando chiusa) */}
-        <div className={cn(
-          "flex flex-col min-h-0 transition-all duration-300",
-          sidebarLocked ? "w-[30%]" : "w-[40%]"
-        )}>
+        {/* Colonna 1: Lista Email (40% width - più spazio senza sidebar fissa) */}
+        <div className="w-[40%] flex flex-col min-h-0">
           <SmartEmailListIntelligent
             emails={classifiedEmails}
             onEmailClick={handleEmailSelect}

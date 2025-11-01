@@ -39,7 +39,6 @@ const FunEmail = () => {
   // AI Sidebar globale state
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const [selectedSenderForAI, setSelectedSenderForAI] = useState<string | null>(null);
-  const [categorySidebarOpen, setCategorySidebarOpen] = useState(false);
 
   // Sincronizza currentView con query param "view" dal CRMLayout
   useEffect(() => {
@@ -306,10 +305,7 @@ const FunEmail = () => {
             </div>
           ) : currentView === 'inbox' ? (
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
-              <SmartInboxTabIntelligent 
-                onOpenAISidebar={openAISidebarForSender}
-                onCategorySidebarChange={setCategorySidebarOpen}
-              />
+              <SmartInboxTabIntelligent onOpenAISidebar={openAISidebarForSender} />
             </GradientBackground>
           ) : null}
         </div>
@@ -382,7 +378,6 @@ const FunEmail = () => {
           onToggle={handleToggleAISidebar}
           senderEmail={selectedSenderForAI}
           onPromptCreated={handlePromptCreatedGlobal}
-          hideButton={categorySidebarOpen}
         />
       )}
 

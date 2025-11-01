@@ -19,7 +19,6 @@ interface AISidebarSliderProps {
   onToggle: () => void;
   senderEmail?: string | null;
   onPromptCreated?: (data: { prompt_name: string; system_prompt: string; sender_email?: string }) => void;
-  hideButton?: boolean;
 }
 
 export function AISidebarSlider({ 
@@ -27,8 +26,7 @@ export function AISidebarSlider({
   onClose,
   onToggle,
   senderEmail,
-  onPromptCreated,
-  hideButton = false
+  onPromptCreated 
 }: AISidebarSliderProps) {
   const { state, sendMessage, clearMessages } = useGlobalAICanvas();
   const [input, setInput] = useState('');
@@ -196,26 +194,24 @@ export function AISidebarSlider({
       </div>
 
       {/* Linguetta trigger (sempre visibile) */}
-      {!hideButton && (
-        <button
-          onClick={onToggle}
+      <button
+        onClick={onToggle}
+        className={cn(
+          "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
+          "bg-primary/90 hover:bg-primary p-3 rounded-r-lg shadow-lg",
+          "transition-all duration-300",
+          isOpen && "translate-x-[500px]"
+        )}
+        aria-label="Toggle AI Assistant"
+      >
+        <Sparkles className="h-5 w-5 text-primary-foreground" />
+        <ChevronRight 
           className={cn(
-            "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
-            "bg-primary/90 hover:bg-primary p-3 rounded-r-lg shadow-lg",
-            "transition-all duration-300",
-            isOpen && "translate-x-[500px]"
+            "h-4 w-4 text-primary-foreground transition-transform mt-1",
+            isOpen && "rotate-180"
           )}
-          aria-label="Toggle AI Assistant"
-        >
-          <Sparkles className="h-5 w-5 text-primary-foreground" />
-          <ChevronRight 
-            className={cn(
-              "h-4 w-4 text-primary-foreground transition-transform mt-1",
-              isOpen && "rotate-180"
-            )}
-          />
-        </button>
-      )}
+        />
+      </button>
     </>
   );
 }

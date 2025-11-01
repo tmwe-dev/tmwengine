@@ -11,17 +11,13 @@ interface CollapsibleCategorySidebarProps {
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
   unverifiedCount: number;
-  onLockedChange?: (locked: boolean) => void;
-  onOpenChange?: (open: boolean) => void;
 }
 
 export function CollapsibleCategorySidebar({
   categories,
   selectedCategory,
   onCategoryChange,
-  unverifiedCount,
-  onLockedChange,
-  onOpenChange
+  unverifiedCount
 }: CollapsibleCategorySidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
@@ -29,26 +25,22 @@ export function CollapsibleCategorySidebar({
   // Mouse proximity tracking
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      // Considera offset di 64px per il badge spostato
-      const adjustedX = e.clientX - 64;
-      const isNear = adjustedX < 100;
+      const isNear = e.clientX < 100;
       
       // Auto-open se vicino al bordo e non locked
       if (isNear && !isLocked && !isOpen) {
         setIsOpen(true);
-        onOpenChange?.(true);
       }
       
-      // Auto-close se lontano e non locked (280px sidebar + 100px buffer)
-      if (e.clientX > 380 && !isLocked && isOpen) {
+      // Auto-close se lontano e non locked
+      if (e.clientX > 340 && !isLocked && isOpen) {
         setIsOpen(false);
-        onOpenChange?.(false);
       }
     };
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [isLocked, isOpen, onOpenChange]);
+  }, [isLocked, isOpen]);
 
   // Trova categoria selezionata per il badge
   const getSelectedInfo = () => {
@@ -68,13 +60,11 @@ export function CollapsibleCategorySidebar({
   return (
     <>
       {/* Badge verticale (sempre visibile) */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={cn(
-          "fixed left-16 top-1/2 -translate-y-1/2 z-50 bg-card-transparent backdrop-blur-md border-r border-white/10 rounded-r-xl py-6 px-2 flex flex-col items-center gap-3 hover:bg-card-transparent/80 transition-all group",
-          isOpen && "opacity-0 pointer-events-none"
-        )}
-      >
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 bg-card-transparent backdrop-blur-md border-r border-white/10 rounded-r-xl py-6 px-2 flex flex-col items-center gap-3 hover:bg-card-transparent/80 transition-all group"
+        >
           <span className="text-2xl group-hover:scale-110 transition-transform">
             {selectedInfo.icon}
           </span>
@@ -91,20 +81,15 @@ export function CollapsibleCategorySidebar({
           >
             {selectedInfo.count}
           </Badge>
-      </button>
+        </button>
+      )}
 
       {/* Sidebar scorrevole */}
       <aside
         className={cn(
-          "h-full w-[280px] backdrop-blur-lg transition-all duration-300 ease-out",
-          isLocked 
-            ? "relative" 
-            : "fixed left-0 top-0 z-40",
-          isOpen || isLocked ? "translate-x-0" : "-translate-x-full"
+          "fixed left-0 top-0 h-full w-[240px] z-40 bg-background/95 backdrop-blur-sm border-r border-white/10 transition-transform duration-300 ease-out",
+          isOpen ? "translate-x-0" : "-translate-x-full"
         )}
-        style={{
-          background: 'linear-gradient(to bottom, hsl(280 70% 65% / 0.65) 0%, transparent 100%)'
-        }}
       >
         {/* Header con lock button */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -112,11 +97,7 @@ export function CollapsibleCategorySidebar({
           <Button
             size="icon"
             variant="ghost"
-            onClick={() => {
-              const newLocked = !isLocked;
-              setIsLocked(newLocked);
-              onLockedChange?.(newLocked);
-            }}
+            onClick={() => setIsLocked(!isLocked)}
             className="h-8 w-8"
           >
             {isLocked ? (

@@ -21,13 +21,15 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  Gauge
+  Gauge,
+  Settings
 } from 'lucide-react';
-import { QuickEmailSyncer, QuickSyncProgress, QuickSyncStats } from '@/lib/email-sync-quick';
-import { QuickEmailSyncerTurbo } from '@/lib/email-sync-quick-turbo';
+import { 
+  QuickEmailSyncerTurboV3 as QuickEmailSyncer,
+  TurboV3SyncProgress as QuickSyncProgress,
+  TurboV3SyncStats as QuickSyncStats
+} from '@/lib/email-sync-quick-turbo-v3-preferences';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 
 interface QuickEmailDownloaderProps {
   onDownloadComplete?: (stats: QuickSyncStats) => void;
@@ -44,9 +46,8 @@ interface FolderQuickOption {
 export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSelectedFolders = [] }: QuickEmailDownloaderProps) {
   const [quickFolders, setQuickFolders] = useState<FolderQuickOption[]>([]);
   const [quickProgress, setQuickProgress] = useState<QuickSyncProgress | null>(null);
-  const [quickSyncer, setQuickSyncer] = useState<QuickEmailSyncer | QuickEmailSyncerTurbo | null>(null);
+  const [quickSyncer, setQuickSyncer] = useState<QuickEmailSyncer | null>(null);
   const [isQuickLoading, setIsQuickLoading] = useState(true);
-  const [isTurboMode, setIsTurboMode] = useState(true); // ✨ Default: TURBO attivo
   const { toast } = useToast();
 
   useEffect(() => {
@@ -269,19 +270,24 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       console.log('🚀 ==============================================');
 
       const newQuickSyncer = new QuickEmailSyncer({
-        folders: foldersToSync,  // ✅ Usa foldersToSync invece di quickSelectedFolders.map()
         userEmail: profile.tmwe_email,
-        batchSize: 15,
+        folders: foldersToSync,
+        applyPreferences: preSelectedFolders.length === 0,
+        batchSize: 25,
         maxRetries: 2,
-        timeout: 60000,  // ✅ 60s per email grandi con allegati
+        timeout: 60000,
         onProgress: (progress) => {
           setQuickProgress(progress);
         },
         onComplete: (stats) => {
           const cacheInfo = stats.cacheHits ? ` (${stats.cacheHits} da cache)` : '';
+          const prefsInfo = stats.preferencesApplied.filteredFolderCount < stats.preferencesApplied.originalFolderCount
+            ? ` [${stats.preferencesApplied.filteredFolderCount}/${stats.preferencesApplied.originalFolderCount} cartelle]`
+            : '';
+          
           toast({
-            title: `✅ Download ${isTurboMode ? 'TURBO' : ''} completato!`,
-            description: `${stats.totalDownloaded} email scaricate in ${Math.round(stats.totalTime)}s (${stats.avgSpeed.toFixed(1)} email/s)${cacheInfo}`,
+            title: `✅ Download V3 completato!`,
+            description: `${stats.downloaded} email in ${Math.round(stats.totalTime)}s (${stats.avgSpeed.toFixed(1)} email/s)${cacheInfo}${prefsInfo}`,
           });
           setQuickSyncer(null);
           setQuickProgress(null);
@@ -290,7 +296,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         },
         onError: (error) => {
           toast({
-            title: '❌ Errore',
+            title: '❌ Errore V3',
             description: error.message,
             variant: 'destructive',
           });
@@ -333,7 +339,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     }
   };
 
-  const quickOverallProgress = quickProgress
+  const quickOverallProgress = quickProgress && quickProgress.totalFolders > 0
     ? ((quickProgress.completedFolders * 100 + 
         (quickProgress.currentFolderTotal > 0 
           ? (quickProgress.currentFolderProgress / quickProgress.currentFolderTotal) * 100 
@@ -341,39 +347,82 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
        ) / quickProgress.totalFolders)
     : 0;
 
+  const startPreferencesSync = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Non autenticato');
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.tmwe_email) {
+        throw new Error('Email TMWE non configurata');
+      }
+
+      console.log('🎯 [PreferencesSync] Starting with automatic folder selection...');
+
+      const newQuickSyncer = new QuickEmailSyncer({
+        userEmail: profile.tmwe_email,
+        applyPreferences: true,
+        batchSize: 25,
+        maxRetries: 2,
+        timeout: 60000,
+        onProgress: (progress) => {
+          setQuickProgress(progress);
+        },
+        onComplete: (stats) => {
+          const prefsInfo = `${stats.preferencesApplied.mode}: ${stats.preferencesApplied.filteredFolderCount}/${stats.preferencesApplied.originalFolderCount} cartelle`;
+          
+          toast({
+            title: `✅ Sync con Preferenze completato!`,
+            description: `${stats.downloaded} email in ${Math.round(stats.totalTime)}s | ${prefsInfo}`,
+          });
+          
+          setQuickSyncer(null);
+          setQuickProgress(null);
+          onDownloadComplete?.(stats);
+          loadQuickStats();
+        },
+        onError: (error) => {
+          toast({
+            title: '❌ Errore Sync Preferences',
+            description: error.message,
+            variant: 'destructive',
+          });
+          setQuickSyncer(null);
+          setQuickProgress(null);
+        }
+      });
+
+      setQuickSyncer(newQuickSyncer);
+      await newQuickSyncer.start();
+
+    } catch (error: any) {
+      console.error('❌ Preferences sync error:', error);
+      toast({
+        title: '❌ Errore',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {/* Header con badge QUICK + Toggle TURBO */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Zap className="h-6 w-6 text-red-500" />
-          <h3 className="text-lg font-semibold">Quick Download (Parallelo)</h3>
-          <Badge variant="default" className={!isTurboMode ? 'bg-primary' : 'bg-yellow-500'}>
-            {isTurboMode ? '⚡ TURBO' : '10x più veloce'}
-          </Badge>
-        </div>
-        
-        {/* ✨ Toggle TURBO Mode */}
-        <div className="flex items-center gap-3">
-          <Label htmlFor="turbo-mode" className="text-sm font-medium">
-            Modalità TURBO
-          </Label>
-          <Switch 
-            id="turbo-mode"
-            checked={isTurboMode}
-            onCheckedChange={setIsTurboMode}
-            disabled={quickProgress?.isRunning}
-          />
-          {!isTurboMode && (
-            <Badge variant="outline" className="text-xs">
-              Cache + Batch 25
-            </Badge>
-          )}
-        </div>
+      {/* Header V3 */}
+      <div className="flex items-center gap-3">
+        <Zap className="h-6 w-6 text-red-500" />
+        <h3 className="text-lg font-semibold">Quick Download V3</h3>
+        <Badge variant="default" className="bg-yellow-500">
+          ⚡ TURBO + Preferences
+        </Badge>
       </div>
 
       {/* Progress Card (visible solo durante download) */}
-      {quickProgress?.isRunning && (
+      {(quickProgress?.status === 'running' || quickProgress?.status === 'paused' || quickProgress?.status === 'loading') && (
         <Card className="border-yellow-500 border-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center justify-between">
@@ -382,7 +431,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
                 Download in corso
               </span>
               <div className="flex gap-2">
-                {quickProgress.isPaused ? (
+                {quickProgress?.status === 'paused' ? (
                   <Button size="sm" variant="outline" onClick={resumeQuickDownload}>
                     <Play className="h-4 w-4 mr-1" />
                     Riprendi
@@ -469,8 +518,38 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         </Card>
       )}
 
+      {/* Sync con Preferences - Nuovo pulsante dedicato */}
+      {!quickProgress && preSelectedFolders.length === 0 && (
+        <Card className="border-purple-500 border-2 bg-purple-50/10">
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <Settings className="h-6 w-6 text-purple-500" />
+                <div>
+                  <h4 className="font-semibold">Sync Automatico con Preferenze</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Sincronizza solo le cartelle configurate in Email Management
+                  </p>
+                </div>
+              </div>
+              
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full border-purple-500 text-purple-600 hover:bg-purple-50"
+                onClick={startPreferencesSync}
+                disabled={isQuickLoading}
+              >
+                <Settings className="mr-2 h-5 w-5" />
+                Avvia Sync con Preferenze
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Folder Selection */}
-      {!quickProgress?.isRunning && (
+      {!quickProgress && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center justify-between">
@@ -510,15 +589,14 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       )}
 
       {/* Start Button */}
-      {!quickProgress?.isRunning && (
+      {!quickProgress && (
         <Button
           className="w-full"
           size="lg"
           onClick={startQuickDownload}
           disabled={
-            isQuickLoading ||  // ✅ FIX 3: Cartelle ancora in caricamento
-            quickProgress?.isRunning ||  // ✅ Download già attivo
-            (preSelectedFolders.length === 0 && quickFolders.filter(f => f.selected).length === 0)  // ✅ Nessuna selezione
+            isQuickLoading ||
+            (preSelectedFolders.length === 0 && quickFolders.filter(f => f.selected).length === 0)
           }
         >
           {isQuickLoading ? (

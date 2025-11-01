@@ -95,6 +95,12 @@ const RadioChatContent = () => {
     return saved ? parseFloat(saved) : 0; // Default 0px
   });
   
+  // ✅ Ghost Icons: proximity detection
+  const [isNearLeftEdge, setIsNearLeftEdge] = useState(false);
+  
+  // ✅ Central Input Zone: hover detection
+  const [isHoveringInputZone, setIsHoveringInputZone] = useState(false);
+  
   // Sync vertical offset to localStorage
   useEffect(() => {
     localStorage.setItem('radio-carousel-vertical-offset', carouselVerticalOffset.toString());
@@ -1100,6 +1106,20 @@ const RadioChatContent = () => {
     };
   }, [currentConversationId]);
 
+  // ✅ Ghost Icons: Global mouse listener for proximity detection
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      // Zona di attivazione: 0-100px dal bordo sinistro
+      setIsNearLeftEdge(e.clientX <= 100);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // ✅ Calcola visibilità icone laterali
+  const shouldShowLeftIcons = isNearLeftEdge || sidebarOpen || crmMenuOpen;
+
   return (
     <div className="relative h-full">
         {(() => {
@@ -1174,8 +1194,10 @@ const RadioChatContent = () => {
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger
         className={cn(
-          "fixed left-0 bottom-[18.5rem] z-40 transition-transform duration-300",
-          sidebarOpen && "translate-x-[320px]"
+          "fixed left-0 bottom-[18.5rem] z-40 transition-all duration-300",
+          sidebarOpen && "translate-x-[320px]",
+          !shouldShowLeftIcons && "opacity-0 pointer-events-none",
+          shouldShowLeftIcons && !sidebarOpen && "opacity-100"
         )}
         isOpen={sidebarOpen}
         onToggle={() => {
@@ -1189,50 +1211,72 @@ const RadioChatContent = () => {
       />
 
       {/* FileText Icon - Below Keyboard */}
-      {!sidebarOpen && !crmMenuOpen && (
-        <button
-          onClick={() => setMessageViewVisible(!messageViewVisible)}
-          className={cn(
-            "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
-            "flex items-center justify-center transition-all duration-300 hover:bg-white/5"
-          )}
-          aria-label="Toggle message view"
-        >
-          <FileText 
-            className={`w-6 h-6 transition-colors ${
-              messageViewVisible ? 'text-gray-500' : (currentMessage ? 'text-cyan-400' : 'text-gray-500')
-            }`}
-            strokeWidth={1}
-          />
-        </button>
-      )}
+      <button
+        onClick={() => setMessageViewVisible(!messageViewVisible)}
+        className={cn(
+          "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+          "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
+          sidebarOpen && "translate-x-[320px]",
+          !shouldShowLeftIcons && "opacity-0 pointer-events-none",
+          shouldShowLeftIcons && "opacity-100"
+        )}
+        aria-label="Toggle message view"
+      >
+        <FileText 
+          className={`w-6 h-6 transition-colors ${
+            messageViewVisible ? 'text-gray-500' : (currentMessage ? 'text-cyan-400' : 'text-gray-500')
+          }`}
+          strokeWidth={1}
+        />
+      </button>
 
       {/* Mic Icon - Between FileText and Keyboard */}
-      {!sidebarOpen && !crmMenuOpen && (
-        <RadioMicTrigger
-          className="fixed left-0 bottom-[7.5rem] z-40"
-          isActive={showAudioControls}
-          onClick={() => setShowAudioControls(!showAudioControls)}
-        />
-      )}
+      <RadioMicTrigger
+        className={cn(
+          "fixed left-0 bottom-[7.5rem] z-40 transition-all duration-300",
+          sidebarOpen && "translate-x-[320px]",
+          !shouldShowLeftIcons && "opacity-0 pointer-events-none",
+          shouldShowLeftIcons && "opacity-100"
+        )}
+        isActive={showAudioControls}
+        onClick={() => setShowAudioControls(!showAudioControls)}
+      />
 
       {/* Keyboard Icon - Above Hamburger */}
-      {!sidebarOpen && !crmMenuOpen && (
-        <button
-          onClick={() => setInputVisible(!inputVisible)}
-          className={cn(
-            "fixed left-0 bottom-8 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
-            "flex items-center justify-center transition-all duration-300 hover:bg-white/5"
-          )}
-          aria-label="Toggle input"
-        >
-          <Keyboard 
-            className={`w-6 h-6 transition-colors ${
-              inputVisible ? 'text-purple-400' : 'text-gray-500'
-            }`} 
-          />
-        </button>
-      )}
+      <button
+        onClick={() => setInputVisible(!inputVisible)}
+        className={cn(
+          "fixed left-0 bottom-8 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+          "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
+          sidebarOpen && "translate-x-[320px]",
+          !shouldShowLeftIcons && "opacity-0 pointer-events-none",
+          shouldShowLeftIcons && "opacity-100"
+        )}
+        aria-label="Toggle input"
+      >
+        <Keyboard 
+          className={`w-6 h-6 transition-colors ${
+            inputVisible ? 'text-purple-400' : 'text-gray-500'
+          }`} 
+        />
+      </button>
+
+      {/* ✅ CENTRAL INPUT ZONE - 300x150px Interactive Area */}
+      <div
+        onMouseEnter={() => setIsHoveringInputZone(true)}
+        onMouseLeave={() => setIsHoveringInputZone(false)}
+        onDoubleClick={() => setInputVisible(true)}
+        className={cn(
+          "fixed bottom-8 left-1/2 -translate-x-1/2 z-30",
+          "w-[300px] h-[150px]"
+        )}
+        style={{
+          cursor: isHoveringInputZone 
+            ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2322d3ee' stroke-width='2'%3E%3Cpath d='M10 8h.01M14 8h.01M8 12h.01M12 12h.01M16 12h.01M9 16h6M6 4h12c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z'/%3E%3C/svg%3E") 12 12, pointer`
+            : 'default'
+        }}
+        aria-label="Double click to open text input"
+      />
 
       {/* Main Content Area */}
         <div className="pt-4 pb-[200px]">

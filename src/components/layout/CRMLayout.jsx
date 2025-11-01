@@ -421,11 +421,23 @@ const CRMLayout = ({ children }) => {
         </div>
       </header>
 
-      <div className={cn("flex", isMobile ? "h-[calc(100vh-6rem)]" : "h-[calc(100vh-7rem)]")}>
+      <div className={cn("relative", isMobile ? "h-[calc(100vh-6rem)]" : "h-[calc(100vh-7rem)]")}>
+        {/* Backdrop quando menu aperto su mobile */}
+        {menuOpen && isMobile && (
+          <div 
+            className="fixed inset-0 top-28 bg-black/20 z-40"
+            onClick={() => setMenuOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
         {/* Sidebar */}
-        <aside className={`bg-card-transparent border-r border-border transition-all duration-300 ${
-          menuOpen ? 'w-64' : 'w-0 lg:w-16'
-        } overflow-hidden`}>
+        <aside className={cn(
+          "fixed left-0 top-28 h-[calc(100vh-7rem)] w-64 z-50",
+          "bg-card-transparent border-r border-border",
+          "transition-transform duration-300 overflow-hidden",
+          menuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 lg:w-16"
+        )}>
           <nav className="p-4 space-y-2">
             {/* Gruppi collassabili */}
             {navigationGroups.map((group) => {
@@ -519,7 +531,7 @@ const CRMLayout = ({ children }) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="w-full overflow-auto lg:ml-16">
           <div className={location.pathname === '/chat' && isMobile ? 'mt-[30px]' : location.pathname === '/radio-chat' ? '' : 'p-6 mt-[30px]'}>
             {children}
           </div>

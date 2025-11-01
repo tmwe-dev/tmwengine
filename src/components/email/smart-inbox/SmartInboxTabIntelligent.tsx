@@ -217,30 +217,42 @@ export const SmartInboxTabIntelligent = ({
       console.log('📧 [DEBUG] Recupero email NON classificate dal DB locale...');
       
       // ✅ Recupera email NON classificate dal DB locale
-      let unclassifiedQuery = supabase
+      // Step 1: Fetch all classified email IDs
+      const { data: classifiedIds, error: classifiedError } = await supabase
+        .from('email_ai_classifications')
+        .select('email_id')
+        .not('email_id', 'is', null);
+
+      if (classifiedError) {
+        console.error('❌ [DEBUG] Error fetching classified IDs:', classifiedError);
+        toast.error('Errore nel recupero classificazioni');
+        return;
+      }
+
+      const classifiedSet = new Set(classifiedIds?.map(c => c.email_id) || []);
+      console.log('📊 [DEBUG] Email già classificate:', classifiedSet.size);
+
+      // Step 2: Fetch all emails from folder
+      let allEmailsQuery = supabase
         .from('email_messages')
         .select('id, subject, from_email')
         .eq('user_email', userEmail)
         .eq('cartella', selectedFolder);
 
       if (unreadOnly) {
-        unclassifiedQuery = unclassifiedQuery.eq('stato', 'nuovo');
+        allEmailsQuery = allEmailsQuery.eq('stato', 'nuovo');
       }
 
-      const { data: unclassifiedEmails, error: fetchError } = await unclassifiedQuery
-        .not('id', 'in', 
-          supabase
-            .from('email_ai_classifications')
-            .select('email_id')
-            .not('email_id', 'is', null)
-        )
-        .limit(100);
+      const { data: allEmails, error: fetchError } = await allEmailsQuery;
 
       if (fetchError) {
-        console.error('❌ [DEBUG] Error fetching unclassified emails:', fetchError);
-        toast.error('Errore nel recupero email non classificate');
+        console.error('❌ [DEBUG] Error fetching emails:', fetchError);
+        toast.error('Errore nel recupero email');
         return;
       }
+
+      // Step 3: Filter unclassified emails in memory
+      const unclassifiedEmails = allEmails?.filter(email => !classifiedSet.has(email.id)).slice(0, 100);
 
       console.log('📬 [DEBUG] Email non classificate trovate:', unclassifiedEmails?.length || 0);
 

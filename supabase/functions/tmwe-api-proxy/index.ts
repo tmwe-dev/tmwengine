@@ -13,7 +13,35 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, data, optimizationFlags } = await req.json();
+    // Parse request body con gestione errori robusta
+    let requestBody;
+    try {
+      const bodyText = await req.text();
+      if (!bodyText || bodyText.trim().length === 0) {
+        throw new Error('Empty request body');
+      }
+      requestBody = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error('═══════════════════════════════════════════════════════');
+      console.error('🔥 ERRORE nel parsing del body della richiesta');
+      console.error('═══════════════════════════════════════════════════════');
+      console.error('⚠️ Error:', parseError.message);
+      console.error('═══════════════════════════════════════════════════════');
+      
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid request body',
+          details: parseError.message,
+          hint: 'Request body must be valid JSON with endpoint and data fields'
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    const { endpoint, data, optimizationFlags } = requestBody;
     
     // 🚀 CONFIGURAZIONE OTTIMALE DI PRODUZIONE (basata su benchmark)
     const enableLogging = optimizationFlags?.enableLogging ?? false;

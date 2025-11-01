@@ -2662,6 +2662,36 @@ export type Database = {
         }
         Relationships: []
       }
+      email_folder_locks: {
+        Row: {
+          created_at: string | null
+          folder_name: string
+          id: string
+          is_locked: boolean | null
+          locked_at: string | null
+          updated_at: string | null
+          user_email: string
+        }
+        Insert: {
+          created_at?: string | null
+          folder_name: string
+          id?: string
+          is_locked?: boolean | null
+          locked_at?: string | null
+          updated_at?: string | null
+          user_email: string
+        }
+        Update: {
+          created_at?: string | null
+          folder_name?: string
+          id?: string
+          is_locked?: boolean | null
+          locked_at?: string | null
+          updated_at?: string | null
+          user_email?: string
+        }
+        Relationships: []
+      }
       email_messages: {
         Row: {
           attachments: Json | null
@@ -2673,6 +2703,8 @@ export type Database = {
           created_at: string
           data_invio: string | null
           data_ricezione: string
+          deleted_from_server: boolean | null
+          deleted_from_server_at: string | null
           direzione: string
           email_references: string | null
           flags: Json | null
@@ -2703,6 +2735,8 @@ export type Database = {
           created_at?: string
           data_invio?: string | null
           data_ricezione: string
+          deleted_from_server?: boolean | null
+          deleted_from_server_at?: string | null
           direzione: string
           email_references?: string | null
           flags?: Json | null
@@ -2733,6 +2767,8 @@ export type Database = {
           created_at?: string
           data_invio?: string | null
           data_ricezione?: string
+          deleted_from_server?: boolean | null
+          deleted_from_server_at?: string | null
           direzione?: string
           email_references?: string | null
           flags?: Json | null

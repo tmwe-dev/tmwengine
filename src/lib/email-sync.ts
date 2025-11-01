@@ -7,14 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 export const syncEmailsToDatabase = async (
   folder: string = 'INBOX',
   mode: 'auto' | 'initial' | 'incremental' = 'auto',
-  maxEmails?: number
+  maxEmails?: number,
+  unreadOnly?: boolean
 ) => {
   const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
     body: {
       mode,
       folder_name: folder,
       max_emails: maxEmails,
-      force_full: mode === 'initial'
+      force_full: mode === 'initial',
+      unread_only: unreadOnly
     }
   });
 

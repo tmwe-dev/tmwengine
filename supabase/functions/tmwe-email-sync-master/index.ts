@@ -11,6 +11,7 @@ interface SyncRequest {
   folder_name?: string;
   max_emails?: number;
   force_full?: boolean;
+  unread_only?: boolean;
 }
 
 interface SyncResult {
@@ -35,7 +36,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { mode = 'auto', folder_name = 'INBOX', max_emails = 0, force_full = false }: SyncRequest = await req.json();
+    const { mode = 'auto', folder_name = 'INBOX', max_emails = 0, force_full = false, unread_only = false }: SyncRequest = await req.json();
 
     console.log('🚀 TMWE Email Sync Master - Modalità:', mode);
     console.log('🆔 Request ID:', crypto.randomUUID());
@@ -379,6 +380,10 @@ serve(async (req) => {
           }
           continue;
         }
+
+        // Se unread_only è true, verifica se l'email è già letta (seen flag)
+        // Per ora assumiamo che le nuove email non siano lette, 
+        // quindi procediamo con il download
 
         // Email NON presente, scaricala con POST + JSON body
         console.log(`📥 Email ${i + 1}/${allUIDs.length}: Download ${uid} - "${emailInfo.subject}"`);

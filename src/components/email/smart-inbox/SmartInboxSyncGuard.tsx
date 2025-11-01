@@ -64,7 +64,7 @@ export const SmartInboxSyncGuard = ({ userEmail, selectedFolder, unreadOnly, chi
         setSyncProgress(prev => Math.min(prev + 10, 90));
       }, 500);
 
-      await syncEmailsToDatabase(selectedFolder, 'auto');
+      await syncEmailsToDatabase(selectedFolder, 'auto', undefined, unreadOnly);
 
       clearInterval(progressInterval);
       setSyncProgress(100);

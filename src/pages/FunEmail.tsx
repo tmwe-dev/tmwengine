@@ -22,6 +22,7 @@ import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartIn
 import { GradientBackground } from '@/components/design-system';
 import { cn } from '@/lib/utils';
 import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
+import { AIAutomationDashboard } from '@/components/email/automation/AIAutomationDashboard';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();
@@ -29,7 +30,7 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick-download' | 'integrity' | 'debugger' | 'inbox'>('list');
+  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations'>('list');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
@@ -79,7 +80,7 @@ const FunEmail = () => {
   // Sincronizza currentView con query param "tab" dal CRMLayout
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['list', 'fun', 'management', 'inbox'].includes(tabParam)) {
+    if (tabParam && ['list', 'fun', 'management', 'inbox', 'automations'].includes(tabParam)) {
       setCurrentView(tabParam as typeof currentView);
     } else if (!tabParam && !searchParams.get('view')) {
       setCurrentView('list'); // Default
@@ -392,6 +393,10 @@ const FunEmail = () => {
                 onFolderChange={setSmartInboxFolder}
                 onUnreadOnlyChange={setSmartInboxUnreadOnly}
               />
+            </GradientBackground>
+          ) : currentView === 'automations' ? (
+            <GradientBackground variant="primary" intensity="medium" className="min-h-screen">
+              <AIAutomationDashboard />
             </GradientBackground>
           ) : null}
         </div>

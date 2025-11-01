@@ -5,7 +5,7 @@ import { SmartInboxHeaderIntelligent } from './SmartInboxHeaderIntelligent';
 import { SmartEmailListIntelligent } from './SmartEmailListIntelligent';
 import { SmartEmailDetailPanel } from './SmartEmailDetailPanel';
 import { EmptyDetailPanel } from './EmptyDetailPanel';
-import { CategoriesVerticalSidebar } from './CategoriesVerticalSidebar';
+import { CollapsibleCategorySidebar } from './CollapsibleCategorySidebar';
 import { AIActionsSidebar } from './AIActionsSidebar';
 import { AIPromptDialog } from './AIPromptDialog';
 import { AIManualCanvas } from './AIManualCanvas';
@@ -303,18 +303,18 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
         onMove={handleMoveSelected}
       />
       
-      {/* 🆕 Layout 3 Colonne: Sidebar Categorie | Lista Email | Dettaglio */}
+      {/* 🆕 Layout 2 Colonne: Lista Email | Dettaglio + Sidebar Collassabile */}
       <div className="flex-1 flex gap-4 overflow-hidden">
-        {/* Colonna 1: Sidebar Categorie Verticale */}
-        <CategoriesVerticalSidebar
+        {/* Sidebar Categorie Collassabile (hover sul bordo sinistro) */}
+        <CollapsibleCategorySidebar
           categories={categoryStats}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
           unverifiedCount={unverifiedCount}
         />
 
-        {/* Colonna 2: Lista Email (30% width) */}
-        <div className="w-[30%] flex flex-col min-h-0">
+        {/* Colonna 1: Lista Email (40% width - più spazio senza sidebar fissa) */}
+        <div className="w-[40%] flex flex-col min-h-0">
           <SmartEmailListIntelligent
             emails={classifiedEmails}
             onEmailClick={handleEmailSelect}

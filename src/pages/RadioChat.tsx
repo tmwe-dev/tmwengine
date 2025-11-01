@@ -1189,49 +1189,50 @@ const RadioChatContent = () => {
       />
 
       {/* FileText Icon - Below Keyboard */}
-      <button
-        onClick={() => setMessageViewVisible(!messageViewVisible)}
-        className={cn(
-          "fixed left-0 bottom-36 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
-          "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
-          sidebarOpen && "translate-x-[320px]"
-        )}
-        aria-label="Toggle message view"
-      >
-        <FileText 
-          className={`w-6 h-6 transition-colors ${
-            messageViewVisible ? 'text-gray-500' : (currentMessage ? 'text-cyan-400' : 'text-gray-500')
-          }`}
-          strokeWidth={1}
-        />
-      </button>
+      {!sidebarOpen && !crmMenuOpen && (
+        <button
+          onClick={() => setMessageViewVisible(!messageViewVisible)}
+          className={cn(
+            "fixed left-0 bottom-36 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+            "flex items-center justify-center transition-all duration-300 hover:bg-white/5"
+          )}
+          aria-label="Toggle message view"
+        >
+          <FileText 
+            className={`w-6 h-6 transition-colors ${
+              messageViewVisible ? 'text-gray-500' : (currentMessage ? 'text-cyan-400' : 'text-gray-500')
+            }`}
+            strokeWidth={1}
+          />
+        </button>
+      )}
 
       {/* Mic Icon - Between FileText and Keyboard */}
-      <RadioMicTrigger
-        className={cn(
-          "fixed left-0 bottom-22 z-40 transition-transform duration-300",
-          sidebarOpen && "translate-x-[320px]"
-        )}
-        isActive={showAudioControls}
-        onClick={() => setShowAudioControls(!showAudioControls)}
-      />
+      {!sidebarOpen && !crmMenuOpen && (
+        <RadioMicTrigger
+          className="fixed left-0 bottom-22 z-40"
+          isActive={showAudioControls}
+          onClick={() => setShowAudioControls(!showAudioControls)}
+        />
+      )}
 
       {/* Keyboard Icon - Above Hamburger */}
-      <button
-        onClick={() => setInputVisible(!inputVisible)}
-        className={cn(
-          "fixed left-0 bottom-8 z-40 w-12 h-20 bg-black rounded-r-lg",
-          "flex items-center justify-center transition-all duration-300 hover:w-14",
-          sidebarOpen && "translate-x-[320px]"
-        )}
-        aria-label="Toggle input"
-      >
-        <Keyboard 
-          className={`w-6 h-6 transition-colors ${
-            inputVisible ? 'text-purple-400' : 'text-gray-500'
-          }`} 
-        />
-      </button>
+      {!sidebarOpen && !crmMenuOpen && (
+        <button
+          onClick={() => setInputVisible(!inputVisible)}
+          className={cn(
+            "fixed left-0 bottom-8 z-40 w-12 h-20 bg-black rounded-r-lg",
+            "flex items-center justify-center transition-all duration-300 hover:w-14"
+          )}
+          aria-label="Toggle input"
+        >
+          <Keyboard 
+            className={`w-6 h-6 transition-colors ${
+              inputVisible ? 'text-purple-400' : 'text-gray-500'
+            }`} 
+          />
+        </button>
+      )}
 
       {/* Main Content Area */}
         <div className="pt-4 pb-[200px]">

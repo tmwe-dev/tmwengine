@@ -145,28 +145,31 @@ export function PerformanceTestSuite() {
         }
       });
 
-      if (uidError || !uidData?.success) {
-        throw new Error(`API Error: ${uidError?.message || 'Unknown error'}`);
+      if (uidError) {
+        throw new Error(`API Error: ${uidError?.message || uidError?.toString() || 'Unknown error'}`);
       }
 
+      // L'API può ritornare direttamente i dati o wrappati in un oggetto success
+      const responseData = uidData?.success ? uidData : { ...uidData, success: true };
+
       // 🔍 Parsing robusto - cerca messages/emails in vari punti della risposta
-      let messagesArray = uidData.messages 
-        || uidData.emails 
-        || uidData.data?.messages 
-        || uidData.data?.emails
+      let messagesArray = responseData.messages 
+        || responseData.emails 
+        || responseData.data?.messages 
+        || responseData.data?.emails
         || [];
 
       console.log('🔍 [PERF TEST] Parsed response:', {
-        hasMessages: !!uidData.messages,
-        hasEmails: !!uidData.emails,
-        hasDataMessages: !!uidData.data?.messages,
-        hasDataEmails: !!uidData.data?.emails,
+        hasMessages: !!responseData.messages,
+        hasEmails: !!responseData.emails,
+        hasDataMessages: !!responseData.data?.messages,
+        hasDataEmails: !!responseData.data?.emails,
         foundCount: Array.isArray(messagesArray) ? messagesArray.length : 0,
         sampleItem: messagesArray[0]
       });
 
       if (!Array.isArray(messagesArray) || messagesArray.length === 0) {
-        console.error('❌ [PERF TEST] Unexpected API response structure:', uidData);
+        console.error('❌ [PERF TEST] Unexpected API response structure:', responseData);
         throw new Error(`Nessuna email trovata nella cartella "${config.folder}". Prova con "INBOX" o verifica che la cartella contenga email.`);
       }
 
@@ -214,7 +217,7 @@ export function PerformanceTestSuite() {
             const iterTime = performance.now() - iterStart;
             times.push(iterTime);
 
-            if (apiError || !data?.success) {
+            if (apiError) {
               errorCount++;
             }
 
@@ -260,7 +263,7 @@ export function PerformanceTestSuite() {
           const batchTime = performance.now() - batchStart;
           times.push(batchTime);
 
-          if (apiError || !data?.success) {
+          if (apiError) {
             errorCount++;
           }
 
@@ -310,7 +313,7 @@ export function PerformanceTestSuite() {
             const batchTime = performance.now() - batchStart;
             times.push(batchTime);
 
-            if (apiError || !data?.success) {
+            if (apiError) {
               batchErrors++;
             }
 

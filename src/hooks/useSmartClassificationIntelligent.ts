@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { extractDomain } from '@/lib/smart-inbox-utils';
-import { EmailMetadata } from '@/types/smart-inbox';
 
 interface ClassificationProgress {
   current: number;
@@ -18,68 +16,19 @@ export const useSmartClassificationIntelligent = () => {
     currentEmail: ''
   });
 
-  const classifyEmails = async (emails: EmailMetadata[], userEmail: string, forceCategory?: string) => {
+  // ✅ NUOVO: Accetta array di email_id (UUID) invece di EmailMetadata
+  const classifyEmails = async (emailIds: string[], userEmail: string, forceCategory?: string) => {
     setIsClassifying(true);
-    setProgress({ current: 0, total: emails.length, currentEmail: '' });
+    setProgress({ current: 0, total: emailIds.length, currentEmail: '' });
     
     let successCount = 0;
     let errorCount = 0;
 
     try {
-      for (let i = 0; i < emails.length; i++) {
-        const email = emails[i];
+      for (let i = 0; i < emailIds.length; i++) {
+        const emailId = emailIds[i];
         
         try {
-          // Genera UID univoco usando elasticsearch_id o email_id come fallback
-          const emailUid = email.uid || 
-            email.elasticsearch_id || 
-            (email.email_id ? `email_${email.email_id}` : null);
-
-          if (!emailUid) {
-            console.error('Cannot generate UID for email:', email);
-            errorCount++;
-            continue;
-          }
-
-          // Check se già classificata
-          const { data: existing } = await supabase
-            .from('email_ai_classifications')
-            .select('id')
-            .eq('email_uid', emailUid)
-            .eq('user_email', userEmail)
-            .maybeSingle();
-          
-          if (existing && !forceCategory) {
-            setProgress(p => ({ 
-              ...p, 
-              current: p.current + 1,
-              currentEmail: 'già classificata'
-            }));
-            continue;
-          }
-
-          // Estrai from_email con supporto per diversi formati
-          const fromEmail = email.from_email || 
-            (typeof email.from === 'object' && email.from !== null ? email.from.email : String(email.from || ''));
-
-          if (!fromEmail) {
-            console.error('Could not extract from email, uid:', emailUid);
-            errorCount++;
-            continue;
-          }
-
-          setProgress(p => ({ 
-            ...p, 
-            currentEmail: email.subject || 'Email senza oggetto'
-          }));
-
-          console.log('🔵 Starting classification:', {
-            emailUid,
-            subject: email.subject,
-            fromEmail,
-            hasBodyText: !!(email.body_preview || email.body_text)
-          });
-
           // Get current session
           const { data: { session } } = await supabase.auth.getSession();
           
@@ -89,18 +38,19 @@ export const useSmartClassificationIntelligent = () => {
             continue;
           }
 
-          console.log('✅ Session valid, calling edge function...');
-          
-          // Chiama Edge Function per classificazione intelligente
+          setProgress(p => ({ 
+            ...p, 
+            currentEmail: `Email ID: ${emailId.substring(0, 8)}...`
+          }));
+
+          console.log('🔵 Starting classification for email_id:', emailId);
+
+          // ✅ Passa solo email_id (UUID) dal DB locale
           const { data: classifyData, error: classifyError } = await supabase.functions.invoke(
             'classify-email-content-intelligent',
             {
               body: {
-                email_uid: emailUid,
-                folder_name: email.folder_name || email.folder || 'INBOX',
-                subject: email.subject || '',
-                body_text: email.body_preview || email.body_text || '',
-                from_email: fromEmail,
+                email_id: emailId,       // ✅ Solo UUID dal DB
                 user_email: userEmail,
                 force_category: forceCategory || null
               }
@@ -122,34 +72,19 @@ export const useSmartClassificationIntelligent = () => {
 
           if (classifyData?.success) {
             successCount++;
-            
-            // Fetch logo in background (non bloccante)
-            const domain = extractDomain(fromEmail);
-            supabase.functions.invoke('fetch-company-logo', { 
-              body: { domain } 
-            }).then(({ data: logoData }) => {
-              if (logoData?.logo_url) {
-                supabase
-                  .from('email_ai_classifications')
-                  .update({ sender_logo_url: logoData.logo_url })
-                  .eq('email_uid', emailUid)
-                  .eq('user_email', userEmail)
-                  .then();
-              }
-            });
           } else {
             errorCount++;
           }
           
         } catch (err) {
-          console.error(`Error classifying email ${email.uid}:`, err);
+          console.error(`Error classifying email ID ${emailId}:`, err);
           errorCount++;
         }
         
         setProgress(p => ({ ...p, current: p.current + 1 }));
         
         // Rate limiting: 1 email/sec
-        if (i < emails.length - 1) {
+        if (i < emailIds.length - 1) {
           await new Promise(r => setTimeout(r, 1000));
         }
       }

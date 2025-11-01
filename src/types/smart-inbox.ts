@@ -20,11 +20,12 @@ export interface ClassifiedEmail {
   classification: EmailClassification;
   email: {
     uid: string; // UID sul server TMWE
-    email_id?: number; // ID numerico opzionale
+    email_id?: string; // ✅ UUID dal DB locale
     subject: string;
     from: any;
     to: any;
     body_preview?: string;
+    body_text?: string; // ✅ Aggiunto per body completo dal DB
     date: string;
     read: boolean;
     has_attachments: boolean;

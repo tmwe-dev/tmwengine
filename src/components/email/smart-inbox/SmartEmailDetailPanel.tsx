@@ -17,44 +17,12 @@ interface SmartEmailDetailPanelProps {
 }
 
 export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDetailPanelProps) => {
-  const [emailBody, setEmailBody] = useState<{ html?: string; text?: string } | null>(null);
-  const [isLoadingBody, setIsLoadingBody] = useState(false);
-
-  useEffect(() => {
-    if (!classifiedEmail) {
-      setEmailBody(null);
-      return;
-    }
-
-    const fetchEmailBody = async () => {
-      if (!classifiedEmail.email.email_id) {
-        console.error('email_id not available for fetching body');
-        return;
-      }
-
-      setIsLoadingBody(true);
-      try {
-        const detailData = await emailSearchApi.getEmailDetail({
-          email_id: classifiedEmail.email.email_id,
-          include_body: true
-        });
-
-        if (detailData) {
-          setEmailBody({
-            html: detailData.body_html,
-            text: detailData.body_text
-          });
-        }
-      } catch (error: any) {
-        console.error('Error fetching email body:', error);
-        toast.error('Errore caricamento corpo email');
-      } finally {
-        setIsLoadingBody(false);
-      }
-    };
-
-    fetchEmailBody();
-  }, [classifiedEmail]);
+  // ✅ NUOVO: Usa direttamente i dati dal DB (già disponibili nel prop)
+  const emailBody = {
+    html: classifiedEmail.email.body_text,
+    text: classifiedEmail.email.body_text
+  };
+  const isLoadingBody = false; // Nessun caricamento necessario
 
   const { classification, email } = classifiedEmail;
   const categoryGradient = getCategoryGradient(classification.category);

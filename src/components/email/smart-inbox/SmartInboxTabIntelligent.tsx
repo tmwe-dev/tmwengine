@@ -52,7 +52,7 @@ export const SmartInboxTabIntelligent = ({
     },
   });
 
-  // Fetch email classificate dal DB
+  // ✅ Fetch email classificate con JOIN a email_messages
   const { data: classifiedEmails = [], isLoading, refetch } = useQuery({
     queryKey: ['smart-inbox-intelligent', userEmail, selectedCategory],
     queryFn: async () => {
@@ -62,9 +62,20 @@ export const SmartInboxTabIntelligent = ({
         .from('email_ai_classifications')
         .select(`
           *,
-          email_messages!inner(id, subject, date, has_attachments)
+          email_messages!fk_email_ai_classifications_email_messages(
+            id,
+            subject,
+            body_text,
+            from_email,
+            to_recipients,
+            date,
+            has_attachments,
+            message_id,
+            cartella
+          )
         `)
         .eq('user_email', userEmail)
+        .not('email_id', 'is', null)  // ✅ Solo email sincronizzate
         .order('created_at', { ascending: false });
 
       if (selectedCategory !== 'all' && selectedCategory !== 'da-verificare') {
@@ -79,22 +90,28 @@ export const SmartInboxTabIntelligent = ({
 
       if (error) throw error;
 
-      // Trasforma in ClassifiedEmail con email_id recuperato dal join
-      return (data || []).map((classification: any) => ({
-        classification,
-        email: {
-          uid: classification.email_uid || '',
-          email_id: classification.email_messages?.id,
-          subject: classification.email_messages?.subject || classification.ai_summary?.split(' - ')[1] || 'Email senza oggetto',
-          from: { email: classification.sender_email },
-          to: [],
-          date: classification.email_messages?.date || classification.created_at,
-          read: false,
-          has_attachments: classification.email_messages?.has_attachments || false,
-          folder_name: classification.folder_name || 'INBOX',
-          body_preview: classification.ai_summary
-        }
-      } as ClassifiedEmail));
+      // Map risultati con dati dal JOIN
+      return (data || [])
+        .filter((c: any) => c.email_messages) // ✅ Solo email con dati completi
+        .map((classification: any) => ({
+          classification: {
+            ...classification,
+            email_messages: undefined // Rimuovi dall'oggetto classification
+          },
+          email: {
+            uid: classification.email_messages.message_id,
+            email_id: classification.email_messages.id,
+            subject: classification.email_messages.subject,
+            body_text: classification.email_messages.body_text,
+            from: { email: classification.email_messages.from_email },
+            to: classification.email_messages.to_recipients || [],
+            date: classification.email_messages.date,
+            has_attachments: classification.email_messages.has_attachments || false,
+            folder_name: classification.email_messages.cartella || 'INBOX',
+            read: true,
+            body_preview: classification.ai_summary
+          }
+        } as ClassifiedEmail));
     },
     enabled: !!userEmail,
   });
@@ -140,51 +157,51 @@ export const SmartInboxTabIntelligent = ({
     }
 
     try {
-      console.log('📧 [DEBUG] Recupero email dal server...');
-      toast.info('Recupero email dal server...');
+      console.log('📧 [DEBUG] Recupero email NON classificate dal DB locale...');
       
-      const response = await emailSearchApi.getEmailsMetadata({
-        folder: 'INBOX',
-        limit: 100
-      });
+      // ✅ Recupera email NON classificate dal DB locale (solo INBOX)
+      const { data: unclassifiedEmails, error: fetchError } = await supabase
+        .from('email_messages')
+        .select('id, subject, from_email')
+        .eq('user_email', userEmail)
+        .eq('cartella', 'INBOX')
+        .not('id', 'in', 
+          supabase
+            .from('email_ai_classifications')
+            .select('email_id')
+            .not('email_id', 'is', null)
+        )
+        .limit(100);
 
-      const serverEmails = response?.emails || [];
-      console.log('📬 [DEBUG] Email recuperate dal server:', serverEmails.length);
-
-      if (!serverEmails || serverEmails.length === 0) {
-        console.warn('⚠️ [DEBUG] Nessuna email trovata sul server');
-        toast.info('Nessuna nuova email da classificare');
+      if (fetchError) {
+        console.error('❌ [DEBUG] Error fetching unclassified emails:', fetchError);
+        toast.error('Errore nel recupero email non classificate');
         return;
       }
 
-      const { data: existingClassifications } = await supabase
-        .from('email_ai_classifications')
-        .select('email_uid')
-        .eq('user_email', userEmail);
+      console.log('📬 [DEBUG] Email non classificate trovate:', unclassifiedEmails?.length || 0);
 
-      const classifiedUids = new Set(existingClassifications?.map(c => c.email_uid) || []);
-      const unclassifiedEmails = serverEmails.filter(e => !classifiedUids.has(e.uid));
-      
-      console.log('🔍 [DEBUG] Email già classificate:', classifiedUids.size);
-      console.log('🆕 [DEBUG] Email non classificate:', unclassifiedEmails.length);
-
-      if (unclassifiedEmails.length === 0) {
-        console.info('✅ [DEBUG] Tutte le email sono già classificate');
-        toast.info('Tutte le email sono già classificate');
+      if (!unclassifiedEmails || unclassifiedEmails.length === 0) {
+        toast.info('Nessuna nuova email da classificare');
         return;
       }
 
       toast.success(`Trovate ${unclassifiedEmails.length} email da classificare`);
       console.log('🚀 [DEBUG] Avvio classificazione...');
-      
-      await classifyEmails(unclassifiedEmails, userEmail);
-      
+
+      // ✅ Classifica usando solo gli ID (UUID)
+      await classifyEmails(
+        unclassifiedEmails.map(e => e.id),
+        userEmail
+      );
+
+      // Ricarica lista dopo classificazione
       refetch();
       console.log('✅ [DEBUG] Classificazione completata');
       
     } catch (error: any) {
-      console.error('❌ [DEBUG] Error fetching emails:', error);
-      toast.error(`Errore recupero email: ${error.message}`);
+      console.error('❌ [DEBUG] Error in handleClassifyNew:', error);
+      toast.error(`Errore durante la classificazione: ${error.message}`);
     }
   };
 
@@ -216,24 +233,20 @@ export const SmartInboxTabIntelligent = ({
   const handleBulkClassify = async (category: string) => {
     if (!userEmail || selectedEmails.size === 0) return;
 
-    const emailsToClassify: EmailMetadata[] = Array.from(selectedEmails).map(uid => {
-      const email = classifiedEmails.find(e => e.email.uid === uid);
-      if (!email) return null;
-      return {
-        uid: email.email.uid,
-        email_id: email.email.email_id || 0,
-        subject: email.classification.ai_summary || '',
-        from: { email: email.classification.sender_email },
-        to: [],
-        date: email.email.date,
-        read: email.email.read,
-        has_attachments: email.email.has_attachments,
-        folder_name: email.email.folder_name,
-        body_preview: ''
-      };
-    }).filter(Boolean) as EmailMetadata[];
+    // ✅ Raccogli gli email_id (UUID) per riclassificazione
+    const emailIds: string[] = Array.from(selectedEmails)
+      .map(uid => {
+        const email = classifiedEmails.find(e => e.email.uid === uid);
+        return email?.email.email_id;
+      })
+      .filter(Boolean) as string[];
 
-    await classifyEmails(emailsToClassify, userEmail, category);
+    if (emailIds.length === 0) {
+      toast.error('Nessuna email valida selezionata');
+      return;
+    }
+
+    await classifyEmails(emailIds, userEmail, category);
     setSelectedEmails(new Set());
     refetch();
   };

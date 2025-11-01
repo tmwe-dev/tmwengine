@@ -13,21 +13,18 @@ serve(async (req) => {
   }
 
   try {
+    // ✅ NUOVO: Accetta email_id (UUID) dal DB locale
     const { 
-      email_uid, 
-      folder_name = 'INBOX',
-      subject, 
-      body_text, 
-      from_email, 
+      email_id,
       user_email,
-      force_category = null // Categoria forzata dall'utente
+      force_category = null
     } = await req.json();
 
-    console.log('📧 Classificazione Intelligente Email:', { email_uid, folder_name, from_email, force_category });
+    console.log('📧 Classificazione Intelligente Email:', { email_id, user_email, force_category });
 
-    if (!email_uid || !from_email || !user_email) {
+    if (!email_id || !user_email) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: email_uid, from_email, user_email' }),
+        JSON.stringify({ error: 'Missing required fields: email_id, user_email' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -35,6 +32,39 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // ✅ Fetch email from local DB (email_messages table)
+    const { data: email, error: emailError } = await supabase
+      .from('email_messages')
+      .select('*')
+      .eq('id', email_id)
+      .eq('user_email', user_email)
+      .single();
+
+    if (emailError || !email) {
+      console.error('Email not found in local DB:', emailError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Email not found in local database. Please sync emails first.' 
+        }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Extract data from DB
+    const email_uid = email.message_id;
+    const subject = email.subject || '';
+    const body_text = email.body_text || '';
+    const from_email = email.from_email || '';
+    const folder_name = email.cartella || 'INBOX';
+
+    console.log('✅ Email fetched from DB:', {
+      email_id,
+      email_uid,
+      subject: subject.substring(0, 50),
+      from_email
+    });
 
     // Recupera configurazione AI attiva
     const { data: aiConfig, error: configError } = await supabase
@@ -283,13 +313,15 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
     // Step 3: Estrai dominio mittente
     const senderDomain = from_email.split('@')[1]?.toLowerCase() || '';
 
-    // Step 4: Salva classificazione nel DB
+    // Step 4: Salva classificazione nel DB con email_id FK
     const { data: insertData, error: insertError } = await supabase
       .from('email_ai_classifications')
       .upsert({
-        email_uid,
+        email_id,         // ✅ FK to email_messages(id)
+        email_uid,        // ✅ Keep for backward compatibility
         folder_name,
         user_email,
+        subject,          // ✅ Save subject for quick access
         sender_email: from_email,
         sender_domain: senderDomain,
         category,
@@ -299,7 +331,7 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
         is_verified: isVerified,
         sender_logo_url: null, // Sarà aggiornato in background
       }, {
-        onConflict: 'email_uid,user_email',
+        onConflict: 'email_id',  // ✅ Use email_id as unique key
         ignoreDuplicates: false
       })
       .select()

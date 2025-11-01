@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { Bug, Send, Loader2, Info } from 'lucide-react';
+import { PerformanceTestSuite } from './PerformanceTestSuite';
 
 export function TmweBackendDebugger() {
   const [folder, setFolder] = useState('lette');
@@ -167,14 +168,19 @@ export function TmweBackendDebugger() {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bug className="h-5 w-5" />
-          TMWE Backend Debugger
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-6">
+      {/* Performance Test Suite */}
+      <PerformanceTestSuite />
+
+      {/* Original Debugger */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bug className="h-5 w-5" />
+            TMWE Backend Debugger
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
         {/* Auth Status Alert */}
         <Alert>
           <Info className="h-4 w-4" />
@@ -309,5 +315,6 @@ export function TmweBackendDebugger() {
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 }

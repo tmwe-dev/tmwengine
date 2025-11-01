@@ -6,6 +6,7 @@ import { extractCompanyName, extractInitials, getCategoryIcon, formatDate } from
 import { getCategoryGradient, getCategoryGlow } from '@/lib/category-gradients';
 import { Paperclip, CheckCircle2, AlertCircle, Zap, ShoppingCart, FileText, Users, TrendingUp, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SenderGroupBadge } from './SenderGroupBadge';
 
 interface SmartEmailCardIntelligentProps {
   classifiedEmail: ClassifiedEmail;
@@ -90,8 +91,18 @@ export const SmartEmailCardIntelligent = ({
         <div className="flex-1 min-w-0" onClick={onClick}>
           <div className="flex items-start justify-between gap-2 mb-1">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <h3 className="font-semibold text-sm truncate text-white/90">{companyName}</h3>
+                
+                {/* Badge Gruppo Mittente */}
+                {(classification as any).sender_group && (
+                  <SenderGroupBadge
+                    groupName={(classification as any).sender_group.name}
+                    groupIcon={(classification as any).sender_group.icon}
+                    groupColor={(classification as any).sender_group.color}
+                  />
+                )}
+                
                 {isVerified ? (
                   <Badge className="text-xs bg-white/10 border border-white/20 text-white/80 rounded-full backdrop-blur-sm shadow-sm">
                     <CheckCircle2 className="h-3 w-3 mr-1 text-green-400" />

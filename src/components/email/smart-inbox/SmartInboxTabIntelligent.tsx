@@ -104,6 +104,14 @@ export const SmartInboxTabIntelligent = ({
             message_id,
             cartella,
             stato
+          ),
+          email_sender_rules!left(
+            group_id,
+            email_sender_groups!left(
+              name,
+              icon,
+              color
+            )
           )
         `)
         .eq('user_email', userEmail)
@@ -131,25 +139,36 @@ export const SmartInboxTabIntelligent = ({
       // Map risultati con dati dal JOIN
       return (data || [])
         .filter((c: any) => c.email_messages) // ✅ Solo email con dati completi
-        .map((classification: any) => ({
-          classification: {
-            ...classification,
-            email_messages: undefined // Rimuovi dall'oggetto classification
-          },
-          email: {
-            uid: classification.email_messages.message_id,
-            email_id: classification.email_messages.id,
-            subject: classification.email_messages.subject,
-            body_text: classification.email_messages.body_text,
-            from: { email: classification.email_messages.from_email },
-            to: classification.email_messages.to_recipients || [],
-            date: classification.email_messages.date,
-            has_attachments: classification.email_messages.has_attachments || false,
-            folder_name: classification.email_messages.cartella || 'INBOX',
-            read: true,
-            body_preview: classification.ai_summary
-          }
-        } as ClassifiedEmail));
+        .map((classification: any) => {
+          // Estrai dati gruppo mittente se disponibili
+          const senderGroup = classification.email_sender_rules?.email_sender_groups;
+          
+          return {
+            classification: {
+              ...classification,
+              email_messages: undefined, // Rimuovi dall'oggetto classification
+              email_sender_rules: undefined, // Rimuovi per pulizia
+              sender_group: senderGroup ? {
+                name: senderGroup.name,
+                icon: senderGroup.icon,
+                color: senderGroup.color
+              } : null
+            },
+            email: {
+              uid: classification.email_messages.message_id,
+              email_id: classification.email_messages.id,
+              subject: classification.email_messages.subject,
+              body_text: classification.email_messages.body_text,
+              from: { email: classification.email_messages.from_email },
+              to: classification.email_messages.to_recipients || [],
+              date: classification.email_messages.date,
+              has_attachments: classification.email_messages.has_attachments || false,
+              folder_name: classification.email_messages.cartella || 'INBOX',
+              read: true,
+              body_preview: classification.ai_summary
+            }
+          } as ClassifiedEmail;
+        });
     },
     enabled: !!userEmail,
   });

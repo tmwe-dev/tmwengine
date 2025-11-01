@@ -265,11 +265,10 @@ const FunEmail = () => {
             <button
               onClick={handleToggleMenu}
               className={cn(
-                "fixed left-0 bottom-[18.5rem] z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
-                "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
+                "fixed left-0 bottom-[18.5rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
+                "flex items-center justify-center transition-all duration-300 hover:bg-white/10",
                 sidebarOpen && "translate-x-[320px]",
-                !shouldShowLeftIcons && !sidebarOpen && "opacity-0 pointer-events-none",
-                (shouldShowLeftIcons || sidebarOpen) && "opacity-100"
+                !shouldShowLeftIcons && !sidebarOpen && "hidden"
               )}
             >
               <Menu className="w-6 h-6 text-gray-400" strokeWidth={1} />
@@ -279,11 +278,10 @@ const FunEmail = () => {
             <button
               onClick={handleToggleCategories}
               className={cn(
-                "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
-                "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
+                "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
+                "flex items-center justify-center transition-all duration-300 hover:bg-white/10",
                 categoriesOpen && "translate-x-[280px]",
-                !shouldShowLeftIcons && !categoriesOpen && "opacity-0 pointer-events-none",
-                (shouldShowLeftIcons || categoriesOpen) && "opacity-100"
+                !shouldShowLeftIcons && !categoriesOpen && "hidden"
               )}
             >
               <span className="text-2xl">📬</span>
@@ -293,11 +291,10 @@ const FunEmail = () => {
             <button
               onClick={handleToggleAI}
               className={cn(
-                "fixed left-0 bottom-[7.5rem] z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
-                "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
+                "fixed left-0 bottom-[7.5rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
+                "flex items-center justify-center transition-all duration-300 hover:bg-white/10",
                 aiSidebarOpen && "translate-x-[500px]",
-                !shouldShowLeftIcons && !aiSidebarOpen && "opacity-0 pointer-events-none",
-                (shouldShowLeftIcons || aiSidebarOpen) && "opacity-100"
+                !shouldShowLeftIcons && !aiSidebarOpen && "hidden"
               )}
             >
               <Sparkles className="w-6 h-6 text-primary" strokeWidth={1} />

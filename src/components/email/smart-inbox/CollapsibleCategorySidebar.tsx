@@ -45,8 +45,8 @@ export function CollapsibleCategorySidebar({
       {/* Sidebar scorrevole */}
       <aside
         className={cn(
-          "fixed left-0 top-0 h-full w-[280px] z-40 bg-background/95 backdrop-blur-sm border-r border-white/10 transition-transform duration-300 ease-out",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed left-0 top-0 h-full w-[280px] z-40 bg-background/95 backdrop-blur-sm transition-transform duration-300 ease-out",
+          isOpen ? "translate-x-0 border-r border-white/10" : "-translate-x-full"
         )}
       >
         {/* Header con lock button */}

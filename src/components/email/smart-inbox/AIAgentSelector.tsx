@@ -49,30 +49,27 @@ interface AIAgentSelectorProps {
 
 export const AIAgentSelector = ({ selectedAgent, onAgentChange }: AIAgentSelectorProps) => {
   return (
-    <div className="flex gap-3 items-center">
-      <span className="text-sm font-semibold text-white/90">Agente AI:</span>
-      <div className="flex gap-2">
-        {AI_AGENTS.map(agent => (
-          <button
-            key={agent.id}
-            onClick={() => onAgentChange(agent.id)}
-            className={cn(
-              "relative w-16 h-16 rounded-full overflow-hidden transition-all duration-300",
-              "border-2 hover:scale-110",
-              selectedAgent === agent.id 
-                ? "border-primary shadow-lg shadow-primary/50 scale-105" 
-                : "border-white/20 grayscale hover:grayscale-0 opacity-60 hover:opacity-100"
-            )}
-            title={`${agent.name}\n${agent.description}\nModello: ${agent.model}`}
-          >
-            <img 
-              src={selectedAgent === agent.id ? agent.gif : agent.staticFrame}
-              alt={agent.name}
-              className="w-full h-full object-cover"
-            />
-          </button>
-        ))}
-      </div>
+    <div className="flex gap-2">
+      {AI_AGENTS.map(agent => (
+        <button
+          key={agent.id}
+          onClick={() => onAgentChange(agent.id)}
+          className={cn(
+            "relative w-12 h-12 rounded-full overflow-hidden transition-all duration-300",
+            "hover:scale-110",
+            selectedAgent === agent.id 
+              ? "ring-2 ring-primary shadow-lg shadow-primary/50 scale-105" 
+              : "grayscale hover:grayscale-0 opacity-60 hover:opacity-100 hover:ring-2 hover:ring-primary/50"
+          )}
+          title={`${agent.name}\n${agent.description}\nModello: ${agent.model}`}
+        >
+          <img 
+            src={selectedAgent === agent.id ? agent.gif : agent.staticFrame}
+            alt={agent.name}
+            className="w-full h-full object-cover"
+          />
+        </button>
+      ))}
     </div>
   );
 };

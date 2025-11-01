@@ -151,9 +151,19 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
           include_counts: true,
           skipCache: true
         });
+
+        console.log('📂 [QuickDownload] Server response:', serverResponse);
+        console.log('📂 [QuickDownload] Response keys:', Object.keys(serverResponse || {}));
+        console.log('📂 [QuickDownload] Response type:', typeof serverResponse);
         
-        const serverFolders = serverResponse.folders || serverResponse.data || serverResponse || [];
+        const serverFolders = serverResponse.folders 
+          || serverResponse.data 
+          || (Array.isArray(serverResponse) ? serverResponse : []);
         console.log('📂 Server folders:', serverFolders.length);
+        if (serverFolders.length > 0) {
+          console.log('📂 [QuickDownload] First folder structure:', serverFolders[0]);
+          console.log('📂 [QuickDownload] First folder keys:', Object.keys(serverFolders[0] || {}));
+        }
 
         // 3. Fetch DB counts
         const { data: dbCounts } = await supabase.rpc('get_email_folder_counts', {
@@ -172,7 +182,12 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         const quickMapped: FolderQuickOption[] = serverFolders.map((folder: any) => {
           const folderName = folder.name || folder;
           const normalizedName = (folderName || '').trim().toLowerCase();
-          const serverCount = folder.message_count || folder.total_count || 0;
+          const serverCount = folder.message_count 
+            || folder.total_count 
+            || folder.messages 
+            || folder.count 
+            || folder.total 
+            || 0;
           const dbCount = dbCountsMap[folderName] || 0;
           const missing = Math.max(0, serverCount - dbCount);
           

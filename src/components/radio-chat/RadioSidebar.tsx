@@ -48,14 +48,14 @@ export function RadioSidebar({
       {/* Backdrop */}
       {isOpen && (
         <div 
-          className="fixed left-0 right-0 bottom-0 top-14 bg-transparent z-40 animate-in fade-in"
+          className="fixed left-0 right-0 bottom-0 top-14 bg-transparent z-[60] animate-in fade-in"
           onClick={onClose}
         />
       )}
       
       {/* Sidebar */}
       <div className={cn(
-        "fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-80 bg-transparent border-r z-50",
+        "fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-80 bg-transparent border-r z-[70]",
         "transition-transform duration-300",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>

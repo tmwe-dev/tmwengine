@@ -22,19 +22,15 @@ import { cn } from '@/lib/utils';
 
 interface SmartInboxTabIntelligentProps {
   onOpenAISidebar?: (senderEmail: string) => void;
-  categoriesOpen: boolean;
-  onCategoriesOpenChange: (open: boolean) => void;
+  onCategorySidebarChange?: (open: boolean) => void;
 }
 
-export const SmartInboxTabIntelligent = ({ 
-  onOpenAISidebar, 
-  categoriesOpen, 
-  onCategoriesOpenChange 
-}: SmartInboxTabIntelligentProps) => {
+export const SmartInboxTabIntelligent = ({ onOpenAISidebar, onCategorySidebarChange }: SmartInboxTabIntelligentProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedEmail, setSelectedEmail] = useState<ClassifiedEmail | null>(null);
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
   const [sidebarLocked, setSidebarLocked] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // AI Automation State
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
@@ -129,6 +125,10 @@ export const SmartInboxTabIntelligent = ({
     e => !e.classification.is_verified || e.classification.confidence < 0.8
   ).length;
 
+  // Notifica FunEmail quando sidebar categorie si apre/chiude
+  React.useEffect(() => {
+    onCategorySidebarChange?.(sidebarOpen || sidebarLocked);
+  }, [sidebarOpen, sidebarLocked, onCategorySidebarChange]);
 
   const handleClassifyNew = async () => {
     console.log('🔍 [DEBUG] Classifica Nuove cliccato');
@@ -320,9 +320,8 @@ export const SmartInboxTabIntelligent = ({
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
           unverifiedCount={unverifiedCount}
-          isOpen={categoriesOpen}
-          onOpenChange={onCategoriesOpenChange}
           onLockedChange={setSidebarLocked}
+          onOpenChange={setSidebarOpen}
         />
 
         {/* Colonna 1: Lista Email (30% quando sidebar locked, 40% quando chiusa) */}

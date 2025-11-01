@@ -30,6 +30,7 @@ import { QuickEmailSyncerTurbo } from '@/lib/email-sync-quick-turbo';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useFolderLocks } from '@/hooks/useFolderLocks';
 
 interface QuickEmailDownloaderProps {
   onDownloadComplete?: (stats: QuickSyncStats) => void;
@@ -52,7 +53,25 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const [quickSyncer, setQuickSyncer] = useState<QuickEmailSyncer | QuickEmailSyncerTurbo | null>(null);
   const [isQuickLoading, setIsQuickLoading] = useState(true);
   const [isTurboMode, setIsTurboMode] = useState(true); // ✨ Default: TURBO attivo
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const { toast } = useToast();
+  const { isLocked, toggleLock } = useFolderLocks(userEmail);
+  
+  // Load user email for folder locks
+  useEffect(() => {
+    const loadUserEmail = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('tmwe_email')
+          .eq('user_id', user.id)
+          .single();
+        setUserEmail(profile?.tmwe_email || null);
+      }
+    };
+    loadUserEmail();
+  }, []);
 
   useEffect(() => {
     console.log('🔍 [QuickDownload] Received preSelectedFolders prop:', preSelectedFolders);
@@ -235,14 +254,17 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   };
 
   const toggleQuickSelectAll = () => {
-    const allQuickSelected = quickFolders.every(f => f.selected);
-    setQuickFolders(prev => prev.map(f => ({ ...f, selected: !allQuickSelected })));
+    const unlockedFolders = quickFolders.filter(f => !isLocked(f.name));
+    const allUnlockedSelected = unlockedFolders.every(f => f.selected);
+    setQuickFolders(prev => prev.map(f => 
+      isLocked(f.name) ? f : { ...f, selected: !allUnlockedSelected }
+    ));
   };
 
   const selectFoldersWithMissing = () => {
     setQuickFolders(prev => prev.map(f => ({ 
       ...f, 
-      selected: f.missing > 0 
+      selected: f.missing > 0 && !isLocked(f.name)
     })));
   };
 
@@ -559,7 +581,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
                     <TableRow>
                       <TableHead className="w-12">
                         <Checkbox 
-                          checked={quickFolders.every(f => f.selected)}
+                          checked={quickFolders.length > 0 && quickFolders.filter(f => !isLocked(f.name)).every(f => f.selected)}
                           onCheckedChange={toggleQuickSelectAll}
                         />
                       </TableHead>
@@ -568,6 +590,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
                       <TableHead className="text-right">Database</TableHead>
                       <TableHead className="text-right">Mancanti</TableHead>
                       <TableHead className="text-right">Sincronizzazione</TableHead>
+                      <TableHead className="w-12 text-center">🔒</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -578,12 +601,13 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
                       
                       return (
                         <TableRow key={folder.name}>
-                          <TableCell>
-                            <Checkbox 
-                              checked={folder.selected}
-                              onCheckedChange={() => toggleQuickFolder(folder.name)}
-                            />
-                          </TableCell>
+                  <TableCell>
+                    <Checkbox 
+                      checked={folder.selected}
+                      onCheckedChange={() => toggleQuickFolder(folder.name)}
+                      disabled={isLocked(folder.name)}
+                    />
+                  </TableCell>
                           <TableCell className="font-medium">{folder.display}</TableCell>
                           <TableCell className="text-right">{folder.serverCount}</TableCell>
                           <TableCell className="text-right">{folder.dbCount}</TableCell>
@@ -597,6 +621,16 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
                               <Progress value={syncPercentage} className="w-20 h-2" />
                               <span className="text-xs text-muted-foreground w-10">{syncPercentage}%</span>
                             </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => toggleLock(folder.name)}
+                            >
+                              {isLocked(folder.name) ? '🔒' : '🔓'}
+                            </Button>
                           </TableCell>
                         </TableRow>
                       );

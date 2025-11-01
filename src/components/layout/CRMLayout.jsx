@@ -474,7 +474,7 @@ const CRMLayout = ({ children }) => {
             <div className="pt-2 border-t border-border mt-2">
               {standaloneItems.map((item) => {
                 const active = isActive(item.href);
-                const isCollapsed = !sidebarOpen && !isMobile;
+                const isCollapsed = !menuOpen && !isMobile;
                 
                 return (
                   <AnimatedNavButton
@@ -491,7 +491,7 @@ const CRMLayout = ({ children }) => {
               })}
               
               {/* Theme Switcher e Regionalizzazione */}
-              {sidebarOpen && (
+              {menuOpen && (
                 <div className="space-y-2">
                   <div className="pt-4 mt-2">
                     <ThemeSwitcher />

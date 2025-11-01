@@ -108,7 +108,17 @@ serve(async (req) => {
     if (!predefinedCategory) {
       console.log('🤖 Nessuna categoria predefinita, chiamo AI...');
 
-      const systemPrompt = `Sei un assistente AI specializzato nella classificazione automatica di email per un'azienda di trasporti e spedizioni internazionali.
+      // FASE 1.2: Carica prompt da DB (chat_laboratory_composed_prompts)
+      const { data: promptData, error: promptError } = await supabase
+        .from('chat_laboratory_composed_prompts')
+        .select('content')
+        .eq('target_agent', 'email_classifier')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Fallback al prompt hardcoded se non trovato nel DB
+      const systemPrompt = promptData?.content || `Sei un assistente AI specializzato nella classificazione automatica di email per un'azienda di trasporti e spedizioni internazionali.
 
 CATEGORIE DISPONIBILI:
 1. Fatture - Fatture, invoices, ricevute fiscali
@@ -121,6 +131,14 @@ CATEGORIE DISPONIBILI:
 8. Spam / Non Rilevante - Spam, phishing, contenuti irrilevanti
 
 Analizza il contenuto dell'email e classifica nella categoria più appropriata. Fornisci anche un riassunto conciso (max 100 parole) e 3-5 keywords rilevanti.`;
+
+      if (promptError) {
+        console.warn('⚠️ Error loading prompt from DB, using fallback:', promptError);
+      } else if (promptData) {
+        console.log('✅ Using prompt from DB (email_classifier)');
+      } else {
+        console.log('⚠️ No prompt found in DB, using hardcoded fallback');
+      }
 
       const userPrompt = `Email da classificare:
 Mittente: ${from_email}

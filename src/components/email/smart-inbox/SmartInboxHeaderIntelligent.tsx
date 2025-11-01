@@ -4,7 +4,7 @@ import { Sparkles, FileText } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
 import { BulkActionsBar } from './BulkActionsBar';
-import { AIPromptViewer } from './AIPromptViewer';
+import { EmailClassifierPromptEditor } from './EmailClassifierPromptEditor';
 import { AIAgentSelector } from './AIAgentSelector';
 
 interface SmartInboxHeaderIntelligentProps {
@@ -114,8 +114,8 @@ export const SmartInboxHeaderIntelligent = ({
         />
       </div>
 
-      {/* Dialog Prompt Viewer */}
-      <AIPromptViewer 
+      {/* Dialog Prompt Editor */}
+      <EmailClassifierPromptEditor 
         open={promptViewerOpen}
         onOpenChange={setPromptViewerOpen}
       />

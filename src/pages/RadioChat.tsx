@@ -1118,7 +1118,17 @@ const RadioChatContent = () => {
   }, []);
 
   // ✅ Calcola visibilità icone laterali
-  const shouldShowLeftIcons = isNearLeftEdge || sidebarOpen || crmMenuOpen;
+  // Le icone devono rimanere visibili quando:
+  // - Mouse vicino al bordo sinistro
+  // - Sidebar/menu aperti
+  // - Il rispettivo pannello è aperto (input, messaggio, audio)
+  const shouldShowLeftIcons = 
+    isNearLeftEdge || 
+    sidebarOpen || 
+    crmMenuOpen || 
+    inputVisible || 
+    messageViewVisible || 
+    showAudioControls;
 
   return (
     <div className="relative h-full">
@@ -1217,30 +1227,31 @@ const RadioChatContent = () => {
           "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
           "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
           sidebarOpen && "translate-x-[320px]",
-          !shouldShowLeftIcons && "opacity-0 pointer-events-none",
-          shouldShowLeftIcons && "opacity-100"
+          !shouldShowLeftIcons && !messageViewVisible && "opacity-0 pointer-events-none",
+          (shouldShowLeftIcons || messageViewVisible) && "opacity-100"
         )}
         aria-label="Toggle message view"
       >
         <FileText 
-          className={`w-6 h-6 transition-colors ${
-            messageViewVisible ? 'text-gray-500' : (currentMessage ? 'text-cyan-400' : 'text-gray-500')
-          }`}
+          className={cn(
+            "w-6 h-6 transition-colors",
+            messageViewVisible ? 'text-cyan-400' : (currentMessage ? 'text-cyan-400' : 'text-gray-500')
+          )}
           strokeWidth={1}
         />
       </button>
 
       {/* Mic Icon - Between FileText and Keyboard */}
-      <RadioMicTrigger
-        className={cn(
-          "fixed left-0 bottom-[7.5rem] z-40 transition-all duration-300",
-          sidebarOpen && "translate-x-[320px]",
-          !shouldShowLeftIcons && "opacity-0 pointer-events-none",
-          shouldShowLeftIcons && "opacity-100"
-        )}
-        isActive={showAudioControls}
-        onClick={() => setShowAudioControls(!showAudioControls)}
-      />
+        <RadioMicTrigger
+          className={cn(
+            "fixed left-0 bottom-[7.5rem] z-40 transition-all duration-300",
+            sidebarOpen && "translate-x-[320px]",
+            !shouldShowLeftIcons && !showAudioControls && "opacity-0 pointer-events-none",
+            (shouldShowLeftIcons || showAudioControls) && "opacity-100"
+          )}
+          isActive={showAudioControls}
+          onClick={() => setShowAudioControls(!showAudioControls)}
+        />
 
       {/* Keyboard Icon - Above Hamburger */}
       <button
@@ -1249,15 +1260,17 @@ const RadioChatContent = () => {
           "fixed left-0 bottom-8 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
           "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
           sidebarOpen && "translate-x-[320px]",
-          !shouldShowLeftIcons && "opacity-0 pointer-events-none",
-          shouldShowLeftIcons && "opacity-100"
+          !shouldShowLeftIcons && !inputVisible && "opacity-0 pointer-events-none",
+          (shouldShowLeftIcons || inputVisible) && "opacity-100"
         )}
         aria-label="Toggle input"
       >
         <Keyboard 
-          className={`w-6 h-6 transition-colors ${
-            inputVisible ? 'text-purple-400' : 'text-gray-500'
-          }`} 
+          className={cn(
+            "w-6 h-6 transition-colors",
+            inputVisible ? 'text-cyan-400' : 'text-gray-500'
+          )}
+          strokeWidth={1}
         />
       </button>
 

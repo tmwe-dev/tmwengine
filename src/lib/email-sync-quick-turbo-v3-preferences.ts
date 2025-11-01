@@ -135,8 +135,14 @@ async function loadFoldersWithPreferences(
 
   // Carica tutte le cartelle disponibili
   console.log('📂 [TURBO V3] Loading available folders from server...');
-  const allFolders = await emailFolderApi.getFolders({ include_counts: false });
-  const folderNames = allFolders.map(f => f.name || String(f));
+  const foldersResponse = await emailFolderApi.getFolders({ include_counts: false });
+  
+  // ✅ FIX: Gestisci risposta API (array o oggetto)
+  const allFolders = Array.isArray(foldersResponse) 
+    ? foldersResponse 
+    : (foldersResponse?.folders || foldersResponse?.data || []);
+  
+  const folderNames = allFolders.map((f: any) => f.name || String(f));
   
   console.log(`📂 [TURBO V3] Found ${folderNames.length} folders on server`);
 

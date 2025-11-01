@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -39,6 +41,9 @@ interface FolderQuickOption {
   name: string;
   display: string;
   selected: boolean;
+  serverCount: number;
+  dbCount: number;
+  missing: number;
 }
 
 export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSelectedFolders = [] }: QuickEmailDownloaderProps) {
@@ -109,61 +114,74 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     setIsQuickLoading(true);
       try {
         console.log('📂 [loadQuickFolders] ========== FOLDER LOADING START ==========');
-        console.log('📂 Calling emailFolderApi.getFolders()...');
         
-        // ✅ USA STESSA API DI EmailIntegrityChecker
-        const quickResponse = await emailFolderApi.getFolders({ 
-          include_counts: false,
-          skipCache: false
+        // 1. Get user email
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Non autenticato');
+
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('tmwe_email')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
+
+        // 2. Fetch SERVER counts (con include_counts: true)
+        const serverResponse = await emailFolderApi.getFolders({ 
+          include_counts: true,
+          skipCache: true
+        });
+        
+        const serverFolders = serverResponse.folders || serverResponse.data || serverResponse || [];
+        console.log('📂 Server folders:', serverFolders.length);
+
+        // 3. Fetch DB counts
+        const { data: dbCounts } = await supabase.rpc('get_email_folder_counts', {
+          p_user_email: profile.tmwe_email,
+          p_sync_status: 'fun_email_backup'
+        });
+        
+        const dbCountsMap = (dbCounts || []).reduce((acc: Record<string, number>, row: any) => {
+          acc[row.cartella] = row.count;
+          return acc;
+        }, {});
+
+        console.log('📂 DB counts:', dbCountsMap);
+
+        // 4. Combina dati
+        const quickMapped: FolderQuickOption[] = serverFolders.map((folder: any) => {
+          const folderName = folder.name || folder;
+          const normalizedName = (folderName || '').trim().toLowerCase();
+          const serverCount = folder.message_count || folder.total_count || 0;
+          const dbCount = dbCountsMap[folderName] || 0;
+          const missing = Math.max(0, serverCount - dbCount);
+          
+          return {
+            name: folderName,
+            display: folder.display_name || folderName,
+            serverCount,
+            dbCount,
+            missing,
+            selected: preSelectedFolders.length > 0 
+              ? preSelectedFolders.some(pre => 
+                  (pre || '').trim().toLowerCase() === normalizedName
+                )
+              : (normalizedName === 'inbox')
+          };
         });
 
-      console.log('📂 [loadQuickFolders] RAW API RESPONSE:', JSON.stringify(quickResponse, null, 2));
-      console.log('📂 [loadQuickFolders] Response type:', typeof quickResponse);
-      console.log('📂 [loadQuickFolders] Is Array?', Array.isArray(quickResponse));
+        console.log('📂 Mapped folders with stats:', quickMapped.length);
+        console.log('📂 [loadQuickFolders] ========== FOLDER LOADING COMPLETE ==========');
 
-      const quickFoldersList = Array.isArray(quickResponse) 
-        ? quickResponse 
-        : (quickResponse?.folders || quickResponse?.data || []);
-      
-      console.log('📂 [loadQuickFolders] Extracted folders list:', quickFoldersList);
-      console.log('📂 [loadQuickFolders] Folders count:', quickFoldersList.length);
-      
-      // Log each folder with details
-      quickFoldersList.forEach((f: any, idx: number) => {
-        const folderName = String(f.name || f);
-        console.log(`📂 [loadQuickFolders] Folder ${idx + 1}:`);
-        console.log(`   Raw object:`, f);
-        console.log(`   Name: "${folderName}"`);
-        console.log(`   Display: "${f.display_name || folderName}"`);
-        console.log(`   Length: ${folderName.length}`);
-        console.log(`   Bytes: [${Array.from(folderName).map((c: string) => c.charCodeAt(0)).join(',')}]`);
-      });
-      
-      // ✅ FIX 2: Normalizza confronto case-insensitive + trim
-      const quickMapped = quickFoldersList.map((f: any) => {
-        const folderName = f.name || f;
-        const normalizedName = (folderName || '').trim().toLowerCase();
+        setQuickFolders(quickMapped);
         
-        return {
-          name: folderName,  // ✅ Mantieni nome originale
-          display: f.display_name || folderName,
-          selected: preSelectedFolders.length > 0 
-            ? preSelectedFolders.some(pre => 
-                (pre || '').trim().toLowerCase() === normalizedName  // ✅ Confronto normalizzato
-              )
-            : (normalizedName === 'inbox')  // ✅ Anche default normalizzato
-        };
-      });
-
-      console.log('🔍 [QuickDownload] preSelectedFolders:', preSelectedFolders);
-      console.log('🔍 [QuickDownload] Server folders:', quickFoldersList.map((f: any) => f.name || f));
-      console.log('🔍 [QuickDownload] Mapped with selection:', quickMapped.filter(f => f.selected).map(f => f.name));
-      console.log('📂 [loadQuickFolders] ========== FOLDER LOADING COMPLETE ==========');
-
-      setQuickFolders(quickMapped);
-      
-      // Load stats dal DB
-      await loadQuickStats();
+        // Aggiorna stats callback
+        const statsObj = quickMapped.reduce((acc: Record<string, number>, f) => {
+          acc[f.name] = f.dbCount;
+          return acc;
+        }, {});
+        onStatsUpdate?.(statsObj);
 
     } catch (error: any) {
       console.error('❌ Quick folders error:', error);
@@ -219,6 +237,13 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const toggleQuickSelectAll = () => {
     const allQuickSelected = quickFolders.every(f => f.selected);
     setQuickFolders(prev => prev.map(f => ({ ...f, selected: !allQuickSelected })));
+  };
+
+  const selectFoldersWithMissing = () => {
+    setQuickFolders(prev => prev.map(f => ({ 
+      ...f, 
+      selected: f.missing > 0 
+    })));
   };
 
   const startQuickDownload = async () => {
@@ -473,36 +498,111 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       {!quickProgress?.isRunning && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center justify-between">
-              Seleziona Cartelle
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={toggleQuickSelectAll}
-              >
-                {quickFolders.every(f => f.selected) ? 'Deseleziona' : 'Seleziona'} tutte
-              </Button>
+            <CardTitle className="text-sm flex items-center justify-between">
+              <span>Cartelle da scaricare</span>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={selectFoldersWithMissing}
+                  disabled={isQuickLoading}
+                >
+                  Seleziona con email mancanti
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={toggleQuickSelectAll}
+                  disabled={isQuickLoading}
+                >
+                  {quickFolders.every(f => f.selected) ? 'Deseleziona tutto' : 'Seleziona tutto'}
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {isQuickLoading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Caricamento cartelle...
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto">
-                {quickFolders.map(folder => (
-                  <Button
-                    key={folder.name}
-                    variant={folder.selected ? 'default' : 'outline'}
-                    size="sm"
-                    className="justify-start"
-                    onClick={() => toggleQuickFolder(folder.name)}
-                  >
-                    <FolderOpen className="h-4 w-4 mr-2" />
-                    {folder.display}
-                  </Button>
-                ))}
+              <div className="space-y-4">
+                {/* Totali globali */}
+                <div className="grid grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">Totale Server</p>
+                    <p className="text-2xl font-bold">
+                      {quickFolders.reduce((sum, f) => sum + f.serverCount, 0)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">Totale Database</p>
+                    <p className="text-2xl font-bold">
+                      {quickFolders.reduce((sum, f) => sum + f.dbCount, 0)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">Email Mancanti</p>
+                    <p className={`text-2xl font-bold ${
+                      quickFolders.reduce((sum, f) => sum + f.missing, 0) > 0 
+                        ? 'text-destructive' 
+                        : 'text-green-500'
+                    }`}>
+                      {quickFolders.reduce((sum, f) => sum + f.missing, 0)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tabella cartelle */}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox 
+                          checked={quickFolders.every(f => f.selected)}
+                          onCheckedChange={toggleQuickSelectAll}
+                        />
+                      </TableHead>
+                      <TableHead>Cartella</TableHead>
+                      <TableHead className="text-right">Server</TableHead>
+                      <TableHead className="text-right">Database</TableHead>
+                      <TableHead className="text-right">Mancanti</TableHead>
+                      <TableHead className="text-right">Sincronizzazione</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {quickFolders.map(folder => {
+                      const syncPercentage = folder.serverCount > 0 
+                        ? Math.round((folder.dbCount / folder.serverCount) * 100) 
+                        : 100;
+                      
+                      return (
+                        <TableRow key={folder.name}>
+                          <TableCell>
+                            <Checkbox 
+                              checked={folder.selected}
+                              onCheckedChange={() => toggleQuickFolder(folder.name)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">{folder.display}</TableCell>
+                          <TableCell className="text-right">{folder.serverCount}</TableCell>
+                          <TableCell className="text-right">{folder.dbCount}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant={folder.missing > 0 ? 'destructive' : 'secondary'}>
+                              {folder.missing}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center gap-2 justify-end">
+                              <Progress value={syncPercentage} className="w-20 h-2" />
+                              <span className="text-xs text-muted-foreground w-10">{syncPercentage}%</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </CardContent>

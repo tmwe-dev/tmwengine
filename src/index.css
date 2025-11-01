@@ -63,7 +63,7 @@ Tutti i colori DEVONO essere HSL.
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
     --card-border: 240 3.7% 15.9%;
-    --card-transparent: 240 10% 3.9% / 0.90; /* Trasparenza 90% per card */
+    --card-transparent: 240 10% 3.9% / 0.35; /* Trasparenza 35% per card */
 
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
@@ -166,7 +166,7 @@ Tutti i colori DEVONO essere HSL.
     --card: 200 20% 10%;
     --card-foreground: 180 10% 95%;
     --card-border: 200 15% 18%;
-    --card-transparent: 200 20% 10% / 0.90;
+    --card-transparent: 200 20% 10% / 0.35;
 
     --popover: 200 20% 10%;
     --popover-foreground: 180 10% 95%;
@@ -224,7 +224,7 @@ Tutti i colori DEVONO essere HSL.
     --card: 25 30% 8%;
     --card-foreground: 30 10% 95%;
     --card-border: 25 20% 15%;
-    --card-transparent: 25 30% 8% / 0.90;
+    --card-transparent: 25 30% 8% / 0.35;
 
     --popover: 25 30% 8%;
     --popover-foreground: 30 10% 95%;
@@ -282,7 +282,7 @@ Tutti i colori DEVONO essere HSL.
     --card: 140 25% 8%;
     --card-foreground: 140 10% 95%;
     --card-border: 140 20% 15%;
-    --card-transparent: 140 25% 8% / 0.90;
+    --card-transparent: 140 25% 8% / 0.35;
 
     --popover: 140 25% 8%;
     --popover-foreground: 140 10% 95%;
@@ -340,7 +340,7 @@ Tutti i colori DEVONO essere HSL.
     --card: 210 30% 10%;
     --card-foreground: 210 10% 95%;
     --card-border: 210 25% 18%;
-    --card-transparent: 210 30% 10% / 0.90;
+    --card-transparent: 210 30% 10% / 0.35;
 
     --popover: 210 30% 10%;
     --popover-foreground: 210 10% 95%;
@@ -398,7 +398,7 @@ Tutti i colori DEVONO essere HSL.
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
     --card-border: 240 3.7% 15.9%;
-    --card-transparent: 240 10% 3.9% / 0.90; /* Trasparenza 90% per card */
+    --card-transparent: 240 10% 3.9% / 0.35; /* Trasparenza 35% per card */
 
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;

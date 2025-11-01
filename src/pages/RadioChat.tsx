@@ -1174,7 +1174,7 @@ const RadioChatContent = () => {
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger
         className={cn(
-          "fixed left-0 top-1/2 -translate-y-1/2 z-40 transition-transform duration-300",
+          "fixed left-0 bottom-[18.5rem] z-40 transition-transform duration-300",
           sidebarOpen && "translate-x-[320px]"
         )}
         isOpen={sidebarOpen}
@@ -1193,7 +1193,7 @@ const RadioChatContent = () => {
         <button
           onClick={() => setMessageViewVisible(!messageViewVisible)}
           className={cn(
-            "fixed left-0 bottom-36 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+            "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
             "flex items-center justify-center transition-all duration-300 hover:bg-white/5"
           )}
           aria-label="Toggle message view"
@@ -1210,7 +1210,7 @@ const RadioChatContent = () => {
       {/* Mic Icon - Between FileText and Keyboard */}
       {!sidebarOpen && !crmMenuOpen && (
         <RadioMicTrigger
-          className="fixed left-0 bottom-20 z-40"
+          className="fixed left-0 bottom-[7.5rem] z-40"
           isActive={showAudioControls}
           onClick={() => setShowAudioControls(!showAudioControls)}
         />

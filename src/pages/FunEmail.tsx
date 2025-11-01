@@ -306,10 +306,7 @@ const FunEmail = () => {
         )}
 
         {/* Content - condizionale in base alla view */}
-        <div className={cn(
-          "w-full",
-          !['management', 'quick-download', 'integrity', 'debugger'].includes(currentView) && "pl-16"
-        )}>
+        <div className="w-full">
           {currentView === 'list' ? (
             <EmailList
               emails={emails}

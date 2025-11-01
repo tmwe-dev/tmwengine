@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, FileText } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
 import { BulkActionsBar } from './BulkActionsBar';
+import { AIPromptViewer } from './AIPromptViewer';
+import { AIAgentSelector } from './AIAgentSelector';
 
 interface SmartInboxHeaderIntelligentProps {
   categories: CategoryStats[];
@@ -37,28 +40,50 @@ export const SmartInboxHeaderIntelligent = ({
   onDelete,
   onMove
 }: SmartInboxHeaderIntelligentProps) => {
+  const [promptViewerOpen, setPromptViewerOpen] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<string>('gemini');
   
   return (
-    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 space-y-4 shrink-0">
-      {/* Header principale */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-xl lg:text-2xl font-bold flex items-center gap-2">
-          <span className="text-2xl lg:text-4xl">🧠</span>
-          <span>Inbox Intelligente</span>
-        </h2>
-        
-        {/* Pulsante Classifica Nuove - icona grande */}
-        <Button 
-          onClick={onClassifyNew}
-          variant="outline"
-          size="lg"
-          disabled={isClassifying}
-          className="rounded-2xl bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 hover:scale-105 transition-all flex flex-col items-center gap-1.5 h-auto py-3 px-4 lg:py-4 lg:px-6"
-        >
-          <Sparkles className="h-6 w-6 lg:h-8 lg:w-8" />
-          <span className="text-xs lg:text-sm font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica Nuove'}</span>
-        </Button>
-      </div>
+    <>
+      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 space-y-4 shrink-0">
+        {/* Header principale */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h2 className="text-xl lg:text-2xl font-bold flex items-center gap-2 text-white/90">
+            <span className="text-2xl lg:text-4xl">🧠</span>
+            <span>Inbox Intelligente</span>
+          </h2>
+          
+          <div className="flex items-center gap-3">
+            {/* Selettore Agente AI */}
+            <AIAgentSelector 
+              selectedAgent={selectedAgent}
+              onAgentChange={setSelectedAgent}
+            />
+
+            {/* Pulsante Vedi Prompt */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPromptViewerOpen(true)}
+              className="gap-2 text-white/80 hover:text-white"
+            >
+              <FileText className="h-4 w-4" />
+              Vedi Prompt
+            </Button>
+            
+            {/* Pulsante Classifica Nuove - icona grande */}
+            <Button 
+              onClick={onClassifyNew}
+              variant="outline"
+              size="lg"
+              disabled={isClassifying}
+              className="rounded-2xl bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 hover:scale-105 transition-all flex flex-col items-center gap-1.5 h-auto py-3 px-4 lg:py-4 lg:px-6"
+            >
+              <Sparkles className="h-6 w-6 lg:h-8 lg:w-8" />
+              <span className="text-xs lg:text-sm font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica Nuove'}</span>
+            </Button>
+          </div>
+        </div>
       
       {/* Classification Progress Bar */}
       {isClassifying && classificationProgress && (
@@ -78,15 +103,22 @@ export const SmartInboxHeaderIntelligent = ({
         </div>
       )}
 
-      {/* 🆕 Barra Azioni Unificata sotto i badge */}
-      <BulkActionsBar
-        selectedCount={selectedCount}
-        categories={categories}
-        onArchive={onArchive}
-        onDelete={onDelete}
-        onMove={onMove}
-        onBulkClassify={onBulkClassify}
+        {/* 🆕 Barra Azioni Unificata sotto i badge */}
+        <BulkActionsBar
+          selectedCount={selectedCount}
+          categories={categories}
+          onArchive={onArchive}
+          onDelete={onDelete}
+          onMove={onMove}
+          onBulkClassify={onBulkClassify}
+        />
+      </div>
+
+      {/* Dialog Prompt Viewer */}
+      <AIPromptViewer 
+        open={promptViewerOpen}
+        onOpenChange={setPromptViewerOpen}
       />
-    </div>
+    </>
   );
 };

@@ -60,7 +60,10 @@ export const SmartInboxTabIntelligent = ({
 
       let query = supabase
         .from('email_ai_classifications')
-        .select('*')
+        .select(`
+          *,
+          email_messages!inner(id, subject, date, has_attachments)
+        `)
         .eq('user_email', userEmail)
         .order('created_at', { ascending: false });
 
@@ -76,18 +79,18 @@ export const SmartInboxTabIntelligent = ({
 
       if (error) throw error;
 
-      // Trasforma in ClassifiedEmail (email metadata sarà caricata on-demand)
-      return (data || []).map(classification => ({
+      // Trasforma in ClassifiedEmail con email_id recuperato dal join
+      return (data || []).map((classification: any) => ({
         classification,
         email: {
           uid: classification.email_uid || '',
-          email_id: undefined,
-          subject: classification.ai_summary?.split(' - ')[1] || 'Email senza oggetto',
+          email_id: classification.email_messages?.id,
+          subject: classification.email_messages?.subject || classification.ai_summary?.split(' - ')[1] || 'Email senza oggetto',
           from: { email: classification.sender_email },
           to: [],
-          date: classification.created_at,
+          date: classification.email_messages?.date || classification.created_at,
           read: false,
-          has_attachments: false,
+          has_attachments: classification.email_messages?.has_attachments || false,
           folder_name: classification.folder_name || 'INBOX',
           body_preview: classification.ai_summary
         }

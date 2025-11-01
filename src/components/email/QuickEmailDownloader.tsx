@@ -412,13 +412,22 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
   return (
     <div className="space-y-4">
-      {/* Header V3 */}
-      <div className="flex items-center gap-3">
-        <Zap className="h-6 w-6 text-red-500" />
-        <h3 className="text-lg font-semibold">Quick Download V3</h3>
-        <Badge variant="default" className="bg-yellow-500">
-          ⚡ TURBO + Preferences
-        </Badge>
+      {/* Header V3 + Mode Selector */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Zap className="h-6 w-6 text-red-500" />
+          <h3 className="text-lg font-semibold">Quick Download V3</h3>
+          <Badge variant="default" className="bg-yellow-500">
+            ⚡ TURBO + Preferences
+          </Badge>
+        </div>
+        
+        {/* ✅ FIX 4: Mode Selector (placeholder per future versioni) */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Settings className="h-4 w-4" />
+          <span>Mode: <strong className="text-foreground">V3 Turbo</strong></span>
+          {/* TODO: Ripristinare V1/V2 in FASE 3 */}
+        </div>
       </div>
 
       {/* Progress Card (visible solo durante download) */}

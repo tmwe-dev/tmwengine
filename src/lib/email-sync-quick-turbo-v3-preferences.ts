@@ -137,12 +137,59 @@ async function loadFoldersWithPreferences(
   console.log('📂 [TURBO V3] Loading available folders from server...');
   const foldersResponse = await emailFolderApi.getFolders({ include_counts: false });
   
-  // ✅ FIX: Gestisci risposta API (array o oggetto)
-  const allFolders = Array.isArray(foldersResponse) 
-    ? foldersResponse 
-    : (foldersResponse?.folders || foldersResponse?.data || []);
-  
-  const folderNames = allFolders.map((f: any) => f.name || String(f));
+  // 🔍 DEBUG: Log struttura risposta
+  console.log('🔍 [TURBO V3 DEBUG] Response type:', typeof foldersResponse);
+  console.log('🔍 [TURBO V3 DEBUG] Is array?', Array.isArray(foldersResponse));
+  console.log('🔍 [TURBO V3 DEBUG] Sample:', JSON.stringify(foldersResponse).substring(0, 200));
+
+  // ✅ FIX 2 COMPLETO: Gestisci tutti i formati possibili
+  let allFolders: any[] = [];
+
+  if (Array.isArray(foldersResponse)) {
+    // Caso 1: Risposta è già un array
+    allFolders = foldersResponse;
+    console.log('✅ [TURBO V3] Folders as direct array');
+  } else if (foldersResponse?.folders && Array.isArray(foldersResponse.folders)) {
+    // Caso 2: { folders: [...] }
+    allFolders = foldersResponse.folders;
+    console.log('✅ [TURBO V3] Folders in .folders property');
+  } else if (foldersResponse?.data) {
+    // Caso 3: { data: {...} } o { data: [...] }
+    if (Array.isArray(foldersResponse.data)) {
+      allFolders = foldersResponse.data;
+      console.log('✅ [TURBO V3] Folders in .data array');
+    } else if (foldersResponse.data.folders) {
+      allFolders = foldersResponse.data.folders;
+      console.log('✅ [TURBO V3] Folders in .data.folders');
+    }
+  } else if (typeof foldersResponse === 'object' && foldersResponse !== null) {
+    // Caso 4: Oggetto cache - converti in array
+    const values = Object.values(foldersResponse);
+    if (values.length > 0 && typeof values[0] === 'object') {
+      allFolders = values;
+      console.log('✅ [TURBO V3] Folders from cache object');
+    }
+  }
+
+  if (allFolders.length === 0) {
+    console.error('❌ [TURBO V3] Could not parse folders from response:', foldersResponse);
+    throw new Error('Impossibile recuperare le cartelle dal server');
+  }
+
+  // ✅ FIX: Estrai nomi cartelle in modo robusto
+  const folderNames = allFolders
+    .map((f: any) => {
+      if (typeof f === 'string') return f;
+      if (f?.name) return f.name;
+      if (f?.folder_name) return f.folder_name;
+      if (f?.path) return f.path;
+      console.warn('⚠️ Unknown folder format:', f);
+      return String(f);
+    })
+    .filter(name => name && name.trim() !== ''); // Rimuovi valori vuoti
+
+  console.log(`📂 [TURBO V3] Parsed ${folderNames.length} folder names`);
+  console.log(`📂 [TURBO V3] Sample folders:`, folderNames.slice(0, 5));
   
   console.log(`📂 [TURBO V3] Found ${folderNames.length} folders on server`);
 
@@ -383,12 +430,22 @@ export class QuickEmailSyncerTurboV3 {
     try {
       this.startTime = Date.now();
       this.progress.status = 'loading';
+      
+      // ✅ FIX 5: Logging onProgress
+      console.log('📊 [TURBO V3 Progress] Initial status:', {
+        status: this.progress.status,
+        currentFolder: this.progress.currentFolder,
+        downloadedCount: this.progress.downloadedCount
+      });
       this.options.onProgress(this.progress);
 
       // 🆕 STEP 1: Carica cartelle con filtro preferenze
+      // ✅ FIX 1: Correggi logica invertita
       const { folders, preferences } = await loadFoldersWithPreferences(
         this.options.userEmail,
-        this.options.applyPreferences ? undefined : this.options.folders
+        (this.options.folders && this.options.folders.length > 0) 
+          ? this.options.folders  // ✅ Usa cartelle specificate dall'utente
+          : undefined             // ✅ Carica tutte e applica preferenze
       );
 
       if (folders.length === 0) {
@@ -404,6 +461,14 @@ export class QuickEmailSyncerTurboV3 {
       console.log('\n🚀 [TURBO V3] Starting sync with preferences...');
       console.log(`📂 Folders to sync (${folders.length}):`, folders);
       console.log(`⚙️ Preferences mode: ${preferences.mode}`);
+      
+      // ✅ FIX 5: Logging onProgress dopo setup
+      console.log('📊 [TURBO V3 Progress] After folder setup:', {
+        status: this.progress.status,
+        totalFolders: this.progress.totalFolders,
+        filteredFoldersCount: this.progress.filteredFoldersCount
+      });
+      this.options.onProgress(this.progress);
 
       // Clean old cache
       cleanOldCache();
@@ -536,6 +601,15 @@ export class QuickEmailSyncerTurboV3 {
           const batchTime = (Date.now() - batchStart) / 1000;
           this.progress.currentSpeed = inserted / batchTime;
 
+          // ✅ FIX 5: Logging onProgress durante batch
+          console.log('📊 [TURBO V3 Progress] Batch complete:', {
+            status: this.progress.status,
+            currentFolder: this.progress.currentFolder,
+            currentFolderProgress: this.progress.currentFolderProgress,
+            currentFolderTotal: this.progress.currentFolderTotal,
+            downloadedCount: this.progress.downloadedCount,
+            currentSpeed: this.progress.currentSpeed.toFixed(1)
+          });
           this.options.onProgress(this.progress);
 
         } catch (error) {

@@ -27,23 +27,6 @@ export function CollapsibleCategorySidebar({
 }: CollapsibleCategorySidebarProps) {
   const [isLocked, setIsLocked] = useState(false);
 
-  // Mouse proximity tracking - proximity detection a 40px
-  useEffect(() => {
-    if (isLocked) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      // Proximity detection a 40px come richiesto
-      if (e.clientX < 40) {
-        onOpenChange(true);
-      } else if (e.clientX > 320) {
-        onOpenChange(false);
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [isLocked, onOpenChange]);
-
   // Trova categoria selezionata per il badge
   const getSelectedInfo = () => {
     if (selectedCategory === 'all') {

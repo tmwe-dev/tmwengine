@@ -65,6 +65,29 @@ export function PerformanceTestSuite() {
   const [result, setResult] = useState<TestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const debugApiResponse = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+        body: {
+          endpoint: '/email_message',
+          data: {
+            handler: 'get_messages',
+            folder: config.folder,
+            limit: 5,
+            offset: 0
+          }
+        }
+      });
+      
+      console.log('🔍 RAW API RESPONSE:', JSON.stringify(data, null, 2));
+      console.log('🔍 ERROR (if any):', error);
+      alert('✅ Risposta API loggata nella console. Apri DevTools per vedere i dettagli.');
+    } catch (err) {
+      console.error('❌ Debug failed:', err);
+      alert('❌ Errore durante il debug. Vedi console per dettagli.');
+    }
+  };
+
   const runPerformanceTest = async () => {
     setIsRunning(true);
     setError(null);
@@ -92,15 +115,44 @@ export function PerformanceTestSuite() {
         }
       });
 
-      if (uidError || !uidData?.success || !uidData?.messages?.length) {
-        throw new Error('Impossibile recuperare UIDs dalla cartella. Verifica che la cartella contenga email.');
+      if (uidError || !uidData?.success) {
+        throw new Error(`API Error: ${uidError?.message || 'Unknown error'}`);
       }
 
-      const realUIDs = uidData.messages.map((m: any) => m.uid).filter(Boolean);
+      // 🔍 Parsing robusto - cerca messages/emails in vari punti della risposta
+      let messagesArray = uidData.messages 
+        || uidData.emails 
+        || uidData.data?.messages 
+        || uidData.data?.emails
+        || [];
+
+      console.log('🔍 [PERF TEST] Parsed response:', {
+        hasMessages: !!uidData.messages,
+        hasEmails: !!uidData.emails,
+        hasDataMessages: !!uidData.data?.messages,
+        hasDataEmails: !!uidData.data?.emails,
+        foundCount: Array.isArray(messagesArray) ? messagesArray.length : 0,
+        sampleItem: messagesArray[0]
+      });
+
+      if (!Array.isArray(messagesArray) || messagesArray.length === 0) {
+        console.error('❌ [PERF TEST] Unexpected API response structure:', uidData);
+        throw new Error(`Nessuna email trovata nella cartella "${config.folder}". Prova con "INBOX" o verifica che la cartella contenga email.`);
+      }
+
+      // Estrai UIDs in modo robusto
+      const realUIDs = messagesArray
+        .map((m: any) => m.uid || m.id || m.message_id)
+        .filter(Boolean);
+
       console.log(`✅ [PERF TEST] Found ${realUIDs.length} UIDs`);
 
       if (realUIDs.length === 0) {
-        throw new Error('Nessun UID trovato nella cartella.');
+        throw new Error(
+          `Nessun UID valido trovato. ` +
+          `Email trovate: ${messagesArray.length}, ` +
+          `ma nessuna ha un campo uid/id/message_id valido.`
+        );
       }
 
       const startTime = performance.now();
@@ -182,7 +234,9 @@ export function PerformanceTestSuite() {
             errorCount++;
           }
 
-          const emailCount = data?.messages?.length || config.batchSize || 25;
+          // Parsing robusto per batch
+          const batchMessages = data?.messages || data?.emails || data?.data?.messages || data?.data?.emails || [];
+          const emailCount = Array.isArray(batchMessages) ? batchMessages.length : (config.batchSize || 25);
 
           setLiveMetrics({
             emailsProcessed: emailCount,
@@ -230,7 +284,9 @@ export function PerformanceTestSuite() {
               batchErrors++;
             }
 
-            const emailCount = data?.messages?.length || batchSize;
+            // Parsing robusto per batch comparison
+            const compareMessages = data?.messages || data?.emails || data?.data?.messages || data?.data?.emails || [];
+            const emailCount = Array.isArray(compareMessages) ? compareMessages.length : batchSize;
             const throughput = (emailCount / batchTime) * 1000;
 
             comparisonData.push({
@@ -644,23 +700,32 @@ export function PerformanceTestSuite() {
             </Alert>
           )}
 
-          <Button
-            onClick={runPerformanceTest}
-            disabled={isRunning || !config.folder}
-            className="w-full"
-          >
-            {isRunning ? (
-              <>
-                <Activity className="mr-2 h-4 w-4 animate-pulse" />
-                Running Test...
-              </>
-            ) : (
-              <>
-                <Play className="mr-2 h-4 w-4" />
-                Run Performance Test
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={runPerformanceTest}
+              disabled={isRunning || !config.folder}
+              className="flex-1"
+            >
+              {isRunning ? (
+                <>
+                  <Activity className="mr-2 h-4 w-4 animate-pulse" />
+                  Running Test...
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 h-4 w-4" />
+                  Run Performance Test
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={debugApiResponse}
+              disabled={isRunning}
+              variant="outline"
+            >
+              🔍 Debug
+            </Button>
+          </div>
         </div>
 
         {/* Live Metrics */}

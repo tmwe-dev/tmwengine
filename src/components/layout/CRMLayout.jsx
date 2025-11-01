@@ -434,7 +434,7 @@ const CRMLayout = ({ children }) => {
         {/* Sidebar */}
         <aside className={cn(
           "fixed left-0 top-28 h-[calc(100vh-7rem)] w-64 z-50",
-          "bg-card-transparent border-r border-border",
+          "bg-card-transparent backdrop-blur-lg border-r border-border",
           "transition-transform duration-300 overflow-hidden",
           menuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 lg:w-16"
         )}>

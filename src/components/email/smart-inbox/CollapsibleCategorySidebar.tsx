@@ -25,15 +25,17 @@ export function CollapsibleCategorySidebar({
   // Mouse proximity tracking
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      const isNear = e.clientX < 100;
+      // Considera offset di 64px per il badge spostato
+      const adjustedX = e.clientX - 64;
+      const isNear = adjustedX < 100;
       
       // Auto-open se vicino al bordo e non locked
       if (isNear && !isLocked && !isOpen) {
         setIsOpen(true);
       }
       
-      // Auto-close se lontano e non locked
-      if (e.clientX > 340 && !isLocked && isOpen) {
+      // Auto-close se lontano e non locked (280px sidebar + 100px buffer)
+      if (e.clientX > 380 && !isLocked && isOpen) {
         setIsOpen(false);
       }
     };
@@ -60,11 +62,13 @@ export function CollapsibleCategorySidebar({
   return (
     <>
       {/* Badge verticale (sempre visibile) */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 bg-card-transparent backdrop-blur-md border-r border-white/10 rounded-r-xl py-6 px-2 flex flex-col items-center gap-3 hover:bg-card-transparent/80 transition-all group"
-        >
+      <button
+        onClick={() => setIsOpen(true)}
+        className={cn(
+          "fixed left-16 top-1/2 -translate-y-1/2 z-50 bg-card-transparent backdrop-blur-md border-r border-white/10 rounded-r-xl py-6 px-2 flex flex-col items-center gap-3 hover:bg-card-transparent/80 transition-all group",
+          isOpen && "opacity-0 pointer-events-none"
+        )}
+      >
           <span className="text-2xl group-hover:scale-110 transition-transform">
             {selectedInfo.icon}
           </span>
@@ -81,15 +85,17 @@ export function CollapsibleCategorySidebar({
           >
             {selectedInfo.count}
           </Badge>
-        </button>
-      )}
+      </button>
 
       {/* Sidebar scorrevole */}
       <aside
         className={cn(
-          "fixed left-0 top-0 h-full w-[240px] z-40 bg-background/95 backdrop-blur-sm border-r border-white/10 transition-transform duration-300 ease-out",
+          "fixed left-0 top-0 h-full w-[280px] z-40 backdrop-blur-lg transition-transform duration-300 ease-out",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
+        style={{
+          background: 'linear-gradient(to bottom, hsl(220 91% 55% / 0.65) 0%, transparent 100%)'
+        }}
       >
         {/* Header con lock button */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">

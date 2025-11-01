@@ -1232,6 +1232,107 @@ export function PerformanceTestSuite() {
                 </AlertDescription>
               </Alert>
             )}
+
+            {/* ✅ NUOVO: Health Check Status */}
+            {result.healthCheck && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    🏥 IMAP Server Health Status
+                    <Badge variant={
+                      result.healthCheck.overallHealth === 'healthy' ? 'default' :
+                      result.healthCheck.overallHealth === 'degraded' ? 'secondary' : 'destructive'
+                    }>
+                      {result.healthCheck.overallHealth.toUpperCase()}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className={`p-4 border rounded-lg ${result.healthCheck.accountConnection ? 'bg-green-50 dark:bg-green-950 border-green-200' : 'bg-red-50 dark:bg-red-950 border-red-200'}`}>
+                        <div className="font-semibold">Account Connection</div>
+                        <div className="text-sm text-muted-foreground">{result.healthCheck.accountConnectionTime.toFixed(0)}ms</div>
+                        <div className="mt-2 text-lg">{result.healthCheck.accountConnection ? '✅' : '❌'}</div>
+                      </div>
+                      
+                      <div className={`p-4 border rounded-lg ${result.healthCheck.folderAccess ? 'bg-green-50 dark:bg-green-950 border-green-200' : 'bg-red-50 dark:bg-red-950 border-red-200'}`}>
+                        <div className="font-semibold">Folder Access</div>
+                        <div className="text-sm text-muted-foreground">{result.healthCheck.folderAccessTime.toFixed(0)}ms</div>
+                        <div className="mt-2 text-lg">{result.healthCheck.folderAccess ? '✅' : '❌'}</div>
+                      </div>
+                      
+                      <div className={`p-4 border rounded-lg ${result.healthCheck.emailRetrieval ? 'bg-green-50 dark:bg-green-950 border-green-200' : 'bg-red-50 dark:bg-red-950 border-red-200'}`}>
+                        <div className="font-semibold">Email Retrieval</div>
+                        <div className="text-sm text-muted-foreground">{result.healthCheck.emailRetrievalTime.toFixed(0)}ms</div>
+                        <div className="mt-2 text-lg">{result.healthCheck.emailRetrieval ? '✅' : '❌'}</div>
+                      </div>
+                    </div>
+                    
+                    {result.healthCheck.issues.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="font-semibold mb-2">Issues Detected:</h4>
+                        {result.healthCheck.issues.map((issue, idx) => (
+                          <Alert key={idx} variant="destructive" className="mb-2">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>{issue}</AlertDescription>
+                          </Alert>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ✅ NUOVO: Error Analysis */}
+            {result.errorLog && result.errorLog.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    🔍 Error Analysis
+                    <Badge variant="destructive">{result.errorLog.length} errors</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.entries(
+                        result.errorLog.reduce((acc, err) => {
+                          acc[err.type] = (acc[err.type] || 0) + 1;
+                          return acc;
+                        }, {} as Record<string, number>)
+                      ).map(([type, count]) => (
+                        <div key={type} className="flex justify-between items-center p-3 border rounded-lg">
+                          <span className="capitalize font-semibold">{type} Errors:</span>
+                          <Badge variant={count > 3 ? 'destructive' : 'secondary'}>
+                            {count}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="mt-4">
+                      <h4 className="font-semibold mb-2">Latest Errors (last 5):</h4>
+                      <div className="space-y-2">
+                        {result.errorLog.slice(-5).reverse().map((err, idx) => (
+                          <Alert key={idx} variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription className="text-xs">
+                              <div className="font-mono">
+                                <div><strong>[{err.type.toUpperCase()}]</strong> {err.handler}</div>
+                                <div className="text-muted-foreground">{err.message}</div>
+                                <div className="text-muted-foreground">Folder: {err.folder} | {new Date(err.timestamp).toLocaleTimeString()}</div>
+                              </div>
+                            </AlertDescription>
+                          </Alert>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
@@ -1243,6 +1344,7 @@ export function PerformanceTestSuite() {
             <ul className="space-y-1 mt-2">
               <li>• <strong>Single Email</strong>: Testa velocità download singolo email (ripetuto N volte per media)</li>
               <li>• <strong>Batch Download</strong>: Testa download multiplo email in una chiamata</li>
+              <li>• <strong>IMAP Health Check</strong>: Verifica stato server IMAP (connessione, folder, email)</li>
               <li>• Confronta i risultati per trovare configurazione ottimale</li>
               <li>• Esporta risultati JSON per analisi ulteriore</li>
             </ul>

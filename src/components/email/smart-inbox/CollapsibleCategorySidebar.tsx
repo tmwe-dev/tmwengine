@@ -11,13 +11,17 @@ interface CollapsibleCategorySidebarProps {
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
   unverifiedCount: number;
+  onLockedChange?: (locked: boolean) => void;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function CollapsibleCategorySidebar({
   categories,
   selectedCategory,
   onCategoryChange,
-  unverifiedCount
+  unverifiedCount,
+  onLockedChange,
+  onOpenChange
 }: CollapsibleCategorySidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
@@ -32,17 +36,19 @@ export function CollapsibleCategorySidebar({
       // Auto-open se vicino al bordo e non locked
       if (isNear && !isLocked && !isOpen) {
         setIsOpen(true);
+        onOpenChange?.(true);
       }
       
       // Auto-close se lontano e non locked (280px sidebar + 100px buffer)
       if (e.clientX > 380 && !isLocked && isOpen) {
         setIsOpen(false);
+        onOpenChange?.(false);
       }
     };
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [isLocked, isOpen]);
+  }, [isLocked, isOpen, onOpenChange]);
 
   // Trova categoria selezionata per il badge
   const getSelectedInfo = () => {
@@ -90,11 +96,14 @@ export function CollapsibleCategorySidebar({
       {/* Sidebar scorrevole */}
       <aside
         className={cn(
-          "fixed left-0 top-0 h-full w-[280px] z-40 backdrop-blur-lg transition-transform duration-300 ease-out",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          "h-full w-[280px] backdrop-blur-lg transition-all duration-300 ease-out",
+          isLocked 
+            ? "relative" 
+            : "fixed left-0 top-0 z-40",
+          isOpen || isLocked ? "translate-x-0" : "-translate-x-full"
         )}
         style={{
-          background: 'linear-gradient(to bottom, hsl(220 91% 55% / 0.65) 0%, transparent 100%)'
+          background: 'linear-gradient(to bottom, hsl(280 70% 65% / 0.65) 0%, transparent 100%)'
         }}
       >
         {/* Header con lock button */}
@@ -103,7 +112,11 @@ export function CollapsibleCategorySidebar({
           <Button
             size="icon"
             variant="ghost"
-            onClick={() => setIsLocked(!isLocked)}
+            onClick={() => {
+              const newLocked = !isLocked;
+              setIsLocked(newLocked);
+              onLockedChange?.(newLocked);
+            }}
             className="h-8 w-8"
           >
             {isLocked ? (

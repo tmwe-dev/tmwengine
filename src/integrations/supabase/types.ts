@@ -2367,7 +2367,7 @@ export type Database = {
           confidence: number
           created_at: string | null
           email_date: string | null
-          email_id: string | null
+          email_id: string
           email_message_id: string | null
           email_uid: string
           folder_name: string | null
@@ -2390,7 +2390,7 @@ export type Database = {
           confidence: number
           created_at?: string | null
           email_date?: string | null
-          email_id?: string | null
+          email_id: string
           email_message_id?: string | null
           email_uid: string
           folder_name?: string | null
@@ -2413,7 +2413,7 @@ export type Database = {
           confidence?: number
           created_at?: string | null
           email_date?: string | null
-          email_id?: string | null
+          email_id?: string
           email_message_id?: string | null
           email_uid?: string
           folder_name?: string | null
@@ -2439,7 +2439,7 @@ export type Database = {
           {
             foreignKeyName: "fk_email_ai_classifications_email_messages"
             columns: ["email_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "email_messages"
             referencedColumns: ["id"]
           },

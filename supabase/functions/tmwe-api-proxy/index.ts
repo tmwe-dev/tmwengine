@@ -7,6 +7,54 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Circuit Breaker per IMAP server health
+interface CircuitBreakerState {
+  failures: number;
+  lastFailure: number;
+  isOpen: boolean;
+}
+
+const circuitBreaker: Map<string, CircuitBreakerState> = new Map();
+const FAILURE_THRESHOLD = 5;
+const COOLDOWN_MS = 60000; // 1 minuto
+
+function checkCircuitBreaker(handler: string): boolean {
+  const state = circuitBreaker.get(handler) || { failures: 0, lastFailure: 0, isOpen: false };
+  
+  // Reset dopo cooldown
+  if (state.isOpen && Date.now() - state.lastFailure > COOLDOWN_MS) {
+    state.isOpen = false;
+    state.failures = 0;
+  }
+  
+  return !state.isOpen;
+}
+
+function recordFailure(handler: string, errorMessage: string) {
+  const state = circuitBreaker.get(handler) || { failures: 0, lastFailure: 0, isOpen: false };
+  
+  // Solo conteggia errori IMAP
+  if (errorMessage.includes('Connection refused') || errorMessage.includes('IMAP')) {
+    state.failures++;
+    state.lastFailure = Date.now();
+    
+    if (state.failures >= FAILURE_THRESHOLD) {
+      state.isOpen = true;
+      console.error(`🔴 Circuit Breaker OPEN per ${handler} (${state.failures} failures)`);
+    }
+  }
+  
+  circuitBreaker.set(handler, state);
+}
+
+function recordSuccess(handler: string) {
+  const state = circuitBreaker.get(handler);
+  if (state && state.failures > 0) {
+    state.failures = Math.max(0, state.failures - 1); // Decrementa gradualmente
+    circuitBreaker.set(handler, state);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -41,7 +89,8 @@ serve(async (req) => {
       );
     }
     
-    const { endpoint, data, optimizationFlags } = requestBody;
+    const { endpoint, data, optimizationFlags, requestTimeout } = requestBody;
+    const timeout = requestTimeout || 30000; // Default 30s
     
     // 🚀 CONFIGURAZIONE OTTIMALE DI PRODUZIONE (basata su benchmark)
     const enableLogging = optimizationFlags?.enableLogging ?? false;
@@ -360,6 +409,21 @@ serve(async (req) => {
     }
     
     // NORMALE SINGLE REQUEST
+    
+    // ✅ NUOVO: Verifica circuit breaker
+    if (data?.handler && !checkCircuitBreaker(data.handler)) {
+      console.warn(`⚠️ Circuit Breaker OPEN per ${data.handler}, richiesta bloccata temporaneamente`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Service temporarily unavailable',
+          details: 'IMAP server health check failed, retry after cooldown',
+          handler: data.handler,
+          retry_after_ms: 60000
+        }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const tmweUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
     
     if (enableLogging) {
@@ -371,15 +435,43 @@ serve(async (req) => {
       }
     }
 
-    const tmweResponse = await fetch(tmweUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${tmweAccessToken}`,
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
+    // ✅ NUOVO: Timeout con AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    let tmweResponse: Response;
+    try {
+      tmweResponse = await fetch(tmweUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tmweAccessToken}`,
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(data),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      
+      // ✅ NUOVO: Gestione timeout
+      if (fetchError.name === 'AbortError') {
+        console.error('⏱️ TMWE API Timeout dopo', timeout, 'ms');
+        if (data?.handler) recordFailure(data.handler, 'Timeout');
+        return new Response(
+          JSON.stringify({ 
+            error: 'TMWE API timeout',
+            timeout_ms: timeout,
+            handler: data?.handler,
+            retry_suggested: true
+          }),
+          { status: 504, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      throw fetchError;
+    }
 
     // Response processing ottimizzato o tradizionale
     let responseData: any;
@@ -452,6 +544,11 @@ serve(async (req) => {
     }
 
     if (!tmweResponse.ok) {
+      // ✅ NUOVO: Record failure nel circuit breaker
+      if (data?.handler) {
+        recordFailure(data.handler, responseData?.error || tmweResponse.statusText);
+      }
+      
       // LOGGING SEMPRE ATTIVO per errori (anche senza enableLogging)
       console.error('═══════════════════════════════════════════════════════');
       console.error('❌ ERRORE HTTP dalla TMWE API');
@@ -474,6 +571,11 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
+    }
+
+    // ✅ NUOVO: Record success nel circuit breaker
+    if (data?.handler) {
+      recordSuccess(data.handler);
     }
 
     if (enableLogging) {

@@ -15,14 +15,36 @@ import { supabase } from '@/integrations/supabase/client';
 import { Zap, Play, Download, TrendingUp, Clock, Activity, AlertCircle, FileCode } from 'lucide-react';
 import { StatCard } from '@/components/design-system/cards/StatCard';
 import { Link } from 'react-router-dom';
+import { withTMWERetry, categorizeError, type ErrorCategory } from '@/lib/api-retry-advanced';
+import { logPerformanceMetrics } from '@/lib/performance-metrics-logger';
 
 interface TestConfig {
   folder: string;
-  testType: 'single' | 'batch' | 'batch-compare' | 'light-vs-full' | 'parallel';
+  testType: 'single' | 'batch' | 'batch-compare' | 'light-vs-full' | 'parallel' | 'imap-health';
   batchSize?: number;
   repetitions?: number;
   batchSizes?: number[]; // Per batch-compare
   parallelBatches?: number; // Per parallel test
+}
+
+interface TestError {
+  type: ErrorCategory;
+  message: string;
+  timestamp: string;
+  testType: string;
+  folder: string;
+  handler: string;
+}
+
+interface IMAPHealthStatus {
+  accountConnection: boolean;
+  accountConnectionTime: number;
+  folderAccess: boolean;
+  folderAccessTime: number;
+  emailRetrieval: boolean;
+  emailRetrievalTime: number;
+  overallHealth: 'healthy' | 'degraded' | 'critical';
+  issues: string[];
 }
 
 interface TestMetrics {
@@ -41,6 +63,8 @@ interface TestResult {
   metrics: TestMetrics;
   timestamp: string;
   recommendations: string[];
+  errorLog?: TestError[];
+  healthCheck?: IMAPHealthStatus;
   comparisonData?: Array<{ batchSize: number; metrics: TestMetrics }>; // Per batch-compare
   metadataComparison?: { withBody: TestMetrics; metadataOnly: TestMetrics }; // Per metadata test
 }
@@ -192,6 +216,7 @@ export function PerformanceTestSuite() {
       const times: number[] = [];
       let totalApiCalls = 1; // Già fatta una chiamata per gli UIDs
       let errorCount = 0;
+      const errorLog: TestError[] = []; // ✅ NUOVO: Error tracking
 
       if (config.testType === 'single') {
         // Test: Single Email Performance (con UIDs reali)
@@ -247,25 +272,33 @@ export function PerformanceTestSuite() {
         const batchStart = performance.now();
         
         try {
-          const { data, error: apiError } = await supabase.functions.invoke('tmwe-api-proxy', {
-            body: {
-              endpoint: '/email_message',
-              data: {
-                handler: 'get_messages',
-                folder: config.folder,
-                limit: config.batchSize || 25,
-                offset: 0
+          // ✅ NUOVO: Usa withTMWERetry
+          const { data, error: apiError } = await withTMWERetry(
+            () => supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/email_message',
+                data: {
+                  handler: 'get_messages',
+                  folder: config.folder,
+                  limit: config.batchSize || 25,
+                  offset: 0,
+                  include_attachments: false
+                },
+                requestTimeout: 30000 // ✅ NUOVO
               }
+            }),
+            'get_messages',
+            (attempt) => {
+              setLiveMetrics(prev => ({
+                ...prev,
+                apiCalls: prev.apiCalls + 1
+              }));
             }
-          });
+          );
 
           totalApiCalls++;
           const batchTime = performance.now() - batchStart;
           times.push(batchTime);
-
-          if (apiError) {
-            errorCount++;
-          }
 
           // Parsing robusto per batch
           const batchMessages = data?.messages || data?.emails || data?.data?.messages || data?.data?.emails || [];
@@ -274,6 +307,15 @@ export function PerformanceTestSuite() {
           
           if (apiError || actualEmailCount === 0) {
             errorCount++;
+            // ✅ NUOVO: Track error
+            errorLog.push({
+              type: categorizeError(apiError),
+              message: apiError?.message || 'No emails retrieved',
+              timestamp: new Date().toISOString(),
+              testType: config.testType,
+              folder: config.folder,
+              handler: 'get_messages'
+            });
           }
 
           setLiveMetrics({
@@ -288,6 +330,15 @@ export function PerformanceTestSuite() {
         } catch (err) {
           errorCount++;
           console.error('❌ [PERF TEST] Batch request failed:', err);
+          // ✅ NUOVO: Track error
+          errorLog.push({
+            type: categorizeError(err),
+            message: err instanceof Error ? err.message : String(err),
+            timestamp: new Date().toISOString(),
+            testType: config.testType,
+            folder: config.folder,
+            handler: 'get_messages'
+          });
         }
 
       } else if (config.testType === 'batch-compare') {
@@ -557,6 +608,157 @@ export function PerformanceTestSuite() {
         setResult(testResult);
         setIsRunning(false);
         return;
+      
+      } else if (config.testType === 'imap-health') {
+        // ✅ NUOVO: Test IMAP Health Check
+        console.log('🏥 [PERF TEST] IMAP Health Check');
+        
+        const healthStatus: IMAPHealthStatus = {
+          accountConnection: false,
+          accountConnectionTime: 0,
+          folderAccess: false,
+          folderAccessTime: 0,
+          emailRetrieval: false,
+          emailRetrievalTime: 0,
+          overallHealth: 'critical',
+          issues: []
+        };
+        
+        // Test 1: Account Connection
+        try {
+          const t1 = performance.now();
+          await withTMWERetry(
+            () => supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/email_account',
+                data: { handler: 'get_account_info' },
+                requestTimeout: 10000
+              }
+            }),
+            'get_account_info'
+          );
+          healthStatus.accountConnectionTime = performance.now() - t1;
+          healthStatus.accountConnection = true;
+          console.log('✅ Account connection: OK');
+        } catch (err: any) {
+          healthStatus.issues.push(`Account connection error: ${err.message}`);
+          errorLog.push({
+            type: categorizeError(err),
+            message: err.message,
+            timestamp: new Date().toISOString(),
+            testType: 'imap-health',
+            folder: 'N/A',
+            handler: 'get_account_info'
+          });
+        }
+        
+        setProgress(33);
+        
+        // Test 2: Folder Access
+        try {
+          const t2 = performance.now();
+          await withTMWERetry(
+            () => supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/email_folder',
+                data: { handler: 'get_folders' },
+                requestTimeout: 15000
+              }
+            }),
+            'get_folders'
+          );
+          healthStatus.folderAccessTime = performance.now() - t2;
+          healthStatus.folderAccess = true;
+          console.log('✅ Folder access: OK');
+        } catch (err: any) {
+          healthStatus.issues.push(`Folder access error: ${err.message}`);
+          errorLog.push({
+            type: categorizeError(err),
+            message: err.message,
+            timestamp: new Date().toISOString(),
+            testType: 'imap-health',
+            folder: 'N/A',
+            handler: 'get_folders'
+          });
+        }
+        
+        setProgress(66);
+        
+        // Test 3: Email Retrieval
+        try {
+          const t3 = performance.now();
+          await withTMWERetry(
+            () => supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/email_message',
+                data: {
+                  handler: 'get_messages',
+                  folder: 'INBOX',
+                  limit: 1,
+                  offset: 0,
+                  include_attachments: false
+                },
+                requestTimeout: 20000
+              }
+            }),
+            'get_messages'
+          );
+          healthStatus.emailRetrievalTime = performance.now() - t3;
+          healthStatus.emailRetrieval = true;
+          console.log('✅ Email retrieval: OK');
+        } catch (err: any) {
+          healthStatus.issues.push(`Email retrieval error: ${err.message}`);
+          errorLog.push({
+            type: categorizeError(err),
+            message: err.message,
+            timestamp: new Date().toISOString(),
+            testType: 'imap-health',
+            folder: 'INBOX',
+            handler: 'get_messages'
+          });
+        }
+        
+        setProgress(100);
+        
+        // Calcola overall health
+        const healthScore = 
+          (healthStatus.accountConnection ? 1 : 0) +
+          (healthStatus.folderAccess ? 1 : 0) +
+          (healthStatus.emailRetrieval ? 1 : 0);
+        
+        if (healthScore === 3) healthStatus.overallHealth = 'healthy';
+        else if (healthScore >= 2) healthStatus.overallHealth = 'degraded';
+        else healthStatus.overallHealth = 'critical';
+        
+        console.log(`🏥 Health Status: ${healthStatus.overallHealth.toUpperCase()}`);
+        
+        const healthTestResult: TestResult = {
+          config,
+          metrics: {
+            totalTime: healthStatus.accountConnectionTime + healthStatus.folderAccessTime + healthStatus.emailRetrievalTime,
+            avgTimePerEmail: 0,
+            minTime: 0,
+            maxTime: 0,
+            throughput: 0,
+            apiCalls: 3,
+            errors: errorLog.length,
+            successRate: (healthScore / 3) * 100
+          },
+          timestamp: new Date().toISOString(),
+          recommendations: [
+            healthStatus.overallHealth === 'healthy' ? '✅ IMAP server is healthy' : '⚠️ IMAP server has issues',
+            ...healthStatus.issues.map(i => `❌ ${i}`),
+            healthStatus.accountConnectionTime > 5000 ? '⚠️ Account connection is slow (>5s)' : '',
+            healthStatus.folderAccessTime > 10000 ? '⚠️ Folder access is slow (>10s)' : '',
+            healthStatus.emailRetrievalTime > 15000 ? '⚠️ Email retrieval is slow (>15s)' : ''
+          ].filter(Boolean),
+          errorLog,
+          healthCheck: healthStatus
+        };
+        
+        setResult(healthTestResult);
+        setIsRunning(false);
+        return;
       }
 
       const totalTime = performance.now() - startTime;
@@ -589,11 +791,23 @@ export function PerformanceTestSuite() {
         config,
         metrics,
         timestamp: new Date().toISOString(),
-        recommendations
+        recommendations,
+        errorLog // ✅ NUOVO: Include error log
       };
 
       setResult(testResult);
       console.log('✅ [PERF TEST] Test completed:', testResult);
+      
+      // ✅ NUOVO: Log performance metrics
+      await logPerformanceMetrics({
+        test_type: config.testType,
+        folder: config.folder,
+        batch_size: config.batchSize || 25,
+        throughput: metrics.throughput,
+        success_rate: metrics.successRate,
+        avg_time_per_email: metrics.avgTimePerEmail,
+        errors: metrics.errors
+      });
 
     } catch (err: any) {
       setError(`Test fallito: ${err.message}`);
@@ -692,6 +906,7 @@ export function PerformanceTestSuite() {
                   <SelectItem value="batch-compare">📊 Batch Size Comparison</SelectItem>
                   <SelectItem value="light-vs-full">⚡ Light vs Full Body</SelectItem>
                   <SelectItem value="parallel">🔄 Parallel Download</SelectItem>
+                  <SelectItem value="imap-health">🏥 IMAP Health Check</SelectItem>
                 </SelectContent>
               </Select>
             </div>

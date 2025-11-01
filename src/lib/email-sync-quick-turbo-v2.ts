@@ -12,6 +12,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { emailMessageApi } from "@/lib/tmwe-api-integrated";
+import { withTMWERetry } from "@/lib/api-retry-advanced";
+import { ParallelDownloadController } from "@/lib/parallel-download-controller";
 import { 
   getFolderCacheV2, 
   saveFolderCacheV2, 
@@ -78,16 +80,20 @@ const quickFetchWithTimeout = async (
 };
 
 const getQuickFolderUids = async (folderName: string): Promise<string[]> => {
-  const response = await supabase.functions.invoke('tmwe-api-proxy', {
-    body: {
-      endpoint: '/email_message',
-      data: { 
-        handler: 'get_messages',
-        folder: folderName,
-        limit: 2000
+  const response = await withTMWERetry(
+    () => supabase.functions.invoke('tmwe-api-proxy', {
+      body: {
+        endpoint: '/email_message',
+        data: { 
+          handler: 'get_messages',
+          folder: folderName,
+          limit: 2000
+        },
+        requestTimeout: 60000
       }
-    }
-  });
+    }),
+    `get_folder_uids_${folderName}`
+  );
 
   if (response.error) throw response.error;
   
@@ -373,52 +379,72 @@ export class QuickEmailSyncerTurboV2 {
   /**
    * ✨ TURBO V2: Calcola batch size ottimale basato su dimensione folder
    */
-  private calculateOptimalBatchSize(totalEmails: number): number {
-    if (totalEmails < 50) return 50;      // Folder piccole → aggressivo
+  private calculateOptimalBatchSize(totalEmails: number, folderName: string): number {
+    // Cartelle speciali (Trash, Spam) → più conservativo
+    if (folderName === 'Trash' || folderName === 'Spam' || folderName === 'Junk') {
+      return 10;
+    }
+    
+    if (totalEmails < 50) return 50;
     if (totalEmails < 200) return 35;
-    if (totalEmails < 1000) return 30;
-    return 20;  // Folder grandi → conservativo (evita timeout)
+    if (totalEmails < 1000) return 25;
+    if (totalEmails < 5000) return 15;
+    return 10;
+  }
+
+  private downloadController: ParallelDownloadController;
+
+  constructor(options: QuickSyncOptions) {
+    this.options = {
+      batchSize: 30,
+      maxRetries: 2,
+      timeout: 60000,
+      onProgress: () => {},
+      onComplete: () => {},
+      onError: () => {},
+      ...options
+    };
+
+    this.downloadController = new ParallelDownloadController(5, 200);
+
+    this.progress = {
+      status: 'idle',
+      currentFolder: '',
+      foldersToSync: options.folders,
+      completedFolders: [],
+      totalEmails: 0,
+      downloadedCount: 0,
+      failedCount: 0,
+      speed: 0,
+      estimatedTimeRemaining: 0
+    };
+
+    this.stats = {
+      totalEmails: 0,
+      downloaded: 0,
+      skipped: 0,
+      failed: 0,
+      duration: 0,
+      avgSpeed: 0,
+      folders: {}
+    };
+
+    this.metrics = {
+      phase1_uid_fetch_ms: 0,
+      phase2_duplicate_check_ms: 0,
+      phase3_download_ms: 0,
+      phase4_insert_ms: 0,
+      cache_hit_rate: 0,
+      cache_size_bytes: 0,
+      avg_batch_size: 0,
+      rpc_insert_used: false
+    };
   }
 
   async start() {
     try {
       this.startTime = Date.now();
       this.progress.status = 'running';
-      
-      console.log('\n🚀 [TURBO V2] Starting Quick Email Sync...');
-      console.log(`📂 Folders: ${this.options.folders.join(', ')}`);
-      
-      // Pulisci cache vecchia
-      cleanOldCacheV2(this.options.userEmail);
-      
-      // Priority queue: INBOX first, poi resto
-      const priorityFolders = [...this.options.folders].sort((a, b) => {
-        if (a === 'INBOX') return -1;
-        if (b === 'INBOX') return 1;
-        return 0;
-      });
-      
-      for (const folder of priorityFolders) {
-        if (this.shouldStop) {
-          console.log('🛑 [TURBO V2] Sync stopped by user');
-          break;
-        }
-        
-        while (this.isPaused) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        await this.syncQuickFolderV2(folder, this.options.userEmail);
-      }
-      
-      this.finalizeV2();
-      
-    } catch (error) {
-      console.error('❌ [TURBO V2] Sync error:', error);
-      this.progress.status = 'error';
-      this.options.onError(error as Error);
-    }
-  }
 
   private async syncQuickFolderV2(folderName: string, userEmail: string) {
     console.log(`\n📂 [TURBO V2] Syncing folder: ${folderName}`);
@@ -455,7 +481,7 @@ export class QuickEmailSyncerTurboV2 {
       }
       
       // ✨ BATCH SIZE DINAMICO
-      const batchSize = this.calculateOptimalBatchSize(newUids.length);
+      const batchSize = this.calculateOptimalBatchSize(newUids.length, folderName);
       console.log(`📊 [TURBO V2] ${folderName}: using batch size ${batchSize}`);
       this.metrics.avg_batch_size = (this.metrics.avg_batch_size + batchSize) / 2;
       

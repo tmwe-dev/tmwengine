@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Menu, LayoutGrid, MessageSquare, ChevronLeft, ChevronRight, Bug, X, Keyboard, FileText, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCRMLayout } from '@/contexts/CRMLayoutContext';
 import { RadioSidebar } from '@/components/radio-chat/RadioSidebar';
 import { RadioConversationsSidebar } from '@/components/radio-chat/RadioConversationsSidebar';
 import { RadioMessageInput } from '@/components/radio-chat/RadioMessageInput';
@@ -50,6 +51,7 @@ const RadioChat = () => {
 };
 
 const RadioChatContent = () => {
+  const { menuOpen: crmMenuOpen, setMenuOpen: setCrmMenuOpen } = useCRMLayout();
   const [sidebarOpen, setSidebarOpen] = useState(true); // ✅ Open by default to show chat selector
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -338,6 +340,8 @@ const RadioChatContent = () => {
     await loadMessages(conversationId);
     loadCachedPrompts(conversationId);
     setSidebarOpen(false);
+    // Chiudi menu CRM se è aperto
+    if (crmMenuOpen) setCrmMenuOpen(false);
   };
   
   // Handle new conversation (Pattern identico ChatLaboratory)
@@ -375,6 +379,8 @@ const RadioChatContent = () => {
       loadCachedPrompts(newConv.id);
       await loadConversations();
       setSidebarOpen(false);
+      // Chiudi menu CRM se è aperto
+      if (crmMenuOpen) setCrmMenuOpen(false);
       
       toast({
         title: "✨ Nuova conversazione",
@@ -680,6 +686,13 @@ const RadioChatContent = () => {
   useEffect(() => {
     localStorage.setItem('radio-view-mode', viewMode);
   }, [viewMode]);
+  
+  // 🔒 Chiusura reciproca: se apro CRM menu, chiudo sidebar RadioChat
+  useEffect(() => {
+    if (crmMenuOpen && sidebarOpen) {
+      setSidebarOpen(false);
+    }
+  }, [crmMenuOpen]);
   
   
   // Persist carousel zoom changes to localStorage with debouncing
@@ -1141,7 +1154,11 @@ const RadioChatContent = () => {
           ) : (
             <RadioSidebar 
               isOpen={true}
-              onClose={() => setSidebarOpen(false)} 
+              onClose={() => {
+                setSidebarOpen(false);
+                // Chiudi menu CRM se è aperto
+                if (crmMenuOpen) setCrmMenuOpen(false);
+              }}
               conversationId={currentConversationId}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
@@ -1161,7 +1178,12 @@ const RadioChatContent = () => {
           sidebarOpen && "translate-x-[320px]"
         )}
         isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onToggle={() => {
+          const newState = !sidebarOpen;
+          setSidebarOpen(newState);
+          // Se apro la sidebar, chiudo il menu CRM
+          if (newState && crmMenuOpen) setCrmMenuOpen(false);
+        }}
         isAudioEnabled={isAudioEnabled}
         isAutoAdvanceEnabled={isAutoAdvanceEnabled}
       />
@@ -1236,7 +1258,7 @@ const RadioChatContent = () => {
               </div>
               
               {/* 🎛️ Controlli Zoom e Vertical Offset - POSIZIONE SINISTRA */}
-              {!sidebarOpen && (
+              {!sidebarOpen && !crmMenuOpen && (
                 <FloatingZoomControl
                   zoom={carouselZoom}
                   onZoomChange={setCarouselZoom}

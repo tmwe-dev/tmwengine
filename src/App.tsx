@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { GlobalCallHandler } from "@/components/GlobalCallHandler";
 import { GlobalVideoCallHandler } from "@/components/GlobalVideoCallHandler";
 import { GlobalAICanvasProvider } from "@/contexts/GlobalAICanvasContext";
+import { CRMLayoutProvider } from "@/contexts/CRMLayoutContext";
 import '@/i18n/config';
 
 import Auth from "./pages/Auth";
@@ -146,13 +147,14 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TMWEAuthProvider>
         <GlobalAICanvasProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-            <GlobalCallHandler>
-              <GlobalVideoCallHandler />
-              <Routes>
+          <CRMLayoutProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+              <GlobalCallHandler>
+                <GlobalVideoCallHandler />
+                <Routes>
             <Route path="/" element={
               <ProtectedRoute>
                 <CRMLayout><ImportTemplates /></CRMLayout>
@@ -399,6 +401,7 @@ const App = () => {
             </GlobalCallHandler>
           </BrowserRouter>
         </TooltipProvider>
+          </CRMLayoutProvider>
       </GlobalAICanvasProvider>
     </TMWEAuthProvider>
   </QueryClientProvider>

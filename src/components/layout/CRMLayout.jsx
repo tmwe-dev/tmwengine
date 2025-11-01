@@ -67,11 +67,12 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from '@/components/ui/collapsible';
+import { useCRMLayout } from '@/contexts/CRMLayoutContext';
 
 const CRMLayout = ({ children }) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { menuOpen, setMenuOpen } = useCRMLayout();
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -121,7 +122,7 @@ const CRMLayout = ({ children }) => {
 
   // Chiudi automaticamente la sidebar quando cambia la rotta
   useEffect(() => {
-    setSidebarOpen(false);
+    setMenuOpen(false);
   }, [location.pathname]);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
@@ -190,10 +191,10 @@ const CRMLayout = ({ children }) => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={() => setMenuOpen(!menuOpen)}
             className="shrink-0"
           >
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
           {/* Page Title */}
@@ -423,12 +424,12 @@ const CRMLayout = ({ children }) => {
       <div className={cn("flex", isMobile ? "h-[calc(100vh-6rem)]" : "h-[calc(100vh-7rem)]")}>
         {/* Sidebar */}
         <aside className={`bg-card-transparent border-r border-border transition-all duration-300 ${
-          sidebarOpen ? 'w-64' : 'w-0 lg:w-16'
+          menuOpen ? 'w-64' : 'w-0 lg:w-16'
         } overflow-hidden`}>
           <nav className="p-4 space-y-2">
             {/* Gruppi collassabili */}
             {navigationGroups.map((group) => {
-              const isCollapsed = !sidebarOpen && !isMobile;
+              const isCollapsed = !menuOpen && !isMobile;
               const isGroupOpen = groupStates[group.name];
               const hasActiveItem = group.items.some(item => isActive(item.href));
               

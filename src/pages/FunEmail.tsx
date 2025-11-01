@@ -22,8 +22,6 @@ import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartIn
 import { GradientBackground } from '@/components/design-system';
 import { cn } from '@/lib/utils';
 import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
-import { UnifiedSidebarBadge } from '@/components/email/smart-inbox/UnifiedSidebarBadge';
-import { Inbox, Sparkles } from 'lucide-react';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();
@@ -42,8 +40,6 @@ const FunEmail = () => {
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const [selectedSenderForAI, setSelectedSenderForAI] = useState<string | null>(null);
   const [categorySidebarOpen, setCategorySidebarOpen] = useState(false);
-  const [menuSidebarOpen, setMenuSidebarOpen] = useState(false);
-  const [showBadges, setShowBadges] = useState(false);
 
   // Sincronizza currentView con query param "view" dal CRMLayout
   useEffect(() => {
@@ -68,42 +64,6 @@ const FunEmail = () => {
     setAiSidebarOpen(false);
     setSelectedSenderForAI(null);
   }, [currentView]);
-
-  // Handle proximity detection for badges (40px)
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const isNear = e.clientX < 40;
-      setShowBadges(isNear);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  // Close other sidebars when one opens
-  const handleCategorySidebarChange = (open: boolean) => {
-    setCategorySidebarOpen(open);
-    if (open) {
-      setAiSidebarOpen(false);
-      setMenuSidebarOpen(false);
-    }
-  };
-
-  const handleToggleAISidebar = () => {
-    setAiSidebarOpen(!aiSidebarOpen);
-    if (!aiSidebarOpen) {
-      setCategorySidebarOpen(false);
-      setMenuSidebarOpen(false);
-    }
-  };
-
-  const handleToggleMenuSidebar = () => {
-    setMenuSidebarOpen(!menuSidebarOpen);
-    if (!menuSidebarOpen) {
-      setCategorySidebarOpen(false);
-      setAiSidebarOpen(false);
-    }
-  };
 
   // ✅ Query email dal DB locale per la cartella selezionata
   const {
@@ -177,6 +137,10 @@ const FunEmail = () => {
     enabled: !!selectedEmailId,
   });
 
+  // Handler AI Sidebar
+  const handleToggleAISidebar = () => {
+    setAiSidebarOpen(prev => !prev);
+  };
 
   const openAISidebarForSender = (senderEmail: string) => {
     setSelectedSenderForAI(senderEmail);
@@ -246,32 +210,8 @@ const FunEmail = () => {
       actions={null}
     >
       <div className="relative w-full min-h-screen">
-        {/* Unified Sidebar Badges - visible on proximity */}
-        {showBadges && currentView === 'inbox' && (
-          <>
-            <UnifiedSidebarBadge
-              icon={Menu}
-              onClick={handleToggleMenuSidebar}
-              isActive={menuSidebarOpen}
-              position="top"
-            />
-            <UnifiedSidebarBadge
-              icon={Inbox}
-              onClick={() => setCategorySidebarOpen(!categorySidebarOpen)}
-              isActive={categorySidebarOpen}
-              position="middle"
-            />
-            <UnifiedSidebarBadge
-              icon={Sparkles}
-              onClick={handleToggleAISidebar}
-              isActive={aiSidebarOpen}
-              position="bottom"
-            />
-          </>
-        )}
-
         {/* Hamburger Button - nascosto in modalità debug/admin e management */}
-        {!['quick-download', 'integrity', 'debugger', 'management', 'inbox'].includes(currentView) && (
+        {!['quick-download', 'integrity', 'debugger', 'management'].includes(currentView) && (
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className={cn(
@@ -368,54 +308,14 @@ const FunEmail = () => {
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
               <SmartInboxTabIntelligent 
                 onOpenAISidebar={openAISidebarForSender}
-                onCategorySidebarChange={handleCategorySidebarChange}
+                onCategorySidebarChange={setCategorySidebarOpen}
               />
             </GradientBackground>
           ) : null}
         </div>
 
-        {/* Menu Sidebar (inbox view) */}
-        {menuSidebarOpen && currentView === 'inbox' && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-transparent z-[35]"
-              onClick={() => setMenuSidebarOpen(false)}
-            />
-            
-            {/* Sidebar */}
-            <div 
-              className="fixed top-0 left-0 h-full w-80 backdrop-blur-lg border-r border-border/50 z-40 shadow-2xl overflow-y-auto"
-              style={{
-                background: 'linear-gradient(to right, hsl(var(--background)) 0%, transparent 100%)'
-              }}
-            >
-              <div className="p-4 border-b border-border/50 flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Menu</h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setMenuSidebarOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <EmailSidebar
-                selectedFolder={selectedFolder}
-                onFolderSelect={(folder) => {
-                  setSelectedFolder(folder);
-                  setMenuSidebarOpen(false);
-                }}
-                onCompose={() => {}}
-                onSync={() => {}}
-                onClose={() => setMenuSidebarOpen(false)}
-              />
-            </div>
-          </>
-        )}
-
-        {/* Sidebar Overlay (other views) */}
-        {sidebarOpen && currentView !== 'inbox' && (
+        {/* Sidebar Overlay */}
+        {sidebarOpen && (
           <>
             {/* Backdrop */}
             <div
@@ -482,6 +382,7 @@ const FunEmail = () => {
           onToggle={handleToggleAISidebar}
           senderEmail={selectedSenderForAI}
           onPromptCreated={handlePromptCreatedGlobal}
+          hideButton={categorySidebarOpen}
         />
       )}
 

@@ -195,6 +195,27 @@ export function AISidebarSlider({
         )}
       </div>
 
+      {/* Linguetta trigger (sempre visibile) */}
+      {!hideButton && (
+        <button
+          onClick={onToggle}
+          className={cn(
+            "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
+            "bg-primary/90 hover:bg-primary p-3 rounded-r-lg shadow-lg",
+            "transition-all duration-300",
+            isOpen && "translate-x-[500px]"
+          )}
+          aria-label="Toggle AI Assistant"
+        >
+          <Sparkles className="h-5 w-5 text-primary-foreground" />
+          <ChevronRight 
+            className={cn(
+              "h-4 w-4 text-primary-foreground transition-transform mt-1",
+              isOpen && "rotate-180"
+            )}
+          />
+        </button>
+      )}
     </>
   );
 }

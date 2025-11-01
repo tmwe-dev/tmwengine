@@ -1174,7 +1174,7 @@ const RadioChatContent = () => {
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger
         className={cn(
-          "fixed left-0 bottom-64 z-40 transition-transform duration-300",
+          "fixed left-0 top-1/2 -translate-y-1/2 z-40 transition-transform duration-300",
           sidebarOpen && "translate-x-[320px]"
         )}
         isOpen={sidebarOpen}
@@ -1210,7 +1210,7 @@ const RadioChatContent = () => {
       {/* Mic Icon - Between FileText and Keyboard */}
       {!sidebarOpen && !crmMenuOpen && (
         <RadioMicTrigger
-          className="fixed left-0 bottom-22 z-40"
+          className="fixed left-0 bottom-20 z-40"
           isActive={showAudioControls}
           onClick={() => setShowAudioControls(!showAudioControls)}
         />
@@ -1221,8 +1221,8 @@ const RadioChatContent = () => {
         <button
           onClick={() => setInputVisible(!inputVisible)}
           className={cn(
-            "fixed left-0 bottom-8 z-40 w-12 h-20 bg-black rounded-r-lg",
-            "flex items-center justify-center transition-all duration-300 hover:w-14"
+            "fixed left-0 bottom-8 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+            "flex items-center justify-center transition-all duration-300 hover:bg-white/5"
           )}
           aria-label="Toggle input"
         >

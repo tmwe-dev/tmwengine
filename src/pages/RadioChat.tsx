@@ -1236,13 +1236,15 @@ const RadioChatContent = () => {
               </div>
               
               {/* 🎛️ Controlli Zoom e Vertical Offset - POSIZIONE SINISTRA */}
-              <FloatingZoomControl
-                zoom={carouselZoom}
-                onZoomChange={setCarouselZoom}
-                verticalOffset={carouselVerticalOffset}
-                onVerticalOffsetChange={setCarouselVerticalOffset}
-                position="left"
-              />
+              {!sidebarOpen && (
+                <FloatingZoomControl
+                  zoom={carouselZoom}
+                  onZoomChange={setCarouselZoom}
+                  verticalOffset={carouselVerticalOffset}
+                  onVerticalOffsetChange={setCarouselVerticalOffset}
+                  position="left"
+                />
+              )}
 
               {/* ✅ AREE CLICCABILI INVISIBILI (25% sinistra e destra) */}
               {aiMessages.length > 1 && (

@@ -1,10 +1,11 @@
-import { GlassCard } from '@/components/design-system/cards/GlassCard';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ClassifiedEmail } from '@/types/smart-inbox';
-import { extractCompanyName, extractInitials, getCategoryColor, getCategoryIcon, formatDate } from '@/lib/smart-inbox-utils';
+import { extractCompanyName, extractInitials, getCategoryIcon, formatDate } from '@/lib/smart-inbox-utils';
+import { getCategoryGradient, getCategoryGlow } from '@/lib/category-gradients';
 import { Paperclip, CheckCircle2, AlertCircle, Zap, ShoppingCart, FileText, Users, TrendingUp, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface SmartEmailCardIntelligentProps {
   classifiedEmail: ClassifiedEmail;
@@ -40,7 +41,6 @@ export const SmartEmailCardIntelligent = ({
   onToggleSelect 
 }: SmartEmailCardIntelligentProps) => {
   const { classification, email } = classifiedEmail;
-  const categoryColor = getCategoryColor(classification.category);
   const categoryIcon = getCategoryIcon(classification.category);
   
   const companyName = extractCompanyName(classification.sender_email);
@@ -49,14 +49,21 @@ export const SmartEmailCardIntelligent = ({
   const isVerified = classification.is_verified && classification.confidence >= 80;
   
   return (
-    <GlassCard 
-      blur="md"
-      gradient={true}
-      glossy={true}
+    <div 
       onClick={onClick}
-      className={`p-4 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/20 transition-all duration-200 ${isSelected ? 'ring-2 ring-primary' : ''}`}
+      className={cn(
+        "relative p-4 cursor-pointer transition-all duration-300 rounded-2xl",
+        "bg-gradient-to-br from-[#1c1c28]/80 via-[#23233a]/60 to-[#0e0e18]/70",
+        "backdrop-blur-md border border-white/10",
+        "hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(0,200,255,0.1)]",
+        isSelected && "ring-2 ring-primary"
+      )}
     >
-      <div className="flex gap-3">
+      {/* Diagonal light reflection */}
+      <div className="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/8 via-transparent to-transparent opacity-50" />
+      </div>
+      <div className="flex gap-3 relative z-10">
         {/* Checkbox per selezione multipla */}
         <div className="flex-shrink-0 pt-1" onClick={(e) => e.stopPropagation()}>
           <Checkbox 
@@ -65,16 +72,18 @@ export const SmartEmailCardIntelligent = ({
           />
         </div>
 
-        {/* Avatar mittente */}
+        {/* Avatar mittente con glassmorphism wrapper */}
         <div className="flex-shrink-0" onClick={onClick}>
-          <Avatar className="h-12 w-12 border-2 border-white/20">
-            {classification.sender_logo_url ? (
-              <AvatarImage src={classification.sender_logo_url} alt={companyName} />
-            ) : null}
-            <AvatarFallback className="text-xs font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <div className="rounded-full bg-white/10 border border-white/20 p-1">
+            <Avatar className="h-12 w-12">
+              {classification.sender_logo_url ? (
+                <AvatarImage src={classification.sender_logo_url} alt={companyName} />
+              ) : null}
+              <AvatarFallback className="text-xs font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </div>
         </div>
 
         {/* Contenuto email */}
@@ -82,42 +91,41 @@ export const SmartEmailCardIntelligent = ({
           <div className="flex items-start justify-between gap-2 mb-1">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-sm truncate">{companyName}</h3>
+                <h3 className="font-semibold text-sm truncate text-white/90">{companyName}</h3>
                 {isVerified ? (
-                  <Badge variant="outline" className="text-xs">
-                    <CheckCircle2 className="h-3 w-3 mr-1 text-green-600" />
+                  <Badge className="text-xs bg-white/10 border border-white/20 text-white/80 rounded-full backdrop-blur-sm shadow-sm">
+                    <CheckCircle2 className="h-3 w-3 mr-1 text-green-400" />
                     Verificata
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-xs">
-                    <AlertCircle className="h-3 w-3 mr-1 text-orange-500" />
+                  <Badge className="text-xs bg-white/10 border border-white/20 text-white/80 rounded-full backdrop-blur-sm shadow-sm">
+                    <AlertCircle className="h-3 w-3 mr-1 text-orange-400" />
                     Da Verificare
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground truncate">
+              <p className="text-xs text-white/70 truncate">
                 {classification.sender_email}
               </p>
             </div>
             
             <div className="flex items-center gap-2 flex-shrink-0">
               {email.has_attachments && (
-                <Paperclip className="h-4 w-4 text-muted-foreground" />
+                <Paperclip className="h-4 w-4 text-white/60" />
               )}
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
+              <span className="text-xs text-white/60 whitespace-nowrap">
                 {formatDate(email.date)}
               </span>
             </div>
           </div>
 
-          {/* Categoria */}
+          {/* Categoria con gradient glassmorphism */}
           <Badge 
-            className="mb-2 rounded-full px-3 py-1.5 flex items-center gap-2"
-            style={{ 
-              backgroundColor: categoryColor, 
-              color: 'white',
-              borderColor: categoryColor
-            }}
+            className={cn(
+              "mb-2 rounded-full px-3 py-1 flex items-center gap-2 text-white border-0",
+              getCategoryGradient(classification.category),
+              getCategoryGlow(classification.category)
+            )}
           >
             {getCategoryLucideIcon(classification.category)}
             <span className="text-base">{categoryIcon}</span>
@@ -131,16 +139,16 @@ export const SmartEmailCardIntelligent = ({
 
           {/* Riassunto AI */}
           {classification.ai_summary && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+            <p className="text-sm text-white/85 line-clamp-2 mb-1.5">
               {classification.ai_summary}
             </p>
           )}
 
-          {/* Keywords */}
+          {/* Keywords con pill-style glassmorphism */}
           {classification.keywords && classification.keywords.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-2">
               {classification.keywords.slice(0, 3).map((keyword, idx) => (
-                <Badge key={idx} variant="secondary" className="text-xs">
+                <Badge key={idx} className="text-xs bg-white/10 border border-white/15 text-white/90 rounded-full px-2 py-0.5">
                   {keyword}
                 </Badge>
               ))}
@@ -148,6 +156,6 @@ export const SmartEmailCardIntelligent = ({
           )}
         </div>
       </div>
-    </GlassCard>
+    </div>
   );
 };

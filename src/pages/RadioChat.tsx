@@ -1118,17 +1118,9 @@ const RadioChatContent = () => {
   }, []);
 
   // ✅ Calcola visibilità icone laterali
-  // Le icone devono rimanere visibili quando:
-  // - Mouse vicino al bordo sinistro
-  // - Sidebar/menu aperti
-  // - Il rispettivo pannello è aperto (input, messaggio, audio)
-  const shouldShowLeftIcons = 
-    isNearLeftEdge || 
-    sidebarOpen || 
-    crmMenuOpen || 
-    inputVisible || 
-    messageViewVisible || 
-    showAudioControls;
+  // Visibilità generale: mouse vicino bordo sinistro O sidebar/menu aperti
+  // Ogni icona gestisce individualmente la propria visibilità quando il suo pannello è attivo
+  const shouldShowLeftIcons = isNearLeftEdge || sidebarOpen || crmMenuOpen;
 
   return (
     <div className="relative h-full">

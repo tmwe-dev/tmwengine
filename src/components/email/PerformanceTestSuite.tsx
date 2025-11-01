@@ -269,11 +269,16 @@ export function PerformanceTestSuite() {
 
           // Parsing robusto per batch
           const batchMessages = data?.messages || data?.emails || data?.data?.messages || data?.data?.emails || [];
-          const emailCount = Array.isArray(batchMessages) ? batchMessages.length : (config.batchSize || 25);
+          const actualEmailCount = Array.isArray(batchMessages) ? batchMessages.length : 0;
+          const batchSuccess = !apiError && actualEmailCount > 0;
+          
+          if (apiError || actualEmailCount === 0) {
+            errorCount++;
+          }
 
           setLiveMetrics({
-            emailsProcessed: emailCount,
-            currentSpeed: (emailCount / batchTime) * 1000,
+            emailsProcessed: actualEmailCount,
+            currentSpeed: actualEmailCount > 0 ? (actualEmailCount / batchTime) * 1000 : 0,
             elapsed: batchTime / 1000,
             apiCalls: totalApiCalls
           });
@@ -319,25 +324,31 @@ export function PerformanceTestSuite() {
 
             // Parsing robusto per batch comparison
             const compareMessages = data?.messages || data?.emails || data?.data?.messages || data?.data?.emails || [];
-            const emailCount = Array.isArray(compareMessages) ? compareMessages.length : batchSize;
-            const throughput = (emailCount / batchTime) * 1000;
+            const actualEmailCount = Array.isArray(compareMessages) ? compareMessages.length : 0;
+            const batchSuccess = !apiError && actualEmailCount > 0;
+            
+            if (!batchSuccess) {
+              batchErrors++;
+            }
+
+            const throughput = actualEmailCount > 0 ? (actualEmailCount / batchTime) * 1000 : 0;
 
             comparisonData.push({
               batchSize,
               metrics: {
                 totalTime: Math.round(batchTime),
-                avgTimePerEmail: Math.round(batchTime / emailCount),
+                avgTimePerEmail: actualEmailCount > 0 ? Math.round(batchTime / actualEmailCount) : 0,
                 minTime: Math.round(batchTime),
                 maxTime: Math.round(batchTime),
                 throughput: Math.round(throughput * 100) / 100,
                 apiCalls: 1,
                 errors: batchErrors,
-                successRate: batchErrors === 0 ? 100 : 0
+                successRate: batchSuccess ? 100 : 0
               }
             });
 
             setLiveMetrics({
-              emailsProcessed: emailCount * (i + 1),
+              emailsProcessed: actualEmailCount * (i + 1),
               currentSpeed: throughput,
               elapsed: (performance.now() - startTime) / 1000,
               apiCalls: totalApiCalls
@@ -430,29 +441,35 @@ export function PerformanceTestSuite() {
 
         setProgress(100);
 
-        const emailCount = config.batchSize || 25;
+        // Verifica messaggi effettivamente ricevuti
+        const lightMessages = lightData?.messages || [];
+        const fullMessages = fullData?.messages || [];
+        const lightSuccess = !lightError && lightMessages.length > 0;
+        const fullSuccess = !fullError && fullMessages.length > 0;
+        const actualEmailCount = Math.max(lightMessages.length, fullMessages.length) || (config.batchSize || 25);
+
         const speedup = fullTime / lightTime;
 
         const lightMetrics: TestMetrics = {
           totalTime: Math.round(lightTime),
-          avgTimePerEmail: Math.round(lightTime / emailCount),
+          avgTimePerEmail: Math.round(lightTime / actualEmailCount),
           minTime: Math.round(lightTime),
           maxTime: Math.round(lightTime),
-          throughput: Math.round((emailCount / lightTime) * 1000 * 100) / 100,
+          throughput: Math.round((actualEmailCount / lightTime) * 1000 * 100) / 100,
           apiCalls: 1,
-          errors: lightError ? 1 : 0,
-          successRate: lightError ? 0 : 100
+          errors: lightSuccess ? 0 : 1,
+          successRate: lightSuccess ? 100 : 0
         };
 
         const fullMetrics: TestMetrics = {
           totalTime: Math.round(fullTime),
-          avgTimePerEmail: Math.round(fullTime / emailCount),
+          avgTimePerEmail: Math.round(fullTime / actualEmailCount),
           minTime: Math.round(fullTime),
           maxTime: Math.round(fullTime),
-          throughput: Math.round((emailCount / fullTime) * 1000 * 100) / 100,
+          throughput: Math.round((actualEmailCount / fullTime) * 1000 * 100) / 100,
           apiCalls: 1,
-          errors: fullError ? 1 : 0,
-          successRate: fullError ? 0 : 100
+          errors: fullSuccess ? 0 : 1,
+          successRate: fullSuccess ? 100 : 0
         };
 
         const testResult: TestResult = {
@@ -505,25 +522,33 @@ export function PerformanceTestSuite() {
         const results = await Promise.all(promises);
         const parallelTime = performance.now() - parallelStart;
 
-        const successCount = results.filter(r => !r.error && r.data?.success).length;
-        const totalEmails = batchSize * parallelBatches;
+        // Calcola success verificando messaggi ricevuti
+        const successCount = results.filter(r => {
+          const messages = r.data?.messages || [];
+          return !r.error && messages.length > 0;
+        }).length;
+        
+        // Conta email effettivamente ricevute
+        const actualEmailCount = results.reduce((sum, r) => {
+          return sum + (r.data?.messages?.length || 0);
+        }, 0);
 
         const testResult: TestResult = {
           config,
           metrics: {
             totalTime: Math.round(parallelTime),
-            avgTimePerEmail: Math.round(parallelTime / totalEmails),
+            avgTimePerEmail: actualEmailCount > 0 ? Math.round(parallelTime / actualEmailCount) : 0,
             minTime: Math.round(parallelTime),
             maxTime: Math.round(parallelTime),
-            throughput: Math.round((totalEmails / parallelTime) * 1000 * 100) / 100,
+            throughput: actualEmailCount > 0 ? Math.round((actualEmailCount / parallelTime) * 1000 * 100) / 100 : 0,
             apiCalls: parallelBatches,
             errors: parallelBatches - successCount,
             successRate: (successCount / parallelBatches) * 100
           },
           timestamp: new Date().toISOString(),
           recommendations: [
-            `⚡ Download parallelo di ${parallelBatches} batch (${totalEmails} email totali)`,
-            `🚀 Throughput: ${Math.round((totalEmails / parallelTime) * 1000 * 100) / 100} email/sec`,
+            `⚡ Download parallelo di ${parallelBatches} batch (${actualEmailCount} email totali)`,
+            `🚀 Throughput: ${actualEmailCount > 0 ? Math.round((actualEmailCount / parallelTime) * 1000 * 100) / 100 : 0} email/sec`,
             parallelBatches < 5 ? '💡 Prova aumentare il parallelismo a 4-5 batch' : '✅ Buon livello di parallelismo',
             successCount === parallelBatches ? '✅ Tutti i batch completati con successo' : '⚠️ Alcuni batch falliti, verifica limiti API'
           ]

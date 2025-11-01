@@ -60,6 +60,29 @@ export const SmartInboxTabIntelligent = ({
     },
   });
 
+  // Fetch available folders
+  const { data: availableFolders = [] } = useQuery({
+    queryKey: ['available-folders', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      
+      const { data, error } = await supabase
+        .from('email_messages')
+        .select('cartella')
+        .eq('user_email', userEmail)
+        .not('cartella', 'is', null);
+      
+      if (error) {
+        console.error('Error fetching folders:', error);
+        return [];
+      }
+      
+      const uniqueFolders = Array.from(new Set(data.map(d => d.cartella)));
+      return uniqueFolders.sort();
+    },
+    enabled: !!userEmail
+  });
+
   // ✅ Fetch email classificate con JOIN a email_messages
   const { data: classifiedEmails = [], isLoading, refetch } = useQuery({
     queryKey: ['smart-inbox-intelligent', userEmail, selectedCategory, selectedFolder, unreadOnly],
@@ -329,7 +352,7 @@ export const SmartInboxTabIntelligent = ({
   };
 
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] max-w-[1800px] mx-auto w-full gap-4">
+    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] w-[95%] max-w-[1600px] mx-auto gap-4">
       {/* Header compatto - solo titolo + Classifica Nuove + Barra Azioni */}
       <SmartInboxHeaderIntelligent
         categories={categoryStats}
@@ -344,11 +367,6 @@ export const SmartInboxTabIntelligent = ({
         onArchive={handleArchiveSelected}
         onDelete={handleDeleteSelected}
         onMove={handleMoveSelected}
-        selectedFolder={selectedFolder}
-        unreadOnly={unreadOnly}
-        onFolderChange={onFolderChange}
-        onUnreadOnlyChange={onUnreadOnlyChange}
-        userEmail={userEmail}
       />
       
       {/* 🆕 Layout 2 Colonne: Lista Email | Dettaglio + Sidebar Collassabile */}
@@ -361,6 +379,11 @@ export const SmartInboxTabIntelligent = ({
           unverifiedCount={unverifiedCount}
           isOpen={categoriesOpen}
           onOpenChange={onCategoriesOpenChange}
+          selectedFolder={selectedFolder}
+          unreadOnly={unreadOnly}
+          onFolderChange={onFolderChange}
+          onUnreadOnlyChange={onUnreadOnlyChange}
+          availableFolders={availableFolders}
         />
 
         {/* Colonna 1: Lista Email (40% width - più spazio senza sidebar fissa) */}

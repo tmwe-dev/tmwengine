@@ -58,8 +58,8 @@ export const AIAgentSelector = ({ selectedAgent, onAgentChange }: AIAgentSelecto
             "relative w-12 h-12 rounded-full overflow-hidden transition-all duration-300",
             "hover:scale-110",
             selectedAgent === agent.id 
-              ? "ring-2 ring-primary shadow-lg shadow-primary/50 scale-105" 
-              : "grayscale hover:grayscale-0 opacity-60 hover:opacity-100 hover:ring-2 hover:ring-primary/50"
+              ? "shadow-lg scale-105" 
+              : "grayscale hover:grayscale-0 opacity-60 hover:opacity-100"
           )}
           title={`${agent.name}\n${agent.description}\nModello: ${agent.model}`}
         >

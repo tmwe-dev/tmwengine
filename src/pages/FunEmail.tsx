@@ -40,6 +40,10 @@ const FunEmail = () => {
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const [selectedSenderForAI, setSelectedSenderForAI] = useState<string | null>(null);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  
+  // Smart Inbox filters
+  const [smartInboxFolder, setSmartInboxFolder] = useState('INBOX');
+  const [smartInboxUnreadOnly, setSmartInboxUnreadOnly] = useState(false);
 
   // Proximity detection con isteresi (pattern RadioChat)
   const [isNearLeftEdge, setIsNearLeftEdge] = useState(false);
@@ -383,6 +387,10 @@ const FunEmail = () => {
                 onOpenAISidebar={openAISidebarForSender}
                 categoriesOpen={categoriesOpen}
                 onCategoriesOpenChange={setCategoriesOpen}
+                selectedFolder={smartInboxFolder}
+                unreadOnly={smartInboxUnreadOnly}
+                onFolderChange={setSmartInboxFolder}
+                onUnreadOnlyChange={setSmartInboxUnreadOnly}
               />
             </GradientBackground>
           ) : null}

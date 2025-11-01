@@ -12,6 +12,8 @@ interface SmartInboxDialogProps {
 
 export const SmartInboxDialog = ({ open, onOpenChange }: SmartInboxDialogProps) => {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState('INBOX');
+  const [unreadOnly, setUnreadOnly] = useState(false);
 
   // Get current user email
   const { data: userEmail } = useQuery({
@@ -32,10 +34,18 @@ export const SmartInboxDialog = ({ open, onOpenChange }: SmartInboxDialogProps) 
         
         {/* ✅ LAZY MOUNT + SYNC GUARD */}
         {open && userEmail && (
-          <SmartInboxSyncGuard userEmail={userEmail}>
+          <SmartInboxSyncGuard 
+            userEmail={userEmail}
+            selectedFolder={selectedFolder}
+            unreadOnly={unreadOnly}
+          >
             <SmartInboxTabIntelligent 
               categoriesOpen={categoriesOpen}
               onCategoriesOpenChange={setCategoriesOpen}
+              selectedFolder={selectedFolder}
+              unreadOnly={unreadOnly}
+              onFolderChange={setSelectedFolder}
+              onUnreadOnlyChange={setUnreadOnly}
             />
           </SmartInboxSyncGuard>
         )}

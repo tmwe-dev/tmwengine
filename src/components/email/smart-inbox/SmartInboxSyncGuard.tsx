@@ -10,22 +10,30 @@ import { toast } from 'sonner';
 
 interface SmartInboxSyncGuardProps {
   userEmail: string;
+  selectedFolder: string;
+  unreadOnly: boolean;
   children: React.ReactNode;
 }
 
-export const SmartInboxSyncGuard = ({ userEmail, children }: SmartInboxSyncGuardProps) => {
+export const SmartInboxSyncGuard = ({ userEmail, selectedFolder, unreadOnly, children }: SmartInboxSyncGuardProps) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
 
   const { data: syncStatus, isLoading, refetch } = useQuery({
-    queryKey: ['smart-inbox-sync-status', userEmail],
+    queryKey: ['smart-inbox-sync-status', userEmail, selectedFolder, unreadOnly],
     queryFn: async () => {
       // Conta email nel DB locale
-      const { count: dbCount, error: dbError } = await supabase
+      let query = supabase
         .from('email_messages')
         .select('*', { count: 'exact', head: true })
         .eq('user_email', userEmail)
-        .eq('cartella', 'INBOX');
+        .eq('cartella', selectedFolder);
+
+      if (unreadOnly) {
+        query = query.eq('stato', 'nuovo');
+      }
+
+      const { count: dbCount, error: dbError } = await query;
 
       if (dbError) {
         console.error('Error counting local emails:', dbError);
@@ -56,7 +64,7 @@ export const SmartInboxSyncGuard = ({ userEmail, children }: SmartInboxSyncGuard
         setSyncProgress(prev => Math.min(prev + 10, 90));
       }, 500);
 
-      await syncEmailsToDatabase('INBOX', 'auto');
+      await syncEmailsToDatabase(selectedFolder, 'auto');
 
       clearInterval(progressInterval);
       setSyncProgress(100);
@@ -117,7 +125,8 @@ export const SmartInboxSyncGuard = ({ userEmail, children }: SmartInboxSyncGuard
         </Button>
 
         <p className="text-white/40 text-sm text-center max-w-md">
-          La sincronizzazione scaricherà le email dalla cartella INBOX nel database locale.
+          La sincronizzazione scaricherà le email dalla cartella <strong>{selectedFolder}</strong> 
+          {unreadOnly && ' (solo non lette)'} nel database locale.
           Questo processo può richiedere alcuni minuti in base al numero di email.
         </p>
       </div>

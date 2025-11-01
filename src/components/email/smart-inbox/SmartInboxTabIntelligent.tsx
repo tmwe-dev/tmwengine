@@ -23,12 +23,20 @@ interface SmartInboxTabIntelligentProps {
   onOpenAISidebar?: (senderEmail: string) => void;
   categoriesOpen: boolean;
   onCategoriesOpenChange: (open: boolean) => void;
+  selectedFolder: string;
+  unreadOnly: boolean;
+  onFolderChange: (folder: string) => void;
+  onUnreadOnlyChange: (unreadOnly: boolean) => void;
 }
 
 export const SmartInboxTabIntelligent = ({ 
   onOpenAISidebar,
   categoriesOpen,
-  onCategoriesOpenChange 
+  onCategoriesOpenChange,
+  selectedFolder,
+  unreadOnly,
+  onFolderChange,
+  onUnreadOnlyChange
 }: SmartInboxTabIntelligentProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedEmail, setSelectedEmail] = useState<ClassifiedEmail | null>(null);
@@ -54,7 +62,7 @@ export const SmartInboxTabIntelligent = ({
 
   // ✅ Fetch email classificate con JOIN a email_messages
   const { data: classifiedEmails = [], isLoading, refetch } = useQuery({
-    queryKey: ['smart-inbox-intelligent', userEmail, selectedCategory],
+    queryKey: ['smart-inbox-intelligent', userEmail, selectedCategory, selectedFolder, unreadOnly],
     queryFn: async () => {
       if (!userEmail) return [];
 
@@ -71,12 +79,19 @@ export const SmartInboxTabIntelligent = ({
             date,
             has_attachments,
             message_id,
-            cartella
+            cartella,
+            stato
           )
         `)
         .eq('user_email', userEmail)
-        .not('email_id', 'is', null)  // ✅ Solo email sincronizzate
-        .order('created_at', { ascending: false });
+        .eq('email_messages.cartella', selectedFolder)
+        .not('email_id', 'is', null);  // ✅ Solo email sincronizzate
+
+      if (unreadOnly) {
+        query = query.eq('email_messages.stato', 'nuovo');
+      }
+
+      query = query.order('created_at', { ascending: false });
 
       if (selectedCategory !== 'all' && selectedCategory !== 'da-verificare') {
         query = query.eq('category', selectedCategory);
@@ -159,12 +174,18 @@ export const SmartInboxTabIntelligent = ({
     try {
       console.log('📧 [DEBUG] Recupero email NON classificate dal DB locale...');
       
-      // ✅ Recupera email NON classificate dal DB locale (solo INBOX)
-      const { data: unclassifiedEmails, error: fetchError } = await supabase
+      // ✅ Recupera email NON classificate dal DB locale
+      let unclassifiedQuery = supabase
         .from('email_messages')
         .select('id, subject, from_email')
         .eq('user_email', userEmail)
-        .eq('cartella', 'INBOX')
+        .eq('cartella', selectedFolder);
+
+      if (unreadOnly) {
+        unclassifiedQuery = unclassifiedQuery.eq('stato', 'nuovo');
+      }
+
+      const { data: unclassifiedEmails, error: fetchError } = await unclassifiedQuery
         .not('id', 'in', 
           supabase
             .from('email_ai_classifications')
@@ -323,6 +344,11 @@ export const SmartInboxTabIntelligent = ({
         onArchive={handleArchiveSelected}
         onDelete={handleDeleteSelected}
         onMove={handleMoveSelected}
+        selectedFolder={selectedFolder}
+        unreadOnly={unreadOnly}
+        onFolderChange={onFolderChange}
+        onUnreadOnlyChange={onUnreadOnlyChange}
+        userEmail={userEmail}
       />
       
       {/* 🆕 Layout 2 Colonne: Lista Email | Dettaglio + Sidebar Collassabile */}

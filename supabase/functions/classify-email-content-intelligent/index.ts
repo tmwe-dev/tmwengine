@@ -159,10 +159,13 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
                   'Fatture',
                   'Bolle / Packing List',
                   'Preventivi / Quotazioni',
-                  'Rate Aeree / Rate Navali',
+                  'Rate Aeree / Marittime',
                   'Documenti Spedizione',
+                  'Tracking & Status Updates',
+                  'Booking Requests',
+                  'Customer Service',
                   'Offerte di Lavoro',
-                  'Marketing / Pubblicità',
+                  'Marketing / Newsletter',
                   'Spam / Non Rilevante'
                 ],
                 description: 'Categoria email'
@@ -179,6 +182,29 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
                 type: 'array',
                 items: { type: 'string' },
                 description: 'Keywords rilevanti (3-5)'
+              },
+              alternative_categories: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Categorie alternative se incerto (opzionale)'
+              },
+              detected_patterns: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Pattern rilevati come AWB, IATA codes, container numbers (opzionale)'
+              },
+              urgency: {
+                type: 'string',
+                enum: ['critical', 'high', 'normal', 'low'],
+                description: 'Livello urgenza percepito (opzionale)'
+              },
+              action_suggested: {
+                type: 'string',
+                description: 'Azione consigliata se ovvia (opzionale)'
+              },
+              reasoning: {
+                type: 'string',
+                description: 'Breve spiegazione della scelta (1-2 frasi, opzionale)'
               }
             },
             required: ['category', 'confidence', 'summary', 'keywords']
@@ -320,6 +346,24 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
       confidence = classification.confidence / 100; // Convert from 0-100 to 0.0-1.0
       summary = classification.summary;
       keywords = classification.keywords;
+
+      // ✅ Estrai campi opzionali (FASE 1)
+      const alternative_categories = classification.alternative_categories || null;
+      const detected_patterns = classification.detected_patterns || null;
+      const urgency = classification.urgency || null;
+      const action_suggested = classification.action_suggested || null;
+      const reasoning = classification.reasoning || null;
+
+      // Log per analisi (non salvato in DB per ora)
+      if (detected_patterns || urgency || action_suggested || reasoning) {
+        console.log('🔍 AI Insights:', {
+          alternative_categories,
+          detected_patterns,
+          urgency,
+          action_suggested,
+          reasoning: reasoning?.substring(0, 100)
+        });
+      }
 
       console.log('📊 Classificazione AI:', { category, confidence, keywords });
     } else {

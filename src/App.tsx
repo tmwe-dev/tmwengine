@@ -62,6 +62,7 @@ import DesignLabDashboard from "./pages/DesignLabDashboard";
 import DesignLabScanner from "./pages/DesignLabScanner";
 import PromptSystemManager from "./pages/PromptSystemManager";
 import FunEmail from "./pages/FunEmail";
+import ApiFunctionsReference from "./pages/ApiFunctionsReference";
 
 const queryClient = new QueryClient();
 
@@ -392,6 +393,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <PromptSystemManager />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/api-functions" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <ApiFunctionsReference />
                 </CRMLayout>
               </ProtectedRoute>
             } />

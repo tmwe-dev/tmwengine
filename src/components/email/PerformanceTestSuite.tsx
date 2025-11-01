@@ -2,7 +2,7 @@
  * Performance Test Suite - Analisi ottimizzazione importazione email
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,8 +12,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { Zap, Play, Download, TrendingUp, Clock, Activity, AlertCircle } from 'lucide-react';
+import { Zap, Play, Download, TrendingUp, Clock, Activity, AlertCircle, FileCode } from 'lucide-react';
 import { StatCard } from '@/components/design-system/cards/StatCard';
+import { Link } from 'react-router-dom';
 
 interface TestConfig {
   folder: string;
@@ -54,6 +55,9 @@ export function PerformanceTestSuite() {
     parallelBatches: 3
   });
 
+  const [folders, setFolders] = useState<string[]>(['INBOX', 'Sent', 'Drafts', 'Archive', 'Trash']);
+  const [loadingFolders, setLoadingFolders] = useState(false);
+
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [liveMetrics, setLiveMetrics] = useState({
@@ -64,6 +68,32 @@ export function PerformanceTestSuite() {
   });
   const [result, setResult] = useState<TestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Load folders on mount
+  useEffect(() => {
+    const loadFolders = async () => {
+      setLoadingFolders(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+          body: {
+            endpoint: '/email_folder',
+            data: { handler: 'get_folders' }
+          }
+        });
+
+        if (!error && data?.success && data?.folders) {
+          const folderNames = data.folders.map((f: any) => f.name || f);
+          setFolders(folderNames.length > 0 ? folderNames : ['INBOX']);
+        }
+      } catch (err) {
+        console.error('Failed to load folders:', err);
+      } finally {
+        setLoadingFolders(false);
+      }
+    };
+
+    loadFolders();
+  }, []);
 
   const debugApiResponse = async () => {
     try {
@@ -599,11 +629,19 @@ export function PerformanceTestSuite() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Zap className="h-5 w-5 text-yellow-500" />
-          Performance Test Suite
-          <Badge variant="outline" className="ml-auto">BETA</Badge>
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-yellow-500" />
+            <CardTitle>Performance Test Suite</CardTitle>
+            <Badge variant="outline">BETA</Badge>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/api-functions">
+              <FileCode className="w-4 h-4 mr-2" />
+              API Reference
+            </Link>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Test Configuration */}
@@ -630,11 +668,22 @@ export function PerformanceTestSuite() {
 
             <div className="space-y-2">
               <Label>Folder</Label>
-              <Input
+              <Select
                 value={config.folder}
-                onChange={(e) => setConfig({ ...config, folder: e.target.value })}
-                placeholder="INBOX"
-              />
+                onValueChange={(value) => setConfig({ ...config, folder: value })}
+                disabled={loadingFolders}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingFolders ? "Loading folders..." : "Select folder"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {folders.map((folder) => (
+                    <SelectItem key={folder} value={folder}>
+                      {folder}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

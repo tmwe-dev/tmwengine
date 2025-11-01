@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, FileText } from 'lucide-react';
+import { Sparkles, FileText, Download } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
 import { BulkActionsBar } from './BulkActionsBar';
@@ -24,6 +24,8 @@ interface SmartInboxHeaderIntelligentProps {
   onArchive: () => void;
   onDelete: () => void;
   onMove: (categoryId: string) => void;
+  onSyncMissing?: () => void;
+  isSyncing?: boolean;
 }
 
 export const SmartInboxHeaderIntelligent = ({
@@ -38,7 +40,9 @@ export const SmartInboxHeaderIntelligent = ({
   onBulkClassify,
   onArchive,
   onDelete,
-  onMove
+  onMove,
+  onSyncMissing,
+  isSyncing = false
 }: SmartInboxHeaderIntelligentProps) => {
   const [promptViewerOpen, setPromptViewerOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string>('gemini');
@@ -70,6 +74,20 @@ export const SmartInboxHeaderIntelligent = ({
             >
               <FileText className="h-4 w-4" />
             </Button>
+
+            {/* Pulsante Sincronizza Mancanti */}
+            {onSyncMissing && (
+              <Button 
+                onClick={onSyncMissing}
+                variant="outline"
+                size="sm"
+                disabled={isSyncing}
+                className="border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 hover:scale-105 transition-all gap-1.5 h-8 px-3"
+              >
+                <Download className="h-5 w-5" />
+                <span className="text-xs font-semibold">{isSyncing ? 'Sincronizzazione...' : 'Sincronizza Mancanti'}</span>
+              </Button>
+            )}
             
             {/* Pulsante Classifica Nuove */}
             <Button 

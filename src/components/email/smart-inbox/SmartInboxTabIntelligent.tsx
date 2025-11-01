@@ -15,9 +15,12 @@ import { ClassifiedEmail, EmailMetadata } from '@/types/smart-inbox';
 import { useSmartClassificationIntelligent } from '@/hooks/useSmartClassificationIntelligent';
 import { useEmailAIAutomation } from '@/hooks/useEmailAIAutomation';
 import { useEmailAIProcessor } from '@/hooks/useEmailAIProcessor';
+import { useAutoSyncMissing } from '@/hooks/useAutoSyncMissing';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { SyncProgressOverlay } from '../SyncProgressOverlay';
+import { useNavigate } from 'react-router-dom';
 
 interface SmartInboxTabIntelligentProps {
   onOpenAISidebar?: (senderEmail: string) => void;
@@ -50,6 +53,7 @@ export const SmartInboxTabIntelligent = ({
   const { classifyEmails, isClassifying, progress } = useSmartClassificationIntelligent();
   const { createSimpleAction, applyAIPromptToSender } = useEmailAIAutomation();
   const { currentProposal, processEmailWithAI, clearProposal } = useEmailAIProcessor();
+  const navigate = useNavigate();
 
   // Fetch user email
   const { data: userEmail } = useQuery({
@@ -59,6 +63,9 @@ export const SmartInboxTabIntelligent = ({
       return user?.email || '';
     },
   });
+
+  // Initialize auto sync hook after userEmail is available
+  const { syncMissingEmails, syncProgress, isSyncing } = useAutoSyncMissing(userEmail);
 
   // Fetch available folders
   const { data: availableFolders = [] } = useQuery({
@@ -370,6 +377,26 @@ export const SmartInboxTabIntelligent = ({
     }
   };
 
+  const handleSyncMissing = async () => {
+    try {
+      const foldersToSync = await syncMissingEmails();
+      
+      if (foldersToSync && foldersToSync.length > 0) {
+        // Redirect to Quick Download with pre-selected folders
+        navigate(`/funnemail?view=quick-download&folders=${encodeURIComponent(foldersToSync.join(','))}`);
+        
+        toast.success('Redirect al Quick Download', {
+          description: `${foldersToSync.length} cartelle da sincronizzare`
+        });
+      }
+    } catch (error: any) {
+      console.error('Sync missing error:', error);
+      toast.error('Errore sincronizzazione', {
+        description: error.message
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] w-[95%] max-w-[1600px] mx-auto gap-4">
       {/* Header compatto - solo titolo + Classifica Nuove + Barra Azioni */}
@@ -386,6 +413,8 @@ export const SmartInboxTabIntelligent = ({
         onArchive={handleArchiveSelected}
         onDelete={handleDeleteSelected}
         onMove={handleMoveSelected}
+        onSyncMissing={handleSyncMissing}
+        isSyncing={isSyncing}
       />
       
       {/* 🆕 Layout 2 Colonne: Lista Email | Dettaglio + Sidebar Collassabile */}
@@ -468,6 +497,17 @@ export const SmartInboxTabIntelligent = ({
           setPromptDialogOpen(false);
         }}
       />
+
+      {/* Sync Progress Overlay */}
+      {isSyncing && syncProgress.folders.length > 0 && (
+        <SyncProgressOverlay
+          folders={syncProgress.folders}
+          onCancel={() => {
+            toast.info('Sincronizzazione annullata');
+          }}
+          open={isSyncing}
+        />
+      )}
     </div>
   );
 };

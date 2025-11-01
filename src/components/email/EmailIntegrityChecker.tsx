@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RefreshCw, Loader2, Lock, Unlock } from 'lucide-react';
+import { RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useFolderLocks } from '@/hooks/useFolderLocks';
 
 interface FolderComparison {
   folderName: string;
@@ -25,10 +24,6 @@ interface EmailIntegrityCheckerProps {
 
 export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheckerProps) => {
   const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-
-  // Initialize folder locks hook
-  const { isLocked, toggleLock, isTogglingLock } = useFolderLocks(userEmail);
 
   const toggleFolderSelection = (folderName: string) => {
     setSelectedFolders(prev => 
@@ -57,9 +52,6 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
       console.log('🔍 [IntegrityCheck] Profile email:', profile?.tmwe_email);
 
       if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
-
-      // Set user email for folder locks
-      setUserEmail(profile.tmwe_email);
 
       // 1. Fetch conteggi server (usando emailFolderApi più affidabile)
       console.log('🔍 [IntegrityCheck] Fetching folders from server via emailFolderApi...');
@@ -223,12 +215,12 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
                 size="sm"
                 onClick={() => {
                   const allWithMissing = comparisons
-                    .filter(c => c.missing > 0 && !isLocked(c.folderName))
+                    .filter(c => c.missing > 0)
                     .map(c => c.folderName);
                   setSelectedFolders(allWithMissing);
                 }}
               >
-                ✅ Seleziona tutte con email mancanti (non bloccate)
+                ✅ Seleziona tutte con email mancanti
               </Button>
               
               <Button
@@ -250,7 +242,6 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
                     <TableHead className="text-right">DB Locale</TableHead>
                     <TableHead className="text-right">Mancanti</TableHead>
                     <TableHead className="text-center">% Sync</TableHead>
-                    <TableHead className="text-center">🔒 Blocco</TableHead>
                     <TableHead className="text-center">Seleziona</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -269,27 +260,10 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleLock(comp.folderName)}
-                          disabled={isTogglingLock}
-                          className="h-8 w-8 p-0"
-                          title={isLocked(comp.folderName) ? 'Clicca per sbloccare download automatico' : 'Clicca per bloccare download automatico'}
-                        >
-                          {isLocked(comp.folderName) ? (
-                            <Lock className="h-4 w-4 text-destructive" />
-                          ) : (
-                            <Unlock className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-center">
                         {comp.missing > 0 ? (
                           <Checkbox
                             checked={selectedFolders.includes(comp.folderName)}
                             onCheckedChange={() => toggleFolderSelection(comp.folderName)}
-                            disabled={isLocked(comp.folderName)}
                           />
                         ) : (
                           <span className="text-xs text-green-500">✓ Completo</span>

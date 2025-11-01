@@ -2662,36 +2662,6 @@ export type Database = {
         }
         Relationships: []
       }
-      email_folder_locks: {
-        Row: {
-          created_at: string | null
-          folder_name: string
-          id: string
-          is_locked: boolean | null
-          locked_at: string | null
-          updated_at: string | null
-          user_email: string
-        }
-        Insert: {
-          created_at?: string | null
-          folder_name: string
-          id?: string
-          is_locked?: boolean | null
-          locked_at?: string | null
-          updated_at?: string | null
-          user_email: string
-        }
-        Update: {
-          created_at?: string | null
-          folder_name?: string
-          id?: string
-          is_locked?: boolean | null
-          locked_at?: string | null
-          updated_at?: string | null
-          user_email?: string
-        }
-        Relationships: []
-      }
       email_messages: {
         Row: {
           attachments: Json | null

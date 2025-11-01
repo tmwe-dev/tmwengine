@@ -7,7 +7,7 @@ import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { X, Menu, Brain, ArrowLeft, Bug } from 'lucide-react';
+import { X, Menu, Brain, ArrowLeft, Bug, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
@@ -39,6 +39,30 @@ const FunEmail = () => {
   // AI Sidebar globale state
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const [selectedSenderForAI, setSelectedSenderForAI] = useState<string | null>(null);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+
+  // Proximity detection con isteresi (pattern RadioChat)
+  const [isNearLeftEdge, setIsNearLeftEdge] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      // Zona di attivazione: 0-30px
+      if (e.clientX <= 30) {
+        setIsNearLeftEdge(true);
+      } 
+      // Zona di disattivazione: 150px (isteresi)
+      else if (e.clientX > 150) {
+        setIsNearLeftEdge(false);
+      }
+      // Tra 30-150px: mantieni stato corrente
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Calcola visibilità icone
+  const shouldShowLeftIcons = isNearLeftEdge || sidebarOpen || aiSidebarOpen || categoriesOpen;
 
   // Sincronizza currentView con query param "view" dal CRMLayout
   useEffect(() => {
@@ -136,14 +160,39 @@ const FunEmail = () => {
     enabled: !!selectedEmailId,
   });
 
-  // Handler AI Sidebar
-  const handleToggleAISidebar = () => {
-    setAiSidebarOpen(prev => !prev);
+  // Mutua esclusione sidebar (pattern RadioChat)
+  const handleToggleMenu = () => {
+    const newState = !sidebarOpen;
+    setSidebarOpen(newState);
+    if (newState) {
+      setAiSidebarOpen(false);
+      setCategoriesOpen(false);
+    }
+  };
+
+  const handleToggleAI = () => {
+    const newState = !aiSidebarOpen;
+    setAiSidebarOpen(newState);
+    if (newState) {
+      setSidebarOpen(false);
+      setCategoriesOpen(false);
+    }
+  };
+
+  const handleToggleCategories = () => {
+    const newState = !categoriesOpen;
+    setCategoriesOpen(newState);
+    if (newState) {
+      setSidebarOpen(false);
+      setAiSidebarOpen(false);
+    }
   };
 
   const openAISidebarForSender = (senderEmail: string) => {
     setSelectedSenderForAI(senderEmail);
     setAiSidebarOpen(true);
+    setSidebarOpen(false);
+    setCategoriesOpen(false);
   };
 
   const handlePromptCreatedGlobal = async (promptData: {
@@ -209,20 +258,51 @@ const FunEmail = () => {
       actions={null}
     >
       <div className="relative w-full min-h-screen">
-        {/* Hamburger Button - nascosto in modalità debug/admin e management */}
-        {!['quick-download', 'integrity', 'debugger', 'management'].includes(currentView) && (
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={cn(
-              "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
-              "bg-background/90 hover:bg-accent/90 border-r border-y border-border p-3 rounded-r-lg shadow-lg",
-              "transition-all duration-300",
-              sidebarOpen && "translate-x-80"
-            )}
-            aria-label="Toggle Menu"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+        {/* 3 Icone Verticali - solo in view inbox */}
+        {currentView === 'inbox' && (
+          <>
+            {/* Menu Icon - Top */}
+            <button
+              onClick={handleToggleMenu}
+              className={cn(
+                "fixed left-0 bottom-[18.5rem] z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+                "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
+                sidebarOpen && "translate-x-[320px]",
+                !shouldShowLeftIcons && !sidebarOpen && "opacity-0 pointer-events-none",
+                (shouldShowLeftIcons || sidebarOpen) && "opacity-100"
+              )}
+            >
+              <Menu className="w-6 h-6 text-gray-400" strokeWidth={1} />
+            </button>
+
+            {/* Inbox/Categories Icon - Middle (20px gap) */}
+            <button
+              onClick={handleToggleCategories}
+              className={cn(
+                "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+                "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
+                categoriesOpen && "translate-x-[280px]",
+                !shouldShowLeftIcons && !categoriesOpen && "opacity-0 pointer-events-none",
+                (shouldShowLeftIcons || categoriesOpen) && "opacity-100"
+              )}
+            >
+              <span className="text-2xl">📬</span>
+            </button>
+
+            {/* AI Icon - Bottom (20px gap) */}
+            <button
+              onClick={handleToggleAI}
+              className={cn(
+                "fixed left-0 bottom-[7.5rem] z-40 w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+                "flex items-center justify-center transition-all duration-300 hover:bg-white/5",
+                aiSidebarOpen && "translate-x-[500px]",
+                !shouldShowLeftIcons && !aiSidebarOpen && "opacity-0 pointer-events-none",
+                (shouldShowLeftIcons || aiSidebarOpen) && "opacity-100"
+              )}
+            >
+              <Sparkles className="w-6 h-6 text-primary" strokeWidth={1} />
+            </button>
+          </>
         )}
 
         {/* Content - condizionale in base alla view */}
@@ -305,18 +385,22 @@ const FunEmail = () => {
             </div>
           ) : currentView === 'inbox' ? (
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
-              <SmartInboxTabIntelligent onOpenAISidebar={openAISidebarForSender} />
+              <SmartInboxTabIntelligent 
+                onOpenAISidebar={openAISidebarForSender}
+                categoriesOpen={categoriesOpen}
+                onCategoriesOpenChange={setCategoriesOpen}
+              />
             </GradientBackground>
           ) : null}
         </div>
 
-        {/* Sidebar Overlay */}
-        {sidebarOpen && (
+        {/* Menu Sidebar Overlay - solo in inbox */}
+        {currentView === 'inbox' && sidebarOpen && (
           <>
             {/* Backdrop */}
             <div
               className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
-              onClick={() => setSidebarOpen(false)}
+              onClick={handleToggleMenu}
             />
             
             {/* Sidebar */}
@@ -329,7 +413,7 @@ const FunEmail = () => {
                 }}
                 onCompose={() => {}}
                 onSync={() => {}}
-                onClose={() => setSidebarOpen(false)}
+                onClose={handleToggleMenu}
               />
             </div>
           </>
@@ -374,10 +458,11 @@ const FunEmail = () => {
       {!['quick-download', 'integrity', 'debugger'].includes(currentView) && (
         <AISidebarSlider
           isOpen={aiSidebarOpen}
-          onClose={() => setAiSidebarOpen(false)}
-          onToggle={handleToggleAISidebar}
+          onClose={handleToggleAI}
+          onToggle={handleToggleAI}
           senderEmail={selectedSenderForAI}
           onPromptCreated={handlePromptCreatedGlobal}
+          hideButton={currentView === 'inbox'}
         />
       )}
 

@@ -21,9 +21,15 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface SmartInboxTabIntelligentProps {
   onOpenAISidebar?: (senderEmail: string) => void;
+  categoriesOpen: boolean;
+  onCategoriesOpenChange: (open: boolean) => void;
 }
 
-export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntelligentProps) => {
+export const SmartInboxTabIntelligent = ({ 
+  onOpenAISidebar,
+  categoriesOpen,
+  onCategoriesOpenChange 
+}: SmartInboxTabIntelligentProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedEmail, setSelectedEmail] = useState<ClassifiedEmail | null>(null);
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
@@ -305,12 +311,14 @@ export const SmartInboxTabIntelligent = ({ onOpenAISidebar }: SmartInboxTabIntel
       
       {/* 🆕 Layout 2 Colonne: Lista Email | Dettaglio + Sidebar Collassabile */}
       <div className="flex-1 flex gap-4 overflow-hidden">
-        {/* Sidebar Categorie Collassabile (hover sul bordo sinistro) */}
+        {/* Sidebar Categorie Collassabile (controllata da FunEmail) */}
         <CollapsibleCategorySidebar
           categories={categoryStats}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
           unverifiedCount={unverifiedCount}
+          isOpen={categoriesOpen}
+          onOpenChange={onCategoriesOpenChange}
         />
 
         {/* Colonna 1: Lista Email (40% width - più spazio senza sidebar fissa) */}

@@ -452,16 +452,22 @@ serve(async (req) => {
     }
 
     if (!tmweResponse.ok) {
-      if (enableLogging) {
-        console.error('❌ ERRORE HTTP dalla TMWE API');
-        console.error('📊 Status:', tmweResponse.status);
-        console.error('📄 Response:', responseData);
-      }
+      // LOGGING SEMPRE ATTIVO per errori (anche senza enableLogging)
+      console.error('═══════════════════════════════════════════════════════');
+      console.error('❌ ERRORE HTTP dalla TMWE API');
+      console.error('═══════════════════════════════════════════════════════');
+      console.error('📊 Status:', tmweResponse.status, tmweResponse.statusText);
+      console.error('🔗 URL:', tmweUrl);
+      console.error('📤 Request Handler:', data?.handler);
+      console.error('📤 Request Body:', JSON.stringify(data, null, 2));
+      console.error('📥 Response Data:', JSON.stringify(responseData, null, 2));
+      console.error('═══════════════════════════════════════════════════════');
       
       return new Response(
         JSON.stringify({ 
           error: `TMWE API Error: ${tmweResponse.status}`,
-          details: responseData 
+          details: responseData,
+          requestSent: data // Includi la richiesta per debug
         }),
         {
           status: tmweResponse.status,

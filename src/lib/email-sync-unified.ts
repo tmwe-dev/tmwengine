@@ -56,6 +56,39 @@ export interface UnifiedSyncStats {
 // ==================== HELPER FUNCTIONS ====================
 
 async function fetchFolderUIDs(folderName: string): Promise<string[]> {
+  // ✅ STEP 1: Verifica sessione (come nel debugger)
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  
+  if (sessionError || !session) {
+    console.error('🔐 [UNIFIED] Session error:', sessionError);
+    throw new Error('TMWE_SESSION_EXPIRED');
+  }
+
+  // ✅ STEP 2: Check token expiry (come nel debugger)
+  const expiresAt = session.expires_at || 0;
+  const now = Math.floor(Date.now() / 1000);
+  const timeUntilExpiry = expiresAt - now;
+
+  console.log('🔐 [UNIFIED] Token status:', {
+    folder: folderName,
+    expiresAt: new Date(expiresAt * 1000).toLocaleString(),
+    timeUntilExpiry: `${Math.floor(timeUntilExpiry / 60)} minuti`,
+    needsRefresh: timeUntilExpiry < 300
+  });
+
+  // ✅ STEP 3: Refresh se necessario (come nel debugger)
+  if (timeUntilExpiry < 300) {
+    console.log('🔄 [UNIFIED] Refreshing token...');
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) {
+      console.error('❌ [UNIFIED] Token refresh failed:', refreshError);
+      throw new Error('TMWE_SESSION_EXPIRED');
+    }
+  }
+
+  // ✅ STEP 4: Chiama API (come nel debugger)
+  console.log(`📧 [UNIFIED] Fetching UIDs for: ${folderName}`);
+  
   const response = await supabase.functions.invoke('tmwe-api-proxy', {
     body: {
       endpoint: '/email_message',
@@ -68,8 +101,24 @@ async function fetchFolderUIDs(folderName: string): Promise<string[]> {
     }
   });
 
-  if (response.error) throw response.error;
-  
+  // ✅ STEP 5: Gestione errori (come nel debugger)
+  if (response.error) {
+    console.error('❌ [UNIFIED] Edge function error:', response.error);
+    throw new Error('TMWE_SESSION_EXPIRED');
+  }
+
+  if (response.data && !response.data.success) {
+    console.warn('⚠️ [UNIFIED] TMWE API error:', response.data.errors);
+    return [];
+  }
+
+  // ✅ STEP 6: Extract UIDs
+  console.log(`📧 [UNIFIED] Response for ${folderName}:`, {
+    success: response.data?.success,
+    dataLength: response.data?.data?.length || 0,
+    firstUID: response.data?.data?.[0]?.uid
+  });
+
   const uids: string[] = response.data?.data?.map((msg: any) => msg.uid?.toString() || '') || [];
   return uids.filter((uid: string) => Boolean(uid));
 }

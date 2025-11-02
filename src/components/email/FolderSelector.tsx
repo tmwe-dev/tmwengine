@@ -6,6 +6,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Folder, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import type { UnifiedFolderCount } from '@/lib/email-count-service';
@@ -55,8 +56,9 @@ export function FolderSelector({
         {showSyncStatus && ` • ${folders.filter(f => f.isTestable).length} testabili`}
       </div>
       
-      <div className="grid gap-2">
-        {folders.map((folder) => (
+      <ScrollArea className="h-[400px] w-full pr-4">
+        <div className="grid gap-2">
+          {folders.map((folder) => (
           <TooltipProvider key={folder.folderName}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -131,8 +133,9 @@ export function FolderSelector({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-        ))}
-      </div>
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

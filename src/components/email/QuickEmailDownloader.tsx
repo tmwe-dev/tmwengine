@@ -366,18 +366,25 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
             });
 
             if (!emailError && emailData) {
-              // Parsing robusto con più fallback
-              const email = emailData?.data?.message 
-                || emailData?.data?.email 
-                || emailData?.message 
-                || emailData?.email 
-                || emailData;
+              // Estrai la risposta completa
+              const rawEmail = emailData?.data || emailData;
+
+              // Se la risposta ha header + body separati, uniscili
+              const email = rawEmail?.header ? {
+                ...rawEmail.header,
+                body_plain: rawEmail.body_plain,
+                body_html: rawEmail.body_html,
+                body: rawEmail.body_html || rawEmail.body_plain,
+                body_type: rawEmail.body_html ? 'html' : 'plain'
+              } : (emailData?.message || emailData?.email || emailData);
               
               console.log(`📧 [QuickDownload] Parsed email for UID ${uid}:`, {
+                rawStructure: Object.keys(rawEmail || {}),
+                hasHeader: !!rawEmail?.header,
                 hasUid: !!email?.uid,
                 hasSubject: !!email?.subject,
                 hasFrom: !!email?.from,
-                structure: Object.keys(email || {})
+                finalStructure: Object.keys(email || {})
               });
               
               if (email && email.uid) {

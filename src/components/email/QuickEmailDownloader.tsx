@@ -139,7 +139,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         // ✅ USA STESSA API DI EmailIntegrityChecker
         const quickResponse = await emailFolderApi.getFolders({ 
           include_counts: false,
-          skipCache: false
+          skipCache: true
         });
 
       console.log('📂 [loadQuickFolders] RAW API RESPONSE:', JSON.stringify(quickResponse, null, 2));

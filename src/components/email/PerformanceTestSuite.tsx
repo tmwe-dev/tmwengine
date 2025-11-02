@@ -852,6 +852,128 @@ export function PerformanceTestSuite() {
         errorLog,
         healthCheck: healthStatus
       };
+    
+    } else if (testConfig.testType === 'all-in-one') {
+      console.log('🎯 [ALL-IN-ONE] Starting comprehensive test suite');
+      
+      // Step 1: Ottieni user email
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!profile?.tmwe_email) {
+        throw new Error('Email TMWE non configurata');
+      }
+      
+      // Step 2: Ottieni folder testabili
+      setProgress(10);
+      const testableFolders = await getTestableFolders(profile.tmwe_email, 25);
+      console.log(`📁 Found ${testableFolders.length} testable folders`);
+      
+      if (testableFolders.length === 0) {
+        throw new Error('Nessuna folder testabile trovata. Sincronizza prima alcune email.');
+      }
+      
+      // Step 3: Seleziona top 3 folder più popolate
+      const selectedFolders = testableFolders
+        .sort((a, b) => b.serverCount - a.serverCount)
+        .slice(0, 3);
+      
+      console.log(`🎯 Testing folders: ${selectedFolders.map(f => f.folderName).join(', ')}`);
+      
+      const allResults: TestResult[] = [];
+      const totalTests = selectedFolders.length * 3; // 3 test per folder
+      let completedTests = 0;
+      
+      // Step 4: Esegui test per ogni folder
+      for (const folder of selectedFolders) {
+        console.log(`\n📂 Testing folder: ${folder.folderName}`);
+        
+        // Test 1: IMAP Health Check
+        try {
+          const healthResult = await executeTest({
+            ...testConfig,
+            testType: 'imap-health',
+            folder: folder.folderName
+          });
+          allResults.push(healthResult);
+          completedTests++;
+          setProgress(10 + (completedTests / totalTests) * 80);
+        } catch (err) {
+          console.error(`❌ Health check failed for ${folder.folderName}:`, err);
+        }
+        
+        // Test 2: Batch Standard (25 emails)
+        try {
+          const batchResult = await executeTest({
+            ...testConfig,
+            testType: 'batch',
+            folder: folder.folderName,
+            batchSize: 25
+          });
+          allResults.push(batchResult);
+          completedTests++;
+          setProgress(10 + (completedTests / totalTests) * 80);
+        } catch (err) {
+          console.error(`❌ Batch test failed for ${folder.folderName}:`, err);
+        }
+        
+        // Test 3: Parallel Download (3 batches)
+        try {
+          const parallelResult = await executeTest({
+            ...testConfig,
+            testType: 'parallel',
+            folder: folder.folderName,
+            parallelBatches: 3,
+            batchSize: 25
+          });
+          allResults.push(parallelResult);
+          completedTests++;
+          setProgress(10 + (completedTests / totalTests) * 80);
+        } catch (err) {
+          console.error(`❌ Parallel test failed for ${folder.folderName}:`, err);
+        }
+      }
+      
+      setProgress(100);
+      
+      // Step 5: Salva i risultati in suiteResults
+      setSuiteResults(allResults);
+      
+      // Step 6: Calcola metriche aggregate
+      const totalTime = allResults.reduce((sum, r) => sum + r.metrics.totalTime, 0);
+      const totalErrors = allResults.reduce((sum, r) => sum + r.metrics.errors, 0);
+      const avgSuccessRate = allResults.reduce((sum, r) => sum + r.metrics.successRate, 0) / allResults.length;
+      
+      console.log(`✅ [ALL-IN-ONE] Completed ${allResults.length} tests in ${totalTime}ms`);
+      
+      return {
+        config: testConfig,
+        metrics: {
+          totalTime: Math.round(totalTime),
+          avgTimePerEmail: 0,
+          minTime: 0,
+          maxTime: 0,
+          throughput: 0,
+          apiCalls: allResults.reduce((sum, r) => sum + r.metrics.apiCalls, 0),
+          errors: totalErrors,
+          successRate: Math.round(avgSuccessRate * 100) / 100
+        },
+        timestamp: new Date().toISOString(),
+        recommendations: [
+          `✅ Test completato su ${selectedFolders.length} cartelle`,
+          `📊 ${allResults.length} test eseguiti con successo`,
+          totalErrors === 0 ? '✅ Nessun errore rilevato' : `⚠️ ${totalErrors} errori totali`,
+          avgSuccessRate > 90 ? '✅ Ottima affidabilità sistema' : '⚠️ Sistema necessita ottimizzazione'
+        ]
+      };
     }
 
     // Default test (single/batch fallback)

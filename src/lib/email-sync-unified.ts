@@ -141,25 +141,36 @@ async function downloadBatch(
   
   const allEmails: any[] = [];
   
-  for (const uid of uids) {
+  let offset = 0;
+  
+  for (const batch of batches) {
     let attempt = 0;
     let success = false;
     
     while (attempt < maxRetries && !success) {
       try {
-        const email = await emailMessageApi.getMessage(uid, folder);
+        console.log(`📥 [UNIFIED] Downloading batch: limit=${batch.length}, offset=${offset}`);
         
-        if (email) {
-          allEmails.push(email);
-        }
+        const response = await emailMessageApi.getMessages({
+          folder,
+          limit: batch.length,
+          offset: offset
+        });
+        
+        const emails = response.data || response.messages || response.emails || [];
+        console.log(`✅ [UNIFIED] Downloaded ${emails.length} emails`);
+        
+        allEmails.push(...emails);
+        offset += batch.length;
         success = true;
         
       } catch (error) {
         attempt++;
         if (attempt >= maxRetries) {
-          console.error(`❌ [UNIFIED] UID ${uid} failed after ${maxRetries} attempts:`, error);
+          console.error(`❌ [UNIFIED] Batch failed after ${maxRetries} attempts:`, error);
         } else {
-          await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+          console.warn(`⚠️ [UNIFIED] Batch attempt ${attempt} failed, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
       }
     }

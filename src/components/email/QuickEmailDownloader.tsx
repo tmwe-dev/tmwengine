@@ -584,7 +584,6 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
                     {userEmail && (
                       <FolderSyncPreferencesManager
                         userEmail={userEmail}
-                        availableFolders={quickFolders.map(f => f.name)}
                         onPreferencesChanged={() => {
                           loadQuickFolders();
                           setIsPreferencesDialogOpen(false);

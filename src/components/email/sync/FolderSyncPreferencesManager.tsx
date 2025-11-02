@@ -13,38 +13,56 @@ import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 import { 
   getSyncPreferences, 
   saveSyncPreferences, 
   type SyncPreferences 
 } from '@/lib/email-sync-preferences';
+import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { Folder, Lock, Unlock, CheckCircle2, XCircle } from 'lucide-react';
 
 interface FolderSyncPreferencesManagerProps {
   userEmail: string;
-  availableFolders: string[];
   onPreferencesChanged?: () => void;
 }
 
 export function FolderSyncPreferencesManager({ 
   userEmail, 
-  availableFolders,
   onPreferencesChanged 
 }: FolderSyncPreferencesManagerProps) {
   
   const [syncMode, setSyncMode] = useState<'blacklist' | 'whitelist'>('blacklist');
   const [excludedFolders, setExcludedFolders] = useState<string[]>([]);
   const [includedFolders, setIncludedFolders] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
+  // ✅ Carica cartelle autonomamente
+  const { data: foldersData, isLoading: isLoadingFolders } = useQuery({
+    queryKey: ['email-folders', userEmail],
+    queryFn: async () => {
+      const response = await emailFolderApi.getFolders({ 
+        include_counts: false,
+        skipCache: false
+      });
+      const foldersList = Array.isArray(response) 
+        ? response 
+        : (response?.folders || response?.data || []);
+      return foldersList.map((f: any) => f.name || f);
+    },
+    enabled: !!userEmail,
+  });
+
+  const availableFolders = foldersData || [];
+
   useEffect(() => {
-    loadCurrentPreferences();
-  }, [userEmail]);
+    if (userEmail && availableFolders.length > 0) {
+      loadCurrentPreferences();
+    }
+  }, [userEmail, availableFolders.length]);
 
   const loadCurrentPreferences = async () => {
-    setIsLoading(true);
     try {
       const prefs = await getSyncPreferences(userEmail);
       
@@ -58,7 +76,8 @@ export function FolderSyncPreferencesManager({
       console.log('📥 [FolderPrefs] Loaded preferences:', {
         mode,
         excluded: prefs.excluded_folders,
-        included: prefs.included_folders
+        included: prefs.included_folders,
+        availableFolders: availableFolders.length
       });
 
     } catch (error) {
@@ -68,8 +87,6 @@ export function FolderSyncPreferencesManager({
         description: 'Impossibile caricare le preferenze',
         variant: 'destructive'
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -141,10 +158,18 @@ export function FolderSyncPreferencesManager({
     }
   };
 
-  if (isLoading) {
+  if (isLoadingFolders) {
     return (
       <div className="py-8 text-center text-muted-foreground">
-        Caricamento preferenze...
+        Caricamento cartelle...
+      </div>
+    );
+  }
+
+  if (availableFolders.length === 0) {
+    return (
+      <div className="py-8 text-center text-muted-foreground">
+        Nessuna cartella disponibile
       </div>
     );
   }

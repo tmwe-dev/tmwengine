@@ -141,28 +141,25 @@ async function downloadBatch(
   
   const allEmails: any[] = [];
   
-  for (const batch of batches) {
+  for (const uid of uids) {
     let attempt = 0;
     let success = false;
     
     while (attempt < maxRetries && !success) {
       try {
-        const response = await emailMessageApi.getMessages({
-          folder,
-          limit: batch.length,
-          offset: 0
-        });
+        const email = await emailMessageApi.getMessage(uid, folder);
         
-        const emails = response.data || response.messages || response.emails || [];
-        allEmails.push(...emails);
+        if (email) {
+          allEmails.push(email);
+        }
         success = true;
         
       } catch (error) {
         attempt++;
         if (attempt >= maxRetries) {
-          console.error(`❌ [UNIFIED] Batch failed after ${maxRetries} attempts:`, error);
+          console.error(`❌ [UNIFIED] UID ${uid} failed after ${maxRetries} attempts:`, error);
         } else {
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          await new Promise(resolve => setTimeout(resolve, 500 * attempt));
         }
       }
     }
@@ -233,11 +230,13 @@ async function insertBatch(
         .insert([record]);
       
       if (error) {
+        console.warn(`⚠️ [UNIFIED] Insert error for ${record.message_id}:`, error.message);
         failed++;
       } else {
         inserted++;
       }
-    } catch {
+    } catch (insertError: any) {
+      console.error(`❌ [UNIFIED] Exception inserting ${record.message_id}:`, insertError.message);
       failed++;
     }
   }
@@ -335,26 +334,12 @@ export class EmailSyncUnified {
       return this.options.folders;
     }
     
-    // Case 2: Load with preferences
+    // Case 2: Preferences applied - folders should be pre-filtered and passed in options
     if (this.options.applyPreferences) {
-      console.log('📁 [UNIFIED] Loading folders with preferences');
-      
-      const allFolders = await emailFolderApi.getFolders();
-      const preferences = await getSyncPreferences(this.options.userEmail);
-      
-      const emailFolders: EmailFolder[] = allFolders.map((f: any) => ({
-        name: f.name || f.folder_name || '',
-        display_name: f.display_name,
-        unread_count: f.unread,
-        total_count: f.total
-      }));
-      
-      const filtered = filterFolders(emailFolders, preferences);
-      const folderNames = filtered.map(f => f.name);
-      
-      console.log(`📁 [UNIFIED] Filtered to ${folderNames.length} folders:`, folderNames);
-      
-      return folderNames.length > 0 ? folderNames : ['INBOX'];
+      console.log('📁 [UNIFIED] Using preference-filtered folders from component');
+      return this.options.folders && this.options.folders.length > 0 
+        ? this.options.folders 
+        : ['INBOX'];
     }
     
     // Case 3: Default to INBOX

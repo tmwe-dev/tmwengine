@@ -9,7 +9,7 @@ export class ParallelDownloadController {
   private maxConcurrent: number;
   private minDelay: number; // ms tra download
   
-  constructor(maxConcurrent = 5, minDelay = 100) {
+  constructor(maxConcurrent = 10, minDelay = 0) {
     this.maxConcurrent = maxConcurrent;
     this.minDelay = minDelay;
   }

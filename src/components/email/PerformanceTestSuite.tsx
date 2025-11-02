@@ -646,29 +646,53 @@ export function PerformanceTestSuite() {
       const parallelStart = performance.now();
 
       // ✅ Wrappa con ParallelDownloadController + withTMWERetry
+      // 🔧 FIX 4: Dynamic timeout basato su batch size
+      const dynamicTimeout = Math.min(5000 + (batchSize * 100), 30000); // 5s base + 100ms per email, max 30s
+      
       const promises = Array.from({ length: parallelBatches }, (_, i) =>
-        downloadController.download(() =>
-          withTMWERetry(
-            () => supabase.functions.invoke('tmwe-api-proxy', {
-              body: {
-                endpoint: '/email_message',
-                data: {
-                  handler: 'get_messages',
-                  folder: testConfig.folder,
-                  limit: batchSize,
-                  offset: i * batchSize
+        downloadController.download(async () => {
+          try {
+            // 🔧 FIX 5: Usa page invece di offset
+            const page = i + 1;
+            
+            // 🔧 FIX 6: Aggiungi Connection: keep-alive header
+            const result = await withTMWERetry(
+              () => supabase.functions.invoke('tmwe-api-proxy', {
+                body: {
+                  endpoint: '/email_message',
+                  data: {
+                    handler: 'get_messages',
+                    folder: testConfig.folder,
+                    limit: batchSize,
+                    page, // 🔧 FIX 5: page-based pagination
+                    sort: 'date',
+                    order: 'DESC',
+                    format: 'text'
+                  }
+                },
+                headers: {
+                  'Connection': 'keep-alive' // 🔧 FIX 6
                 }
-              }
-            }),
-            'get_messages',
-            undefined,
-            30000 // ✅ 30s timeout
-          ).then(result => {
+              }),
+              'get_messages',
+              undefined,
+              dynamicTimeout // 🔧 FIX 4: Dynamic timeout
+            );
+            
             totalApiCalls++;
             setProgress(((i + 1) / parallelBatches) * 100);
+            
+            // 🔧 FIX 1: Error check DENTRO il retry (come batch test)
+            if (result.error) {
+              throw new Error(result.error.message || 'API error');
+            }
+            
             return result;
-          })
-        )
+          } catch (error) {
+            console.error(`❌ Batch ${i + 1} failed:`, error);
+            throw error;
+          }
+        })
       );
 
       // ✅ Promise.allSettled per non fallire su singoli errori
@@ -677,15 +701,16 @@ export function PerformanceTestSuite() {
 
       const successCount = results.filter(r => {
         if (r.status === 'fulfilled') {
-          const messages = r.value.data?.messages || [];
-          return !r.value.error && messages.length > 0;
+          const messages = r.value?.data?.messages || r.value?.data?.emails || [];
+          return messages.length > 0;
         }
         return false;
       }).length;
       
       const actualEmailCount = results.reduce((sum, r) => {
         if (r.status === 'fulfilled') {
-          return sum + (r.value.data?.messages?.length || 0);
+          const messages = r.value?.data?.messages || r.value?.data?.emails || [];
+          return sum + messages.length;
         }
         return sum;
       }, 0);

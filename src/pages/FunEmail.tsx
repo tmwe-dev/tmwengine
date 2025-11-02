@@ -23,6 +23,7 @@ import { GradientBackground } from '@/components/design-system';
 import { cn } from '@/lib/utils';
 import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
 import { AIAutomationDashboard } from '@/components/email/automation/AIAutomationDashboard';
+import { EmailCountDiagnostics } from '@/components/email/EmailCountDiagnostics';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();
@@ -30,7 +31,7 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations'>('list');
+  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics'>('list');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
@@ -72,7 +73,7 @@ const FunEmail = () => {
   // Sincronizza currentView con query param "view" dal CRMLayout
   useEffect(() => {
     const viewParam = searchParams.get('view');
-    if (viewParam && ['quick-download', 'integrity', 'debugger'].includes(viewParam)) {
+    if (viewParam && ['quick-download', 'integrity', 'debugger', 'diagnostics'].includes(viewParam)) {
       setCurrentView(viewParam as typeof currentView);
     }
   }, [searchParams]);
@@ -245,7 +246,7 @@ const FunEmail = () => {
       gradient={true}
       contentClassName="p-0 max-w-none"
       title={
-        ['quick-download', 'integrity', 'debugger'].includes(currentView) ? (
+        ['quick-download', 'integrity', 'debugger', 'diagnostics'].includes(currentView) ? (
           <Button
             variant="ghost"
             size="sm"
@@ -381,6 +382,10 @@ const FunEmail = () => {
           ) : currentView === 'debugger' ? (
             <div className="p-6 max-w-4xl mx-auto">
               <TmweBackendDebugger />
+            </div>
+          ) : currentView === 'diagnostics' ? (
+            <div className="p-6 max-w-4xl mx-auto">
+              <EmailCountDiagnostics />
             </div>
           ) : currentView === 'inbox' ? (
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">

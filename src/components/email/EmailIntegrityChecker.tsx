@@ -36,11 +36,9 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
   const { data: comparisons, isLoading, refetch, isRefetching, error, isSuccess } = useQuery<FolderComparison[], Error>({
     queryKey: ['email-integrity-check'],
     queryFn: async (): Promise<FolderComparison[]> => {
-      console.log('🔍 [IntegrityCheck] Inizio verifica...');
+      console.log('🔍 [IntegrityCheck] Using unified count service...');
       
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('🔍 [IntegrityCheck] User:', user?.id);
-      
       if (!user) throw new Error('Non autenticato');
 
       const { data: profile } = await supabase
@@ -48,71 +46,21 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
         .select('tmwe_email')
         .eq('user_id', user.id)
         .single();
-      
-      console.log('🔍 [IntegrityCheck] Profile email:', profile?.tmwe_email);
 
       if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
 
-      // 1. Fetch conteggi server (usando emailFolderApi più affidabile)
-      console.log('🔍 [IntegrityCheck] Fetching folders from server via emailFolderApi...');
-      const serverFoldersResponse = await emailFolderApi.getFolders({ 
-        include_counts: true,  // Include conteggi messaggi per cartella
-        skipCache: true        // Salta cache per dati freschi
-      });
-      console.log('🔍 [IntegrityCheck] Server folders response:', serverFoldersResponse);
-      console.log('🔍 [IntegrityCheck] Response keys:', Object.keys(serverFoldersResponse || {}));
+      // ✅ USA SERVIZIO UNIFICATO
+      const { getUnifiedFolderCounts } = await import('@/lib/email-count-service');
+      const unifiedResults = await getUnifiedFolderCounts(profile.tmwe_email);
       
-      // La risposta potrebbe avere folders, data, o essere direttamente un array
-      const serverFolders = serverFoldersResponse.folders 
-        || serverFoldersResponse.data 
-        || (Array.isArray(serverFoldersResponse) ? serverFoldersResponse : []);
-      
-      console.log('🔍 [IntegrityCheck] Extracted server folders:', serverFolders);
-      console.log('🔍 [IntegrityCheck] Server folders count:', serverFolders.length);
-      
-      if (serverFolders.length > 0) {
-        console.log('🔍 [IntegrityCheck] First folder structure:', serverFolders[0]);
-      }
-
-      // 2. Fetch conteggi DB locale
-      console.log('🔍 [IntegrityCheck] Fetching DB counts...');
-      const { data: dbCounts, error: dbError } = await supabase.rpc('get_email_folder_counts', {
-        p_user_email: profile.tmwe_email,
-        p_sync_status: 'fun_email_backup'
-      });
-      
-      console.log('🔍 [IntegrityCheck] DB counts:', dbCounts);
-      if (dbError) console.error('🔍 [IntegrityCheck] DB error:', dbError);
-
-      const dbCountsMap = (dbCounts || []).reduce((acc: Record<string, number>, row: { cartella: string; count: number }) => {
-        acc[row.cartella] = row.count;
-        return acc;
-      }, {});
-
-      // 3. Confronta e crea risultati
-      const results: FolderComparison[] = serverFolders.map((folder: any) => {
-        // emailFolderApi restituisce: { name, display_name?, total_count?, message_count?, unread_count? }
-        const folderName = folder.name || folder.folder;
-        const serverCount = folder.message_count || folder.total_count || folder.messages || folder.count || folder.total || 0;
-        const dbCount = dbCountsMap[folderName] || 0;
-        const missing = Math.max(0, serverCount - dbCount);
-        const syncPercentage = serverCount > 0 
-          ? Math.round((dbCount / serverCount) * 100) 
-          : 100;
-
-        console.log(`🔍 [IntegrityCheck] Folder "${folderName}": server=${serverCount}, db=${dbCount}, missing=${missing}`);
-
-        return {
-          folderName,
-          serverCount,
-          dbCount,
-          missing,
-          syncPercentage
-        };
-      });
-
-      console.log('🔍 [IntegrityCheck] Results:', results);
-      return results;
+      // Converti in formato FolderComparison
+      return unifiedResults.map(r => ({
+        folderName: r.folderName,
+        serverCount: r.serverCount >= 0 ? r.serverCount : 0,
+        dbCount: r.dbCount,
+        missing: r.missing,
+        syncPercentage: r.syncPercentage
+      }));
     },
     enabled: true,
     refetchInterval: false,

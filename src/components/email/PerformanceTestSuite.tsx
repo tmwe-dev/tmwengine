@@ -18,13 +18,15 @@ import { Link } from 'react-router-dom';
 import { withTMWERetry, categorizeError, type ErrorCategory } from '@/lib/api-retry-advanced';
 import { logPerformanceMetrics } from '@/lib/performance-metrics-logger';
 import { ParallelDownloadController } from '@/lib/parallel-download-controller';
+import { FolderSelector } from '@/components/email/FolderSelector';
+import { getUnifiedFolderCounts, getTestableFolders, type UnifiedFolderCount } from '@/lib/email-count-service';
 
 // 🚀 Istanza globale ParallelDownloadController per rate limiting
 const downloadController = new ParallelDownloadController(10, 50);
 
 interface TestConfig {
   folder: string;
-  testType: 'single' | 'batch' | 'batch-compare' | 'light-vs-full' | 'parallel' | 'imap-health';
+  testType: 'single' | 'batch' | 'batch-compare' | 'light-vs-full' | 'parallel' | 'imap-health' | 'all-in-one';
   batchSize?: number;
   repetitions?: number;
   batchSizes?: number[]; // Per batch-compare
@@ -81,7 +83,33 @@ interface TestSuiteConfig {
   estimatedDuration: number; // seconds
 }
 
-// Suite completa di test per analisi ottimale
+// ✅ GENERATE DYNAMIC COMPLETE SUITE basata su cartelle reali
+const generateCompleteSuite = async (userEmail: string): Promise<TestSuiteConfig> => {
+  const { getTestableFolders } = await import('@/lib/email-count-service');
+  const testable = await getTestableFolders(userEmail, 25);
+  
+  if (testable.length === 0) {
+    throw new Error('Nessuna cartella con abbastanza email per test completo (minimo 25 email richieste)');
+  }
+  
+  // Seleziona top 3 cartelle per dimensione
+  const topFolders = testable.slice(0, 3);
+  
+  console.log('📊 [SUITE] Dynamic suite will test:', topFolders.map(f => f.folderName));
+  
+  return {
+    name: "Complete Performance Analysis (Dynamic)",
+    description: `Testa ${topFolders.length} cartelle reali con dati sufficienti`,
+    estimatedDuration: topFolders.length * 60,
+    tests: topFolders.flatMap(folder => [
+      { folder: folder.folderName, testType: 'imap-health' as const },
+      { folder: folder.folderName, testType: 'batch' as const, batchSize: 25 },
+      { folder: folder.folderName, testType: 'parallel' as const, batchSize: 25, parallelBatches: 3 }
+    ])
+  };
+};
+
+// Suite completa STATICA (fallback)
 const COMPLETE_TEST_SUITE: TestSuiteConfig = {
   name: "Complete Performance Analysis",
   description: "Esegue tutti i test in sequenza per analisi completa sistema",
@@ -145,6 +173,7 @@ export function PerformanceTestSuite() {
 
   const [folders, setFolders] = useState<string[]>(['INBOX', 'Sent', 'Drafts', 'Archive', 'Trash']);
   const [loadingFolders, setLoadingFolders] = useState(false);
+  const [unifiedFolders, setUnifiedFolders] = useState<UnifiedFolderCount[]>([]);
 
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -180,24 +209,30 @@ export function PerformanceTestSuite() {
     }
   }, []); // Esegui solo al mount
 
-  // Load folders on mount
+  // ✅ Load folders with counts using unified service
   useEffect(() => {
     const loadFolders = async () => {
       setLoadingFolders(true);
       try {
-        const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
-          body: {
-            endpoint: '/email_folder',
-            data: { handler: 'get_folders' }
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('tmwe_email')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (profile?.tmwe_email) {
+            const unified = await getUnifiedFolderCounts(profile.tmwe_email);
+            setUnifiedFolders(unified);
+            setFolders(unified.map(f => f.folderName));
+            console.log('✅ [PERF] Loaded', unified.length, 'folders with counts');
           }
-        });
-
-        if (!error && data?.success && data?.folders) {
-          const folderNames = data.folders.map((f: any) => f.name || f);
-          setFolders(folderNames.length > 0 ? folderNames : ['INBOX']);
         }
       } catch (err) {
         console.error('Failed to load folders:', err);
+        // Fallback to basic folders
+        setFolders(['INBOX', 'Sent', 'Drafts', 'Archive', 'Trash']);
       } finally {
         setLoadingFolders(false);
       }
@@ -1137,28 +1172,39 @@ export function PerformanceTestSuite() {
                     <SelectItem value="light-vs-full">⚡ Light vs Full Body</SelectItem>
                     <SelectItem value="parallel">🔄 Parallel Download</SelectItem>
                     <SelectItem value="imap-health">🏥 IMAP Health Check</SelectItem>
+                    <SelectItem value="all-in-one">🎯 All-in-One (Smart Test)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <Label>Folder</Label>
-                <Select
-                  value={config.folder}
-                  onValueChange={(value) => setConfig({ ...config, folder: value })}
-                  disabled={loadingFolders}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={loadingFolders ? "Loading folders..." : "Select folder"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {folders.map((folder) => (
-                      <SelectItem key={folder} value={folder}>
-                        {folder}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {unifiedFolders.length > 0 ? (
+                  <FolderSelector
+                    folders={unifiedFolders}
+                    selectedFolder={config.folder}
+                    onSelect={(folder) => setConfig({ ...config, folder })}
+                    showCounts={true}
+                    showSyncStatus={true}
+                  />
+                ) : (
+                  <Select
+                    value={config.folder}
+                    onValueChange={(value) => setConfig({ ...config, folder: value })}
+                    disabled={loadingFolders}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingFolders ? "Loading folders..." : "Select folder"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {folders.map((folder) => (
+                        <SelectItem key={folder} value={folder}>
+                          {folder}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
           )}

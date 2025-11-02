@@ -6,7 +6,6 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -144,135 +143,132 @@ export function FolderSyncPreferencesManager({
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Caricamento preferenze...
-        </CardContent>
-      </Card>
+      <div className="py-8 text-center text-muted-foreground">
+        Caricamento preferenze...
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
           <Lock className="h-5 w-5" />
           Gestione Sincronizzazione Cartelle
-        </CardTitle>
-        <CardDescription>
+        </h3>
+        <p className="text-sm text-muted-foreground">
           Scegli quali cartelle sincronizzare automaticamente nel database locale.
           Le preferenze si applicano al Quick Download e alla sincronizzazione automatica.
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="space-y-6">
-        {/* Modalità Sync */}
-        <div className="space-y-3">
-          <Label className="text-base font-semibold">Modalità di Sincronizzazione</Label>
-          
-          <RadioGroup value={syncMode} onValueChange={(v) => setSyncMode(v as any)}>
-            <div className="flex items-start space-x-3 p-3 border rounded-md hover:bg-muted/50 transition-colors">
-              <RadioGroupItem value="blacklist" id="mode-blacklist" className="mt-1" />
-              <div className="flex-1">
-                <Label htmlFor="mode-blacklist" className="cursor-pointer">
-                  <div className="font-medium">Blacklist (Escludi)</div>
-                  <div className="text-sm text-muted-foreground">
-                    Sincronizza <strong>tutte</strong> le cartelle <strong>tranne</strong> quelle selezionate
-                  </div>
-                </Label>
-              </div>
-              <Badge variant="outline">Consigliato</Badge>
-            </div>
+        </p>
+      </div>
 
-            <div className="flex items-start space-x-3 p-3 border rounded-md hover:bg-muted/50 transition-colors">
-              <RadioGroupItem value="whitelist" id="mode-whitelist" className="mt-1" />
-              <div className="flex-1">
-                <Label htmlFor="mode-whitelist" className="cursor-pointer">
-                  <div className="font-medium">Whitelist (Includi)</div>
-                  <div className="text-sm text-muted-foreground">
-                    Sincronizza <strong>solo</strong> le cartelle selezionate
-                  </div>
-                </Label>
-              </div>
+      {/* Modalità Sync */}
+      <div className="space-y-3">
+        <Label className="text-base font-semibold">Modalità di Sincronizzazione</Label>
+        
+        <RadioGroup value={syncMode} onValueChange={(v) => setSyncMode(v as any)}>
+          <div className="flex items-start space-x-3 p-3 border rounded-md hover:bg-muted/50 transition-colors">
+            <RadioGroupItem value="blacklist" id="mode-blacklist" className="mt-1" />
+            <div className="flex-1">
+              <Label htmlFor="mode-blacklist" className="cursor-pointer">
+                <div className="font-medium">Blacklist (Escludi)</div>
+                <div className="text-sm text-muted-foreground">
+                  Sincronizza <strong>tutte</strong> le cartelle <strong>tranne</strong> quelle selezionate
+                </div>
+              </Label>
             </div>
-          </RadioGroup>
-        </div>
-
-        {/* Lista Cartelle */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-base font-semibold">Cartelle Disponibili</Label>
-            <Badge variant="secondary">
-              {getActiveCount()} / {availableFolders.length} attive
-            </Badge>
+            <Badge variant="outline">Consigliato</Badge>
           </div>
 
-          <ScrollArea className="h-[300px] border rounded-md p-4">
-            <div className="space-y-2">
-              {availableFolders.map(folder => {
-                const isActive = isFolderActive(folder);
-                
-                return (
-                  <div 
-                    key={folder} 
-                    className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 flex-1">
-                      <Folder className="h-4 w-4 text-muted-foreground" />
-                      <Label 
-                        htmlFor={`folder-${folder}`}
-                        className="cursor-pointer flex-1 font-normal"
-                      >
-                        {folder}
-                      </Label>
-                      {isActive ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </div>
-                    
-                    <Switch
-                      id={`folder-${folder}`}
-                      checked={isActive}
-                      onCheckedChange={() => toggleFolderInclusion(folder)}
-                    />
-                  </div>
-                );
-              })}
+          <div className="flex items-start space-x-3 p-3 border rounded-md hover:bg-muted/50 transition-colors">
+            <RadioGroupItem value="whitelist" id="mode-whitelist" className="mt-1" />
+            <div className="flex-1">
+              <Label htmlFor="mode-whitelist" className="cursor-pointer">
+                <div className="font-medium">Whitelist (Includi)</div>
+                <div className="text-sm text-muted-foreground">
+                  Sincronizza <strong>solo</strong> le cartelle selezionate
+                </div>
+              </Label>
             </div>
-          </ScrollArea>
-
-          <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-md">
-            {syncMode === 'blacklist' ? (
-              <div className="flex items-start gap-2">
-                <Unlock className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>
-                  Le cartelle <strong>attive</strong> (con switch ON) saranno sincronizzate.
-                  Le altre verranno ignorate.
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-start gap-2">
-                <Lock className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>
-                  Verranno sincronizzate <strong>solo</strong> le cartelle attive (con switch ON).
-                  Tutte le altre verranno ignorate.
-                </span>
-              </div>
-            )}
           </div>
+        </RadioGroup>
+      </div>
+
+      {/* Lista Cartelle */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-base font-semibold">Cartelle Disponibili</Label>
+          <Badge variant="secondary">
+            {getActiveCount()} / {availableFolders.length} attive
+          </Badge>
         </div>
 
-        {/* Save Button */}
-        <Button 
-          className="w-full" 
-          onClick={handleSavePreferences}
-          disabled={isSaving}
-        >
-          {isSaving ? 'Salvataggio...' : 'Salva Preferenze'}
-        </Button>
-      </CardContent>
-    </Card>
+        <ScrollArea className="h-[400px] max-h-[45vh] border rounded-md p-4">
+          <div className="space-y-2">
+            {availableFolders.map(folder => {
+              const isActive = isFolderActive(folder);
+              
+              return (
+                <div 
+                  key={folder} 
+                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2 flex-1">
+                    <Folder className="h-4 w-4 text-muted-foreground" />
+                    <Label 
+                      htmlFor={`folder-${folder}`}
+                      className="cursor-pointer flex-1 font-normal"
+                    >
+                      {folder}
+                    </Label>
+                    {isActive ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                  
+                  <Switch
+                    id={`folder-${folder}`}
+                    checked={isActive}
+                    onCheckedChange={() => toggleFolderInclusion(folder)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+
+        <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-md">
+          {syncMode === 'blacklist' ? (
+            <div className="flex items-start gap-2">
+              <Unlock className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>
+                Le cartelle <strong>attive</strong> (con switch ON) saranno sincronizzate.
+                Le altre verranno ignorate.
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2">
+              <Lock className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>
+                Verranno sincronizzate <strong>solo</strong> le cartelle attive (con switch ON).
+                Tutte le altre verranno ignorate.
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <Button 
+        className="w-full" 
+        onClick={handleSavePreferences}
+        disabled={isSaving}
+      >
+        {isSaving ? 'Salvataggio...' : 'Salva Preferenze'}
+      </Button>
+    </div>
   );
 }

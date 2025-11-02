@@ -160,6 +160,22 @@ export function PerformanceTestSuite() {
   const [suiteResults, setSuiteResults] = useState<TestResult[]>([]);
   const [suiteProgress, setSuiteProgress] = useState(0);
 
+  // ✅ Carica risultati suite da localStorage all'avvio
+  useEffect(() => {
+    const savedReport = localStorage.getItem('last-suite-report');
+    if (savedReport) {
+      try {
+        const { results } = JSON.parse(savedReport);
+        if (results && Array.isArray(results) && results.length > 0) {
+          console.log('📂 [SUITE] Loaded', results.length, 'test results from localStorage');
+          setSuiteResults(results);
+        }
+      } catch (err) {
+        console.error('❌ [SUITE] Failed to load results from localStorage:', err);
+      }
+    }
+  }, []); // Esegui solo al mount
+
   // Load folders on mount
   useEffect(() => {
     const loadFolders = async () => {
@@ -1051,6 +1067,36 @@ export function PerformanceTestSuite() {
             )}
           </div>
 
+          {/* ✅ Pulsante per ripristinare suite salvata */}
+          {suiteResults.length === 0 && (() => {
+            const savedReport = localStorage.getItem('last-suite-report');
+            if (savedReport) {
+              const { timestamp, results } = JSON.parse(savedReport);
+              return (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>💾 Previous Test Suite Available</AlertTitle>
+                  <AlertDescription className="flex items-center justify-between">
+                    <span className="text-xs">
+                      Last run: {new Date(timestamp).toLocaleString('it-IT')} ({results.length} tests)
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSuiteResults(results);
+                        console.log('📂 Restored', results.length, 'test results');
+                      }}
+                    >
+                      Restore Results
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              );
+            }
+            return null;
+          })()}
+
           {selectedSuite === 'custom' && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1584,46 +1630,73 @@ export function PerformanceTestSuite() {
         {suiteResults.length > 0 && (
           <Card className="border-primary">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  📊 Suite Results Comparison
-                  <Badge variant="outline">{suiteResults.length} tests</Badge>
-                  {isRunningSuite && (
-                    <Badge variant="secondary" className="animate-pulse">
-                      Running... {currentTestIndex + 1}/{SUITE_MAP[selectedSuite]?.tests.length}
-                    </Badge>
-                  )}
-                </CardTitle>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => {
-                      const json = JSON.stringify(suiteResults, null, 2);
-                      const blob = new Blob([json], { type: 'application/json' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `suite-results-${new Date().toISOString()}.json`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Download className="mr-2 h-3 w-3" />
-                    Export JSON
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      setSuiteResults([]);
-                      localStorage.removeItem('last-suite-report');
-                    }}
-                    variant="ghost"
-                    size="sm"
-                    disabled={isRunningSuite}
-                  >
-                    Clear Results
-                  </Button>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    📊 Suite Results Comparison
+                    <Badge variant="outline">{suiteResults.length} tests</Badge>
+                    {isRunningSuite && (
+                      <Badge variant="secondary" className="animate-pulse">
+                        Running... {currentTestIndex + 1}/{SUITE_MAP[selectedSuite]?.tests.length}
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    {/* ✅ Mostra timestamp ultimo test */}
+                    {(() => {
+                      const savedReport = localStorage.getItem('last-suite-report');
+                      if (savedReport) {
+                        const { timestamp } = JSON.parse(savedReport);
+                        return (
+                          <Badge variant="secondary" className="text-xs">
+                            Last run: {new Date(timestamp).toLocaleString('it-IT')}
+                          </Badge>
+                        );
+                      }
+                      return null;
+                    })()}
+                    
+                    <Button 
+                      onClick={() => {
+                        const json = JSON.stringify(suiteResults, null, 2);
+                        const blob = new Blob([json], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `suite-results-${new Date().toISOString()}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Download className="mr-2 h-3 w-3" />
+                      Export JSON
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        setSuiteResults([]);
+                        localStorage.removeItem('last-suite-report');
+                      }}
+                      variant="ghost"
+                      size="sm"
+                      disabled={isRunningSuite}
+                    >
+                      Clear Results
+                    </Button>
+                  </div>
                 </div>
+                {/* ✅ Descrizione suite eseguita */}
+                <p className="text-xs text-muted-foreground">
+                  {(() => {
+                    const savedReport = localStorage.getItem('last-suite-report');
+                    if (savedReport) {
+                      const { report } = JSON.parse(savedReport);
+                      return `Overall Success: ${report.overallSuccessRate}% | Peak Throughput: ${Math.max(...suiteResults.map(r => r.metrics.throughput)).toFixed(1)}/s`;
+                    }
+                    return 'Results from current session';
+                  })()}
+                </p>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">

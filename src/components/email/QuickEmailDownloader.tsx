@@ -660,10 +660,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
           className="w-full"
           size="lg"
           onClick={startQuickDownload}
-          disabled={
-            isQuickLoading ||
-            (preSelectedFolders.length === 0 && quickFolders.filter(f => f.selected).length === 0)
-          }
+          disabled={isQuickLoading}
         >
           {isQuickLoading ? (
             <>

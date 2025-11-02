@@ -148,7 +148,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
       const quickFoldersList = Array.isArray(quickResponse) 
         ? quickResponse 
-        : (quickResponse?.folders || quickResponse?.data || []);
+        : (quickResponse?.data || quickResponse?.folders || []);
       
       console.log('📂 [loadQuickFolders] Extracted folders list:', quickFoldersList);
       console.log('📂 [loadQuickFolders] Folders count:', quickFoldersList.length);

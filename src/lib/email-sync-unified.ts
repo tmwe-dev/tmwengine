@@ -176,7 +176,7 @@ export class EmailSyncUnified {
         const response = await emailFolderApi.getFolders({ include_counts: false, skipCache: true });
         const allFolders = Array.isArray(response) 
           ? response.map(f => ({ name: f.name || f, ...f }))
-          : (response?.folders || []).map(f => ({ name: f.name || f, ...f }));
+          : (response?.data || response?.folders || []).map(f => ({ name: f.name || f, ...f }));
         
         console.log('📁 All server folders:', allFolders.map(f => f.name));
         

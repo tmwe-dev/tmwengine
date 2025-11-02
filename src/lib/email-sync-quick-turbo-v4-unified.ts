@@ -447,7 +447,8 @@ const downloadParallelBatches = async (
   batchSize: number,
   parallelBatches: number,
   maxRetries: number,
-  timeout: number
+  timeout: number,
+  downloadController: ParallelDownloadController  // ✅ FIX 3: Aggiungi controller
 ): Promise<Array<{ uid: string; data: any }>> => {
   
   const chunks = chunkArray(uids, batchSize);
@@ -458,48 +459,51 @@ const downloadParallelBatches = async (
   for (let i = 0; i < chunks.length; i += parallelBatches) {
     const parallelChunks = chunks.slice(i, i + parallelBatches);
     
-    // ✅ FIX: USA chiamate parallele a get_message singolo (handler supportato)
-    const batchPromises = parallelChunks.map(async (chunk) => {
-      console.log(`🚀 [TURBO V4] Parallel download for ${chunk.length} emails using get_message...`);
-      
-      // Chiamate parallele a get_message singolo
-      const emailPromises = chunk.map(async (uid) => {
-        try {
-          const response = await supabase.functions.invoke('tmwe-api-proxy', {
-            body: {
-              endpoint: '/email_message',
-              data: {
-                handler: 'get_message',
-                uid: parseInt(uid, 10),
-                folder: folderName,
-                include_body: true
+    // ✅ FIX 4: Wrappa ogni batch con downloadController per rate limiting
+    const batchPromises = parallelChunks.map(chunk => 
+      downloadController.download(async () => {
+        console.log(`🚀 [TURBO V4] Parallel download for ${chunk.length} emails using get_message...`);
+        
+        // Chiamate parallele a get_message singolo
+        const emailPromises = chunk.map(async (uid) => {
+          try {
+            const response = await supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/email_message',
+                data: {
+                  handler: 'get_message',
+                  uid: parseInt(uid, 10),
+                  folder: folderName,
+                  include_body: true
+                }
               }
+            });
+            
+            if (response.error) {
+              console.error(`❌ [TURBO V4] get_message failed for UID ${uid}:`, response.error);
+              return null;
             }
-          });
-          
-          if (response.error) {
-            console.error(`❌ [TURBO V4] get_message failed for UID ${uid}:`, response.error);
+            
+            return { uid, data: response.data };
+          } catch (error) {
+            console.error(`❌ [TURBO V4] Exception for UID ${uid}:`, error);
             return null;
           }
-          
-          return { uid, data: response.data };
-        } catch (error) {
-          console.error(`❌ [TURBO V4] Exception for UID ${uid}:`, error);
-          return null;
-        }
-      });
-      
-      const results = await Promise.allSettled(emailPromises);
-      const successfulResults = results
-        .filter((r): r is PromiseFulfilledResult<{ uid: string; data: any } | null> => 
-          r.status === 'fulfilled' && r.value !== null
-        )
-        .map(r => r.value!);
-      
-      console.log(`✅ [TURBO V4] Batch completed: ${successfulResults.length}/${chunk.length} successful`);
-      return successfulResults;
-    });
+        });
+        
+        const results = await Promise.allSettled(emailPromises);
+        const successfulResults = results
+          .filter((r): r is PromiseFulfilledResult<{ uid: string; data: any } | null> => 
+            r.status === 'fulfilled' && r.value !== null
+          )
+          .map(r => r.value!);
+        
+        console.log(`✅ [TURBO V4] Batch completed: ${successfulResults.length}/${chunk.length} successful`);
+        return successfulResults;
+      })
+    );
     
+    // ✅ FIX 4: Attendi tutti i batch in parallelo
     const settledResults = await Promise.allSettled(batchPromises);
     
     settledResults.forEach(result => {
@@ -848,31 +852,24 @@ export class QuickEmailSyncerTurboV4 {
         return;
       }
 
-      // ✨ V4: Calcola configurazione ottimale per questa folder
-      const batchSize = this.calculateOptimalBatchSize(newUids.length, folder);
-      const parallelBatches = this.calculateOptimalParallelBatches(folder);
+      // ✅ FIX 2: Usa config ottimale (già applicato a linea 803)
+      this.metrics.avg_batch_size = (this.metrics.avg_batch_size + config.batchSize) / 2;
+      this.metrics.avg_parallel_batches = (this.metrics.avg_parallel_batches + config.parallelBatches) / 2;
       
-      this.metrics.avg_batch_size = (this.metrics.avg_batch_size + batchSize) / 2;
-      this.metrics.avg_parallel_batches = (this.metrics.avg_parallel_batches + parallelBatches) / 2;
-      
-      console.log(`⚙️ [TURBO V4] ${folder}: batch=${batchSize}, parallel=${parallelBatches}`);
+      console.log(`⚙️ [TURBO V4] ${folder}: batch=${config.batchSize}, parallel=${config.parallelBatches}`);
 
-      // Aggiorna controller dinamicamente per folder problematiche
-      if (folder === 'Trash' || folder === 'Spam' || folder === 'Junk') {
-        this.downloadController.updateLimits(2, 150);
-      } else {
-        this.downloadController.updateLimits(3, 100);
-      }
+      // ✅ FIX 1: RIMOSSO doppio updateLimits (già fatto a linea 803)
 
       // PHASE 3: 🚀 PARALLEL DOWNLOAD
       const t3 = Date.now();
       const emails = await downloadParallelBatches(
         newUids,
         folder,
-        batchSize,
-        parallelBatches,
+        config.batchSize,           // ✅ FIX 2: Usa config.batchSize
+        config.parallelBatches,     // ✅ FIX 2: Usa config.parallelBatches
         this.options.maxRetries,
-        this.options.timeout
+        this.options.timeout,
+        this.downloadController     // ✅ FIX 3: Passa controller
       );
       this.metrics.phase3_parallel_download_ms += Date.now() - t3;
       this.metrics.parallel_download_used = true;

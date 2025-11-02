@@ -360,14 +360,26 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
                 data: {
                   handler: 'get_message',
                   uid: uid,
-                  folder: folder,
-                  include_attachments: false
+                  folder: folder
                 }
               }
             });
 
             if (!emailError && emailData) {
-              const email = emailData?.message || emailData?.email || emailData?.data?.message || emailData;
+              // Parsing robusto con più fallback
+              const email = emailData?.data?.message 
+                || emailData?.data?.email 
+                || emailData?.message 
+                || emailData?.email 
+                || emailData;
+              
+              console.log(`📧 [QuickDownload] Parsed email for UID ${uid}:`, {
+                hasUid: !!email?.uid,
+                hasSubject: !!email?.subject,
+                hasFrom: !!email?.from,
+                structure: Object.keys(email || {})
+              });
+              
               if (email && email.uid) {
                 emails.push(email);
                 totalDownloaded++;
@@ -379,8 +391,13 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
                   speed: totalDownloaded / ((performance.now() - startTime) / 1000),
                   eta: ((performance.now() - startTime) / totalDownloaded) * (prev.overallTotal - totalDownloaded) / 1000
                 } : null);
+              } else {
+                console.warn(`⚠️ [QuickDownload] Invalid email structure for UID ${uid}:`, email);
+                errorCount++;
               }
             } else {
+              console.error(`❌ [QuickDownload] Error downloading UID ${uid}:`, emailError);
+              console.error(`📋 [QuickDownload] EmailData received:`, emailData);
               errorCount++;
             }
           } catch (err) {
@@ -396,36 +413,51 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
         console.log(`✅ [QuickDownload] Downloaded ${emails.length} emails from ${folder}`);
 
-        // STEP 3: Insert in DB (bulk insert)
+        // STEP 3: Insert in DB (bulk insert con controllo duplicati)
         if (emails.length > 0) {
-          const records = emails.map(email => ({
-            message_id: `${folder}/${email.uid}`,
-            user_email: userEmail,
-            provider_id: 'tmwe',
-            from_email: typeof email.from === 'object' ? email.from.email : email.from || '',
-            to_email: Array.isArray(email.to) 
-              ? email.to.map((t: any) => typeof t === 'object' ? t.email : t).join(', ')
-              : (typeof email.to === 'object' ? email.to.email : email.to || ''),
-            subject: email.subject || '(No Subject)',
-            body_text: email.body_type === 'plain' ? email.body : null,
-            body_html: email.body_type === 'html' ? email.body : null,
-            data_ricezione: email.date || new Date().toISOString(),
-            cartella: folder,
-            attachments: email.attachments || [],
-            direzione: 'inbound',
-            sync_status: 'fun_email_backup'
-          }));
-
-          const { error: insertError } = await supabase
+          // Controllo duplicati
+          const messageIds = emails.map(e => `${folder}/${e.uid}`);
+          const { data: existing } = await supabase
             .from('email_messages')
-            .insert(records);
+            .select('message_id')
+            .in('message_id', messageIds)
+            .eq('user_email', userEmail);
 
-          if (insertError) {
-            console.error(`❌ [QuickDownload] Insert error for ${folder}:`, insertError);
-            errorCount++;
-          } else {
-            totalInserted += records.length;
-            console.log(`✅ [QuickDownload] Inserted ${records.length} emails into DB`);
+          const existingIds = new Set(existing?.map(e => e.message_id) || []);
+          const newEmails = emails.filter(e => !existingIds.has(`${folder}/${e.uid}`));
+
+          console.log(`📊 [QuickDownload] Duplicates check: ${emails.length} total, ${existingIds.size} existing, ${newEmails.length} new`);
+
+          if (newEmails.length > 0) {
+            const records = newEmails.map(email => ({
+              message_id: `${folder}/${email.uid}`,
+              user_email: userEmail,
+              provider_id: 'tmwe',
+              from_email: typeof email.from === 'object' ? email.from.email : email.from || '',
+              to_email: Array.isArray(email.to) 
+                ? email.to.map((t: any) => typeof t === 'object' ? t.email : t).join(', ')
+                : (typeof email.to === 'object' ? email.to.email : email.to || ''),
+              subject: email.subject || '(No Subject)',
+              body_text: email.body_type === 'plain' ? email.body : null,
+              body_html: email.body_type === 'html' ? email.body : null,
+              data_ricezione: email.date || new Date().toISOString(),
+              cartella: folder,
+              attachments: email.attachments || [],
+              direzione: 'inbound',
+              sync_status: 'fun_email_backup'
+            }));
+
+            const { error: insertError } = await supabase
+              .from('email_messages')
+              .insert(records);
+
+            if (insertError) {
+              console.error(`❌ [QuickDownload] Insert error for ${folder}:`, insertError);
+              errorCount++;
+            } else {
+              totalInserted += records.length;
+              console.log(`✅ [QuickDownload] Inserted ${records.length} emails into DB`);
+            }
           }
         }
 

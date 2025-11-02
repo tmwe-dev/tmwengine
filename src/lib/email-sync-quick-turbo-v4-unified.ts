@@ -165,10 +165,12 @@ async function loadFoldersWithPreferences(
   console.log(`📂 [TURBO V4] Found ${folderNames.length} folders on server`);
 
   const prefs = await getSyncPreferences(userEmail);
+  console.log('⚙️ [TURBO V4] Raw Preferences from DB:', prefs);
   console.log('⚙️ [TURBO V4] Preferences:', {
     mode: prefs.included_folders.length > 0 ? 'whitelist' : 'blacklist',
     excluded: prefs.excluded_folders,
-    included: prefs.included_folders
+    included: prefs.included_folders,
+    userEmail: userEmail
   });
 
   const emailFolders: EmailFolder[] = folderNames.map(name => ({ name }));
@@ -482,7 +484,7 @@ export class QuickEmailSyncerTurboV4 {
 
   constructor(options: TurboV4SyncOptions) {
     this.options = {
-      folders: options.folders || [],
+      folders: options.folders,
       batchSize: options.batchSize || 25,
       maxRetries: options.maxRetries || 2,
       timeout: options.timeout || 60000,
@@ -548,9 +550,12 @@ export class QuickEmailSyncerTurboV4 {
       console.log('\n🚀 [TURBO V4] Starting UNIFIED sync...');
 
       // STEP 1: Carica cartelle con preferenze
+      console.log('🔧 [TURBO V4] Apply Preferences Flag:', this.options.applyPreferences);
+      console.log('🔧 [TURBO V4] Forced Folders:', this.options.folders);
+      
       const { folders, preferences } = await loadFoldersWithPreferences(
         this.options.userEmail,
-        (this.options.folders && this.options.folders.length > 0) 
+        (this.options.applyPreferences === false || (this.options.folders && this.options.folders.length > 0))
           ? this.options.folders
           : undefined
       );

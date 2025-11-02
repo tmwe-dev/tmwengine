@@ -134,47 +134,43 @@ async function downloadBatch(
   batchSize: number = 25,
   maxRetries: number = 2
 ): Promise<any[]> {
-  const batches: string[][] = [];
-  for (let i = 0; i < uids.length; i += batchSize) {
-    batches.push(uids.slice(i, i + batchSize));
-  }
-  
   const allEmails: any[] = [];
   
-  let offset = 0;
+  console.log(`📥 [UNIFIED] Downloading ${uids.length} emails individually from folder: ${folder}`);
   
-  for (const batch of batches) {
+  for (const uid of uids) {
     let attempt = 0;
     let success = false;
     
     while (attempt < maxRetries && !success) {
       try {
-        console.log(`📥 [UNIFIED] Downloading batch: limit=${batch.length}, offset=${offset}`);
-        
-        const response = await emailMessageApi.getMessages({
+        const response = await emailMessageApi.getMessage(
+          uid.toString(),
           folder,
-          limit: batch.length,
-          offset: offset
-        });
+          false  // markAsRead = false per non modificare lo stato
+        );
         
-        const emails = response.data || response.messages || response.emails || [];
-        console.log(`✅ [UNIFIED] Downloaded ${emails.length} emails`);
-        
-        allEmails.push(...emails);
-        offset += batch.length;
-        success = true;
+        if (response?.success && response?.data) {
+          allEmails.push(response.data);
+          success = true;
+        } else {
+          console.warn(`⚠️ [UNIFIED] UID ${uid} returned invalid response`);
+          success = true; // Skip this UID
+        }
         
       } catch (error) {
         attempt++;
         if (attempt >= maxRetries) {
-          console.error(`❌ [UNIFIED] Batch failed after ${maxRetries} attempts:`, error);
+          console.error(`❌ [UNIFIED] UID ${uid} failed after ${maxRetries} attempts:`, error);
         } else {
-          console.warn(`⚠️ [UNIFIED] Batch attempt ${attempt} failed, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          console.warn(`⚠️ [UNIFIED] UID ${uid} attempt ${attempt} failed, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 500 * attempt));
         }
       }
     }
   }
+  
+  console.log(`✅ [UNIFIED] Downloaded ${allEmails.length}/${uids.length} emails successfully`);
   
   return allEmails;
 }

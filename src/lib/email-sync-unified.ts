@@ -251,14 +251,29 @@ export class EmailSyncUnified {
         }
 
         try {
+          console.log(`📥 [EmailSyncUnified] Downloading UID ${uid} from ${folder}`);
+          
           // Download email (CLONE DEBUGGER)
           const email = await this.downloadEmail(uid, folder);
           
-          if (email) {
-            // Insert into DB
-            await this.insertEmail(email, folder);
-            this.progress.downloadedEmails++;
+          console.log(`📧 [EmailSyncUnified] Downloaded UID ${uid}:`, {
+            hasData: !!email,
+            uid: email?.uid,
+            subject: email?.subject?.substring(0, 50)
+          });
+          
+          if (email && email.uid) {
+            try {
+              // Insert into DB
+              await this.insertEmail(email, folder);
+              this.progress.downloadedEmails++;
+              console.log(`✅ [EmailSyncUnified] Inserted UID ${uid}`);
+            } catch (insertError: any) {
+              console.error(`❌ [EmailSyncUnified] Insert failed for UID ${uid}:`, insertError);
+              this.progress.failedEmails++;
+            }
           } else {
+            console.warn(`⚠️ [EmailSyncUnified] Invalid email data for UID ${uid}`);
             this.progress.failedEmails++;
           }
 
@@ -360,6 +375,13 @@ export class EmailSyncUnified {
           folder
         }
       }
+    });
+
+    console.log(`📧 [EmailSyncUnified] API Response for UID ${uid}:`, {
+      hasError: !!error,
+      success: data?.success,
+      hasData: !!data?.data,
+      dataKeys: data?.data ? Object.keys(data.data) : []
     });
 
     if (error || !data?.success) {

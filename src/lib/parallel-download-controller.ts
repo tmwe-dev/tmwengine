@@ -61,4 +61,14 @@ export class ParallelDownloadController {
       maxConcurrent: this.maxConcurrent
     };
   }
+  
+  /**
+   * 🆕 V4: Aggiorna dinamicamente i limiti di concorrenza e delay
+   * Utile per adattare il comportamento per folder diverse
+   */
+  updateLimits(maxConcurrent: number, minDelay: number) {
+    this.maxConcurrent = maxConcurrent;
+    this.minDelay = minDelay;
+    console.log(`⚙️ [ParallelController] Updated limits: concurrent=${maxConcurrent}, delay=${minDelay}ms`);
+  }
 }

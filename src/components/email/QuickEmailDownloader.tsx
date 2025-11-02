@@ -25,10 +25,10 @@ import {
   Settings
 } from 'lucide-react';
 import { 
-  QuickEmailSyncerTurboV3 as QuickEmailSyncer,
-  TurboV3SyncProgress as QuickSyncProgress,
-  TurboV3SyncStats as QuickSyncStats
-} from '@/lib/email-sync-quick-turbo-v3-preferences';
+  QuickEmailSyncerTurboV4 as QuickEmailSyncer,
+  TurboV4SyncProgress as QuickSyncProgress,
+  TurboV4SyncStats as QuickSyncStats
+} from '@/lib/email-sync-quick-turbo-v4-unified';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 
 interface QuickEmailDownloaderProps {

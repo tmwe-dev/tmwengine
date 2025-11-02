@@ -341,12 +341,45 @@ export class EmailSyncUnified {
       return this.options.folders;
     }
     
-    // Case 2: Preferences applied - folders should be pre-filtered and passed in options
+    // Case 2: Apply preferences from DB
     if (this.options.applyPreferences) {
-      console.log('📁 [UNIFIED] Using preference-filtered folders from component');
-      return this.options.folders && this.options.folders.length > 0 
-        ? this.options.folders 
-        : ['INBOX'];
+      console.log('📁 [UNIFIED] Loading preferences from DB...');
+      
+      try {
+        // 1. Get user preferences
+        const preferences = await getSyncPreferences(this.options.userEmail);
+        console.log('📁 [UNIFIED] User preferences:', {
+          excluded_count: preferences.excluded_folders.length,
+          included_count: preferences.included_folders.length,
+          excluded: preferences.excluded_folders,
+          included: preferences.included_folders
+        });
+        
+        // 2. Get all folders from server
+        const response = await emailFolderApi.getFolders({ include_counts: false });
+        const allFolders = Array.isArray(response) 
+          ? response.map(f => ({ name: f.name || f, ...f }))
+          : (response?.folders || []).map(f => ({ name: f.name || f, ...f }));
+        
+        console.log('📁 [UNIFIED] All server folders:', allFolders.map(f => f.name));
+        
+        // 3. Filter based on preferences
+        const filtered = filterFolders(allFolders, preferences);
+        const folderNames = filtered.map(f => f.name);
+        
+        console.log('📁 [UNIFIED] Filtered by preferences:', folderNames);
+        
+        if (folderNames.length === 0) {
+          console.warn('⚠️ [UNIFIED] No folders after filtering, defaulting to INBOX');
+          return ['INBOX'];
+        }
+        
+        return folderNames;
+        
+      } catch (error) {
+        console.error('❌ [UNIFIED] Error loading preferences:', error);
+        return ['INBOX'];
+      }
     }
     
     // Case 3: Default to INBOX

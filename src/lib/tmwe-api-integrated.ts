@@ -484,6 +484,27 @@ export const emailMessageApi = {
       mark_as_read: markAsRead 
     });
   },
+
+  // ✅ FIX 3: BATCH API per getMessage (10x più veloce)
+  getMessagesBatch: (uids: number[], folder: string = 'INBOX', markAsRead: boolean = false) => {
+    if (!Array.isArray(uids) || uids.length === 0) {
+      throw new Error('UIDs array is required and cannot be empty');
+    }
+    
+    // Converti tutti gli UID a integer
+    const uidInts = uids.map(uid => {
+      const parsed = typeof uid === 'string' ? parseInt(uid, 10) : uid;
+      if (isNaN(parsed)) throw new Error(`Invalid UID in batch: ${uid}`);
+      return parsed;
+    });
+    
+    return fetchApi('/email_message', {
+      handler: 'get_messages_batch',  // Nuovo handler batch
+      uids: uidInts,
+      folder,
+      mark_as_read: markAsRead
+    });
+  },
   
   // ✅ OTTIMIZZAZIONE 4: Batch intelligente per mark as read (mantiene backward compatibility)
   markAsRead: async (messageIds: string[]) => {

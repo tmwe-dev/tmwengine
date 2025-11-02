@@ -249,24 +249,26 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const startQuickDownload = async () => {
     const quickSelectedFolders = quickFolders.filter(f => f.selected);
     
-    // ✅ FIX 1: Se abbiamo preSelectedFolders, usali direttamente (bypass UI)
-    const foldersToSync = preSelectedFolders.length > 0 
-      ? preSelectedFolders  // ✅ Usa nomi da Verifica (già corretti)
-      : quickSelectedFolders.map(f => f.name);  // ✅ Usa selezione UI
+    // ✅ FIX 1 (CRITICAL): Rispetta preferenze quando nessuna selezione manuale
+    // Se utente seleziona cartelle manualmente → usa quelle
+    // Se utente NON seleziona nulla → usa preferenze (folders: undefined)
+    const foldersToSync = quickSelectedFolders.length > 0 
+      ? quickSelectedFolders.map(f => f.name)  // Selezione manuale
+      : undefined;  // undefined = usa preferenze automatiche
     
     console.log('🚀 [QuickDownload] STARTING SYNC');
     console.log('🚀 [QuickDownload] foldersToSync:', foldersToSync);
-    console.log('🚀 [QuickDownload] Source:', preSelectedFolders.length > 0 ? 'preSelected' : 'UI selection');
-    console.log('🚀 [QuickDownload] preSelectedFolders:', preSelectedFolders);
+    console.log('🚀 [QuickDownload] Will apply preferences:', foldersToSync === undefined);
     console.log('🚀 [QuickDownload] quickSelectedFolders:', quickSelectedFolders.map(f => f.name));
     
-    if (foldersToSync.length === 0) {
-      toast({
-        title: '⚠️ Attenzione',
-        description: 'Seleziona almeno una cartella',
-        variant: 'default',
-      });
-      return;
+    if (quickSelectedFolders.length === 0 && preSelectedFolders.length === 0) {
+      // Nessuna selezione → usa preferenze automatiche
+      console.log('🎯 Using automatic folder selection with preferences');
+    }
+    
+    if (quickSelectedFolders.length === 0 && preSelectedFolders.length === 0 && !foldersToSync) {
+      // OK - userà le preferenze
+      console.log('✅ Will sync with preferences (no manual selection)');
     }
 
     try {
@@ -295,8 +297,8 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
       const newQuickSyncer = new QuickEmailSyncer({
         userEmail: profile.tmwe_email,
-        folders: foldersToSync,
-        applyPreferences: preSelectedFolders.length === 0,
+        folders: foldersToSync,  // undefined se nessuna selezione manuale
+        applyPreferences: foldersToSync === undefined,  // true solo se folders è undefined
         batchSize: 25,
         maxRetries: 2,
         timeout: 60000,

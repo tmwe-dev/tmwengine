@@ -327,12 +327,34 @@ const downloadParallelBatches = async (
   for (let i = 0; i < chunks.length; i += parallelBatches) {
     const parallelChunks = chunks.slice(i, i + parallelBatches);
     
-    // ✨ PARALLEL DOWNLOAD: Promise.allSettled
+    // ✅ FIX 3: USA BATCH API invece di singoli getMessage
     const batchPromises = parallelChunks.map(async (chunk) => {
-      const chunkResults = await Promise.all(
-        chunk.map(uid => downloadSingleEmail(uid, folderName, maxRetries, timeout))
-      );
-      return chunkResults.filter((r): r is NonNullable<typeof r> => r !== null);
+      try {
+        // Converti UIDs a numeri
+        const uidInts = chunk.map(uid => parseInt(uid, 10));
+        
+        // Chiamata BATCH (1 sola richiesta per 25 email invece di 25 richieste)
+        console.log(`🚀 [TURBO V4] Using BATCH API for ${uidInts.length} emails...`);
+        const batchResponse = await withTMWERetry(
+          () => emailMessageApi.getMessagesBatch(uidInts, folderName, false),
+          `get_messages_batch_${folderName}_${i}`
+        );
+        
+        // Mappa risultati nel formato atteso
+        return chunk.map((uid, idx) => ({
+          uid,
+          data: batchResponse[idx] || null
+        })).filter(r => r.data !== null);
+        
+      } catch (error) {
+        console.error(`[TURBO V4] Batch download failed, falling back to single:`, error);
+        
+        // FALLBACK: Se batch fallisce, usa singoli getMessage
+        const chunkResults = await Promise.all(
+          chunk.map(uid => downloadSingleEmail(uid, folderName, maxRetries, timeout))
+        );
+        return chunkResults.filter((r): r is NonNullable<typeof r> => r !== null);
+      }
     });
     
     const settledResults = await Promise.allSettled(batchPromises);
@@ -550,15 +572,34 @@ export class QuickEmailSyncerTurboV4 {
       console.log('\n🚀 [TURBO V4] Starting UNIFIED sync...');
 
       // STEP 1: Carica cartelle con preferenze
-      console.log('🔧 [TURBO V4] Apply Preferences Flag:', this.options.applyPreferences);
-      console.log('🔧 [TURBO V4] Forced Folders:', this.options.folders);
-      
+      console.log('🔧 [TURBO V4] ========== PREFERENCES CHECK ==========');
+      console.log('🔧 [TURBO V4] Options:', {
+        applyPreferences: this.options.applyPreferences,
+        folders: this.options.folders,
+        foldersLength: this.options.folders?.length || 0
+      });
+
+      const shouldApplyPreferences = this.options.applyPreferences === false || 
+        (this.options.folders && this.options.folders.length > 0);
+
+      console.log('🔧 [TURBO V4] Decision:', {
+        shouldApplyPreferences,
+        willUseForcedFolders: shouldApplyPreferences,
+        forcedFolders: shouldApplyPreferences ? this.options.folders : undefined
+      });
+
       const { folders, preferences } = await loadFoldersWithPreferences(
         this.options.userEmail,
-        (this.options.applyPreferences === false || (this.options.folders && this.options.folders.length > 0))
-          ? this.options.folders
-          : undefined
+        shouldApplyPreferences ? this.options.folders : undefined
       );
+
+      console.log('🔧 [TURBO V4] Result:', {
+        foldersCount: folders.length,
+        mode: preferences.mode,
+        filtered: preferences.filteredFolderCount,
+        original: preferences.originalFolderCount
+      });
+      console.log('🔧 [TURBO V4] ==========================================');
 
       if (folders.length === 0) {
         throw new Error('Nessuna cartella da sincronizzare');
@@ -576,10 +617,42 @@ export class QuickEmailSyncerTurboV4 {
 
       cleanOldCacheV2(this.options.userEmail);
 
+      // FIX 2: Escludi automaticamente cartelle troppo grandi (> 5000 messaggi)
+      const LARGE_FOLDER_THRESHOLD = 5000;
+      console.log('📊 [TURBO V4] Checking folder sizes...');
+      
+      const folderCounts = await Promise.all(
+        folders.map(async (folder) => {
+          try {
+            const response = await emailMessageApi.getMessages({ 
+              folder,
+              limit: 1,
+            });
+            const count = (response as any).total || 0;
+            return { folder, count };
+          } catch (error) {
+            console.warn(`⚠️ Could not get count for ${folder}:`, error);
+            return { folder, count: 0 };
+          }
+        })
+      );
+
+      const safeFolders = folderCounts
+        .filter(({ folder, count }) => {
+          if (count > LARGE_FOLDER_THRESHOLD) {
+            console.warn(`⚠️ [TURBO V4] Skipping large folder: ${folder} (${count} messages > ${LARGE_FOLDER_THRESHOLD})`);
+            return false;
+          }
+          return true;
+        })
+        .map(({ folder }) => folder);
+
+      console.log(`✅ [TURBO V4] Safe folders: ${safeFolders.length}/${folders.length}`);
+
       // Priority: INBOX first
       const priorityFolders = [
-        ...folders.filter(f => f.toLowerCase() === 'inbox'),
-        ...folders.filter(f => f.toLowerCase() !== 'inbox')
+        ...safeFolders.filter(f => f.toLowerCase() === 'inbox'),
+        ...safeFolders.filter(f => f.toLowerCase() !== 'inbox')
       ];
 
       // Sync each folder

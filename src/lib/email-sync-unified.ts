@@ -1,21 +1,12 @@
 /**
- * EMAIL SYNC UNIFIED - Sistema consolidato per sincronizzazione email
- * 
- * ✅ Batch seriale ottimizzato (25 email/batch)
- * ✅ Supporto preferences (whitelist/blacklist folders)
- * ✅ Cache V2 (highestUID + lastSync)
- * ✅ Bulk insert RPC con fallback
- * ✅ Progress tracking real-time
+ * Email Sync Unified - CLONE DEBUGGER VERSION
+ * Logica semplificata: clona esattamente il codice funzionante del TmweBackendDebugger
+ * Nessuna cache complessa, nessun batch seriale, solo download diretto e inserimento
  */
 
-import { supabase } from "@/integrations/supabase/client";
-import { emailMessageApi, emailFolderApi } from "@/lib/tmwe-api-integrated";
-import { getSyncPreferences, filterFolders, type EmailFolder } from "./email-sync-preferences";
-import { 
-  getFolderCacheV2, 
-  saveFolderCacheV2, 
-  cleanOldCacheV2 
-} from "./email-sync-quick-cache-v2";
+import { supabase } from '@/integrations/supabase/client';
+import { getSyncPreferences, filterFolders, type EmailFolder } from './email-sync-preferences';
+import { emailFolderApi } from './tmwe-api-integrated';
 
 // ==================== TYPES ====================
 
@@ -25,6 +16,13 @@ export interface UnifiedSyncProgress {
   foldersToSync: string[];
   completedFolders: string[];
   totalEmails: number;
+  downloadedEmails: number;
+  skippedEmails: number;
+  failedEmails: number;
+  currentSpeed: number;
+  avgSpeed: number;
+  eta: number;
+  startTime: number;
   downloadedCount: number;
   failedCount: number;
   speed: number;
@@ -50,355 +48,124 @@ export interface UnifiedSyncStats {
   failed: number;
   duration: number;
   avgSpeed: number;
-  folders: { [key: string]: number };
 }
 
-// ==================== HELPER FUNCTIONS ====================
-
-async function fetchFolderUIDs(folderName: string): Promise<string[]> {
-  // ✅ STEP 1: Verifica sessione (come nel debugger)
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  
-  if (sessionError || !session) {
-    console.error('🔐 [UNIFIED] Session error:', sessionError);
-    throw new Error('TMWE_SESSION_EXPIRED');
-  }
-
-  // ✅ STEP 2: Check token expiry (come nel debugger)
-  const expiresAt = session.expires_at || 0;
-  const now = Math.floor(Date.now() / 1000);
-  const timeUntilExpiry = expiresAt - now;
-
-  console.log('🔐 [UNIFIED] Token status:', {
-    folder: folderName,
-    expiresAt: new Date(expiresAt * 1000).toLocaleString(),
-    timeUntilExpiry: `${Math.floor(timeUntilExpiry / 60)} minuti`,
-    needsRefresh: timeUntilExpiry < 300
-  });
-
-  // ✅ STEP 3: Refresh se necessario (come nel debugger)
-  if (timeUntilExpiry < 300) {
-    console.log('🔄 [UNIFIED] Refreshing token...');
-    const { error: refreshError } = await supabase.auth.refreshSession();
-    if (refreshError) {
-      console.error('❌ [UNIFIED] Token refresh failed:', refreshError);
-      throw new Error('TMWE_SESSION_EXPIRED');
-    }
-  }
-
-  // ✅ STEP 4: Chiama API (come nel debugger)
-  console.log(`📧 [UNIFIED] Fetching UIDs for: ${folderName}`);
-  
-  const response = await supabase.functions.invoke('tmwe-api-proxy', {
-    body: {
-      endpoint: '/email_message',
-      data: { 
-        handler: 'get_messages',
-        folder: folderName,
-        limit: 999999,
-        offset: 0
-      }
-    }
-  });
-
-  // ✅ STEP 5: Gestione errori (come nel debugger)
-  if (response.error) {
-    console.error('❌ [UNIFIED] Edge function error:', response.error);
-    throw new Error('TMWE_SESSION_EXPIRED');
-  }
-
-  if (response.data && !response.data.success) {
-    console.warn('⚠️ [UNIFIED] TMWE API error:', response.data.errors);
-    return [];
-  }
-
-  // ✅ STEP 6: Extract UIDs
-  console.log(`📧 [UNIFIED] Response for ${folderName}:`, {
-    success: response.data?.success,
-    dataLength: response.data?.data?.length || 0,
-    firstUID: response.data?.data?.[0]?.uid
-  });
-
-  const uids: string[] = response.data?.data?.map((msg: any) => msg.uid?.toString() || '') || [];
-  return uids.filter((uid: string) => Boolean(uid));
-}
-
-async function checkDuplicates(
-  uids: string[], 
-  userEmail: string, 
-  folderName: string
-): Promise<{ existingUids: Set<string>; cacheHits: number }> {
-  const existingUids = new Set<string>();
-  let cacheHits = 0;
-  
-  if (uids.length === 0) {
-    return { existingUids, cacheHits };
-  }
-  
-  // Check cache V2
-  const cache = getFolderCacheV2(userEmail, folderName);
-  let uidsToCheck: string[] = uids;
-  
-  if (cache) {
-    const newUids: string[] = uids.filter((uid: string) => parseInt(uid) > cache.highestUID);
-    cacheHits = uids.length - newUids.length;
-    
-    console.log(`💾 [UNIFIED] ${folderName}: ${cacheHits}/${uids.length} UIDs cached`);
-    uidsToCheck = newUids;
-    
-    const cachedUids: string[] = uids.filter((uid: string) => parseInt(uid) <= cache.highestUID);
-    cachedUids.forEach((uid: string) => existingUids.add(uid));
-  }
-  
-  if (uidsToCheck.length === 0) {
-    return { existingUids, cacheHits };
-  }
-  
-  // Check DB in batches
-  const BATCH_SIZE = 500;
-  const messageIds = uidsToCheck.map(uid => `${folderName}/${uid}`);
-
-  for (let i = 0; i < messageIds.length; i += BATCH_SIZE) {
-    const batch = messageIds.slice(i, i + BATCH_SIZE);
-    
-    const { data } = await supabase
-      .from('email_messages')
-      .select('message_id')
-      .eq('user_email', userEmail)
-      .in('message_id', batch);
-    
-    if (data) {
-      data.forEach((row: any) => {
-        const uid = row.message_id.split('/')[1];
-        if (uid) existingUids.add(uid);
-      });
-    }
-  }
-  
-  return { existingUids, cacheHits };
-}
-
-async function downloadBatch(
-  folder: string,
-  uids: string[],
-  batchSize: number = 25,
-  maxRetries: number = 2
-): Promise<any[]> {
-  const allEmails: any[] = [];
-  
-  console.log(`📥 [UNIFIED] Downloading ${uids.length} emails individually from folder: ${folder}`);
-  
-  for (const uid of uids) {
-    let attempt = 0;
-    let success = false;
-    
-    while (attempt < maxRetries && !success) {
-      try {
-        const response = await emailMessageApi.getMessage(
-          uid.toString(),
-          folder,
-          false  // markAsRead = false per non modificare lo stato
-        );
-        
-        if (response?.success && response?.data) {
-          allEmails.push(response.data);
-          success = true;
-        } else {
-          console.warn(`⚠️ [UNIFIED] UID ${uid} returned invalid response`);
-          success = true; // Skip this UID
-        }
-        
-      } catch (error) {
-        attempt++;
-        if (attempt >= maxRetries) {
-          console.error(`❌ [UNIFIED] UID ${uid} failed after ${maxRetries} attempts:`, error);
-        } else {
-          console.warn(`⚠️ [UNIFIED] UID ${uid} attempt ${attempt} failed, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 500 * attempt));
-        }
-      }
-    }
-  }
-  
-  console.log(`✅ [UNIFIED] Downloaded ${allEmails.length}/${uids.length} emails successfully`);
-  
-  return allEmails;
-}
-
-async function insertBatch(
-  emails: any[],
-  userEmail: string,
-  folderName: string
-): Promise<{ inserted: number; failed: number }> {
-  if (emails.length === 0) {
-    return { inserted: 0, failed: 0 };
-  }
-  
-  const records = emails.map((email: any) => ({
-    user_email: userEmail,
-    message_id: email.message_id || `${folderName}/${email.uid}`,
-    cartella: folderName,
-    uid_server: email.uid?.toString() || '',
-    oggetto: email.subject || '',
-    mittente_email: email.from || '',
-    destinatario_email: email.to || '',
-    from_email: email.from || '',
-    to_email: email.to || '',
-    cc_email: email.cc || '',
-    bcc_email: email.bcc || '',
-    data_ricezione: email.date || new Date().toISOString(),
-    corpo_html: email.body_html || '',
-    corpo_testo: email.body_text || '',
-    allegati: email.attachments || [],
-    flags: email.flags || [],
-    dimensione_bytes: email.size || 0,
-    letto: email.seen || false,
-    contrassegnato: email.flagged || false,
-    direzione: 'ricevuto' as const,
-    provider_id: 'tmwe'
-  }));
-  
-  // Insert to database
-  let inserted = 0;
-  let failed = 0;
-  
-  // Try bulk insert first
-  try {
-    const { error } = await supabase
-      .from('email_messages')
-      .insert(records);
-    
-    if (!error) {
-      console.log(`✅ [UNIFIED] Bulk inserted ${records.length} emails`);
-      return { inserted: records.length, failed: 0 };
-    }
-    
-    // If bulk fails, try individual inserts
-    console.warn('⚠️ [UNIFIED] Bulk insert failed, trying individual inserts');
-  } catch (bulkError) {
-    console.warn('⚠️ [UNIFIED] Bulk insert error, trying individual inserts');
-  }
-  
-  // Fallback: individual inserts
-  for (const record of records) {
-    try {
-      const { error } = await supabase
-        .from('email_messages')
-        .insert([record]);
-      
-      if (error) {
-        console.warn(`⚠️ [UNIFIED] Insert error for ${record.message_id}:`, error.message);
-        failed++;
-      } else {
-        inserted++;
-      }
-    } catch (insertError: any) {
-      console.error(`❌ [UNIFIED] Exception inserting ${record.message_id}:`, insertError.message);
-      failed++;
-    }
-  }
-  
-  return { inserted, failed };
-}
-
-// ==================== MAIN CLASS ====================
+// ==================== EMAIL SYNC UNIFIED CLASS ====================
 
 export class EmailSyncUnified {
+  private userEmail: string;
+  private folders?: string[];
+  private applyPreferences: boolean;
+  private onProgress?: (progress: UnifiedSyncProgress) => void;
+  private onComplete?: (stats: UnifiedSyncStats) => void;
+  private onError?: (error: Error) => void;
+
   private progress: UnifiedSyncProgress;
-  private options: Required<UnifiedSyncOptions>;
-  private shouldStop = false;
-  private startTime = 0;
-  private stats: UnifiedSyncStats;
+  private startTime: number = 0;
+  private isPaused: boolean = false;
+  private isStopped: boolean = false;
 
   constructor(options: UnifiedSyncOptions) {
-    this.options = {
-      userEmail: options.userEmail,
-      folders: options.folders || [],
-      applyPreferences: options.applyPreferences ?? false,
-      batchSize: options.batchSize || 25,
-      maxRetries: options.maxRetries || 2,
-      timeout: options.timeout || 60000,
-      onProgress: options.onProgress || (() => {}),
-      onComplete: options.onComplete || (() => {}),
-      onError: options.onError || (() => {})
-    };
-    
+    this.userEmail = options.userEmail;
+    this.folders = options.folders;
+    this.applyPreferences = options.applyPreferences ?? false;
+    this.onProgress = options.onProgress;
+    this.onComplete = options.onComplete;
+    this.onError = options.onError;
+
     this.progress = {
       status: 'idle',
       currentFolder: '',
       foldersToSync: [],
       completedFolders: [],
       totalEmails: 0,
+      downloadedEmails: 0,
+      skippedEmails: 0,
+      failedEmails: 0,
+      currentSpeed: 0,
+      avgSpeed: 0,
+      eta: 0,
+      startTime: 0,
       downloadedCount: 0,
       failedCount: 0,
       speed: 0,
       estimatedTimeRemaining: 0
     };
-    
-    this.stats = {
-      totalEmails: 0,
-      downloaded: 0,
-      skipped: 0,
-      failed: 0,
-      duration: 0,
-      avgSpeed: 0,
-      folders: {}
-    };
   }
 
+  // ==================== MAIN METHODS ====================
+
   async start(): Promise<UnifiedSyncStats> {
-    this.startTime = Date.now();
-    this.progress.status = 'running';
-    
     try {
-      // Load folders
+      this.startTime = Date.now();
+      this.progress.status = 'running';
+      this.progress.startTime = this.startTime;
+
+      console.log('🚀 [EmailSyncUnified] START');
+      console.log('   User:', this.userEmail);
+      console.log('   Folders:', this.folders);
+      console.log('   Apply Preferences:', this.applyPreferences);
+
+      // STEP 1: Load folders to sync
       const foldersToSync = await this.loadFolders();
       this.progress.foldersToSync = foldersToSync;
-      
-      console.log(`🚀 [UNIFIED] Starting sync for ${foldersToSync.length} folders`);
-      
-      // Sync each folder
+      this.updateProgress();
+
+      console.log('📂 [EmailSyncUnified] Folders to sync:', foldersToSync);
+
+      // STEP 2: Sync each folder
       for (const folder of foldersToSync) {
-        if (this.shouldStop) break;
+        if (this.isStopped) break;
         
         this.progress.currentFolder = folder;
+        this.updateProgress();
+
         await this.syncFolder(folder);
-        this.progress.completedFolders.push(folder);
         
+        this.progress.completedFolders.push(folder);
         this.updateProgress();
       }
-      
-      // Complete
+
+      // STEP 3: Complete
+      const stats: UnifiedSyncStats = {
+        totalEmails: this.progress.totalEmails,
+        downloaded: this.progress.downloadedEmails,
+        skipped: this.progress.skippedEmails,
+        failed: this.progress.failedEmails,
+        duration: (Date.now() - this.startTime) / 1000,
+        avgSpeed: this.progress.downloadedEmails / ((Date.now() - this.startTime) / 1000)
+      };
+
       this.progress.status = 'completed';
-      this.stats.duration = Date.now() - this.startTime;
-      this.stats.avgSpeed = this.stats.downloaded / (this.stats.duration / 1000);
-      
-      this.options.onComplete(this.stats);
-      
-      return this.stats;
-      
+      this.updateProgress();
+      this.onComplete?.(stats);
+
+      return stats;
+
     } catch (error: any) {
+      console.error('❌ [EmailSyncUnified] Fatal error:', error);
       this.progress.status = 'error';
-      this.options.onError(error);
+      this.updateProgress();
+      this.onError?.(error);
       throw error;
     }
   }
 
+  // ==================== FOLDER LOADING ====================
+
   private async loadFolders(): Promise<string[]> {
-    // Case 1: Manual folder selection
-    if (this.options.folders && this.options.folders.length > 0) {
-      console.log('📁 [UNIFIED] Using manual folder selection:', this.options.folders);
-      return this.options.folders;
+    if (this.folders && this.folders.length > 0) {
+      console.log('📂 Using explicit folders:', this.folders);
+      return this.folders;
     }
-    
-    // Case 2: Apply preferences from DB
-    if (this.options.applyPreferences) {
-      console.log('📁 [UNIFIED] Loading preferences from DB...');
+
+    if (this.applyPreferences) {
+      console.log('🎯 Loading folders from preferences...');
       
       try {
         // 1. Get user preferences
-        const preferences = await getSyncPreferences(this.options.userEmail);
-        console.log('📁 [UNIFIED] User preferences:', {
+        const preferences = await getSyncPreferences(this.userEmail);
+        console.log('📁 User preferences:', {
           excluded_count: preferences.excluded_folders.length,
           included_count: preferences.included_folders.length,
           excluded: preferences.excluded_folders,
@@ -406,128 +173,271 @@ export class EmailSyncUnified {
         });
         
         // 2. Get all folders from server
-        const response = await emailFolderApi.getFolders({ include_counts: false });
+        const response = await emailFolderApi.getFolders({ include_counts: false, skipCache: true });
         const allFolders = Array.isArray(response) 
           ? response.map(f => ({ name: f.name || f, ...f }))
           : (response?.folders || []).map(f => ({ name: f.name || f, ...f }));
         
-        console.log('📁 [UNIFIED] All server folders:', allFolders.map(f => f.name));
+        console.log('📁 All server folders:', allFolders.map(f => f.name));
         
         // 3. Filter based on preferences
         const filtered = filterFolders(allFolders, preferences);
         const folderNames = filtered.map(f => f.name);
         
-        console.log('📁 [UNIFIED] Filtered by preferences:', folderNames);
+        console.log('📁 Filtered by preferences:', folderNames);
         
         if (folderNames.length === 0) {
-          console.warn('⚠️ [UNIFIED] No folders after filtering, defaulting to INBOX');
+          console.warn('⚠️ No folders after filtering, defaulting to INBOX');
           return ['INBOX'];
         }
         
         return folderNames;
         
       } catch (error) {
-        console.error('❌ [UNIFIED] Error loading preferences:', error);
+        console.error('❌ Error loading preferences:', error);
         return ['INBOX'];
       }
     }
-    
-    // Case 3: Default to INBOX
+
+    console.log('📂 No folders specified, defaulting to INBOX');
     return ['INBOX'];
   }
 
+  // ==================== FOLDER SYNC ====================
+
   private async syncFolder(folder: string): Promise<void> {
-    console.log(`\n📂 [UNIFIED] Syncing folder: ${folder}`);
-    
+    console.log(`📂 [EmailSyncUnified] Syncing folder: ${folder}`);
+
     try {
-      // 1. Fetch UIDs
-      const allUids = await fetchFolderUIDs(folder);
-      console.log(`   Found ${allUids.length} UIDs`);
-      
-      if (allUids.length === 0) {
+      // STEP 1: Fetch UIDs from TMWE (CLONE DEBUGGER)
+      const uids = await this.fetchFolderUIDs(folder);
+      console.log(`   Found ${uids.length} UIDs`);
+
+      if (uids.length === 0) {
+        console.log('   No UIDs found, skipping');
         return;
       }
-      
-      // 2. Check duplicates
-      const { existingUids, cacheHits } = await checkDuplicates(
-        allUids, 
-        this.options.userEmail, 
-        folder
+
+      this.progress.totalEmails += uids.length;
+      this.updateProgress();
+
+      // STEP 2: Check existing message_ids in DB
+      const messageIds = uids.map(uid => `${folder}/${uid}`);
+      const { data: existingEmails } = await supabase
+        .from('email_messages')
+        .select('message_id')
+        .eq('user_email', this.userEmail)
+        .in('message_id', messageIds);
+
+      const existingUids = new Set(
+        (existingEmails || []).map(e => e.message_id?.split('/')[1]).filter(Boolean)
       );
-      
-      const newUids = allUids.filter(uid => !existingUids.has(uid));
-      console.log(`   New emails to download: ${newUids.length} (skipped ${existingUids.size})`);
-      
-      this.stats.skipped += existingUids.size;
-      
-      if (newUids.length === 0) {
-        return;
+
+      console.log(`   Already in DB: ${existingUids.size}`);
+
+      // STEP 3: Download and insert new emails
+      for (const uid of uids) {
+        if (this.isStopped) break;
+        
+        // Wait if paused
+        while (this.isPaused && !this.isStopped) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        if (existingUids.has(uid)) {
+          this.progress.skippedEmails++;
+          this.updateProgress();
+          continue;
+        }
+
+        try {
+          // Download email (CLONE DEBUGGER)
+          const email = await this.downloadEmail(uid, folder);
+          
+          if (email) {
+            // Insert into DB
+            await this.insertEmail(email, folder);
+            this.progress.downloadedEmails++;
+          } else {
+            this.progress.failedEmails++;
+          }
+
+        } catch (error: any) {
+          console.error(`❌ Failed to download UID ${uid}:`, error);
+          this.progress.failedEmails++;
+        }
+
+        this.updateProgress();
       }
-      
-      // 3. Download emails
-      const emails = await downloadBatch(
-        folder,
-        newUids,
-        this.options.batchSize,
-        this.options.maxRetries
-      );
-      
-      console.log(`   Downloaded ${emails.length} emails`);
-      
-      // 4. Insert to DB
-      const { inserted, failed } = await insertBatch(
-        emails,
-        this.options.userEmail,
-        folder
-      );
-      
-      console.log(`   Inserted: ${inserted}, Failed: ${failed}`);
-      
-      // 5. Update cache
-      if (newUids.length > 0) {
-        const highestUID = Math.max(...newUids.map(uid => parseInt(uid)));
-        saveFolderCacheV2(this.options.userEmail, folder, highestUID);
-      }
-      
-      // 6. Update stats
-      this.stats.downloaded += inserted;
-      this.stats.failed += failed;
-      this.stats.totalEmails += allUids.length;
-      this.stats.folders[folder] = inserted;
-      
-    } catch (error) {
-      console.error(`❌ [UNIFIED] Error syncing ${folder}:`, error);
+
+    } catch (error: any) {
+      console.error(`❌ [EmailSyncUnified] Error syncing folder ${folder}:`, error);
       throw error;
     }
   }
 
-  private updateProgress(): void {
-    const elapsed = (Date.now() - this.startTime) / 1000;
-    this.progress.downloadedCount = this.stats.downloaded;
-    this.progress.failedCount = this.stats.failed;
-    this.progress.speed = elapsed > 0 ? this.stats.downloaded / elapsed : 0;
+  // ==================== API METHODS (CLONE DEBUGGER) ====================
+
+  private async ensureValidSession(): Promise<void> {
+    // 🔐 STEP 1: Verifica sessione (IDENTICO AL DEBUGGER)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    const remaining = this.progress.foldersToSync.length - this.progress.completedFolders.length;
-    this.progress.estimatedTimeRemaining = this.progress.speed > 0 
-      ? (remaining * 30) // Stima 30s per folder
-      : 0;
-    
-    this.options.onProgress(this.progress);
+    if (sessionError || !session) {
+      console.error('🔐 [EmailSyncUnified] Session error:', sessionError);
+      throw new Error('TMWE_SESSION_EXPIRED');
+    }
+
+    // 🔐 STEP 2: Check token expiry (IDENTICO AL DEBUGGER)
+    const expiresAt = session.expires_at || 0;
+    const now = Math.floor(Date.now() / 1000);
+    const timeUntilExpiry = expiresAt - now;
+
+    console.log('🔐 [EmailSyncUnified] Token status:', {
+      expiresAt: new Date(expiresAt * 1000).toLocaleString(),
+      timeUntilExpiry: `${Math.floor(timeUntilExpiry / 60)} minuti`,
+      needsRefresh: timeUntilExpiry < 300
+    });
+
+    // 🔐 STEP 3: Refresh se necessario (IDENTICO AL DEBUGGER)
+    if (timeUntilExpiry < 300) {
+      console.log('🔄 [EmailSyncUnified] Refreshing token...');
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.error('❌ [EmailSyncUnified] Token refresh failed:', refreshError);
+        throw new Error('TMWE_SESSION_EXPIRED');
+      }
+    }
   }
 
-  stop(): void {
-    this.shouldStop = true;
-    this.progress.status = 'idle';
+  private async fetchFolderUIDs(folder: string): Promise<string[]> {
+    await this.ensureValidSession();
+
+    console.log(`📧 [EmailSyncUnified] Fetching UIDs for: ${folder}`);
+
+    // 🧪 Chiama API (IDENTICO AL DEBUGGER)
+    const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      body: {
+        endpoint: '/email_message',
+        data: {
+          handler: 'get_messages',
+          folder,
+          limit: 999999,
+          offset: 0
+        }
+      }
+    });
+
+    if (error) {
+      console.error('❌ [EmailSyncUnified] Edge function error:', error);
+      throw new Error('TMWE_SESSION_EXPIRED');
+    }
+
+    if (data && !data.success) {
+      console.warn('⚠️ [EmailSyncUnified] TMWE API error:', data.errors);
+      return [];
+    }
+
+    console.log(`📧 [EmailSyncUnified] Response for ${folder}:`, {
+      success: data?.success,
+      dataLength: data?.data?.length || 0,
+      firstUID: data?.data?.[0]?.uid
+    });
+
+    const uids: string[] = data?.data?.map((msg: any) => msg.uid?.toString() || '') || [];
+    return uids.filter(uid => Boolean(uid));
+  }
+
+  private async downloadEmail(uid: string, folder: string): Promise<any> {
+    await this.ensureValidSession();
+
+    // 🧪 Chiama API (IDENTICO AL DEBUGGER testGetMessage)
+    const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      body: {
+        endpoint: '/email_message',
+        data: {
+          handler: 'get_message',
+          uid,
+          folder
+        }
+      }
+    });
+
+    if (error || !data?.success) {
+      console.error(`❌ Failed to download UID ${uid}:`, error || data?.errors);
+      return null;
+    }
+
+    return data.data;
+  }
+
+  // ==================== DATABASE METHODS ====================
+
+  private async insertEmail(email: any, folder: string): Promise<void> {
+    const emailData = {
+      user_email: this.userEmail,
+      message_id: `${folder}/${email.uid}`,
+      cartella: folder,
+      subject: email.subject || '',
+      from_email: email.from?.email || email.from || '',
+      to_email: email.to?.[0]?.email || (Array.isArray(email.to) && email.to.length > 0 ? email.to[0] : email.to) || '',
+      cc_email: email.cc ? (Array.isArray(email.cc) ? email.cc.map((c: any) => c.email || c).join(', ') : email.cc) : null,
+      bcc_email: email.bcc ? (Array.isArray(email.bcc) ? email.bcc.map((b: any) => b.email || b).join(', ') : email.bcc) : null,
+      data_ricezione: email.date || new Date().toISOString(),
+      body_html: email.body_type === 'html' ? email.body : null,
+      body_text: email.body_type === 'plain' ? email.body : email.preview || '',
+      attachments: email.attachments ? JSON.stringify(email.attachments) : null,
+      flags: email.flags ? JSON.stringify(email.flags) : null,
+      sync_status: 'fun_email_backup',
+      direzione: 'ricevuto',
+      provider_id: 'tmwe',
+      stato: 'ricevuto'
+    };
+
+    const { error } = await supabase
+      .from('email_messages')
+      .insert([emailData]);
+
+    if (error) {
+      console.error('❌ Insert error:', error);
+      throw error;
+    }
+  }
+
+  // ==================== PROGRESS & CONTROL ====================
+
+  private updateProgress(): void {
+    const elapsed = (Date.now() - this.startTime) / 1000;
+    this.progress.currentSpeed = elapsed > 0 ? this.progress.downloadedEmails / elapsed : 0;
+    this.progress.avgSpeed = this.progress.currentSpeed;
+    
+    const remaining = this.progress.totalEmails - this.progress.downloadedEmails - this.progress.skippedEmails;
+    this.progress.eta = this.progress.currentSpeed > 0 ? remaining / this.progress.currentSpeed : 0;
+
+    // Maintain backward compatibility with old property names
+    this.progress.downloadedCount = this.progress.downloadedEmails;
+    this.progress.failedCount = this.progress.failedEmails;
+    this.progress.speed = this.progress.currentSpeed;
+    this.progress.estimatedTimeRemaining = this.progress.eta;
+
+    this.onProgress?.(this.progress);
   }
 
   pause(): void {
+    this.isPaused = true;
     this.progress.status = 'paused';
+    this.updateProgress();
   }
 
   resume(): void {
-    if (this.progress.status === 'paused') {
-      this.progress.status = 'running';
-    }
+    this.isPaused = false;
+    this.progress.status = 'running';
+    this.updateProgress();
+  }
+
+  stop(): void {
+    this.isStopped = true;
+    this.progress.status = 'completed';
+    this.updateProgress();
   }
 
   getProgress(): UnifiedSyncProgress {
@@ -535,6 +445,13 @@ export class EmailSyncUnified {
   }
 
   getStats(): UnifiedSyncStats {
-    return this.stats;
+    return {
+      totalEmails: this.progress.totalEmails,
+      downloaded: this.progress.downloadedEmails,
+      skipped: this.progress.skippedEmails,
+      failed: this.progress.failedEmails,
+      duration: (Date.now() - this.startTime) / 1000,
+      avgSpeed: this.progress.avgSpeed
+    };
   }
 }

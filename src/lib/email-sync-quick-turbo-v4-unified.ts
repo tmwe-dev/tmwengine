@@ -201,69 +201,91 @@ async function loadFoldersWithPreferences(
  * ✨ V4: Fetch UIDs con timeout e retry (da V2)
  */
 const getQuickFolderUids = async (folderName: string): Promise<string[]> => {
-  const response = await withTMWERetry(
-    () => supabase.functions.invoke('tmwe-api-proxy', {
+  console.log(`🔍 [getQuickFolderUids] START for folder: ${folderName}`);
+  
+  try {
+    // ✅ Chiamata DIRETTA senza wrapper (come Performance Test)
+    const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
       body: {
         endpoint: '/email_message',
         data: { 
           handler: 'get_messages',
           folder: folderName,
-          limit: 2000
+          limit: 2000,
+          offset: 0,  // ✅ Come Performance Test
+          include_attachments: false  // ✅ Come Performance Test
         }
       }
-    }),
-    `get_folder_uids_${folderName}`,
-    undefined, // onRetry callback
-    60000 // 🆕 Custom timeout 60s per cartelle grandi
-  );
+    });
 
-  // 🔍 DEBUG: Ispeziona risposta COMPLETA
-  console.log('🔍 [DEBUG getQuickFolderUids] Raw response:', {
-    folder: folderName,
-    hasError: !!response.error,
-    errorMsg: response.error?.message,
-    hasData: !!response.data,
-    dataKeys: response.data ? Object.keys(response.data) : [],
-    dataType: typeof response.data,
-    dataSuccess: response.data?.success,
-    dataDataExists: !!response.data?.data,
-    dataDataType: response.data?.data ? typeof response.data.data : 'undefined',
-    dataDataLength: Array.isArray(response.data?.data) ? response.data.data.length : 'not_array',
-    first3Items: Array.isArray(response.data?.data) ? response.data.data.slice(0, 3) : []
-  });
+    console.log('🔍 [getQuickFolderUids] Raw response:', {
+      folder: folderName,
+      hasError: !!error,
+      errorMsg: error?.message,
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data) : [],
+      dataType: typeof data
+    });
 
-  if (response.error) {
-    console.error('❌ [DEBUG] Response has error:', response.error);
-    throw response.error;
+    if (error) {
+      console.error('❌ [getQuickFolderUids] Edge Function error:', error);
+      throw error;
+    }
+
+    if (!data) {
+      console.error('❌ [getQuickFolderUids] No data returned');
+      return [];
+    }
+
+    // ✅ Parsing robusto come Performance Test (4 fallback)
+    const messagesArray = data.messages 
+      || data.emails 
+      || data.data?.messages 
+      || data.data?.emails
+      || data.data
+      || [];
+
+    console.log('🔍 [getQuickFolderUids] Parsed messages:', {
+      hasMessages: !!data.messages,
+      hasEmails: !!data.emails,
+      hasDataMessages: !!data.data?.messages,
+      hasDataEmails: !!data.data?.emails,
+      hasDataData: !!data.data,
+      arrayLength: Array.isArray(messagesArray) ? messagesArray.length : 'not_array',
+      arrayType: typeof messagesArray
+    });
+
+    if (!Array.isArray(messagesArray)) {
+      console.error('❌ [getQuickFolderUids] messagesArray is not an array:', typeof messagesArray);
+      return [];
+    }
+
+    if (messagesArray.length === 0) {
+      console.warn('⚠️ [getQuickFolderUids] Empty array for folder:', folderName);
+      return [];
+    }
+
+    const uids: string[] = messagesArray.map((msg: any) => msg.uid?.toString() || '');
+    const filtered = uids.filter((uid: string) => Boolean(uid));
+
+    console.log('✅ [getQuickFolderUids] SUCCESS:', {
+      folder: folderName,
+      totalMsgs: messagesArray.length,
+      uidsExtracted: uids.length,
+      uidsFiltered: filtered.length
+    });
+
+    return filtered;
+
+  } catch (error) {
+    console.error('❌ [getQuickFolderUids] CRASH:', {
+      folder: folderName,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
+    throw error;
   }
-  
-  // 🔍 Verifica struttura dati
-  if (!response.data) {
-    console.error('❌ [DEBUG] response.data is null/undefined');
-    return [];
-  }
-  
-  if (!response.data.data) {
-    console.error('❌ [DEBUG] response.data.data is null/undefined, response.data:', response.data);
-    return [];
-  }
-  
-  if (!Array.isArray(response.data.data)) {
-    console.error('❌ [DEBUG] response.data.data is not an array:', typeof response.data.data);
-    return [];
-  }
-  
-  const uids: string[] = response.data.data.map((msg: any) => msg.uid?.toString() || '');
-  const filtered = uids.filter((uid: string) => Boolean(uid));
-  
-  console.log('✅ [DEBUG] Extracted UIDs:', {
-    folder: folderName,
-    totalMsgs: response.data.data.length,
-    uidsExtracted: uids.length,
-    uidsFiltered: filtered.length
-  });
-  
-  return filtered;
 };
 
 /**

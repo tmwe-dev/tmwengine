@@ -337,11 +337,32 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
     } catch (error: any) {
       console.error('❌ Quick start error:', error);
+      
+      if (error.message === 'TMWE_SESSION_EXPIRED') {
+        toast({
+          title: '🔐 Sessione TMWE Scaduta',
+          description: 'La tua sessione TMWE è scaduta. Clicca qui per effettuare nuovamente il login.',
+          variant: 'destructive',
+          action: (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => window.location.href = '/tmwe/auth'}
+            >
+              Accedi
+            </Button>
+          )
+        });
+        return;
+      }
+      
       toast({
         title: '❌ Errore',
         description: error.message,
         variant: 'destructive',
       });
+    } finally {
+      setIsQuickLoading(false);
     }
   };
 
@@ -429,6 +450,25 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
     } catch (error: any) {
       console.error('❌ Preferences sync error:', error);
+      
+      if (error.message === 'TMWE_SESSION_EXPIRED') {
+        toast({
+          title: '🔐 Sessione TMWE Scaduta',
+          description: 'La tua sessione TMWE è scaduta. Clicca qui per effettuare nuovamente il login.',
+          variant: 'destructive',
+          action: (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => window.location.href = '/tmwe/auth'}
+            >
+              Accedi
+            </Button>
+          )
+        });
+        return;
+      }
+      
       toast({
         title: '❌ Errore',
         description: error.message,

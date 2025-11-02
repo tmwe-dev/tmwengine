@@ -339,21 +339,34 @@ export const refreshAccessToken = async (): Promise<boolean> => {
 // Ensure valid token (supporta sia OAuth2 che JWT)
 const ensureValidToken = async (): Promise<string | null> => {
   const config = await getApiConfigFromDB();
-  if (!config) return null;
+  if (!config) {
+    console.error('❌ TMWE credentials not found in database');
+    throw new Error('TMWE_AUTH_REQUIRED');
+  }
 
   // Check if token is expired or about to expire (5 minutes buffer)
   if (config.expiresAt && new Date(config.expiresAt).getTime() < Date.now() + 300000) {
+    console.warn('⚠️ TMWE token expired, attempting refresh...');
+    console.log('   Expires at:', config.expiresAt);
+    console.log('   Auth type:', config.authType || 'oauth2');
+    
     // JWT: re-authenticate (no refresh token)
     if (config.authType === 'jwt') {
       const refreshed = await authenticateWithJWT();
-      if (!refreshed) return null;
+      if (!refreshed) {
+        console.error('❌ JWT re-authentication failed');
+        throw new Error('TMWE_REFRESH_FAILED');
+      }
       const newConfig = await getApiConfigFromDB();
       return newConfig?.accessToken || null;
     }
     
     // OAuth2: use refresh token
     const refreshed = await refreshAccessToken();
-    if (!refreshed) return null;
+    if (!refreshed) {
+      console.error('❌ OAuth2 token refresh failed');
+      throw new Error('TMWE_REFRESH_FAILED');
+    }
     const newConfig = await getApiConfigFromDB();
     return newConfig?.accessToken || null;
   }
@@ -373,13 +386,31 @@ const OPTIMAL_CONFIG = {
 
 // API request wrapper - USA EDGE FUNCTION COME PROXY CORS
 const fetchApi = async (endpoint: string, data: any) => {
-  await ensureValidToken();
+  let token: string | null;
+  
+  try {
+    token = await ensureValidToken();
+  } catch (authError: any) {
+    if (authError.message === 'TMWE_AUTH_REQUIRED' || authError.message === 'TMWE_REFRESH_FAILED') {
+      console.error('❌ TMWE session expired or refresh failed');
+      throw new Error('TMWE_SESSION_EXPIRED');
+    }
+    throw authError;
+  }
+  
+  if (!token) {
+    console.error('❌ TMWE token is null after validation');
+    throw new Error('TMWE_SESSION_EXPIRED');
+  }
 
   try {
     const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
       body: { 
         endpoint, 
-        data,
+        data: {
+          ...data,
+          bearerToken: token
+        },
         optimizationFlags: OPTIMAL_CONFIG
       },
     });

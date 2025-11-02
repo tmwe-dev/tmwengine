@@ -69,6 +69,66 @@ interface TestResult {
   metadataComparison?: { withBody: TestMetrics; metadataOnly: TestMetrics }; // Per metadata test
 }
 
+// ============= TEST SUITE CONFIGURATIONS =============
+interface TestSuiteConfig {
+  name: string;
+  description: string;
+  tests: TestConfig[];
+  estimatedDuration: number; // seconds
+}
+
+// Suite completa di test per analisi ottimale
+const COMPLETE_TEST_SUITE: TestSuiteConfig = {
+  name: "Complete Performance Analysis",
+  description: "Esegue tutti i test in sequenza per analisi completa sistema",
+  estimatedDuration: 180, // ~3 minuti
+  tests: [
+    // 1. IMAP Health Check (critico - primo test)
+    { folder: 'INBOX', testType: 'imap-health' },
+    // 2. Batch Standard (baseline performance)
+    { folder: 'INBOX', testType: 'batch', batchSize: 25 },
+    // 3. Batch Compare (trova batch size ottimale)
+    { folder: 'INBOX', testType: 'batch-compare', batchSizes: [5, 10, 25, 50] },
+    // 4. Light vs Full (confronto metadata/body)
+    { folder: 'INBOX', testType: 'light-vs-full', batchSize: 25 },
+    // 5. Parallel Download (massima velocità)
+    { folder: 'INBOX', testType: 'parallel', batchSize: 25, parallelBatches: 3 },
+    // 6. Test su Trash (folder problematica)
+    { folder: 'Trash', testType: 'batch', batchSize: 10 },
+    // 7. Test su Sent (folder standard)
+    { folder: 'Sent', testType: 'batch', batchSize: 25 }
+  ]
+};
+
+const QUICK_SUITE: TestSuiteConfig = {
+  name: "Quick Check",
+  description: "Test rapido per verifica base (2 min)",
+  estimatedDuration: 120,
+  tests: [
+    { folder: 'INBOX', testType: 'imap-health' },
+    { folder: 'INBOX', testType: 'batch', batchSize: 25 },
+    { folder: 'INBOX', testType: 'parallel', batchSize: 25, parallelBatches: 3 }
+  ]
+};
+
+const STRESS_SUITE: TestSuiteConfig = {
+  name: "Stress Test",
+  description: "Test di carico su tutte le folder (5 min)",
+  estimatedDuration: 300,
+  tests: [
+    { folder: 'INBOX', testType: 'parallel', batchSize: 50, parallelBatches: 5 },
+    { folder: 'Sent', testType: 'parallel', batchSize: 50, parallelBatches: 5 },
+    { folder: 'Trash', testType: 'batch', batchSize: 25 },
+    { folder: 'Archive', testType: 'batch', batchSize: 35 }
+  ]
+};
+
+const SUITE_MAP: Record<string, TestSuiteConfig> = {
+  complete: COMPLETE_TEST_SUITE,
+  quick: QUICK_SUITE,
+  stress: STRESS_SUITE
+};
+
 export function PerformanceTestSuite() {
   const [config, setConfig] = useState<TestConfig>({
     folder: 'INBOX',
@@ -92,6 +152,13 @@ export function PerformanceTestSuite() {
   });
   const [result, setResult] = useState<TestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // ✅ NUOVO: Suite Runner State
+  const [selectedSuite, setSelectedSuite] = useState<string>('custom');
+  const [isRunningSuite, setIsRunningSuite] = useState(false);
+  const [currentTestIndex, setCurrentTestIndex] = useState(0);
+  const [suiteResults, setSuiteResults] = useState<TestResult[]>([]);
+  const [suiteProgress, setSuiteProgress] = useState(0);
 
   // Load folders on mount
   useEffect(() => {
@@ -870,6 +937,125 @@ export function PerformanceTestSuite() {
     URL.revokeObjectURL(url);
   };
 
+  // ============= SUITE RUNNER =============
+  
+  const runAllTests = async () => {
+    const selectedSuiteConfig = SUITE_MAP[selectedSuite];
+    if (!selectedSuiteConfig) {
+      setError('Invalid suite selected');
+      return;
+    }
+
+    console.log(`🚀 [TEST SUITE] Starting ${selectedSuiteConfig.name}...`);
+    setIsRunningSuite(true);
+    setCurrentTestIndex(0);
+    setSuiteResults([]);
+    setSuiteProgress(0);
+    setError(null);
+    
+    const results: TestResult[] = [];
+    const totalTests = selectedSuiteConfig.tests.length;
+    
+    try {
+      for (let i = 0; i < selectedSuiteConfig.tests.length; i++) {
+        const testConfig = selectedSuiteConfig.tests[i];
+        setCurrentTestIndex(i);
+        
+        console.log(`\n📋 [TEST ${i + 1}/${totalTests}] Running: ${testConfig.testType} on ${testConfig.folder}`);
+        
+        // Aggiorna config
+        setConfig(testConfig);
+        
+        // Aspetta per UI update
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Esegui il test (riusa runPerformanceTest)
+        setIsRunning(true);
+        setProgress(0);
+        setResult(null);
+        
+        // Esegui test in modo sincrono
+        await new Promise<void>((resolve) => {
+          (async () => {
+            await runPerformanceTest();
+            resolve();
+          })();
+        });
+        
+        // Aspetta che il risultato sia disponibile
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Recupera risultato dalla closure
+        if (result) {
+          results.push(result);
+          setSuiteResults([...results]);
+          console.log(`✅ [TEST ${i + 1}/${totalTests}] Completed: ${testConfig.testType}`);
+        }
+        
+        // Aggiorna progress
+        setSuiteProgress(((i + 1) / totalTests) * 100);
+        
+        // Delay tra test
+        if (i < totalTests - 1) {
+          console.log('⏳ Waiting 2s before next test...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+      console.log('✅ [TEST SUITE] All tests completed!');
+      
+      // Genera report
+      if (results.length > 0) {
+        generateSuiteReport(results);
+      }
+      
+    } catch (err: any) {
+      setError(`Test suite failed at test ${currentTestIndex + 1}: ${err.message}`);
+      console.error('💥 [TEST SUITE] Error:', err);
+    } finally {
+      setIsRunningSuite(false);
+      setIsRunning(false);
+      setCurrentTestIndex(0);
+    }
+  };
+
+  const generateSuiteReport = (results: TestResult[]) => {
+    console.log('\n📊 [SUITE REPORT] Generating comparative analysis...');
+    
+    const report = {
+      totalTests: results.length,
+      successfulTests: results.filter(r => r.metrics.successRate === 100).length,
+      overallSuccessRate: (results.reduce((acc, r) => acc + r.metrics.successRate, 0) / results.length).toFixed(1),
+      
+      fastestTest: results.reduce((best, r) => 
+        r.metrics.throughput > (best?.metrics.throughput || 0) ? r : best
+      ),
+      
+      slowestTest: results.reduce((worst, r) => 
+        r.metrics.throughput < (worst?.metrics.throughput || Infinity) ? r : worst
+      ),
+      
+      optimalBatchSize: results
+        .filter(r => r.config.testType === 'batch' || r.config.testType === 'batch-compare')
+        .reduce((best, r) => {
+          const batchSize = r.config.batchSize || 25;
+          const score = r.metrics.throughput * (r.metrics.successRate / 100);
+          return score > (best.score || 0) ? { batchSize, score } : best;
+        }, {} as any).batchSize || 25,
+      
+      imapHealth: results.find(r => r.config.testType === 'imap-health')?.healthCheck
+    };
+    
+    console.log('📊 [SUITE REPORT]', report);
+    
+    // Salva in localStorage
+    localStorage.setItem('last-suite-report', JSON.stringify({
+      timestamp: new Date().toISOString(),
+      report,
+      results
+    }));
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -890,137 +1076,245 @@ export function PerformanceTestSuite() {
       <CardContent className="space-y-6">
         {/* Test Configuration */}
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Test Type</Label>
-              <Select
-                value={config.testType}
-                onValueChange={(value: any) => setConfig({ ...config, testType: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="single">📧 Single Email (with repeats)</SelectItem>
-                  <SelectItem value="batch">📦 Batch Download</SelectItem>
-                  <SelectItem value="batch-compare">📊 Batch Size Comparison</SelectItem>
-                  <SelectItem value="light-vs-full">⚡ Light vs Full Body</SelectItem>
-                  <SelectItem value="parallel">🔄 Parallel Download</SelectItem>
-                  <SelectItem value="imap-health">🏥 IMAP Health Check</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Folder</Label>
-              <Select
-                value={config.folder}
-                onValueChange={(value) => setConfig({ ...config, folder: value })}
-                disabled={loadingFolders}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={loadingFolders ? "Loading folders..." : "Select folder"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {folders.map((folder) => (
-                    <SelectItem key={folder} value={folder}>
-                      {folder}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* ✅ NUOVO: Suite Selector */}
+          <div className="space-y-2">
+            <Label>Test Suite Mode</Label>
+            <Select
+              value={selectedSuite}
+              onValueChange={setSelectedSuite}
+              disabled={isRunning || isRunningSuite}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="complete">🎯 Complete Analysis (~3min)</SelectItem>
+                <SelectItem value="quick">⚡ Quick Check (~2min)</SelectItem>
+                <SelectItem value="stress">💪 Stress Test (~5min)</SelectItem>
+                <SelectItem value="custom">✏️ Custom (manual config)</SelectItem>
+              </SelectContent>
+            </Select>
+            {selectedSuite !== 'custom' && (
+              <p className="text-xs text-muted-foreground">
+                {SUITE_MAP[selectedSuite]?.description}
+              </p>
+            )}
           </div>
 
-          {config.testType === 'single' && (
-            <div className="space-y-2">
-              <Label>Repetitions</Label>
-              <Input
-                type="number"
-                value={config.repetitions}
-                onChange={(e) => setConfig({ ...config, repetitions: parseInt(e.target.value) || 5 })}
-                min={1}
-                max={50}
-              />
+          {selectedSuite === 'custom' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Test Type</Label>
+                <Select
+                  value={config.testType}
+                  onValueChange={(value: any) => setConfig({ ...config, testType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="single">📧 Single Email (with repeats)</SelectItem>
+                    <SelectItem value="batch">📦 Batch Download</SelectItem>
+                    <SelectItem value="batch-compare">📊 Batch Size Comparison</SelectItem>
+                    <SelectItem value="light-vs-full">⚡ Light vs Full Body</SelectItem>
+                    <SelectItem value="parallel">🔄 Parallel Download</SelectItem>
+                    <SelectItem value="imap-health">🏥 IMAP Health Check</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Folder</Label>
+                <Select
+                  value={config.folder}
+                  onValueChange={(value) => setConfig({ ...config, folder: value })}
+                  disabled={loadingFolders}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingFolders ? "Loading folders..." : "Select folder"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {folders.map((folder) => (
+                      <SelectItem key={folder} value={folder}>
+                        {folder}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
 
-          {(config.testType === 'batch' || config.testType === 'light-vs-full') && (
-            <div className="space-y-2">
-              <Label>Batch Size</Label>
-              <Input
-                type="number"
-                value={config.batchSize}
-                onChange={(e) => setConfig({ ...config, batchSize: parseInt(e.target.value) || 25 })}
-                min={5}
-                max={100}
-                step={5}
-              />
-            </div>
-          )}
-
-          {config.testType === 'parallel' && (
+          {selectedSuite === 'custom' && (
             <>
-              <div className="space-y-2">
-                <Label>Batch Size</Label>
-                <Input
-                  type="number"
-                  value={config.batchSize}
-                  onChange={(e) => setConfig({ ...config, batchSize: parseInt(e.target.value) || 25 })}
-                  min={5}
-                  max={50}
-                  step={5}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Parallel Batches</Label>
-                <Input
-                  type="number"
-                  value={config.parallelBatches}
-                  onChange={(e) => setConfig({ ...config, parallelBatches: parseInt(e.target.value) || 3 })}
-                  min={2}
-                  max={10}
-                />
-              </div>
+              {config.testType === 'single' && (
+                <div className="space-y-2">
+                  <Label>Repetitions</Label>
+                  <Input
+                    type="number"
+                    value={config.repetitions}
+                    onChange={(e) => setConfig({ ...config, repetitions: parseInt(e.target.value) || 5 })}
+                    min={1}
+                    max={50}
+                  />
+                </div>
+              )}
+
+              {(config.testType === 'batch' || config.testType === 'light-vs-full') && (
+                <div className="space-y-2">
+                  <Label>Batch Size</Label>
+                  <Input
+                    type="number"
+                    value={config.batchSize}
+                    onChange={(e) => setConfig({ ...config, batchSize: parseInt(e.target.value) || 25 })}
+                    min={5}
+                    max={100}
+                    step={5}
+                  />
+                </div>
+              )}
+
+              {config.testType === 'parallel' && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Batch Size</Label>
+                    <Input
+                      type="number"
+                      value={config.batchSize}
+                      onChange={(e) => setConfig({ ...config, batchSize: parseInt(e.target.value) || 25 })}
+                      min={5}
+                      max={50}
+                      step={5}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Parallel Batches</Label>
+                    <Input
+                      type="number"
+                      value={config.parallelBatches}
+                      onChange={(e) => setConfig({ ...config, parallelBatches: parseInt(e.target.value) || 3 })}
+                      min={2}
+                      max={10}
+                    />
+                  </div>
+                </>
+              )}
+
+              {config.testType === 'batch-compare' && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Verranno testati batch size: 5, 10, 25, 50
+                  </AlertDescription>
+                </Alert>
+              )}
             </>
           )}
 
-          {config.testType === 'batch-compare' && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Verranno testati batch size: 5, 10, 25, 50
-              </AlertDescription>
-            </Alert>
-          )}
-
+          {/* ✅ NUOVO: Bottoni Run */}
           <div className="flex gap-2">
-            <Button
-              onClick={runPerformanceTest}
-              disabled={isRunning || !config.folder}
-              className="flex-1"
-            >
-              {isRunning ? (
-                <>
-                  <Activity className="mr-2 h-4 w-4 animate-pulse" />
-                  Running Test...
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 h-4 w-4" />
-                  Run Performance Test
-                </>
-              )}
-            </Button>
+            {selectedSuite !== 'custom' ? (
+              <Button
+                onClick={runAllTests}
+                disabled={isRunning || isRunningSuite}
+                className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              >
+                {isRunningSuite ? (
+                  <>
+                    <Activity className="mr-2 h-4 w-4 animate-pulse" />
+                    Running Suite ({currentTestIndex + 1}/{SUITE_MAP[selectedSuite]?.tests.length})...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="mr-2 h-4 w-4" />
+                    🚀 Run All Tests
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                onClick={runPerformanceTest}
+                disabled={isRunning || isRunningSuite || !config.folder}
+                className="flex-1"
+              >
+                {isRunning ? (
+                  <>
+                    <Activity className="mr-2 h-4 w-4 animate-pulse" />
+                    Running Test...
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" />
+                    Run Single Test
+                  </>
+                )}
+              </Button>
+            )}
             <Button
               onClick={debugApiResponse}
-              disabled={isRunning}
+              disabled={isRunning || isRunningSuite}
               variant="outline"
             >
               🔍 Debug
             </Button>
           </div>
         </div>
+
+        {/* ✅ NUOVO: Suite Progress */}
+        {isRunningSuite && SUITE_MAP[selectedSuite] && (
+          <Card className="border-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                🚀 Running {SUITE_MAP[selectedSuite].name}
+                <Badge variant="outline">
+                  {currentTestIndex + 1} / {SUITE_MAP[selectedSuite].tests.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Overall Progress</span>
+                  <span className="font-semibold">{Math.round(suiteProgress)}%</span>
+                </div>
+                <Progress value={suiteProgress} className="h-3" />
+              </div>
+              
+              <div className="text-sm">
+                <div className="font-semibold mb-1">Current Test:</div>
+                <div className="flex items-center gap-2">
+                  <Badge>{SUITE_MAP[selectedSuite].tests[currentTestIndex]?.testType}</Badge>
+                  <span className="text-muted-foreground">
+                    on folder: <strong>{SUITE_MAP[selectedSuite].tests[currentTestIndex]?.folder}</strong>
+                  </span>
+                </div>
+              </div>
+              
+              {suiteResults.length > 0 && (
+                <div className="text-sm">
+                  <div className="font-semibold mb-1">Completed Tests:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {suiteResults.map((r, idx) => (
+                      <Badge 
+                        key={idx} 
+                        variant={r.metrics.successRate === 100 ? "default" : "destructive"}
+                      >
+                        {r.config.testType} ({r.metrics.successRate}%)
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <Alert>
+                <Clock className="h-4 w-4" />
+                <AlertDescription>
+                  Estimated time remaining: ~{Math.round((SUITE_MAP[selectedSuite].estimatedDuration / SUITE_MAP[selectedSuite].tests.length) * (SUITE_MAP[selectedSuite].tests.length - currentTestIndex - 1))}s
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Live Metrics */}
         {isRunning && (
@@ -1334,6 +1628,102 @@ export function PerformanceTestSuite() {
               </Card>
             )}
           </div>
+        )}
+
+        {/* ✅ NUOVO: Suite Comparative Report */}
+        {suiteResults.length > 0 && !isRunningSuite && (
+          <Card className="border-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                📊 Comparative Analysis Report
+                <Badge variant="outline">{suiteResults.length} tests</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard
+                  icon={Activity}
+                  label="Tests Run"
+                  value={suiteResults.length.toString()}
+                />
+                <StatCard
+                  icon={TrendingUp}
+                  label="Success Rate"
+                  value={`${(suiteResults.reduce((acc, r) => acc + r.metrics.successRate, 0) / suiteResults.length).toFixed(1)}%`}
+                  trend={suiteResults.every(r => r.metrics.successRate === 100) ? 'up' : undefined}
+                />
+                <StatCard
+                  icon={Zap}
+                  label="Best Throughput"
+                  value={`${Math.max(...suiteResults.map(r => r.metrics.throughput)).toFixed(1)}/s`}
+                />
+                <StatCard
+                  icon={Clock}
+                  label="Total Time"
+                  value={`${(suiteResults.reduce((acc, r) => acc + r.metrics.totalTime, 0) / 1000).toFixed(1)}s`}
+                />
+              </div>
+              
+              {/* Performance by Test Type */}
+              <div>
+                <h4 className="font-semibold mb-3">Performance by Test Type:</h4>
+                <div className="space-y-2">
+                  {suiteResults.map((testResult, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline">{testResult.config.testType}</Badge>
+                        <span className="text-sm text-muted-foreground">{testResult.config.folder}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className="text-sm font-semibold">{testResult.metrics.throughput.toFixed(1)} email/s</div>
+                          <div className="text-xs text-muted-foreground">{testResult.metrics.avgTimePerEmail.toFixed(0)}ms avg</div>
+                        </div>
+                        <Badge variant={testResult.metrics.successRate === 100 ? "default" : "destructive"}>
+                          {testResult.metrics.successRate}%
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Recommendations */}
+              <div>
+                <h4 className="font-semibold mb-3">System Recommendations:</h4>
+                <Alert>
+                  <TrendingUp className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Optimal Configuration Detected:</strong><br />
+                    • Batch Size: {suiteResults.reduce((best, r) => r.metrics.throughput > best.metrics.throughput ? r : best).config.batchSize || 25}<br />
+                    • Best Folder: {suiteResults.reduce((best, r) => r.metrics.successRate > best.metrics.successRate ? r : best).config.folder}<br />
+                    • Recommended Method: {suiteResults.reduce((best, r) => r.metrics.throughput > best.metrics.throughput ? r : best).config.testType}<br />
+                    • Overall Success Rate: {(suiteResults.reduce((acc, r) => acc + r.metrics.successRate, 0) / suiteResults.length).toFixed(1)}%
+                  </AlertDescription>
+                </Alert>
+              </div>
+              
+              {/* Export Suite Results */}
+              <Button 
+                onClick={() => {
+                  const json = JSON.stringify(suiteResults, null, 2);
+                  const blob = new Blob([json], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `test-suite-${new Date().toISOString()}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export Suite Results (JSON)
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         {/* Info */}

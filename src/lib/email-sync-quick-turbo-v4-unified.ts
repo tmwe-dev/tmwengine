@@ -209,8 +209,7 @@ const getQuickFolderUids = async (folderName: string): Promise<string[]> => {
           handler: 'get_messages',
           folder: folderName,
           limit: 2000
-        },
-        requestTimeout: 60000
+        }
       }
     }),
     `get_folder_uids_${folderName}`,
@@ -218,10 +217,53 @@ const getQuickFolderUids = async (folderName: string): Promise<string[]> => {
     60000 // 🆕 Custom timeout 60s per cartelle grandi
   );
 
-  if (response.error) throw response.error;
+  // 🔍 DEBUG: Ispeziona risposta COMPLETA
+  console.log('🔍 [DEBUG getQuickFolderUids] Raw response:', {
+    folder: folderName,
+    hasError: !!response.error,
+    errorMsg: response.error?.message,
+    hasData: !!response.data,
+    dataKeys: response.data ? Object.keys(response.data) : [],
+    dataType: typeof response.data,
+    dataSuccess: response.data?.success,
+    dataDataExists: !!response.data?.data,
+    dataDataType: response.data?.data ? typeof response.data.data : 'undefined',
+    dataDataLength: Array.isArray(response.data?.data) ? response.data.data.length : 'not_array',
+    first3Items: Array.isArray(response.data?.data) ? response.data.data.slice(0, 3) : []
+  });
+
+  if (response.error) {
+    console.error('❌ [DEBUG] Response has error:', response.error);
+    throw response.error;
+  }
   
-  const uids: string[] = response.data?.data?.map((msg: any) => msg.uid?.toString() || '') || [];
-  return uids.filter((uid: string) => Boolean(uid));
+  // 🔍 Verifica struttura dati
+  if (!response.data) {
+    console.error('❌ [DEBUG] response.data is null/undefined');
+    return [];
+  }
+  
+  if (!response.data.data) {
+    console.error('❌ [DEBUG] response.data.data is null/undefined, response.data:', response.data);
+    return [];
+  }
+  
+  if (!Array.isArray(response.data.data)) {
+    console.error('❌ [DEBUG] response.data.data is not an array:', typeof response.data.data);
+    return [];
+  }
+  
+  const uids: string[] = response.data.data.map((msg: any) => msg.uid?.toString() || '');
+  const filtered = uids.filter((uid: string) => Boolean(uid));
+  
+  console.log('✅ [DEBUG] Extracted UIDs:', {
+    folder: folderName,
+    totalMsgs: response.data.data.length,
+    uidsExtracted: uids.length,
+    uidsFiltered: filtered.length
+  });
+  
+  return filtered;
 };
 
 /**

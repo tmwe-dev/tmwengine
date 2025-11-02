@@ -298,7 +298,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
       const newQuickSyncer = new QuickEmailSyncer({
         userEmail: profile.tmwe_email,
-        folders: foldersToSync && foldersToSync.length > 0 ? foldersToSync : quickFolders.map(f => f.name),
+        folders: foldersToSync && foldersToSync.length > 0 ? foldersToSync : undefined,
         applyPreferences: !foldersToSync || foldersToSync.length === 0,
         batchSize: 25,
         maxRetries: 2,

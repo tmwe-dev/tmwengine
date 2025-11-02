@@ -25,10 +25,10 @@ import {
   Settings
 } from 'lucide-react';
 import { 
-  QuickEmailSyncerTurboV2 as QuickEmailSyncer,
-  QuickSyncProgress,
-  QuickSyncStats
-} from '@/lib/email-sync-quick-turbo';
+  EmailSyncUnified as QuickEmailSyncer,
+  UnifiedSyncProgress as QuickSyncProgress,
+  UnifiedSyncStats as QuickSyncStats
+} from '@/lib/email-sync-unified';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';

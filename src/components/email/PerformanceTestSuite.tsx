@@ -1800,7 +1800,7 @@ export function PerformanceTestSuite() {
 
                   {/* ✅ BEST PERFORMER HIGHLIGHTS */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="border-green-500 bg-green-50 dark:bg-green-950/20">
+                    <Card className="border-green-500">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-sm flex items-center gap-2">
                           🏆 Fastest Configuration
@@ -1835,7 +1835,7 @@ export function PerformanceTestSuite() {
                       </CardContent>
                     </Card>
                     
-                    <Card className="border-blue-500 bg-blue-50 dark:bg-blue-950/20">
+                    <Card className="border-blue-500">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-sm flex items-center gap-2">
                           💯 Most Reliable

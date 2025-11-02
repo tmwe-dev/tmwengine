@@ -286,13 +286,14 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       }
 
       console.log('🚀 [QuickDownload] ========== SYNC START ==========');
-      console.log('🚀 Selected folders:', foldersToSync);
-      foldersToSync.forEach((name, idx) => {
-        console.log(`🚀 Folder ${idx + 1}:`);
-        console.log(`   Name: "${name}"`);
-        console.log(`   Length: ${name.length}`);
-        console.log(`   Bytes: ${Array.from(name).map(c => c.charCodeAt(0)).join(',')}`);
-      });
+      if (foldersToSync) {
+        console.log('🚀 Manual folder selection:', foldersToSync);
+        foldersToSync.forEach((name, idx) => {
+          console.log(`🚀   Folder ${idx + 1}: "${name}" (${name.length} chars)`);
+        });
+      } else {
+        console.log('🎯 Automatic folder selection (will use user preferences from DB)');
+      }
       console.log('🚀 ==============================================');
 
       const newQuickSyncer = new QuickEmailSyncer({

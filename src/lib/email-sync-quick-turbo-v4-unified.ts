@@ -579,18 +579,18 @@ export class QuickEmailSyncerTurboV4 {
         foldersLength: this.options.folders?.length || 0
       });
 
-      const shouldApplyPreferences = this.options.applyPreferences === false || 
+      const shouldUseForcedFolders = this.options.applyPreferences === false || 
         (this.options.folders && this.options.folders.length > 0);
 
       console.log('🔧 [TURBO V4] Decision:', {
-        shouldApplyPreferences,
-        willUseForcedFolders: shouldApplyPreferences,
-        forcedFolders: shouldApplyPreferences ? this.options.folders : undefined
+        applyPreferences: !shouldUseForcedFolders,
+        willUseForcedFolders: shouldUseForcedFolders,
+        forcedFolders: shouldUseForcedFolders ? this.options.folders : undefined
       });
 
       const { folders, preferences } = await loadFoldersWithPreferences(
         this.options.userEmail,
-        shouldApplyPreferences ? this.options.folders : undefined
+        shouldUseForcedFolders ? this.options.folders : undefined
       );
 
       console.log('🔧 [TURBO V4] Result:', {

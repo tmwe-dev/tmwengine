@@ -756,13 +756,26 @@ export const emailFolderApi = {
     // ✅ Controlla cache prima
     if (!options?.skipCache) {
       const cached = folderCache.get(config);
-      if (cached) return cached;
+      if (cached) {
+        console.log('💾 [emailFolderApi] Using cached folders:', cached?.length || 0);
+        return cached;
+      }
     }
+    
+    console.log('🌐 [emailFolderApi] Calling TMWE API for folders (skipCache:', options?.skipCache, ')');
     
     // ✅ Chiamata API
     const result = await fetchApi('/email_folder', { 
       handler: 'get_folders',
       ...config
+    });
+    
+    console.log('📥 [emailFolderApi] TMWE API returned:', {
+      hasResult: !!result,
+      isArray: Array.isArray(result),
+      length: result?.length || 0,
+      type: typeof result,
+      keys: result ? Object.keys(result) : []
     });
     
     // ✅ Salva in cache

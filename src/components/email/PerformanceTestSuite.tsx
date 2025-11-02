@@ -1725,7 +1725,7 @@ export function PerformanceTestSuite() {
                       return (
                         <tr 
                           key={idx} 
-                          className={`border-t hover:bg-accent/50 transition-colors ${isFastest ? 'bg-green-50 dark:bg-green-950/20' : isSlowest ? 'bg-red-50 dark:bg-red-950/20' : ''}`}
+                          className={`border-t hover:bg-muted/30 transition-colors ${isFastest ? 'bg-green-50 dark:bg-green-950/20' : isSlowest ? 'bg-red-50 dark:bg-red-950/20' : ''}`}
                         >
                           <td className="p-3 font-mono text-muted-foreground">{idx + 1}</td>
                           <td className="p-3">

@@ -610,20 +610,25 @@ export function PerformanceTestSuite() {
 
       const parallelStart = performance.now();
 
-      // ✅ Wrappa con ParallelDownloadController per rate limiting
+      // ✅ Wrappa con ParallelDownloadController + withTMWERetry
       const promises = Array.from({ length: parallelBatches }, (_, i) =>
         downloadController.download(() =>
-          supabase.functions.invoke('tmwe-api-proxy', {
-            body: {
-              endpoint: '/email_message',
-              data: {
-                handler: 'get_messages',
-                folder: testConfig.folder,
-                limit: batchSize,
-                offset: i * batchSize
+          withTMWERetry(
+            () => supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/email_message',
+                data: {
+                  handler: 'get_messages',
+                  folder: testConfig.folder,
+                  limit: batchSize,
+                  offset: i * batchSize
+                }
               }
-            }
-          }).then(result => {
+            }),
+            'get_messages',
+            undefined,
+            30000 // ✅ 30s timeout
+          ).then(result => {
             totalApiCalls++;
             setProgress(((i + 1) / parallelBatches) * 100);
             return result;
@@ -631,16 +636,23 @@ export function PerformanceTestSuite() {
         )
       );
 
-      const results = await Promise.all(promises);
+      // ✅ Promise.allSettled per non fallire su singoli errori
+      const results = await Promise.allSettled(promises);
       const parallelTime = performance.now() - parallelStart;
 
       const successCount = results.filter(r => {
-        const messages = r.data?.messages || [];
-        return !r.error && messages.length > 0;
+        if (r.status === 'fulfilled') {
+          const messages = r.value.data?.messages || [];
+          return !r.value.error && messages.length > 0;
+        }
+        return false;
       }).length;
       
       const actualEmailCount = results.reduce((sum, r) => {
-        return sum + (r.data?.messages?.length || 0);
+        if (r.status === 'fulfilled') {
+          return sum + (r.value.data?.messages?.length || 0);
+        }
+        return sum;
       }, 0);
 
       return {

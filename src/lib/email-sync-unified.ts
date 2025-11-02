@@ -61,8 +61,7 @@ async function fetchFolderUIDs(folderName: string): Promise<string[]> {
       endpoint: '/email_message',
       data: { 
         handler: 'get_messages',
-        folder: folderName,
-        limit: 2000
+        folder: folderName
       }
     }
   });

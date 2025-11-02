@@ -115,13 +115,14 @@ export async function withAdvancedRetry<T>(
 export async function withTMWERetry<T>(
   fn: () => Promise<T>,
   handler: string,
-  onRetry?: (attempt: number) => void
+  onRetry?: (attempt: number) => void,
+  customTimeout?: number // 🆕 Timeout configurabile
 ): Promise<T> {
   const result = await withAdvancedRetry(fn, {
     maxRetries: 3,
     initialDelay: 500,
     maxDelay: 5000,
-    timeout: 30000,
+    timeout: customTimeout || 30000, // ✅ Usa custom o default 30s
     retryableErrors: ['network', 'imap', 'timeout'],
     onRetry: onRetry ? (attempt, error, category) => {
       console.log(`🔄 [${handler}] Retry ${attempt}/3 (${category})`);

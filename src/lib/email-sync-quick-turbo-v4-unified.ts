@@ -213,7 +213,9 @@ const getQuickFolderUids = async (folderName: string): Promise<string[]> => {
         requestTimeout: 60000
       }
     }),
-    `get_folder_uids_${folderName}`
+    `get_folder_uids_${folderName}`,
+    undefined, // onRetry callback
+    60000 // 🆕 Custom timeout 60s per cartelle grandi
   );
 
   if (response.error) throw response.error;

@@ -298,8 +298,8 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
       const newQuickSyncer = new QuickEmailSyncer({
         userEmail: profile.tmwe_email,
-        folders: foldersToSync,  // undefined se nessuna selezione manuale
-        applyPreferences: foldersToSync === undefined,  // true solo se folders è undefined
+        folders: foldersToSync && foldersToSync.length > 0 ? foldersToSync : undefined,  // Normalizza [] → undefined
+        applyPreferences: !foldersToSync || foldersToSync.length === 0,  // ✅ CORRETTO: true se nessuna selezione
         batchSize: 25,
         maxRetries: 2,
         timeout: 60000,

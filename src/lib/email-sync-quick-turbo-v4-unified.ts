@@ -399,34 +399,46 @@ const downloadParallelBatches = async (
   for (let i = 0; i < chunks.length; i += parallelBatches) {
     const parallelChunks = chunks.slice(i, i + parallelBatches);
     
-    // ✅ FIX 3: USA BATCH API invece di singoli getMessage
+    // ✅ FIX: USA chiamate parallele a get_message singolo (handler supportato)
     const batchPromises = parallelChunks.map(async (chunk) => {
-      try {
-        // Converti UIDs a numeri
-        const uidInts = chunk.map(uid => parseInt(uid, 10));
-        
-        // Chiamata BATCH (1 sola richiesta per 25 email invece di 25 richieste)
-        console.log(`🚀 [TURBO V4] Using BATCH API for ${uidInts.length} emails...`);
-        const batchResponse = await withTMWERetry(
-          () => emailMessageApi.getMessagesBatch(uidInts, folderName, false),
-          `get_messages_batch_${folderName}_${i}`
-        );
-        
-        // Mappa risultati nel formato atteso
-        return chunk.map((uid, idx) => ({
-          uid,
-          data: batchResponse[idx] || null
-        })).filter(r => r.data !== null);
-        
-      } catch (error) {
-        console.error(`[TURBO V4] Batch download failed, falling back to single:`, error);
-        
-        // FALLBACK: Se batch fallisce, usa singoli getMessage
-        const chunkResults = await Promise.all(
-          chunk.map(uid => downloadSingleEmail(uid, folderName, maxRetries, timeout))
-        );
-        return chunkResults.filter((r): r is NonNullable<typeof r> => r !== null);
-      }
+      console.log(`🚀 [TURBO V4] Parallel download for ${chunk.length} emails using get_message...`);
+      
+      // Chiamate parallele a get_message singolo
+      const emailPromises = chunk.map(async (uid) => {
+        try {
+          const response = await supabase.functions.invoke('tmwe-api-proxy', {
+            body: {
+              endpoint: '/email_message',
+              data: {
+                handler: 'get_message',
+                uid: parseInt(uid, 10),
+                folder: folderName,
+                include_body: true
+              }
+            }
+          });
+          
+          if (response.error) {
+            console.error(`❌ [TURBO V4] get_message failed for UID ${uid}:`, response.error);
+            return null;
+          }
+          
+          return { uid, data: response.data };
+        } catch (error) {
+          console.error(`❌ [TURBO V4] Exception for UID ${uid}:`, error);
+          return null;
+        }
+      });
+      
+      const results = await Promise.allSettled(emailPromises);
+      const successfulResults = results
+        .filter((r): r is PromiseFulfilledResult<{ uid: string; data: any } | null> => 
+          r.status === 'fulfilled' && r.value !== null
+        )
+        .map(r => r.value!);
+      
+      console.log(`✅ [TURBO V4] Batch completed: ${successfulResults.length}/${chunk.length} successful`);
+      return successfulResults;
     });
     
     const settledResults = await Promise.allSettled(batchPromises);

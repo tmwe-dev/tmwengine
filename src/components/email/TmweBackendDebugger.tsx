@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { Bug, Send, Loader2, Info } from 'lucide-react';
 import { PerformanceTestSuite } from './PerformanceTestSuite';
+import { PerformanceAnalysisDashboard } from '@/components/testing/PerformanceAnalysisDashboard';
 
 export function TmweBackendDebugger() {
   const [folder, setFolder] = useState('lette');
@@ -315,6 +316,11 @@ export function TmweBackendDebugger() {
         </div>
       </CardContent>
     </Card>
+
+    {/* Performance Analysis Dashboard */}
+    <div className="mt-6">
+      <PerformanceAnalysisDashboard />
+    </div>
     </div>
   );
 }

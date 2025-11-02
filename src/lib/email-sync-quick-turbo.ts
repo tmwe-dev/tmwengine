@@ -11,7 +11,8 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { emailMessageApi } from "@/lib/tmwe-api-integrated";
+import { emailMessageApi, emailFolderApi } from "@/lib/tmwe-api-integrated";
+import { getSyncPreferences, filterFolders, type EmailFolder } from "./email-sync-preferences";
 import { 
   getFolderCacheV2, 
   saveFolderCacheV2, 
@@ -33,8 +34,9 @@ export interface QuickSyncProgress {
 }
 
 export interface QuickSyncOptions {
-  folders: string[];
+  folders?: string[];
   userEmail: string;
+  applyPreferences?: boolean;
   batchSize?: number;
   maxRetries?: number;
   timeout?: number;
@@ -318,7 +320,7 @@ const insertQuickBatchV2 = async (
 
 export class QuickEmailSyncerTurboV2 {
   private progress: QuickSyncProgress;
-  private options: Required<QuickSyncOptions>;
+  private options: Omit<Required<QuickSyncOptions>, 'folders' | 'applyPreferences'> & Pick<QuickSyncOptions, 'folders' | 'applyPreferences'>;
   private shouldStop = false;
   private isPaused = false;
   private startTime = 0;
@@ -339,7 +341,7 @@ export class QuickEmailSyncerTurboV2 {
     this.progress = {
       status: 'idle',
       currentFolder: '',
-      foldersToSync: options.folders,
+      foldersToSync: options.folders || [],
       completedFolders: [],
       totalEmails: 0,
       downloadedCount: 0,
@@ -371,6 +373,54 @@ export class QuickEmailSyncerTurboV2 {
   }
 
   /**
+   * ✨ TURBO V2: Carica folders da preferences DB e filtra secondo logica whitelist/blacklist
+   */
+  private async loadFoldersFromPreferences(userEmail: string): Promise<string[]> {
+    try {
+      console.log('📂 [TURBO V2] Loading folders with preferences...');
+      
+      // 1. Carica tutte le cartelle dal server
+      const foldersResponse = await emailFolderApi.getFolders({ include_counts: false });
+      
+      let allFolders: EmailFolder[] = [];
+      if (Array.isArray(foldersResponse)) {
+        allFolders = foldersResponse.map((f: any) => ({ name: f.name || f }));
+      } else if (foldersResponse?.folders && Array.isArray(foldersResponse.folders)) {
+        allFolders = foldersResponse.folders.map((f: any) => ({ name: f.name || f }));
+      } else if (foldersResponse?.data && Array.isArray(foldersResponse.data)) {
+        allFolders = foldersResponse.data.map((f: any) => ({ name: f.name || f }));
+      }
+      
+      if (allFolders.length === 0) {
+        console.warn('⚠️ [TURBO V2] No folders found from server, using INBOX as fallback');
+        return ['INBOX'];
+      }
+      
+      console.log(`📂 [TURBO V2] Loaded ${allFolders.length} folders from server`);
+      
+      // 2. Carica preferenze utente
+      const preferences = await getSyncPreferences(userEmail);
+      console.log(`🎯 [TURBO V2] Preferences mode: ${preferences.included_folders.length > 0 ? 'WHITELIST' : 'BLACKLIST'}`);
+      
+      // 3. Filtra cartelle secondo preferenze
+      const filteredFolders = filterFolders(allFolders, preferences);
+      const folderNames = filteredFolders.map(f => f.name);
+      
+      console.log(`✅ [TURBO V2] Filtered to ${folderNames.length} folders:`, folderNames);
+      
+      if (folderNames.length === 0) {
+        console.warn('⚠️ [TURBO V2] No folders after filtering, using INBOX as fallback');
+        return ['INBOX'];
+      }
+      
+      return folderNames;
+    } catch (error) {
+      console.error('❌ [TURBO V2] Error loading preferences:', error);
+      return ['INBOX'];
+    }
+  }
+
+  /**
    * ✨ TURBO V2: Calcola batch size ottimale basato su dimensione folder
    */
   private calculateOptimalBatchSize(totalEmails: number): number {
@@ -386,13 +436,27 @@ export class QuickEmailSyncerTurboV2 {
       this.progress.status = 'running';
       
       console.log('\n🚀 [TURBO V2] Starting Quick Email Sync...');
-      console.log(`📂 Folders: ${this.options.folders.join(', ')}`);
+      
+      // ✅ Carica folders da preferences se necessario
+      let foldersToSync = this.options.folders || [];
+      
+      if (this.options.applyPreferences && foldersToSync.length === 0) {
+        console.log('🎯 [TURBO V2] Loading folders from user preferences...');
+        foldersToSync = await this.loadFoldersFromPreferences(this.options.userEmail);
+      }
+      
+      if (foldersToSync.length === 0) {
+        throw new Error('No folders to sync');
+      }
+      
+      this.progress.foldersToSync = foldersToSync;
+      console.log(`📂 [TURBO V2] Folders to sync: ${foldersToSync.join(', ')}`);
       
       // Pulisci cache vecchia
       cleanOldCacheV2(this.options.userEmail);
       
       // Priority queue: INBOX first, poi resto
-      const priorityFolders = [...this.options.folders].sort((a, b) => {
+      const priorityFolders = [...foldersToSync].sort((a, b) => {
         if (a === 'INBOX') return -1;
         if (b === 'INBOX') return 1;
         return 0;

@@ -99,6 +99,65 @@ export interface TurboV4SyncOptions {
   onError: (error: Error) => void;
 }
 
+// ==================== OPTIMAL CONFIGS (da Performance Test) ====================
+
+/**
+ * 🎯 Configurazioni ottimali per folder basate su test performance
+ * - INBOX/Sent: batch 25, parallel 8 (peak 8.3 email/s testato)
+ * - Trash/Spam: batch 10, parallel 5 (folder problematiche)
+ * - Default: batch 15, parallel 6 (conservative)
+ */
+const OPTIMAL_FOLDER_CONFIGS: Record<string, {
+  batchSize: number;
+  parallelBatches: number;
+  timeout: number;
+  include_attachments: boolean;
+}> = {
+  'INBOX': {
+    batchSize: 25,
+    parallelBatches: 8,
+    timeout: 30000,
+    include_attachments: false
+  },
+  'Sent': {
+    batchSize: 25,
+    parallelBatches: 8,
+    timeout: 30000,
+    include_attachments: false
+  },
+  'Trash': {
+    batchSize: 10,
+    parallelBatches: 5,
+    timeout: 60000,
+    include_attachments: false
+  },
+  'Spam': {
+    batchSize: 10,
+    parallelBatches: 5,
+    timeout: 60000,
+    include_attachments: false
+  },
+  'Junk': {
+    batchSize: 10,
+    parallelBatches: 5,
+    timeout: 60000,
+    include_attachments: false
+  },
+  'default': {
+    batchSize: 15,
+    parallelBatches: 6,
+    timeout: 45000,
+    include_attachments: false
+  }
+};
+
+/**
+ * Ottieni configurazione ottimale per una folder
+ */
+function getOptimalConfig(folderName: string) {
+  return OPTIMAL_FOLDER_CONFIGS[folderName] || OPTIMAL_FOLDER_CONFIGS.default;
+}
+
 // ==================== HELPER FUNCTIONS ====================
 
 /**
@@ -581,11 +640,11 @@ export class QuickEmailSyncerTurboV4 {
   private calculateOptimalParallelBatches(folderName: string): number {
     // Folder problematiche (da test performance)
     if (folderName === 'Trash' || folderName === 'Spam' || folderName === 'Junk') {
-      return 2;
+      return 5; // ⚡ Aumentato da 2 a 5
     }
     
-    // INBOX, Sent, Archive - parallel 3 (da test)
-    return 3;
+    // INBOX, Sent, Archive - parallel aumentato per performance
+    return 8; // ⚡ Aumentato da 3 a 8
   }
 
   constructor(options: TurboV4SyncOptions) {
@@ -598,8 +657,9 @@ export class QuickEmailSyncerTurboV4 {
       ...options
     };
 
-    // ✨ V4: Controller ottimizzato (3 concurrent, 100ms delay)
-    this.downloadController = new ParallelDownloadController(3, 100);
+    // ✨ V4: Controller ottimizzato (10 concurrent, 50ms delay)
+    // ⚡ OTTIMIZZATO: Aumentato da 3→10 concurrent, ridotto delay 100→50ms
+    this.downloadController = new ParallelDownloadController(10, 50);
 
     this.progress = {
       status: 'idle',
@@ -734,6 +794,14 @@ export class QuickEmailSyncerTurboV4 {
 
   private async syncFolderV4(folder: string) {
     console.log(`\n📂 [TURBO V4] ========== SYNCING: ${folder} ==========`);
+    
+    // ⚡ APPLICA CONFIG OTTIMALE PER FOLDER
+    const config = getOptimalConfig(folder);
+    console.log(`⚙️ [TURBO V4] ${folder} using optimal config:`, config);
+    
+    // Aggiorna controller con limiti dinamici
+    this.downloadController.updateLimits(config.parallelBatches, 50);
+    
     this.progress.currentFolder = folder;
     this.progress.currentFolderProgress = 0;
 

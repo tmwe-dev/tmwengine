@@ -1703,7 +1703,7 @@ export function PerformanceTestSuite() {
               {/* ✅ TABELLA COMPARATIVA DETTAGLIATA */}
               <div className="rounded-lg border overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/50">
+                  <thead>
                     <tr>
                       <th className="p-3 text-left font-semibold">#</th>
                       <th className="p-3 text-left font-semibold">Test Type</th>

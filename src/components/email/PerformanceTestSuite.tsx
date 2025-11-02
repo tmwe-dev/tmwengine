@@ -17,6 +17,10 @@ import { StatCard } from '@/components/design-system/cards/StatCard';
 import { Link } from 'react-router-dom';
 import { withTMWERetry, categorizeError, type ErrorCategory } from '@/lib/api-retry-advanced';
 import { logPerformanceMetrics } from '@/lib/performance-metrics-logger';
+import { ParallelDownloadController } from '@/lib/parallel-download-controller';
+
+// 🚀 Istanza globale ParallelDownloadController per rate limiting
+const downloadController = new ParallelDownloadController(10, 50);
 
 interface TestConfig {
   folder: string;
@@ -348,27 +352,30 @@ export function PerformanceTestSuite() {
       const batchStart = performance.now();
       
       try {
-        const { data, error: apiError } = await withTMWERetry(
-          () => supabase.functions.invoke('tmwe-api-proxy', {
-            body: {
-              endpoint: '/email_message',
-              data: {
-                handler: 'get_messages',
-                folder: testConfig.folder,
-                limit: testConfig.batchSize || 25,
-                offset: 0,
-                include_attachments: false
-              },
-              requestTimeout: 30000
+        // ✅ Wrappa con ParallelDownloadController per rate limiting
+        const { data, error: apiError } = await downloadController.download(() =>
+          withTMWERetry(
+            () => supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/email_message',
+                data: {
+                  handler: 'get_messages',
+                  folder: testConfig.folder,
+                  limit: testConfig.batchSize || 25,
+                  offset: 0,
+                  include_attachments: false
+                },
+                requestTimeout: 30000
+              }
+            }),
+            'get_messages',
+            (attempt) => {
+              setLiveMetrics(prev => ({
+                ...prev,
+                apiCalls: prev.apiCalls + 1
+              }));
             }
-          }),
-          'get_messages',
-          (attempt) => {
-            setLiveMetrics(prev => ({
-              ...prev,
-              apiCalls: prev.apiCalls + 1
-            }));
-          }
+          )
         );
 
         totalApiCalls++;
@@ -603,22 +610,25 @@ export function PerformanceTestSuite() {
 
       const parallelStart = performance.now();
 
+      // ✅ Wrappa con ParallelDownloadController per rate limiting
       const promises = Array.from({ length: parallelBatches }, (_, i) =>
-        supabase.functions.invoke('tmwe-api-proxy', {
-          body: {
-            endpoint: '/email_message',
-            data: {
-              handler: 'get_messages',
-              folder: testConfig.folder,
-              limit: batchSize,
-              offset: i * batchSize
+        downloadController.download(() =>
+          supabase.functions.invoke('tmwe-api-proxy', {
+            body: {
+              endpoint: '/email_message',
+              data: {
+                handler: 'get_messages',
+                folder: testConfig.folder,
+                limit: batchSize,
+                offset: i * batchSize
+              }
             }
-          }
-        }).then(result => {
-          totalApiCalls++;
-          setProgress(((i + 1) / parallelBatches) * 100);
-          return result;
-        })
+          }).then(result => {
+            totalApiCalls++;
+            setProgress(((i + 1) / parallelBatches) * 100);
+            return result;
+          })
+        )
       );
 
       const results = await Promise.all(promises);

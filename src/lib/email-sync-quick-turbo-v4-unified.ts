@@ -459,47 +459,41 @@ const downloadParallelBatches = async (
   for (let i = 0; i < chunks.length; i += parallelBatches) {
     const parallelChunks = chunks.slice(i, i + parallelBatches);
     
-    // ✅ FIX 4: Wrappa ogni batch con downloadController per rate limiting
+    // ✅ OTTIMIZZAZIONE: Usa nuovo handler batch get_messages_by_uids
     const batchPromises = parallelChunks.map(chunk => 
       downloadController.download(async () => {
-        console.log(`🚀 [TURBO V4] Parallel download for ${chunk.length} emails using get_message...`);
+        console.log(`🚀 [TURBO V4] Batch download for ${chunk.length} emails using get_messages_by_uids...`);
         
-        // Chiamate parallele a get_message singolo
-        const emailPromises = chunk.map(async (uid) => {
-          try {
-            const response = await supabase.functions.invoke('tmwe-api-proxy', {
-              body: {
-                endpoint: '/email_message',
-                data: {
-                  handler: 'get_message',
-                  uid: parseInt(uid, 10),
-                  folder: folderName,
-                  include_body: true
-                }
+        try {
+          // ✅ NUOVA CHIAMATA BATCH OTTIMIZZATA
+          const response = await supabase.functions.invoke('tmwe-api-proxy', {
+            body: {
+              endpoint: '/email_message',
+              data: {
+                handler: 'get_messages_by_uids',  // ✅ Nuovo handler batch
+                folder: folderName,
+                uids: chunk.map(uid => parseInt(uid, 10)),
+                include_attachments: true
               }
-            });
-            
-            if (response.error) {
-              console.error(`❌ [TURBO V4] get_message failed for UID ${uid}:`, response.error);
-              return null;
             }
-            
-            return { uid, data: response.data };
-          } catch (error) {
-            console.error(`❌ [TURBO V4] Exception for UID ${uid}:`, error);
-            return null;
+          });
+          
+          if (response.error) {
+            console.error(`❌ [TURBO V4] Batch failed:`, response.error);
+            return [];
           }
-        });
-        
-        const results = await Promise.allSettled(emailPromises);
-        const successfulResults = results
-          .filter((r): r is PromiseFulfilledResult<{ uid: string; data: any } | null> => 
-            r.status === 'fulfilled' && r.value !== null
-          )
-          .map(r => r.value!);
-        
-        console.log(`✅ [TURBO V4] Batch completed: ${successfulResults.length}/${chunk.length} successful`);
-        return successfulResults;
+          
+          const messages = response.data?.messages || [];
+          console.log(`✅ [TURBO V4] Batch completed: ${messages.length}/${chunk.length} successful`);
+          
+          return messages.map((msg: any) => ({
+            uid: msg.uid?.toString() || msg.message_id?.toString(),
+            data: msg
+          }));
+        } catch (error) {
+          console.error(`❌ [TURBO V4] Exception in batch:`, error);
+          return [];
+        }
       })
     );
     
@@ -908,6 +902,32 @@ export class QuickEmailSyncerTurboV4 {
         const highestUID = Math.max(...uids.map(uid => parseInt(uid)));
         saveFolderCacheV2(this.options.userEmail, folder, highestUID, uids.length);
       }
+
+      // 📊 LOGGING PERFORMANCE DETTAGLIATO
+      const totalTimeMs = Date.now() - t1;
+      const throughput = inserted / (totalTimeMs / 1000);
+      const successRate = uids.length > 0 ? (inserted / uids.length) * 100 : 0;
+      const totalProcessed = this.stats.downloaded + this.stats.failed;
+      const cacheHitRate = totalProcessed > 0 
+        ? (this.stats.cacheHits / totalProcessed) * 100 
+        : 0;
+      
+      console.log(`
+📊 [TURBO V4 METRICS] ${folder}
+===============================
+✅ Throughput:       ${throughput.toFixed(1)} email/s
+🎯 Target:           30-40 email/s
+📈 Achievement:      ${(throughput / 35 * 100).toFixed(1)}%
+📦 Batch Size:       ${config.batchSize}
+🔀 Parallel Batches: ${config.parallelBatches}
+🚀 API Call Type:    get_messages_by_uids (BATCH OPTIMIZED)
+💾 Cache Hit Rate:   ${cacheHitRate.toFixed(1)}%
+✅ Success Rate:     ${successRate.toFixed(1)}%
+⚡ Total Time:       ${totalTimeMs}ms
+📧 Downloaded:       ${inserted}/${uids.length}
+❌ Failed:           ${failed}
+===============================
+`);
 
       console.log(`✅ [TURBO V4] ${folder}: COMPLETE - ${inserted} downloaded, ${failed} failed`);
 

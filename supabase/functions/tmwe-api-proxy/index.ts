@@ -408,6 +408,64 @@ serve(async (req) => {
       });
     }
     
+    // 🚀 BATCH GET MESSAGES BY UIDS (Download email batch ottimizzato)
+    if (data.handler === 'get_messages_by_uids' && Array.isArray(data.uids)) {
+      const { folder, uids, include_attachments = true } = data;
+      
+      if (enableLogging) {
+        console.log(`📥 Batch Get Messages: ${uids.length} UIDs from ${folder}`);
+      }
+      
+      const batchStartTime = Date.now();
+      
+      // Usa chunked parallel per evitare timeout
+      const chunks = chunkArray(uids, batchChunkSize); // 10 per chunk
+      if (enableLogging) console.log(`🧩 Chunking: ${chunks.length} chunks di ${batchChunkSize} UIDs`);
+      
+      const chunkPromises = chunks.map(chunk => 
+        Promise.all(chunk.map(uid => 
+          fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${tmweAccessToken}`,
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ 
+              handler: 'get_message', 
+              uid: uid,
+              folder: folder,
+              include_body: include_attachments
+            }),
+          }).then(r => r.json()).catch(err => {
+            console.error(`❌ Failed to get UID ${uid}:`, err);
+            return { success: false, uid: uid, error: err.message };
+          })
+        ))
+      );
+      
+      const chunkResults = await Promise.all(chunkPromises);
+      const messages = chunkResults.flat();
+      
+      const batchEndTime = Date.now();
+      const successfulMessages = messages.filter((m: any) => m.success || m.uid || m.message_id);
+      
+      if (enableLogging) {
+        console.log(`✅ Batch Get Messages completato in ${batchEndTime - batchStartTime}ms - ${successfulMessages.length}/${uids.length} successful`);
+      }
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        messages: successfulMessages,
+        total: uids.length,
+        successful: successfulMessages.length,
+        duration: batchEndTime - batchStartTime
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     // NORMALE SINGLE REQUEST
     
     // ✅ NUOVO: Verifica circuit breaker

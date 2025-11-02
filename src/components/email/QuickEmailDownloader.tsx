@@ -30,6 +30,8 @@ import {
   TurboV4SyncStats as QuickSyncStats
 } from '@/lib/email-sync-quick-turbo-v4-unified';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface QuickEmailDownloaderProps {
   onDownloadComplete?: (stats: QuickSyncStats) => void;
@@ -48,12 +50,34 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const [quickProgress, setQuickProgress] = useState<QuickSyncProgress | null>(null);
   const [quickSyncer, setQuickSyncer] = useState<QuickEmailSyncer | null>(null);
   const [isQuickLoading, setIsQuickLoading] = useState(true);
+  const [isPreferencesDialogOpen, setIsPreferencesDialogOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
     console.log('🔍 [QuickDownload] Received preSelectedFolders prop:', preSelectedFolders);
     loadQuickFolders();
+    loadUserEmail();
   }, []);
+
+  const loadUserEmail = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profile?.tmwe_email) {
+        setUserEmail(profile.tmwe_email);
+      }
+    } catch (error) {
+      console.error('Error loading user email:', error);
+    }
+  };
 
   // 🔍 DEBUG: Monitora stato reale di preSelectedFolders e quickFolders
   useEffect(() => {
@@ -532,14 +556,45 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         <Card className="border-purple-500 border-2 bg-purple-50/10">
           <CardContent className="pt-6">
             <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-3">
-                <Settings className="h-6 w-6 text-purple-500" />
-                <div>
-                  <h4 className="font-semibold">Sync Automatico con Preferenze</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Sincronizza solo le cartelle configurate in Email Management
-                  </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Settings className="h-6 w-6 text-purple-500" />
+                  <div>
+                    <h4 className="font-semibold">Sync Automatico con Preferenze</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Sincronizza solo le cartelle configurate in Email Management
+                    </p>
+                  </div>
                 </div>
+                
+                {/* Pulsante Gestione Preferenze */}
+                <Dialog open={isPreferencesDialogOpen} onOpenChange={setIsPreferencesDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Settings className="h-4 w-4" />
+                      Gestisci Preferenze
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>⚙️ Preferenze Sincronizzazione</DialogTitle>
+                    </DialogHeader>
+                    {userEmail && (
+                      <FolderSyncPreferencesManager
+                        userEmail={userEmail}
+                        availableFolders={quickFolders.map(f => f.name)}
+                        onPreferencesChanged={() => {
+                          loadQuickFolders();
+                          setIsPreferencesDialogOpen(false);
+                          toast({
+                            title: '✅ Preferenze salvate',
+                            description: 'Le tue preferenze di sincronizzazione sono state aggiornate',
+                          });
+                        }}
+                      />
+                    )}
+                  </DialogContent>
+                </Dialog>
               </div>
               
               <Button

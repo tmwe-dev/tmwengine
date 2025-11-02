@@ -25,10 +25,10 @@ import {
   Settings
 } from 'lucide-react';
 import { 
-  QuickEmailSyncerTurboV4 as QuickEmailSyncer,
-  TurboV4SyncProgress as QuickSyncProgress,
-  TurboV4SyncStats as QuickSyncStats
-} from '@/lib/email-sync-quick-turbo-v4-unified';
+  QuickEmailSyncerTurboV2 as QuickEmailSyncer,
+  QuickSyncProgress,
+  QuickSyncStats
+} from '@/lib/email-sync-quick-turbo';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -298,8 +298,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
       const newQuickSyncer = new QuickEmailSyncer({
         userEmail: profile.tmwe_email,
-        folders: foldersToSync && foldersToSync.length > 0 ? foldersToSync : undefined,  // Normalizza [] → undefined
-        applyPreferences: !foldersToSync || foldersToSync.length === 0,  // ✅ CORRETTO: true se nessuna selezione
+        folders: foldersToSync && foldersToSync.length > 0 ? foldersToSync : quickFolders.map(f => f.name),
         batchSize: 25,
         maxRetries: 2,
         timeout: 60000,
@@ -307,14 +306,9 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
           setQuickProgress(progress);
         },
         onComplete: (stats) => {
-          const cacheInfo = stats.cacheHits ? ` (${stats.cacheHits} da cache)` : '';
-          const prefsInfo = stats.preferencesApplied.filteredFolderCount < stats.preferencesApplied.originalFolderCount
-            ? ` [${stats.preferencesApplied.filteredFolderCount}/${stats.preferencesApplied.originalFolderCount} cartelle]`
-            : '';
-          
           toast({
-            title: `✅ Download V3 completato!`,
-            description: `${stats.downloaded} email in ${Math.round(stats.totalTime)}s (${stats.avgSpeed.toFixed(1)} email/s)${cacheInfo}${prefsInfo}`,
+            title: `✅ Download V2 completato!`,
+            description: `${stats.downloaded} email in ${Math.round(stats.duration)}s (${stats.avgSpeed.toFixed(1)} email/s)`,
           });
           setQuickSyncer(null);
           setQuickProgress(null);
@@ -387,12 +381,8 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     }
   };
 
-  const quickOverallProgress = quickProgress && quickProgress.totalFolders > 0
-    ? ((quickProgress.completedFolders * 100 + 
-        (quickProgress.currentFolderTotal > 0 
-          ? (quickProgress.currentFolderProgress / quickProgress.currentFolderTotal) * 100 
-          : 0)
-       ) / quickProgress.totalFolders)
+  const quickOverallProgress = quickProgress && quickProgress.foldersToSync.length > 0
+    ? (quickProgress.completedFolders.length / quickProgress.foldersToSync.length) * 100
     : 0;
 
   const startPreferencesSync = async () => {
@@ -410,11 +400,11 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         throw new Error('Email TMWE non configurata');
       }
 
-      console.log('🎯 [PreferencesSync] Starting with automatic folder selection...');
+      console.log('🎯 [PreferencesSync] Starting with all folders...');
 
       const newQuickSyncer = new QuickEmailSyncer({
         userEmail: profile.tmwe_email,
-        applyPreferences: true,
+        folders: quickFolders.map(f => f.name),
         batchSize: 25,
         maxRetries: 2,
         timeout: 60000,
@@ -422,11 +412,9 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
           setQuickProgress(progress);
         },
         onComplete: (stats) => {
-          const prefsInfo = `${stats.preferencesApplied.mode}: ${stats.preferencesApplied.filteredFolderCount}/${stats.preferencesApplied.originalFolderCount} cartelle`;
-          
           toast({
-            title: `✅ Sync con Preferenze completato!`,
-            description: `${stats.downloaded} email in ${Math.round(stats.totalTime)}s | ${prefsInfo}`,
+            title: `✅ Sync completato!`,
+            description: `${stats.downloaded} email in ${Math.round(stats.duration)}s (${stats.avgSpeed.toFixed(1)} email/s)`,
           });
           
           setQuickSyncer(null);
@@ -498,7 +486,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       </div>
 
       {/* Progress Card (visible solo durante download) */}
-      {(quickProgress?.status === 'running' || quickProgress?.status === 'paused' || quickProgress?.status === 'loading') && (
+      {(quickProgress?.status === 'running' || quickProgress?.status === 'paused') && (
         <Card className="border-yellow-500 border-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center justify-between">
@@ -531,7 +519,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
               <div className="flex justify-between text-sm mb-2">
                 <span className="font-medium">Progresso totale</span>
                 <span className="text-muted-foreground">
-                  {quickProgress.completedFolders} / {quickProgress.totalFolders} cartelle
+                  {quickProgress.completedFolders.length} / {quickProgress.foldersToSync.length} cartelle
                 </span>
               </div>
               <Progress value={quickOverallProgress} className="h-2" />
@@ -541,13 +529,10 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
             <div className="flex items-center gap-2 text-sm">
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium">{quickProgress.currentFolder}</span>
-              <span className="text-muted-foreground">
-                ({quickProgress.currentFolderProgress} / {quickProgress.currentFolderTotal})
-              </span>
             </div>
 
             {/* Stats inline */}
-            <div className="grid grid-cols-4 gap-4 text-center">
+            <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <div className="text-2xl font-bold text-green-500">
                   {quickProgress.downloadedCount}
@@ -556,12 +541,6 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
                   <CheckCircle2 className="h-3 w-3" />
                   Scaricate
                 </div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-gray-500">
-                  {quickProgress.skippedCount}
-                </div>
-                <div className="text-xs text-muted-foreground">Duplicate</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-red-500">
@@ -574,7 +553,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
               </div>
               <div>
                 <div className="text-2xl font-bold text-yellow-500">
-                  {quickProgress.currentSpeed?.toFixed(1) || '0'}
+                  {quickProgress.speed?.toFixed(1) || '0'}
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
                   <Gauge className="h-3 w-3" />

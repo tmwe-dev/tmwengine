@@ -69,13 +69,34 @@ export function filterFolders(
 ): EmailFolder[] {
   const { excluded_folders, included_folders } = preferences;
 
+  // 🔧 Normalizza nome: lowercase + trim per confronto case-insensitive
+  const normalize = (name: string) => (name || '').trim().toLowerCase();
+
+  // Crea Set normalizzati (O(1) lookup invece di O(n))
+  const excludedSet = new Set(excluded_folders.map(normalize));
+  const includedSet = new Set(included_folders.map(normalize));
+
+  console.log('🔍 [filterFolders] Excluded set:', Array.from(excludedSet));
+  console.log('🔍 [filterFolders] Input folders:', folders.map(f => normalize(f.name)));
+
   // Se ci sono cartelle specifiche incluse, considera SOLO quelle
   if (included_folders.length > 0) {
-    return folders.filter(f => included_folders.includes(f.name));
+    const filtered = folders.filter(f => {
+      const isIncluded = includedSet.has(normalize(f.name));
+      console.log(`   ${f.name}: ${isIncluded ? '✅ INCLUDED' : '❌ excluded'}`);
+      return isIncluded;
+    });
+    return filtered;
   }
 
   // Altrimenti, escludi solo quelle nella blacklist
-  return folders.filter(f => !excluded_folders.includes(f.name));
+  const filtered = folders.filter(f => {
+    const isExcluded = excludedSet.has(normalize(f.name));
+    console.log(`   ${f.name}: ${isExcluded ? '❌ EXCLUDED' : '✅ included'}`);
+    return !isExcluded;
+  });
+  
+  return filtered;
 }
 
 /**

@@ -165,19 +165,25 @@ async function loadFoldersWithPreferences(
   console.log(`📂 [TURBO V4] Found ${folderNames.length} folders on server`);
 
   const prefs = await getSyncPreferences(userEmail);
-  console.log('⚙️ [TURBO V4] Raw Preferences from DB:', prefs);
-  console.log('⚙️ [TURBO V4] Preferences:', {
-    mode: prefs.included_folders.length > 0 ? 'whitelist' : 'blacklist',
-    excluded: prefs.excluded_folders,
-    included: prefs.included_folders,
-    userEmail: userEmail
+  console.log('⚙️ [TURBO V4] Raw Preferences from DB:', {
+    user_email: prefs.user_email,
+    excluded_count: prefs.excluded_folders.length,
+    excluded_sample: prefs.excluded_folders.slice(0, 5),
+    included_count: prefs.included_folders.length,
+    included_sample: prefs.included_folders.slice(0, 5)
   });
 
   const emailFolders: EmailFolder[] = folderNames.map(name => ({ name }));
+  console.log('📂 [TURBO V4] Server folders (first 10):', folderNames.slice(0, 10));
+
   const filteredFolders = filterFolders(emailFolders, prefs);
   const filteredNames = filteredFolders.map(f => f.name);
 
-  console.log(`✅ [TURBO V4] Filtered to ${filteredNames.length} folders:`, filteredNames);
+  console.log(`✅ [TURBO V4] FILTER RESULT:`);
+  console.log(`   Original: ${folderNames.length} folders`);
+  console.log(`   Excluded: ${prefs.excluded_folders.length} rules`);
+  console.log(`   Filtered to: ${filteredNames.length} folders`);
+  console.log(`   Folders that will sync:`, filteredNames);
 
   return {
     folders: filteredNames,
@@ -617,42 +623,10 @@ export class QuickEmailSyncerTurboV4 {
 
       cleanOldCacheV2(this.options.userEmail);
 
-      // FIX 2: Escludi automaticamente cartelle troppo grandi (> 5000 messaggi)
-      const LARGE_FOLDER_THRESHOLD = 5000;
-      console.log('📊 [TURBO V4] Checking folder sizes...');
-      
-      const folderCounts = await Promise.all(
-        folders.map(async (folder) => {
-          try {
-            const response = await emailMessageApi.getMessages({ 
-              folder,
-              limit: 1,
-            });
-            const count = (response as any).total || 0;
-            return { folder, count };
-          } catch (error) {
-            console.warn(`⚠️ Could not get count for ${folder}:`, error);
-            return { folder, count: 0 };
-          }
-        })
-      );
-
-      const safeFolders = folderCounts
-        .filter(({ folder, count }) => {
-          if (count > LARGE_FOLDER_THRESHOLD) {
-            console.warn(`⚠️ [TURBO V4] Skipping large folder: ${folder} (${count} messages > ${LARGE_FOLDER_THRESHOLD})`);
-            return false;
-          }
-          return true;
-        })
-        .map(({ folder }) => folder);
-
-      console.log(`✅ [TURBO V4] Safe folders: ${safeFolders.length}/${folders.length}`);
-
-      // Priority: INBOX first
+      // Priority: INBOX first (rimosso check cartelle grandi - già gestito da preferenze)
       const priorityFolders = [
-        ...safeFolders.filter(f => f.toLowerCase() === 'inbox'),
-        ...safeFolders.filter(f => f.toLowerCase() !== 'inbox')
+        ...folders.filter(f => f.toLowerCase() === 'inbox'),
+        ...folders.filter(f => f.toLowerCase() !== 'inbox')
       ];
 
       // Sync each folder

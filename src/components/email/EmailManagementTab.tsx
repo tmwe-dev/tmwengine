@@ -104,6 +104,13 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   
   const { toast } = useToast();
 
+  // Ordina gruppi alfabeticamente per nome
+  const sortedGroups = useMemo(() => {
+    return [...groups].sort((a, b) => 
+      a.nome_gruppo.localeCompare(b.nome_gruppo, 'it', { sensitivity: 'base' })
+    );
+  }, [groups]);
+
   // Handler per salvare zoom in localStorage
   const handleZoomChange = (zoom: number) => {
     setCarouselZoom(zoom);
@@ -602,7 +609,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           carouselZoom={carouselZoom}
           onCarouselZoomChange={handleZoomChange}
           onCreateCategory={() => setShowCreateDialog(true)}
-          groups={groups}
+          groups={sortedGroups}
           activeCategoryId={activeCategoryId}
           onCategorySelect={setActiveCategoryId}
           sortOption={sortOption}
@@ -617,14 +624,14 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         {/* Area principale condizionale */}
         {viewMode === 'grid' ? (
           <EmailGridContainer
-            groups={groups}
+            groups={sortedGroups}
             onRefresh={loadData}
             lastUpdatedGroupId={lastUpdatedGroupId}
             onRegisterGroupCallback={registerGroupCallback}
           />
         ) : (
           <EmailCarouselContainer
-            categories={groups}
+            categories={sortedGroups}
             assignedSenders={assignedSenders}
             activeCategoryId={activeCategoryId}
             zoom={carouselZoom}
@@ -661,7 +668,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onSubmit={handleCreateCategory}
-        existingNames={groups.map(g => g.nome_gruppo)}
+        existingNames={sortedGroups.map(g => g.nome_gruppo)}
       />
 
     </div>

@@ -132,36 +132,40 @@ export const SmartEmailDetailPanel = ({
         </Button>
       </div>
 
+      {/* Keywords + Categoria - Centrate in alto (solo in modalità detail) */}
+      {viewMode === 'detail' && (
+        <div className="relative shrink-0 px-6 pb-2 flex justify-center">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            {/* Keywords inline */}
+            {filteredKeywords.length > 0 && (
+              <div className="flex gap-1.5 flex-wrap">
+                {filteredKeywords.map((keyword, idx) => (
+                  <Badge 
+                    key={idx} 
+                    className="text-xs bg-white/10 border-white/15 px-2 py-0.5 text-white/80"
+                  >
+                    {keyword}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            
+            {/* Categoria compatta con confidence solo se bassa */}
+            <Badge className={`text-xs ${categoryGradient} border-0 px-2 py-1`}>
+              <span className="mr-1">{getCategoryIcon(classification.category)}</span>
+              {classification.confidence < 80 && (
+                <span className="text-[10px] font-bold">{Math.round(classification.confidence)}%</span>
+              )}
+            </Badge>
+          </div>
+        </div>
+      )}
+
       {/* Contenuto scrollabile */}
       <ScrollArea className="relative flex-1 px-6">
         {viewMode === 'detail' ? (
           /* Layout ultra-compatto per modalità detail */
           <div className="space-y-2 py-3">
-            {/* Header compatto: keywords + categoria inline */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Keywords inline */}
-              {filteredKeywords.length > 0 && (
-                <div className="flex gap-1.5 flex-wrap flex-1">
-                  {filteredKeywords.map((keyword, idx) => (
-                    <Badge 
-                      key={idx} 
-                      className="text-xs bg-white/10 border-white/15 px-2 py-0.5 text-white/80"
-                    >
-                      {keyword}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              
-              {/* Categoria compatta con confidence solo se bassa */}
-              <Badge className={`text-xs ${categoryGradient} border-0 px-2 py-1 ml-auto`}>
-                <span className="mr-1">{getCategoryIcon(classification.category)}</span>
-                {classification.confidence < 80 && (
-                  <span className="text-[10px] font-bold">{Math.round(classification.confidence)}%</span>
-                )}
-              </Badge>
-            </div>
-
             {/* Oggetto + AI Summary inline */}
             <div className="space-y-1">
               <div className="flex items-baseline gap-2">

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDate, formatDateDetailed } from '@/lib/smart-inbox-utils';
+import { cleanEmailBody } from '@/lib/email-thread-utils';
 import DOMPurify from 'dompurify';
 
 interface EmailThreadViewProps {
@@ -117,11 +118,15 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
                 mb-8 transition-all
                 ${isCurrent 
                   ? cleanMode 
-                    ? 'border-2 border-blue-500 bg-blue-50 shadow-lg' 
+                    ? 'border-2 border-purple-500 bg-purple-50 shadow-lg' 
                     : 'border-2 border-purple-500 bg-purple-900/30 shadow-xl backdrop-blur-sm'
-                  : cleanMode
-                    ? 'border border-gray-300 bg-white shadow-md'
-                    : 'border border-white/30 bg-gray-900/40 shadow-md backdrop-blur-sm'
+                  : email.from_email?.toLowerCase().includes('tmwe')
+                    ? cleanMode
+                      ? 'border border-blue-300 bg-blue-50 shadow-md'
+                      : 'border border-blue-500/50 bg-blue-900/20 shadow-md backdrop-blur-sm'
+                    : cleanMode
+                      ? 'border border-gray-300 bg-gray-50 shadow-md'
+                      : 'border border-white/30 bg-gray-900/40 shadow-md backdrop-blur-sm'
                 }
               `}
             >
@@ -211,7 +216,7 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
                   <div
                     className={`prose max-w-none email-body-content mt-4 ${cleanMode ? 'prose-slate email-body-light' : 'prose-invert'}`}
                     dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(email.body_html || email.body_text || '', {
+                      __html: DOMPurify.sanitize(cleanEmailBody(email.body_html || email.body_text || ''), {
                         ADD_TAGS: ['img', 'table', 'tbody', 'thead', 'tr', 'td', 'th', 'a', 'span', 'div', 'p', 'br', 'strong', 'em', 'u'],
                         ADD_ATTR: ['src', 'alt', 'width', 'height', 'href', 'target', 'rel', 'title', 'style'],
                         ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|cid|data):)/i,

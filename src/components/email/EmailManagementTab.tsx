@@ -641,14 +641,24 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           />
         )}
 
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay 
+          dropAnimation={null}
+          modifiers={[
+            (args) => ({
+              ...args.transform,
+              y: Math.min(args.transform.y, 10)
+            })
+          ]}
+        >
           {activeDragId ? (
-            <div className="backdrop-blur-sm bg-gradient-to-br from-blue-500/35 to-blue-400/25 rotate-[0.5deg] scale-[1.02] shadow-lg rounded-lg border border-blue-300/30">
-              {(() => {
-                const sender = senders.find(s => s.email === activeDragId);
-                return sender ? <SenderCard sender={sender} isDragging /> : null;
-              })()}
-            </div>
+            (() => {
+              const sender = senders.find(s => s.email === activeDragId);
+              return sender ? (
+                <div className="rotate-[0.5deg] scale-[1.02] shadow-lg">
+                  <SenderCard sender={sender} isDragging dragOverlayStyle />
+                </div>
+              ) : null;
+            })()
           ) : null}
         </DragOverlay>
       </DndContext>

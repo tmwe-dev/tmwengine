@@ -12,9 +12,10 @@ interface FunEmailSenderCardProps {
   sender: SenderAnalysis;
   isDragging?: boolean;
   onDoubleClick?: (sender: SenderAnalysis) => void;
+  dragOverlayStyle?: boolean;
 }
 
-export function SenderCard({ sender, isDragging, onDoubleClick }: FunEmailSenderCardProps) {
+export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle }: FunEmailSenderCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging: dragActive } = useDraggable({
     id: sender.email,
     data: sender,
@@ -35,7 +36,8 @@ export function SenderCard({ sender, isDragging, onDoubleClick }: FunEmailSender
           "cursor-grab active:cursor-grabbing border-l-4 transition-transform",
           "hover:scale-[1.02]",
           sender.emailCount > 50 && "border-l-orange-500",
-          sender.emailCount > 100 && "border-l-red-500"
+          sender.emailCount > 100 && "border-l-red-500",
+          dragOverlayStyle && "bg-gradient-to-br from-blue-500/35 to-blue-400/25 backdrop-blur-sm border-blue-300/30"
         )}
         onDoubleClick={() => onDoubleClick?.(sender)}
       >

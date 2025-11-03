@@ -33,7 +33,7 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
   const isVerified = classification.is_verified && classification.confidence >= 80;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-gradient-to-br from-purple-500/10 to-blue-500/10 backdrop-blur-sm rounded-2xl border border-white/10">
+    <div className="h-full flex flex-col overflow-hidden bg-gradient-to-br from-purple-500/[0.02] to-blue-500/[0.02] backdrop-blur-sm rounded-2xl border border-white/10">
       {/* Header con chiusura */}
       <div className="flex items-center gap-3 p-4 border-b border-white/10 shrink-0">
         <Avatar className="h-12 w-12">

@@ -129,58 +129,51 @@ export function CollapsibleCategorySidebar({
           </Button>
         </div>
 
-        {/* Sezione Filtri */}
+        {/* Filtri e Azioni su una riga */}
         <div className="p-4 border-b border-white/10 space-y-3">
-          <h4 className="text-xs font-semibold text-white/60 uppercase">Filtri</h4>
-          
           {/* Folder Selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs text-white/70">Cartella</label>
-            <Select value={selectedFolder} onValueChange={onFolderChange}>
-              <SelectTrigger className="w-full h-9 bg-white/5 border-white/20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {availableFolders.map(folder => (
-                  <SelectItem key={folder} value={folder}>{folder}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={selectedFolder} onValueChange={onFolderChange}>
+            <SelectTrigger className="w-full h-9 bg-white/5 border-white/20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableFolders.map(folder => (
+                <SelectItem key={folder} value={folder}>{folder}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          {/* Unread Only Toggle */}
-          <div className="flex items-center justify-between">
-            <label className="text-xs text-white/70">Solo non lette</label>
-            <Switch checked={unreadOnly} onCheckedChange={onUnreadOnlyChange} />
-          </div>
-        </div>
+          {/* Riga unica: Toggle + Icone */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Toggle Solo non lette */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-white/70">Solo non lette</label>
+              <Switch checked={unreadOnly} onCheckedChange={onUnreadOnlyChange} />
+            </div>
 
-        {/* Sezione Azioni AI */}
-        <div className="p-4 border-b border-white/10 space-y-3">
-          <h4 className="text-xs font-semibold text-white/60 uppercase">Azioni AI</h4>
-          
-          <div className="flex items-center gap-2">
-            {/* Pulsante Classifica */}
-            <Button 
-              onClick={onClassifyNew}
-              variant="outline"
-              size="sm"
-              disabled={isClassifying}
-              className="flex-1 border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 hover:scale-105 transition-all gap-1.5 h-9"
-            >
-              <Sparkles className="h-4 w-4" />
-              <span className="text-xs font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica'}</span>
-            </Button>
+            {/* Icone Azioni */}
+            <div className="flex items-center gap-1">
+              {/* Icona Classifica */}
+              <Button 
+                onClick={onClassifyNew}
+                variant="ghost"
+                size="sm"
+                disabled={isClassifying}
+                className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10"
+              >
+                <Sparkles className="h-4 w-4" />
+              </Button>
 
-            {/* Pulsante Vedi Prompt */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onPromptViewerChange(true)}
-              className="gap-1 text-white/80 hover:text-white h-9 px-3"
-            >
-              <FileText className="h-4 w-4" />
-            </Button>
+              {/* Icona Vedi Prompt */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onPromptViewerChange(true)}
+                className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10"
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 

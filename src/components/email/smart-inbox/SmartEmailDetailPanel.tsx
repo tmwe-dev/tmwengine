@@ -29,10 +29,11 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
   const sanitizedHtml = emailBody.html 
     ? DOMPurify.sanitize(emailBody.html, {
         ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'img', 'div', 'span', 'table', 'tr', 'td', 'th', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'thead', 'tbody', 'tfoot'],
-        ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'style', 'class', 'width', 'height', 'align', 'target', 'loading'],
+        ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'style', 'class', 'width', 'height', 'align', 'target', 'loading', 'srcset', 'sizes'],
         ALLOW_DATA_ATTR: false,
-        ALLOW_UNKNOWN_PROTOCOLS: false, // 🔒 Blocca javascript:, data:, vbscript:
-        ADD_ATTR: ['target'] // 🔗 Forza target="_blank" per link esterni
+        ALLOW_UNKNOWN_PROTOCOLS: false,
+        ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|data):)/i, // ✅ Permetti data:image per immagini inline
+        ADD_ATTR: ['target']
       })
     : null;
 
@@ -166,12 +167,13 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
                 </div>
               ) : sanitizedHtml ? (
                 <div 
-                  className="prose prose-sm prose-invert max-w-none bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 text-white/85 overflow-x-auto"
+                  className="prose prose-sm prose-invert max-w-none p-4 text-white overflow-x-auto"
                   dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                   style={{
-                    color: 'rgba(255, 255, 255, 0.85)',
+                    color: 'rgba(255, 255, 255, 0.95) !important',
                     fontSize: '14px',
-                    lineHeight: '1.6'
+                    lineHeight: '1.6',
+                    background: 'transparent'
                   }}
                 />
               ) : emailBody?.text ? (
@@ -205,13 +207,31 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
 
       {/* CSS ottimizzato per email HTML */}
       <style>{`
+        /* Override forzato per testo dentro email */
+        .prose,
+        .prose * {
+          color: rgba(255, 255, 255, 0.95) !important;
+          background: transparent !important;
+        }
+
+        /* Immagini sempre visibili */
         .prose img {
           max-width: 100%;
           height: auto;
           border-radius: 8px;
           margin: 8px 0;
-          content-visibility: auto;
+          display: block;
+          object-fit: contain;
+          background: transparent;
         }
+
+        /* Nascondi immagini rotte */
+        .prose img[src=""],
+        .prose img:not([src]) {
+          display: none;
+        }
+
+        /* Tabelle */
         .prose table {
           width: 100%;
           border-collapse: collapse;
@@ -219,16 +239,19 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
         }
         .prose table td,
         .prose table th {
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
           padding: 8px;
+          background: transparent !important;
         }
+
+        /* Link */
         .prose a {
-          color: #60a5fa;
+          color: #60a5fa !important;
           text-decoration: underline;
           transition: color 0.2s;
         }
         .prose a:hover {
-          color: #93c5fd;
+          color: #93c5fd !important;
         }
       `}</style>
     </div>

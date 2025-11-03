@@ -643,7 +643,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
 
         <DragOverlay dropAnimation={null}>
           {activeDragId ? (
-            <div className="opacity-90 rotate-3 scale-110 shadow-2xl">
+            <div className="backdrop-blur-sm bg-gradient-to-br from-blue-500/35 to-blue-400/25 rotate-[0.5deg] scale-[1.02] shadow-lg rounded-lg border border-blue-300/30">
               {(() => {
                 const sender = senders.find(s => s.email === activeDragId);
                 return sender ? <SenderCard sender={sender} isDragging /> : null;

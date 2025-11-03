@@ -22,11 +22,13 @@ import {
   XCircle,
   Clock,
   Gauge,
-  Settings
+  Settings,
+  Sliders
 } from 'lucide-react';
 // ✅ Rimosso EmailSyncUnified - ora usa metodo Performance Test Suite
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
+import { PerformanceProfileConfigurator } from '@/components/testing/PerformanceProfileConfigurator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { getSyncPreferences, filterFolders } from '@/lib/email-sync-preferences';
 
@@ -68,6 +70,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const [quickProgress, setQuickProgress] = useState<QuickSyncProgress | null>(null);
   const [isQuickLoading, setIsQuickLoading] = useState(true);
   const [isPreferencesDialogOpen, setIsPreferencesDialogOpen] = useState(false);
+  const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const { toast } = useToast();
@@ -800,6 +803,22 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
             </p>
             
             <div className="flex gap-2">
+              {/* Pulsante Performance Configurator */}
+              <Dialog open={isPerformanceDialogOpen} onOpenChange={setIsPerformanceDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 border-primary text-primary">
+                    <Sliders className="h-4 w-4" />
+                    Performance
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>🎯 Performance Profile Configurator</DialogTitle>
+                  </DialogHeader>
+                  <PerformanceProfileConfigurator />
+                </DialogContent>
+              </Dialog>
+
               {/* Pulsante Configura Preferenze */}
               <Dialog open={isPreferencesDialogOpen} onOpenChange={setIsPreferencesDialogOpen}>
                 <DialogTrigger asChild>

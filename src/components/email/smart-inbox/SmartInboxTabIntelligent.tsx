@@ -10,7 +10,6 @@ import { AIActionsSidebar } from './AIActionsSidebar';
 import { AIPromptDialog } from './AIPromptDialog';
 import { AIManualCanvas } from './AIManualCanvas';
 import { AIActionConfirmation } from './AIActionConfirmation';
-import { ViewModeSelector, ViewMode } from './ViewModeSelector';
 import React from 'react';
 import { ClassifiedEmail, EmailMetadata } from '@/types/smart-inbox';
 import { useSmartClassificationIntelligent } from '@/hooks/useSmartClassificationIntelligent';
@@ -43,7 +42,6 @@ export const SmartInboxTabIntelligent = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedEmail, setSelectedEmail] = useState<ClassifiedEmail | null>(null);
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<ViewMode>('split');
   
   // AI Automation State
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
@@ -409,13 +407,8 @@ export const SmartInboxTabIntelligent = ({
         onDelete={handleDeleteSelected}
         onMove={handleMoveSelected}
       />
-
-      {/* Selettore Modalità Vista */}
-      <div className="flex justify-end">
-        <ViewModeSelector value={viewMode} onChange={setViewMode} />
-      </div>
       
-      {/* 🆕 Layout Dinamico: Lista Email | Dettaglio + Sidebar Collassabile */}
+      {/* 🆕 Layout 2 Colonne: Lista Email | Dettaglio + Sidebar Collassabile */}
       <div className="flex-1 flex gap-4 overflow-hidden">
         {/* Sidebar Categorie Collassabile (controllata da FunEmail) */}
         <CollapsibleCategorySidebar
@@ -432,35 +425,31 @@ export const SmartInboxTabIntelligent = ({
           availableFolders={availableFolders}
         />
 
-        {/* Colonna 1: Lista Email - Visibile in modalità "list" e "split" */}
-        {(viewMode === 'list' || viewMode === 'split') && (
-          <div className={viewMode === 'list' ? 'flex-1' : 'w-[40%]'} style={{ minHeight: 0 }}>
-            <SmartEmailListIntelligent
-              emails={classifiedEmails}
-              onEmailClick={handleEmailSelect}
-              isLoading={isLoading}
-              selectedEmails={selectedEmails}
-              onSelectionChange={setSelectedEmails}
-            />
-          </div>
-        )}
+        {/* Colonna 1: Lista Email (40% width - più spazio senza sidebar fissa) */}
+        <div className="w-[40%] flex flex-col min-h-0">
+          <SmartEmailListIntelligent
+            emails={classifiedEmails}
+            onEmailClick={handleEmailSelect}
+            isLoading={isLoading}
+            selectedEmails={selectedEmails}
+            onSelectionChange={setSelectedEmails}
+          />
+        </div>
         
-        {/* Colonna 2: Dettaglio Email - Visibile in modalità "detail" e "split" */}
-        {(viewMode === 'detail' || viewMode === 'split') && (
-          <div className="flex-1 flex flex-col min-h-0">
-            {selectedEmail ? (
-              <SmartEmailDetailPanel
-                classifiedEmail={selectedEmail}
-                onClose={() => {
-                  setSelectedEmail(null);
-                  setSelectedSender(null);
-                }}
-              />
-            ) : (
-              <EmptyDetailPanel />
-            )}
-          </div>
-        )}
+        {/* Colonna 3: Dettaglio Email (flex-1, prende tutto lo spazio restante) */}
+        <div className="flex-1 flex flex-col min-h-0">
+          {selectedEmail ? (
+            <SmartEmailDetailPanel
+              classifiedEmail={selectedEmail}
+              onClose={() => {
+                setSelectedEmail(null);
+                setSelectedSender(null);
+              }}
+            />
+          ) : (
+            <EmptyDetailPanel />
+          )}
+        </div>
       </div>
 
       {/* AI Manual Canvas Dialog */}

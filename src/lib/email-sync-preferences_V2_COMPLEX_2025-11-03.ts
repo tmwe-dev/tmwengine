@@ -13,9 +13,11 @@ export interface EmailFolder {
   total_count?: number;
 }
 
+const DEFAULT_EXCLUDED_FOLDERS = ["Trash", "Archives", "Junk", "Drafts"];
+
 /**
  * Recupera le preferenze di sincronizzazione per un utente
- * Se non esistono, ritorna array vuoti
+ * Se non esistono, ritorna i default
  */
 export async function getSyncPreferences(userEmail: string): Promise<SyncPreferences> {
   const { data, error } = await supabase
@@ -30,7 +32,7 @@ export async function getSyncPreferences(userEmail: string): Promise<SyncPrefere
 
   return {
     user_email: userEmail,
-    excluded_folders: (data?.excluded_folders as string[]) || [],
+    excluded_folders: (data?.excluded_folders as string[]) || DEFAULT_EXCLUDED_FOLDERS,
     included_folders: (data?.included_folders as string[]) || [],
   };
 }
@@ -49,6 +51,8 @@ export async function saveSyncPreferences(
       excluded_folders: preferences.excluded_folders || [],
       included_folders: preferences.included_folders || [],
       updated_at: new Date().toISOString(),
+    }, {
+      onConflict: 'user_email'
     });
 
   if (error) {
@@ -58,32 +62,40 @@ export async function saveSyncPreferences(
 
 /**
  * Filtra le cartelle in base alle preferenze
- * LOGICA SEMPLIFICATA:
- * - Se included_folders è vuoto → sincronizza TUTTE le cartelle
- * - Se included_folders è popolato → sincronizza SOLO quelle
  */
 export function filterFolders(
   folders: EmailFolder[],
   preferences: SyncPreferences
 ): EmailFolder[] {
-  const { included_folders } = preferences;
+  const { excluded_folders, included_folders } = preferences;
 
-  // Se NON ci sono cartelle selezionate → sincronizza TUTTE
-  if (included_folders.length === 0) {
-    console.log('⚠️ Nessuna preferenza → sincronizzazione TUTTE le cartelle');
-    return folders;
-  }
-
-  // Altrimenti sincronizza SOLO quelle selezionate
+  // 🔧 Normalizza nome: lowercase + trim per confronto case-insensitive
   const normalize = (name: string) => (name || '').trim().toLowerCase();
+
+  // Crea Set normalizzati (O(1) lookup invece di O(n))
+  const excludedSet = new Set(excluded_folders.map(normalize));
   const includedSet = new Set(included_folders.map(normalize));
 
-  const filtered = folders.filter(f => {
-    const isIncluded = includedSet.has(normalize(f.name));
-    console.log(`   ${f.name}: ${isIncluded ? '✅ SYNC' : '❌ skip'}`);
-    return isIncluded;
-  });
+  console.log('🔍 [filterFolders] Excluded set:', Array.from(excludedSet));
+  console.log('🔍 [filterFolders] Input folders:', folders.map(f => normalize(f.name)));
 
+  // Se ci sono cartelle specifiche incluse, considera SOLO quelle
+  if (included_folders.length > 0) {
+    const filtered = folders.filter(f => {
+      const isIncluded = includedSet.has(normalize(f.name));
+      console.log(`   ${f.name}: ${isIncluded ? '✅ INCLUDED' : '❌ excluded'}`);
+      return isIncluded;
+    });
+    return filtered;
+  }
+
+  // Altrimenti, escludi solo quelle nella blacklist
+  const filtered = folders.filter(f => {
+    const isExcluded = excludedSet.has(normalize(f.name));
+    console.log(`   ${f.name}: ${isExcluded ? '❌ EXCLUDED' : '✅ included'}`);
+    return !isExcluded;
+  });
+  
   return filtered;
 }
 
@@ -94,10 +106,11 @@ export function getFilterStats(
   totalFolders: number,
   filteredFolders: EmailFolder[],
   preferences: SyncPreferences
-): { total: number; filtered: number; excluded: number } {
+): { total: number; filtered: number; excluded: number; mode: 'whitelist' | 'blacklist' } {
   return {
     total: totalFolders,
     filtered: filteredFolders.length,
     excluded: totalFolders - filteredFolders.length,
+    mode: preferences.included_folders.length > 0 ? 'whitelist' : 'blacklist'
   };
 }

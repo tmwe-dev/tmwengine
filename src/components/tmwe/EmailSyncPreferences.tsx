@@ -1,17 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { emailSearchApi } from '@/lib/tmwe-email-search-api';
-import { getSyncPreferences, saveSyncPreferences } from '@/lib/email-sync-preferences';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Check } from 'lucide-react';
+import { getSyncPreferences, saveSyncPreferences } from '@/lib/email-sync-preferences';
 
 interface EmailSyncPreferencesProps {
   userEmail: string;
@@ -21,79 +16,80 @@ interface EmailSyncPreferencesProps {
   compact?: boolean;
 }
 
-type SyncMode = 'blacklist' | 'whitelist';
-
-const RECOMMENDED_EXCLUDES = ["Trash", "Archives", "Junk", "Drafts"];
-
-export const EmailSyncPreferences = ({ 
+export function EmailSyncPreferences({
   userEmail,
   onClose,
   showButtons = true,
   onSave,
-  compact = false
-}: EmailSyncPreferencesProps) => {
+  compact = false,
+}: EmailSyncPreferencesProps) {
   const { toast } = useToast();
-  const [syncMode, setSyncMode] = useState<SyncMode>('blacklist');
-  const [excludedFolders, setExcludedFolders] = useState<string[]>(RECOMMENDED_EXCLUDES);
+  const queryClient = useQueryClient();
+  
   const [includedFolders, setIncludedFolders] = useState<string[]>([]);
 
-  // Carica le cartelle disponibili
+  // Fetch available folders
   const { data: foldersData, isLoading: loadingFolders } = useQuery({
-    queryKey: ['folders', userEmail],
-    queryFn: () => emailSearchApi.getFolders(),
+    queryKey: ['email-folders', userEmail],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-folders', {
+        body: { email: userEmail },
+      });
+      if (error) throw error;
+      return data.folders || [];
+    },
   });
 
-  // Carica le preferenze esistenti
-  const { data: preferences, isLoading: loadingPrefs } = useQuery({
+  // Fetch existing preferences
+  const { data: preferences, isLoading: loadingPreferences } = useQuery({
     queryKey: ['sync-preferences', userEmail],
     queryFn: () => getSyncPreferences(userEmail),
   });
 
-  // Inizializza lo stato quando le preferenze sono caricate
+  // Initialize state from preferences with smart defaults
   useEffect(() => {
-    if (preferences) {
-      setExcludedFolders(preferences.excluded_folders);
-      setIncludedFolders(preferences.included_folders);
-      setSyncMode(preferences.included_folders.length > 0 ? 'whitelist' : 'blacklist');
+    if (preferences && foldersData) {
+      if (preferences.included_folders.length > 0) {
+        // User has already saved preferences
+        setIncludedFolders(preferences.included_folders);
+      } else {
+        // First time: pre-select all except Trash/Junk/Drafts
+        const recommended = foldersData
+          .map((f: any) => f.name)
+          .filter((name: string) => !['Trash', 'Junk', 'Drafts'].includes(name));
+        setIncludedFolders(recommended);
+      }
     }
-  }, [preferences]);
+  }, [preferences, foldersData]);
 
-  // Salva preferenze
+  // Save preferences mutation
   const saveMutation = useMutation({
     mutationFn: async () => {
       await saveSyncPreferences(userEmail, {
-        excluded_folders: syncMode === 'blacklist' ? excludedFolders : [],
-        included_folders: syncMode === 'whitelist' ? includedFolders : [],
+        excluded_folders: [], // Always empty now
+        included_folders: includedFolders,
       });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sync-preferences', userEmail] });
       toast({
         title: "✅ Preferenze salvate",
-        description: "Le tue preferenze di sincronizzazione sono state aggiornate.",
+        description: `${includedFolders.length} cartelle selezionate per la sincronizzazione`,
       });
       onSave?.();
       onClose?.();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
-        title: "❌ Errore",
-        description: error.message || "Impossibile salvare le preferenze",
+        title: "❌ Errore salvataggio",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const folders = foldersData?.data || [];
-
-  const toggleExclude = (folderName: string) => {
-    setExcludedFolders(prev =>
-      prev.includes(folderName)
-        ? prev.filter(f => f !== folderName)
-        : [...prev, folderName]
-    );
-  };
-
-  const toggleInclude = (folderName: string) => {
+  // Toggle folder selection
+  const toggleFolder = (folderName: string) => {
     setIncludedFolders(prev =>
       prev.includes(folderName)
         ? prev.filter(f => f !== folderName)
@@ -101,15 +97,7 @@ export const EmailSyncPreferences = ({
     );
   };
 
-  const handleFolderToggle = (folderName: string) => {
-    if (syncMode === 'blacklist') {
-      toggleExclude(folderName);
-    } else {
-      toggleInclude(folderName);
-    }
-  };
-
-  const isLoading = loadingFolders || loadingPrefs;
+  const isLoading = loadingFolders || loadingPreferences;
 
   if (isLoading) {
     return (
@@ -119,118 +107,90 @@ export const EmailSyncPreferences = ({
     );
   }
 
-  const filteredCount = syncMode === 'blacklist' 
-    ? folders.length - excludedFolders.length 
-    : includedFolders.length;
+  const folders = foldersData || [];
 
   return (
-    <div className={compact ? "space-y-2" : "space-y-3"}>
-      <div className={compact ? "space-y-1" : "space-y-2"}>
-        <div>
-          <h3 className={compact ? "text-sm font-medium" : "font-medium mb-1"}>
-            Modalità di Sincronizzazione
-          </h3>
-          {!compact && (
-            <p className="text-xs text-muted-foreground">
-              Scegli come gestire le cartelle da sincronizzare
-            </p>
-          )}
-        </div>
-
-        <RadioGroup value={syncMode} onValueChange={(value: any) => setSyncMode(value)}>
-          <div className={compact ? "flex items-center space-x-2 py-0.5" : "flex items-center space-x-2 py-1.5"}>
-            <RadioGroupItem value="blacklist" id="blacklist" />
-            <Label htmlFor="blacklist" className={compact ? "cursor-pointer text-xs" : "cursor-pointer text-sm"}>
-              Tutte (eccetto escluse)
-            </Label>
-          </div>
-          <div className={compact ? "flex items-center space-x-2 py-0.5" : "flex items-center space-x-2 py-1.5"}>
-            <RadioGroupItem value="whitelist" id="whitelist" />
-            <Label htmlFor="whitelist" className={compact ? "cursor-pointer text-xs" : "cursor-pointer text-sm"}>
-              Solo selezionate
-            </Label>
-          </div>
-        </RadioGroup>
+    <div className={`space-y-4 ${compact ? 'p-2' : 'p-6'}`}>
+      <div>
+        <h3 className="text-lg font-semibold mb-2">
+          Seleziona Cartelle da Sincronizzare
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Spunta le cartelle che vuoi sincronizzare. Le cartelle non selezionate verranno ignorate.
+        </p>
       </div>
 
-      <Separator className="bg-border/30" />
-
-      <div className={compact ? "space-y-1" : "space-y-2"}>
-        <h4 className={compact ? "text-xs font-medium" : "text-sm font-medium"}>
-          {syncMode === 'blacklist' ? 'Cartelle da Escludere' : 'Cartelle da Includere'}
-        </h4>
-        
-        <ScrollArea className={compact ? "max-h-[50vh] rounded-lg p-1" : "h-[400px] rounded-lg p-1"}>
-          <div className="space-y-0.5">
-            {folders.map((folder: any) => {
-              const isRecommendedExclude = RECOMMENDED_EXCLUDES.includes(folder.name);
-              const isSelected = syncMode === 'blacklist'
-                ? excludedFolders.includes(folder.name)
-                : includedFolders.includes(folder.name);
-
+      <ScrollArea className={compact ? 'h-[300px]' : 'h-[400px]'}>
+        <div className="space-y-2 pr-4">
+          {folders.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nessuna cartella disponibile
+            </p>
+          ) : (
+            folders.map((folder: any) => {
+              const isSelected = includedFolders.includes(folder.name);
+              
               return (
-                <div key={folder.id} className={compact ? "flex items-center gap-2 py-0.5 px-1 hover:bg-accent/50 rounded-sm transition-colors" : "flex items-center gap-2 py-1 px-1 hover:bg-accent/50 rounded-sm transition-colors"}>
+                <div
+                  key={folder.name}
+                  className="flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                >
                   <Checkbox
-                    id={`folder-${folder.id}`}
+                    id={`folder-${folder.name}`}
                     checked={isSelected}
-                    onCheckedChange={() => handleFolderToggle(folder.name)}
-                    className="h-4 w-4"
+                    onCheckedChange={() => toggleFolder(folder.name)}
                   />
-                  <Label 
-                    htmlFor={`folder-${folder.id}`} 
-                    className={compact ? "flex-1 cursor-pointer text-xs flex items-center gap-1.5" : "flex-1 cursor-pointer text-sm flex items-center gap-1.5"}
+                  <label
+                    htmlFor={`folder-${folder.name}`}
+                    className="flex-1 cursor-pointer"
                   >
-                    <span>{folder.name}</span>
-                    {isRecommendedExclude && syncMode === 'blacklist' && (
-                      <Badge variant="secondary" className="text-[9px] h-4 px-1">
-                        Consigliato
-                      </Badge>
+                    <div className="font-medium">{folder.name}</div>
+                    {folder.unread_count !== undefined && (
+                      <div className="text-xs text-muted-foreground">
+                        {folder.unread_count} non lette / {folder.total_count || 0} totali
+                      </div>
                     )}
-                  </Label>
-                  {folder.total_messages > 0 && (
-                    <Badge variant="outline" className="text-[9px] h-4 px-1.5">
-                      {folder.total_messages}
-                    </Badge>
-                  )}
+                  </label>
                 </div>
               );
-            })}
-          </div>
-        </ScrollArea>
+            })
+          )}
+        </div>
+      </ScrollArea>
 
-        {!compact && (
-          <div className="text-xs text-muted-foreground pt-1">
-            {syncMode === 'blacklist' 
-              ? `✓ ${filteredCount} cartelle saranno sincronizzate`
-              : `✓ ${filteredCount} cartelle selezionate`
-            }
-          </div>
-        )}
+      <div className="pt-4 border-t">
+        <p className="text-sm font-medium text-muted-foreground">
+          ✓ {includedFolders.length} cartelle selezionate per la sincronizzazione
+        </p>
       </div>
 
       {showButtons && (
-        <>
-          <Separator className="bg-border/30" />
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={onClose}>
-              Annulla
-            </Button>
+        <div className="flex gap-3 pt-2">
+          <Button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            className="flex-1"
+          >
+            {saveMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvataggio...
+              </>
+            ) : (
+              'Salva Preferenze'
+            )}
+          </Button>
+          {onClose && (
             <Button
-              onClick={() => saveMutation.mutate()}
+              variant="outline"
+              onClick={onClose}
               disabled={saveMutation.isPending}
             >
-              {saveMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvataggio...
-                </>
-              ) : (
-                'Salva Preferenze'
-              )}
+              Annulla
             </Button>
-          </div>
-        </>
+          )}
+        </div>
       )}
     </div>
   );
-};
+}

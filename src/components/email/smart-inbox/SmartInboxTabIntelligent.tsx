@@ -108,7 +108,7 @@ export const SmartInboxTabIntelligent = ({
       
       return Array.from(categoryMap.entries()).map(([category, count]) => ({
         id: category,
-        name: category.split(' / ')[0],
+        name: category,
         icon: getCategoryIcon(category),
         color: getCategoryColor(category),
         count

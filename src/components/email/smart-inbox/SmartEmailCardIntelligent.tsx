@@ -57,7 +57,6 @@ export const SmartEmailCardIntelligent = ({
       onClick={onClick}
       className={cn(
         "relative p-4 cursor-pointer transition-all duration-300 rounded-2xl",
-        "min-h-[160px]",
         "bg-gradient-to-br from-[#1c1c28]/80 via-[#23233a]/60 to-[#0e0e18]/70",
         "backdrop-blur-md border border-white/10",
         "hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(0,200,255,0.1)]",
@@ -122,32 +121,27 @@ export const SmartEmailCardIntelligent = ({
             </div>
           </div>
 
-          {/* Categoria compatta - SOLO ICONE */}
-          <div className="flex items-center gap-1.5 mb-2">
-            <Badge 
-              className={cn(
-                "rounded-full p-1.5 flex items-center justify-center border-0",
-                getCategoryGradient(classification.category),
-                getCategoryGlow(classification.category)
-              )}
-              title={classification.category}
-            >
-              {getCategoryLucideIcon(classification.category)}
-            </Badge>
-            
-            {classification.confidence < 100 && (
-              <Badge 
-                className="text-xs font-bold bg-white/15 text-white/90 px-2 py-0.5 rounded-full border border-white/20"
-                title={`Confidenza: ${Math.round(classification.confidence)}%`}
-              >
-                {Math.round(classification.confidence)}%
-              </Badge>
+          {/* Categoria con gradient glassmorphism */}
+          <Badge 
+            className={cn(
+              "mb-2 rounded-full px-3 py-1 flex items-center gap-2 text-white border-0",
+              getCategoryGradient(classification.category),
+              getCategoryGlow(classification.category)
             )}
-          </div>
+          >
+            {getCategoryLucideIcon(classification.category)}
+            <span className="text-base">{categoryIcon}</span>
+            <span className="font-semibold">{classification.category}</span>
+            {classification.confidence < 100 && (
+              <span className="ml-2 text-xs font-bold bg-white/20 px-1.5 py-0.5 rounded-full">
+                {Math.round(classification.confidence)}%
+              </span>
+            )}
+          </Badge>
 
           {/* Riassunto AI */}
           {classification.ai_summary && (
-            <p className="text-sm text-white/85 line-clamp-3 mb-1.5">
+            <p className="text-sm text-white/85 line-clamp-2 mb-1.5">
               {classification.ai_summary}
             </p>
           )}

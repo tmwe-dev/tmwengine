@@ -118,19 +118,28 @@ serve(async (req) => {
         .maybeSingle();
 
       // Fallback al prompt hardcoded se non trovato nel DB
-      const systemPrompt = promptData?.content || `Sei un assistente AI specializzato nella classificazione automatica di email per un'azienda di trasporti e spedizioni internazionali.
+      const systemPrompt = promptData?.content || `Sei un assistente AI specializzato nella classificazione di email per trasporti internazionali.
 
-CATEGORIE DISPONIBILI:
-1. Fatture - Fatture, invoices, ricevute fiscali
-2. Bolle / Packing List - DDT, bolle di accompagnamento, packing list
-3. Preventivi / Quotazioni - Richieste preventivo, quotazioni, offerte commerciali
-4. Rate Aeree / Rate Navali - Tariffe trasporto, rate shipping
-5. Documenti Spedizione - AWB, Bill of Lading, tracking, customs
-6. Offerte di Lavoro - Job posting, recruiting, carriere
-7. Marketing / Pubblicità - Newsletter, promozioni, advertising
-8. Spam / Non Rilevante - Spam, phishing, contenuti irrilevanti
+LINEE GUIDA CATEGORIE (usa queste o creane di nuove se necessario):
+- Fatture → Invoices, ricevute, pagamenti
+- Bolle → DDT, bolle accompagnamento, packing list
+- Preventivi → Richieste preventivo, quotazioni, offerte
+- Rate → Tariffe trasporto aereo/marittimo
+- Documenti Spedizione → AWB, Bill of Lading, customs, certificati
+- Tracking → Status updates, tracking spedizioni
+- Booking → Richieste prenotazione
+- Customer Service → Assistenza clienti, reclami
+- Offerte Lavoro → Recruiting, job posting
+- Marketing → Newsletter, promozioni, advertising (unifica tutto)
+- Spam → Contenuti irrilevanti, phishing
 
-Analizza il contenuto dell'email e classifica nella categoria più appropriata. Fornisci anche un riassunto conciso (max 100 parole) e 3-5 keywords rilevanti.`;
+REGOLE:
+1. Usa macro-categorie (es: "Marketing" invece di sotto-categorie come "Marketing / Newsletter")
+2. Se nessuna categoria esistente è appropriata, crea un nuovo tag descrittivo e conciso
+3. Mantieni i nomi in italiano
+4. Evita sotto-categorie eccessive (usa "/" solo se veramente necessario)
+
+Fornisci anche riassunto (max 100 parole) e 3-5 keywords.`;
 
       if (promptError) {
         console.warn('⚠️ Error loading prompt from DB, using fallback:', promptError);
@@ -155,20 +164,7 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
             properties: {
               category: {
                 type: 'string',
-                enum: [
-                  'Fatture',
-                  'Bolle / Packing List',
-                  'Preventivi / Quotazioni',
-                  'Rate Aeree / Marittime',
-                  'Documenti Spedizione',
-                  'Tracking & Status Updates',
-                  'Booking Requests',
-                  'Customer Service',
-                  'Offerte di Lavoro',
-                  'Marketing / Newsletter',
-                  'Spam / Non Rilevante'
-                ],
-                description: 'Categoria email'
+                description: 'Categoria email. Usa una categoria esistente o creane una nuova se necessario. Categorie suggerite: Fatture, Bolle, Preventivi, Rate, Documenti Spedizione, Tracking, Booking, Customer Service, Offerte Lavoro, Marketing, Spam'
               },
               confidence: {
                 type: 'number',

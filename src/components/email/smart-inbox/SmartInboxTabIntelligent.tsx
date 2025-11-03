@@ -18,6 +18,7 @@ import { useEmailAIProcessor } from '@/hooks/useEmailAIProcessor';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { getCategoryIcon, getCategoryColor } from '@/lib/smart-inbox-utils';
 
 interface SmartInboxTabIntelligentProps {
   onOpenAISidebar?: (senderEmail: string) => void;
@@ -177,26 +178,30 @@ export const SmartInboxTabIntelligent = ({
     enabled: !!userEmail,
   });
 
-  // Calcola statistiche categorie
+  // FASE 2: Calcola statistiche categorie DINAMICAMENTE dal DB
   const categoryStats = React.useMemo(() => {
-    const categories = [
-      { id: 'Fatture', name: 'Fatture', icon: '💰', color: '#3B82F6' },
-      { id: 'Bolle / Packing List', name: 'Bolle', icon: '📦', color: '#10B981' },
-      { id: 'Preventivi / Quotazioni', name: 'Preventivi', icon: '📊', color: '#F59E0B' },
-      { id: 'Rate Aeree / Rate Navali', name: 'Rate', icon: '✈️', color: '#8B5CF6' },
-      { id: 'Documenti Spedizione', name: 'Documenti', icon: '📄', color: '#06B6D4' },
-      { id: 'Offerte di Lavoro', name: 'Lavoro', icon: '💼', color: '#EC4899' },
-      { id: 'Marketing / Pubblicità', name: 'Marketing', icon: '📢', color: '#F43F5E' },
-      { id: 'Spam / Non Rilevante', name: 'Spam', icon: '🚫', color: '#6B7280' },
-    ];
-
-    return categories.map(cat => ({
-      ...cat,
-      count: classifiedEmails.filter(e => e.classification.category === cat.id).length
-    })).sort((a, b) => {
-      const priority = ['Preventivi / Quotazioni', 'Fatture', 'Rate Aeree / Rate Navali', 'Bolle / Packing List', 'Documenti Spedizione'];
-      const aIdx = priority.indexOf(a.id);
-      const bIdx = priority.indexOf(b.id);
+    // Conta occorrenze per categoria direttamente dalle email classificate
+    const categoryMap = new Map<string, number>();
+    
+    classifiedEmails.forEach(email => {
+      const category = email.classification.category;
+      categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
+    });
+    
+    // Converti in array con icone/colori dal sistema di mapping
+    const categories = Array.from(categoryMap.entries()).map(([category, count]) => ({
+      id: category,
+      name: category.split(' / ')[0], // Usa prima parte come nome breve
+      icon: getCategoryIcon(category),
+      color: getCategoryColor(category),
+      count
+    }));
+    
+    // Ordina per priorità + conteggio
+    return categories.sort((a, b) => {
+      const priority = ['Preventivi', 'Fatture', 'Rate', 'Bolle', 'Documenti'];
+      const aIdx = priority.indexOf(a.name);
+      const bIdx = priority.indexOf(b.name);
       if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
       if (aIdx !== -1) return -1;
       if (bIdx !== -1) return 1;

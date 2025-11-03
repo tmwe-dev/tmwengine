@@ -224,13 +224,13 @@ export const SmartEmailDetailPanel = ({
                 </div>
               ) : sanitizedHtml ? (
                 <div 
-                  className="prose prose-sm prose-invert max-w-none p-4 text-white overflow-x-auto"
+                  className="prose prose-sm max-w-none p-4 rounded-xl border border-white/10 overflow-x-auto"
                   dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                   style={{
-                    color: 'rgba(255, 255, 255, 0.95) !important',
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    color: 'inherit',
                     fontSize: '14px',
-                    lineHeight: '1.6',
-                    background: 'transparent'
+                    lineHeight: '1.6'
                   }}
                 />
               ) : emailBody?.text ? (
@@ -264,14 +264,7 @@ export const SmartEmailDetailPanel = ({
 
       {/* CSS ottimizzato per email HTML */}
       <style>{`
-        /* Override forzato per testo dentro email */
-        .prose,
-        .prose * {
-          color: rgba(255, 255, 255, 0.95) !important;
-          background: transparent !important;
-        }
-
-        /* Immagini sempre visibili */
+        /* Immagini email sempre visibili */
         .prose img {
           max-width: 100%;
           height: auto;
@@ -279,7 +272,6 @@ export const SmartEmailDetailPanel = ({
           margin: 8px 0;
           display: block;
           object-fit: contain;
-          background: transparent;
         }
 
         /* Nascondi immagini rotte */
@@ -296,19 +288,18 @@ export const SmartEmailDetailPanel = ({
         }
         .prose table td,
         .prose table th {
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border: 1px solid rgba(0, 0, 0, 0.1);
           padding: 8px;
-          background: transparent !important;
         }
 
         /* Link */
         .prose a {
-          color: #60a5fa !important;
+          color: #2563eb;
           text-decoration: underline;
           transition: color 0.2s;
         }
         .prose a:hover {
-          color: #93c5fd !important;
+          color: #1d4ed8;
         }
       `}</style>
     </div>

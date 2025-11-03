@@ -138,14 +138,6 @@ export const SmartInboxTabIntelligent = ({
             message_id,
             cartella,
             stato
-          ),
-          email_sender_rules!left(
-            group_id,
-            email_sender_groups!left(
-              name,
-              icon,
-              color
-            )
           )
         `)
         .eq('user_email', userEmail)
@@ -176,37 +168,39 @@ export const SmartInboxTabIntelligent = ({
 
       // Map risultati con dati dal JOIN
       return (data || [])
-        .filter((c: any) => c.email_messages) // ✅ Solo email con dati completi
-        .map((classification: any) => {
-          // Estrai dati gruppo mittente se disponibili
-          const senderGroup = classification.email_sender_rules?.email_sender_groups;
-          
-          return {
-            classification: {
-              ...classification,
-              email_messages: undefined, // Rimuovi dall'oggetto classification
-              email_sender_rules: undefined, // Rimuovi per pulizia
-              sender_group: senderGroup ? {
-                name: senderGroup.name,
-                icon: senderGroup.icon,
-                color: senderGroup.color
-              } : null
-            },
-            email: {
-              uid: classification.email_messages.message_id,
-              email_id: classification.email_messages.id,
-              subject: classification.email_messages.subject,
-              body_text: classification.email_messages.body_text,
-              from: { email: classification.email_messages.from_email },
-              to: classification.email_messages.to_recipients || [],
-              date: classification.email_messages.date,
-              has_attachments: classification.email_messages.has_attachments || false,
-              folder_name: classification.email_messages.cartella || 'INBOX',
-              read: true,
-              body_preview: classification.ai_summary
-            }
-          } as ClassifiedEmail;
-        });
+        .filter((c: any) => c.email_messages)
+        .map((item: any) => ({
+          classification: {
+            id: item.id,
+            email_message_id: item.email_id,
+            email_uid: item.email_uid,
+            folder_name: item.folder_name,
+            user_email: item.user_email,
+            category: item.category,
+            confidence: item.confidence,
+            ai_summary: item.ai_summary,
+            keywords: item.keywords,
+            sender_email: item.sender_email,
+            sender_domain: item.sender_domain,
+            sender_logo_url: item.sender_logo_url,
+            is_verified: item.is_verified,
+            created_at: item.created_at,
+            updated_at: item.updated_at
+          },
+          email: {
+            uid: item.email_messages.message_id || item.email_uid,
+            email_id: item.email_messages.id,
+            subject: item.email_messages.subject,
+            body_text: item.email_messages.body_text,
+            from: { email: item.email_messages.from_email },
+            to: item.email_messages.to_recipients || [],
+            date: item.email_messages.date,
+            has_attachments: item.email_messages.has_attachments || false,
+            folder_name: item.email_messages.cartella || item.folder_name || 'INBOX',
+            read: item.email_messages.stato !== 'nuovo',
+            body_preview: item.ai_summary || item.email_messages.body_text?.substring(0, 150)
+          }
+        })) as ClassifiedEmail[];
     },
     enabled: !!userEmail,
   });

@@ -26,7 +26,7 @@ export interface TestResult {
 }
 
 /**
- * Salva risultato test come nuovo profilo
+ * Salva risultato test come nuovo profilo (o aggiorna se esiste)
  */
 export async function saveTestResultAsProfile(
   testResult: TestResult,
@@ -37,23 +37,52 @@ export async function saveTestResultAsProfile(
   
   const name = profileName || testResult.name;
   
-  const { data, error } = await supabase
+  // Cerca profilo esistente con stesso user_id e profile_name
+  const { data: existing } = await supabase
     .from('performance_profiles')
-    .insert({
-      user_id: user.id,
-      profile_name: name,
-      optimization_flags: testResult.optimizationFlags as any,
-      avg_response_time_ms: testResult.avgTime,
-      success_rate: testResult.successRate,
-      total_tests_run: testResult.repetitions,
-      source_test_name: testResult.testType,
-      is_active: false
-    })
-    .select()
-    .single();
+    .select('id, total_tests_run')
+    .eq('user_id', user.id)
+    .eq('profile_name', name)
+    .maybeSingle();
+  
+  if (existing) {
+    // Aggiorna profilo esistente cumulando i test
+    const { data, error } = await supabase
+      .from('performance_profiles')
+      .update({
+        optimization_flags: testResult.optimizationFlags as any,
+        avg_response_time_ms: testResult.avgTime,
+        success_rate: testResult.successRate,
+        total_tests_run: existing.total_tests_run + testResult.repetitions,
+        source_test_name: testResult.testType,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existing.id)
+      .select()
+      .single();
     
-  if (error) throw error;
-  return data.id;
+    if (error) throw error;
+    return data.id;
+  } else {
+    // Inserisci nuovo profilo
+    const { data, error } = await supabase
+      .from('performance_profiles')
+      .insert({
+        user_id: user.id,
+        profile_name: name,
+        optimization_flags: testResult.optimizationFlags as any,
+        avg_response_time_ms: testResult.avgTime,
+        success_rate: testResult.successRate,
+        total_tests_run: testResult.repetitions,
+        source_test_name: testResult.testType,
+        is_active: false
+      })
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data.id;
+  }
 }
 
 /**

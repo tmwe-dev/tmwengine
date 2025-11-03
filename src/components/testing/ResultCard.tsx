@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Save } from 'lucide-react';
+import { Check, Save, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ResultCardProps {
@@ -14,6 +14,7 @@ interface ResultCardProps {
   onActivate: () => void;
   isActive: boolean;
   isSaved?: boolean;
+  isActivating?: boolean;
 }
 
 export function ResultCard({
@@ -24,7 +25,8 @@ export function ResultCard({
   onSave,
   onActivate,
   isActive,
-  isSaved = false
+  isSaved = false,
+  isActivating = false
 }: ResultCardProps) {
   const getRankEmoji = (rank: number) => {
     switch (rank) {
@@ -84,7 +86,7 @@ export function ResultCard({
             size="sm"
             variant="ghost"
             onClick={onSave}
-            disabled={isSaved}
+            disabled={isSaved || isActivating}
             title="Salva profilo"
           >
             <Save className="h-3 w-3" />
@@ -93,10 +95,14 @@ export function ResultCard({
             size="sm"
             variant={isActive ? "default" : "outline"}
             onClick={onActivate}
-            disabled={isActive}
+            disabled={isActive || isActivating}
             title="Attiva profilo"
           >
-            <Check className="h-3 w-3" />
+            {isActivating ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Check className="h-3 w-3" />
+            )}
           </Button>
         </div>
       </div>

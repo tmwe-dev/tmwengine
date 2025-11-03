@@ -91,6 +91,7 @@ export function PerformanceProfileConfigurator() {
   // Active profile
   const [activeProfile, setActiveProfile] = useState<PerformanceProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [activatingProfile, setActivatingProfile] = useState<string | null>(null);
 
   // Load active profile on mount
   useEffect(() => {
@@ -232,36 +233,33 @@ export function PerformanceProfileConfigurator() {
   };
 
   const activateResult = async (result: TestResult) => {
+    setActivatingProfile(result.id);
     try {
-      // Save first if not saved
-      if (!savedProfiles.has(result.id)) {
-        const profileId = await saveTestResultAsProfile(result);
-        await activateProfileDB(profileId);
-      } else {
-        // Find profile by name and activate
-        const { data: profiles } = await supabase
-          .from('performance_profiles')
-          .select('id')
-          .eq('profile_name', result.name)
-          .maybeSingle();
-        
-        if (profiles?.id) {
-          await activateProfileDB(profiles.id);
-        }
-      }
-
+      // 1. Salva sempre il profilo (o aggiorna se esiste)
+      const profileId = await saveTestResultAsProfile(result);
+      
+      // 2. Aggiorna set dei profili salvati
+      setSavedProfiles(prev => new Set([...prev, result.id]));
+      
+      // 3. Attiva usando l'ID appena ottenuto
+      await activateProfileDB(profileId);
+      
+      // 4. Ricarica profilo attivo
       await loadActiveProfile();
-
+      
       toast({
-        title: "Profilo attivato",
+        title: "✅ Profilo attivato",
         description: `${result.name} ora è il profilo attivo`
       });
     } catch (error: any) {
+      console.error('Errore attivazione profilo:', error);
       toast({
-        title: "Errore attivazione",
-        description: error.message,
+        title: "❌ Errore attivazione",
+        description: error.message || 'Impossibile attivare il profilo',
         variant: "destructive"
       });
+    } finally {
+      setActivatingProfile(null);
     }
   };
 
@@ -421,6 +419,7 @@ export function PerformanceProfileConfigurator() {
                       onActivate={() => activateResult(result)}
                       isActive={activeProfile?.profile_name === result.name}
                       isSaved={savedProfiles.has(result.id)}
+                      isActivating={activatingProfile === result.id}
                     />
                   ))}
                 </div>

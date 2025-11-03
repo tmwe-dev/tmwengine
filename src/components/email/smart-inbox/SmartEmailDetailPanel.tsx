@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -29,6 +29,8 @@ export const SmartEmailDetailPanel = ({
   onNavigateNext,
   onNavigatePrev
 }: SmartEmailDetailPanelProps) => {
+  const messageContentRef = useRef<HTMLDivElement>(null);
+  
   // ✅ Usa body_html con fallback a body_text
   const emailBody = {
     html: classifiedEmail.email.body_html || classifiedEmail.email.body_text,
@@ -195,14 +197,26 @@ export const SmartEmailDetailPanel = ({
           </div>
 
           {/* Corpo email collapsible */}
-          <details className="space-y-2">
+          <details 
+            className="space-y-2"
+            onToggle={(e) => {
+              if ((e.target as HTMLDetailsElement).open) {
+                setTimeout(() => {
+                  messageContentRef.current?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                  });
+                }, 100);
+              }
+            }}
+          >
             <summary className="font-semibold text-sm flex items-center gap-2 cursor-pointer text-white/90 hover:text-white transition-colors">
               <ChevronRight className="h-4 w-4 transition-transform" />
               <span className="text-lg">📧</span>
               Messaggio Completo
               {isLoadingBody && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
             </summary>
-            <div className="mt-2">
+            <div ref={messageContentRef} className="mt-2">
               {isLoadingBody ? (
                 <div className="text-center py-8 bg-white/5 rounded-xl border border-white/10">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-white/60" />

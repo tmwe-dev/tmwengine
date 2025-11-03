@@ -127,16 +127,16 @@ export const SmartInboxTabIntelligent = ({
         .from('email_ai_classifications')
         .select(`
           *,
-          email:email_messages!inner(
+          email:email_messages!fk_email_ai_classifications_email_messages(
             id,
             subject,
-            from,
-            to,
+            from_email,
+            to_email,
             body_text,
             body_html,
             data_ricezione,
-            read,
-            has_attachments
+            stato,
+            attachments
           )
         `)
         .eq('user_email', userEmail)
@@ -159,24 +159,35 @@ export const SmartInboxTabIntelligent = ({
 
       if (error) throw error;
 
-      // Map risultati dal backup - passa l'oggetto email direttamente
-      return (data || []).map(item => ({
-        classification: {
-          id: item.id,
-          email_message_id: item.email_id,
-          user_email: item.user_email,
-          category: item.category,
-          confidence: item.confidence,
-          ai_summary: item.ai_summary,
-          keywords: item.keywords,
-          sender_email: item.sender_email,
-          sender_domain: item.sender_domain,
-          sender_logo_url: item.sender_logo_url,
-          created_at: item.created_at,
-          updated_at: item.updated_at
-        },
-        email: Array.isArray(item.email) ? item.email[0] : item.email
-      })) as ClassifiedEmail[];
+      // Map risultati con trasformazione campi DB → UI
+      return (data || []).map(item => {
+        const emailData = Array.isArray(item.email) ? item.email[0] : item.email;
+        
+        return {
+          classification: {
+            id: item.id,
+            email_message_id: item.email_id,
+            user_email: item.user_email,
+            category: item.category,
+            confidence: item.confidence,
+            ai_summary: item.ai_summary,
+            keywords: item.keywords,
+            sender_email: item.sender_email,
+            sender_domain: item.sender_domain,
+            sender_logo_url: item.sender_logo_url,
+            created_at: item.created_at,
+            updated_at: item.updated_at
+          },
+          email: {
+            ...emailData,
+            from: emailData.from_email ? { email: emailData.from_email } : emailData.from,
+            to: emailData.to_email ? [{ email: emailData.to_email }] : emailData.to,
+            read: emailData.stato ? emailData.stato !== 'nuovo' : emailData.read,
+            has_attachments: emailData.attachments ? (Array.isArray(emailData.attachments) && emailData.attachments.length > 0) : emailData.has_attachments,
+            date: emailData.data_ricezione || emailData.date
+          }
+        };
+      }) as ClassifiedEmail[];
     },
     enabled: !!userEmail,
   });

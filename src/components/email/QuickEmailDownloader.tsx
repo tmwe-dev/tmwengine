@@ -28,6 +28,7 @@ import {
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { getSyncPreferences, filterFolders } from '@/lib/email-sync-preferences';
 
 interface QuickSyncStats {
   downloaded: number;
@@ -587,12 +588,93 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     ? (quickProgress.completedFolders.length / quickProgress.foldersToSync.length) * 100
     : 0;
 
-  const startPreferencesSync = async () => {
-    // TODO: Implement preferences-based sync if needed
-    toast({
-      title: 'ℹ️ Info',
-      description: 'Funzionalità in fase di sviluppo',
-    });
+  // ✅ NUOVO: Download email basato su preferenze utente
+  const downloadEmailsFromPreferences = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Non autenticato');
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.tmwe_email) {
+        throw new Error('Email TMWE non configurata');
+      }
+
+      console.log('🔍 [PreferencesSync] Loading preferences for:', profile.tmwe_email);
+
+      // STEP 1: Recupera preferenze utente
+      const preferences = await getSyncPreferences(profile.tmwe_email);
+      console.log('🔍 [PreferencesSync] Preferences loaded:', preferences);
+
+      // STEP 2: Carica cartelle dal server
+      const serverFoldersResponse = await emailFolderApi.getFolders({ 
+        include_counts: false,
+        skipCache: true
+      });
+
+      const serverFoldersList = Array.isArray(serverFoldersResponse) 
+        ? serverFoldersResponse 
+        : (serverFoldersResponse?.data || serverFoldersResponse?.folders || []);
+
+      const serverFolders = serverFoldersList.map((f: any) => ({
+        name: f.name || f,
+        display_name: f.display_name || f.name || f
+      }));
+
+      console.log('🔍 [PreferencesSync] Server folders:', serverFolders.map(f => f.name));
+
+      // STEP 3: Filtra cartelle in base a preferenze
+      const filteredFolders = filterFolders(serverFolders, preferences);
+      const foldersToSync = filteredFolders.map(f => f.name);
+
+      console.log('🔍 [PreferencesSync] Filtered folders to sync:', foldersToSync);
+
+      if (foldersToSync.length === 0) {
+        toast({
+          title: '⚠️ Attenzione',
+          description: 'Nessuna cartella selezionata nelle preferenze',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: '🚀 Sync da Preferenze avviato',
+        description: `Sincronizzazione di ${foldersToSync.length} cartelle...`,
+      });
+
+      setIsQuickLoading(true);
+
+      // STEP 4: Usa il metodo di download testato (identico a Quick Download)
+      const stats = await downloadEmailsLikePerformanceTest(foldersToSync, profile.tmwe_email);
+
+      toast({
+        title: `✅ Sync completato!`,
+        description: `${stats.downloaded} email in ${Math.round(stats.duration)}s (${stats.avgSpeed.toFixed(1)} email/s)`,
+      });
+
+      setQuickProgress(null);
+      onDownloadComplete?.(stats);
+      loadQuickStats();
+
+    } catch (error: any) {
+      console.error('❌ Preferences sync error:', error);
+      
+      toast({
+        title: '❌ Errore',
+        description: error.message,
+        variant: 'destructive',
+      });
+
+      setQuickProgress(null);
+    } finally {
+      setIsQuickLoading(false);
+      setAbortController(null);
+    }
   };
 
   return (
@@ -703,60 +785,59 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         </Card>
       )}
 
-      {/* Sync con Preferences - Nuovo pulsante dedicato */}
-      {!quickProgress && preSelectedFolders.length === 0 && (
+      {/* ✅ NUOVO: Sync da Preferenze */}
+      {!quickProgress && (
         <Card className="border-purple-500 border-2 bg-purple-50/10">
-          <CardContent className="pt-6">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Settings className="h-6 w-6 text-purple-500" />
-                  <div>
-                    <h4 className="font-semibold">Sync Automatico con Preferenze</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Sincronizza solo le cartelle configurate in Email Management
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Pulsante Gestione Preferenze */}
-                <Dialog open={isPreferencesDialogOpen} onOpenChange={setIsPreferencesDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Settings className="h-4 w-4" />
-                      Gestisci Preferenze
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>⚙️ Preferenze Sincronizzazione</DialogTitle>
-                    </DialogHeader>
-                    {userEmail && (
-                      <FolderSyncPreferencesManager
-                        userEmail={userEmail}
-                        onPreferencesChanged={() => {
-                          loadQuickFolders();
-                          setIsPreferencesDialogOpen(false);
-                          toast({
-                            title: '✅ Preferenze salvate',
-                            description: 'Le tue preferenze di sincronizzazione sono state aggiornate',
-                          });
-                        }}
-                      />
-                    )}
-                  </DialogContent>
-                </Dialog>
-              </div>
-              
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Settings className="h-5 w-5 text-purple-500" />
+              Sync da Preferenze
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Sincronizza automaticamente solo le cartelle configurate nelle preferenze.
+            </p>
+            
+            <div className="flex gap-2">
+              {/* Pulsante Configura Preferenze */}
+              <Dialog open={isPreferencesDialogOpen} onOpenChange={setIsPreferencesDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Settings className="h-4 w-4" />
+                    Configura
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>⚙️ Preferenze Sincronizzazione</DialogTitle>
+                  </DialogHeader>
+                  {userEmail && (
+                    <FolderSyncPreferencesManager
+                      userEmail={userEmail}
+                      onPreferencesChanged={() => {
+                        loadQuickFolders();
+                        setIsPreferencesDialogOpen(false);
+                        toast({
+                          title: '✅ Preferenze salvate',
+                          description: 'Le tue preferenze di sincronizzazione sono state aggiornate',
+                        });
+                      }}
+                    />
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              {/* Pulsante Avvia Sync */}
               <Button
-                size="lg"
+                className="flex-1 border-purple-500 text-purple-600 hover:bg-purple-50"
                 variant="outline"
-                className="w-full border-purple-500 text-purple-600 hover:bg-purple-50"
-                onClick={startPreferencesSync}
+                size="sm"
+                onClick={downloadEmailsFromPreferences}
                 disabled={isQuickLoading}
               >
-                <Settings className="mr-2 h-5 w-5" />
-                Avvia Sync con Preferenze
+                <Download className="mr-2 h-4 w-4" />
+                Avvia Sync da Preferenze
               </Button>
             </div>
           </CardContent>

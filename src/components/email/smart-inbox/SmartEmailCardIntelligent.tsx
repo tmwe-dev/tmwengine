@@ -189,25 +189,12 @@ export const SmartEmailCardIntelligent = ({
               <span className="text-xs text-white/60 whitespace-nowrap">
                 {formatDate(email.date)}
               </span>
+              {/* Icona categoria */}
+              <span className="text-white/80" title={classification.category}>
+                {getCategoryLucideIcon(classification.category)}
+              </span>
             </div>
           </div>
-
-          {/* Categoria compatta con solo icona */}
-          <Badge 
-            className={cn(
-              "mb-2 rounded-full px-3 py-1 flex items-center gap-2 text-white border-0",
-              getCategoryGradient(classification.category),
-              getCategoryGlow(classification.category)
-            )}
-            title={`${categoryIcon} ${classification.category}`}
-          >
-            {getCategoryLucideIcon(classification.category)}
-            {classification.confidence < 100 && (
-              <span className="ml-2 text-xs font-bold bg-white/20 px-1.5 py-0.5 rounded-full">
-                {Math.round(classification.confidence)}%
-              </span>
-            )}
-          </Badge>
 
           {/* TAG INTELLIGENTI */}
           {classification.tags && classification.tags.length > 0 && (

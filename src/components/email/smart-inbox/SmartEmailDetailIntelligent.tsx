@@ -67,15 +67,10 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
               <span>{categoryIcon}</span>
               {classification.category}
             </Badge>
-            {isVerified ? (
+            {isVerified && (
               <Badge variant="outline" className="text-xs">
                 <CheckCircle2 className="h-3 w-3 mr-1 text-green-600" />
                 Verificata
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-xs">
-                <AlertCircle className="h-3 w-3 mr-1 text-orange-500" />
-                Da Verificare ({Math.round(classification.confidence)}%)
               </Badge>
             )}
           </div>

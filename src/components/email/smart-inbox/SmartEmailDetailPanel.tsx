@@ -153,8 +153,9 @@ export const SmartEmailDetailPanel = ({
             {/* Categoria compatta con confidence solo se bassa */}
             <Badge className={`text-xs ${categoryGradient} border-0 px-2 py-1`}>
               <span className="mr-1">{getCategoryIcon(classification.category)}</span>
+              <span className="font-semibold">{classification.category}</span>
               {classification.confidence < 80 && (
-                <span className="text-[10px] font-bold">{Math.round(classification.confidence)}%</span>
+                <span className="text-[10px] font-bold ml-1.5">{Math.round(classification.confidence)}%</span>
               )}
             </Badge>
           </div>

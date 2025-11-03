@@ -43,17 +43,29 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <div className="font-bold text-lg truncate">{companyName}</div>
-            <Badge 
-              className="flex items-center gap-1 shrink-0"
-              style={{ 
-                backgroundColor: categoryColor, 
-                color: 'white',
-                borderColor: categoryColor
-              }}
-            >
-              <span>{categoryIcon}</span>
-              {classification.category}
-            </Badge>
+            <div className="flex flex-col items-end gap-2">
+              <Badge 
+                className="flex items-center gap-1 shrink-0"
+                style={{ 
+                  backgroundColor: categoryColor, 
+                  color: 'white',
+                  borderColor: categoryColor
+                }}
+              >
+                <span>{categoryIcon}</span>
+                {classification.category}
+              </Badge>
+              {/* Keywords */}
+              {classification.keywords && classification.keywords.length > 0 && (
+                <div className="flex flex-wrap gap-1 justify-end">
+                  {classification.keywords.map((keyword, idx) => (
+                    <Badge key={idx} variant="secondary" className="text-xs">
+                      {keyword}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="text-sm text-muted-foreground truncate">
             {classification.sender_email}
@@ -77,27 +89,12 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
             </div>
           )}
 
-          {/* Riassunto AI */}
+          {/* Riassunto AI con stile email body */}
           {classification.ai_summary && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm">📝 Riassunto AI</h3>
-              <p className="text-sm bg-muted p-3 rounded-md">
+            <div className="border-l-4 border-purple-500 bg-purple-500/10 backdrop-blur-sm rounded-lg pl-4 py-3">
+              <p className="text-sm text-white/90">
                 {classification.ai_summary}
               </p>
-            </div>
-          )}
-
-          {/* Keywords */}
-          {classification.keywords && classification.keywords.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm">🏷️ Keywords</h3>
-              <div className="flex flex-wrap gap-2">
-                {classification.keywords.map((keyword, idx) => (
-                  <Badge key={idx} variant="secondary">
-                    {keyword}
-                  </Badge>
-                ))}
-              </div>
             </div>
           )}
 

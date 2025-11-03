@@ -499,6 +499,15 @@ Tutti i colori DEVONO essere HSL.
     line-height: var(--line-height-normal);
   }
 
+  /* === RESPONSIVE TEXT === */
+  .email-body-content {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    max-width: 100%;
+  }
+
   h5 {
     @apply text-base font-medium;
     line-height: var(--line-height-normal);

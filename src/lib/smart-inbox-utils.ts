@@ -58,3 +58,16 @@ export const formatDate = (dateString: string): string => {
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
   });
 };
+
+// 🆕 Data completa per header email (opzionale)
+export const formatDateDetailed = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('it-IT', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};

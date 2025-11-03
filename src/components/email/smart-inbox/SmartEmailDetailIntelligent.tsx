@@ -4,8 +4,9 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ClassifiedEmail } from '@/types/smart-inbox';
 import { extractCompanyName, extractInitials, getCategoryColor, getCategoryIcon } from '@/lib/smart-inbox-utils';
-import { CheckCircle2, AlertCircle, X, Sparkles } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X, Sparkles, Loader2 } from 'lucide-react';
 import { useEmailThread } from '@/hooks/useEmailThread';
+import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
 import { EmailThreadView } from './EmailThreadView';
 
 interface SmartEmailDetailIntelligentProps {
@@ -18,6 +19,9 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
   const { emails, currentEmailIndex, hasMore, loadMore, isLoading } = useEmailThread({
     emailId: classifiedEmail?.email?.email_id
   });
+
+  // 🆕 Recupera logo HD con cache
+  const { data: logoData, isLoading: logoLoading } = useCompanyLogo(classifiedEmail?.classification?.sender_email);
 
   if (!classifiedEmail) return null;
 
@@ -33,11 +37,19 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
       {/* Header con chiusura */}
       <div className="flex items-center gap-3 p-4 border-b border-white/10 shrink-0">
         <Avatar className="h-12 w-12">
-          {classification.sender_logo_url ? (
-            <AvatarImage src={classification.sender_logo_url} alt={companyName} />
-          ) : null}
+          <AvatarImage 
+            src={logoData?.logo_url || classification.sender_logo_url}
+            alt={companyName}
+            onError={(e) => {
+              e.currentTarget.src = classification.sender_logo_url || '';
+            }}
+          />
           <AvatarFallback className="text-sm font-semibold">
-            {initials}
+            {logoLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              initials
+            )}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">

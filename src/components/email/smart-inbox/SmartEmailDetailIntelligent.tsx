@@ -41,7 +41,20 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <div className="font-bold text-lg truncate">{companyName}</div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-bold text-lg truncate">{companyName}</div>
+            <Badge 
+              className="flex items-center gap-1 shrink-0"
+              style={{ 
+                backgroundColor: categoryColor, 
+                color: 'white',
+                borderColor: categoryColor
+              }}
+            >
+              <span>{categoryIcon}</span>
+              {classification.category}
+            </Badge>
+          </div>
           <div className="text-sm text-muted-foreground truncate">
             {classification.sender_email}
           </div>
@@ -54,26 +67,15 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
       {/* Content scrollabile */}
       <ScrollArea className="flex-1">
         <div className="space-y-4 p-6">
-          {/* Stato classificazione */}
-          <div className="flex items-center gap-2">
-            <Badge 
-              className="flex items-center gap-1"
-              style={{ 
-                backgroundColor: categoryColor, 
-                color: 'white',
-                borderColor: categoryColor
-              }}
-            >
-              <span>{categoryIcon}</span>
-              {classification.category}
-            </Badge>
-            {isVerified && (
+          {/* Stato verificazione */}
+          {isVerified && (
+            <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs">
                 <CheckCircle2 className="h-3 w-3 mr-1 text-green-600" />
                 Verificata
               </Badge>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Riassunto AI */}
           {classification.ai_summary && (

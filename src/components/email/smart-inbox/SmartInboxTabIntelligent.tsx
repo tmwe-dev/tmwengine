@@ -84,6 +84,39 @@ export const SmartInboxTabIntelligent = ({
     enabled: !!userEmail
   });
 
+  // ✅ Query separata per statistiche categorie (NON filtrata per categoria selezionata)
+  const { data: categoryCounts = [] } = useQuery({
+    queryKey: ['category-counts', userEmail, selectedFolder],
+    queryFn: async () => {
+      if (!userEmail || !selectedFolder) return [];
+      
+      const { data, error } = await supabase
+        .from('email_ai_classifications')
+        .select('category')
+        .eq('user_email', userEmail)
+        .eq('folder_name', selectedFolder)
+        .not('email_id', 'is', null);
+      
+      if (error) throw error;
+      
+      // Conta occorrenze per categoria
+      const categoryMap = new Map<string, number>();
+      data.forEach(item => {
+        const count = categoryMap.get(item.category) || 0;
+        categoryMap.set(item.category, count + 1);
+      });
+      
+      return Array.from(categoryMap.entries()).map(([category, count]) => ({
+        id: category,
+        name: category.split(' / ')[0],
+        icon: getCategoryIcon(category),
+        color: getCategoryColor(category),
+        count
+      }));
+    },
+    enabled: !!userEmail && !!selectedFolder
+  });
+
   // ✅ Fetch email classificate con JOIN a email_messages
   const { data: classifiedEmails = [], isLoading, refetch } = useQuery({
     queryKey: ['smart-inbox-intelligent', userEmail, selectedCategory, selectedFolder, unreadOnly],
@@ -178,27 +211,12 @@ export const SmartInboxTabIntelligent = ({
     enabled: !!userEmail,
   });
 
-  // FASE 2: Calcola statistiche categorie DINAMICAMENTE dal DB
+  // FASE 2: Calcola statistiche categorie dalla query dedicata
   const categoryStats = React.useMemo(() => {
-    // Conta occorrenze per categoria direttamente dalle email classificate
-    const categoryMap = new Map<string, number>();
-    
-    classifiedEmails.forEach(email => {
-      const category = email.classification.category;
-      categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
-    });
-    
-    // Converti in array con icone/colori dal sistema di mapping
-    const categories = Array.from(categoryMap.entries()).map(([category, count]) => ({
-      id: category,
-      name: category.split(' / ')[0], // Usa prima parte come nome breve
-      icon: getCategoryIcon(category),
-      color: getCategoryColor(category),
-      count
-    }));
+    if (!categoryCounts || categoryCounts.length === 0) return [];
     
     // Ordina per priorità + conteggio
-    return categories.sort((a, b) => {
+    return [...categoryCounts].sort((a, b) => {
       const priority = ['Preventivi', 'Fatture', 'Rate', 'Bolle', 'Documenti'];
       const aIdx = priority.indexOf(a.name);
       const bIdx = priority.indexOf(b.name);
@@ -207,7 +225,7 @@ export const SmartInboxTabIntelligent = ({
       if (bIdx !== -1) return 1;
       return b.count - a.count;
     });
-  }, [classifiedEmails]);
+  }, [categoryCounts]);
 
   const unverifiedCount = classifiedEmails.filter(
     e => !e.classification.is_verified || e.classification.confidence < 0.8

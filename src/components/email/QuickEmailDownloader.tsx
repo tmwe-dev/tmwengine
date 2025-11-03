@@ -31,6 +31,7 @@ import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSync
 import { PerformanceProfileConfigurator } from '@/components/testing/PerformanceProfileConfigurator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { getSyncPreferences, filterFolders } from '@/lib/email-sync-preferences';
+import { getActiveProfile, type PerformanceProfile } from '@/lib/performance-profiles';
 
 interface QuickSyncStats {
   downloaded: number;
@@ -73,12 +74,14 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [activeProfile, setActiveProfile] = useState<PerformanceProfile | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     console.log('🔍 [QuickDownload] Received preSelectedFolders prop:', preSelectedFolders);
     loadQuickFolders();
     loadUserEmail();
+    loadActiveProfile();
   }, []);
 
   const loadUserEmail = async () => {
@@ -97,6 +100,24 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       }
     } catch (error) {
       console.error('Error loading user email:', error);
+    }
+  };
+
+  const loadActiveProfile = async () => {
+    try {
+      const profile = await getActiveProfile();
+      setActiveProfile(profile);
+    } catch (error) {
+      console.error('Error loading active profile:', error);
+    }
+  };
+
+  const handlePerformanceDialogChange = (open: boolean) => {
+    setIsPerformanceDialogOpen(open);
+    
+    // Quando chiudi il dialog, ricarica il profilo attivo
+    if (!open) {
+      loadActiveProfile();
     }
   };
 
@@ -795,6 +816,16 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
             <CardTitle className="text-base flex items-center gap-2">
               <Settings className="h-5 w-5 text-purple-500" />
               Sync da Preferenze
+              
+              {/* Badge Profilo Attivo */}
+              {activeProfile && (
+                <Badge 
+                  variant="secondary" 
+                  className="ml-2 bg-green-500/20 text-green-400 border border-green-500/30"
+                >
+                  🎯 {activeProfile.profile_name}
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -804,7 +835,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
             
             <div className="flex gap-2">
               {/* Pulsante Performance Configurator */}
-              <Dialog open={isPerformanceDialogOpen} onOpenChange={setIsPerformanceDialogOpen}>
+              <Dialog open={isPerformanceDialogOpen} onOpenChange={handlePerformanceDialogChange}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2 border-primary text-primary">
                     <Sliders className="h-4 w-4" />

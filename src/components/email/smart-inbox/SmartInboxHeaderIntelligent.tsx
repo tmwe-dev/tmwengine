@@ -1,10 +1,7 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Sparkles, FileText } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
 import { BulkActionsBar } from './BulkActionsBar';
-import { EmailClassifierPromptEditor } from './EmailClassifierPromptEditor';
 import { AIAgentSelector } from './AIAgentSelector';
 import { ViewModeSelector, ViewMode } from './ViewModeSelector';
 
@@ -45,7 +42,6 @@ export const SmartInboxHeaderIntelligent = ({
   viewMode,
   onViewModeChange
 }: SmartInboxHeaderIntelligentProps) => {
-  const [promptViewerOpen, setPromptViewerOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string>('gemini');
   
   return (
@@ -54,44 +50,14 @@ export const SmartInboxHeaderIntelligent = ({
         {/* Header principale */}
         <div className="flex items-center justify-between gap-4 flex-wrap lg:flex-nowrap">
           <div className="flex items-center gap-3">
-            <h2 className="text-xl lg:text-2xl font-bold flex items-center gap-2 text-white/90">
-              <span className="text-2xl lg:text-4xl">🧠</span>
-              <span>Inbox Intelligente</span>
-            </h2>
-            
-            {/* Selettore Vista */}
-            <ViewModeSelector value={viewMode} onChange={onViewModeChange} />
-          </div>
-          
-          {/* Controlli destra con spaziatura */}
-          <div className="flex items-center gap-4">
-            {/* Selettore Agente AI */}
+            {/* Selettore Agente AI - sostituisce il titolo */}
             <AIAgentSelector 
               selectedAgent={selectedAgent}
               onAgentChange={setSelectedAgent}
             />
-
-            {/* Pulsante Vedi Prompt */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setPromptViewerOpen(true)}
-              className="gap-1 text-white/80 hover:text-white h-8 px-2"
-            >
-              <FileText className="h-4 w-4" />
-            </Button>
             
-            {/* Pulsante Classifica Nuove */}
-            <Button 
-              onClick={onClassifyNew}
-              variant="outline"
-              size="sm"
-              disabled={isClassifying}
-              className="border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 hover:scale-105 transition-all gap-1.5 h-8 px-3"
-            >
-              <Sparkles className="h-5 w-5" />
-              <span className="text-xs font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica'}</span>
-            </Button>
+            {/* Selettore Vista */}
+            <ViewModeSelector value={viewMode} onChange={onViewModeChange} />
           </div>
         </div>
       
@@ -123,12 +89,6 @@ export const SmartInboxHeaderIntelligent = ({
           onBulkClassify={onBulkClassify}
         />
       </div>
-
-      {/* Dialog Prompt Editor */}
-      <EmailClassifierPromptEditor 
-        open={promptViewerOpen}
-        onOpenChange={setPromptViewerOpen}
-      />
     </>
   );
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Lock, Unlock, Folder } from 'lucide-react';
+import { Lock, Unlock, Folder, Sparkles, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +24,9 @@ interface CollapsibleCategorySidebarProps {
   onFolderChange: (folder: string) => void;
   onUnreadOnlyChange: (unreadOnly: boolean) => void;
   availableFolders: string[];
+  onClassifyNew: () => void;
+  isClassifying: boolean;
+  onPromptViewerChange: (open: boolean) => void;
 }
 
 export function CollapsibleCategorySidebar({
@@ -37,7 +40,10 @@ export function CollapsibleCategorySidebar({
   unreadOnly,
   onFolderChange,
   onUnreadOnlyChange,
-  availableFolders
+  availableFolders,
+  onClassifyNew,
+  isClassifying,
+  onPromptViewerChange
 }: CollapsibleCategorySidebarProps) {
   const [isLocked, setIsLocked] = useState(false);
 
@@ -146,6 +152,35 @@ export function CollapsibleCategorySidebar({
           <div className="flex items-center justify-between">
             <label className="text-xs text-white/70">Solo non lette</label>
             <Switch checked={unreadOnly} onCheckedChange={onUnreadOnlyChange} />
+          </div>
+        </div>
+
+        {/* Sezione Azioni AI */}
+        <div className="p-4 border-b border-white/10 space-y-3">
+          <h4 className="text-xs font-semibold text-white/60 uppercase">Azioni AI</h4>
+          
+          <div className="flex items-center gap-2">
+            {/* Pulsante Classifica */}
+            <Button 
+              onClick={onClassifyNew}
+              variant="outline"
+              size="sm"
+              disabled={isClassifying}
+              className="flex-1 border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 hover:scale-105 transition-all gap-1.5 h-9"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="text-xs font-semibold">{isClassifying ? 'Classificazione...' : 'Classifica'}</span>
+            </Button>
+
+            {/* Pulsante Vedi Prompt */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onPromptViewerChange(true)}
+              className="gap-1 text-white/80 hover:text-white h-9 px-3"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 

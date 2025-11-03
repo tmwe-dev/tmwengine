@@ -10,6 +10,7 @@ import { AIActionsSidebar } from './AIActionsSidebar';
 import { AIPromptDialog } from './AIPromptDialog';
 import { AIManualCanvas } from './AIManualCanvas';
 import { AIActionConfirmation } from './AIActionConfirmation';
+import { EmailClassifierPromptEditor } from './EmailClassifierPromptEditor';
 import React from 'react';
 import { ClassifiedEmail, EmailMetadata } from '@/types/smart-inbox';
 import { useSmartClassificationIntelligent } from '@/hooks/useSmartClassificationIntelligent';
@@ -51,6 +52,7 @@ export const SmartInboxTabIntelligent = ({
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
   const [aiCanvasOpen, setAiCanvasOpen] = useState(false);
+  const [promptViewerOpen, setPromptViewerOpen] = useState(false);
   
   // Auto-switch to split if detail mode but no email selected
   useEffect(() => {
@@ -533,6 +535,9 @@ export const SmartInboxTabIntelligent = ({
           onFolderChange={onFolderChange}
           onUnreadOnlyChange={onUnreadOnlyChange}
           availableFolders={availableFolders}
+          onClassifyNew={handleClassifyNew}
+          isClassifying={isClassifying}
+          onPromptViewerChange={setPromptViewerOpen}
         />
 
         {/* Colonna 1: Lista Email - MAX 40% larghezza in split, 100% centrata in list */}
@@ -628,6 +633,12 @@ export const SmartInboxTabIntelligent = ({
           toast.success('Prompt AI creato!');
           setPromptDialogOpen(false);
         }}
+      />
+
+      {/* Dialog Prompt Editor */}
+      <EmailClassifierPromptEditor 
+        open={promptViewerOpen}
+        onOpenChange={setPromptViewerOpen}
       />
     </div>
   );

@@ -90,11 +90,14 @@ export const useEmailThread = (
         };
       }
 
-      // 4. Deduplica per id (può esserci lo stesso email più volte per mittente/destinatario match)
+      // 4. Deduplica robusta: mittente + timestamp + oggetto
       const emailMap = new Map();
       (threadEmails || []).forEach(email => {
-        if (!emailMap.has(email.id)) {
-          emailMap.set(email.id, email);
+        // Chiave univoca: mittente + timestamp + oggetto
+        const uniqueKey = `${email.from_email}_${email.data_ricezione}_${email.subject}`;
+        
+        if (!emailMap.has(uniqueKey)) {
+          emailMap.set(uniqueKey, email);
         }
       });
       const deduplicatedEmails = Array.from(emailMap.values());

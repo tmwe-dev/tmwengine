@@ -111,8 +111,8 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
           )}
 
           {/* Thread Email */}
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm">📧 Conversazione</h3>
+          <div>
+            <h3 className="font-semibold text-sm mb-6">📧 Conversazione</h3>
             {isLoading ? (
               <div className="text-center py-8">Caricamento thread...</div>
             ) : (

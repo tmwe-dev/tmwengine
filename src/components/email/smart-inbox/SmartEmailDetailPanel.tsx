@@ -134,7 +134,7 @@ export const SmartEmailDetailPanel = ({
 
       {/* Keywords + Categoria - Centrate in alto (solo in modalità detail) */}
       {viewMode === 'detail' && (
-        <div className="relative shrink-0 px-6 pb-2 flex justify-center">
+        <div className="relative shrink-0 px-6 pt-1.5 pb-2 flex justify-center">
           <div className="flex items-center gap-2 flex-wrap justify-center">
             {/* Keywords inline */}
             {filteredKeywords.length > 0 && (

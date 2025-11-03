@@ -127,7 +127,7 @@ export const SmartInboxTabIntelligent = ({
         .from('email_ai_classifications')
         .select(`
           *,
-          email_messages!fk_email_ai_classifications_email_messages(
+          email:email_messages!inner(
             id,
             subject,
             body_text,
@@ -168,7 +168,7 @@ export const SmartInboxTabIntelligent = ({
 
       // Map risultati con dati dal JOIN
       return (data || [])
-        .filter((c: any) => c.email_messages)
+        .filter((c: any) => c.email)
         .map((item: any) => ({
           classification: {
             id: item.id,
@@ -188,17 +188,17 @@ export const SmartInboxTabIntelligent = ({
             updated_at: item.updated_at
           },
           email: {
-            uid: item.email_messages.message_id || item.email_uid,
-            email_id: item.email_messages.id,
-            subject: item.email_messages.subject,
-            body_text: item.email_messages.body_text,
-            from: { email: item.email_messages.from_email },
-            to: item.email_messages.to_recipients || [],
-            date: item.email_messages.date,
-            has_attachments: item.email_messages.has_attachments || false,
-            folder_name: item.email_messages.cartella || item.folder_name || 'INBOX',
-            read: item.email_messages.stato !== 'nuovo',
-            body_preview: item.ai_summary || item.email_messages.body_text?.substring(0, 150)
+            uid: item.email.message_id || item.email_uid,
+            email_id: item.email.id,
+            subject: item.email.subject,
+            body_text: item.email.body_text,
+            from: { email: item.email.from_email },
+            to: item.email.to_recipients || [],
+            date: item.email.date,
+            has_attachments: item.email.has_attachments || false,
+            folder_name: item.email.cartella || item.folder_name || 'INBOX',
+            read: item.email.stato !== 'nuovo',
+            body_preview: item.ai_summary || item.email.body_text?.substring(0, 150)
           }
         })) as ClassifiedEmail[];
     },

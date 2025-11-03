@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,7 @@ import {
   type SyncPreferences 
 } from '@/lib/email-sync-preferences';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
-import { Folder, Lock, Unlock, CheckCircle2, XCircle } from 'lucide-react';
+import { Folder, CheckCircle2 } from 'lucide-react';
 
 interface FolderSyncPreferencesManagerProps {
   userEmail: string;
@@ -32,8 +32,6 @@ export function FolderSyncPreferencesManager({
   onPreferencesChanged 
 }: FolderSyncPreferencesManagerProps) {
   
-  const [syncMode, setSyncMode] = useState<'blacklist' | 'whitelist'>('blacklist');
-  const [excludedFolders, setExcludedFolders] = useState<string[]>([]);
   const [includedFolders, setIncludedFolders] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -66,16 +64,18 @@ export function FolderSyncPreferencesManager({
     try {
       const prefs = await getSyncPreferences(userEmail);
       
-      setExcludedFolders(prefs.excluded_folders);
-      setIncludedFolders(prefs.included_folders);
-      
-      // Determina modalità corrente
-      const mode = prefs.included_folders.length > 0 ? 'whitelist' : 'blacklist';
-      setSyncMode(mode);
+      if (prefs.included_folders.length > 0) {
+        // Utente ha già salvato preferenze
+        setIncludedFolders(prefs.included_folders);
+      } else {
+        // Prima volta: pre-seleziona tutte tranne Trash/Junk/Drafts
+        const recommended = availableFolders.filter(
+          name => !['Trash', 'Junk', 'Drafts'].includes(name)
+        );
+        setIncludedFolders(recommended);
+      }
 
       console.log('📥 [FolderPrefs] Loaded preferences:', {
-        mode,
-        excluded: prefs.excluded_folders,
         included: prefs.included_folders,
         availableFolders: availableFolders.length
       });
@@ -93,21 +93,18 @@ export function FolderSyncPreferencesManager({
   const handleSavePreferences = async () => {
     setIsSaving(true);
     try {
-      const prefsToSave = {
-        excluded_folders: syncMode === 'blacklist' ? excludedFolders : [],
-        included_folders: syncMode === 'whitelist' ? includedFolders : []
-      };
-
-      await saveSyncPreferences(userEmail, prefsToSave);
+      await saveSyncPreferences(userEmail, {
+        excluded_folders: [],
+        included_folders: includedFolders
+      });
 
       console.log('💾 [FolderPrefs] Saved preferences:', {
-        mode: syncMode,
-        ...prefsToSave
+        included: includedFolders
       });
 
       toast({
         title: '✅ Preferenze salvate',
-        description: `Modalità ${syncMode === 'blacklist' ? 'Blacklist' : 'Whitelist'} attivata`
+        description: `${includedFolders.length} cartelle selezionate per la sincronizzazione`
       });
 
       onPreferencesChanged?.();
@@ -124,38 +121,12 @@ export function FolderSyncPreferencesManager({
     }
   };
 
-  const toggleFolderInclusion = (folderName: string) => {
-    if (syncMode === 'blacklist') {
-      // Blacklist: toggle exclude
-      setExcludedFolders(prev =>
-        prev.includes(folderName)
-          ? prev.filter(f => f !== folderName)
-          : [...prev, folderName]
-      );
-    } else {
-      // Whitelist: toggle include
-      setIncludedFolders(prev =>
-        prev.includes(folderName)
-          ? prev.filter(f => f !== folderName)
-          : [...prev, folderName]
-      );
-    }
-  };
-
-  const isFolderActive = (folderName: string): boolean => {
-    if (syncMode === 'blacklist') {
-      return !excludedFolders.includes(folderName);
-    } else {
-      return includedFolders.includes(folderName);
-    }
-  };
-
-  const getActiveCount = (): number => {
-    if (syncMode === 'blacklist') {
-      return availableFolders.length - excludedFolders.length;
-    } else {
-      return includedFolders.length;
-    }
+  const toggleFolder = (folderName: string) => {
+    setIncludedFolders(prev =>
+      prev.includes(folderName)
+        ? prev.filter(f => f !== folderName)
+        : [...prev, folderName]
+    );
   };
 
   if (isLoadingFolders) {
@@ -179,45 +150,12 @@ export function FolderSyncPreferencesManager({
       {/* Header */}
       <div className="space-y-2">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Lock className="h-5 w-5" />
-          Gestione Sincronizzazione Cartelle
+          <Folder className="h-5 w-5" />
+          Seleziona Cartelle da Sincronizzare
         </h3>
         <p className="text-sm text-muted-foreground">
-          Scegli quali cartelle sincronizzare automaticamente nel database locale.
-          Le preferenze si applicano al Quick Download e alla sincronizzazione automatica.
+          Spunta le cartelle che vuoi sincronizzare. Le cartelle non selezionate verranno ignorate.
         </p>
-      </div>
-
-      {/* Modalità Sync */}
-      <div className="space-y-3">
-        <Label className="text-base font-semibold">Modalità di Sincronizzazione</Label>
-        
-        <RadioGroup value={syncMode} onValueChange={(v) => setSyncMode(v as any)}>
-          <div className="flex items-start space-x-3 p-3 border rounded-md hover:bg-muted/50 transition-colors">
-            <RadioGroupItem value="blacklist" id="mode-blacklist" className="mt-1" />
-            <div className="flex-1">
-              <Label htmlFor="mode-blacklist" className="cursor-pointer">
-                <div className="font-medium">Blacklist (Escludi)</div>
-                <div className="text-sm text-muted-foreground">
-                  Sincronizza <strong>tutte</strong> le cartelle <strong>tranne</strong> quelle selezionate
-                </div>
-              </Label>
-            </div>
-            <Badge variant="outline">Consigliato</Badge>
-          </div>
-
-          <div className="flex items-start space-x-3 p-3 border rounded-md hover:bg-muted/50 transition-colors">
-            <RadioGroupItem value="whitelist" id="mode-whitelist" className="mt-1" />
-            <div className="flex-1">
-              <Label htmlFor="mode-whitelist" className="cursor-pointer">
-                <div className="font-medium">Whitelist (Includi)</div>
-                <div className="text-sm text-muted-foreground">
-                  Sincronizza <strong>solo</strong> le cartelle selezionate
-                </div>
-              </Label>
-            </div>
-          </div>
-        </RadioGroup>
       </div>
 
       {/* Lista Cartelle */}
@@ -225,14 +163,14 @@ export function FolderSyncPreferencesManager({
         <div className="flex items-center justify-between">
           <Label className="text-base font-semibold">Cartelle Disponibili</Label>
           <Badge variant="secondary">
-            {getActiveCount()} / {availableFolders.length} attive
+            {includedFolders.length} / {availableFolders.length} selezionate
           </Badge>
         </div>
 
         <ScrollArea className="h-[400px] max-h-[45vh] border rounded-md p-4">
           <div className="space-y-2">
             {availableFolders.map(folder => {
-              const isActive = isFolderActive(folder);
+              const isSelected = includedFolders.includes(folder);
               
               return (
                 <div 
@@ -247,17 +185,15 @@ export function FolderSyncPreferencesManager({
                     >
                       {folder}
                     </Label>
-                    {isActive ? (
+                    {isSelected && (
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
                   
                   <Switch
                     id={`folder-${folder}`}
-                    checked={isActive}
-                    onCheckedChange={() => toggleFolderInclusion(folder)}
+                    checked={isSelected}
+                    onCheckedChange={() => toggleFolder(folder)}
                   />
                 </div>
               );
@@ -266,23 +202,12 @@ export function FolderSyncPreferencesManager({
         </ScrollArea>
 
         <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-md">
-          {syncMode === 'blacklist' ? (
-            <div className="flex items-start gap-2">
-              <Unlock className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <span>
-                Le cartelle <strong>attive</strong> (con switch ON) saranno sincronizzate.
-                Le altre verranno ignorate.
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-start gap-2">
-              <Lock className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <span>
-                Verranno sincronizzate <strong>solo</strong> le cartelle attive (con switch ON).
-                Tutte le altre verranno ignorate.
-              </span>
-            </div>
-          )}
+          <div className="flex items-start gap-2">
+            <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <span>
+              ✓ {includedFolders.length} cartelle selezionate per la sincronizzazione
+            </span>
+          </div>
         </div>
       </div>
 

@@ -1,14 +1,12 @@
-import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ClassifiedEmail } from '@/types/smart-inbox';
-import { extractCompanyName, extractInitials, getCategoryColor, getCategoryIcon, formatDate } from '@/lib/smart-inbox-utils';
-import { Paperclip, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { emailSearchApi } from '@/lib/tmwe-email-search-api';
-import { toast } from 'sonner';
+import { extractCompanyName, extractInitials, getCategoryColor, getCategoryIcon } from '@/lib/smart-inbox-utils';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { useEmailThread } from '@/hooks/useEmailThread';
+import { EmailThreadView } from './EmailThreadView';
 
 interface SmartEmailDetailIntelligentProps {
   classifiedEmail: ClassifiedEmail | null;
@@ -17,12 +15,9 @@ interface SmartEmailDetailIntelligentProps {
 }
 
 export const SmartEmailDetailIntelligent = ({ classifiedEmail, open, onClose }: SmartEmailDetailIntelligentProps) => {
-  // ✅ NUOVO: Usa direttamente i dati dal DB (già disponibili nel prop)
-  const emailBody = classifiedEmail ? {
-    html: classifiedEmail.email.body_text,
-    text: classifiedEmail.email.body_text
-  } : null;
-  const isLoadingBody = false; // Nessun caricamento necessario
+  const { emails, currentEmailIndex, hasMore, loadMore, isLoading } = useEmailThread({
+    emailId: classifiedEmail?.email?.email_id
+  });
 
   if (!classifiedEmail) return null;
 
@@ -107,59 +102,21 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, open, onClose }: 
               </div>
             )}
 
-            <Separator />
-
-            {/* Oggetto email */}
+            {/* Thread Email */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm">Oggetto</h3>
-                <span className="text-xs text-muted-foreground">
-                  {formatDate(email.date)}
-                </span>
-              </div>
-              <p className="text-sm font-medium">{email.subject || 'Nessun oggetto'}</p>
-            </div>
-
-            {/* Corpo email */}
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                Contenuto
-                {isLoadingBody && <Loader2 className="h-4 w-4 animate-spin" />}
-              </h3>
-              
-              {isLoadingBody ? (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground mt-2">Caricamento...</p>
-                </div>
-              ) : emailBody?.html ? (
-                <div 
-                  className="prose prose-sm max-w-none bg-muted p-4 rounded-md"
-                  dangerouslySetInnerHTML={{ __html: emailBody.html }}
-                />
-              ) : emailBody?.text ? (
-                <pre className="text-sm whitespace-pre-wrap bg-muted p-4 rounded-md font-sans">
-                  {emailBody.text}
-                </pre>
+              <h3 className="font-semibold text-sm">📧 Conversazione</h3>
+              {isLoading ? (
+                <div className="text-center py-8">Caricamento thread...</div>
               ) : (
-                <p className="text-sm text-muted-foreground italic">
-                  Contenuto non disponibile
-                </p>
+                <EmailThreadView
+                  emails={emails}
+                  currentEmailIndex={currentEmailIndex}
+                  hasMore={hasMore}
+                  onLoadMore={loadMore}
+                  cleanMode={false}
+                />
               )}
             </div>
-
-            {/* Allegati */}
-            {email.has_attachments && (
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
-                  <Paperclip className="h-4 w-4" />
-                  Allegati
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Questa email contiene allegati
-                </p>
-              </div>
-            )}
           </div>
         </ScrollArea>
       </SheetContent>

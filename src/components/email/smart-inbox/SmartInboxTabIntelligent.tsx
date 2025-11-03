@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SmartInboxHeaderIntelligent } from './SmartInboxHeaderIntelligent';
 import { SmartEmailListIntelligent } from './SmartEmailListIntelligent';
-import { SmartEmailDetailPanel } from './SmartEmailDetailPanel';
 import { EmptyDetailPanel } from './EmptyDetailPanel';
 import { CollapsibleCategorySidebar } from './CollapsibleCategorySidebar';
 import { AIActionsSidebar } from './AIActionsSidebar';
@@ -24,6 +23,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { getCategoryIcon, getCategoryColor } from '@/lib/smart-inbox-utils';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { cn } from '@/lib/utils';
+import { SmartEmailDetailPanel } from './SmartEmailDetailPanel';
 
 interface SmartInboxTabIntelligentProps {
   onOpenAISidebar?: (senderEmail: string) => void;
@@ -50,6 +50,12 @@ export const SmartInboxTabIntelligent = ({
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [selectedAgent, setSelectedAgent] = useState<string>('gemini');
   
+  // Clean View Mode State
+  const [cleanViewMode, setCleanViewMode] = useState(() => {
+    const saved = localStorage.getItem('email-view-mode');
+    return saved === 'clean';
+  });
+  
   // AI Automation State
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
@@ -62,6 +68,11 @@ export const SmartInboxTabIntelligent = ({
       setViewMode('split');
     }
   }, [viewMode, selectedEmail]);
+
+  // Persistere preferenza vista pulita
+  useEffect(() => {
+    localStorage.setItem('email-view-mode', cleanViewMode ? 'clean' : 'intelligent');
+  }, [cleanViewMode]);
 
   // ✅ Navigazione tra email con swipe
   const navigateToNextEmail = () => {
@@ -552,6 +563,8 @@ export const SmartInboxTabIntelligent = ({
           onPromptViewerChange={setPromptViewerOpen}
           selectedAgent={selectedAgent}
           onAgentChange={setSelectedAgent}
+          cleanViewMode={cleanViewMode}
+          onCleanViewModeChange={setCleanViewMode}
         />
 
         {/* Colonna 1: Lista Email - MAX 40% larghezza in split, 100% centrata in list */}
@@ -605,6 +618,7 @@ export const SmartInboxTabIntelligent = ({
               totalEmails={classifiedEmails.length}
               onNavigateNext={navigateToNextEmail}
               onNavigatePrev={navigateToPreviousEmail}
+              cleanViewMode={cleanViewMode}
             />
           ) : (
             <EmptyDetailPanel />

@@ -14,6 +14,13 @@ export interface EmailClassification {
   is_verified: boolean; // Se classificazione verificata manualmente
   created_at: string;
   updated_at: string;
+  // 🆕 Campi Smart Inbox Enhancements
+  urgency?: 'critical' | 'high' | 'normal' | 'low' | null;
+  action_suggested?: string | null;
+  detected_patterns?: string[] | null;
+  reasoning?: string | null;
+  tags?: string[] | null;
+  custom_prompt?: string | null;
 }
 
 export interface ClassifiedEmail {

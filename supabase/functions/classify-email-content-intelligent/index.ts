@@ -120,7 +120,26 @@ serve(async (req) => {
       // Fallback al prompt hardcoded se non trovato nel DB
       const systemPrompt = promptData?.content || `Sei un assistente AI specializzato nella classificazione di email per trasporti internazionali.
 
-LINEE GUIDA CATEGORIE (usa queste o creane di nuove se necessario):
+ISTRUZIONI RIASSUNTO (PRIORITÀ ASSOLUTA):
+- Max 2 righe (60 parole)
+- PRIMA: Azione richiesta (se presente), es: "• Firma contratto urgente entro 48h"
+- POI: Contesto essenziale
+- Usa bullet points (•) per elencare azioni multiple
+- VAI SUBITO AL PUNTO
+
+ESEMPI RIASSUNTO:
+✅ CORRETTO: "• Firma contratto urgente richiesta entro 48h\n• Conferma riunione 15/11 ore 14:00"
+❌ ERRATO: "Il mittente Cargo1 ha inviato una mail dove richiede la firma di un contratto..."
+
+ANTI-SPAM RULES (CRITICO):
+- NON classificare come Spam se:
+  * Email contiene AWB, tracking, booking reference, numeri documento
+  * Richiede firma, conferma, azione specifica, meeting
+  * Mittente ha dominio aziendale valido (.com, .it, .net, .org, non @gmail/@hotmail)
+  * Contenuto professionale con dati di trasporto
+- Spam SOLO per: phishing, pubblicità non richiesta, contenuti irrilevanti senza valore lavorativo
+
+CATEGORIE (usa queste o creane di nuove):
 - Fatture → Invoices, ricevute, pagamenti
 - Bolle → DDT, bolle accompagnamento, packing list
 - Preventivi → Richieste preventivo, quotazioni, offerte
@@ -130,16 +149,16 @@ LINEE GUIDA CATEGORIE (usa queste o creane di nuove se necessario):
 - Booking → Richieste prenotazione
 - Customer Service → Assistenza clienti, reclami
 - Offerte Lavoro → Recruiting, job posting
-- Marketing → Newsletter, promozioni, advertising (unifica tutto)
-- Spam → Contenuti irrilevanti, phishing
+- Marketing → Newsletter, promozioni, advertising
+- Spam → Solo contenuti irrilevanti/pericolosi
 
 REGOLE:
-1. Usa macro-categorie (es: "Marketing" invece di sotto-categorie come "Marketing / Newsletter")
-2. Se nessuna categoria esistente è appropriata, crea un nuovo tag descrittivo e conciso
+1. Usa macro-categorie (es: "Marketing" invece di "Marketing / Newsletter")
+2. Se nessuna categoria esistente è appropriata, crea un nuovo tag descrittivo
 3. Mantieni i nomi in italiano
-4. Evita sotto-categorie eccessive (usa "/" solo se veramente necessario)
+4. Evita sotto-categorie eccessive
 
-Fornisci anche riassunto (max 100 parole) e 3-5 keywords.`;
+Fornisci anche 3-5 keywords prioritarie.`;
 
       if (promptError) {
         console.warn('⚠️ Error loading prompt from DB, using fallback:', promptError);
@@ -343,24 +362,6 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
       summary = classification.summary;
       keywords = classification.keywords;
 
-      // ✅ Estrai campi opzionali (FASE 1)
-      const alternative_categories = classification.alternative_categories || null;
-      const detected_patterns = classification.detected_patterns || null;
-      const urgency = classification.urgency || null;
-      const action_suggested = classification.action_suggested || null;
-      const reasoning = classification.reasoning || null;
-
-      // Log per analisi (non salvato in DB per ora)
-      if (detected_patterns || urgency || action_suggested || reasoning) {
-        console.log('🔍 AI Insights:', {
-          alternative_categories,
-          detected_patterns,
-          urgency,
-          action_suggested,
-          reasoning: reasoning?.substring(0, 100)
-        });
-      }
-
       console.log('📊 Classificazione AI:', { category, confidence, keywords });
     } else {
       // Usa categoria predefinita, ma genera comunque summary/keywords se disponibili
@@ -371,7 +372,40 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
     // Step 3: Estrai dominio mittente
     const senderDomain = from_email.split('@')[1]?.toLowerCase() || '';
 
-    // Step 4: Salva classificazione nel DB con email_id FK
+    // Step 4: Estrai campi AI estesi (se disponibili)
+    let urgency_value = null;
+    let action_suggested_value = null;
+    let detected_patterns_value = null;
+    let reasoning_value = null;
+    let tags_value: string[] = [];
+
+    // Se abbiamo una classificazione AI (non predefinita), estraiamo i campi
+    if (!predefinedCategory && toolCall) {
+      const full_classification = JSON.parse(toolCall.function.arguments);
+      urgency_value = full_classification.urgency || null;
+      action_suggested_value = full_classification.action_suggested || null;
+      detected_patterns_value = full_classification.detected_patterns || null;
+      reasoning_value = full_classification.reasoning || null;
+
+      // 🆕 Genera tag intelligenti
+      if (action_suggested_value) tags_value.push('azione-richiesta');
+      if (urgency_value === 'critical' || urgency_value === 'high') tags_value.push('urgente');
+      if (action_suggested_value?.toLowerCase().includes('meeting') || 
+          action_suggested_value?.toLowerCase().includes('riunione')) tags_value.push('meeting');
+      if (action_suggested_value?.toLowerCase().includes('follow') || 
+          action_suggested_value?.toLowerCase().includes('risposta')) tags_value.push('follow-up');
+      if (action_suggested_value?.toLowerCase().includes('firma')) tags_value.push('firma-richiesta');
+
+      console.log('🔍 AI Insights saved:', {
+        urgency: urgency_value,
+        action_suggested: action_suggested_value,
+        detected_patterns: detected_patterns_value,
+        tags: tags_value,
+        reasoning: reasoning_value?.substring(0, 100)
+      });
+    }
+
+    // Step 5: Salva classificazione nel DB con email_id FK
     const { data: insertData, error: insertError } = await supabase
       .from('email_ai_classifications')
       .upsert({
@@ -388,6 +422,12 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
         keywords,
         is_verified: isVerified,
         sender_logo_url: null, // Sarà aggiornato in background
+        // 🆕 Campi estesi
+        urgency: urgency_value,
+        action_suggested: action_suggested_value,
+        detected_patterns: detected_patterns_value,
+        reasoning: reasoning_value,
+        tags: tags_value.length > 0 ? tags_value : null,
       }, {
         onConflict: 'email_id',  // ✅ Use email_id as unique key
         ignoreDuplicates: false

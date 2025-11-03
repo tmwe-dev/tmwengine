@@ -264,23 +264,10 @@ const FunEmail = () => {
       actions={null}
     >
       <div className="relative w-full min-h-screen">
-        {/* 3 Icone Verticali - solo in view inbox */}
+        {/* 2 Icone Verticali - solo in view inbox */}
         {currentView === 'inbox' && (
           <>
-            {/* Menu Icon - Top */}
-            <button
-              onClick={handleToggleMenu}
-              className={cn(
-                "fixed left-0 bottom-[18.5rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
-                "flex items-center justify-center transition-all duration-300 hover:bg-white/10",
-                sidebarOpen && "translate-x-[320px]",
-                !shouldShowLeftIcons && !sidebarOpen && "hidden"
-              )}
-            >
-              <Menu className="w-6 h-6 text-gray-400" strokeWidth={1} />
-            </button>
-
-            {/* Inbox/Categories Icon - Middle (20px gap) */}
+            {/* Inbox/Categories Icon - Top */}
             <button
               onClick={handleToggleCategories}
               className={cn(
@@ -406,30 +393,6 @@ const FunEmail = () => {
           ) : null}
         </div>
 
-        {/* Menu Sidebar Overlay - solo in inbox */}
-        {currentView === 'inbox' && sidebarOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
-              onClick={handleToggleMenu}
-            />
-            
-            {/* Sidebar */}
-            <div className="fixed top-0 left-0 h-full w-80 bg-background border-r z-50 shadow-2xl overflow-y-auto">
-              <EmailSidebar
-                selectedFolder={selectedFolder}
-                onFolderSelect={(folder) => {
-                  setSelectedFolder(folder);
-                  setSidebarOpen(false);
-                }}
-                onCompose={() => {}}
-                onSync={() => {}}
-                onClose={handleToggleMenu}
-              />
-            </div>
-          </>
-        )}
       </div>
 
       {/* Dettaglio Email (Overlay) */}

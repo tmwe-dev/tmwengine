@@ -185,15 +185,23 @@ export const SmartEmailDetailPanel = ({
             <div className="flex-1">
               {sanitizedHtml ? (
                 <div 
-                  className="prose prose-sm prose-invert max-w-none text-white/95"
+                  className="prose prose-sm prose-invert max-w-none p-4 text-white overflow-x-auto"
                   dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+                  style={{
+                    color: 'rgba(255, 255, 255, 0.95) !important',
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    background: 'transparent'
+                  }}
                 />
               ) : emailBody?.text ? (
-                <pre className="text-sm whitespace-pre-wrap font-sans text-white/85">
+                <pre className="text-sm whitespace-pre-wrap bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 font-sans text-white/85">
                   {emailBody.text}
                 </pre>
               ) : (
-                <p className="text-sm text-white/70 italic">Contenuto non disponibile</p>
+                <p className="text-sm text-white/70 italic bg-white/5 p-4 rounded-xl border border-white/10">
+                  Contenuto non disponibile
+                </p>
               )}
             </div>
 

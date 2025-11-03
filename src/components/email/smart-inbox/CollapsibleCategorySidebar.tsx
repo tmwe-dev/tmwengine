@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
 import { CategoriesVerticalSidebar } from './CategoriesVerticalSidebar';
+import { AIAgentSelector } from './AIAgentSelector';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -27,6 +28,8 @@ interface CollapsibleCategorySidebarProps {
   onClassifyNew: () => void;
   isClassifying: boolean;
   onPromptViewerChange: (open: boolean) => void;
+  selectedAgent: string;
+  onAgentChange: (agent: string) => void;
 }
 
 export function CollapsibleCategorySidebar({
@@ -43,7 +46,9 @@ export function CollapsibleCategorySidebar({
   availableFolders,
   onClassifyNew,
   isClassifying,
-  onPromptViewerChange
+  onPromptViewerChange,
+  selectedAgent,
+  onAgentChange
 }: CollapsibleCategorySidebarProps) {
   const [isLocked, setIsLocked] = useState(false);
 
@@ -112,9 +117,14 @@ export function CollapsibleCategorySidebar({
           isOpen ? "translate-x-0 border-r border-white/10" : "-translate-x-full"
         )}
       >
-        {/* Header con lock button */}
+        {/* Header con AI Agent Selector centrato */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h3 className="text-sm font-semibold">Categorie</h3>
+          <div className="flex-1 flex justify-center">
+            <AIAgentSelector 
+              selectedAgent={selectedAgent}
+              onAgentChange={onAgentChange}
+            />
+          </div>
           <Button
             size="icon"
             variant="ghost"

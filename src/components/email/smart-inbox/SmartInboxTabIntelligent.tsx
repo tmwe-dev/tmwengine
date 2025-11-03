@@ -47,6 +47,7 @@ export const SmartInboxTabIntelligent = ({
   const [selectedEmail, setSelectedEmail] = useState<ClassifiedEmail | null>(null);
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('split');
+  const [selectedAgent, setSelectedAgent] = useState<string>('gemini');
   
   // AI Automation State
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
@@ -538,6 +539,8 @@ export const SmartInboxTabIntelligent = ({
           onClassifyNew={handleClassifyNew}
           isClassifying={isClassifying}
           onPromptViewerChange={setPromptViewerOpen}
+          selectedAgent={selectedAgent}
+          onAgentChange={setSelectedAgent}
         />
 
         {/* Colonna 1: Lista Email - MAX 40% larghezza in split, 100% centrata in list */}

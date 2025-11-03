@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
 import { BulkActionsBar } from './BulkActionsBar';
-import { AIAgentSelector } from './AIAgentSelector';
 import { ViewModeSelector, ViewMode } from './ViewModeSelector';
 
 interface SmartInboxHeaderIntelligentProps {
@@ -42,20 +40,12 @@ export const SmartInboxHeaderIntelligent = ({
   viewMode,
   onViewModeChange
 }: SmartInboxHeaderIntelligentProps) => {
-  const [selectedAgent, setSelectedAgent] = useState<string>('gemini');
-  
   return (
     <>
       <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 space-y-4 shrink-0">
         {/* Header principale */}
         <div className="flex items-center justify-between gap-4 flex-wrap lg:flex-nowrap">
           <div className="flex items-center gap-3">
-            {/* Selettore Agente AI - sostituisce il titolo */}
-            <AIAgentSelector 
-              selectedAgent={selectedAgent}
-              onAgentChange={setSelectedAgent}
-            />
-            
             {/* Selettore Vista */}
             <ViewModeSelector value={viewMode} onChange={onViewModeChange} />
           </div>

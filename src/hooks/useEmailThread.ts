@@ -90,8 +90,17 @@ export const useEmailThread = (
         };
       }
 
-      // 4. Ordina e trova l'indice dell'email corrente
-      const sortedEmails = sortEmailsByDate(threadEmails || []);
+      // 4. Deduplica per id (può esserci lo stesso email più volte per mittente/destinatario match)
+      const emailMap = new Map();
+      (threadEmails || []).forEach(email => {
+        if (!emailMap.has(email.id)) {
+          emailMap.set(email.id, email);
+        }
+      });
+      const deduplicatedEmails = Array.from(emailMap.values());
+
+      // 5. Ordina e trova l'indice dell'email corrente
+      const sortedEmails = sortEmailsByDate(deduplicatedEmails);
       const currentIndex = sortedEmails.findIndex(
         e => e.id === emailId
       );

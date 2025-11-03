@@ -644,6 +644,12 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         <DragOverlay 
           dropAnimation={null}
           adjustScale={false}
+          modifiers={[
+            (args) => ({
+              ...args.transform,
+              y: 0  // ✅ Blocca movimento verticale
+            })
+          ]}
         >
           {activeDragId ? (
             (() => {

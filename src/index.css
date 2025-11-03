@@ -508,6 +508,32 @@ Tutti i colori DEVONO essere HSL.
     max-width: 100%;
   }
 
+  /* === GESTIONE IMMAGINI EMAIL === */
+  /* Sfondo bianco solo per immagini standalone e inline */
+  .email-body-content > img,
+  .email-body-content p > img {
+    background-color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+  }
+
+  /* Immagini dentro tabelle: solo sfondo, niente padding (layout preservato) */
+  .email-body-content table img {
+    background-color: white;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Immagini rotte: nascondi */
+  .email-body-content img[alt]:not([src]),
+  .email-body-content img:broken {
+    display: none;
+  }
+
   h5 {
     @apply text-base font-medium;
     line-height: var(--line-height-normal);

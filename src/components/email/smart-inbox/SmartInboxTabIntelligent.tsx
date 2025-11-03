@@ -504,7 +504,7 @@ export const SmartInboxTabIntelligent = ({
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] w-[95%] max-w-[1600px] mx-auto gap-4 relative">
       {/* Selettore Vista Galleggiante - Centrato sopra l'header */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-12 z-50">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-8 z-50 mt-2">
         <ViewModeSelector value={viewMode} onChange={setViewMode} />
       </div>
 

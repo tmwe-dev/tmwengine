@@ -376,15 +376,7 @@ const FunEmail = () => {
             </div>
           ) : currentView === 'inbox' ? (
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
-              <SmartInboxTabIntelligent 
-                onOpenAISidebar={openAISidebarForSender}
-                categoriesOpen={categoriesOpen}
-                onCategoriesOpenChange={setCategoriesOpen}
-                selectedFolder={smartInboxFolder}
-                unreadOnly={smartInboxUnreadOnly}
-                onFolderChange={setSmartInboxFolder}
-                onUnreadOnlyChange={setSmartInboxUnreadOnly}
-              />
+              <SmartInboxTabIntelligent />
             </GradientBackground>
           ) : currentView === 'automations' ? (
             <GradientBackground variant="primary" intensity="medium" className="min-h-screen">

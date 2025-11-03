@@ -39,14 +39,7 @@ export const SmartInboxDialog = ({ open, onOpenChange }: SmartInboxDialogProps) 
             selectedFolder={selectedFolder}
             unreadOnly={unreadOnly}
           >
-            <SmartInboxTabIntelligent 
-              categoriesOpen={categoriesOpen}
-              onCategoriesOpenChange={setCategoriesOpen}
-              selectedFolder={selectedFolder}
-              unreadOnly={unreadOnly}
-              onFolderChange={setSelectedFolder}
-              onUnreadOnlyChange={setUnreadOnly}
-            />
+            <SmartInboxTabIntelligent />
           </SmartInboxSyncGuard>
         )}
       </DialogContent>

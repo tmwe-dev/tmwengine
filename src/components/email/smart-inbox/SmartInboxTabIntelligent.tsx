@@ -21,6 +21,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { getCategoryIcon, getCategoryColor } from '@/lib/smart-inbox-utils';
 import { ViewMode } from './ViewModeSelector';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
+import { cn } from '@/lib/utils';
 
 interface SmartInboxTabIntelligentProps {
   onOpenAISidebar?: (senderEmail: string) => void;
@@ -479,12 +480,15 @@ export const SmartInboxTabIntelligent = ({
           availableFolders={availableFolders}
         />
 
-        {/* Colonna 1: Lista Email - MAX 40% larghezza */}
+        {/* Colonna 1: Lista Email - MAX 40% larghezza in split, 100% centrata in list */}
         <div 
-          className="flex flex-col min-h-0 transition-all duration-300"
+          className={cn(
+            "flex flex-col min-h-0 transition-all duration-300",
+            viewMode === 'list' && "mx-auto w-full max-w-4xl"
+          )}
           style={{
-            width: viewMode === 'detail' ? '0%' : viewMode === 'list' ? '40%' : '40%',
-            maxWidth: '40%',
+            width: viewMode === 'detail' ? '0%' : viewMode === 'list' ? '100%' : '40%',
+            maxWidth: viewMode === 'list' ? undefined : '40%',
             opacity: viewMode === 'detail' ? 0 : 1,
             overflow: viewMode === 'detail' ? 'hidden' : 'visible',
             pointerEvents: viewMode === 'detail' ? 'none' : 'auto'
@@ -506,7 +510,8 @@ export const SmartInboxTabIntelligent = ({
             width: viewMode === 'list' ? '0%' : viewMode === 'detail' ? '100%' : 'calc(60% - 1rem)',
             opacity: viewMode === 'list' ? 0 : 1,
             overflow: viewMode === 'list' ? 'hidden' : 'visible',
-            pointerEvents: viewMode === 'list' ? 'none' : 'auto'
+            pointerEvents: viewMode === 'list' ? 'none' : 'auto',
+            touchAction: 'pan-y'
           }}
         >
           {selectedEmail ? (

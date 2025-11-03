@@ -60,7 +60,7 @@ export const SmartEmailCardIntelligent = ({
         "bg-gradient-to-br from-[#1c1c28]/80 via-[#23233a]/60 to-[#0e0e18]/70",
         "backdrop-blur-md border border-white/10",
         "hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(0,200,255,0.1)]",
-        isSelected && "ring-2 ring-primary"
+        isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
       )}
     >
       {/* Diagonal light reflection */}
@@ -77,7 +77,7 @@ export const SmartEmailCardIntelligent = ({
         </div>
 
         {/* Avatar mittente con glassmorphism wrapper */}
-        <div className="flex-shrink-0" onClick={onClick}>
+        <div className="flex-shrink-0">
           <div className="rounded-full bg-white/10 border border-white/20 p-1">
             <Avatar className="h-12 w-12">
               {logoUrl ? (
@@ -91,7 +91,7 @@ export const SmartEmailCardIntelligent = ({
         </div>
 
         {/* Contenuto email */}
-        <div className="flex-1 min-w-0" onClick={onClick}>
+        <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">

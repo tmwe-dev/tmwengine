@@ -49,18 +49,6 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
         )}
       </div>
 
-      {/* Footer con toggle Vista Intelligente */}
-      <div className="shrink-0 p-4 border-t border-gray-200 bg-white">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={onToggleCleanView}
-          className="w-full text-black border-gray-300 hover:bg-gray-50"
-        >
-          <Eye className="h-4 w-4 mr-2" />
-          Vista Intelligente
-        </Button>
-      </div>
     </div>
   );
 };

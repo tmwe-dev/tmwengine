@@ -42,21 +42,23 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
     });
   };
 
-  // Handler per immagini che non caricano
+  // Handler per immagini che non caricano (broken images)
   React.useEffect(() => {
     const handleImageError = (e: Event) => {
       const img = e.target as HTMLImageElement;
       
       // Crea placeholder
       const placeholder = document.createElement('div');
-      placeholder.className = 'bg-gray-700/50 p-3 rounded text-center text-xs text-white/60 border border-white/10';
-      placeholder.innerHTML = '🖼️ Immagine non disponibile';
+      placeholder.className = 'bg-gray-700/50 p-3 rounded text-center text-xs text-white/60 border border-white/10 inline-block';
+      placeholder.textContent = '🖼️ Immagine non disponibile';
       
       // Sostituisci immagine con placeholder
-      img.parentNode?.replaceChild(placeholder, img);
+      if (img.parentNode) {
+        img.parentNode.replaceChild(placeholder, img);
+      }
     };
 
-    // Applica listener a tutte le immagini
+    // Applica listener a tutte le immagini nel body email
     const images = document.querySelectorAll('.email-body-content img');
     images.forEach(img => {
       img.addEventListener('error', handleImageError);
@@ -92,15 +94,8 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
         const isFirstEmail = index === 0;
 
         return (
-          <div key={email.id}>
-            {/* Separatore più evidente */}
-            {index > 0 && (
-              <div className="my-6">
-                <div className="h-0.5 bg-gradient-to-r from-transparent via-purple-400/40 to-transparent rounded-full" />
-              </div>
-            )}
-
-            {/* Badge inizio conversazione stilizzato */}
+          <React.Fragment key={email.id}>
+            {/* Badge inizio conversazione (FUORI dalla card) */}
             {isFirstEmail && (
               <div className="flex items-center gap-2 mb-3">
                 <Badge className={`
@@ -112,59 +107,74 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
                 `}>
                   🚀 Inizio Conversazione
                 </Badge>
-                <span className={`text-xs ${cleanMode ? 'text-gray-500' : 'text-white/60'}`}>
-                  {formatDateDetailed(email.data_ricezione)}
-                </span>
               </div>
             )}
 
-            {/* Card Email */}
+            {/* 🆕 CARD EMAIL INDIPENDENTE */}
             <div
               className={`
-                border-l-4 pl-6 py-5 rounded-lg relative
+                rounded-xl p-6 mb-6 transition-all
                 ${isCurrent 
                   ? cleanMode 
-                    ? 'border-blue-500 bg-blue-50 shadow-md' 
-                    : 'border-purple-500 bg-purple-500/15 shadow-xl'
+                    ? 'border-2 border-blue-500 bg-blue-50 shadow-lg' 
+                    : 'border-2 border-purple-500 bg-purple-500/15 shadow-xl backdrop-blur-sm'
                   : cleanMode
-                    ? 'border-gray-300 bg-white shadow-sm'
-                    : 'border-white/20 bg-white/5 shadow-md'
+                    ? 'border border-gray-300 bg-white shadow-md'
+                    : 'border border-white/20 bg-white/5 shadow-md backdrop-blur-sm'
                 }
-                ${cleanMode ? '' : 'backdrop-blur-sm'}
               `}
             >
-              {/* Header Strutturato */}
-              <div className="space-y-2 mb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-2">
-                    {/* Riga 1: Mittente + Badge Corrente */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`font-bold text-lg ${cleanMode ? 'text-black' : 'text-white'}`}>
-                        {email.from_email}
-                      </span>
-                      {isCurrent && (
-                        <Badge className="bg-blue-500 text-white text-xs">
-                          📧 Email Corrente
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Riga 2: Data Dettagliata */}
-                    <div className={`text-sm font-medium ${cleanMode ? 'text-gray-600' : 'text-white/80'}`}>
-                      📅 {formatDateDetailed(email.data_ricezione)}
-                    </div>
-
-                    {/* Riga 3: Destinatari con guard */}
-                    {email.to_email && (Array.isArray(email.to_email) ? email.to_email.length > 0 : email.to_email) && (
-                      <div className={`text-xs ${cleanMode ? 'text-gray-500' : 'text-white/60'}`}>
-                        A: {Array.isArray(email.to_email) 
-                          ? email.to_email.filter(Boolean).join(', ') 
-                          : email.to_email}
-                      </div>
+              {/* 🆕 HEADER FORMATTATO A DUE COLONNE */}
+              <div className="flex items-start justify-between mb-4 pb-4 border-b border-white/10">
+                {/* Colonna Sinistra: Mittente + Email */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className={`font-bold text-lg ${cleanMode ? 'text-black' : 'text-white'}`}>
+                      {email.from_email 
+                        ? (email.from_email.includes('@') 
+                            ? email.from_email.split('@')[0] 
+                            : email.from_email)
+                        : 'Mittente Sconosciuto'
+                      }
+                    </span>
+                    {isCurrent && (
+                      <Badge className="bg-blue-500 text-white text-xs shrink-0">
+                        📧 Corrente
+                      </Badge>
                     )}
                   </div>
+                  <div className={`text-sm truncate mb-1 ${cleanMode ? 'text-gray-600' : 'text-white/70'}`}>
+                    {email.from_email}
+                  </div>
+                  {/* Destinatari sotto (se presenti) */}
+                  {email.to_email && (Array.isArray(email.to_email) ? email.to_email.length > 0 : email.to_email) && (
+                    <div className={`text-xs truncate ${cleanMode ? 'text-gray-500' : 'text-white/50'}`}>
+                      A: {Array.isArray(email.to_email) 
+                        ? email.to_email.filter(Boolean).join(', ') 
+                        : email.to_email}
+                    </div>
+                  )}
+                </div>
 
-                  {/* Toggle collapse posizionato top-right */}
+                {/* Colonna Destra: Data + Ora + Toggle */}
+                <div className="flex items-start gap-2 shrink-0 ml-4">
+                  <div className="flex flex-col items-end gap-1">
+                    <div className={`text-sm font-semibold whitespace-nowrap ${cleanMode ? 'text-gray-700' : 'text-white/90'}`}>
+                      📅 {new Date(email.data_ricezione).toLocaleDateString('it-IT', { 
+                        day: 'numeric', 
+                        month: 'short', 
+                        year: 'numeric' 
+                      })}
+                    </div>
+                    <div className={`text-xs whitespace-nowrap ${cleanMode ? 'text-gray-500' : 'text-white/60'}`}>
+                      🕐 {new Date(email.data_ricezione).toLocaleTimeString('it-IT', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Toggle collapse (SE non è email corrente) */}
                   {!isCurrent && (
                     <Button 
                       variant="ghost" 
@@ -173,17 +183,18 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
                         e.stopPropagation();
                         toggleCollapse(index);
                       }}
-                      className="absolute top-4 right-4"
+                      className="shrink-0"
                     >
-                      {isCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                      {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                     </Button>
                   )}
                 </div>
               </div>
 
-              {/* Body (collapsible per vecchie email) */}
+              {/* Body Email (collapsible) */}
               {(!isCollapsed || isCurrent) && (
                 <div className="space-y-3">
+                  {/* Oggetto */}
                   <h3 className={`
                     font-semibold text-base break-words 
                     border-l-4 border-purple-400/50 pl-4 py-2 rounded
@@ -191,6 +202,8 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
                   `}>
                     {email.subject}
                   </h3>
+
+                  {/* Contenuto HTML */}
                   <div
                     className={`prose max-w-none email-body-content mt-4 ${cleanMode ? 'prose-slate email-body-light' : 'prose-invert'}`}
                     dangerouslySetInnerHTML={{
@@ -206,7 +219,12 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
                 </div>
               )}
             </div>
-          </div>
+
+            {/* Separatore DOPO la card (solo tra email consecutive) */}
+            {index < emails.length - 1 && (
+              <div className="h-px bg-gradient-to-r from-transparent via-purple-400/40 to-transparent my-6" />
+            )}
+          </React.Fragment>
         );
       })}
     </div>

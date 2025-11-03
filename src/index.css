@@ -534,6 +534,36 @@ Tutti i colori DEVONO essere HSL.
   display: none;
 }
 
+/* === SFONDO BIANCO PER IMMAGINI EMAIL (CRITICAL FIX) === */
+.email-body-content img {
+  background-color: white;
+  padding: 6px;
+  border-radius: 4px;
+  max-width: 100%;
+  height: auto;
+  display: inline-block;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.email-body-content img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Variante per clean mode */
+.email-body-light img {
+  background-color: white;
+  padding: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Immagini dentro tabelle (newsletter HTML complesse) */
+.email-body-content table img {
+  background-color: transparent;
+  padding: 0;
+}
+
 /* === GESTIONE COLORI TESTO EMAIL === */
 /* Forza colori chiari per tutto il testo nel body email */
 .email-body-content,

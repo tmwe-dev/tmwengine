@@ -128,18 +128,6 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
         </div>
       </ScrollArea>
 
-      {/* Footer con toggle Vista Pulita */}
-      <div className="shrink-0 p-4 border-t border-white/10">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={onToggleCleanView}
-          className="w-full"
-        >
-          <Sparkles className="h-4 w-4 mr-2" />
-          Vista Pulita
-        </Button>
-      </div>
     </div>
   );
 };

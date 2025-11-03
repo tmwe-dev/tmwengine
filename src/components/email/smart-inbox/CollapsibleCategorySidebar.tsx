@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Lock, Unlock, Folder, Sparkles, FileText, Eye } from 'lucide-react';
+import { Lock, Unlock, Folder, Sparkles, FileText, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,6 +30,8 @@ interface CollapsibleCategorySidebarProps {
   onPromptViewerChange: (open: boolean) => void;
   selectedAgent: string;
   onAgentChange: (agent: string) => void;
+  cleanViewMode?: boolean;
+  onToggleCleanView?: () => void;
 }
 
 export function CollapsibleCategorySidebar({
@@ -48,7 +50,9 @@ export function CollapsibleCategorySidebar({
   isClassifying,
   onPromptViewerChange,
   selectedAgent,
-  onAgentChange
+  onAgentChange,
+  cleanViewMode = false,
+  onToggleCleanView
 }: CollapsibleCategorySidebarProps) {
   const [isLocked, setIsLocked] = useState(false);
 
@@ -183,6 +187,19 @@ export function CollapsibleCategorySidebar({
               >
                 <FileText className="h-4 w-4" />
               </Button>
+
+              {/* 🆕 Toggle Vista Pulita */}
+              {onToggleCleanView && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onToggleCleanView}
+                  className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10"
+                  title={cleanViewMode ? "Vista Intelligente" : "Vista Pulita"}
+                >
+                  {cleanViewMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              )}
             </div>
           </div>
         </div>

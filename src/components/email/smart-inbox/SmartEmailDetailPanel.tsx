@@ -6,15 +6,17 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { ClassifiedEmail } from '@/types/smart-inbox';
-import { extractCompanyName, extractInitials, formatDate } from '@/lib/smart-inbox-utils';
+import { extractCompanyName, extractInitials, formatDate, getCategoryIcon } from '@/lib/smart-inbox-utils';
 import { getCategoryGradient, getCategoryGlow } from '@/lib/category-gradients';
 import { Paperclip, CheckCircle2, AlertCircle, Loader2, X, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { toast } from 'sonner';
+import { ViewMode } from './ViewModeSelector';
 
 interface SmartEmailDetailPanelProps {
   classifiedEmail: ClassifiedEmail;
   onClose: () => void;
+  viewMode?: ViewMode;
   currentIndex?: number;
   totalEmails?: number;
   onNavigateNext?: () => void;
@@ -24,6 +26,7 @@ interface SmartEmailDetailPanelProps {
 export const SmartEmailDetailPanel = ({ 
   classifiedEmail, 
   onClose,
+  viewMode = 'split',
   currentIndex,
   totalEmails,
   onNavigateNext,
@@ -54,6 +57,13 @@ export const SmartEmailDetailPanel = ({
   const companyName = extractCompanyName(classification.sender_email);
   const initials = extractInitials(classification.sender_email);
   const isVerified = classification.is_verified && classification.confidence >= 80;
+  
+  // Filtra keywords ridondanti
+  const filteredKeywords = classification.keywords?.filter(kw => {
+    const lower = kw.toLowerCase();
+    const categoryLower = classification.category.toLowerCase();
+    return kw.length > 2 && !categoryLower.includes(lower);
+  }).slice(0, 4) || [];
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-[#1c1c28]/80 via-[#23233a]/60 to-[#0e0e18]/70 backdrop-blur-md rounded-2xl border border-white/10 animate-fade-in">
@@ -124,128 +134,202 @@ export const SmartEmailDetailPanel = ({
 
       {/* Contenuto scrollabile */}
       <ScrollArea className="relative flex-1 px-6">
-        <div className="space-y-3 py-3">
-          {/* Stato classificazione */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge 
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-white border-0 ${categoryGradient} ${categoryGlow}`}
-            >
-              <span className="font-semibold">{classification.category}</span>
-            </Badge>
-            {isVerified ? (
-              <Badge className="bg-white/10 border border-white/20 text-white/80 rounded-full backdrop-blur-sm shadow-sm">
-                <CheckCircle2 className="h-3 w-3 mr-1 text-green-400" />
-                Verificata
-              </Badge>
-            ) : (
-              <Badge className="bg-white/10 border border-white/20 text-white/80 rounded-full backdrop-blur-sm shadow-sm">
-                <AlertCircle className="h-3 w-3 mr-1 text-orange-400" />
-                Da Verificare ({Math.round(classification.confidence)}%)
-              </Badge>
-            )}
-          </div>
-
-          {/* Riassunto AI */}
-          {classification.ai_summary && (
-            <details className="space-y-2" open>
-              <summary className="font-semibold text-sm flex items-center gap-2 cursor-pointer text-white/90 hover:text-white transition-colors">
-                <ChevronDown className="h-4 w-4 transition-transform" />
-                <span className="text-lg">📝</span>
-                Riassunto AI
-              </summary>
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-3 rounded-xl mt-2">
-                <p className="text-sm text-white/85">{classification.ai_summary}</p>
-              </div>
-            </details>
-          )}
-
-          {/* Keywords */}
-          {classification.keywords && classification.keywords.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm flex items-center gap-2 text-white/90">
-                <span className="text-lg">🏷️</span>
-                Keywords
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {classification.keywords.map((keyword, idx) => (
-                  <Badge 
-                    key={idx} 
-                    className="bg-white/10 border border-white/15 text-white/90 rounded-full px-2 py-0.5"
-                  >
-                    {keyword}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <Separator className="bg-white/10" />
-
-          {/* Oggetto email */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-white/90">Oggetto</h3>
-              <span className="text-xs text-white/60">
-                {formatDate(email.date)}
-              </span>
-            </div>
-            <p className="text-sm font-medium bg-white/5 p-3 rounded-lg border border-white/10 text-white/85">
-              {email.subject || 'Nessun oggetto'}
-            </p>
-          </div>
-
-          {/* Corpo email collapsible */}
-          <details className="space-y-2">
-            <summary className="font-semibold text-sm flex items-center gap-2 cursor-pointer text-white/90 hover:text-white transition-colors">
-              <ChevronRight className="h-4 w-4 transition-transform" />
-              <span className="text-lg">📧</span>
-              Messaggio Completo
-              {isLoadingBody && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-            </summary>
-            <div className="mt-2">
-              {isLoadingBody ? (
-                <div className="text-center py-8 bg-white/5 rounded-xl border border-white/10">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-white/60" />
-                  <p className="text-sm text-white/70 mt-2">Caricamento...</p>
+        {viewMode === 'detail' ? (
+          /* Layout ultra-compatto per modalità detail */
+          <div className="space-y-2 py-3">
+            {/* Header compatto: keywords + categoria inline */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Keywords inline */}
+              {filteredKeywords.length > 0 && (
+                <div className="flex gap-1.5 flex-wrap flex-1">
+                  {filteredKeywords.map((keyword, idx) => (
+                    <Badge 
+                      key={idx} 
+                      className="text-xs bg-white/10 border-white/15 px-2 py-0.5 text-white/80"
+                    >
+                      {keyword}
+                    </Badge>
+                  ))}
                 </div>
-              ) : sanitizedHtml ? (
-                <div 
-                  className="prose prose-sm prose-invert max-w-none p-4 text-white overflow-x-auto"
-                  dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-                  style={{
-                    color: 'rgba(255, 255, 255, 0.95) !important',
-                    fontSize: '14px',
-                    lineHeight: '1.6',
-                    background: 'transparent'
-                  }}
-                />
-              ) : emailBody?.text ? (
-                <pre className="text-sm whitespace-pre-wrap bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 font-sans text-white/85">
-                  {emailBody.text}
-                </pre>
-              ) : (
-                <p className="text-sm text-white/70 italic bg-white/5 p-4 rounded-xl border border-white/10">
-                  Contenuto non disponibile
+              )}
+              
+              {/* Categoria compatta con confidence solo se bassa */}
+              <Badge className={`text-xs ${categoryGradient} border-0 px-2 py-1 ml-auto`}>
+                <span className="mr-1">{getCategoryIcon(classification.category)}</span>
+                {classification.confidence < 80 && (
+                  <span className="text-[10px] font-bold">{Math.round(classification.confidence)}%</span>
+                )}
+              </Badge>
+            </div>
+
+            {/* Oggetto + AI Summary inline */}
+            <div className="space-y-1">
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-sm font-semibold text-white/90 flex-1">
+                  {email.subject || 'Nessun oggetto'}
+                </h2>
+                <span className="text-xs text-white/60 whitespace-nowrap">{formatDate(email.date)}</span>
+              </div>
+              
+              {/* AI Summary inline */}
+              {classification.ai_summary && (
+                <p className="text-xs text-white/70 leading-tight">
+                  {classification.ai_summary}
                 </p>
               )}
             </div>
-          </details>
 
-          {/* Allegati */}
-          {email.has_attachments && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm flex items-center gap-2 text-white/90">
-                <Paperclip className="h-4 w-4" />
-                Allegati
-              </h3>
-              <div className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
-                <p className="text-sm text-white/70">
-                  Questa email contiene allegati
-                </p>
-              </div>
+            <Separator className="bg-white/10 my-2" />
+
+            {/* Corpo email SEMPRE aperto */}
+            <div className="flex-1">
+              {sanitizedHtml ? (
+                <div 
+                  className="prose prose-sm prose-invert max-w-none text-white/95"
+                  dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+                />
+              ) : emailBody?.text ? (
+                <pre className="text-sm whitespace-pre-wrap font-sans text-white/85">
+                  {emailBody.text}
+                </pre>
+              ) : (
+                <p className="text-sm text-white/70 italic">Contenuto non disponibile</p>
+              )}
             </div>
-          )}
-        </div>
+
+            {/* Allegati compatti */}
+            {email.has_attachments && (
+              <div className="flex items-center gap-1 text-xs text-white/60 pt-2 border-t border-white/10">
+                <Paperclip className="h-3 w-3" />
+                <span>Allegati presenti</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Layout normale per altre modalità */
+          <div className="space-y-3 py-3">
+            {/* Stato classificazione */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge 
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-white border-0 ${categoryGradient} ${categoryGlow}`}
+              >
+                <span className="font-semibold">{classification.category}</span>
+              </Badge>
+              {isVerified ? (
+                <Badge className="bg-white/10 border border-white/20 text-white/80 rounded-full backdrop-blur-sm shadow-sm">
+                  <CheckCircle2 className="h-3 w-3 mr-1 text-green-400" />
+                  Verificata
+                </Badge>
+              ) : (
+                <Badge className="bg-white/10 border border-white/20 text-white/80 rounded-full backdrop-blur-sm shadow-sm">
+                  <AlertCircle className="h-3 w-3 mr-1 text-orange-400" />
+                  Da Verificare ({Math.round(classification.confidence)}%)
+                </Badge>
+              )}
+            </div>
+
+            {/* Riassunto AI */}
+            {classification.ai_summary && (
+              <details className="space-y-2" open>
+                <summary className="font-semibold text-sm flex items-center gap-2 cursor-pointer text-white/90 hover:text-white transition-colors">
+                  <ChevronDown className="h-4 w-4 transition-transform" />
+                  <span className="text-lg">📝</span>
+                  Riassunto AI
+                </summary>
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-3 rounded-xl mt-2">
+                  <p className="text-sm text-white/85">{classification.ai_summary}</p>
+                </div>
+              </details>
+            )}
+
+            {/* Keywords */}
+            {filteredKeywords.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-semibold text-sm flex items-center gap-2 text-white/90">
+                  <span className="text-lg">🏷️</span>
+                  Keywords
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {filteredKeywords.map((keyword, idx) => (
+                    <Badge 
+                      key={idx} 
+                      className="bg-white/10 border border-white/15 text-white/90 rounded-full px-2 py-0.5"
+                    >
+                      {keyword}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Separator className="bg-white/10" />
+
+            {/* Oggetto email */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm text-white/90">Oggetto</h3>
+                <span className="text-xs text-white/60">
+                  {formatDate(email.date)}
+                </span>
+              </div>
+              <p className="text-sm font-medium bg-white/5 p-3 rounded-lg border border-white/10 text-white/85">
+                {email.subject || 'Nessun oggetto'}
+              </p>
+            </div>
+
+            {/* Corpo email collapsible */}
+            <details className="space-y-2">
+              <summary className="font-semibold text-sm flex items-center gap-2 cursor-pointer text-white/90 hover:text-white transition-colors">
+                <ChevronRight className="h-4 w-4 transition-transform" />
+                <span className="text-lg">📧</span>
+                Messaggio Completo
+                {isLoadingBody && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              </summary>
+              <div className="mt-2">
+                {isLoadingBody ? (
+                  <div className="text-center py-8 bg-white/5 rounded-xl border border-white/10">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-white/60" />
+                    <p className="text-sm text-white/70 mt-2">Caricamento...</p>
+                  </div>
+                ) : sanitizedHtml ? (
+                  <div 
+                    className="prose prose-sm prose-invert max-w-none p-4 text-white overflow-x-auto"
+                    dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+                    style={{
+                      color: 'rgba(255, 255, 255, 0.95) !important',
+                      fontSize: '14px',
+                      lineHeight: '1.6',
+                      background: 'transparent'
+                    }}
+                  />
+                ) : emailBody?.text ? (
+                  <pre className="text-sm whitespace-pre-wrap bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 font-sans text-white/85">
+                    {emailBody.text}
+                  </pre>
+                ) : (
+                  <p className="text-sm text-white/70 italic bg-white/5 p-4 rounded-xl border border-white/10">
+                    Contenuto non disponibile
+                  </p>
+                )}
+              </div>
+            </details>
+
+            {/* Allegati */}
+            {email.has_attachments && (
+              <div className="space-y-2">
+                <h3 className="font-semibold text-sm flex items-center gap-2 text-white/90">
+                  <Paperclip className="h-4 w-4" />
+                  Allegati
+                </h3>
+                <div className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
+                  <p className="text-sm text-white/70">
+                    Questa email contiene allegati
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </ScrollArea>
 
       {/* CSS ottimizzato per email HTML */}

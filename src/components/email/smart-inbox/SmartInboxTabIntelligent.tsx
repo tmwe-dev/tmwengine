@@ -560,7 +560,10 @@ export const SmartInboxTabIntelligent = ({
         
         {/* Colonna 2: Dettaglio Email - CSS dinamico basato su viewMode */}
         <div 
-          className="flex flex-col min-h-0 transition-all duration-300"
+          className={cn(
+            "flex flex-col min-h-0 transition-all duration-300",
+            viewMode === 'detail' && "mx-auto w-full max-w-4xl"
+          )}
           style={{
             width: viewMode === 'list' ? '0%' : viewMode === 'detail' ? '100%' : 'calc(60% - 1rem)',
             opacity: viewMode === 'list' ? 0 : 1,
@@ -576,6 +579,7 @@ export const SmartInboxTabIntelligent = ({
                 setSelectedEmail(null);
                 setSelectedSender(null);
               }}
+              viewMode={viewMode}
               currentIndex={classifiedEmails.findIndex(
                 e => e.classification.id === selectedEmail.classification.id
               )}

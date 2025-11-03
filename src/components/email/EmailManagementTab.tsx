@@ -128,19 +128,19 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
 
   // Navigazione manuale carousel (clone Radio Chat)
   const handlePrevCategory = () => {
-    if (groups.length === 0) return;
+    if (naturalOrderGroups.length === 0) return;
     
-    const currentIndex = groups.findIndex(g => g.id === activeCategoryId);
-    const newIndex = (currentIndex - 1 + groups.length) % groups.length;
-    setActiveCategoryId(groups[newIndex].id);
+    const currentIndex = naturalOrderGroups.findIndex(g => g.id === activeCategoryId);
+    const newIndex = (currentIndex - 1 + naturalOrderGroups.length) % naturalOrderGroups.length;
+    setActiveCategoryId(naturalOrderGroups[newIndex].id);
   };
 
   const handleNextCategory = () => {
-    if (groups.length === 0) return;
+    if (naturalOrderGroups.length === 0) return;
     
-    const currentIndex = groups.findIndex(g => g.id === activeCategoryId);
-    const newIndex = (currentIndex + 1) % groups.length;
-    setActiveCategoryId(groups[newIndex].id);
+    const currentIndex = naturalOrderGroups.findIndex(g => g.id === activeCategoryId);
+    const newIndex = (currentIndex + 1) % naturalOrderGroups.length;
+    setActiveCategoryId(naturalOrderGroups[newIndex].id);
   };
 
   useEffect(() => {

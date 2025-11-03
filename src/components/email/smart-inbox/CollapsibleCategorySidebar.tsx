@@ -179,26 +179,29 @@ export function CollapsibleCategorySidebar({
 
         {/* FASE 2: Folder Statistics */}
         {folderStats && (
-          <div className="px-4 pt-3 pb-2 border-b border-white/10">
+          <div className="px-4 py-2 border-b border-white/10">
             <Card className="bg-white/5 border-white/10">
-              <CardContent className="pt-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Email nel DB:</span>
-                  <span className="font-semibold">{folderStats.totalInDB}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Classificate:</span>
-                  <span className="font-semibold text-green-400">
-                    {folderStats.totalClassified}
-                  </span>
-                </div>
-                <div className="pt-2 border-t border-white/10">
-                  <div className="flex justify-between text-sm mb-1.5">
-                    <span className="text-muted-foreground">Progresso:</span>
+              <CardContent className="p-3 space-y-1.5">
+                {/* Numeri con icone su una riga */}
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span>📧</span>
+                    <span className="font-semibold">{folderStats.totalInDB}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span>✅</span>
+                    <span className="font-semibold text-green-400">{folderStats.totalClassified}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
                     <span className="font-semibold">{folderStats.classificationPercentage}%</span>
                   </div>
-                  <Progress value={folderStats.classificationPercentage} className="h-2" />
                 </div>
+                {/* Barra progresso sottilissima lilla */}
+                <Progress 
+                  value={folderStats.classificationPercentage} 
+                  className="h-0.5 bg-white/10"
+                  style={{ '--progress-color': 'hsl(270, 70%, 65%)' } as React.CSSProperties}
+                />
               </CardContent>
             </Card>
           </div>

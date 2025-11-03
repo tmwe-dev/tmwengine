@@ -13,11 +13,12 @@ serve(async (req) => {
   }
 
   try {
-    // ✅ NUOVO: Accetta email_id (UUID) dal DB locale
+    // ✅ NUOVO: Accetta email_id (UUID) dal DB locale + additional_instructions
     const { 
       email_id,
       user_email,
-      force_category = null
+      force_category = null,
+      additional_instructions = null
     } = await req.json();
 
     console.log('📧 Classificazione Intelligente Email:', { email_id, user_email, force_category });
@@ -65,6 +66,24 @@ serve(async (req) => {
       subject: subject.substring(0, 50),
       from_email
     });
+
+    // ✅ Leggi prompt custom per questo sender (se non passato esplicitamente)
+    let senderCustomPrompt = additional_instructions;
+
+    if (!senderCustomPrompt && from_email) {
+      const { data: promptData } = await supabase
+        .from('email_sender_ai_prompts')
+        .select('custom_prompt_additions')
+        .eq('sender_email', from_email)
+        .eq('is_active', true)
+        .single();
+      
+      senderCustomPrompt = promptData?.custom_prompt_additions || null;
+      
+      if (senderCustomPrompt) {
+        console.log('📝 Custom prompt trovato per mittente:', senderCustomPrompt.substring(0, 50));
+      }
+    }
 
     // Recupera configurazione AI attiva
     const { data: aiConfig, error: configError } = await supabase
@@ -118,7 +137,7 @@ serve(async (req) => {
         .maybeSingle();
 
       // Fallback al prompt hardcoded se non trovato nel DB
-      const systemPrompt = promptData?.content || `Sei un assistente AI specializzato nella classificazione di email per trasporti internazionali.
+      let systemPrompt = promptData?.content || `Sei un assistente AI specializzato nella classificazione di email per trasporti internazionali.
 
 ISTRUZIONI RIASSUNTO (PRIORITÀ ASSOLUTA):
 - Max 2 righe (60 parole)
@@ -159,6 +178,12 @@ REGOLE:
 4. Evita sotto-categorie eccessive
 
 Fornisci anche 3-5 keywords prioritarie.`;
+
+      // ✅ Aggiungi istruzioni custom per questo mittente (se presenti)
+      if (senderCustomPrompt) {
+        systemPrompt += `\n\n🎯 ISTRUZIONI SPECIFICHE PER QUESTO MITTENTE:\n${senderCustomPrompt}\n`;
+        console.log('✅ Prompt custom aggiunto al system prompt');
+      }
 
       if (promptError) {
         console.warn('⚠️ Error loading prompt from DB, using fallback:', promptError);

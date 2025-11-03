@@ -13,13 +13,13 @@ serve(async (req) => {
   }
 
   try {
-    const { email_id, user_email, custom_prompt } = await req.json();
+    const { email_id, user_email, sender_email } = await req.json();
 
-    console.log('🔄 Riprocessamento email con prompt custom:', { email_id, custom_prompt: custom_prompt?.substring(0, 50) });
+    console.log('🔄 Riprocessamento email con prompt custom:', { email_id, sender_email });
 
-    if (!email_id || !user_email || !custom_prompt) {
+    if (!email_id || !user_email || !sender_email) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: email_id, user_email, custom_prompt' }),
+        JSON.stringify({ error: 'Missing required fields: email_id, user_email, sender_email' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -28,31 +28,29 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Step 1: Salva custom_prompt in email_ai_classifications
-    const { error: updateError } = await supabase
-      .from('email_ai_classifications')
-      .update({ 
-        custom_prompt,
-        updated_at: new Date().toISOString()
-      })
-      .eq('email_id', email_id)
-      .eq('user_email', user_email);
+    // Step 1: Leggi custom_prompt_additions da email_sender_ai_prompts
+    const { data: promptData, error: promptError } = await supabase
+      .from('email_sender_ai_prompts')
+      .select('custom_prompt_additions, ai_prompt')
+      .eq('sender_email', sender_email)
+      .eq('is_active', true)
+      .single();
 
-    if (updateError) {
-      console.error('❌ Error updating custom_prompt:', updateError);
-      throw updateError;
+    if (promptError && promptError.code !== 'PGRST116') { // Ignora "no rows"
+      console.error('⚠️ Error loading custom prompt (non-fatal):', promptError);
     }
 
-    console.log('✅ Custom prompt salvato');
+    const customPrompt = promptData?.custom_prompt_additions || null;
+    console.log('📝 Custom prompt per mittente:', customPrompt ? `${customPrompt.substring(0, 50)}...` : 'Nessuno');
 
-    // Step 2: Richiama classify-email-content-intelligent
+    // Step 2: Richiama classify-email-content-intelligent con custom prompt
     const { data: classificationData, error: classifyError } = await supabase.functions.invoke(
       'classify-email-content-intelligent',
       {
         body: { 
           email_id, 
           user_email,
-          // Il custom_prompt sarà letto dalla tabella all'interno della funzione
+          additional_instructions: customPrompt
         }
       }
     );

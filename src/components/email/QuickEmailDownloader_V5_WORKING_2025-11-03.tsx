@@ -436,39 +436,23 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
           console.log(`📊 [QuickDownload] Duplicates check: ${emails.length} total, ${existingIds.size} existing, ${newEmails.length} new`);
 
           if (newEmails.length > 0) {
-            const records = newEmails.map(email => {
-              // Preparazione data ISO
-              let isoDate = new Date().toISOString();
-              if (email.date) {
-                try {
-                  isoDate = new Date(email.date).toISOString();
-                } catch (e) {
-                  console.error('Error parsing date:', email.date);
-                }
-              }
-
-              return {
-                message_id: `${folder}/${email.uid}`,
-                from_email: email.from?.address || email.from || email.from_email || '',
-                to_email: Array.isArray(email.to) 
-                  ? email.to.map((t: any) => t.address || t).join(',')
-                  : email.to || email.to_email || '',
-                cc_email: email.cc || email.cc_email || null,
-                bcc_email: email.bcc || email.bcc_email || null,
-                subject: email.subject || '',
-                body_text: email.body_text || email.text || email.body || '',
-                body_html: email.body_html || email.html || '',
-                data_ricezione: isoDate,
-                cartella: folder,
-                direzione: 'inbound',
-                stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
-                flags: email.flags || [],
-                attachments: email.attachments || [],
-                provider_id: '00000000-0000-0000-0000-000000000000',
-                user_email: userEmail,
-                sync_status: 'fun_email_backup',
-              };
-            });
+            const records = newEmails.map(email => ({
+              message_id: `${folder}/${email.uid}`,
+              user_email: userEmail,
+              provider_id: 'tmwe',
+              from_email: typeof email.from === 'object' ? email.from.email : email.from || '',
+              to_email: Array.isArray(email.to) 
+                ? email.to.map((t: any) => typeof t === 'object' ? t.email : t).join(', ')
+                : (typeof email.to === 'object' ? email.to.email : email.to || ''),
+              subject: email.subject || '(No Subject)',
+              body_text: email.body_type === 'plain' ? email.body : null,
+              body_html: email.body_type === 'html' ? email.body : null,
+              data_ricezione: email.date || new Date().toISOString(),
+              cartella: folder,
+              attachments: email.attachments || [],
+              direzione: 'inbound',
+              sync_status: 'fun_email_backup'
+            }));
 
             const { error: insertError } = await supabase
               .from('email_messages')

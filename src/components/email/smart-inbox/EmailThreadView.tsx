@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDate, formatDateDetailed } from '@/lib/smart-inbox-utils';
 import DOMPurify from 'dompurify';
@@ -111,9 +112,9 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
             )}
 
             {/* 🆕 CARD EMAIL INDIPENDENTE */}
-            <div
+            <Card
               className={`
-                rounded-xl p-6 mb-6 transition-all
+                mb-6 transition-all
                 ${isCurrent 
                   ? cleanMode 
                     ? 'border-2 border-blue-500 bg-blue-50 shadow-lg' 
@@ -124,8 +125,9 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
                 }
               `}
             >
-              {/* 🆕 HEADER FORMATTATO A DUE COLONNE */}
-              <div className="flex items-start justify-between mb-4 pb-4 border-b border-white/10">
+              <CardHeader className="pb-4">
+                {/* 🆕 HEADER FORMATTATO A DUE COLONNE */}
+                <div className="flex items-start justify-between border-b border-white/10 pb-4">
                 {/* Colonna Sinistra: Mittente + Email */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -190,10 +192,12 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
                   )}
                 </div>
               </div>
+              </CardHeader>
 
               {/* Body Email (collapsible) */}
               {(!isCollapsed || isCurrent) && (
-                <div className="space-y-3">
+                <CardContent>
+                  <div className="space-y-3">
                   {/* Oggetto */}
                   <h3 className={`
                     font-semibold text-base break-words 
@@ -216,9 +220,10 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
                       })
                     }}
                   />
-                </div>
+                  </div>
+                </CardContent>
               )}
-            </div>
+            </Card>
 
             {/* Separatore DOPO la card (solo tra email consecutive) */}
             {index < emails.length - 1 && (

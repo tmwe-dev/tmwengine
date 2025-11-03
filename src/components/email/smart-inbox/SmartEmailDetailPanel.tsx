@@ -250,11 +250,39 @@ export const SmartEmailDetailPanel = ({
 
       {/* CSS ottimizzato per email HTML */}
       <style>{`
-        /* Override forzato per testo dentro email */
+        /* Override forzato SOLO per elementi testuali - preserva grafica */
         .prose,
-        .prose * {
+        .prose p,
+        .prose span:not([role]):not([aria-label]),
+        .prose div:not(:has(img)):not([role]),
+        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6,
+        .prose strong, .prose em, .prose b, .prose i, .prose u,
+        .prose li, .prose blockquote,
+        .prose pre, .prose code {
           color: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        /* Background trasparente SOLO su elementi non grafici */
+        .prose p,
+        .prose div:not(:has(img)):not(:has(svg)),
+        .prose span:not(:has(img)) {
           background: transparent !important;
+        }
+
+        /* PROTEZIONE ESPLICITA: Immagini, loghi, icone */
+        .prose img,
+        .prose svg,
+        .prose a > img,
+        .prose a > svg,
+        .prose [role="img"],
+        .prose [aria-label*="logo"],
+        .prose [aria-label*="icon"],
+        .prose td > img,
+        .prose td > a > img {
+          color: initial !important;
+          background: initial !important;
+          filter: none !important;
+          opacity: 1 !important;
         }
 
         /* Immagini sempre visibili */
@@ -265,7 +293,6 @@ export const SmartEmailDetailPanel = ({
           margin: 8px 0;
           display: block;
           object-fit: contain;
-          background: transparent;
         }
 
         /* Nascondi immagini rotte */
@@ -295,6 +322,15 @@ export const SmartEmailDetailPanel = ({
         }
         .prose a:hover {
           color: #93c5fd !important;
+        }
+
+        /* PRESERVA stili inline per elementi con background/color forzati */
+        .prose [style*="background-image"],
+        .prose [style*="background-color"][style*="color:"],
+        .prose td[bgcolor],
+        .prose table[bgcolor] {
+          color: inherit !important;
+          background: inherit !important;
         }
 
         /* FIX: Testo nero su elementi con sfondo bianco per leggibilità */

@@ -117,9 +117,9 @@ export const SmartInboxTabIntelligent = ({
         .eq('user_email', userEmail)
         .not('email_id', 'is', null);  // ✅ Solo email sincronizzate
       
-      // ✅ Filtro opzionale per cartella (se selectedFolder non è "INBOX" generico)
-      if (selectedFolder && selectedFolder !== 'INBOX') {
-        query = query.eq('email_messages.cartella', selectedFolder);
+      // ✅ FASE 1: Filtro per cartella (applica sempre se specificato)
+      if (selectedFolder) {
+        query = query.eq('folder_name', selectedFolder);
       }
 
       if (unreadOnly) {

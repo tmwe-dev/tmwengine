@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Lock, Unlock, Folder } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
 import { CategoriesVerticalSidebar } from './CategoriesVerticalSidebar';
 import { cn } from '@/lib/utils';
@@ -36,6 +40,47 @@ export function CollapsibleCategorySidebar({
   availableFolders
 }: CollapsibleCategorySidebarProps) {
   const [isLocked, setIsLocked] = useState(false);
+
+  // FASE 2: Fetch user email
+  const { data: userEmail } = useQuery({
+    queryKey: ['user-email'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user?.email || '';
+    },
+  });
+
+  // FASE 2: Fetch folder statistics
+  const { data: folderStats } = useQuery({
+    queryKey: ['folder-stats', userEmail, selectedFolder],
+    queryFn: async () => {
+      if (!userEmail || !selectedFolder) return null;
+
+      // Count total emails in DB for folder
+      const { count: totalInDB } = await supabase
+        .from('email_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_email', userEmail)
+        .eq('cartella', selectedFolder);
+      
+      // Count classified emails
+      const { count: totalClassified } = await supabase
+        .from('email_ai_classifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_email', userEmail)
+        .eq('folder_name', selectedFolder);
+      
+      const total = totalInDB || 0;
+      const classified = totalClassified || 0;
+      
+      return {
+        totalInDB: total,
+        totalClassified: classified,
+        classificationPercentage: total > 0 ? Math.round((classified / total) * 100) : 0
+      };
+    },
+    enabled: !!userEmail && !!selectedFolder
+  });
 
   // Trova categoria selezionata per il badge
   const getSelectedInfo = () => {
@@ -103,6 +148,33 @@ export function CollapsibleCategorySidebar({
             <Switch checked={unreadOnly} onCheckedChange={onUnreadOnlyChange} />
           </div>
         </div>
+
+        {/* FASE 2: Folder Statistics */}
+        {folderStats && (
+          <div className="px-4 pt-3 pb-2 border-b border-white/10">
+            <Card className="bg-white/5 border-white/10">
+              <CardContent className="pt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Email nel DB:</span>
+                  <span className="font-semibold">{folderStats.totalInDB}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Classificate:</span>
+                  <span className="font-semibold text-green-400">
+                    {folderStats.totalClassified}
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-white/10">
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-muted-foreground">Progresso:</span>
+                    <span className="font-semibold">{folderStats.classificationPercentage}%</span>
+                  </div>
+                  <Progress value={folderStats.classificationPercentage} className="h-2" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Contenuto sidebar */}
         <div className="h-[calc(100%-18rem)] overflow-y-auto p-4">

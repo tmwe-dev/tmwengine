@@ -528,11 +528,55 @@ Tutti i colori DEVONO essere HSL.
     height: auto;
   }
 
-  /* Immagini rotte: nascondi */
-  .email-body-content img[alt]:not([src]),
-  .email-body-content img:broken {
-    display: none;
-  }
+/* Immagini rotte: nascondi */
+.email-body-content img[alt]:not([src]),
+.email-body-content img:broken {
+  display: none;
+}
+
+/* === GESTIONE COLORI TESTO EMAIL === */
+/* Forza colori chiari per tutto il testo nel body email */
+.email-body-content,
+.email-body-content * {
+  color: white !important;
+}
+
+/* Link con colore distinguibile */
+.email-body-content a {
+  color: #a78bfa !important; /* purple-400 */
+  text-decoration: underline;
+}
+
+.email-body-content a:hover {
+  color: #c4b5fd !important; /* purple-300 */
+}
+
+/* Testo in grassetto più visibile */
+.email-body-content strong,
+.email-body-content b {
+  color: white !important;
+  font-weight: 700;
+}
+
+/* Testo secondario (piccolo) più leggibile */
+.email-body-content small {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Clean Mode: testo scuro su sfondo chiaro */
+.email-body-light,
+.email-body-light * {
+  color: #1f2937 !important; /* gray-800 */
+}
+
+.email-body-light a {
+  color: #7c3aed !important; /* violet-600 */
+}
+
+.email-body-light strong,
+.email-body-light b {
+  color: #111827 !important; /* gray-900 */
+}
 
   h5 {
     @apply text-base font-medium;

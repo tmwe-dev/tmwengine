@@ -17,9 +17,9 @@ interface SmartEmailDetailPanelProps {
 }
 
 export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDetailPanelProps) => {
-  // ✅ NUOVO: Usa body_html se disponibile, altrimenti fallback a body_text
+  // ✅ NUOVO: Usa direttamente i dati dal DB (già disponibili nel prop)
   const emailBody = {
-    html: classifiedEmail.email.body_html || classifiedEmail.email.body_text,
+    html: classifiedEmail.email.body_text,
     text: classifiedEmail.email.body_text
   };
   const isLoadingBody = false; // Nessun caricamento necessario
@@ -42,14 +42,9 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
       <div className="relative shrink-0 px-6 py-3 border-b border-white/10 flex items-center gap-3">
         <div className="rounded-full bg-white/10 border border-white/20 p-1">
           <Avatar className="h-12 w-12">
-            {classification.sender_logo_url && (
-              <AvatarImage 
-                src={classification.sender_logo_url} 
-                alt={companyName}
-                className="object-contain"
-                loading="lazy"
-              />
-            )}
+            {classification.sender_logo_url ? (
+              <AvatarImage src={classification.sender_logo_url} alt={companyName} />
+            ) : null}
             <AvatarFallback className="text-sm font-semibold bg-transparent">
               {initials}
             </AvatarFallback>

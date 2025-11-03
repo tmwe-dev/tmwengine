@@ -137,13 +137,6 @@ export const SmartInboxTabIntelligent = ({
             data_ricezione,
             stato,
             attachments
-          ),
-          sender_group:email_sender_rules!sender_email(
-            group:email_sender_groups!inner(
-              nome_gruppo,
-              icon,
-              colore
-            )
           )
         `)
         .eq('user_email', userEmail)
@@ -166,17 +159,14 @@ export const SmartInboxTabIntelligent = ({
 
       if (error) throw error;
 
-      // Map risultati con trasformazione campi DB → UI + sender_group
+      // Map risultati con trasformazione campi DB → UI
       return (data || []).map(item => {
         const emailData = Array.isArray(item.email) ? item.email[0] : item.email;
-        const senderGroup = Array.isArray(item.sender_group) ? item.sender_group[0] : item.sender_group;
         
         return {
           classification: {
             id: item.id,
             email_message_id: item.email_id,
-            email_uid: item.email_uid || null,
-            folder_name: item.folder_name || 'INBOX',
             user_email: item.user_email,
             category: item.category,
             confidence: item.confidence,
@@ -185,15 +175,8 @@ export const SmartInboxTabIntelligent = ({
             sender_email: item.sender_email,
             sender_domain: item.sender_domain,
             sender_logo_url: item.sender_logo_url,
-            is_verified: item.is_verified || false,
             created_at: item.created_at,
-            updated_at: item.updated_at,
-            // ✅ Aggiungi sender_group per badge prominente
-            sender_group: senderGroup?.group ? {
-              name: senderGroup.group.nome_gruppo,
-              icon: senderGroup.group.icon,
-              color: senderGroup.group.colore
-            } : null
+            updated_at: item.updated_at
           },
           email: {
             ...emailData,

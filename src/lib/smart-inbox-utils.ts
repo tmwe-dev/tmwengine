@@ -58,17 +58,3 @@ export const formatDate = (dateString: string): string => {
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
   });
 };
-
-/**
- * 🆕 Rileva urgenza email da subject e body
- */
-export const detectUrgency = (email: { subject?: string; body_text?: string }): boolean => {
-  const urgentKeywords = [
-    'urgente', 'immediate', 'asap', 'scadenza', 'deadline',
-    'importante', 'critical', 'emergency', 'action required',
-    'entro', 'da confermare', 'conferma immediata', 'risposta immediata'
-  ];
-  
-  const text = `${email.subject || ''} ${email.body_text || ''}`.toLowerCase();
-  return urgentKeywords.some(kw => text.includes(kw));
-};

@@ -104,8 +104,11 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   
   const { toast } = useToast();
 
-  // Ordina gruppi alfabeticamente per nome
-  const sortedGroups = useMemo(() => {
+  // 🔄 Gruppi in ordine naturale (DB: created_at ASC) - per Carousel
+  const naturalOrderGroups = useMemo(() => [...groups], [groups]);
+
+  // 📝 Gruppi in ordine alfabetico - per Grid/Sidebar
+  const alphabeticGroups = useMemo(() => {
     return [...groups].sort((a, b) => 
       a.nome_gruppo.localeCompare(b.nome_gruppo, 'it', { sensitivity: 'base' })
     );
@@ -609,7 +612,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           carouselZoom={carouselZoom}
           onCarouselZoomChange={handleZoomChange}
           onCreateCategory={() => setShowCreateDialog(true)}
-          groups={sortedGroups}
+          groups={alphabeticGroups}
           activeCategoryId={activeCategoryId}
           onCategorySelect={setActiveCategoryId}
           sortOption={sortOption}
@@ -624,14 +627,14 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         {/* Area principale condizionale */}
         {viewMode === 'grid' ? (
           <EmailGridContainer
-            groups={sortedGroups}
+            groups={alphabeticGroups}
             onRefresh={loadData}
             lastUpdatedGroupId={lastUpdatedGroupId}
             onRegisterGroupCallback={registerGroupCallback}
           />
         ) : (
           <EmailCarouselContainer
-            categories={sortedGroups}
+            categories={naturalOrderGroups}
             assignedSenders={assignedSenders}
             activeCategoryId={activeCategoryId}
             zoom={carouselZoom}
@@ -679,7 +682,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onSubmit={handleCreateCategory}
-        existingNames={sortedGroups.map(g => g.nome_gruppo)}
+        existingNames={alphabeticGroups.map(g => g.nome_gruppo)}
       />
 
     </div>

@@ -6,6 +6,7 @@ import { CategoryStats } from '@/types/smart-inbox';
 import { BulkActionsBar } from './BulkActionsBar';
 import { EmailClassifierPromptEditor } from './EmailClassifierPromptEditor';
 import { AIAgentSelector } from './AIAgentSelector';
+import { ViewModeSelector, ViewMode } from './ViewModeSelector';
 
 interface SmartInboxHeaderIntelligentProps {
   categories: CategoryStats[];
@@ -24,6 +25,8 @@ interface SmartInboxHeaderIntelligentProps {
   onArchive: () => void;
   onDelete: () => void;
   onMove: (categoryId: string) => void;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 export const SmartInboxHeaderIntelligent = ({
@@ -38,7 +41,9 @@ export const SmartInboxHeaderIntelligent = ({
   onBulkClassify,
   onArchive,
   onDelete,
-  onMove
+  onMove,
+  viewMode,
+  onViewModeChange
 }: SmartInboxHeaderIntelligentProps) => {
   const [promptViewerOpen, setPromptViewerOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string>('gemini');
@@ -48,10 +53,15 @@ export const SmartInboxHeaderIntelligent = ({
       <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 space-y-4 shrink-0">
         {/* Header principale */}
         <div className="flex items-center justify-between gap-4 flex-wrap lg:flex-nowrap">
-          <h2 className="text-xl lg:text-2xl font-bold flex items-center gap-2 text-white/90">
-            <span className="text-2xl lg:text-4xl">🧠</span>
-            <span>Inbox Intelligente</span>
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl lg:text-2xl font-bold flex items-center gap-2 text-white/90">
+              <span className="text-2xl lg:text-4xl">🧠</span>
+              <span>Inbox Intelligente</span>
+            </h2>
+            
+            {/* Selettore Vista */}
+            <ViewModeSelector value={viewMode} onChange={onViewModeChange} />
+          </div>
           
           {/* Controlli destra con spaziatura */}
           <div className="flex items-center gap-4">

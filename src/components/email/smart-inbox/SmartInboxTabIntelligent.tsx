@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SmartInboxHeaderIntelligent } from './SmartInboxHeaderIntelligent';
@@ -19,6 +19,7 @@ import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { getCategoryIcon, getCategoryColor } from '@/lib/smart-inbox-utils';
+import { ViewMode } from './ViewModeSelector';
 
 interface SmartInboxTabIntelligentProps {
   onOpenAISidebar?: (senderEmail: string) => void;
@@ -42,11 +43,19 @@ export const SmartInboxTabIntelligent = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedEmail, setSelectedEmail] = useState<ClassifiedEmail | null>(null);
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<ViewMode>('split');
   
   // AI Automation State
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
   const [aiCanvasOpen, setAiCanvasOpen] = useState(false);
+  
+  // Auto-switch to split if detail mode but no email selected
+  useEffect(() => {
+    if (viewMode === 'detail' && !selectedEmail) {
+      setViewMode('split');
+    }
+  }, [viewMode, selectedEmail]);
   
   const { classifyEmails, isClassifying, progress } = useSmartClassificationIntelligent();
   const { createSimpleAction, applyAIPromptToSender } = useEmailAIAutomation();
@@ -406,6 +415,8 @@ export const SmartInboxTabIntelligent = ({
         onArchive={handleArchiveSelected}
         onDelete={handleDeleteSelected}
         onMove={handleMoveSelected}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
       
       {/* 🆕 Layout 2 Colonne: Lista Email | Dettaglio + Sidebar Collassabile */}
@@ -425,8 +436,16 @@ export const SmartInboxTabIntelligent = ({
           availableFolders={availableFolders}
         />
 
-        {/* Colonna 1: Lista Email (40% width - più spazio senza sidebar fissa) */}
-        <div className="w-[40%] flex flex-col min-h-0">
+        {/* Colonna 1: Lista Email - CSS dinamico basato su viewMode */}
+        <div 
+          className="flex flex-col min-h-0 transition-all duration-300"
+          style={{
+            width: viewMode === 'detail' ? '0%' : viewMode === 'list' ? '100%' : '40%',
+            opacity: viewMode === 'detail' ? 0 : 1,
+            overflow: viewMode === 'detail' ? 'hidden' : 'visible',
+            pointerEvents: viewMode === 'detail' ? 'none' : 'auto'
+          }}
+        >
           <SmartEmailListIntelligent
             emails={classifiedEmails}
             onEmailClick={handleEmailSelect}
@@ -436,8 +455,16 @@ export const SmartInboxTabIntelligent = ({
           />
         </div>
         
-        {/* Colonna 3: Dettaglio Email (flex-1, prende tutto lo spazio restante) */}
-        <div className="flex-1 flex flex-col min-h-0">
+        {/* Colonna 2: Dettaglio Email - CSS dinamico basato su viewMode */}
+        <div 
+          className="flex flex-col min-h-0 transition-all duration-300"
+          style={{
+            width: viewMode === 'list' ? '0%' : viewMode === 'detail' ? '100%' : 'calc(60% - 1rem)',
+            opacity: viewMode === 'list' ? 0 : 1,
+            overflow: viewMode === 'list' ? 'hidden' : 'visible',
+            pointerEvents: viewMode === 'list' ? 'none' : 'auto'
+          }}
+        >
           {selectedEmail ? (
             <SmartEmailDetailPanel
               classifiedEmail={selectedEmail}

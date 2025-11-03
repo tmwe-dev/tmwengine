@@ -165,15 +165,15 @@ export const SmartEmailDetailPanel = ({
             {/* Oggetto + AI Summary inline */}
             <div className="space-y-1">
               <div className="flex items-baseline gap-2">
-                <h2 className="text-sm font-semibold text-white/90 flex-1">
-                  {email.subject || 'Nessun oggetto'}
+                <h2 className="text-base font-semibold text-white/90 flex-1">
+                  {email.subject || "Nessun oggetto"}
                 </h2>
                 <span className="text-xs text-white/60 whitespace-nowrap">{formatDate(email.date)}</span>
               </div>
               
               {/* AI Summary inline */}
               {classification.ai_summary && (
-                <p className="text-xs text-white/70 leading-tight">
+                <p className="text-sm text-white/70 leading-tight">
                   {classification.ai_summary}
                 </p>
               )}

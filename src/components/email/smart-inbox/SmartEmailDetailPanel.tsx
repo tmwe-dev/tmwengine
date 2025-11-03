@@ -8,16 +8,27 @@ import { Button } from '@/components/ui/button';
 import { ClassifiedEmail } from '@/types/smart-inbox';
 import { extractCompanyName, extractInitials, formatDate } from '@/lib/smart-inbox-utils';
 import { getCategoryGradient, getCategoryGlow } from '@/lib/category-gradients';
-import { Paperclip, CheckCircle2, AlertCircle, Loader2, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { Paperclip, CheckCircle2, AlertCircle, Loader2, X, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { toast } from 'sonner';
 
 interface SmartEmailDetailPanelProps {
   classifiedEmail: ClassifiedEmail;
   onClose: () => void;
+  currentIndex?: number;
+  totalEmails?: number;
+  onNavigateNext?: () => void;
+  onNavigatePrev?: () => void;
 }
 
-export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDetailPanelProps) => {
+export const SmartEmailDetailPanel = ({ 
+  classifiedEmail, 
+  onClose,
+  currentIndex,
+  totalEmails,
+  onNavigateNext,
+  onNavigatePrev
+}: SmartEmailDetailPanelProps) => {
   // ✅ Usa body_html con fallback a body_text
   const emailBody = {
     html: classifiedEmail.email.body_html || classifiedEmail.email.body_text,
@@ -69,6 +80,38 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
             {classification.sender_email}
           </div>
         </div>
+        
+        {/* Indicatore posizione + navigazione */}
+        {currentIndex !== undefined && totalEmails !== undefined && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onNavigatePrev}
+              disabled={currentIndex === 0}
+              className="h-8 w-8 rounded-full hover:bg-white/10 disabled:opacity-30"
+              title="Email precedente (swipe 2 dita →)"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <Badge className="bg-white/10 border border-white/15 text-white/90 text-xs px-2 py-0.5">
+              {currentIndex + 1} / {totalEmails}
+            </Badge>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onNavigateNext}
+              disabled={currentIndex === totalEmails - 1}
+              className="h-8 w-8 rounded-full hover:bg-white/10 disabled:opacity-30"
+              title="Email successiva (swipe 2 dita ←)"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
         <Button
           variant="ghost"
           size="icon"

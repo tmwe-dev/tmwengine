@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { getCategoryIcon, getCategoryColor } from '@/lib/smart-inbox-utils';
 import { ViewMode } from './ViewModeSelector';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 
 interface SmartInboxTabIntelligentProps {
   onOpenAISidebar?: (senderEmail: string) => void;
@@ -56,6 +57,48 @@ export const SmartInboxTabIntelligent = ({
       setViewMode('split');
     }
   }, [viewMode, selectedEmail]);
+
+  // ✅ Navigazione tra email con swipe
+  const navigateToNextEmail = () => {
+    if (!selectedEmail) return;
+    
+    const currentIndex = classifiedEmails.findIndex(
+      e => e.classification.id === selectedEmail.classification.id
+    );
+    
+    if (currentIndex < classifiedEmails.length - 1) {
+      const nextEmail = classifiedEmails[currentIndex + 1];
+      setSelectedEmail(nextEmail);
+      setSelectedSender(nextEmail.classification.sender_email);
+      toast.success('📧 Email successiva', { duration: 1500 });
+    } else {
+      toast.info('📭 Ultima email raggiunta', { duration: 1500 });
+    }
+  };
+
+  const navigateToPreviousEmail = () => {
+    if (!selectedEmail) return;
+    
+    const currentIndex = classifiedEmails.findIndex(
+      e => e.classification.id === selectedEmail.classification.id
+    );
+    
+    if (currentIndex > 0) {
+      const prevEmail = classifiedEmails[currentIndex - 1];
+      setSelectedEmail(prevEmail);
+      setSelectedSender(prevEmail.classification.sender_email);
+      toast.success('📧 Email precedente', { duration: 1500 });
+    } else {
+      toast.info('📭 Prima email raggiunta', { duration: 1500 });
+    }
+  };
+
+  // Attiva swipe navigation quando una email è selezionata
+  useSwipeNavigation({
+    onSwipeLeft: navigateToNextEmail,
+    onSwipeRight: navigateToPreviousEmail,
+    enabled: !!selectedEmail && (viewMode === 'detail' || viewMode === 'split')
+  });
   
   const { classifyEmails, isClassifying, progress } = useSmartClassificationIntelligent();
   const { createSimpleAction, applyAIPromptToSender } = useEmailAIAutomation();
@@ -436,11 +479,12 @@ export const SmartInboxTabIntelligent = ({
           availableFolders={availableFolders}
         />
 
-        {/* Colonna 1: Lista Email - CSS dinamico basato su viewMode */}
+        {/* Colonna 1: Lista Email - MAX 40% larghezza */}
         <div 
           className="flex flex-col min-h-0 transition-all duration-300"
           style={{
-            width: viewMode === 'detail' ? '0%' : viewMode === 'list' ? '100%' : '40%',
+            width: viewMode === 'detail' ? '0%' : viewMode === 'list' ? '40%' : '40%',
+            maxWidth: '40%',
             opacity: viewMode === 'detail' ? 0 : 1,
             overflow: viewMode === 'detail' ? 'hidden' : 'visible',
             pointerEvents: viewMode === 'detail' ? 'none' : 'auto'
@@ -472,6 +516,12 @@ export const SmartInboxTabIntelligent = ({
                 setSelectedEmail(null);
                 setSelectedSender(null);
               }}
+              currentIndex={classifiedEmails.findIndex(
+                e => e.classification.id === selectedEmail.classification.id
+              )}
+              totalEmails={classifiedEmails.length}
+              onNavigateNext={navigateToNextEmail}
+              onNavigatePrev={navigateToPreviousEmail}
             />
           ) : (
             <EmptyDetailPanel />

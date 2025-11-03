@@ -130,77 +130,53 @@ export const SmartInboxTabIntelligent = ({
           email:email_messages!inner(
             id,
             subject,
+            from,
+            to,
             body_text,
-            from_email,
-            to_email,
+            body_html,
             data_ricezione,
-            attachments,
-            message_id,
-            cartella,
-            stato
+            read,
+            has_attachments
           )
         `)
         .eq('user_email', userEmail)
         .not('email_id', 'is', null);  // ✅ Solo email sincronizzate
       
-      // ✅ FASE 1: Filtro per cartella (applica sempre se specificato)
+      // Filtro cartella
       if (selectedFolder) {
         query = query.eq('folder_name', selectedFolder);
       }
 
-    if (unreadOnly) {
-      query = query.eq('email.stato', 'nuovo');
-    }
-
-      query = query.order('created_at', { ascending: false });
-
-      if (selectedCategory !== 'all' && selectedCategory !== 'da-verificare') {
+      // Filtro categoria PRIMA della query
+      if (selectedCategory !== 'all') {
         query = query.eq('category', selectedCategory);
       }
 
-      if (selectedCategory === 'da-verificare') {
-        query = query.or('is_verified.eq.false,confidence.lt.0.8');
-      }
+      // Ordine
+      query = query.order('created_at', { ascending: false });
 
       const { data, error } = await query;
 
       if (error) throw error;
 
-      // Map risultati con dati dal JOIN
-      return (data || [])
-        .filter((c: any) => c.email)
-        .map((item: any) => ({
-          classification: {
-            id: item.id,
-            email_message_id: item.email_id,
-            email_uid: item.email_uid,
-            folder_name: item.folder_name,
-            user_email: item.user_email,
-            category: item.category,
-            confidence: item.confidence,
-            ai_summary: item.ai_summary,
-            keywords: item.keywords,
-            sender_email: item.sender_email,
-            sender_domain: item.sender_domain,
-            sender_logo_url: item.sender_logo_url,
-            is_verified: item.is_verified,
-            created_at: item.created_at,
-            updated_at: item.updated_at
-          },
-          email: {
-            uid: item.email.message_id || item.email_uid,
-            email_id: item.email.id,
-            subject: item.email.subject,
-            body_text: item.email.body_text,
-            from: { email: item.email.from_email },
-            to: item.email.to_email ? [{ email: item.email.to_email }] : [],
-            date: item.email.data_ricezione,
-            has_attachments: !!item.email.attachments && Array.isArray(item.email.attachments) && item.email.attachments.length > 0,
-            folder_name: item.email.cartella || item.folder_name || 'INBOX',
-            read: item.email.stato !== 'nuovo',
-            body_preview: item.ai_summary || item.email.body_text?.substring(0, 150)
-          }
-        })) as ClassifiedEmail[];
+      // Map risultati dal backup - passa l'oggetto email direttamente
+      return (data || []).map(item => ({
+        classification: {
+          id: item.id,
+          email_message_id: item.email_id,
+          user_email: item.user_email,
+          category: item.category,
+          confidence: item.confidence,
+          ai_summary: item.ai_summary,
+          keywords: item.keywords,
+          sender_email: item.sender_email,
+          sender_domain: item.sender_domain,
+          sender_logo_url: item.sender_logo_url,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        },
+        email: Array.isArray(item.email) ? item.email[0] : item.email
+      })) as ClassifiedEmail[];
     },
     enabled: !!userEmail,
   });

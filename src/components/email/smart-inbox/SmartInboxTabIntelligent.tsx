@@ -176,68 +176,123 @@ export const SmartInboxTabIntelligent = ({
     queryFn: async () => {
       if (!userEmail) return [];
 
-      let query = supabase
+      // 1️⃣ Query classificazioni con filtri
+      let classificationsQuery = supabase
         .from('email_ai_classifications')
-        .select(`
-          *,
-          email:email_messages!fk_email_ai_classifications_email_messages(
-            id,
-            subject,
-            from_email,
-            to_email,
-            body_text,
-            body_html,
-            data_ricezione,
-            stato,
-            attachments
-          )
-        `)
+        .select('*')
         .eq('user_email', userEmail)
-        .not('email_id', 'is', null);  // ✅ Solo email sincronizzate
-      
+        .not('email_id', 'is', null);
+
       // Filtro cartella
       if (selectedFolder) {
-        query = query.eq('folder_name', selectedFolder);
+        classificationsQuery = classificationsQuery.eq('folder_name', selectedFolder);
       }
 
-      // Filtro categoria PRIMA della query
+      // Filtro categoria
       if (selectedCategory !== 'all') {
-        query = query.eq('category', selectedCategory);
+        classificationsQuery = classificationsQuery.eq('category', selectedCategory);
       }
 
       // Ordine
-      query = query.order('created_at', { ascending: false });
+      classificationsQuery = classificationsQuery.order('created_at', { ascending: false });
 
-      const { data, error } = await query;
+      const { data: classifications, error: classError } = await classificationsQuery;
 
-      if (error) throw error;
+      if (classError) throw classError;
+      if (!classifications || classifications.length === 0) return [];
 
-      // Map risultati con trasformazione campi DB → UI
-      return (data || []).map(item => {
-        const emailData = Array.isArray(item.email) ? item.email[0] : item.email;
+      // 2️⃣ Estrai email_id univoci
+      const emailIds = [...new Set(classifications.map(c => c.email_id).filter(Boolean))];
+
+      // 3️⃣ Query email_messages
+      const { data: emailMessages, error: emailError } = await supabase
+        .from('email_messages')
+        .select('id, subject, from_email, to_email, body_text, body_html, data_ricezione, stato, attachments')
+        .in('id', emailIds);
+
+      if (emailError) throw emailError;
+
+      // 4️⃣ Crea mappa per lookup O(1)
+      const emailMap = new Map(
+        (emailMessages || []).map(email => [email.id, email])
+      );
+
+      // 5️⃣ Merge classificazioni + email
+      return classifications.map(classification => {
+        const emailData = emailMap.get(classification.email_id);
         
+        // Fallback se email non trovata
+        if (!emailData) {
+          console.warn(`⚠️ Email ${classification.email_id} non trovata per classificazione ${classification.id}`);
+          return {
+            classification: {
+              id: classification.id,
+              email_message_id: classification.email_id,
+              email_uid: classification.email_uid,
+              folder_name: classification.folder_name,
+              user_email: classification.user_email,
+              category: classification.category,
+              confidence: classification.confidence,
+              ai_summary: classification.ai_summary,
+              keywords: classification.keywords,
+              sender_email: classification.sender_email,
+              sender_domain: classification.sender_domain,
+              sender_logo_url: classification.sender_logo_url,
+              is_verified: classification.is_verified || false,
+              created_at: classification.created_at,
+              updated_at: classification.updated_at
+            },
+            email: {
+              uid: classification.email_uid || classification.email_id,
+              email_id: classification.email_id,
+              subject: 'Email non disponibile',
+              from: { email: classification.sender_email || 'unknown' },
+              to: [],
+              body_text: '',
+              body_html: '',
+              read: false,
+              has_attachments: false,
+              date: classification.created_at,
+              folder_name: classification.folder_name || 'INBOX'
+            }
+          };
+        }
+        
+        // Merge con dati reali
         return {
           classification: {
-            id: item.id,
-            email_message_id: item.email_id,
-            user_email: item.user_email,
-            category: item.category,
-            confidence: item.confidence,
-            ai_summary: item.ai_summary,
-            keywords: item.keywords,
-            sender_email: item.sender_email,
-            sender_domain: item.sender_domain,
-            sender_logo_url: item.sender_logo_url,
-            created_at: item.created_at,
-            updated_at: item.updated_at
+            id: classification.id,
+            email_message_id: classification.email_id,
+            email_uid: classification.email_uid,
+            folder_name: classification.folder_name,
+            user_email: classification.user_email,
+            category: classification.category,
+            confidence: classification.confidence,
+            ai_summary: classification.ai_summary,
+            keywords: classification.keywords,
+            sender_email: classification.sender_email,
+            sender_domain: classification.sender_domain,
+            sender_logo_url: classification.sender_logo_url,
+            is_verified: classification.is_verified || false,
+            created_at: classification.created_at,
+            updated_at: classification.updated_at
           },
           email: {
-            ...emailData,
-            from: emailData.from_email ? { email: emailData.from_email } : emailData.from,
-            to: emailData.to_email ? [{ email: emailData.to_email }] : emailData.to,
-            read: emailData.stato ? emailData.stato !== 'nuovo' : emailData.read,
-            has_attachments: emailData.attachments ? (Array.isArray(emailData.attachments) && emailData.attachments.length > 0) : emailData.has_attachments,
-            date: emailData.data_ricezione || emailData.date
+            uid: classification.email_uid || emailData.id,
+            email_id: emailData.id,
+            subject: emailData.subject,
+            from: emailData.from_email 
+              ? { email: emailData.from_email } 
+              : { email: classification.sender_email || 'unknown' },
+            to: emailData.to_email 
+              ? [{ email: emailData.to_email }] 
+              : [],
+            body_text: emailData.body_text || '',
+            body_html: emailData.body_html || '',
+            read: emailData.stato !== 'nuovo',
+            has_attachments: Array.isArray(emailData.attachments) && emailData.attachments.length > 0,
+            date: emailData.data_ricezione || classification.created_at,
+            folder_name: classification.folder_name || 'INBOX'
           }
         };
       }) as ClassifiedEmail[];

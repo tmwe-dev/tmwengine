@@ -12,6 +12,7 @@ import { AIManualCanvas } from './AIManualCanvas';
 import { AIActionConfirmation } from './AIActionConfirmation';
 import { EmailClassifierPromptEditor } from './EmailClassifierPromptEditor';
 import { ViewModeSelector, ViewMode } from './ViewModeSelector';
+import { BulkActionsBarVertical } from './BulkActionsBarVertical';
 import React from 'react';
 import { ClassifiedEmail, EmailMetadata } from '@/types/smart-inbox';
 import { useSmartClassificationIntelligent } from '@/hooks/useSmartClassificationIntelligent';
@@ -508,23 +509,28 @@ export const SmartInboxTabIntelligent = ({
         <ViewModeSelector value={viewMode} onChange={setViewMode} />
       </div>
 
+      {/* Barra Azioni Verticale - Galleggiante a sinistra */}
+      <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50">
+        <BulkActionsBarVertical
+          selectedCount={selectedEmails.size}
+          categories={categoryStats}
+          onArchive={handleArchiveSelected}
+          onDelete={handleDeleteSelected}
+          onMove={handleMoveSelected}
+          onBulkClassify={handleBulkClassify}
+        />
+      </div>
+
       {/* Header compatto - solo Barra Azioni */}
-      <SmartInboxHeaderIntelligent
-        categories={categoryStats}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        onClassifyNew={handleClassifyNew}
-        isClassifying={isClassifying}
-        classificationProgress={progress}
-        unverifiedCount={unverifiedCount}
-        selectedCount={selectedEmails.size}
-        onBulkClassify={handleBulkClassify}
-        onArchive={handleArchiveSelected}
-        onDelete={handleDeleteSelected}
-        onMove={handleMoveSelected}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-      />
+        <SmartInboxHeaderIntelligent
+          categories={categoryStats}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          onClassifyNew={handleClassifyNew}
+          isClassifying={isClassifying}
+          classificationProgress={progress}
+          unverifiedCount={unverifiedCount}
+        />
       
       {/* 🆕 Layout 2 Colonne: Lista Email | Dettaglio + Sidebar Collassabile */}
       <div className="flex-1 flex gap-4 overflow-hidden">

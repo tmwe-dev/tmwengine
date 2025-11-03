@@ -1,7 +1,5 @@
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
-import { BulkActionsBar } from './BulkActionsBar';
-import { ViewModeSelector, ViewMode } from './ViewModeSelector';
 
 interface SmartInboxHeaderIntelligentProps {
   categories: CategoryStats[];
@@ -15,13 +13,6 @@ interface SmartInboxHeaderIntelligentProps {
     currentEmail: string;
   };
   unverifiedCount: number;
-  selectedCount: number;
-  onBulkClassify: (category: string) => void;
-  onArchive: () => void;
-  onDelete: () => void;
-  onMove: (categoryId: string) => void;
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
 }
 
 export const SmartInboxHeaderIntelligent = ({
@@ -31,19 +22,10 @@ export const SmartInboxHeaderIntelligent = ({
   onClassifyNew,
   isClassifying,
   classificationProgress,
-  unverifiedCount,
-  selectedCount,
-  onBulkClassify,
-  onArchive,
-  onDelete,
-  onMove,
-  viewMode,
-  onViewModeChange
+  unverifiedCount
 }: SmartInboxHeaderIntelligentProps) => {
   return (
     <>
-      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 space-y-4 shrink-0">
-      
       {/* Classification Progress Bar */}
       {isClassifying && classificationProgress && (
         <div className="space-y-2 p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
@@ -61,17 +43,6 @@ export const SmartInboxHeaderIntelligent = ({
           />
         </div>
       )}
-
-        {/* 🆕 Barra Azioni Unificata sotto i badge */}
-        <BulkActionsBar
-          selectedCount={selectedCount}
-          categories={categories}
-          onArchive={onArchive}
-          onDelete={onDelete}
-          onMove={onMove}
-          onBulkClassify={onBulkClassify}
-        />
-      </div>
     </>
   );
 };

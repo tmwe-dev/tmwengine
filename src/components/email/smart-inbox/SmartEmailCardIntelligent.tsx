@@ -4,9 +4,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ClassifiedEmail } from '@/types/smart-inbox';
 import { extractCompanyName, extractInitials, getCategoryIcon, formatDate } from '@/lib/smart-inbox-utils';
 import { getCategoryGradient, getCategoryGlow } from '@/lib/category-gradients';
-import { Paperclip, CheckCircle2, AlertCircle, Zap, ShoppingCart, FileText, Users, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Paperclip, Zap, ShoppingCart, FileText, Users, TrendingUp, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SenderGroupBadge } from './SenderGroupBadge';
+import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
 
 interface SmartEmailCardIntelligentProps {
   classifiedEmail: ClassifiedEmail;
@@ -47,7 +48,9 @@ export const SmartEmailCardIntelligent = ({
   const companyName = extractCompanyName(classification.sender_email);
   const initials = extractInitials(classification.sender_email);
 
-  const isVerified = classification.is_verified && classification.confidence >= 80;
+  // ✅ Hook per logo aziendale alta qualità
+  const { data: logoData } = useCompanyLogo(classification.sender_email);
+  const logoUrl = logoData?.logo_url || classification.sender_logo_url;
   
   return (
     <div 
@@ -77,8 +80,8 @@ export const SmartEmailCardIntelligent = ({
         <div className="flex-shrink-0" onClick={onClick}>
           <div className="rounded-full bg-white/10 border border-white/20 p-1">
             <Avatar className="h-12 w-12">
-              {classification.sender_logo_url ? (
-                <AvatarImage src={classification.sender_logo_url} alt={companyName} />
+              {logoUrl ? (
+                <AvatarImage src={logoUrl} alt={companyName} />
               ) : null}
               <AvatarFallback className="text-xs font-semibold">
                 {initials}
@@ -101,18 +104,6 @@ export const SmartEmailCardIntelligent = ({
                     groupIcon={(classification as any).sender_group.icon}
                     groupColor={(classification as any).sender_group.color}
                   />
-                )}
-                
-                {isVerified ? (
-                  <Badge className="text-xs bg-white/10 border border-white/20 text-white/80 rounded-full backdrop-blur-sm shadow-sm">
-                    <CheckCircle2 className="h-3 w-3 mr-1 text-green-400" />
-                    Verificata
-                  </Badge>
-                ) : (
-                  <Badge className="text-xs bg-white/10 border border-white/20 text-white/80 rounded-full backdrop-blur-sm shadow-sm">
-                    <AlertCircle className="h-3 w-3 mr-1 text-orange-400" />
-                    Da Verificare
-                  </Badge>
                 )}
               </div>
               <p className="text-xs text-white/70 truncate">
@@ -155,14 +146,21 @@ export const SmartEmailCardIntelligent = ({
             </p>
           )}
 
-          {/* Keywords con pill-style glassmorphism */}
+          {/* Keywords intelligenti (max 2, qualità alta) */}
           {classification.keywords && classification.keywords.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {classification.keywords.slice(0, 3).map((keyword, idx) => (
-                <Badge key={idx} className="text-xs bg-white/10 border border-white/15 text-white/90 rounded-full px-2 py-0.5">
-                  {keyword}
-                </Badge>
-              ))}
+              {classification.keywords
+                .filter(kw => 
+                  kw.length > 3 && 
+                  (/\d/.test(kw) || classification.confidence >= 85)
+                )
+                .slice(0, 2)
+                .map((keyword, idx) => (
+                  <Badge key={idx} className="text-xs bg-white/10 border border-white/15 text-white/90 rounded-full px-2 py-0.5">
+                    {keyword}
+                  </Badge>
+                ))
+              }
             </div>
           )}
         </div>

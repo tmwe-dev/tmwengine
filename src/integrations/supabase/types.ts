@@ -4522,6 +4522,68 @@ export type Database = {
         }
         Relationships: []
       }
+      performance_profiles: {
+        Row: {
+          avg_response_time_ms: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          optimization_flags: Json
+          profile_name: string
+          source_benchmark_id: string | null
+          source_test_name: string | null
+          success_rate: number | null
+          total_tests_run: number | null
+          updated_at: string | null
+          usage_count: number | null
+          user_id: string
+        }
+        Insert: {
+          avg_response_time_ms?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          optimization_flags?: Json
+          profile_name: string
+          source_benchmark_id?: string | null
+          source_test_name?: string | null
+          success_rate?: number | null
+          total_tests_run?: number | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_id: string
+        }
+        Update: {
+          avg_response_time_ms?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          optimization_flags?: Json
+          profile_name?: string
+          source_benchmark_id?: string | null
+          source_test_name?: string | null
+          success_rate?: number | null
+          total_tests_run?: number | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_profiles_source_benchmark_id_fkey"
+            columns: ["source_benchmark_id"]
+            isOneToOne: false
+            referencedRelation: "tmwe_api_benchmark_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_history: {
         Row: {
           created_at: string | null

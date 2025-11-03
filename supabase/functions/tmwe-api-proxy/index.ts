@@ -90,7 +90,18 @@ serve(async (req) => {
     }
     
     const { endpoint, data, optimizationFlags, requestTimeout } = requestBody;
-    const timeout = requestTimeout || 30000; // Default 30s
+    
+    // ⏱️ Timeout dinamico basato su handler
+    const getTimeoutForHandler = (handler: string): number => {
+      switch (handler) {
+        case 'get_messages': return 90000; // 90s per operazioni lente
+        case 'get_folders': return 60000; // 60s per cartelle
+        case 'full_sync': return 120000; // 2 min per sync completo
+        default: return 30000; // 30s default
+      }
+    };
+    
+    const timeout = requestTimeout || getTimeoutForHandler(data?.handler) || 30000;
     
     // 🚀 CONFIGURAZIONE OTTIMALE DI PRODUZIONE (basata su benchmark)
     const enableLogging = optimizationFlags?.enableLogging ?? false;
@@ -107,6 +118,7 @@ serve(async (req) => {
       console.log('⏰ Timestamp:', new Date().toISOString());
       console.log('📍 Endpoint:', endpoint);
       console.log('🎯 Handler:', data?.handler);
+      console.log('⏱️ Timeout configurato:', timeout, 'ms');
       console.log('═══════════════════════════════════════════════════════');
     }
 

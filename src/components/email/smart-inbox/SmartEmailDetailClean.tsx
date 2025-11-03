@@ -26,9 +26,16 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
     <div className="h-full flex flex-col overflow-hidden bg-white rounded-2xl border border-gray-200">
       {/* Header bianco con chiusura */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 shrink-0 bg-white">
-        <h2 className="text-xl font-semibold text-black">
-          {classifiedEmail.email.subject}
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-semibold text-black">
+            {classifiedEmail.email.subject}
+          </h2>
+          {emails.length > 1 && (
+            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
+              {emails.length} email
+            </span>
+          )}
+        </div>
         <Button variant="ghost" size="sm" onClick={onClose}>
           <X className="h-4 w-4 text-black" />
         </Button>

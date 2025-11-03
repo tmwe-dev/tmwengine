@@ -114,14 +114,14 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
             {/* 🆕 CARD EMAIL INDIPENDENTE */}
             <Card
               className={`
-                mb-6 transition-all
+                mb-8 transition-all
                 ${isCurrent 
                   ? cleanMode 
                     ? 'border-2 border-blue-500 bg-blue-50 shadow-lg' 
-                    : 'border-2 border-purple-500 bg-purple-500/15 shadow-xl backdrop-blur-sm'
+                    : 'border-2 border-purple-500 bg-purple-900/30 shadow-xl backdrop-blur-sm'
                   : cleanMode
                     ? 'border border-gray-300 bg-white shadow-md'
-                    : 'border border-white/20 bg-white/5 shadow-md backdrop-blur-sm'
+                    : 'border border-white/30 bg-gray-900/40 shadow-md backdrop-blur-sm'
                 }
               `}
             >

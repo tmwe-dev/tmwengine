@@ -79,7 +79,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<{ synced: number; total: number } | null>(null);
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterByAttachments, setFilterByAttachments] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'carousel'>('grid');
@@ -88,6 +87,11 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('count-desc');
   const [lastUpdatedGroupId, setLastUpdatedGroupId] = useState<string | null>(null);
+  
+  // 🆕 Stato drag nativo (come Design Lab)
+  const [draggedSender, setDraggedSender] = useState<SenderAnalysis | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
   
   // 🆕 Map callbacks per aggiornamento ottimistico card gruppi
   const groupUpdateCallbacksRef = useRef<Map<string, (senderEmail: string) => void>>(new Map());
@@ -496,57 +500,87 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     handleClassifySender(sender, activeCategoryId);
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over, delta } = event;
-    setActiveDragId(null);
+  // ✅ DRAG NATIVO: Mouse Down (inizio drag)
+  const handleMouseDown = (sender: SenderAnalysis, e: React.MouseEvent) => {
+    e.preventDefault();
+    setDraggedSender(sender);
+    setDragStartPosition({ x: e.clientX, y: e.clientY });
+    setMousePosition({ x: e.clientX, y: e.clientY });
+  };
 
-    // 🆕 BLOCCO 1: Verifica se è stato un vero drag o solo un click
-    // Se delta.x e delta.y sono entrambi < 5px, è un click, non un drag
-    const dragDistance = Math.sqrt(delta.x ** 2 + delta.y ** 2);
-    const isClick = dragDistance < 5; // Threshold: 5px
-    
-    if (isClick) {
-      console.log('🚫 Click rilevato (non drag) - nessuna azione');
-      return;
-    }
+  // ✅ DRAG NATIVO: Mouse Move + Mouse Up (gestione drag)
+  useEffect(() => {
+    if (!draggedSender) return;
 
-    // ❌ CASO 2: Nessun target valido (drop fuori da tutto)
-    if (!over) {
-      console.log('🚫 Drop fuori da zona valida - card torna in lista');
-      return;
-    }
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
 
-    const sender = senders.find(s => s.email === active.id);
-    if (!sender) return;
+    const handleMouseUp = (e: MouseEvent) => {
+      const dragDistance = Math.sqrt(
+        Math.pow(e.clientX - dragStartPosition.x, 2) +
+        Math.pow(e.clientY - dragStartPosition.y, 2)
+      );
 
-    // 🆕 VALIDAZIONE TARGET: Verifica che over.id sia carousel o gruppo valido
-    const isCarouselDrop = over.id === 'email-carousel-canvas';
-    const isGroupDrop = groups.some(g => g.id === over.id);
-
-    // ❌ CASO 2: Drop su zona non valida (lista mittenti, ecc.)
-    if (!isCarouselDrop && !isGroupDrop) {
-      console.log('🚫 Drop su zona non valida (probabilmente lista mittenti) - card torna in lista');
-      return;
-    }
-
-    // ✅ CASO 3: Drop su carousel (con categoria attiva)
-    if (isCarouselDrop) {
-      if (!activeCategoryId) {
-        console.warn('⚠️ Nessuna categoria attiva nel carousel');
+      // Se movimento < 5px → click, non drag
+      if (dragDistance < 5) {
+        console.log('🚫 Click rilevato (non drag)');
+        setDraggedSender(null);
         return;
       }
-      console.log(`✅ Classifico su carousel - categoria: ${activeCategoryId}`);
-      handleClassifySender(sender, activeCategoryId);
-      return;
-    }
-    
-    // ✅ CASO 4: Drop su gruppo sidebar (gruppo illuminato = over.id valido)
-    const targetGroup = groups.find(g => g.id === over.id);
-    if (targetGroup) {
-      console.log(`✅ Classifico su gruppo sidebar - gruppo: ${targetGroup.nome_gruppo}`);
-      handleClassifySender(sender, targetGroup.id);
-    }
-  };
+
+      // Trova elemento sotto il cursore
+      const elementUnderCursor = document.elementFromPoint(e.clientX, e.clientY);
+      if (!elementUnderCursor) {
+        console.log('🚫 Drop fuori da zona valida');
+        setDraggedSender(null);
+        return;
+      }
+
+      // Cerca categoria/gruppo target risalendo il DOM
+      let targetElement: HTMLElement | null = elementUnderCursor as HTMLElement;
+      let targetGroupId: string | null = null;
+
+      while (targetElement && !targetGroupId) {
+        // Cerca data-group-id su elemento o antenati
+        targetGroupId = targetElement.getAttribute('data-group-id');
+        if (!targetGroupId) {
+          targetElement = targetElement.parentElement;
+        }
+      }
+
+      if (targetGroupId) {
+        const targetGroup = groups.find(g => g.id === targetGroupId);
+        if (targetGroup) {
+          console.log(`✅ Drop su gruppo: ${targetGroup.nome_gruppo}`);
+          handleClassifySender(draggedSender, targetGroup.id);
+        }
+      } else {
+        // Verifica se drop su carousel canvas
+        let carouselElement: HTMLElement | null = elementUnderCursor as HTMLElement;
+        while (carouselElement) {
+          if (carouselElement.getAttribute('data-carousel-canvas') === 'true') {
+            if (activeCategoryId) {
+              console.log(`✅ Drop su carousel - categoria attiva: ${activeCategoryId}`);
+              handleClassifySender(draggedSender, activeCategoryId);
+            }
+            break;
+          }
+          carouselElement = carouselElement.parentElement;
+        }
+      }
+
+      setDraggedSender(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggedSender, dragStartPosition, groups, activeCategoryId]);
 
   const filteredSenders = senders.filter(s => {
     const matchesSearch = !searchQuery || 
@@ -590,79 +624,68 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
 
   return (
     <div className="flex h-full w-full gap-4 max-w-[1920px] mx-auto">
-      <DndContext
-        collisionDetection={viewMode === 'carousel' ? carousel70PercentCollision : grid50PercentCollision}
-        onDragEnd={handleDragEnd}
-        onDragStart={(e) => setActiveDragId(e.active.id as string)}
-        onDragCancel={() => setActiveDragId(null)}
-      >
-        {/* Sidebar - flex item */}
-        <EmailSidebar
-          senders={senders}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          filterByAttachments={filterByAttachments}
-          setFilterByAttachments={setFilterByAttachments}
-          filteredSenders={sortedSenders}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          carouselZoom={carouselZoom}
-          onCarouselZoomChange={handleZoomChange}
-          onCreateCategory={() => setShowCreateDialog(true)}
+      {/* Sidebar - flex item */}
+      <EmailSidebar
+        senders={senders}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        filterByAttachments={filterByAttachments}
+        setFilterByAttachments={setFilterByAttachments}
+        filteredSenders={sortedSenders}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        carouselZoom={carouselZoom}
+        onCarouselZoomChange={handleZoomChange}
+        onCreateCategory={() => setShowCreateDialog(true)}
+        groups={sortedGroups}
+        activeCategoryId={activeCategoryId}
+        onCategorySelect={setActiveCategoryId}
+        sortOption={sortOption}
+        onSortChange={setSortOption}
+        onSync={handleSync}
+        onRefresh={loadData}
+        isSyncing={isSyncing}
+        isLoading={isLoading}
+        onSenderDoubleClick={handleDoubleClickSender}
+        onSenderMouseDown={handleMouseDown}
+        draggedSenderEmail={draggedSender?.email}
+      />
+      
+      {/* Area principale condizionale */}
+      {viewMode === 'grid' ? (
+        <EmailGridContainer
           groups={sortedGroups}
-          activeCategoryId={activeCategoryId}
-          onCategorySelect={setActiveCategoryId}
-          sortOption={sortOption}
-          onSortChange={setSortOption}
-          onSync={handleSync}
           onRefresh={loadData}
-          isSyncing={isSyncing}
-          isLoading={isLoading}
-          onSenderDoubleClick={handleDoubleClickSender}
+          lastUpdatedGroupId={lastUpdatedGroupId}
+          onRegisterGroupCallback={registerGroupCallback}
         />
-        
-        {/* Area principale condizionale */}
-        {viewMode === 'grid' ? (
-          <EmailGridContainer
-            groups={sortedGroups}
-            onRefresh={loadData}
-            lastUpdatedGroupId={lastUpdatedGroupId}
-            onRegisterGroupCallback={registerGroupCallback}
-          />
-        ) : (
-          <EmailCarouselContainer
-            categories={sortedGroups}
-            assignedSenders={assignedSenders}
-            activeCategoryId={activeCategoryId}
-            zoom={carouselZoom}
-            verticalOffset={carouselVerticalOffset}
-            onPrevious={handlePrevCategory}
-            onNext={handleNextCategory}
-          />
-        )}
+      ) : (
+        <EmailCarouselContainer
+          categories={sortedGroups}
+          assignedSenders={assignedSenders}
+          activeCategoryId={activeCategoryId}
+          zoom={carouselZoom}
+          verticalOffset={carouselVerticalOffset}
+          onPrevious={handlePrevCategory}
+          onNext={handleNextCategory}
+        />
+      )}
 
-        <DragOverlay 
-          dropAnimation={null}
-          adjustScale={false}
-          modifiers={[
-            (args) => ({
-              ...args.transform,
-              y: 0  // ✅ Blocca movimento verticale
-            })
-          ]}
+      {/* ✅ DRAG OVERLAY NATIVO (position: fixed come Design Lab) */}
+      {draggedSender && (
+        <div
+          className="fixed pointer-events-none z-50"
+          style={{
+            left: `${mousePosition.x}px`,
+            top: `${mousePosition.y}px`,
+            transform: 'translate(-50%, -50%)',
+          }}
         >
-          {activeDragId ? (
-            (() => {
-              const sender = senders.find(s => s.email === activeDragId);
-              return sender ? (
-                <div className="rotate-[0.5deg] scale-[1.02] shadow-lg">
-                  <SenderCard sender={sender} isDragging dragOverlayStyle />
-                </div>
-              ) : null;
-            })()
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+          <div className="rotate-[0.5deg] scale-[1.02] shadow-lg">
+            <SenderCard sender={draggedSender} dragOverlayStyle />
+          </div>
+        </div>
+      )}
 
       {/* Floating Zoom Control - Visibile solo in modalità carousel */}
       {viewMode === 'carousel' && (

@@ -67,7 +67,7 @@ export const useEmailThread = (
       const orFilters = Array.from(participants)
         .flatMap(participant => [
           `from_email.eq.${participant}`,
-          `to_email.cs.{${participant}}`
+          `to_email.ilike.*${participant}*`
         ])
         .join(',');
 

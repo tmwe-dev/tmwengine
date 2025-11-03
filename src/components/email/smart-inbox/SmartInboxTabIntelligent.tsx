@@ -148,9 +148,9 @@ export const SmartInboxTabIntelligent = ({
         query = query.eq('folder_name', selectedFolder);
       }
 
-      if (unreadOnly) {
-        query = query.eq('email_messages.stato', 'nuovo');
-      }
+    if (unreadOnly) {
+      query = query.eq('email.stato', 'nuovo');
+    }
 
       query = query.order('created_at', { ascending: false });
 

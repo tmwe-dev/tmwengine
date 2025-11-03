@@ -296,6 +296,26 @@ export const SmartEmailDetailPanel = ({
         .prose a:hover {
           color: #93c5fd !important;
         }
+
+        /* FIX: Testo nero su elementi con sfondo bianco per leggibilità */
+        .prose [style*="background: white"],
+        .prose [style*="background: #fff"],
+        .prose [style*="background:#fff"],
+        .prose [style*="background-color: white"],
+        .prose [style*="background-color: #fff"],
+        .prose [style*="background-color:#fff"],
+        .prose [style*="background-color: rgb(255, 255, 255)"],
+        .prose [style*="background-color:rgb(255, 255, 255)"],
+        .prose [style*="background-color: #FFF"],
+        .prose [style*="background-color:#FFF"],
+        .prose table[style*="background: white"],
+        .prose table[style*="background-color: white"],
+        .prose td[style*="background: white"],
+        .prose td[style*="background-color: white"],
+        .prose div[style*="background: white"],
+        .prose div[style*="background-color: white"] {
+          color: #1a1a1a !important;
+        }
       `}</style>
     </div>
   );

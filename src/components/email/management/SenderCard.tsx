@@ -1,8 +1,8 @@
 /**
  * Card draggable mittente - Sistema isolato FunEmail
- * ✅ Sistema drag nativo (mouse events) come Design Lab
  */
 
+import { useDraggable } from '@dnd-kit/core';
 import { Card, CardContent } from '@/components/ui/card';
 import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -13,19 +13,25 @@ interface FunEmailSenderCardProps {
   isDragging?: boolean;
   onDoubleClick?: (sender: SenderAnalysis) => void;
   dragOverlayStyle?: boolean;
-  onMouseDown?: (e: React.MouseEvent) => void;
 }
 
-export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle, onMouseDown }: FunEmailSenderCardProps) {
-  // ✅ Nasconde card originale durante drag
+export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle }: FunEmailSenderCardProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging: dragActive } = useDraggable({
+    id: sender.email,
+    data: sender,
+  });
+
+  // ✅ Nasconde immediatamente la card originale durante il drag
   const style = {
-    opacity: isDragging ? 0 : 1,
+    opacity: dragActive && !isDragging ? 0 : 1,
     transition: 'opacity 0.15s ease-out'
   };
 
   return (
-    <div style={style} className="snap-start">
+    <div ref={setNodeRef} style={style} className="snap-start">
       <Card 
+        {...listeners}
+        {...attributes}
         className={cn(
           "cursor-grab active:cursor-grabbing border-l-4 transition-transform",
           "hover:scale-[1.02]",
@@ -33,7 +39,6 @@ export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle
           sender.emailCount > 100 && "border-l-red-500",
           dragOverlayStyle && "bg-gradient-to-br from-blue-500/35 to-blue-400/25 backdrop-blur-sm border-blue-300/30"
         )}
-        onMouseDown={onMouseDown}
         onDoubleClick={() => onDoubleClick?.(sender)}
       >
         <CardContent className="p-4">

@@ -41,8 +41,6 @@ interface EmailSidebarProps {
   isSyncing: boolean;
   isLoading: boolean;
   onSenderDoubleClick?: (sender: SenderAnalysis) => void;
-  onSenderMouseDown?: (sender: SenderAnalysis, e: React.MouseEvent) => void;
-  draggedSenderEmail?: string;
 }
 
 export function EmailSidebar({
@@ -67,8 +65,6 @@ export function EmailSidebar({
   isSyncing,
   isLoading,
   onSenderDoubleClick,
-  onSenderMouseDown,
-  draggedSenderEmail,
 }: EmailSidebarProps) {
   return (
     <div className="flex-shrink-0 w-[416px] z-20">
@@ -202,8 +198,6 @@ export function EmailSidebar({
                 key={sender.email} 
                 sender={sender}
                 onDoubleClick={onSenderDoubleClick}
-                onMouseDown={(e) => onSenderMouseDown?.(sender, e)}
-                isDragging={draggedSenderEmail === sender.email}
               />
             ))
           )}

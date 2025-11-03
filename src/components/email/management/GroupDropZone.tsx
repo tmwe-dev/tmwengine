@@ -1,8 +1,8 @@
 /**
  * Drop zone gruppo mittenti - Sistema isolato FunEmail
- * ✅ Sistema drag nativo (data attributes per drop detection)
  */
 
+import { useDroppable } from '@dnd-kit/core';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,10 @@ export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated, on
   const [rules, setRules] = useState<(EmailSenderRule & { sender_name?: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  const { setNodeRef, isOver } = useDroppable({
+    id: group.id,
+  });
 
   useEffect(() => {
     loadRules();
@@ -140,14 +144,16 @@ export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated, on
   }
 
   return (
-    <div data-group-id={group.id} className="h-[20vh] w-[15vw] min-w-[280px] max-w-[380px]">
+    <div ref={setNodeRef} className="h-[20vh] w-[15vw] min-w-[280px] max-w-[380px]">
       <Card 
         className={cn(
           "h-full transition-all border-2 flex flex-col overflow-hidden",
+          isOver && "border-primary bg-primary/5 shadow-2xl scale-105 ring-4 ring-primary/20",
           isLastUpdated && "shadow-[0_4px_12px_rgba(0,0,0,0.15),_-2px_0_8px_rgba(0,0,0,0.1)] border-primary/70"
         )}
         style={{ 
-          borderColor: isLastUpdated ? group.colore : undefined,
+          borderColor: isOver ? group.colore : (isLastUpdated ? group.colore : undefined),
+          backgroundColor: isOver ? `${group.colore}15` : undefined,
         }}
       >
         <CardHeader 
@@ -230,7 +236,16 @@ export function GroupDropZone({ group, onRefresh, onEditGroup, isLastUpdated, on
         </CardHeader>
 
         <CardContent className="pt-4 flex-1 overflow-hidden flex flex-col items-center justify-center">
-          {rules.length > 0 && (
+          {isOver && rules.length === 0 && (
+            <div className="text-center py-12 animate-pulse">
+              <div className="text-5xl mb-3">👇</div>
+              <p className="text-sm font-medium text-primary">
+                Rilascia qui per classificare
+              </p>
+            </div>
+          )}
+
+          {!isOver && rules.length > 0 && (
             <div className="text-left w-full px-2">
               <div className="font-bold text-xl mb-1">{rules[0].sender_name}</div>
               <div className="text-sm text-muted-foreground truncate">{rules[0].sender_email}</div>

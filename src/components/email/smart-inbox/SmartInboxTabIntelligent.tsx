@@ -563,8 +563,6 @@ export const SmartInboxTabIntelligent = ({
           onPromptViewerChange={setPromptViewerOpen}
           selectedAgent={selectedAgent}
           onAgentChange={setSelectedAgent}
-          cleanViewMode={cleanViewMode}
-          onCleanViewModeChange={setCleanViewMode}
         />
 
         {/* Colonna 1: Lista Email - MAX 40% larghezza in split, 100% centrata in list */}
@@ -619,6 +617,7 @@ export const SmartInboxTabIntelligent = ({
               onNavigateNext={navigateToNextEmail}
               onNavigatePrev={navigateToPreviousEmail}
               cleanViewMode={cleanViewMode}
+              onToggleCleanView={() => setCleanViewMode(!cleanViewMode)}
             />
           ) : (
             <EmptyDetailPanel />

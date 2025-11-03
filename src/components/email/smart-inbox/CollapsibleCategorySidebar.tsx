@@ -30,8 +30,6 @@ interface CollapsibleCategorySidebarProps {
   onPromptViewerChange: (open: boolean) => void;
   selectedAgent: string;
   onAgentChange: (agent: string) => void;
-  cleanViewMode: boolean;
-  onCleanViewModeChange: (enabled: boolean) => void;
 }
 
 export function CollapsibleCategorySidebar({
@@ -50,9 +48,7 @@ export function CollapsibleCategorySidebar({
   isClassifying,
   onPromptViewerChange,
   selectedAgent,
-  onAgentChange,
-  cleanViewMode,
-  onCleanViewModeChange
+  onAgentChange
 }: CollapsibleCategorySidebarProps) {
   const [isLocked, setIsLocked] = useState(false);
 
@@ -229,23 +225,6 @@ export function CollapsibleCategorySidebar({
             onCategoryChange={onCategoryChange}
             unverifiedCount={unverifiedCount}
           />
-        </div>
-
-        {/* Vista Pulita Toggle */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-background/95">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              <span className="text-sm font-medium">Vista Pulita</span>
-            </div>
-            <Switch
-              checked={cleanViewMode}
-              onCheckedChange={onCleanViewModeChange}
-            />
-          </div>
-          <p className="text-xs text-white/60 mt-1">
-            Mostra email in formato basico senza stili
-          </p>
         </div>
       </aside>
 

@@ -11,21 +11,23 @@ interface SmartEmailDetailPanelProps {
   totalEmails?: number;
   onNavigateNext?: () => void;
   onNavigatePrev?: () => void;
-  cleanViewMode?: boolean;
+  cleanViewMode: boolean;
+  onToggleCleanView: () => void;
 }
 
 export const SmartEmailDetailPanel = ({
   classifiedEmail,
   onClose,
-  cleanViewMode = false
+  cleanViewMode,
+  onToggleCleanView
 }: SmartEmailDetailPanelProps) => {
   // Router: decide quale vista usare
   if (cleanViewMode) {
     return (
       <SmartEmailDetailClean
         classifiedEmail={classifiedEmail}
-        open={true}
         onClose={onClose}
+        onToggleCleanView={onToggleCleanView}
       />
     );
   }
@@ -33,8 +35,8 @@ export const SmartEmailDetailPanel = ({
   return (
     <SmartEmailDetailIntelligent
       classifiedEmail={classifiedEmail}
-      open={true}
       onClose={onClose}
+      onToggleCleanView={onToggleCleanView}
     />
   );
 };

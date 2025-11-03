@@ -139,7 +139,28 @@ REGOLE:
 3. Mantieni i nomi in italiano
 4. Evita sotto-categorie eccessive (usa "/" solo se veramente necessario)
 
-Fornisci anche riassunto (max 100 parole) e 3-5 keywords.`;
+RIASSUNTO INTELLIGENTE (segui ESATTAMENTE questa struttura):
+1. Se email RICHIEDE AZIONE → indica azione (es: "Webinar 4 nov ore 11 - Registrati")
+2. Se email è INFORMATIVA → estrai il valore (es: "Nuove tariffe conti dal 1/12")
+3. Se email è SPAM/INUTILE → scrivi solo "❌ Contenuto non rilevante"
+4. LUNGHEZZA MASSIMA: 8 parole
+5. NON usare: "email", "messaggio", "comunicazione", "si tratta di"
+6. USA: verbi imperativi ("Conferma", "Leggi", "Ignora"), date, numeri
+
+KEYWORDS (3-5 max):
+- Solo termini chiave business (no stop words)
+- Includi SEMPRE date se presenti (formato: "4-nov", "dic-2025")
+- Includi codici/numeri rilevanti (fatture, tracking, etc)
+
+ESEMPI:
+❌ BAD: "Email promozionale di auguri per Halloween inviata da LoadKarma"
+✅ GOOD: "🎃 Auguri Halloween - Ignora"
+
+❌ BAD: "Invito a un webinar gratuito organizzato dall'International Grain Forum sul mercato dei cereali"
+✅ GOOD: "Webinar cereali 4-nov 11:00 CET"
+
+❌ BAD: "Email di notifica da City National Bank riguardante un aggiornamento delle tariffe"
+✅ GOOD: "⚠️ Tariffe banca cambiano 1-dic"`;
 
       if (promptError) {
         console.warn('⚠️ Error loading prompt from DB, using fallback:', promptError);
@@ -172,7 +193,7 @@ Corpo: ${body_text?.substring(0, 1000) || 'Nessun contenuto'}`;
               },
               summary: {
                 type: 'string',
-                description: 'Riassunto conciso email (max 100 parole)'
+                description: 'Riassunto ULTRA-COMPATTO email (MAX 8 parole). NO "email", "messaggio". USA verbi imperativi, date, numeri. Se spam: "❌ Contenuto non rilevante"'
               },
               keywords: {
                 type: 'array',

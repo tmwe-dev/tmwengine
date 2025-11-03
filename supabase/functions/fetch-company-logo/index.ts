@@ -43,13 +43,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 🌐 FETCH: Prova più provider
+    // 🌐 FETCH: Prova più provider HIGH RES
     let logoUrl: string | null = null;
     let source = 'not_found';
 
-    // 1️⃣ Clearbit Logo API (gratuito, no auth)
+    // 1️⃣ Clearbit Logo API HD (size=256)
     try {
-      const clearbitUrl = `https://logo.clearbit.com/${domain}`;
+      const clearbitUrl = `https://logo.clearbit.com/${domain}?size=256`;
       const response = await fetch(clearbitUrl, { 
         method: 'HEAD',
         redirect: 'follow' 
@@ -57,17 +57,17 @@ Deno.serve(async (req) => {
       if (response.ok) {
         logoUrl = clearbitUrl;
         source = 'clearbit';
-        console.log(`[fetch-company-logo] ✅ Clearbit: ${logoUrl}`);
+        console.log(`[fetch-company-logo] ✅ Clearbit HD: ${logoUrl}`);
       }
     } catch (e) {
       console.log(`[fetch-company-logo] ⚠️ Clearbit failed: ${e}`);
     }
 
-    // 2️⃣ Favicon fallback
+    // 2️⃣ Google S2 Favicon API HD (size=128)
     if (!logoUrl) {
-      logoUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+      logoUrl = `https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${domain}&size=128`;
       source = 'favicon';
-      console.log(`[fetch-company-logo] ℹ️ Fallback to favicon: ${logoUrl}`);
+      console.log(`[fetch-company-logo] ℹ️ Fallback to Google S2 HD: ${logoUrl}`);
     }
 
     // 💾 SAVE: Salva in cache

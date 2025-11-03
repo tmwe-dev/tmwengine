@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ClassifiedEmail } from '@/types/smart-inbox';
-import { extractCompanyName, extractInitials, getCategoryIcon, formatDate } from '@/lib/smart-inbox-utils';
+import { extractCompanyName, extractInitials, getCategoryIcon, formatDate, detectUrgency } from '@/lib/smart-inbox-utils';
 import { getCategoryGradient, getCategoryGlow } from '@/lib/category-gradients';
 import { Paperclip, CheckCircle2, AlertCircle, Zap, ShoppingCart, FileText, Users, TrendingUp, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -48,6 +48,7 @@ export const SmartEmailCardIntelligent = ({
   const initials = extractInitials(classification.sender_email);
 
   const isVerified = classification.is_verified && classification.confidence >= 80;
+  const isUrgent = detectUrgency({ subject: email.subject, body_text: email.body_text });
   
   return (
     <div 
@@ -77,9 +78,12 @@ export const SmartEmailCardIntelligent = ({
         <div className="flex-shrink-0" onClick={onClick}>
           <div className="rounded-full bg-white/10 border border-white/20 p-1">
             <Avatar className="h-12 w-12">
-              {classification.sender_logo_url ? (
-                <AvatarImage src={classification.sender_logo_url} alt={companyName} />
-              ) : null}
+            <AvatarImage 
+              src={classification.sender_logo_url} 
+              alt={companyName}
+              className="object-contain"
+              loading="lazy"
+            />
               <AvatarFallback className="text-xs font-semibold">
                 {initials}
               </AvatarFallback>
@@ -92,27 +96,15 @@ export const SmartEmailCardIntelligent = ({
           <div className="flex items-start justify-between gap-2 mb-1">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3 className="font-semibold text-sm truncate text-white/90">{companyName}</h3>
+                <h3 className="font-semibold text-base truncate text-white/90">{companyName}</h3>
                 
-                {/* Badge Gruppo Mittente */}
+                {/* Badge Gruppo Mittente - PROMINENTE */}
                 {(classification as any).sender_group && (
                   <SenderGroupBadge
                     groupName={(classification as any).sender_group.name}
                     groupIcon={(classification as any).sender_group.icon}
                     groupColor={(classification as any).sender_group.color}
                   />
-                )}
-                
-                {isVerified ? (
-                  <Badge className="text-xs bg-white/10 border border-white/20 text-white/80 rounded-full backdrop-blur-sm shadow-sm">
-                    <CheckCircle2 className="h-3 w-3 mr-1 text-green-400" />
-                    Verificata
-                  </Badge>
-                ) : (
-                  <Badge className="text-xs bg-white/10 border border-white/20 text-white/80 rounded-full backdrop-blur-sm shadow-sm">
-                    <AlertCircle className="h-3 w-3 mr-1 text-orange-400" />
-                    Da Verificare
-                  </Badge>
                 )}
               </div>
               <p className="text-xs text-white/70 truncate">
@@ -130,39 +122,54 @@ export const SmartEmailCardIntelligent = ({
             </div>
           </div>
 
-          {/* Categoria con gradient glassmorphism */}
-          <Badge 
-            className={cn(
-              "mb-2 rounded-full px-3 py-1 flex items-center gap-2 text-white border-0",
-              getCategoryGradient(classification.category),
-              getCategoryGlow(classification.category)
+          {/* Categoria COMPATTA + Urgenza */}
+          <div className="flex items-center gap-2 mb-2">
+            <Badge 
+              className={cn(
+                "rounded-full px-2 py-0.5 flex items-center gap-1 text-white border-0 text-xs",
+                getCategoryGradient(classification.category),
+                getCategoryGlow(classification.category)
+              )}
+            >
+              <span className="text-sm">{categoryIcon}</span>
+              <span className="font-medium">{classification.category}</span>
+              {classification.confidence < 90 && (
+                <span className="text-[10px] font-bold bg-white/20 px-1 py-0.5 rounded-full">
+                  {Math.round(classification.confidence)}%
+                </span>
+              )}
+            </Badge>
+            
+            {/* Indicatore URGENZA */}
+            {isUrgent && (
+              <Badge className="animate-pulse bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold px-2 py-1 rounded-full border-2 border-red-300 shadow-lg text-xs flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                URGENTE
+              </Badge>
             )}
-          >
-            {getCategoryLucideIcon(classification.category)}
-            <span className="text-base">{categoryIcon}</span>
-            <span className="font-semibold">{classification.category}</span>
-            {classification.confidence < 100 && (
-              <span className="ml-2 text-xs font-bold bg-white/20 px-1.5 py-0.5 rounded-full">
-                {Math.round(classification.confidence)}%
-              </span>
-            )}
-          </Badge>
+          </div>
 
-          {/* Riassunto AI */}
+          {/* Riassunto AI PROMINENTE */}
           {classification.ai_summary && (
-            <p className="text-sm text-white/85 line-clamp-2 mb-1.5">
+            <p className="text-base font-medium text-white/90 line-clamp-1 mb-2">
               {classification.ai_summary}
             </p>
           )}
 
-          {/* Keywords con pill-style glassmorphism */}
+          {/* Keywords INTELLIGENTI (solo rilevanti) */}
           {classification.keywords && classification.keywords.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {classification.keywords.slice(0, 3).map((keyword, idx) => (
-                <Badge key={idx} className="text-xs bg-white/10 border border-white/15 text-white/90 rounded-full px-2 py-0.5">
-                  {keyword}
-                </Badge>
-              ))}
+            <div className="flex flex-wrap gap-1.5">
+              {classification.keywords
+                .filter(kw => 
+                  kw.length > 3 && 
+                  (kw.match(/\d/) || classification.confidence >= 85)
+                )
+                .slice(0, 2)
+                .map((keyword, idx) => (
+                  <Badge key={idx} className="text-[10px] bg-white/10 border border-white/15 text-white/80 rounded-full px-2 py-0.5">
+                    {keyword}
+                  </Badge>
+                ))}
             </div>
           )}
         </div>

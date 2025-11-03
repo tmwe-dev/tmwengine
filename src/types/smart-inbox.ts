@@ -14,6 +14,11 @@ export interface EmailClassification {
   is_verified: boolean; // Se classificazione verificata manualmente
   created_at: string;
   updated_at: string;
+  sender_group?: { // ✅ Badge gruppo mittente
+    name: string;
+    icon: string;
+    color: string;
+  } | null;
 }
 
 export interface ClassifiedEmail {
@@ -26,6 +31,7 @@ export interface ClassifiedEmail {
     to: any;
     body_preview?: string;
     body_text?: string; // ✅ Aggiunto per body completo dal DB
+    body_html?: string; // ✅ Body HTML
     date: string;
     read: boolean;
     has_attachments: boolean;

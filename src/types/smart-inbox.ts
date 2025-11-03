@@ -26,6 +26,7 @@ export interface ClassifiedEmail {
     to: any;
     body_preview?: string;
     body_text?: string; // ✅ Aggiunto per body completo dal DB
+    body_html?: string; // ✅ Aggiunto per body HTML
     date: string;
     read: boolean;
     has_attachments: boolean;

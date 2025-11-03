@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -17,12 +18,23 @@ interface SmartEmailDetailPanelProps {
 }
 
 export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDetailPanelProps) => {
-  // ✅ NUOVO: Usa direttamente i dati dal DB (già disponibili nel prop)
+  // ✅ Usa body_html con fallback a body_text
   const emailBody = {
-    html: classifiedEmail.email.body_text,
+    html: classifiedEmail.email.body_html || classifiedEmail.email.body_text,
     text: classifiedEmail.email.body_text
   };
   const isLoadingBody = false; // Nessun caricamento necessario
+
+  // 🔒 Sanitizza HTML con sicurezza avanzata
+  const sanitizedHtml = emailBody.html 
+    ? DOMPurify.sanitize(emailBody.html, {
+        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'img', 'div', 'span', 'table', 'tr', 'td', 'th', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'thead', 'tbody', 'tfoot'],
+        ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'style', 'class', 'width', 'height', 'align', 'target', 'loading'],
+        ALLOW_DATA_ATTR: false,
+        ALLOW_UNKNOWN_PROTOCOLS: false, // 🔒 Blocca javascript:, data:, vbscript:
+        ADD_ATTR: ['target'] // 🔗 Forza target="_blank" per link esterni
+      })
+    : null;
 
   const { classification, email } = classifiedEmail;
   const categoryGradient = getCategoryGradient(classification.category);
@@ -152,10 +164,15 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-white/60" />
                   <p className="text-sm text-white/70 mt-2">Caricamento...</p>
                 </div>
-              ) : emailBody?.html ? (
+              ) : sanitizedHtml ? (
                 <div 
-                  className="prose prose-sm prose-invert max-w-none bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 text-white/85"
-                  dangerouslySetInnerHTML={{ __html: emailBody.html }}
+                  className="prose prose-sm prose-invert max-w-none bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 text-white/85 overflow-x-auto"
+                  dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+                  style={{
+                    color: 'rgba(255, 255, 255, 0.85)',
+                    fontSize: '14px',
+                    lineHeight: '1.6'
+                  }}
                 />
               ) : emailBody?.text ? (
                 <pre className="text-sm whitespace-pre-wrap bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 font-sans text-white/85">
@@ -185,6 +202,35 @@ export const SmartEmailDetailPanel = ({ classifiedEmail, onClose }: SmartEmailDe
           )}
         </div>
       </ScrollArea>
+
+      {/* CSS ottimizzato per email HTML */}
+      <style>{`
+        .prose img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 8px;
+          margin: 8px 0;
+          content-visibility: auto;
+        }
+        .prose table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 12px 0;
+        }
+        .prose table td,
+        .prose table th {
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 8px;
+        }
+        .prose a {
+          color: #60a5fa;
+          text-decoration: underline;
+          transition: color 0.2s;
+        }
+        .prose a:hover {
+          color: #93c5fd;
+        }
+      `}</style>
     </div>
   );
 };

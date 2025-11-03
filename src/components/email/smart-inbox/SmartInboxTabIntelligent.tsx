@@ -11,6 +11,7 @@ import { AIPromptDialog } from './AIPromptDialog';
 import { AIManualCanvas } from './AIManualCanvas';
 import { AIActionConfirmation } from './AIActionConfirmation';
 import { EmailClassifierPromptEditor } from './EmailClassifierPromptEditor';
+import { ViewModeSelector, ViewMode } from './ViewModeSelector';
 import React from 'react';
 import { ClassifiedEmail, EmailMetadata } from '@/types/smart-inbox';
 import { useSmartClassificationIntelligent } from '@/hooks/useSmartClassificationIntelligent';
@@ -20,7 +21,6 @@ import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { getCategoryIcon, getCategoryColor } from '@/lib/smart-inbox-utils';
-import { ViewMode } from './ViewModeSelector';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { cn } from '@/lib/utils';
 
@@ -502,8 +502,13 @@ export const SmartInboxTabIntelligent = ({
   };
 
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] w-[95%] max-w-[1600px] mx-auto gap-4">
-      {/* Header compatto - solo titolo + Classifica Nuove + Barra Azioni */}
+    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] w-[95%] max-w-[1600px] mx-auto gap-4 relative">
+      {/* Selettore Vista Galleggiante - Centrato sopra l'header */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-12 z-50">
+        <ViewModeSelector value={viewMode} onChange={setViewMode} />
+      </div>
+
+      {/* Header compatto - solo Barra Azioni */}
       <SmartInboxHeaderIntelligent
         categories={categoryStats}
         selectedCategory={selectedCategory}

@@ -43,13 +43,6 @@ export const SmartInboxHeaderIntelligent = ({
   return (
     <>
       <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 space-y-4 shrink-0">
-        {/* Header principale */}
-        <div className="flex items-center justify-between gap-4 flex-wrap lg:flex-nowrap">
-          <div className="flex items-center gap-3">
-            {/* Selettore Vista */}
-            <ViewModeSelector value={viewMode} onChange={onViewModeChange} />
-          </div>
-        </div>
       
       {/* Classification Progress Bar */}
       {isClassifying && classificationProgress && (

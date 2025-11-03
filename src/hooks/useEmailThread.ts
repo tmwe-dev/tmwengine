@@ -50,16 +50,34 @@ export const useEmailThread = (
         THREAD_TIME_WINDOW_DAYS
       );
 
-      // 3. Query fuzzy con time window + filtro mittente/destinatario
+      // 3. Estrai tutti i partecipanti (mittente + destinatari)
+      const participants = new Set<string>();
+      participants.add(currentEmail.from_email);
+
+      // Aggiungi destinatari (gestisci sia string che array)
+      if (currentEmail.to_email) {
+        if (Array.isArray(currentEmail.to_email)) {
+          currentEmail.to_email.forEach((email: string) => participants.add(email));
+        } else if (typeof currentEmail.to_email === 'string') {
+          participants.add(currentEmail.to_email);
+        }
+      }
+
+      // Costruisci filtro OR dinamico per tutti i partecipanti
+      const orFilters = Array.from(participants)
+        .flatMap(participant => [
+          `from_email.eq.${participant}`,
+          `to_email.cs.{${participant}}`
+        ])
+        .join(',');
+
+      // 4. Query fuzzy con time window + filtro TUTTI i partecipanti
       const { data: threadEmails, error: threadError, count } = await supabase
         .from('email_messages')
         .select('*', { count: 'exact' })
         .ilike('subject', `%${cleaned}%`)
         .gte('data_ricezione', timeWindowStart.toISOString())
-        .or(
-          `from_email.eq.${currentEmail.from_email},` +
-          `to_email.cs.{${currentEmail.from_email}}`
-        )
+        .or(orFilters)
         .order('data_ricezione', { ascending: true })
         .limit(limit);
 

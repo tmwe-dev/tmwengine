@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -56,6 +57,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const [activeProfile, setActiveProfile] = useState<PerformanceProfile | null>(null);
+  const [useTestFunction, setUseTestFunction] = useState(false); // ✅ NUOVO stato toggle
   const { toast } = useToast();
   
   // Background download hook
@@ -236,12 +238,21 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       return;
     }
 
+    // ✅ Determina quale funzione usare
+    const functionName = useTestFunction 
+      ? 'background-email-sync-test' 
+      : 'background-email-sync';
+
+    console.log(`🎯 [QuickDownload] Using Edge Function: ${functionName}`);
+
     toast({
-      title: '🚀 Download avviato',
-      description: `Download in background di ${selectedFolders.length} cartelle...`,
+      title: useTestFunction ? '🧪 Test Mode Attivo' : '🚀 Download Standard',
+      description: useTestFunction 
+        ? `Download ottimizzato di ${selectedFolders.length} cartelle (solo email nuove)...`
+        : `Download completo di ${selectedFolders.length} cartelle...`,
     });
 
-    const result = await startDownload(selectedFolders, userEmail);
+    const result = await startDownload(selectedFolders, userEmail, functionName);
 
     if (!result.success) {
       toast({
@@ -274,7 +285,12 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         return;
       }
 
-      const result = await startDownload(preferences.included_folders, userEmail);
+      // ✅ Determina quale funzione usare
+      const functionName = useTestFunction 
+        ? 'background-email-sync-test' 
+        : 'background-email-sync';
+
+      const result = await startDownload(preferences.included_folders, userEmail, functionName);
 
       if (!result.success) {
         toast({
@@ -520,6 +536,48 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
                     {folder.display}
                   </Button>
                 ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Test Mode Toggle - PRIMA del pulsante Start */}
+      {bgStatus.status === 'idle' && (
+        <Card className="border-yellow-500 border-2 bg-yellow-50/10">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">🧪</div>
+                <div>
+                  <p className="font-semibold text-sm">
+                    Modalità Test (Pre-check Duplicati)
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {useTestFunction 
+                      ? '✅ Attiva - Scarica solo email nuove (più veloce)'
+                      : '⚠️ Disattiva - Usa funzione standard (scarica tutto)'
+                    }
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Badge variant={useTestFunction ? 'default' : 'outline'} className="text-xs">
+                  {useTestFunction ? 'NEW 🚀' : 'OLD'}
+                </Badge>
+                <Switch
+                  checked={useTestFunction}
+                  onCheckedChange={setUseTestFunction}
+                  className="data-[state=checked]:bg-green-500"
+                />
+              </div>
+            </div>
+            
+            {useTestFunction && (
+              <div className="mt-3 p-2 bg-green-500/10 border border-green-500/30 rounded text-xs">
+                <strong>💡 Ottimizzazione attiva:</strong> Il sistema verifica quali email sono già presenti 
+                nel database prima di scaricarle, risparmiando tempo e banda.
               </div>
             )}
           </CardContent>

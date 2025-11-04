@@ -43,9 +43,17 @@ export function useBackgroundDownload() {
   // ============================================
   // START DOWNLOAD
   // ============================================
-  const startDownload = useCallback(async (folders: string[], userEmail: string) => {
+  const startDownload = useCallback(async (
+    folders: string[], 
+    userEmail: string,
+    functionName: string = 'background-email-sync' // ✅ NUOVO parametro con default
+  ) => {
     try {
-      console.log('🚀 [useBackgroundDownload] Starting download:', { folders, userEmail });
+      console.log('🚀 [useBackgroundDownload] Starting download:', { 
+        folders, 
+        userEmail, 
+        functionName // ✅ Log quale funzione viene usata
+      });
       
       setStatus(prev => ({
         ...prev,
@@ -54,12 +62,12 @@ export function useBackgroundDownload() {
         error: null
       }));
 
-      // Chiama Edge Function per avviare background job
-      const { data, error } = await supabase.functions.invoke('background-email-sync', {
+      // Chiama Edge Function dinamicamente
+      const { data, error } = await supabase.functions.invoke(functionName, { // ✅ Usa parametro
         body: { folders, user_email: userEmail }
       });
 
-      console.log('📡 [useBackgroundDownload] Edge Function response:', { data, error });
+      console.log(`📡 [useBackgroundDownload] ${functionName} response:`, { data, error });
 
       if (error) throw error;
 

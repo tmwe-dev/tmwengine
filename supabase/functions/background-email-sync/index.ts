@@ -585,6 +585,7 @@ async function downloadEmail(userEmail: string, folder: string, uid: number, tmw
   // ✅ Mappa al formato DB corretto (schema email_messages)
   return {
     message_id: `${userEmail}/${folder}/${uid}`,
+    user_email: userEmail,
     provider_id: '00000000-0000-0000-0000-000000000000', // ✅ UUID usato dalle email esistenti
     cartella: folder,                                     // ✅ Nome colonna corretto
     sync_status: 'fun_email_backup',                      // ✅ Aggiunto

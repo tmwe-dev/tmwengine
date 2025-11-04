@@ -9,6 +9,49 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-29] - Background Email Sync - Fix getFolderUIDs()
+
+### File Modificato
+- **Function:** `supabase/functions/background-email-sync/index.ts`
+- **Backup Creato:** `index-old1.ts`
+- **Versione Precedente:** Versione originale (nessun backup precedente)
+
+### Motivo Modifica
+**Fix critico**: `getFolderUIDs()` cercava messaggi in `data.data`, ma `tmwe-api-proxy` ritorna `data.messages`. Questo causava array vuoto e zero download.
+
+### Problema Risolto
+```typescript
+// ❌ PRIMA (linea 501) - array sempre vuoto
+const messages = data.data || [];
+
+// ✅ DOPO (linea 501) - estrae correttamente i messaggi
+const messages = data.messages || [];
+```
+
+### Root Cause Analysis
+1. **TmweBackendDebugger** (funzionante): usa `data.messages` ✅
+2. **background-email-sync** (bug): usava `data.data` ❌
+3. **Response structure** da `tmwe-api-proxy`: `{ messages: [...], total: X }`
+
+### Test Post-Fix
+- [x] Verificato logs: `Extracted messages - isArray: true, length: 3`
+- [x] UIDs parsati correttamente: `✅ SUCCESS - Parsed 3 valid UIDs`
+- [x] Download email in `email_messages` tabella
+- [x] Progress tracking aggiornato in real-time
+
+### Impatto
+- **Tabelle Database:** `email_sync_progress`, `email_messages`
+- **Frontend:** `EmailSyncStatus.tsx`, Quick Download UI
+- **User Experience:** Download email finalmente funziona 🎉
+
+### Rollback Plan
+```bash
+cp supabase/functions/background-email-sync/index-old1.ts supabase/functions/background-email-sync/index.ts
+# Deploy automatico Supabase
+```
+
+---
+
 ## [2025-01-29] - TMWE Email Sync Master - Dual Mode Sync
 
 ### File Modificato

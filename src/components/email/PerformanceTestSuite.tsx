@@ -638,6 +638,126 @@ export function PerformanceTestSuite() {
         }
       };
 
+    } else if (testConfig.testType === 'imap-health') {
+      console.log('🏥 [PERF TEST] Starting IMAP Health Check');
+      
+      const healthCheck: IMAPHealthStatus = {
+        accountConnection: false,
+        accountConnectionTime: 0,
+        folderAccess: false,
+        folderAccessTime: 0,
+        emailRetrieval: false,
+        emailRetrievalTime: 0,
+        overallHealth: 'critical',
+        issues: []
+      };
+
+      // Test 1: Account Connection
+      const connStart = performance.now();
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        healthCheck.accountConnection = !!userData?.user;
+        healthCheck.accountConnectionTime = Math.round(performance.now() - connStart);
+        if (!healthCheck.accountConnection) {
+          healthCheck.issues.push('❌ Account not authenticated');
+        }
+      } catch (err) {
+        healthCheck.accountConnectionTime = Math.round(performance.now() - connStart);
+        healthCheck.issues.push(`❌ Account connection failed: ${err}`);
+      }
+
+      setProgress(33);
+
+      // Test 2: Folder Access
+      const folderStart = performance.now();
+      try {
+        const { data: folderData, error: folderError } = await supabase.functions.invoke('tmwe-api-proxy', {
+          body: {
+            endpoint: '/email_message',
+            data: {
+              handler: 'get_messages',
+              folder: testConfig.folder,
+              limit: 1,
+              offset: 0,
+              include_attachments: false
+            }
+          }
+        });
+        totalApiCalls++;
+        healthCheck.folderAccess = !folderError && !!folderData;
+        healthCheck.folderAccessTime = Math.round(performance.now() - folderStart);
+        if (!healthCheck.folderAccess) {
+          healthCheck.issues.push(`❌ Cannot access folder "${testConfig.folder}"`);
+        }
+      } catch (err) {
+        healthCheck.folderAccessTime = Math.round(performance.now() - folderStart);
+        healthCheck.issues.push(`❌ Folder access failed: ${err}`);
+      }
+
+      setProgress(66);
+
+      // Test 3: Email Retrieval
+      const emailStart = performance.now();
+      try {
+        const testUID = realUIDs[0];
+        if (!testUID) {
+          throw new Error('No UIDs available for testing');
+        }
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('tmwe-api-proxy', {
+          body: {
+            endpoint: '/email_message',
+            data: {
+              handler: 'get_message',
+              uid: testUID,
+              folder: testConfig.folder
+            }
+          }
+        });
+        totalApiCalls++;
+        healthCheck.emailRetrieval = !emailError && !!emailData;
+        healthCheck.emailRetrievalTime = Math.round(performance.now() - emailStart);
+        if (!healthCheck.emailRetrieval) {
+          healthCheck.issues.push('❌ Cannot retrieve email message');
+        }
+      } catch (err) {
+        healthCheck.emailRetrievalTime = Math.round(performance.now() - emailStart);
+        healthCheck.issues.push(`❌ Email retrieval failed: ${err}`);
+      }
+
+      setProgress(100);
+
+      // Overall health determination
+      const totalIssues = healthCheck.issues.length;
+      if (totalIssues === 0) {
+        healthCheck.overallHealth = 'healthy';
+      } else if (totalIssues <= 1) {
+        healthCheck.overallHealth = 'degraded';
+      } else {
+        healthCheck.overallHealth = 'critical';
+      }
+
+      const totalTime = performance.now() - startTime;
+
+      return {
+        config: testConfig,
+        metrics: {
+          totalTime: Math.round(totalTime),
+          avgTimePerEmail: 0,
+          minTime: 0,
+          maxTime: 0,
+          throughput: 0,
+          apiCalls: totalApiCalls,
+          errors: healthCheck.issues.length,
+          successRate: ((3 - healthCheck.issues.length) / 3) * 100
+        },
+        timestamp: new Date().toISOString(),
+        recommendations: [
+          healthCheck.overallHealth === 'healthy' ? '✅ IMAP connection is healthy' : `⚠️ IMAP health: ${healthCheck.overallHealth}`,
+          ...healthCheck.issues
+        ],
+        healthCheck
+      };
+
     } else if (testConfig.testType === 'all-in-one') {
       console.log('🎯 [ALL-IN-ONE] Starting comprehensive test suite');
       

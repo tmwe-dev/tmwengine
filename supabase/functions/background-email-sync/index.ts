@@ -254,7 +254,8 @@ async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken:
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
       endpoint: '/email',
@@ -284,7 +285,8 @@ async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken:
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
       endpoint: '/email',
@@ -311,7 +313,8 @@ async function downloadEmail(userEmail: string, folder: string, uid: number, tmw
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
       endpoint: '/email',

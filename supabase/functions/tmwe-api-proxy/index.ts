@@ -147,8 +147,8 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     
     // 🔑 DUAL AUTHENTICATION MODE
-    // Rileva se è una chiamata da Service Role o da User JWT
-    const isServiceRole = token === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    // Rileva se è una chiamata da Service Role tramite header custom
+    const isServiceRole = req.headers.get('X-Service-Role-Call') === 'true';
     
     let userEmail: string;
     

@@ -260,7 +260,8 @@ async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken:
       endpoint: '/email',
       data: {
         handler: 'get_folder_info',
-        folder: folder
+        folder: folder,
+        user_email: userEmail
       },
       bearerToken: tmweAccessToken
     })
@@ -289,7 +290,8 @@ async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken:
       endpoint: '/email',
       data: {
         handler: 'get_folder_uids',
-        folder: folder
+        folder: folder,
+        user_email: userEmail
       },
       bearerToken: tmweAccessToken
     })
@@ -316,7 +318,8 @@ async function downloadEmail(userEmail: string, folder: string, uid: number, tmw
       data: {
         handler: 'get_email_by_uid',
         folder: folder,
-        uid: uid
+        uid: uid,
+        user_email: userEmail
       },
       bearerToken: tmweAccessToken
     })

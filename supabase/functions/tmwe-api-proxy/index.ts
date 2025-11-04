@@ -146,16 +146,45 @@ serve(async (req) => {
     // Extract JWT token from Authorization header
     const token = authHeader.replace('Bearer ', '');
     
-    // Verify JWT and get user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    // 🔑 DUAL AUTHENTICATION MODE
+    // Rileva se è una chiamata da Service Role o da User JWT
+    const isServiceRole = token === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    if (authError || !user) {
-      console.error('❌ Auth error:', authError);
-      throw new Error('Unauthorized');
-    }
-
-    if (enableLogging) {
-      console.log('✅ User authenticated:', user.email);
+    let userEmail: string;
+    
+    if (isServiceRole) {
+      // Modalità Service Role: richiedi bearerToken + user_email nel body
+      if (enableLogging) {
+        console.log('🔑 Service Role authentication detected');
+      }
+      
+      if (!data.bearerToken) {
+        throw new Error('Service role calls require bearerToken (TMWE token) in request body');
+      }
+      
+      if (!data.user_email) {
+        throw new Error('Service role calls require user_email in request body');
+      }
+      
+      userEmail = data.user_email;
+      
+      if (enableLogging) {
+        console.log('✅ Service role authenticated for user:', userEmail);
+      }
+    } else {
+      // Modalità User JWT: verifica come prima
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+      
+      if (authError || !user) {
+        console.error('❌ Auth error:', authError);
+        throw new Error('Unauthorized');
+      }
+      
+      userEmail = user.email!;
+      
+      if (enableLogging) {
+        console.log('✅ User authenticated:', userEmail);
+      }
     }
 
     // Get TMWE access token from request body or database
@@ -166,7 +195,7 @@ serve(async (req) => {
       const { data: configData, error: configError } = await supabaseClient
         .from('user_tmwe_credentials')
         .select('access_token')
-        .eq('email', user.email)
+        .eq('email', userEmail)
         .single();
 
       if (configError || !configData?.access_token) {

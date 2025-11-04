@@ -1,5 +1,5 @@
-import React from 'react';
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
+import React, { useState, useEffect } from 'react';
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from '@/components/ui/carousel';
 import { User, Building2 } from 'lucide-react';
 
 interface EmailThreadTabsProps {
@@ -17,6 +17,8 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
   currentEmailIndex,
   cleanMode = false
 }) => {
+  const [api, setApi] = useState<CarouselApi>();
+
   const extractFirstName = (email: string): string => {
     if (!email) return 'Unknown';
     
@@ -29,6 +31,19 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
     // Capitalizza prima lettera
     return namePart.charAt(0).toUpperCase() + namePart.slice(1).toLowerCase();
   };
+
+  // Sincronizza scroll carousel quando cambia tab attivo
+  useEffect(() => {
+    if (!api || !activeEmailId) return;
+    
+    // Trova l'indice del tab attivo
+    const activeIndex = emails.findIndex(e => e.id === activeEmailId);
+    
+    if (activeIndex !== -1) {
+      // Scrolla il carousel al tab attivo
+      api.scrollTo(activeIndex, true);
+    }
+  }, [api, activeEmailId, emails]);
 
   interface TabButtonProps {
     isActive: boolean;
@@ -84,6 +99,7 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
   return (
     <div className={`border-b ${cleanMode ? 'bg-gray-50 border-gray-200' : 'bg-muted/50 border-white/10'} shrink-0`}>
       <Carousel
+        setApi={setApi}
         opts={{
           align: "start",
           containScroll: "trimSnaps",

@@ -250,6 +250,8 @@ async function processEmailsInBackground(
 // ============================================
 
 async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken: string): Promise<FolderInfo> {
+  console.log(`[getFolderInfo] Fetching info for folder: ${folder}`);
+  
   const response = await fetch(`${SUPABASE_URL}/functions/v1/tmwe-api-proxy`, {
     method: 'POST',
     headers: {
@@ -258,10 +260,12 @@ async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken:
       'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
-      endpoint: '/email',
+      endpoint: '/email_message',
       data: {
-        handler: 'get_folder_info',
+        handler: 'get_messages',
         folder: folder,
+        limit: 1,
+        offset: 0,
         user_email: userEmail,
         bearerToken: tmweAccessToken
       }
@@ -270,17 +274,22 @@ async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken:
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[getFolderInfo] Failed: ${response.statusText} - ${errorText}`);
     throw new Error(`Failed to get folder info: ${response.statusText} - ${errorText}`);
   }
 
   const data = await response.json();
+  console.log(`[getFolderInfo] Response:`, { success: data.success, total: data.total });
+  
   return {
     folder,
-    total: data.folder_info?.total_messages || 0
+    total: data.total || 0
   };
 }
 
 async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken: string): Promise<number[]> {
+  console.log(`[getFolderUIDs] Fetching UIDs for folder: ${folder}`);
+  
   const response = await fetch(`${SUPABASE_URL}/functions/v1/tmwe-api-proxy`, {
     method: 'POST',
     headers: {
@@ -289,10 +298,12 @@ async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken:
       'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
-      endpoint: '/email',
+      endpoint: '/email_message',
       data: {
-        handler: 'get_folder_uids',
+        handler: 'get_messages',
         folder: folder,
+        limit: 999999,
+        offset: 0,
         user_email: userEmail,
         bearerToken: tmweAccessToken
       }
@@ -301,11 +312,15 @@ async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken:
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[getFolderUIDs] Failed: ${response.statusText} - ${errorText}`);
     throw new Error(`Failed to get UIDs: ${response.statusText} - ${errorText}`);
   }
 
   const data = await response.json();
-  return data.uids || [];
+  console.log(`[getFolderUIDs] Response:`, { success: data.success, count: data.data?.length });
+  
+  const uids = data.data?.map((msg: any) => parseInt(msg.uid, 10)) || [];
+  return uids.filter((uid: number) => !isNaN(uid));
 }
 
 async function downloadEmail(userEmail: string, folder: string, uid: number, tmweAccessToken: string): Promise<any> {
@@ -317,11 +332,11 @@ async function downloadEmail(userEmail: string, folder: string, uid: number, tmw
       'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
-      endpoint: '/email',
+      endpoint: '/email_message',
       data: {
-        handler: 'get_email_by_uid',
+        handler: 'get_message',
+        uid: uid.toString(),
         folder: folder,
-        uid: uid,
         user_email: userEmail,
         bearerToken: tmweAccessToken
       }
@@ -329,26 +344,34 @@ async function downloadEmail(userEmail: string, folder: string, uid: number, tmw
   });
 
   if (!response.ok) {
-    console.error(`Failed to download email UID ${uid}: ${response.statusText}`);
+    console.error(`[downloadEmail] Failed to download UID ${uid}: ${response.statusText}`);
     return null;
   }
 
-  const data = await response.json();
+  const result = await response.json();
   
-  // Mappa al formato DB
+  if (!result.success || !result.data) {
+    console.error(`[downloadEmail] API returned failure for UID ${uid}:`, result.errors);
+    return null;
+  }
+
+  const data = result.data;
+  console.log(`[downloadEmail] Downloaded UID ${uid}:`, { subject: data.subject?.substring(0, 50) });
+  
+  // Mappa al formato DB (identico al Debugger)
   return {
-    message_id: data.message_id,
+    message_id: `${userEmail}/${folder}/${uid}`,
     user_email: userEmail,
     folder_name: folder,
     uid,
-    subject: data.subject,
-    from_email: data.from,
-    to_email: data.to,
-    cc: data.cc,
-    bcc: data.bcc,
-    date: data.date,
-    body_text: data.body_text,
-    body_html: data.body_html,
+    subject: data.subject || '',
+    from_email: data.from?.email || data.from || '',
+    to_email: data.to?.[0]?.email || (Array.isArray(data.to) && data.to.length > 0 ? data.to[0] : data.to) || '',
+    cc: data.cc ? (Array.isArray(data.cc) ? data.cc.map((c: any) => c.email || c).join(', ') : data.cc) : null,
+    bcc: data.bcc ? (Array.isArray(data.bcc) ? data.bcc.map((b: any) => b.email || b).join(', ') : data.bcc) : null,
+    date: data.date || new Date().toISOString(),
+    body_text: data.body_type === 'plain' ? data.body : data.preview || '',
+    body_html: data.body_type === 'html' ? data.body : null,
     attachments: data.attachments || [],
     headers: data.headers || {},
     flags: data.flags || [],

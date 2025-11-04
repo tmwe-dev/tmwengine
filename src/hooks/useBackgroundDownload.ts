@@ -45,6 +45,8 @@ export function useBackgroundDownload() {
   // ============================================
   const startDownload = useCallback(async (folders: string[], userEmail: string) => {
     try {
+      console.log('🚀 [useBackgroundDownload] Starting download:', { folders, userEmail });
+      
       setStatus(prev => ({
         ...prev,
         status: 'pending',
@@ -57,9 +59,16 @@ export function useBackgroundDownload() {
         body: { folders, user_email: userEmail }
       });
 
+      console.log('📡 [useBackgroundDownload] Edge Function response:', { data, error });
+
       if (error) throw error;
 
+      if (!data?.job_id) {
+        throw new Error('No job_id returned from Edge Function');
+      }
+
       const jobId = data.job_id;
+      console.log('✅ [useBackgroundDownload] Job started:', jobId);
 
       setStatus(prev => ({
         ...prev,
@@ -72,7 +81,7 @@ export function useBackgroundDownload() {
 
       return { success: true, jobId };
     } catch (error: any) {
-      console.error('Error starting background download:', error);
+      console.error('❌ [useBackgroundDownload] Error starting download:', error);
       setStatus(prev => ({
         ...prev,
         status: 'error',

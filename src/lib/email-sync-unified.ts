@@ -222,7 +222,7 @@ export class EmailSyncUnified {
       this.updateProgress();
 
       // STEP 2: Check existing message_ids in DB
-      const messageIds = uids.map(uid => `${folder}/${uid}`);
+      const messageIds = uids.map(uid => `${this.userEmail}/${folder}/${uid}`);
       const { data: existingEmails } = await supabase
         .from('email_messages')
         .select('message_id')
@@ -230,7 +230,10 @@ export class EmailSyncUnified {
         .in('message_id', messageIds);
 
       const existingUids = new Set(
-        (existingEmails || []).map(e => e.message_id?.split('/')[1]).filter(Boolean)
+        (existingEmails || []).map(e => {
+          const parts = e.message_id?.split('/');
+          return parts?.[2] ? parseInt(parts[2], 10) : null;
+        }).filter((uid): uid is number => uid !== null && !isNaN(uid))
       );
 
       console.log(`   Already in DB: ${existingUids.size}`);
@@ -324,7 +327,7 @@ export class EmailSyncUnified {
     }
   }
 
-  private async fetchFolderUIDs(folder: string): Promise<string[]> {
+  private async fetchFolderUIDs(folder: string): Promise<number[]> {
     await this.ensureValidSession();
 
     console.log(`📧 [EmailSyncUnified] Fetching UIDs for: ${folder}`);
@@ -358,11 +361,11 @@ export class EmailSyncUnified {
       firstUID: data?.data?.[0]?.uid
     });
 
-    const uids: string[] = data?.data?.map((msg: any) => msg.uid?.toString() || '') || [];
-    return uids.filter(uid => Boolean(uid));
+    const uids: number[] = data?.data?.map((msg: any) => parseInt(msg.uid, 10)) || [];
+    return uids.filter(uid => !isNaN(uid));
   }
 
-  private async downloadEmail(uid: string, folder: string): Promise<any> {
+  private async downloadEmail(uid: number, folder: string): Promise<any> {
     await this.ensureValidSession();
 
     // 🧪 Chiama API (IDENTICO AL DEBUGGER testGetMessage)
@@ -371,7 +374,7 @@ export class EmailSyncUnified {
         endpoint: '/email_message',
         data: {
           handler: 'get_message',
-          uid,
+          uid: uid.toString(),
           folder
         }
       }
@@ -397,7 +400,7 @@ export class EmailSyncUnified {
   private async insertEmail(email: any, folder: string): Promise<void> {
     const emailData = {
       user_email: this.userEmail,
-      message_id: `${folder}/${email.uid}`,
+      message_id: `${this.userEmail}/${folder}/${email.uid}`,
       cartella: folder,
       subject: email.subject || '',
       from_email: email.from?.email || email.from || '',

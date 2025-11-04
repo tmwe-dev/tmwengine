@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useEmailThread } from '@/hooks/useEmailThread';
-import { EmailThreadView } from './EmailThreadView';
+import { EmailThreadTabs } from './EmailThreadTabs';
+import { SingleEmailCard } from './SingleEmailCard';
 import { ClassifiedEmail } from '@/types/smart-inbox';
 import { X, EyeOff } from 'lucide-react';
 
@@ -20,6 +23,11 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
     emailId: classifiedEmail?.email?.email_id
   });
 
+  // 🆕 State per tab attivo
+  const [activeEmailId, setActiveEmailId] = useState(
+    emails[currentEmailIndex]?.id || classifiedEmail?.email?.email_id
+  );
+
   if (!classifiedEmail) return null;
 
   return (
@@ -31,9 +39,9 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
             {classifiedEmail.email.subject}
           </h2>
           {emails.length > 1 && (
-            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
+            <Badge className="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold">
               {emails.length} email
-            </span>
+            </Badge>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -51,18 +59,34 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
         </div>
       </div>
 
-      {/* Content scrollabile bianco */}
+      {/* 🆕 Tabs Navigation Orizzontale */}
+      {emails.length > 0 && (
+        <EmailThreadTabs
+          emails={emails}
+          activeEmailId={activeEmailId}
+          onTabChange={setActiveEmailId}
+          currentEmailIndex={currentEmailIndex}
+          cleanMode={true}
+        />
+      )}
+
+      {/* 🆕 Content con Tabs */}
       <div className="flex-1 overflow-y-auto p-6 bg-white">
         {isLoading ? (
           <div className="text-center py-8 text-black">Caricamento thread...</div>
         ) : (
-          <EmailThreadView
-            emails={emails}
-            currentEmailIndex={currentEmailIndex}
-            hasMore={hasMore}
-            onLoadMore={loadMore}
-            cleanMode={true}
-          />
+          <Tabs value={activeEmailId} onValueChange={setActiveEmailId}>
+            {emails.map((email, index) => (
+              <TabsContent key={email.id} value={email.id} className="mt-0">
+                <SingleEmailCard
+                  email={email}
+                  cleanMode={true}
+                  isCurrent={index === currentEmailIndex}
+                  isCollapsible={false}
+                />
+              </TabsContent>
+            ))}
+          </Tabs>
         )}
       </div>
 

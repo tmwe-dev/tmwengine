@@ -506,106 +506,89 @@ Tutti i colori DEVONO essere HSL.
 /* === MODALITÀ SCURO (DEFAULT) === */
 /* Applicata quando cleanMode = false */
 
-/* Rispetta colori originali HTML - nessun forcing */
+/* Forza testo chiaro per leggibilità su sfondo scuro dell'app */
 .email-body-content:not(.email-body-light) {
-  color: inherit;
+  color: #f3f4f6 !important; /* gray-100 - base text */
 }
 
 .email-body-content:not(.email-body-light) * {
-  color: inherit;
+  color: #f3f4f6 !important; /* gray-100 - tutti gli elementi */
 }
 
 /* Link: viola chiaro distinguibile */
 .email-body-content:not(.email-body-light) a {
   color: #a78bfa !important; /* purple-400 */
   text-decoration: underline;
-  font-weight: 500;
 }
 
 .email-body-content:not(.email-body-light) a:hover {
   color: #c4b5fd !important; /* purple-300 */
 }
 
-/* Grassetto: bianco puro per enfasi */
+/* Testo in grassetto: bianco puro per evidenza */
 .email-body-content:not(.email-body-light) strong,
 .email-body-content:not(.email-body-light) b {
-  color: white !important;
-  font-weight: 700;
+  color: #ffffff !important;
 }
 
-/* Immagini: sfondo bianco per visibilità su sfondo scuro */
+/* Immagini: sfondo bianco sempre (per contrasto con testo scuro embedded) */
 .email-body-content:not(.email-body-light) img {
   background-color: white !important;
-  padding: 6px;
+  padding: 8px;
   border-radius: 4px;
   max-width: 100%;
   height: auto;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Tabelle: bordi chiari */
-.email-body-content:not(.email-body-light) table {
-  border-color: rgba(255, 255, 255, 0.2) !important;
-}
-
+/* Tabelle: mantieni bordi visibili */
+.email-body-content:not(.email-body-light) table,
 .email-body-content:not(.email-body-light) td,
 .email-body-content:not(.email-body-light) th {
   border-color: rgba(255, 255, 255, 0.2) !important;
-  color: #f3f4f6 !important;
-}
-
-/* Citazioni: stile scuro */
-.email-body-content:not(.email-body-light) blockquote {
-  border-left: 4px solid #a78bfa;
-  padding-left: 16px;
-  color: #d1d5db !important; /* gray-300 */
-  font-style: italic;
-}
-
-/* Code blocks: sfondo scuro */
-.email-body-content:not(.email-body-light) code {
-  background-color: rgba(0, 0, 0, 0.3);
-  color: #fbbf24 !important; /* amber-400 */
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-family: 'Courier New', monospace;
 }
 
 
 /* === MODALITÀ CHIARO/ORIGINALE (CLEAN MODE) === */
 /* Applicata quando cleanMode = true */
 
-/* Mantieni colori originali dell'HTML - nessuna forzatura */
-.email-body-light,
-.email-body-light * {
-  color: inherit !important;
-}
-
-/* Solo fallback per elementi senza colore specificato */
+/* FORZA testo scuro per leggibilità su sfondo bianco */
 .email-body-light {
-  color: #1f2937; /* gray-800 - solo come fallback */
+  color: #1f2937 !important; /* gray-800 - base text */
+  background-color: white !important;
 }
 
-/* Immagini: nessuno sfondo - mantieni originali */
+.email-body-light * {
+  color: #1f2937 !important; /* gray-800 - tutti gli elementi */
+}
+
+/* Link: blu scuro leggibile */
+.email-body-light a {
+  color: #2563eb !important; /* blue-600 */
+  text-decoration: underline;
+}
+
+.email-body-light a:hover {
+  color: #1d4ed8 !important; /* blue-700 */
+}
+
+/* Grassetto: nero puro */
+.email-body-light strong,
+.email-body-light b {
+  color: #000000 !important;
+}
+
+/* Immagini: nessuno sfondo forzato - mantieni originali */
 .email-body-light img {
   background-color: transparent !important;
-  padding: 0;
   max-width: 100%;
   height: auto;
 }
 
-/* Link: mantieni colori originali */
-.email-body-light a {
-  color: inherit !important;
-  text-decoration: underline;
-}
-
-/* Tabelle: mantieni colori originali */
+/* Tabelle: bordi grigi */
 .email-body-light table,
 .email-body-light td,
 .email-body-light th {
-  border-color: inherit !important;
-  color: inherit !important;
+  border-color: #e5e7eb !important; /* gray-200 */
 }
 
 

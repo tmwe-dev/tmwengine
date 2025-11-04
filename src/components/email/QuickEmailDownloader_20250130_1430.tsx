@@ -3,7 +3,7 @@
  * Componente UI completamente isolato
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,8 @@ import {
   Square
 } from 'lucide-react';
 import emailFolderGif from '@/assets/email-folder-unscreen.gif';
-import { emailFolderApi, emailMessageApi } from '@/lib/tmwe-api-integrated';
-import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+import { useBackgroundDownload } from '@/hooks/useBackgroundDownload';
+import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
 import { PerformanceProfileConfigurator } from '@/components/testing/PerformanceProfileConfigurator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -63,34 +63,85 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const [activeProfile, setActiveProfile] = useState<PerformanceProfile | null>(null);
+  const [useTestFunction, setUseTestFunction] = useState(false);
   const [pauseState, setPauseState] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // ✅ CLIENT-SIDE STATE (come FunEmailDownloader)
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentFolder, setCurrentFolder] = useState('');
-  const [stats, setStats] = useState({
-    total: 0,
-    downloaded: 0,
-    failed: 0,
-    skipped: 0,
-  });
-  const shouldStop = useRef(false);
-  const isPaused = useRef(false);
+  // Background download hook
+  const { status: bgStatus, startDownload, isDownloading, reset: resetDownload } = useBackgroundDownload();
 
   useEffect(() => {
     loadQuickFolders();
     loadUserEmail();
     loadActiveProfile();
+    cleanupZombieJobs();
   }, []);
 
+  // 🧹 Cleanup zombie jobs automaticamente all'avvio
+  const cleanupZombieJobs = async () => {
+    try {
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      
+      const { data: zombieJobs, error: fetchError } = await supabase
+        .from('email_sync_progress')
+        .select('job_id, folder_name, updated_at')
+        .eq('status', 'running')
+        .lt('updated_at', tenMinutesAgo);
 
+      if (fetchError) {
+        console.error('❌ Error fetching zombie jobs:', fetchError);
+        return;
+      }
+
+      if (zombieJobs && zombieJobs.length > 0) {
+        console.log(`🧹 Found ${zombieJobs.length} zombie jobs, terminating...`);
+        
+        for (const job of zombieJobs) {
+          const { error: updateError } = await supabase
+            .from('email_sync_progress')
+            .update({
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('job_id', job.job_id);
+
+          if (updateError) {
+            console.error(`❌ Error terminating zombie job ${job.job_id}:`, updateError);
+          } else {
+            console.log(`✅ Terminated zombie job: ${job.job_id} (${job.folder_name})`);
+          }
+        }
+
+        toast({
+          title: '🧹 Cleanup automatico',
+          description: `Terminati ${zombieJobs.length} job zombi precedenti`,
+        });
+      }
+    } catch (error) {
+      console.error('❌ Zombie cleanup error:', error);
+    }
+  };
+
+  // Effetto per invalidare query Verifica Integrità al completamento
+  useEffect(() => {
+    if (bgStatus.status === 'completed') {
+      queryClient.invalidateQueries({ queryKey: ['email-integrity-check'] });
+      console.log('✅ [QuickDownload] Invalidated integrity check query');
+    }
+    
+    if (bgStatus.status === 'error') {
+      queryClient.invalidateQueries({ queryKey: ['email-integrity-check'] });
+      console.log('⚠️ [QuickDownload] Invalidated integrity check query after error');
+    }
+  }, [bgStatus.status, queryClient]);
+  
   // Notifica parent component quando cambia lo stato download
   useEffect(() => {
-    onDownloadStatusChange?.(isDownloading);
-  }, [isDownloading, onDownloadStatusChange]);
+    const isActive = bgStatus.status === 'running' || bgStatus.status === 'pending';
+    onDownloadStatusChange?.(isActive);
+  }, [bgStatus.status, onDownloadStatusChange]);
 
   const loadUserEmail = async () => {
     try {
@@ -240,21 +291,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     setQuickFolders(prev => prev.map(f => ({ ...f, selected: !allQuickSelected })));
   };
 
-  const fetchWithTimeout = async <T,>(
-    promise: Promise<T>,
-    timeoutMs: number,
-    errorMessage: string
-  ): Promise<T> => {
-    return Promise.race([
-      promise,
-      new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
-      )
-    ]);
-  };
-
   const pauseDownload = () => {
-    isPaused.current = true;
     setPauseState(true);
     toast({
       title: "⏸️ Download in pausa",
@@ -264,7 +301,6 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   };
 
   const resumeDownload = () => {
-    isPaused.current = false;
     setPauseState(false);
     toast({
       title: "▶️ Download ripreso",
@@ -274,8 +310,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   };
 
   const stopDownload = () => {
-    shouldStop.current = true;
-    isPaused.current = false;
+    resetDownload();
     setPauseState(false);
     toast({
       title: "🛑 Download fermato",
@@ -285,258 +320,50 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     console.log('🛑 Download fermato definitivamente');
   };
 
-  // ✅ CLIENT-SIDE DOWNLOAD (copiato da FunEmailDownloader)
-  const startDownload = async () => {
+  const handleStartBackgroundDownload = async () => {
     const selectedFolders = quickFolders.filter(f => f.selected).map(f => f.name);
     
     if (selectedFolders.length === 0) {
       toast({
         title: '⚠️ Nessuna cartella selezionata',
         description: 'Seleziona almeno una cartella da sincronizzare',
-        variant: 'default',
-      });
-      return;
-    }
-
-    shouldStop.current = false;
-    isPaused.current = false;
-    setPauseState(false);
-    setIsDownloading(true);
-    setProgress(0);
-    setCurrentFolder('');
-    setStats({ total: 0, downloaded: 0, failed: 0, skipped: 0 });
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.email) {
-      toast({
-        title: '❌ Errore autenticazione',
-        description: 'Utente non autenticato',
         variant: 'destructive',
       });
-      setIsDownloading(false);
       return;
     }
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('tmwe_email')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile?.tmwe_email) {
+    if (!userEmail) {
       toast({
-        title: '❌ Email TMWE non configurato',
-        description: 'Configura l\'email TMWE nel profilo',
+        title: '❌ Errore',
+        description: 'Email utente non trovata',
         variant: 'destructive',
       });
-      setIsDownloading(false);
       return;
     }
 
-    let globalDownloaded = 0;
-    let globalFailed = 0;
-    let globalSkipped = 0;
-    let globalTotal = 0;
+    // ✅ Determina quale funzione usare
+    const functionName = useTestFunction 
+      ? 'background-email-sync-test' 
+      : 'background-email-sync';
 
-    for (const folder of selectedFolders) {
-      if (shouldStop.current) {
-        console.log('⏸️ Download fermato dall\'utente');
-        break;
-      }
-
-      try {
-        console.log(`📂 Inizio download cartella: ${folder}`);
-        setCurrentFolder(`📂 ${folder}: recupero lista...`);
-        
-        const uidListResponse = await fetchWithTimeout(
-          emailMessageApi.getMessages({
-            folder: folder,
-            limit: 2000,
-            offset: 0,
-          }),
-          20000,
-          `Timeout recupero UID per cartella ${folder}`
-        );
-        
-        const uidList = uidListResponse?.messages || [];
-        
-        console.log(`📂 ${folder}: API ha restituito ${uidList.length} UID`);
-        
-        if (uidList.length === 0) {
-          console.log(`📂 ${folder}: nessuna email trovata`);
-          continue;
-        }
-
-        // ✅ PRE-FILTRAGGIO BATCH: verifica quali email esistono già nel DB
-        const expectedMessageIds = uidList.map(u => `${folder}/${String(u.uid)}`);
-        
-        const batchSize = 1000;
-        const existingSet = new Set<string>();
-        
-        for (let i = 0; i < expectedMessageIds.length; i += batchSize) {
-          const batch = expectedMessageIds.slice(i, i + batchSize);
-          
-          const { data: existingMessages } = await supabase
-            .from('email_messages')
-            .select('message_id')
-            .eq('user_email', profile.tmwe_email)
-            .in('message_id', batch);
-          
-          existingMessages?.forEach(m => existingSet.add(m.message_id));
-        }
-        
-        const uidsToDownload = uidList.filter(u => {
-          const messageId = `${folder}/${String(u.uid)}`;
-          return !existingSet.has(messageId);
-        });
-        
-        const alreadyPresentCount = uidList.length - uidsToDownload.length;
-        
-        console.log(`📂 ${folder}: ${uidsToDownload.length} nuove email da scaricare`);
-        console.log(`📂 ${folder}: ${alreadyPresentCount} già presenti (saltate in batch)`);
-        
-        globalTotal += uidsToDownload.length;
-        globalSkipped += alreadyPresentCount;
-        setStats(prev => ({ 
-          ...prev, 
-          total: globalTotal,
-          skipped: globalSkipped 
-        }));
-
-        if (uidsToDownload.length === 0) {
-          console.log(`📂 ${folder}: tutte le ${uidList.length} email già presenti nel DB`);
-          continue;
-        }
-
-        console.log(`📂 ${folder}: inizio download ${uidsToDownload.length} nuove email...`);
-
-        for (let i = 0; i < uidsToDownload.length; i++) {
-          if (shouldStop.current) {
-            console.log('⏸️ Download fermato dall\'utente');
-            break;
-          }
-
-          while (isPaused.current) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            if (shouldStop.current) break;
-          }
-
-          if (shouldStop.current) break;
-
-          const uidInfo = uidsToDownload[i];
-          const uid = String(uidInfo.uid);
-          const messageId = `${folder}/${uid}`;
-          
-          setCurrentFolder(`📂 ${folder}: ${i + 1}/${uidsToDownload.length} nuove`);
-          
-          try {
-            const email = await fetchWithTimeout(
-              emailMessageApi.getMessage(uid, folder, false),
-              30000,
-              `Timeout recupero email ${folder}/${uid}`
-            );
-            
-            if (!email) {
-              console.warn(`⚠️ Email ${folder}/${uid} non trovata`);
-              globalFailed++;
-              setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
-              continue;
-            }
-
-            let isoDate = new Date().toISOString();
-            if (email.date) {
-              try {
-                isoDate = new Date(email.date).toISOString();
-              } catch (e) {
-                console.error('Error parsing date:', email.date);
-              }
-            }
-
-            const { error: insertError } = await supabase.from('email_messages').insert({
-              message_id: messageId,
-              from_email: email.from?.address || email.from || email.from_email || '',
-              to_email: Array.isArray(email.to) 
-                ? email.to.map((t: any) => t.address || t).join(',')
-                : email.to || email.to_email || '',
-              cc_email: email.cc || email.cc_email || null,
-              bcc_email: email.bcc || email.bcc_email || null,
-              subject: email.subject || '',
-              body_text: email.body_text || email.text || '',
-              body_html: email.body_html || email.html || '',
-              data_ricezione: isoDate,
-              cartella: folder,
-              direzione: 'inbound',
-              stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
-              flags: email.flags || [],
-              attachments: email.attachments || [],
-              provider_id: '00000000-0000-0000-0000-000000000000',
-              user_email: profile.tmwe_email,
-              sync_status: 'fun_email_backup',
-            });
-
-            if (!insertError) {
-              console.log(`   ✅ Salvata ${folder}/${uid}: ${email.subject?.substring(0, 30)}`);
-              globalDownloaded++;
-              setStats(prev => ({ ...prev, downloaded: prev.downloaded + 1 }));
-            } else {
-              console.error(`Errore inserimento ${folder}/${uid}:`, insertError);
-              globalFailed++;
-              setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
-            }
-
-          } catch (error) {
-            console.error(`Errore download ${folder}/${uid}:`, error);
-            globalFailed++;
-            setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
-          }
-
-          const progressPercent = ((globalDownloaded + globalFailed) / globalTotal) * 100;
-          setProgress(Math.round(progressPercent));
-        }
-        
-        console.log(`✅ Cartella ${folder} completata:`);
-        console.log(`   ${uidsToDownload.length} nuove scaricate`);
-        console.log(`   ${alreadyPresentCount} già presenti (saltate in batch)`);
-        if (globalFailed > 0) console.log(`   ${globalFailed} errori`);
-        
-        await loadQuickStats();
-        
-      } catch (folderError: any) {
-        console.error(`❌ Errore cartella ${folder}:`, folderError.message || folderError);
-        
-        if (folderError.message?.includes('Timeout')) {
-          toast({
-            title: `⏱️ Timeout cartella ${folder}`,
-            description: 'La cartella richiede troppo tempo. Continuo con la prossima...',
-            variant: 'default',
-          });
-        } else {
-          toast({
-            title: `⚠️ Errore cartella ${folder}`,
-            description: folderError.message || 'Continuando con la prossima cartella...',
-            variant: 'default',
-          });
-        }
-        
-        continue;
-      }
-    }
-
-    setProgress(100);
-    setCurrentFolder('Completato!');
+    console.log(`🎯 [QuickDownload] Using Edge Function: ${functionName}`);
 
     toast({
-      title: '✅ Download completato',
-      description: `${globalDownloaded} email salvate, ${globalSkipped} duplicate saltate, ${globalFailed} errori`,
+      title: useTestFunction ? '🧪 Test Mode Attivo' : '🚀 Download Standard',
+      description: useTestFunction 
+        ? `Download ottimizzato di ${selectedFolders.length} cartelle (solo email nuove)...`
+        : `Download completo di ${selectedFolders.length} cartelle...`,
     });
 
-    queryClient.invalidateQueries({ queryKey: ['email-integrity-check'] });
-    queryClient.invalidateQueries({ queryKey: ['fun-email-quick-stats'] });
-    await loadQuickStats();
+    const result = await startDownload(selectedFolders, userEmail, functionName);
 
-    setIsDownloading(false);
-    setProgress(0);
-    setCurrentFolder('');
+    if (!result.success) {
+      toast({
+        title: '❌ Errore',
+        description: result.error || 'Impossibile avviare il download',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDownloadFromPreferences = async () => {
@@ -561,17 +388,25 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         return;
       }
 
-      // Imposta cartelle selezionate e avvia download
-      setQuickFolders(prev => prev.map(f => ({
-        ...f,
-        selected: preferences.included_folders.includes(f.name)
-      })));
+      // ✅ Determina quale funzione usare
+      const functionName = useTestFunction 
+        ? 'background-email-sync-test' 
+        : 'background-email-sync';
 
-      // Attendi un attimo per il re-render delle selezioni
-      setTimeout(() => {
-        startDownload();
-      }, 100);
+      const result = await startDownload(preferences.included_folders, userEmail, functionName);
 
+      if (!result.success) {
+        toast({
+          title: '❌ Errore',
+          description: result.error || 'Impossibile avviare il download',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: '🚀 Sync avviata',
+          description: `Download di ${preferences.included_folders.length} cartelle dalle preferenze...`,
+        });
+      }
     } catch (error: any) {
       toast({
         title: '❌ Errore',
@@ -595,7 +430,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       </div>
 
       {/* Progress Card (visible durante download) */}
-      {isDownloading && (
+      {bgStatus.status !== 'idle' && (
         <Card className="border-purple-500 border-2 shadow-lg shadow-purple-500/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center justify-between">
@@ -603,8 +438,15 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
                 <Gauge className="h-4 w-4 animate-pulse text-purple-500" />
                 Download in corso
               </span>
-              <Badge variant="secondary">
-                ⚡ In corso
+              <Badge variant={
+                bgStatus.status === 'completed' ? 'default' :
+                bgStatus.status === 'error' ? 'destructive' :
+                'secondary'
+              }>
+                {bgStatus.status === 'running' ? '⚡ In corso' :
+                 bgStatus.status === 'pending' ? '⏳ Avvio' :
+                 bgStatus.status === 'completed' ? '✅ Completato' :
+                 bgStatus.status === 'error' ? '❌ Errore' : ''}
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -613,32 +455,32 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
               {userEmail && (
                 <RealtimeEmailInsertionMonitor
                   userEmail={userEmail}
-                  isActive={isDownloading}
+                  isActive={bgStatus.status === 'running' || bgStatus.status === 'pending'}
                 />
               )}
               
               {/* Progress bar */}
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium">Progresso</span>
-                  <span className="text-muted-foreground">
-                    {stats.downloaded} / {stats.total} email
-                  </span>
-                </div>
-                <Progress 
-                  value={progress} 
-                  className="h-2 bg-purple-100 dark:bg-purple-900" 
-                />
+              <div className="flex justify-between text-sm mb-1">
+                <span className="font-medium">Progresso</span>
+                <span className="text-muted-foreground">
+                  {bgStatus.completedFolders.length} / {bgStatus.foldersToSync.length} cartelle
+                </span>
               </div>
+              <Progress 
+                value={(bgStatus.completedFolders.length / bgStatus.foldersToSync.length) * 100 || 0} 
+                className="h-[1px] bg-purple-100 dark:bg-purple-900" 
+              />
+            </div>
 
-              {/* Cartella corrente */}
-              <div className="flex items-center gap-2 text-sm">
-                <FolderOpen className="h-4 w-4 text-purple-500" />
-                <span className="font-medium truncate">{currentFolder || 'Preparazione...'}</span>
-              </div>
+            {/* Cartella corrente */}
+            <div className="flex items-center gap-2 text-sm">
+              <FolderOpen className="h-4 w-4 text-purple-500" />
+              <span className="font-medium truncate">{bgStatus.currentFolder || 'Preparazione...'}</span>
+            </div>
 
-              {/* Controlli Download */}
-              {isDownloading && (
+            {/* Controlli Download */}
+            {(bgStatus.status === 'running' || bgStatus.status === 'pending') && (
               <div className="flex gap-2 pt-2 border-t border-purple-200 dark:border-purple-800">
                 {pauseState ? (
                   <>
@@ -689,35 +531,54 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       )}
 
       {/* Stats durante download */}
-      {isDownloading && (
+      {bgStatus.status !== 'idle' && (
         <div className="flex items-center justify-around gap-6 px-4 animate-fade-in">
-          {/* Da scaricare */}
-          <div className="flex flex-col items-center">
-            <div className="text-3xl font-bold text-blue-600">
-              {stats.total - stats.downloaded - stats.failed}
-            </div>
-            <div className="text-xs text-muted-foreground">da scaricare</div>
-          </div>
-
-          {/* GIF Animata */}
-          <img 
-            src={emailFolderGif} 
-            alt="Email downloading animation" 
-            className="w-20 h-20 object-contain"
-          />
-
           {/* Scaricate */}
           <div className="flex flex-col items-center">
-            <div className="text-3xl font-bold text-green-600">
-              {stats.downloaded}
+            <div className="text-3xl font-bold text-green-500">
+              {bgStatus.overallDownloaded.toLocaleString()}
             </div>
-            <div className="text-xs text-muted-foreground">scaricate</div>
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" />
+              Scaricate
+            </div>
+          </div>
+
+          {/* GIF Animata con badge velocità */}
+          <div className="relative">
+            <img 
+              src={emailFolderGif} 
+              alt="Email downloading animation" 
+              className="w-20 h-20 object-contain"
+            />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-background px-2 py-0.5 rounded-full shadow-sm border border-purple-500/30">
+              {bgStatus.speed?.toFixed(1) || '0'}/s
+            </div>
+          </div>
+
+          {/* Totali */}
+          <div className="flex flex-col items-center">
+            <div className="text-3xl font-bold text-blue-500">
+              {bgStatus.overallTotal.toLocaleString()}
+            </div>
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <Download className="h-3 w-3" />
+              Totali
+            </div>
           </div>
         </div>
       )}
 
+      {/* Tempo stimato */}
+      {bgStatus.status === 'running' && bgStatus.eta > 0 && (
+        <div className="flex items-center justify-center gap-2 text-sm text-purple-600 dark:text-purple-400">
+          <Clock className="h-4 w-4" />
+          <span className="font-medium">~{Math.round(bgStatus.eta)}s rimanenti</span>
+        </div>
+      )}
+
       {/* Sync da Preferenze */}
-      {!isDownloading && (
+      {bgStatus.status === 'idle' && (
         <Card className="border-purple-500 border-2 bg-purple-50/10">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -801,7 +662,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       )}
 
       {/* Folder Selection */}
-      {!isDownloading && (
+      {bgStatus.status === 'idle' && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center justify-between">
@@ -840,12 +701,54 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         </Card>
       )}
 
+      {/* Test Mode Toggle - PRIMA del pulsante Start */}
+      {bgStatus.status === 'idle' && (
+        <Card className="border-yellow-500 border-2 bg-yellow-50/10">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">🧪</div>
+                <div>
+                  <p className="font-semibold text-sm">
+                    Modalità Test (Pre-check Duplicati)
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {useTestFunction 
+                      ? '✅ Attiva - Scarica solo email nuove (più veloce)'
+                      : '⚠️ Disattiva - Usa funzione standard (scarica tutto)'
+                    }
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Badge variant={useTestFunction ? 'default' : 'outline'} className="text-xs">
+                  {useTestFunction ? 'NEW 🚀' : 'OLD'}
+                </Badge>
+                <Switch
+                  checked={useTestFunction}
+                  onCheckedChange={setUseTestFunction}
+                  className="data-[state=checked]:bg-green-500"
+                />
+              </div>
+            </div>
+            
+            {useTestFunction && (
+              <div className="mt-3 p-2 bg-green-500/10 border border-green-500/30 rounded text-xs">
+                <strong>💡 Ottimizzazione attiva:</strong> Il sistema verifica quali email sono già presenti 
+                nel database prima di scaricarle, risparmiando tempo e banda.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Start Button */}
-      {!isDownloading && (
+      {bgStatus.status === 'idle' && (
         <Button
           className="w-full"
           size="lg"
-          onClick={startDownload}
+          onClick={handleStartBackgroundDownload}
           disabled={isQuickLoading || isDownloading || quickFolders.filter(f => f.selected).length === 0}
         >
           {isQuickLoading ? (

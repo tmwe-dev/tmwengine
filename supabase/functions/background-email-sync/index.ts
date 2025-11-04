@@ -258,10 +258,10 @@ async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken:
       'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
-      endpoint: '/email',
+      endpoint: '/email_folder',
       data: {
         handler: 'get_folder_info',
-        folder: folder,
+        folder_name: folder,
         user_email: userEmail,
         bearerToken: tmweAccessToken
       }
@@ -276,7 +276,7 @@ async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken:
   const data = await response.json();
   return {
     folder,
-    total: data.folder_info?.total_messages || 0
+    total: data.message_count || data.messages || 0
   };
 }
 
@@ -289,10 +289,13 @@ async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken:
       'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
-      endpoint: '/email',
+      endpoint: '/email_message',
       data: {
-        handler: 'get_folder_uids',
+        handler: 'get_messages',
         folder: folder,
+        limit: 1000,
+        offset: 0,
+        metadata_only: true,
         user_email: userEmail,
         bearerToken: tmweAccessToken
       }
@@ -305,7 +308,8 @@ async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken:
   }
 
   const data = await response.json();
-  return data.uids || [];
+  const messages = data.messages || data.emails || [];
+  return messages.map((m: any) => m.uid || m.message_id);
 }
 
 async function downloadEmail(userEmail: string, folder: string, uid: number, tmweAccessToken: string): Promise<any> {
@@ -317,11 +321,11 @@ async function downloadEmail(userEmail: string, folder: string, uid: number, tmw
       'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
-      endpoint: '/email',
+      endpoint: '/email_message',
       data: {
-        handler: 'get_email_by_uid',
+        handler: 'get_message',
+        message_id: uid.toString(),
         folder: folder,
-        uid: uid,
         user_email: userEmail,
         bearerToken: tmweAccessToken
       }
@@ -335,24 +339,29 @@ async function downloadEmail(userEmail: string, folder: string, uid: number, tmw
 
   const data = await response.json();
   
-  // Mappa al formato DB
+  // Estrai email dalla risposta (può essere wrappata in .message o .email o diretta)
+  const email = data.message || data.email || data;
+  
+  // Mappa al formato DB con sync_status e cartella per Quick Download
   return {
-    message_id: data.message_id,
+    message_id: email.message_id || uid.toString(),
     user_email: userEmail,
     folder_name: folder,
+    cartella: folder,
     uid,
-    subject: data.subject,
-    from_email: data.from,
-    to_email: data.to,
-    cc: data.cc,
-    bcc: data.bcc,
-    date: data.date,
-    body_text: data.body_text,
-    body_html: data.body_html,
-    attachments: data.attachments || [],
-    headers: data.headers || {},
-    flags: data.flags || [],
-    is_read: data.flags?.includes('\\Seen') || false,
-    is_flagged: data.flags?.includes('\\Flagged') || false
+    subject: email.subject || '',
+    from_email: email.from?.email || email.from || '',
+    to_email: Array.isArray(email.to) ? email.to.map((t: any) => t.email || t) : [email.to],
+    cc: email.cc || [],
+    bcc: email.bcc || [],
+    date: email.date || new Date().toISOString(),
+    body_text: email.body_text || email.text_body || '',
+    body_html: email.body_html || email.html_body || '',
+    attachments: email.attachments || [],
+    headers: email.headers || {},
+    flags: email.flags || [],
+    is_read: email.flags?.includes('\\Seen') || false,
+    is_flagged: email.flags?.includes('\\Flagged') || false,
+    sync_status: 'fun_email_backup'
   };
 }

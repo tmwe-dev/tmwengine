@@ -497,8 +497,8 @@ async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken:
       throw new Error(`TMWE API error: ${data.errors?.[0] || data.message || 'Unknown error'}`);
     }
 
-    // Estrai array messaggi - funziona con entrambi i formati
-    const messages = data.data || [];
+    // Estrai array messaggi - tmwe-api-proxy ritorna { messages: [...], total: X }
+    const messages = data.messages || [];
     console.log(`[getFolderUIDs] Extracted messages - type: ${typeof messages}, isArray: ${Array.isArray(messages)}, length: ${Array.isArray(messages) ? messages.length : 'N/A'}`);
     
     if (!Array.isArray(messages)) {

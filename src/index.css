@@ -564,34 +564,6 @@ Tutti i colori DEVONO essere HSL.
   padding: 0;
 }
 
-/* === GESTIONE COLORI TESTO EMAIL === */
-/* Forza colori chiari per tutto il testo nel body email */
-.email-body-content,
-.email-body-content * {
-  color: white !important;
-}
-
-/* Link con colore distinguibile */
-.email-body-content a {
-  color: #a78bfa !important; /* purple-400 */
-  text-decoration: underline;
-}
-
-.email-body-content a:hover {
-  color: #c4b5fd !important; /* purple-300 */
-}
-
-/* Testo in grassetto più visibile */
-.email-body-content strong,
-.email-body-content b {
-  color: white !important;
-  font-weight: 700;
-}
-
-/* Testo secondario (piccolo) più leggibile */
-.email-body-content small {
-  color: rgba(255, 255, 255, 0.8) !important;
-}
 
 /* Clean Mode: testo scuro su sfondo chiaro */
 .email-body-light,

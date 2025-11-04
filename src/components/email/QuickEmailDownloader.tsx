@@ -75,7 +75,54 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     loadQuickFolders();
     loadUserEmail();
     loadActiveProfile();
+    cleanupZombieJobs();
   }, []);
+
+  // 🧹 Cleanup zombie jobs automaticamente all'avvio
+  const cleanupZombieJobs = async () => {
+    try {
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      
+      const { data: zombieJobs, error: fetchError } = await supabase
+        .from('email_sync_progress')
+        .select('job_id, folder_name, updated_at')
+        .eq('status', 'running')
+        .lt('updated_at', tenMinutesAgo);
+
+      if (fetchError) {
+        console.error('❌ Error fetching zombie jobs:', fetchError);
+        return;
+      }
+
+      if (zombieJobs && zombieJobs.length > 0) {
+        console.log(`🧹 Found ${zombieJobs.length} zombie jobs, terminating...`);
+        
+        for (const job of zombieJobs) {
+          const { error: updateError } = await supabase
+            .from('email_sync_progress')
+            .update({
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('job_id', job.job_id);
+
+          if (updateError) {
+            console.error(`❌ Error terminating zombie job ${job.job_id}:`, updateError);
+          } else {
+            console.log(`✅ Terminated zombie job: ${job.job_id} (${job.folder_name})`);
+          }
+        }
+
+        toast({
+          title: '🧹 Cleanup automatico',
+          description: `Terminati ${zombieJobs.length} job zombi precedenti`,
+        });
+      }
+    } catch (error) {
+      console.error('❌ Zombie cleanup error:', error);
+    }
+  };
 
   // Effetto per invalidare query Verifica Integrità al completamento
   useEffect(() => {

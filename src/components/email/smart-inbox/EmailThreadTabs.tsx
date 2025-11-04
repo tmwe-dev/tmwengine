@@ -1,5 +1,4 @@
 import React from 'react';
-import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
 import { User, Building2 } from 'lucide-react';
 
@@ -30,6 +29,25 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
     // Capitalizza prima lettera
     return namePart.charAt(0).toUpperCase() + namePart.slice(1).toLowerCase();
   };
+
+  interface TabButtonProps {
+    isActive: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+    className: string;
+  }
+
+  const TabButton: React.FC<TabButtonProps> = ({ isActive, onClick, children, className }) => (
+    <button
+      onClick={onClick}
+      className={className}
+      role="tab"
+      aria-selected={isActive}
+      type="button"
+    >
+      {children}
+    </button>
+  );
 
   const formatTime = (dateString: string): string => {
     const date = new Date(dateString);
@@ -74,37 +92,35 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
         className="w-full"
       >
         <CarouselContent className="-ml-2 py-1">
-          <TabsList className="inline-flex h-auto gap-2 bg-transparent border-0 p-0">
-            {emails.map((email) => {
-              const isTmwe = email.from_email?.toLowerCase().includes('tmwe') || false;
-              const firstName = extractFirstName(email.from_email);
-              const time = formatTime(email.data_ricezione);
-              const icon = isTmwe ? <Building2 className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />;
-              const isActive = email.id === activeEmailId;
-              
-              return (
-                <CarouselItem key={email.id} className="basis-auto pl-2">
-                  <TabsTrigger
-                    value={email.id}
-                    onClick={() => onTabChange(email.id)}
-                    className={`
-                      flex items-center gap-2 px-3 py-1.5 rounded-lg
-                      transition-all duration-200 shadow-sm hover:shadow-md
-                      ${getSimplifiedTabStyle(isTmwe, isActive, cleanMode)}
-                    `}
-                  >
-                    {icon}
-                    <span className="font-semibold text-xs whitespace-nowrap">
-                      {firstName}
-                    </span>
-                    <span className={`text-xs whitespace-nowrap ${isActive ? 'opacity-90' : 'opacity-60'}`}>
-                      {time}
-                    </span>
-                  </TabsTrigger>
-                </CarouselItem>
-              );
-            })}
-          </TabsList>
+          {emails.map((email) => {
+            const isTmwe = email.from_email?.toLowerCase().includes('tmwe') || false;
+            const firstName = extractFirstName(email.from_email);
+            const time = formatTime(email.data_ricezione);
+            const icon = isTmwe ? <Building2 className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />;
+            const isActive = email.id === activeEmailId;
+            
+            return (
+              <CarouselItem key={email.id} className="basis-auto pl-2">
+                <TabButton
+                  isActive={isActive}
+                  onClick={() => onTabChange(email.id)}
+                  className={`
+                    flex items-center gap-2 px-3 py-1.5 rounded-lg
+                    transition-all duration-200 shadow-sm hover:shadow-md
+                    ${getSimplifiedTabStyle(isTmwe, isActive, cleanMode)}
+                  `}
+                >
+                  {icon}
+                  <span className="font-semibold text-xs whitespace-nowrap">
+                    {firstName}
+                  </span>
+                  <span className={`text-xs whitespace-nowrap ${isActive ? 'opacity-90' : 'opacity-60'}`}>
+                    {time}
+                  </span>
+                </TabButton>
+              </CarouselItem>
+            );
+          })}
         </CarouselContent>
       </Carousel>
     </div>

@@ -286,8 +286,9 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   };
 
   // ✅ CLIENT-SIDE DOWNLOAD (copiato da FunEmailDownloader)
-  const startDownload = async () => {
-    const selectedFolders = quickFolders.filter(f => f.selected).map(f => f.name);
+  const startDownload = async (explicitFolders?: string[]) => {
+    // ✅ Usa cartelle esplicite se fornite, altrimenti calcola da quickFolders
+    const selectedFolders = explicitFolders || quickFolders.filter(f => f.selected).map(f => f.name);
     
     if (selectedFolders.length === 0) {
       toast({
@@ -561,16 +562,34 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         return;
       }
 
-      // Imposta cartelle selezionate e avvia download
+      // ✅ VALIDAZIONE: filtra solo cartelle che esistono veramente
+      const availableFolderNames = quickFolders.map(f => f.name);
+      const validFolders = preferences.included_folders.filter(prefFolder => 
+        availableFolderNames.includes(prefFolder)
+      );
+
+      if (validFolders.length === 0) {
+        toast({
+          title: '⚠️ Nessuna cartella valida',
+          description: 'Le cartelle salvate nelle preferenze non esistono più',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // ✅ Aggiorna UI (opzionale, per visual feedback)
       setQuickFolders(prev => prev.map(f => ({
         ...f,
-        selected: preferences.included_folders.includes(f.name)
+        selected: validFolders.includes(f.name)
       })));
 
-      // Attendi un attimo per il re-render delle selezioni
-      setTimeout(() => {
-        startDownload();
-      }, 100);
+      toast({
+        title: '🚀 Avvio Sync da Preferenze',
+        description: `${validFolders.length} cartelle selezionate`,
+      });
+
+      // ✅ CHIAMATA DIRETTA: passa cartelle esplicitamente
+      await startDownload(validFolders);
 
     } catch (error: any) {
       toast({
@@ -845,7 +864,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         <Button
           className="w-full"
           size="lg"
-          onClick={startDownload}
+          onClick={() => startDownload()}
           disabled={isQuickLoading || isDownloading || quickFolders.filter(f => f.selected).length === 0}
         >
           {isQuickLoading ? (

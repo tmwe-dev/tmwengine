@@ -56,7 +56,7 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
   };
 
   return (
-    <div className={`border-b relative ${cleanMode ? 'bg-gray-50 border-gray-200' : 'bg-muted/50 border-white/10'} shrink-0 px-16`}>
+    <div className={`border-b ${cleanMode ? 'bg-gray-50 border-gray-200' : 'bg-muted/50 border-white/10'} shrink-0`}>
       <Carousel
         opts={{
           align: "start",
@@ -65,12 +65,7 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
         }}
         className="w-full"
       >
-        {/* Freccia SINISTRA */}
-        <CarouselPrevious 
-          className={`absolute left-2 top-1/2 -translate-y-1/2 ${cleanMode ? 'bg-white border-gray-300' : 'bg-gray-800/80 border-white/20'}`}
-        />
-        
-        <CarouselContent className="-ml-2 py-2">
+        <CarouselContent className="-ml-2 py-1">
           <TabsList className="inline-flex h-auto gap-2 bg-transparent">
             {emails.map((email) => {
               const isTmwe = email.from_email?.toLowerCase().includes('tmwe') || false;
@@ -105,11 +100,6 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
             })}
           </TabsList>
         </CarouselContent>
-        
-        {/* Freccia DESTRA */}
-        <CarouselNext 
-          className={`absolute right-2 top-1/2 -translate-y-1/2 ${cleanMode ? 'bg-white border-gray-300' : 'bg-gray-800/80 border-white/20'}`}
-        />
       </Carousel>
     </div>
   );

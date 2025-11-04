@@ -46,28 +46,36 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-white rounded-2xl border border-gray-200">
-      {/* Header bianco con chiusura */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 shrink-0 bg-white">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-black">
+      {/* Header Ultra-Compatto Clean Mode */}
+      <div className="flex items-center justify-between gap-4 px-6 py-2 bg-white border-b border-gray-200 shrink-0">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <h2 className="text-base font-semibold text-black truncate">
             {classifiedEmail.email.subject}
           </h2>
-          {emails.length > 1 && (
-            <Badge className="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold">
-              {emails.length} email
-            </Badge>
-          )}
         </div>
-        <div className="flex items-center gap-2">
+        
+        {emails.length > 1 && (
+          <Badge className="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold h-6 flex-shrink-0">
+            {emails.length} email
+          </Badge>
+        )}
+        
+        <div className="flex items-center gap-1 shrink-0">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={onToggleCleanView}
             title="Torna alla vista intelligente"
+            className="h-8 w-8 p-0"
           >
             <EyeOff className="h-4 w-4 text-black" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onClose}
+            className="h-8 w-8 p-0"
+          >
             <X className="h-4 w-4 text-black" />
           </Button>
         </div>
@@ -115,7 +123,7 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
               </Button>
             )}
 
-            <div className="flex-1 overflow-y-auto p-6 px-16 bg-white">
+            <div className="flex-1 overflow-y-auto p-4 px-8 bg-white">
             {emails.map((email, index) => (
               <TabsContent key={email.id} value={email.id} className="mt-0">
                 <SingleEmailCard

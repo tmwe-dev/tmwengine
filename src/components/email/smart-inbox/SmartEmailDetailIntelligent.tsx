@@ -81,55 +81,57 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-gradient-to-br from-purple-500/[0.02] to-blue-500/[0.02] backdrop-blur-sm rounded-2xl border border-white/10">
-      {/* Header con layout a 3 colonne */}
-      <div className="flex items-start gap-4 p-4 border-b border-white/10 shrink-0">
-        {/* COLONNA 1: Logo + Nome Azienda (Sinistra) */}
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <Avatar className="h-12 w-12 shrink-0">
-            <AvatarImage 
-              src={logoData?.logo_url || classification.sender_logo_url}
-              alt={companyName}
-              onError={(e) => {
-                e.currentTarget.src = classification.sender_logo_url || '';
-              }}
-            />
-            <AvatarFallback className="text-sm font-semibold">
+      {/* Header Ultra-Compatto: tutto su 1 riga orizzontale */}
+      <div className="flex items-center justify-between gap-4 px-6 py-3 bg-gradient-to-r from-purple-900/40 to-blue-900/40 backdrop-blur-md border-b border-white/10 shrink-0">
+        
+        {/* SINISTRA: Logo + Nome + Email (tutto inline) */}
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <Avatar className="h-8 w-8 shrink-0">
+            {logoData?.logo_url || classification.sender_logo_url ? (
+              <AvatarImage 
+                src={logoData?.logo_url || classification.sender_logo_url}
+                alt={companyName}
+                onError={(e) => {
+                  e.currentTarget.src = classification.sender_logo_url || '';
+                }}
+              />
+            ) : null}
+            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white text-xs">
               {logoLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
                 initials
               )}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0">
-            <div className="font-bold text-lg truncate">{companyName}</div>
-            <div className="text-sm text-muted-foreground truncate">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-bold text-sm truncate">{companyName}</span>
+            <span className="text-xs text-muted-foreground truncate">
               {classification.sender_email}
-            </div>
+            </span>
           </div>
         </div>
 
-        {/* COLONNA 2: Badge Categoria Principale (Centro) */}
-        <div className="flex items-center justify-center flex-shrink-0">
+        {/* CENTRO: Badge Categoria + Keywords (tutto inline orizzontale) */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Badge Categoria Principale */}
           <Badge 
-            className="text-sm font-semibold px-4 py-2 shadow-lg flex items-center gap-2"
+            className="text-xs font-semibold px-3 py-1 shadow-md flex items-center gap-1.5 h-6"
             style={{ 
               backgroundColor: categoryColor, 
               color: 'white'
             }}
           >
-            <span className="text-base">{categoryIcon}</span>
+            <span className="text-sm">{categoryIcon}</span>
             {classification.category}
           </Badge>
-        </div>
-
-        {/* COLONNA 3: Keywords Intelligenti + Actions (Destra) */}
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          {/* Keywords con icone */}
+          
+          {/* Keywords Intelligenti (inline orizzontale) */}
           {classification.keywords && classification.keywords.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 justify-end max-w-[200px]">
+            <>
               {classification.keywords
                 .filter(kw => !isRedundantKeyword(kw, companyName))
+                .slice(0, 3)
                 .map((keyword, idx) => {
                   const icon = getKeywordIcon(keyword);
                   const isImportant = ['firma urgente', 'scadenza', 'contratto', 'urgente'].some(k => 
@@ -141,37 +143,42 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
                       key={idx} 
                       variant={isImportant ? "default" : "outline"}
                       className={`
-                        text-xs flex items-center gap-1
+                        text-xs flex items-center gap-1 h-6 px-2
                         ${isImportant 
                           ? 'bg-white/10 text-white border-white/20' 
-                          : 'bg-transparent border-0 text-white/70'
+                          : 'bg-transparent border-0 text-white/60'
                         }
                       `}
                     >
-                      {icon && <span className="text-sm">{icon}</span>}
-                      {keyword}
+                      {icon && <span className="text-xs">{icon}</span>}
+                      <span className="truncate max-w-[80px]">{keyword}</span>
                     </Badge>
                   );
                 })
               }
-            </div>
+            </>
           )}
-          
-          {/* Pulsanti Eye e X */}
-          <div className="flex gap-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onToggleCleanView}
-              className="shrink-0"
-              title="Visualizza versione pulita"
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onClose} className="shrink-0">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+        </div>
+
+        {/* DESTRA: Pulsanti Eye + X */}
+        <div className="flex gap-1 shrink-0">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onToggleCleanView}
+            className="h-8 w-8 p-0"
+            title="Visualizza versione pulita"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onClose} 
+            className="h-8 w-8 p-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
@@ -218,7 +225,7 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
             )}
 
             <ScrollArea className="flex-1">
-              <div className="space-y-4 p-6 px-16">
+              <div className="space-y-4 p-4 px-8">
               {emails.map((email, index) => {
                 const isCurrentOriginal = email.id === classifiedEmail.email.email_id;
                 

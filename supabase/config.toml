@@ -308,3 +308,6 @@ verify_jwt = true
 [functions.background-email-sync]
 verify_jwt = true
 
+[functions.background-email-sync-test]
+verify_jwt = true
+

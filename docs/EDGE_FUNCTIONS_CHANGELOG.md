@@ -9,6 +9,166 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-11-04] - Background Email Sync TEST - Pre-Check Duplicate Optimization
+
+### File Creato
+- **Function:** `supabase/functions/background-email-sync-test/index.ts`
+- **Tipo:** Nuova funzione temporanea per testing
+- **Status:** 🧪 TEST MODE - Non sostituisce `background-email-sync` esistente
+
+### Motivo Creazione
+Creare funzione isolata per testare ottimizzazione **pre-check duplicati** prima di applicarla alla funzione production. Evita download inutili di email già presenti nel database.
+
+### Problema da Risolvere
+**Comportamento attuale** (`background-email-sync`):
+1. Scarica TUTTE le email dalla cartella via TMWE API
+2. Tenta inserimento in DB con `ignoreDuplicates: true`
+3. Database scarta duplicati in fase di insert
+4. **Spreco:** Download completo anche per cartelle già sincronizzate
+
+**Esempio:** Cartella INBOX con 1000 email già scaricate → scarica tutte 1000, poi scarta 1000 duplicati (~500 secondi sprecati)
+
+### Soluzione Implementata
+
+#### Pre-Check UIDs (linee ~238-280)
+```typescript
+// 1. Query UIDs già presenti nel database
+const { data: existingEmails } = await supabase
+  .from('email_messages')
+  .select('message_id')
+  .eq('user_email', userEmail)
+  .eq('folder_name', folder);
+
+// 2. Estrai numeri UID dalle message_id
+const existingUIDs = new Set(
+  existingEmails?.map(e => {
+    const parts = e.message_id.split('/'); // "user@domain/INBOX/12345" → 12345
+    const uidStr = parts[parts.length - 1];
+    return parseInt(uidStr, 10);
+  }).filter(uid => !isNaN(uid)) || []
+);
+
+// 3. Filtra solo UIDs nuovi
+const newUIDs = uids.filter(uid => !existingUIDs.has(uid));
+
+// 4. Skip cartella se nessun nuovo UID
+if (newUIDs.length === 0) {
+  console.log('✅ Folder fully synced, skipping download');
+  continue;
+}
+
+// 5. Download SOLO newUIDs (non tutti gli uids)
+for (let j = 0; j < newUIDs.length; j += batchSize) {
+  const batch = newUIDs.slice(j, j + batchSize); // ✅ Usa newUIDs
+  // ... download batch
+}
+```
+
+#### Logging Ottimizzazione (linee ~250-260, ~370-375)
+```typescript
+console.log('📊 UID Analysis for INBOX:');
+console.log('  - Total UIDs on server: 1000');
+console.log('  - Already in database: 950');
+console.log('  - New UIDs to download: 50');
+console.log('  - Optimization savings: 950 downloads skipped (95%)');
+console.log('  - Estimated time saved: ~475s');
+```
+
+### Modifiche Rispetto a `background-email-sync`
+
+| Aspetto | `background-email-sync` (OLD) | `background-email-sync-test` (NEW) |
+|---------|-------------------------------|-------------------------------------|
+| **Query DB prima download** | ❌ No | ✅ Sì - query `email_messages` per UIDs esistenti |
+| **UIDs scaricati** | Tutti | Solo nuovi (`newUIDs`) |
+| **Skip cartelle già sync** | ❌ No (scarica sempre) | ✅ Sì (se `newUIDs.length === 0`) |
+| **Logging stats** | Base | Dettagliato (%, tempo risparmiato) |
+| **Logica core** | Invariata | Invariata (stesse API calls, stessa gestione errori) |
+
+### Performance Attese
+
+| Scenario | `background-email-sync` | `background-email-sync-test` | Miglioramento |
+|----------|-------------------------|------------------------------|---------------|
+| **Cartella già sincronizzata** (1000/1000) | ~500s (scarica tutte, scarta) | ~5s (query DB, skip) | **100x più veloce** ⚡ |
+| **Cartella parziale** (50/1000 nuove) | ~500s (scarica tutte) | ~30s (query + 50 download) | **16x più veloce** ⚡ |
+| **Nuova cartella** (0/1000) | ~500s | ~500s | Identico |
+
+### Test Plan
+
+#### Test 1: Cartella già sincronizzata
+```bash
+# Chiamata API
+POST /functions/v1/background-email-sync-test
+{ "folders": ["INBOX"], "user_email": "user@example.com" }
+
+# Atteso nei log:
+# [Job xxx] New UIDs to download: 0
+# [Job xxx] ✅ Folder INBOX fully synced (1000 emails already in DB)
+# Tempo: < 5 secondi
+```
+
+#### Test 2: Cartella parzialmente sincronizzata
+```sql
+-- Simula: elimina 50 email recenti
+DELETE FROM email_messages 
+WHERE folder_name = 'INBOX' 
+ORDER BY date DESC LIMIT 50;
+```
+```bash
+# Atteso nei log:
+# [Job xxx] New UIDs to download: 50
+# [Job xxx] Downloaded new: 50
+# Tempo: ~30 secondi
+```
+
+#### Test 3: Nuova cartella
+```bash
+# Chiamata su cartella mai sincronizzata
+POST /functions/v1/background-email-sync-test
+{ "folders": ["INBOX/NEW_FOLDER"], "user_email": "user@example.com" }
+
+# Atteso: comportamento identico a background-email-sync
+```
+
+### Impatto
+- **Tabelle Database:** `email_sync_progress`, `email_messages` (SELECT only, nessuna modifica struttura)
+- **Frontend:** Nessuna modifica necessaria (job_id compatibile con UI esistente)
+- **API TMWE:** Riduzione chiamate 90% per cartelle aggiornate
+- **User Experience:** Download molto più veloci su sync ripetute
+
+### Rollback Plan
+Funzione isolata, nessun impatto su production. Per tornare indietro:
+```bash
+# Opzione 1: Elimina funzione TEST
+rm -rf supabase/functions/background-email-sync-test
+
+# Opzione 2: Disabilita in config.toml
+[functions.background-email-sync-test]
+disabled = true
+```
+
+Funzione `background-email-sync` rimane **invariata e funzionante**.
+
+### Decisione Post-Test
+✅ **Se test positivi (100% successo):**
+- Creare backup: `cp background-email-sync/index.ts background-email-sync/index-old2.ts`
+- Sostituire: `cp background-email-sync-test/index.ts background-email-sync/index.ts`
+- Eliminare: `rm -rf background-email-sync-test`
+- Documentare: Aggiornare questo changelog con successo implementazione
+
+❌ **Se problemi (errori, duplicati mancanti):**
+- Mantenere `background-email-sync` originale
+- Eliminare `background-email-sync-test`
+- Analizzare logs per debug
+
+### Next Steps
+1. Deploy automatico function TEST
+2. Eseguire Test 1, 2, 3 in sequenza
+3. Verificare logs in Supabase Dashboard
+4. Confrontare performance con version OLD
+5. Decidere se applicare a production
+
+---
+
 ## [2025-01-29] - Background Email Sync - Fix getFolderUIDs()
 
 ### File Modificato

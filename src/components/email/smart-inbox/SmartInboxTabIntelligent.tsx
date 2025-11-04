@@ -586,10 +586,11 @@ export const SmartInboxTabIntelligent = ({
         <div 
           className={cn(
             "flex flex-col min-h-0 transition-all duration-300",
-            viewMode === 'detail' && "mx-auto w-full max-w-4xl"
+            viewMode === 'detail' && "mx-auto"
           )}
           style={{
             width: viewMode === 'list' ? '0%' : viewMode === 'detail' ? '100%' : 'calc(60% - 1rem)',
+            maxWidth: viewMode === 'detail' ? '90%' : '100%',
             opacity: viewMode === 'list' ? 0 : 1,
             overflow: viewMode === 'list' ? 'hidden' : 'visible',
             pointerEvents: viewMode === 'list' ? 'none' : 'auto',

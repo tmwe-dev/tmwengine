@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -56,6 +56,14 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
     emails[currentEmailIndex]?.id || classifiedEmail?.email?.email_id
   );
 
+  // 🆕 Sincronizza activeEmailId quando cambia l'email selezionata
+  useEffect(() => {
+    if (emails.length > 0) {
+      const initialEmailId = emails[currentEmailIndex]?.id || emails[0]?.id;
+      setActiveEmailId(initialEmailId);
+    }
+  }, [classifiedEmail?.email?.email_id, emails, currentEmailIndex]);
+
   const handlePrevEmail = () => {
     const currentIndex = emails.findIndex(e => e.id === activeEmailId);
     if (currentIndex > 0) {
@@ -85,7 +93,7 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
       <div className="flex items-center justify-between gap-4 px-6 py-3 bg-gradient-to-r from-purple-900/40 to-blue-900/40 backdrop-blur-md border-b border-white/10 shrink-0">
         
         {/* SINISTRA: Logo + Nome + Email (tutto inline) */}
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
           <Avatar className="h-8 w-8 shrink-0">
             {logoData?.logo_url || classification.sender_logo_url ? (
               <AvatarImage 
@@ -104,9 +112,9 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
               )}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm truncate">{companyName}</span>
-            <span className="text-xs text-muted-foreground break-all">
+          <div className="flex flex-col min-w-0 overflow-hidden">
+            <span className="font-bold text-sm truncate max-w-[200px]">{companyName}</span>
+            <span className="text-xs text-muted-foreground truncate max-w-[250px]">
               {classification.sender_email}
             </span>
           </div>

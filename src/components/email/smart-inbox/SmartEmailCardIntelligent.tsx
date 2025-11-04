@@ -127,7 +127,7 @@ export const SmartEmailCardIntelligent = ({
       onClick={onClick}
       className={cn(
         "relative p-4 cursor-pointer transition-all duration-300 rounded-2xl",
-        "min-h-[22vh]",
+        "min-h-[clamp(240px,28vh,400px)]",
         "bg-gradient-to-br from-[#1c1c28]/80 via-[#23233a]/60 to-[#0e0e18]/70",
         "backdrop-blur-md border border-white/10",
         "hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(0,200,255,0.1)]",
@@ -222,7 +222,7 @@ export const SmartEmailCardIntelligent = ({
 
           {/* Riassunto AI */}
           {classification.ai_summary && (
-            <p className="text-xs text-white/70 line-clamp-3 leading-tight mb-2">
+            <p className="text-xs text-white/70 leading-tight mb-2 overflow-y-auto max-h-[120px]">
               {classification.ai_summary}
             </p>
           )}

@@ -566,10 +566,10 @@ export const SmartInboxTabIntelligent = ({
             viewMode === 'list' && "mx-auto w-full max-w-4xl"
           )}
           style={{
-            width: viewMode === 'detail' ? '0%' : viewMode === 'list' ? '100%' : '40%',
-            maxWidth: viewMode === 'list' ? undefined : '40%',
+            width: viewMode === 'detail' ? '0%' : viewMode === 'list' ? '100%' : 'clamp(350px, 40%, 600px)',
+            minWidth: viewMode === 'split' ? '350px' : undefined,
             opacity: viewMode === 'detail' ? 0 : 1,
-            overflow: viewMode === 'detail' ? 'hidden' : 'visible',
+            overflow: viewMode === 'detail' ? 'hidden' : 'auto',
             pointerEvents: viewMode === 'detail' ? 'none' : 'auto'
           }}
         >

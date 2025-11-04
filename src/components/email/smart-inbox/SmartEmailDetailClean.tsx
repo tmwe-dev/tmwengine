@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useEmailThread } from '@/hooks/useEmailThread';
 import { EmailThreadView } from './EmailThreadView';
 import { ClassifiedEmail } from '@/types/smart-inbox';
-import { X, Eye } from 'lucide-react';
+import { X, EyeOff } from 'lucide-react';
 
 interface SmartEmailDetailCleanProps {
   classifiedEmail: ClassifiedEmail | null;
@@ -36,6 +36,14 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
             </span>
           )}
         </div>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onToggleCleanView}
+          title="Torna alla vista intelligente"
+        >
+          <EyeOff className="h-4 w-4 text-black" />
+        </Button>
         <Button variant="ghost" size="sm" onClick={onClose}>
           <X className="h-4 w-4 text-black" />
         </Button>

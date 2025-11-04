@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ClassifiedEmail } from '@/types/smart-inbox';
 import { extractCompanyName, extractInitials, getCategoryColor, getCategoryIcon } from '@/lib/smart-inbox-utils';
-import { CheckCircle2, AlertCircle, X, Sparkles, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X, Sparkles, Loader2, Eye } from 'lucide-react';
 import { useEmailThread } from '@/hooks/useEmailThread';
 import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
 import { EmailThreadView } from './EmailThreadView';
@@ -83,6 +83,15 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
             {classification.sender_email}
           </div>
         </div>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onToggleCleanView}
+          className="shrink-0"
+          title="Visualizza versione pulita"
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
         <Button variant="ghost" size="sm" onClick={onClose} className="shrink-0">
           <X className="h-4 w-4" />
         </Button>

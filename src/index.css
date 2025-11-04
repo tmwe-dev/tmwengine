@@ -506,13 +506,13 @@ Tutti i colori DEVONO essere HSL.
 /* === MODALITÀ SCURO (DEFAULT) === */
 /* Applicata quando cleanMode = false */
 
-/* Testo principale: chiaro e leggibile su sfondo scuro */
+/* Rispetta colori originali HTML - nessun forcing */
 .email-body-content:not(.email-body-light) {
-  color: #f3f4f6 !important; /* gray-100 */
+  color: inherit;
 }
 
-.email-body-content:not(.email-body-light) *:not(img):not(a):not(strong):not(b) {
-  color: #f3f4f6 !important; /* gray-100 */
+.email-body-content:not(.email-body-light) * {
+  color: inherit;
 }
 
 /* Link: viola chiaro distinguibile */

@@ -636,24 +636,22 @@ async function downloadEmail(userEmail: string, folder: string, uid: number, tmw
   const data = result.data;
   console.log(`[downloadEmail] Downloaded UID ${uid}:`, { subject: data.subject?.substring(0, 50) });
   
-  // Mappa al formato DB (identico al Debugger)
+  // Mappa al formato DB con schema corretto
   return {
     message_id: `${userEmail}/${folder}/${uid}`,
     user_email: userEmail,
-    folder_name: folder,
-    uid,
+    cartella: folder,
+    sync_status: 'fun_email_backup',
     subject: data.subject || '',
     from_email: data.from?.email || data.from || '',
     to_email: data.to?.[0]?.email || (Array.isArray(data.to) && data.to.length > 0 ? data.to[0] : data.to) || '',
-    cc: data.cc ? (Array.isArray(data.cc) ? data.cc.map((c: any) => c.email || c).join(', ') : data.cc) : null,
-    bcc: data.bcc ? (Array.isArray(data.bcc) ? data.bcc.map((b: any) => b.email || b).join(', ') : data.bcc) : null,
-    date: data.date || new Date().toISOString(),
+    cc_email: data.cc ? (Array.isArray(data.cc) ? data.cc.map((c: any) => c.email || c).join(', ') : data.cc) : null,
+    bcc_email: data.bcc ? (Array.isArray(data.bcc) ? data.bcc.map((b: any) => b.email || b).join(', ') : data.bcc) : null,
+    data_ricezione: data.date || new Date().toISOString(),
     body_text: data.body_type === 'plain' ? data.body : data.preview || '',
     body_html: data.body_type === 'html' ? data.body : null,
     attachments: data.attachments || [],
-    headers: data.headers || {},
-    flags: data.flags || [],
-    is_read: data.flags?.includes('\\Seen') || false,
-    is_flagged: data.flags?.includes('\\Flagged') || false
+    raw_headers: data.headers || {},
+    flags: data.flags || []
   };
 }

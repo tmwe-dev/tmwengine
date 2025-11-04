@@ -9,7 +9,6 @@ import { extractCompanyName, extractInitials, getCategoryColor, getCategoryIcon 
 import { X, Loader2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEmailThread } from '@/hooks/useEmailThread';
 import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
-import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { EmailThreadTabs } from './EmailThreadTabs';
 import { SingleEmailCard } from './SingleEmailCard';
 
@@ -57,8 +56,6 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
     emails[currentEmailIndex]?.id || classifiedEmail?.email?.email_id
   );
 
-  const swipeAreaRef = useRef<HTMLDivElement>(null);
-
   const handlePrevEmail = () => {
     const currentIndex = emails.findIndex(e => e.id === activeEmailId);
     if (currentIndex > 0) {
@@ -72,13 +69,6 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
       setActiveEmailId(emails[currentIndex + 1].id);
     }
   };
-
-  useSwipeNavigation({
-    onSwipeLeft: handleNextEmail,
-    onSwipeRight: handlePrevEmail,
-    enabled: emails.length > 1 && !!activeEmailId,
-    targetRef: swipeAreaRef
-  });
 
   if (!classifiedEmail) return null;
 
@@ -208,7 +198,7 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
           )}
 
           {/* Content scrollabile con frecce laterali */}
-          <div ref={swipeAreaRef} className="relative flex-1 flex flex-col overflow-hidden">
+          <div className="relative flex-1 flex flex-col overflow-hidden">
             {/* Freccia SINISTRA */}
             {emails.findIndex(e => e.id === activeEmailId) > 0 && (
               <Button

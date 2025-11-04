@@ -25,6 +25,7 @@ import {
   Settings,
   Sliders
 } from 'lucide-react';
+import emailFolderGif from '@/assets/email-folder-unscreen.gif';
 // ✅ Rimosso EmailSyncUnified - ora usa metodo Performance Test Suite
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
@@ -723,11 +724,11 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
       {/* Progress Card (visible solo durante download) */}
       {(quickProgress?.status === 'running' || quickProgress?.status === 'paused') && (
-        <Card className="border-yellow-500 border-2">
+        <Card className="border-purple-500 border-2 shadow-lg shadow-purple-500/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <Gauge className="h-4 w-4 animate-pulse text-yellow-500" />
+                <Gauge className="h-4 w-4 animate-pulse text-purple-500" />
                 Download in corso
               </span>
               <div className="flex gap-2">
@@ -749,64 +750,72 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Progress bar complessivo */}
+          <CardContent className="space-y-3">
+            {/* Progress bar ultra-sottile */}
             <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-medium">Progresso totale</span>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="font-medium">Progresso</span>
                 <span className="text-muted-foreground">
                   {quickProgress.completedFolders.length} / {quickProgress.foldersToSync.length} cartelle
                 </span>
               </div>
-              <Progress value={quickOverallProgress} className="h-2" />
+              <Progress value={quickOverallProgress} className="h-[1px] bg-purple-100 dark:bg-purple-900" />
             </div>
 
             {/* Cartella corrente */}
             <div className="flex items-center gap-2 text-sm">
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{quickProgress.currentFolder}</span>
+              <FolderOpen className="h-4 w-4 text-purple-500" />
+              <span className="font-medium truncate">{quickProgress.currentFolder}</span>
             </div>
-
-            {/* Stats inline */}
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-green-500">
-                  {quickProgress.overallDownloaded}
-                </div>
-                <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Scaricate
-                </div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-500">
-                  {quickProgress.overallTotal}
-                </div>
-                <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-                  <Download className="h-3 w-3" />
-                  Totali
-                </div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-yellow-500">
-                  {quickProgress.speed?.toFixed(1) || '0'}
-                </div>
-                <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-                  <Gauge className="h-3 w-3" />
-                  email/s
-                </div>
-              </div>
-            </div>
-
-            {/* Tempo stimato */}
-            {quickProgress.eta > 0 && (
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                Tempo stimato: {Math.round(quickProgress.eta)}s
-              </div>
-            )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Stats FUORI dalla Card con GIF animata */}
+      {(quickProgress?.status === 'running' || quickProgress?.status === 'paused') && (
+        <div className="flex items-center justify-around gap-6 px-4 animate-fade-in">
+          {/* Scaricate */}
+          <div className="flex flex-col items-center">
+            <div className="text-3xl font-bold text-green-500">
+              {quickProgress.overallDownloaded.toLocaleString()}
+            </div>
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" />
+              Scaricate
+            </div>
+          </div>
+
+          {/* GIF Animata con badge velocità */}
+          <div className="relative">
+            <img 
+              src={emailFolderGif} 
+              alt="Email downloading animation" 
+              className="w-20 h-20 object-contain"
+            />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-background px-2 py-0.5 rounded-full shadow-sm border border-purple-500/30">
+              {quickProgress.speed?.toFixed(1) || '0'}/s
+            </div>
+          </div>
+
+          {/* Totali */}
+          <div className="flex flex-col items-center">
+            <div className="text-3xl font-bold text-blue-500">
+              {quickProgress.overallTotal.toLocaleString()}
+            </div>
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <Download className="h-3 w-3" />
+              Totali
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tempo stimato (sotto stats) */}
+      {(quickProgress?.status === 'running' || quickProgress?.status === 'paused') && quickProgress.eta > 0 && (
+        <div className="flex items-center justify-center gap-2 text-sm text-purple-600 dark:text-purple-400">
+          <Clock className="h-4 w-4" />
+          <span className="font-medium">~{Math.round(quickProgress.eta)}s rimanenti</span>
+        </div>
       )}
 
       {/* ✅ NUOVO: Sync da Preferenze */}

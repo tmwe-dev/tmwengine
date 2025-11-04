@@ -214,7 +214,7 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
 
                   {/* Contenuto HTML */}
                   <div
-                    className={`prose max-w-none email-body-content mt-4 ${cleanMode ? 'prose-slate email-body-light' : 'prose-invert'}`}
+                    className="prose prose-slate max-w-none email-body-content mt-4"
                     dangerouslySetInnerHTML={{
                       __html: DOMPurify.sanitize(cleanEmailBody(email.body_html || email.body_text || ''), {
                         ADD_TAGS: ['img', 'table', 'tbody', 'thead', 'tr', 'td', 'th', 'a', 'span', 'div', 'p', 'br', 'strong', 'em', 'u'],

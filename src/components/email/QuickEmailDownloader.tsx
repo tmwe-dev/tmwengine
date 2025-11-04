@@ -33,6 +33,7 @@ import { PerformanceProfileConfigurator } from '@/components/testing/Performance
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { getSyncPreferences, filterFolders } from '@/lib/email-sync-preferences';
 import { getActiveProfile, type PerformanceProfile } from '@/lib/performance-profiles';
+import { RealtimeEmailInsertionMonitor } from './RealtimeEmailInsertionMonitor';
 
 interface QuickSyncStats {
   downloaded: number;
@@ -402,9 +403,17 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Progress bar */}
-            <div>
+            <CardContent className="space-y-3">
+              {/* Real-Time Database Monitor */}
+              {userEmail && (
+                <RealtimeEmailInsertionMonitor
+                  userEmail={userEmail}
+                  isActive={bgStatus.status === 'running' || bgStatus.status === 'pending'}
+                />
+              )}
+              
+              {/* Progress bar */}
+              <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="font-medium">Progresso</span>
                 <span className="text-muted-foreground">

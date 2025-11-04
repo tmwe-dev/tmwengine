@@ -74,6 +74,7 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
         className="w-full"
       >
         <CarouselContent className="-ml-2 py-1">
+          <TabsList className="inline-flex h-auto gap-2 bg-transparent border-0 p-0">
             {emails.map((email) => {
               const isTmwe = email.from_email?.toLowerCase().includes('tmwe') || false;
               const firstName = extractFirstName(email.from_email);
@@ -103,6 +104,7 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
                 </CarouselItem>
               );
             })}
+          </TabsList>
         </CarouselContent>
       </Carousel>
     </div>

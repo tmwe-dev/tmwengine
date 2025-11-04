@@ -239,7 +239,7 @@ async function processEmailsInBackground(
           .from('email_messages')
           .select('message_id')
           .eq('user_email', userEmail)
-          .eq('folder_name', folder);
+          .eq('cartella', folder);
 
         const checkElapsed = Date.now() - checkStartTime;
         console.log(`[Job ${jobId}] DB check completed in ${checkElapsed}ms`);

@@ -1,65 +1,91 @@
 import { useEffect, useRef } from 'react';
 
 interface UseSwipeNavigationProps {
-  onSwipeLeft: () => void;  // Mail successiva
-  onSwipeRight: () => void; // Mail precedente
-  enabled: boolean;          // Abilita solo quando una mail è aperta
+  onSwipeLeft: () => void;
+  onSwipeRight: () => void;
+  enabled: boolean;
+  targetRef?: React.RefObject<HTMLElement>;
 }
 
 export const useSwipeNavigation = ({
   onSwipeLeft,
   onSwipeRight,
-  enabled
+  enabled,
+  targetRef
 }: UseSwipeNavigationProps) => {
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
-  const isTwoFingerSwipe = useRef<boolean>(false);
+  const touchStartTime = useRef<number>(0);
+  const isSwiping = useRef<boolean>(false);
 
   useEffect(() => {
     if (!enabled) return;
 
+    const targetElement = targetRef?.current || document;
+    const SWIPE_THRESHOLD = 80;
+    const MAX_VERTICAL_DRIFT = 100;
+
     const handleTouchStart = (e: TouchEvent) => {
-      // Verifica se sono 2 dita
-      if (e.touches.length === 2) {
+      if (e.touches.length === 1) {
+        isSwiping.current = true;
+        touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
+        touchStartTime.current = Date.now();
+        console.log('👆 Touch start:', touchStartX.current);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isSwiping.current || e.touches.length !== 1) return;
+
+      const currentX = e.touches[0].clientX;
+      const currentY = e.touches[0].clientY;
+      const deltaX = Math.abs(currentX - touchStartX.current);
+      const deltaY = Math.abs(currentY - touchStartY.current);
+
+      if (deltaX > deltaY && deltaX > 10) {
         e.preventDefault();
-        isTwoFingerSwipe.current = true;
-        touchStartX.current = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        touchStartY.current = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        console.info('✅ 2-finger swipe started', touchStartX.current);
-      } else {
-        isTwoFingerSwipe.current = false;
+        console.log('↔️ Swiping horizontal:', deltaX);
       }
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
-      if (!isTwoFingerSwipe.current || e.changedTouches.length < 1) return;
+      if (!isSwiping.current || e.changedTouches.length === 0) return;
 
-      e.preventDefault();
-      const touchEndX = (e.changedTouches[0].clientX + (e.changedTouches[1]?.clientX || e.changedTouches[0].clientX)) / 2;
-      const touchEndY = (e.changedTouches[0].clientY + (e.changedTouches[1]?.clientY || e.changedTouches[0].clientY)) / 2;
-      
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
       const deltaX = touchEndX - touchStartX.current;
       const deltaY = touchEndY - touchStartY.current;
+      const swipeDuration = Date.now() - touchStartTime.current;
 
-      // Swipe orizzontale (ignora se movimento verticale troppo grande)
-      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 50) {
-        console.info('✅ Swipe detected:', deltaX > 0 ? 'RIGHT' : 'LEFT');
+      console.log('🏁 Touch end - deltaX:', deltaX, 'deltaY:', deltaY);
+
+      if (
+        Math.abs(deltaX) > SWIPE_THRESHOLD &&
+        Math.abs(deltaX) > Math.abs(deltaY) * 1.5 &&
+        Math.abs(deltaY) < MAX_VERTICAL_DRIFT &&
+        swipeDuration < 500
+      ) {
         if (deltaX > 0) {
-          onSwipeRight(); // Swipe a destra → mail precedente
+          console.log('✅ SWIPE DETECTED! RIGHT');
+          onSwipeRight();
         } else {
-          onSwipeLeft();  // Swipe a sinistra → mail successiva
+          console.log('✅ SWIPE DETECTED! LEFT');
+          onSwipeLeft();
         }
       }
 
-      isTwoFingerSwipe.current = false;
+      isSwiping.current = false;
     };
 
-    document.addEventListener('touchstart', handleTouchStart);
-    document.addEventListener('touchend', handleTouchEnd);
+    targetElement.addEventListener('touchstart', handleTouchStart as any, { passive: false });
+    targetElement.addEventListener('touchmove', handleTouchMove as any, { passive: false });
+    targetElement.addEventListener('touchend', handleTouchEnd as any);
 
     return () => {
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchend', handleTouchEnd);
+      targetElement.removeEventListener('touchstart', handleTouchStart as any);
+      targetElement.removeEventListener('touchmove', handleTouchMove as any);
+      targetElement.removeEventListener('touchend', handleTouchEnd as any);
     };
-  }, [enabled, onSwipeLeft, onSwipeRight]);
+  }, [enabled, onSwipeLeft, onSwipeRight, targetRef]);
 };

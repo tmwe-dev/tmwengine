@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -57,6 +57,8 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
     emails[currentEmailIndex]?.id || classifiedEmail?.email?.email_id
   );
 
+  const swipeAreaRef = useRef<HTMLDivElement>(null);
+
   const handlePrevEmail = () => {
     const currentIndex = emails.findIndex(e => e.id === activeEmailId);
     if (currentIndex > 0) {
@@ -71,11 +73,11 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
     }
   };
 
-  // 🆕 Abilita swipe per navigare tra thread dentro l'area della card
   useSwipeNavigation({
     onSwipeLeft: handleNextEmail,
     onSwipeRight: handlePrevEmail,
-    enabled: emails.length > 1 && !!activeEmailId
+    enabled: emails.length > 1 && !!activeEmailId,
+    targetRef: swipeAreaRef
   });
 
   if (!classifiedEmail) return null;
@@ -206,7 +208,7 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
           )}
 
           {/* Content scrollabile con frecce laterali */}
-          <div className="relative flex-1 flex flex-col overflow-hidden">
+          <div ref={swipeAreaRef} className="relative flex-1 flex flex-col overflow-hidden">
             {/* Freccia SINISTRA */}
             {emails.findIndex(e => e.id === activeEmailId) > 0 && (
               <Button

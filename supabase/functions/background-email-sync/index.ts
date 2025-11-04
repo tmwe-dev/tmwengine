@@ -110,6 +110,27 @@ async function processEmailsInBackground(
       .update({ status: 'running' })
       .eq('job_id', jobId);
 
+    // Recupera TMWE token dal database
+    const { data: credentials, error: credError } = await supabase
+      .from('user_tmwe_credentials')
+      .select('access_token')
+      .eq('email', userEmail)
+      .single();
+
+    if (credError || !credentials?.access_token) {
+      console.error(`[Job ${jobId}] TMWE token not found for ${userEmail}`);
+      await supabase.from('email_sync_progress')
+        .update({ 
+          status: 'error', 
+          errors: [{ message: 'TMWE token not found', timestamp: new Date().toISOString() }] 
+        })
+        .eq('job_id', jobId);
+      return;
+    }
+
+    const tmweAccessToken = credentials.access_token;
+    console.log(`[Job ${jobId}] TMWE token retrieved successfully`);
+
     // Processa ogni folder
     for (let i = 0; i < folders.length; i++) {
       const folder = folders[i];
@@ -127,7 +148,7 @@ async function processEmailsInBackground(
         .eq('job_id', jobId);
 
       // 1. Ottieni info folder via tmwe-api-proxy
-      const folderInfo = await getFolderInfo(userEmail, folder);
+      const folderInfo = await getFolderInfo(userEmail, folder, tmweAccessToken);
       
       await supabase
         .from('email_sync_progress')
@@ -138,7 +159,7 @@ async function processEmailsInBackground(
         .eq('job_id', jobId);
 
       // 2. Ottieni UIDs via tmwe-api-proxy
-      const uids = await getFolderUIDs(userEmail, folder);
+      const uids = await getFolderUIDs(userEmail, folder, tmweAccessToken);
       
       // 3. Download email in batch di 10
       const batchSize = 10;
@@ -149,7 +170,7 @@ async function processEmailsInBackground(
         
         // Download batch parallelo
         const emailPromises = batch.map(uid => 
-          downloadEmail(userEmail, folder, uid)
+          downloadEmail(userEmail, folder, uid, tmweAccessToken)
         );
         
         const emails = await Promise.allSettled(emailPromises);
@@ -228,7 +249,7 @@ async function processEmailsInBackground(
 // HELPER FUNCTIONS - TMWE API CALLS
 // ============================================
 
-async function getFolderInfo(userEmail: string, folder: string): Promise<FolderInfo> {
+async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken: string): Promise<FolderInfo> {
   const response = await fetch(`${SUPABASE_URL}/functions/v1/tmwe-api-proxy`, {
     method: 'POST',
     headers: {
@@ -236,14 +257,18 @@ async function getFolderInfo(userEmail: string, folder: string): Promise<FolderI
       'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
     },
     body: JSON.stringify({
-      action: 'get_folder_info',
-      folder_name: folder,
-      user_email: userEmail
+      endpoint: '/email',
+      data: {
+        handler: 'get_folder_info',
+        folder: folder
+      },
+      bearerToken: tmweAccessToken
     })
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to get folder info: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to get folder info: ${response.statusText} - ${errorText}`);
   }
 
   const data = await response.json();
@@ -253,7 +278,7 @@ async function getFolderInfo(userEmail: string, folder: string): Promise<FolderI
   };
 }
 
-async function getFolderUIDs(userEmail: string, folder: string): Promise<number[]> {
+async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken: string): Promise<number[]> {
   const response = await fetch(`${SUPABASE_URL}/functions/v1/tmwe-api-proxy`, {
     method: 'POST',
     headers: {
@@ -261,21 +286,25 @@ async function getFolderUIDs(userEmail: string, folder: string): Promise<number[
       'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
     },
     body: JSON.stringify({
-      action: 'get_folder_uids',
-      folder_name: folder,
-      user_email: userEmail
+      endpoint: '/email',
+      data: {
+        handler: 'get_folder_uids',
+        folder: folder
+      },
+      bearerToken: tmweAccessToken
     })
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to get UIDs: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to get UIDs: ${response.statusText} - ${errorText}`);
   }
 
   const data = await response.json();
   return data.uids || [];
 }
 
-async function downloadEmail(userEmail: string, folder: string, uid: number): Promise<any> {
+async function downloadEmail(userEmail: string, folder: string, uid: number, tmweAccessToken: string): Promise<any> {
   const response = await fetch(`${SUPABASE_URL}/functions/v1/tmwe-api-proxy`, {
     method: 'POST',
     headers: {
@@ -283,10 +312,13 @@ async function downloadEmail(userEmail: string, folder: string, uid: number): Pr
       'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
     },
     body: JSON.stringify({
-      action: 'get_email_message',
-      folder_name: folder,
-      uid,
-      user_email: userEmail
+      endpoint: '/email',
+      data: {
+        handler: 'get_email_by_uid',
+        folder: folder,
+        uid: uid
+      },
+      bearerToken: tmweAccessToken
     })
   });
 

@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { ClassifiedEmail } from '@/types/smart-inbox';
 import { extractCompanyName, extractInitials, getCategoryColor, getCategoryIcon } from '@/lib/smart-inbox-utils';
-import { X, Loader2, Eye } from 'lucide-react';
+import { X, Loader2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEmailThread } from '@/hooks/useEmailThread';
 import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
 import { EmailThreadTabs } from './EmailThreadTabs';
@@ -55,6 +55,20 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
   const [activeEmailId, setActiveEmailId] = useState(
     emails[currentEmailIndex]?.id || classifiedEmail?.email?.email_id
   );
+
+  const handlePrevEmail = () => {
+    const currentIndex = emails.findIndex(e => e.id === activeEmailId);
+    if (currentIndex > 0) {
+      setActiveEmailId(emails[currentIndex - 1].id);
+    }
+  };
+
+  const handleNextEmail = () => {
+    const currentIndex = emails.findIndex(e => e.id === activeEmailId);
+    if (currentIndex < emails.length - 1) {
+      setActiveEmailId(emails[currentIndex + 1].id);
+    }
+  };
 
   if (!classifiedEmail) return null;
 
@@ -177,9 +191,34 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
             />
           )}
 
-          {/* Content scrollabile */}
-          <ScrollArea className="flex-1">
-            <div className="space-y-4 p-6">
+          {/* Content scrollabile con frecce laterali */}
+          <div className="relative flex-1 flex flex-col overflow-hidden">
+            {/* Freccia SINISTRA */}
+            {emails.findIndex(e => e.id === activeEmailId) > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handlePrevEmail}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-purple-900/80 hover:bg-purple-800/90 border border-white/20 rounded-full"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            )}
+            
+            {/* Freccia DESTRA */}
+            {emails.findIndex(e => e.id === activeEmailId) < emails.length - 1 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleNextEmail}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-purple-900/80 hover:bg-purple-800/90 border border-white/20 rounded-full"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            )}
+
+            <ScrollArea className="flex-1">
+              <div className="space-y-4 p-6 px-16">
               {emails.map((email, index) => {
                 const isCurrentOriginal = email.id === classifiedEmail.email.email_id;
                 
@@ -205,8 +244,9 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
                   </TabsContent>
                 );
               })}
-            </div>
-          </ScrollArea>
+              </div>
+            </ScrollArea>
+          </div>
         </Tabs>
       )}
 

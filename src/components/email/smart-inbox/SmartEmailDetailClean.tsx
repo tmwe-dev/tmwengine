@@ -59,23 +59,24 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
         </div>
       </div>
 
-      {/* 🆕 Tabs Navigation Orizzontale */}
-      {emails.length > 0 && (
-        <EmailThreadTabs
-          emails={emails}
-          activeEmailId={activeEmailId}
-          onTabChange={setActiveEmailId}
-          currentEmailIndex={currentEmailIndex}
-          cleanMode={true}
-        />
-      )}
+      {/* 🆕 Content con Tabs (avvolge sia TabsList che TabsContent) */}
+      {isLoading ? (
+        <div className="text-center py-8 text-black bg-white p-6">Caricamento thread...</div>
+      ) : (
+        <Tabs value={activeEmailId} onValueChange={setActiveEmailId} className="flex-1 flex flex-col overflow-hidden">
+          {/* Tabs Navigation Orizzontale */}
+          {emails.length > 0 && (
+            <EmailThreadTabs
+              emails={emails}
+              activeEmailId={activeEmailId}
+              onTabChange={setActiveEmailId}
+              currentEmailIndex={currentEmailIndex}
+              cleanMode={true}
+            />
+          )}
 
-      {/* 🆕 Content con Tabs */}
-      <div className="flex-1 overflow-y-auto p-6 bg-white">
-        {isLoading ? (
-          <div className="text-center py-8 text-black">Caricamento thread...</div>
-        ) : (
-          <Tabs value={activeEmailId} onValueChange={setActiveEmailId}>
+          {/* Content scrollabile */}
+          <div className="flex-1 overflow-y-auto p-6 bg-white">
             {emails.map((email, index) => (
               <TabsContent key={email.id} value={email.id} className="mt-0">
                 <SingleEmailCard
@@ -86,9 +87,9 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
                 />
               </TabsContent>
             ))}
-          </Tabs>
-        )}
-      </div>
+          </div>
+        </Tabs>
+      )}
 
     </div>
   );

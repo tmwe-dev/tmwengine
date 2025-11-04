@@ -161,23 +161,24 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
         </div>
       </div>
 
-      {/* 🆕 Tabs Navigation Orizzontale */}
-      {emails.length > 0 && (
-        <EmailThreadTabs
-          emails={emails}
-          activeEmailId={activeEmailId}
-          onTabChange={setActiveEmailId}
-          currentEmailIndex={currentEmailIndex}
-          cleanMode={false}
-        />
-      )}
+      {/* 🆕 Content con Tabs (avvolge sia TabsList che TabsContent) */}
+      {isLoading ? (
+        <div className="text-center py-8">Caricamento thread...</div>
+      ) : (
+        <Tabs value={activeEmailId} onValueChange={setActiveEmailId} className="flex-1 flex flex-col overflow-hidden">
+          {/* Tabs Navigation Orizzontale */}
+          {emails.length > 0 && (
+            <EmailThreadTabs
+              emails={emails}
+              activeEmailId={activeEmailId}
+              onTabChange={setActiveEmailId}
+              currentEmailIndex={currentEmailIndex}
+              cleanMode={false}
+            />
+          )}
 
-      {/* 🆕 Content con Tabs */}
-      <ScrollArea className="flex-1">
-        {isLoading ? (
-          <div className="text-center py-8">Caricamento thread...</div>
-        ) : (
-          <Tabs value={activeEmailId} onValueChange={setActiveEmailId}>
+          {/* Content scrollabile */}
+          <ScrollArea className="flex-1">
             <div className="space-y-4 p-6">
               {emails.map((email, index) => {
                 const isCurrentOriginal = email.id === classifiedEmail.email.email_id;
@@ -205,9 +206,9 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
                 );
               })}
             </div>
-          </Tabs>
-        )}
-      </ScrollArea>
+          </ScrollArea>
+        </Tabs>
+      )}
 
     </div>
   );

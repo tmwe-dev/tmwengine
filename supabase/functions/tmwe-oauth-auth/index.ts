@@ -282,29 +282,21 @@ serve(async (req) => {
 
     console.log('✅ TMWE OAuth credentials saved');
 
-    // 7. Generate Supabase magic link (según proyecto Luca)
-    console.log('🔐 Generating Supabase magic link...');
+    // 7. Generate Supabase session using admin.signInAsUser
+    console.log('🔐 Generating Supabase session...');
 
-    // ✅ CORRECCIÓN CRÍTICA: Usar 'magiclink' en lugar de 'recovery' (según proyecto Luca)
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: email,
-    });
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.signInAsUser(
+      supabaseUser.id
+    );
 
-    if (linkError || !linkData) {
-      console.error('❌ Error generating magic link:', linkError);
-      console.error('   Stack:', linkError?.stack);
-      throw new Error(`Failed to generate magic link: ${linkError?.message || 'No link generated'}`);
+    if (sessionError || !sessionData.session) {
+      console.error('❌ Error generating session:', sessionError);
+      throw new Error(`Failed to generate session: ${sessionError?.message || 'No session generated'}`);
     }
 
-    console.log('✅ Magic link generated successfully');
-    console.log('   Properties:', linkData.properties);
-
-    // ✅ CORRECCIÓN: Con 'magiclink', el link tiene formato diferente
-    // Devolver el magic link completo al cliente para que lo procese
-    const magicLinkUrl = linkData.properties.action_link;
-    
-    console.log('✅ Magic link URL:', magicLinkUrl);
+    console.log('✅ Supabase session generated successfully');
+    console.log('   Access token length:', sessionData.session.access_token.length);
+    console.log('   Refresh token length:', sessionData.session.refresh_token?.length || 0);
     console.log('✅ OAuth authentication flow completed successfully');
     
     const finalResponse = {
@@ -317,8 +309,9 @@ serve(async (req) => {
         rubrica: profileData.rubrica,
       },
       supabaseUserId: supabaseUser.id,
-      // ✅ Return magic link URL for client-side verification
-      magicLink: magicLinkUrl,
+      // ✅ Return Supabase session tokens instead of magic link
+      access_token: sessionData.session.access_token,
+      refresh_token: sessionData.session.refresh_token,
       // Include TMWE OAuth info for reference
       tmwe_user_id: user_id, // email
       tmwe_anagrafica_id: anagrafica_id,

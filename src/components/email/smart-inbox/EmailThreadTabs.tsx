@@ -43,16 +43,24 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
     if (cleanMode) {
       // Clean Mode: Blu per TMWE, Grigio per altri
       if (isTmwe) {
-        return `border-2 ${isActive ? 'border-blue-600 bg-blue-100' : 'border-blue-400 bg-blue-50'} text-blue-700`;
+        return isActive 
+          ? 'border-2 border-blue-500 bg-blue-500 text-white shadow-lg shadow-blue-500/50'
+          : 'border-2 border-blue-400 bg-blue-50 text-blue-700';
       }
-      return `border-2 ${isActive ? 'border-gray-600 bg-gray-100' : 'border-gray-400 bg-gray-50'} text-gray-700`;
+      return isActive
+        ? 'border-2 border-gray-600 bg-gray-600 text-white shadow-lg shadow-gray-500/50'
+        : 'border-2 border-gray-400 bg-gray-50 text-gray-700';
     }
     
     // Dark Mode: Blu per TMWE, Viola per altri
     if (isTmwe) {
-      return `border-2 ${isActive ? 'border-blue-400 bg-blue-900/40' : 'border-blue-500/50 bg-blue-900/20'} text-blue-200`;
+      return isActive
+        ? 'border-2 border-blue-300 bg-blue-500 text-white shadow-lg shadow-blue-500/50'
+        : 'border-2 border-blue-500/50 bg-blue-900/20 text-blue-200';
     }
-    return `border-2 ${isActive ? 'border-purple-400 bg-purple-900/40' : 'border-purple-500/50 bg-purple-900/20'} text-purple-200`;
+    return isActive
+      ? 'border-2 border-purple-300 bg-purple-500 text-white shadow-lg shadow-purple-500/50'
+      : 'border-2 border-purple-500/50 bg-purple-900/20 text-purple-200';
   };
 
   return (
@@ -66,7 +74,6 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
         className="w-full"
       >
         <CarouselContent className="-ml-2 py-1">
-          <TabsList className="inline-flex h-auto gap-2 bg-transparent">
             {emails.map((email) => {
               const isTmwe = email.from_email?.toLowerCase().includes('tmwe') || false;
               const firstName = extractFirstName(email.from_email);
@@ -80,25 +87,22 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
                     value={email.id}
                     onClick={() => onTabChange(email.id)}
                     className={`
-                      flex flex-col items-start gap-1 px-4 py-2 min-w-[120px] rounded-lg
+                      flex items-center gap-2 px-3 py-1.5 rounded-lg
                       transition-all duration-200 shadow-sm hover:shadow-md
                       ${getSimplifiedTabStyle(isTmwe, isActive, cleanMode)}
                     `}
                   >
-                    <div className="flex items-center gap-2 w-full">
-                      {icon}
-                      <span className="font-semibold text-sm truncate max-w-[80px]">
-                        {firstName}
-                      </span>
-                    </div>
-                    <span className={`text-xs ${cleanMode ? 'text-gray-500' : 'text-white/60'}`}>
+                    {icon}
+                    <span className="font-semibold text-xs whitespace-nowrap">
+                      {firstName}
+                    </span>
+                    <span className={`text-xs whitespace-nowrap ${isActive ? 'opacity-90' : 'opacity-60'}`}>
                       {time}
                     </span>
                   </TabsTrigger>
                 </CarouselItem>
               );
             })}
-          </TabsList>
         </CarouselContent>
       </Carousel>
     </div>

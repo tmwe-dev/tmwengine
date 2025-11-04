@@ -104,7 +104,7 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
               )}
             </AvatarFallback>
           </Avatar>
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex flex-col min-w-0">
             <span className="font-bold text-sm truncate">{companyName}</span>
             <span className="text-xs text-muted-foreground truncate">
               {classification.sender_email}

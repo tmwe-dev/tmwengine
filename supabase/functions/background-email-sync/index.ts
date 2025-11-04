@@ -231,8 +231,8 @@ async function processEmailsInBackground(
           continue;
         }
         
-        // 3. Download email in batch di 10
-        const batchSize = 10;
+        // 3. Download email in batch di 5 (ridotto per evitare timeout CPU)
+        const batchSize = 5;
         let downloadedInFolder = 0;
 
         for (let j = 0; j < uids.length; j += batchSize) {
@@ -252,14 +252,28 @@ async function processEmailsInBackground(
             .filter(email => email !== null);
 
           if (validEmails.length > 0) {
-            await supabase.from('email_messages').upsert(validEmails, {
-              onConflict: 'message_id',
-              ignoreDuplicates: true
-            });
-          }
+            const { data: inserted, error: upsertError } = await supabase
+              .from('email_messages')
+              .upsert(validEmails, {
+                onConflict: 'message_id',
+                ignoreDuplicates: true
+              })
+              .select('id');
 
-          downloadedInFolder += validEmails.length;
-          totalDownloaded += validEmails.length;
+            if (upsertError) {
+              console.error(`[Job ${jobId}] ❌ UPSERT FAILED for batch:`, upsertError);
+              console.error(`[Job ${jobId}] Sample email data:`, JSON.stringify(validEmails[0]).substring(0, 300));
+              // Non incrementare contatori se fallisce
+              continue;
+            }
+            
+            const actualInserted = inserted?.length || 0;
+            console.log(`[Job ${jobId}] ✅ Inserted ${actualInserted}/${validEmails.length} emails`);
+            downloadedInFolder += actualInserted;
+            totalDownloaded += actualInserted;
+          } else {
+            console.log(`[Job ${jobId}] ⚠️ No valid emails in batch`);
+          }
 
           // Calcola velocità e ETA
           const elapsedSeconds = (Date.now() - startTime) / 1000;
@@ -568,24 +582,24 @@ async function downloadEmail(userEmail: string, folder: string, uid: number, tmw
   const data = result.data;
   console.log(`[downloadEmail] Downloaded UID ${uid}:`, { subject: data.subject?.substring(0, 50) });
   
-  // Mappa al formato DB (identico al Debugger)
+  // ✅ Mappa al formato DB corretto (schema email_messages)
   return {
     message_id: `${userEmail}/${folder}/${uid}`,
-    user_email: userEmail,
-    folder_name: folder,
-    uid,
+    provider_id: '00000000-0000-0000-0000-000000000000', // ✅ UUID usato dalle email esistenti
+    cartella: folder,                                     // ✅ Nome colonna corretto
+    sync_status: 'fun_email_backup',                      // ✅ Aggiunto
     subject: data.subject || '',
     from_email: data.from?.email || data.from || '',
     to_email: data.to?.[0]?.email || (Array.isArray(data.to) && data.to.length > 0 ? data.to[0] : data.to) || '',
-    cc: data.cc ? (Array.isArray(data.cc) ? data.cc.map((c: any) => c.email || c).join(', ') : data.cc) : null,
-    bcc: data.bcc ? (Array.isArray(data.bcc) ? data.bcc.map((b: any) => b.email || b).join(', ') : data.bcc) : null,
-    date: data.date || new Date().toISOString(),
+    cc_email: data.cc ? (Array.isArray(data.cc) ? data.cc.map((c: any) => c.email || c).join(', ') : data.cc) : null,    // ✅ cc_email
+    bcc_email: data.bcc ? (Array.isArray(data.bcc) ? data.bcc.map((b: any) => b.email || b).join(', ') : data.bcc) : null, // ✅ bcc_email
+    data_ricezione: data.date || new Date().toISOString(), // ✅ data_ricezione
     body_text: data.body_type === 'plain' ? data.body : data.preview || '',
     body_html: data.body_type === 'html' ? data.body : null,
     attachments: data.attachments || [],
-    headers: data.headers || {},
+    raw_headers: data.headers || {},                       // ✅ raw_headers
     flags: data.flags || [],
-    is_read: data.flags?.includes('\\Seen') || false,
-    is_flagged: data.flags?.includes('\\Flagged') || false
+    direzione: 'inbound',                                  // ✅ Aggiunto
+    stato: data.flags?.includes('\\Seen') ? 'letto' : 'nuovo' // ✅ stato invece di is_read
   };
 }

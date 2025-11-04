@@ -312,14 +312,28 @@ async function processEmailsInBackground(
             .filter(email => email !== null);
 
           if (validEmails.length > 0) {
-            await supabase.from('email_messages').upsert(validEmails, {
-              onConflict: 'message_id',
-              ignoreDuplicates: true
-            });
-          }
+            const { data: inserted, error: upsertError } = await supabase
+              .from('email_messages')
+              .upsert(validEmails, {
+                onConflict: 'message_id',
+                ignoreDuplicates: true
+              })
+              .select('id');
 
-          downloadedInFolder += validEmails.length;
-          totalDownloaded += validEmails.length;
+            if (upsertError) {
+              console.error(`[Job ${jobId}] ❌ UPSERT FAILED for batch:`, upsertError);
+              console.error(`[Job ${jobId}] Sample email data:`, JSON.stringify(validEmails[0]).substring(0, 300));
+              // Non incrementare contatori se fallisce
+              continue;
+            }
+            
+            const actualInserted = inserted?.length || 0;
+            console.log(`[Job ${jobId}] ✅ Inserted ${actualInserted}/${validEmails.length} emails`);
+            downloadedInFolder += actualInserted;
+            totalDownloaded += actualInserted;
+          } else {
+            console.log(`[Job ${jobId}] ⚠️ No valid emails in batch`);
+          }
 
           // Calcola velocità e ETA
           const elapsedSeconds = (Date.now() - startTime) / 1000;
@@ -636,10 +650,10 @@ async function downloadEmail(userEmail: string, folder: string, uid: number, tmw
   const data = result.data;
   console.log(`[downloadEmail] Downloaded UID ${uid}:`, { subject: data.subject?.substring(0, 50) });
   
-  // Mappa al formato DB con schema corretto
+  // ✅ Mappa al formato DB corretto (schema email_messages)
   return {
     message_id: `${userEmail}/${folder}/${uid}`,
-    user_email: userEmail,
+    provider_id: '00000000-0000-0000-0000-000000000000', // ✅ UUID usato dalle email esistenti
     cartella: folder,
     sync_status: 'fun_email_backup',
     subject: data.subject || '',
@@ -652,6 +666,8 @@ async function downloadEmail(userEmail: string, folder: string, uid: number, tmw
     body_html: data.body_type === 'html' ? data.body : null,
     attachments: data.attachments || [],
     raw_headers: data.headers || {},
-    flags: data.flags || []
+    flags: data.flags || [],
+    direzione: 'inbound',                                  // ✅ Aggiunto
+    stato: data.flags?.includes('\\Seen') ? 'letto' : 'nuovo' // ✅ stato invece di is_read
   };
 }

@@ -19,8 +19,16 @@ interface SyncRequest {
 // FETCH WITH TIMEOUT HELPER
 // ============================================
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const startTime = Date.now();
+  console.log(`[fetchWithTimeout] 🚀 Starting request - timeout: ${timeoutMs}ms`);
+  console.log(`[fetchWithTimeout] URL: ${url}`);
+  
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = setTimeout(() => {
+    const elapsed = Date.now() - startTime;
+    console.warn(`[fetchWithTimeout] ⏱️ TIMEOUT TRIGGERED after ${elapsed}ms (limit: ${timeoutMs}ms)`);
+    controller.abort();
+  }, timeoutMs);
   
   try {
     const response = await fetch(url, {
@@ -28,12 +36,19 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
       signal: controller.signal
     });
     clearTimeout(timeoutId);
+    const elapsed = Date.now() - startTime;
+    console.log(`[fetchWithTimeout] ✅ Request completed in ${elapsed}ms - status: ${response.status}`);
     return response;
   } catch (error: any) {
     clearTimeout(timeoutId);
+    const elapsed = Date.now() - startTime;
+    
     if (error.name === 'AbortError') {
+      console.error(`[fetchWithTimeout] ❌ Request ABORTED after ${elapsed}ms`);
       throw new Error(`Request timeout after ${timeoutMs}ms`);
     }
+    
+    console.error(`[fetchWithTimeout] ❌ Request FAILED after ${elapsed}ms:`, error.message);
     throw error;
   }
 }
@@ -375,10 +390,15 @@ async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken:
     }
 
     const data = await response.json();
-    console.log(`[getFolderInfo] Raw response:`, JSON.stringify(data));
+    console.log(`[getFolderInfo] Raw response:`, JSON.stringify(data).substring(0, 200));
     
-    // VALIDAZIONE CRITICA
-    if (data.success === false) {
+    // ✅ OPZIONE A: Gestisci entrambi i formati (con/senza wrapper success)
+    const hasSuccess = 'success' in data;
+    const isSuccess = hasSuccess ? data.success !== false : true;
+    
+    console.log(`[getFolderInfo] Success check - hasSuccess: ${hasSuccess}, isSuccess: ${isSuccess}`);
+    
+    if (!isSuccess) {
       console.error(`[getFolderInfo] API returned success=false:`, data.errors || data.message);
       throw new Error(`TMWE API error: ${data.errors?.[0] || data.message || 'Unknown error'}`);
     }
@@ -386,6 +406,8 @@ async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken:
     if (typeof data.total !== 'number') {
       console.warn(`[getFolderInfo] Invalid total (${typeof data.total}), defaulting to 0`);
     }
+    
+    console.log(`[getFolderInfo] Response: { success: ${hasSuccess ? data.success : 'N/A'}, total: ${data.total || 0} }`);
     
     return {
       folder,
@@ -399,9 +421,24 @@ async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken:
 }
 
 async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken: string): Promise<number[]> {
+  console.log(`[getFolderUIDs] ========================================`);
   console.log(`[getFolderUIDs] Fetching UIDs for folder: ${folder}`);
+  console.log(`[getFolderUIDs] User: ${userEmail}`);
   
   try {
+    console.log(`[getFolderUIDs] BEFORE fetch - calling tmwe-api-proxy`);
+    console.log(`[getFolderUIDs] Request body:`, JSON.stringify({
+      endpoint: '/email_message',
+      data: {
+        handler: 'get_messages',
+        folder: folder,
+        limit: 999999,
+        offset: 0,
+        user_email: userEmail,
+        bearerToken: '***' // Non loggare token
+      }
+    }));
+    
     const response = await fetchWithTimeout(
       `${SUPABASE_URL}/functions/v1/tmwe-api-proxy`,
       {
@@ -425,34 +462,73 @@ async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken:
       },
       API_TIMEOUT_MS
     );
-
+    
+    console.log(`[getFolderUIDs] AFTER fetch - status: ${response.status}, ok: ${response.ok}`);
+    console.log(`[getFolderUIDs] Response headers:`, Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[getFolderUIDs] HTTP Error ${response.status}: ${errorText}`);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
+    console.log(`[getFolderUIDs] BEFORE json parse`);
     const data = await response.json();
-    console.log(`[getFolderUIDs] Raw response:`, JSON.stringify(data).substring(0, 200));
+    console.log(`[getFolderUIDs] AFTER json parse - success!`);
+    console.log(`[getFolderUIDs] Response keys:`, Object.keys(data).join(', '));
+    console.log(`[getFolderUIDs] Response structure:`, {
+      hasSuccess: 'success' in data,
+      successValue: data.success,
+      hasData: 'data' in data,
+      dataType: typeof data.data,
+      isDataArray: Array.isArray(data.data),
+      dataLength: Array.isArray(data.data) ? data.data.length : 'N/A'
+    });
+    console.log(`[getFolderUIDs] Raw response (first 500 chars):`, JSON.stringify(data).substring(0, 500));
     
-    // VALIDAZIONE CRITICA
-    if (data.success === false) {
+    // ✅ OPZIONE A: Gestisci entrambi i formati (con/senza wrapper success)
+    const hasSuccess = 'success' in data;
+    const isSuccess = hasSuccess ? data.success !== false : true;
+    
+    console.log(`[getFolderUIDs] Success check - hasSuccess: ${hasSuccess}, isSuccess: ${isSuccess}`);
+    
+    if (!isSuccess) {
       console.error(`[getFolderUIDs] API returned success=false:`, data.errors || data.message);
       throw new Error(`TMWE API error: ${data.errors?.[0] || data.message || 'Unknown error'}`);
     }
 
-    if (!Array.isArray(data.data)) {
-      console.error(`[getFolderUIDs] Expected array, got:`, typeof data.data);
-      throw new Error(`Invalid response format: expected array, got ${typeof data.data}`);
+    // Estrai array messaggi - funziona con entrambi i formati
+    const messages = data.data || [];
+    console.log(`[getFolderUIDs] Extracted messages - type: ${typeof messages}, isArray: ${Array.isArray(messages)}, length: ${Array.isArray(messages) ? messages.length : 'N/A'}`);
+    
+    if (!Array.isArray(messages)) {
+      console.error(`[getFolderUIDs] Expected array, got:`, typeof messages);
+      console.error(`[getFolderUIDs] Full data object:`, JSON.stringify(data));
+      throw new Error(`Invalid response format: expected array, got ${typeof messages}`);
     }
     
-    const uids = data.data.map((msg: any) => parseInt(msg.uid, 10)).filter((uid: number) => !isNaN(uid));
-    console.log(`[getFolderUIDs] Parsed ${uids.length} valid UIDs`);
+    console.log(`[getFolderUIDs] First message sample:`, messages[0] ? JSON.stringify(messages[0]) : 'No messages');
+    
+    const uids = messages
+      .map((msg: any) => {
+        const uid = parseInt(msg.uid, 10);
+        if (isNaN(uid)) {
+          console.warn(`[getFolderUIDs] Invalid UID in message:`, msg);
+        }
+        return uid;
+      })
+      .filter((uid: number) => !isNaN(uid));
+    
+    console.log(`[getFolderUIDs] ✅ SUCCESS - Parsed ${uids.length} valid UIDs from ${messages.length} messages`);
+    console.log(`[getFolderUIDs] Sample UIDs (first 10):`, uids.slice(0, 10));
+    console.log(`[getFolderUIDs] ========================================`);
     
     return uids;
     
   } catch (error: any) {
-    console.error(`[getFolderUIDs] Exception for folder ${folder}:`, error.message);
+    console.error(`[getFolderUIDs] ❌ EXCEPTION for folder ${folder}:`, error.message);
+    console.error(`[getFolderUIDs] Stack trace:`, error.stack);
+    console.error(`[getFolderUIDs] ========================================`);
     throw error;
   }
 }

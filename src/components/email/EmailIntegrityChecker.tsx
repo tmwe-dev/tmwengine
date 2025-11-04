@@ -20,9 +20,10 @@ interface FolderComparison {
 
 interface EmailIntegrityCheckerProps {
   onRequestDownload?: (folderNames: string[]) => void;
+  isDownloadActive?: boolean;
 }
 
-export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheckerProps) => {
+export const EmailIntegrityChecker = ({ onRequestDownload, isDownloadActive = false }: EmailIntegrityCheckerProps) => {
   const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
 
   const toggleFolderSelection = (folderName: string) => {
@@ -92,7 +93,14 @@ export const EmailIntegrityChecker = ({ onRequestDownload }: EmailIntegrityCheck
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>🔍 Verifica Integrità Email</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>🔍 Verifica Integrità Email</CardTitle>
+            {isDownloadActive && (
+              <Badge variant="outline" className="animate-pulse">
+                🔄 Auto-aggiornamento attivo
+              </Badge>
+            )}
+          </div>
           <Button
             onClick={() => refetch()}
             disabled={isLoading || isRefetching}

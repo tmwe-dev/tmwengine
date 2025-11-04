@@ -37,6 +37,7 @@ const FunEmail = () => {
     totalDB: 0,
     folders: [] as { name: string; count: number }[],
   });
+  const [isDownloadActive, setIsDownloadActive] = useState(false);
   
   // AI Sidebar globale state
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
@@ -347,12 +348,14 @@ const FunEmail = () => {
                 onStatsUpdate={(stats) => {
                   console.log('📊 Stats aggiornate:', stats);
                 }}
+                onDownloadStatusChange={setIsDownloadActive}
               />
             </div>
           ) : currentView === 'integrity' ? (
             <div className="p-6">
               <EmailIntegrityChecker 
-            onRequestDownload={(folderNames) => {
+                isDownloadActive={isDownloadActive}
+                onRequestDownload={(folderNames) => {
               console.log('🎯 [FunEmail] Pre-selecting folders FIRST:', folderNames);
               
               // ✅ Step 1: Setta folders PRIMA

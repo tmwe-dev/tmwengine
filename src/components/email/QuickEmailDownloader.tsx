@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -45,6 +46,7 @@ interface QuickEmailDownloaderProps {
   onDownloadComplete?: (stats: QuickSyncStats) => void;
   onStatsUpdate?: (stats: Record<string, number>) => void;
   preSelectedFolders?: string[];
+  onDownloadStatusChange?: (isActive: boolean) => void;
 }
 
 interface FolderQuickOption {
@@ -53,7 +55,7 @@ interface FolderQuickOption {
   selected: boolean;
 }
 
-export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSelectedFolders = [] }: QuickEmailDownloaderProps) {
+export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSelectedFolders = [], onDownloadStatusChange }: QuickEmailDownloaderProps) {
   const [quickFolders, setQuickFolders] = useState<FolderQuickOption[]>([]);
   const [isQuickLoading, setIsQuickLoading] = useState(true);
   const [isPreferencesDialogOpen, setIsPreferencesDialogOpen] = useState(false);
@@ -63,6 +65,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const [useTestFunction, setUseTestFunction] = useState(false);
   const [pauseState, setPauseState] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Background download hook
   const { status: bgStatus, startDownload, isDownloading, reset: resetDownload } = useBackgroundDownload();
@@ -72,6 +75,25 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     loadUserEmail();
     loadActiveProfile();
   }, []);
+
+  // Effetto per invalidare query Verifica Integrità al completamento
+  useEffect(() => {
+    if (bgStatus.status === 'completed') {
+      queryClient.invalidateQueries({ queryKey: ['email-integrity-check'] });
+      console.log('✅ [QuickDownload] Invalidated integrity check query');
+    }
+    
+    if (bgStatus.status === 'error') {
+      queryClient.invalidateQueries({ queryKey: ['email-integrity-check'] });
+      console.log('⚠️ [QuickDownload] Invalidated integrity check query after error');
+    }
+  }, [bgStatus.status, queryClient]);
+  
+  // Notifica parent component quando cambia lo stato download
+  useEffect(() => {
+    const isActive = bgStatus.status === 'running' || bgStatus.status === 'pending';
+    onDownloadStatusChange?.(isActive);
+  }, [bgStatus.status, onDownloadStatusChange]);
 
   const loadUserEmail = async () => {
     try {

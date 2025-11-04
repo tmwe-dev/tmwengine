@@ -9,6 +9,7 @@ import { extractCompanyName, extractInitials, getCategoryColor, getCategoryIcon 
 import { X, Loader2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEmailThread } from '@/hooks/useEmailThread';
 import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { EmailThreadTabs } from './EmailThreadTabs';
 import { SingleEmailCard } from './SingleEmailCard';
 
@@ -70,6 +71,13 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
     }
   };
 
+  // 🆕 Abilita swipe per navigare tra thread dentro l'area della card
+  useSwipeNavigation({
+    onSwipeLeft: handleNextEmail,
+    onSwipeRight: handlePrevEmail,
+    enabled: emails.length > 1 && !!activeEmailId
+  });
+
   if (!classifiedEmail) return null;
 
   const { classification, email } = classifiedEmail;
@@ -106,7 +114,7 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
           </Avatar>
           <div className="flex flex-col min-w-0">
             <span className="font-bold text-sm truncate">{companyName}</span>
-            <span className="text-xs text-muted-foreground truncate">
+            <span className="text-xs text-muted-foreground break-all">
               {classification.sender_email}
             </span>
           </div>
@@ -141,17 +149,16 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
                   return (
                     <Badge 
                       key={idx} 
-                      variant={isImportant ? "default" : "outline"}
+                      variant={isImportant ? "default" : "secondary"}
                       className={`
-                        text-xs flex items-center gap-1 h-6 px-2
+                        flex items-center justify-center h-6 w-6 p-0 rounded-full border-0
                         ${isImportant 
-                          ? 'bg-white/10 text-white border-white/20' 
-                          : 'bg-transparent border-0 text-white/60'
+                          ? 'bg-white/10 text-white' 
+                          : 'bg-transparent text-white/60'
                         }
                       `}
                     >
-                      {icon && <span className="text-xs">{icon}</span>}
-                      <span className="truncate max-w-[80px]">{keyword}</span>
+                      {icon && <span className="text-base">{icon}</span>}
                     </Badge>
                   );
                 })

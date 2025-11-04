@@ -87,9 +87,10 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
         opts={{
           align: "start",
           dragFree: true,
-          containScroll: "trimSnaps"
+          containScroll: "trimSnaps",
+          axis: "x"
         }}
-        className="w-full"
+        className="w-full cursor-grab active:cursor-grabbing"
       >
         <CarouselContent className="-ml-2 py-1">
           {emails.map((email) => {

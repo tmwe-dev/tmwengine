@@ -71,15 +71,32 @@ export const useEmailThread = (
         ])
         .join(',');
 
-      // 4. Query fuzzy con time window + filtro TUTTI i partecipanti
+      // 4. Query fuzzy con time window + filtro TUTTI i partecipanti (escludi email corrente)
       const { data: threadEmails, error: threadError, count } = await supabase
         .from('email_messages')
         .select('*', { count: 'exact' })
         .ilike('subject', `%${cleaned}%`)
         .gte('data_ricezione', timeWindowStart.toISOString())
         .or(orFilters)
+        .neq('id', emailId)  // 🆕 Escludi email corrente dalla query
         .order('data_ricezione', { ascending: true })
         .limit(limit);
+
+      // 🔍 DEBUG: Verifica quali email vengono matchate
+      console.log('🔍 Thread Query Debug:', {
+        currentEmailId: emailId,
+        originalSubject: currentEmail.subject,
+        cleanedSubject: cleaned,
+        participants: Array.from(participants),
+        timeWindow: `${timeWindowStart.toISOString()} → ${currentEmail.data_ricezione}`,
+        fetchedCount: threadEmails?.length,
+        fetchedEmails: threadEmails?.map(e => ({
+          id: e.id,
+          subject: e.subject,
+          from: e.from_email,
+          date: e.data_ricezione
+        }))
+      });
 
       if (threadError) {
         console.error('Error fetching thread:', threadError);
@@ -90,11 +107,14 @@ export const useEmailThread = (
         };
       }
 
-      // 4. Deduplica robusta: mittente + timestamp + oggetto
+      // 4. Re-aggiungi email corrente + thread fetched
+      const allThreadEmails = [currentEmail, ...(threadEmails || [])];
+
+      // 5. Deduplica usando ID univoco database
       const emailMap = new Map();
-      (threadEmails || []).forEach(email => {
-        // Chiave univoca: mittente + timestamp + oggetto
-        const uniqueKey = `${email.from_email}_${email.data_ricezione}_${email.subject}`;
+      allThreadEmails.forEach(email => {
+        // ✅ Chiave univoca: ID database garantisce univocità assoluta
+        const uniqueKey = email.id;
         
         if (!emailMap.has(uniqueKey)) {
           emailMap.set(uniqueKey, email);
@@ -102,7 +122,7 @@ export const useEmailThread = (
       });
       const deduplicatedEmails = Array.from(emailMap.values());
 
-      // 5. Ordina e trova l'indice dell'email corrente
+      // 6. Ordina e trova l'indice dell'email corrente
       const sortedEmails = sortEmailsByDate(deduplicatedEmails);
       const currentIndex = sortedEmails.findIndex(
         e => e.id === emailId

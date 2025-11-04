@@ -62,38 +62,45 @@ export const cleanEmailBody = (html: string): string => {
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html;
   
-  // 1. Rimuovi solo <blockquote> espliciti (citazioni standard)
+  // 1. PRIMA rimuovi blockquote standard con selettori CSS precisi
+  const quoteSelectors = [
+    'blockquote.gmail_quote',
+    'div.gmail_quote',
+    'div.OutlookMessageHeader',
+    'div#divRplyFwdMsg',
+    '[class*="yahoo_quoted"]',
+    '.gmail_extra'
+  ];
+  
+  quoteSelectors.forEach(selector => {
+    const elements = tempDiv.querySelectorAll(selector);
+    elements.forEach(el => el.remove());
+  });
+  
+  // Rimuovi anche blockquote generici
   const blockquotes = tempDiv.querySelectorAll('blockquote');
   blockquotes.forEach(el => el.remove());
   
-  // 2. Rimuovi elementi con classi "quote" evidenti (Gmail, Yahoo)
-  const quotedElements = tempDiv.querySelectorAll(
-    '[class*="gmail_quote"], [class*="yahoo_quoted"], .gmail_extra'
-  );
-  quotedElements.forEach(el => el.remove());
-  
-  // 3. Trova separatori espliciti tipo "---- Original Message ----"
-  // e rimuovi TUTTO DOPO (non prima!)
-  const allText = tempDiv.innerHTML;
-  
-  // Pattern separatori comuni (multi-lingua)
-  const separatorPatterns = [
-    /[-_]{3,}\s*(Original Message|Messaggio originale|Message d'origine)/i,
-    /<hr[^>]*>/i, // Linea orizzontale
-    /From:\s*[^\n]+\nSent:\s*[^\n]+/i, // Header email forwarded
-    /Da:\s*[^\n]+\nInviato:\s*[^\n]+/i // Header italiano
-  ];
-  
+  // 2. SOLO SE blockquote non ha funzionato, usa separator testuali STRINGENTI
   let cleanedHtml = tempDiv.innerHTML;
+  
+  // Pattern separatori comuni (multi-lingua) - PIÙ STRINGENTI
+  const separatorPatterns = [
+    /[-_]{10,}\s*(Original Message|Messaggio originale|Message d'origine|Forwarded message)/i,  // Minimo 10 trattini
+    /^From:\s+.+\nSent:\s+.+\nTo:\s+.+/im,  // Header Outlook completo (From+Sent+To)
+    /^Da:\s+.+\nInviato:\s+.+\nA:\s+.+/im,  // Header Outlook IT completo
+    /^On\s+.+\s+wrote:$/im,  // Gmail classic "On [date] [person] wrote:"
+    /^Il\s+.+\s+ha scritto:$/im  // Gmail IT "Il [data] [persona] ha scritto:"
+  ];
   
   for (const pattern of separatorPatterns) {
     const match = cleanedHtml.match(pattern);
-    if (match && match.index !== undefined) {
+    if (match?.index !== undefined) {
       // Tronca tutto DOPO il separatore
       cleanedHtml = cleanedHtml.substring(0, match.index);
       break; // Usa solo il primo separatore trovato
     }
   }
   
-  return cleanedHtml;
+  return cleanedHtml.trim();
 };

@@ -24,6 +24,16 @@ export const SingleEmailCard: React.FC<SingleEmailCardProps> = ({
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
+  // 🔍 DEBUG: Logging rendering email
+  console.log('📧 Rendering Email Card:', {
+    id: email.id,
+    subject: email.subject?.substring(0, 50),
+    from: email.from_email,
+    bodyPreview: email.body_html?.substring(0, 100) + '...',
+    bodyLength: email.body_html?.length,
+    isCurrent
+  });
+
   // Handler per immagini che non caricano
   React.useEffect(() => {
     const handleImageError = (e: Event) => {

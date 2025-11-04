@@ -8,10 +8,12 @@ import { useSmartClassification } from '@/hooks/useSmartClassification';
 import { CATEGORIES } from '@/lib/smart-inbox-utils';
 import { ClassifiedEmail, CategoryStats } from '@/types/smart-inbox';
 import { toast } from 'sonner';
+import { ViewMode } from './ViewModeSelector';
 
 export const SmartInboxTab = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedEmail, setSelectedEmail] = useState<ClassifiedEmail | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('sequential');
   const { classifyEmails, isClassifying, progress } = useSmartClassification();
 
   // Fetch user email
@@ -146,6 +148,8 @@ export const SmartInboxTab = () => {
         onClassifyNew={handleClassifyNew}
         isClassifying={isClassifying}
         classificationProgress={progress.total > 0 ? progress : undefined}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
       
       <SmartEmailList
@@ -158,6 +162,7 @@ export const SmartInboxTab = () => {
         classifiedEmail={selectedEmail}
         open={!!selectedEmail}
         onClose={() => setSelectedEmail(null)}
+        viewMode={viewMode}
       />
     </div>
   );

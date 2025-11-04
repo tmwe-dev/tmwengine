@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -6,18 +7,40 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Sparkles } from 'lucide-react';
 import { ClassifiedEmail } from '@/types/smart-inbox';
 import { getCategoryColor, getCategoryIcon, extractCompanyName, extractInitials, formatDate } from '@/lib/smart-inbox-utils';
+import { SmartEmailDetailPanel } from './SmartEmailDetailPanel';
+import { ViewMode } from './ViewModeSelector';
 
 interface SmartEmailDetailProps {
   classifiedEmail: ClassifiedEmail | null;
   open: boolean;
   onClose: () => void;
+  viewMode?: ViewMode;
 }
 
-export const SmartEmailDetail = ({ classifiedEmail, open, onClose }: SmartEmailDetailProps) => {
+export const SmartEmailDetail = ({ classifiedEmail, open, onClose, viewMode = 'sequential' }: SmartEmailDetailProps) => {
+  const [cleanViewMode, setCleanViewMode] = useState(false);
+
   if (!classifiedEmail) return null;
 
   const { classification, email } = classifiedEmail;
 
+  // Se viewMode è 'tabs', usa SmartEmailDetailPanel invece del Sheet
+  if (viewMode === 'tabs') {
+    return open ? (
+      <div className="fixed inset-0 z-50 bg-black/50">
+        <div className="fixed inset-4 z-50">
+          <SmartEmailDetailPanel
+            classifiedEmail={classifiedEmail}
+            onClose={onClose}
+            cleanViewMode={cleanViewMode}
+            onToggleCleanView={() => setCleanViewMode(!cleanViewMode)}
+          />
+        </div>
+      </div>
+    ) : null;
+  }
+
+  // Altrimenti, usa il Sheet classico (vista sequenziale)
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">

@@ -86,10 +86,9 @@ export const EmailThreadTabs: React.FC<EmailThreadTabsProps> = ({
       <Carousel
         opts={{
           align: "start",
-          dragFree: true,
           containScroll: "trimSnaps",
           axis: "x",
-          watchDrag: false
+          watchDrag: true
         }}
         className="w-full"
       >

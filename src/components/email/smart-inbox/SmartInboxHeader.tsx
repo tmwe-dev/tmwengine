@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
+import { ViewModeSelector, ViewMode } from './ViewModeSelector';
 
 interface SmartInboxHeaderProps {
   categories: CategoryStats[];
@@ -16,6 +17,8 @@ interface SmartInboxHeaderProps {
     total: number;
     currentEmail: string;
   };
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 export const SmartInboxHeader = ({
@@ -24,7 +27,9 @@ export const SmartInboxHeader = ({
   onCategoryChange,
   onClassifyNew,
   isClassifying,
-  classificationProgress
+  classificationProgress,
+  viewMode,
+  onViewModeChange
 }: SmartInboxHeaderProps) => {
   const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
   
@@ -35,15 +40,18 @@ export const SmartInboxHeader = ({
           <span className="text-2xl">📬</span>
           Inbox Intelligente
         </h2>
-        <Button 
-          onClick={onClassifyNew}
-          variant="outline"
-          size="sm"
-          disabled={isClassifying}
-        >
-          <Sparkles className="h-4 w-4 mr-2" />
-          {isClassifying ? 'Classificazione...' : 'Classifica Nuove'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <ViewModeSelector value={viewMode} onChange={onViewModeChange} />
+          <Button 
+            onClick={onClassifyNew}
+            variant="outline"
+            size="sm"
+            disabled={isClassifying}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            {isClassifying ? 'Classificazione...' : 'Classifica Nuove'}
+          </Button>
+        </div>
       </div>
       
       {isClassifying && classificationProgress && (

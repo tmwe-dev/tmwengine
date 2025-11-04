@@ -147,8 +147,8 @@ async function processEmailsInBackground(
         })
         .eq('job_id', jobId);
 
-      // 1. Ottieni info folder (chiamata diretta API TMWE)
-      const folderInfo = await getFolderInfo(folder, tmweAccessToken);
+      // 1. Ottieni info folder via tmwe-api-proxy
+      const folderInfo = await getFolderInfo(userEmail, folder, tmweAccessToken);
       
       await supabase
         .from('email_sync_progress')
@@ -158,8 +158,8 @@ async function processEmailsInBackground(
         })
         .eq('job_id', jobId);
 
-      // 2. Ottieni UIDs (chiamata diretta API TMWE)
-      const uids = await getFolderUIDs(folder, tmweAccessToken);
+      // 2. Ottieni UIDs via tmwe-api-proxy
+      const uids = await getFolderUIDs(userEmail, folder, tmweAccessToken);
       
       // 3. Download email in batch di 10
       const batchSize = 10;
@@ -170,7 +170,7 @@ async function processEmailsInBackground(
         
         // Download batch parallelo
         const emailPromises = batch.map(uid => 
-          downloadEmail(folder, uid, userEmail, tmweAccessToken)
+          downloadEmail(userEmail, folder, uid, tmweAccessToken)
         );
         
         const emails = await Promise.allSettled(emailPromises);
@@ -249,21 +249,28 @@ async function processEmailsInBackground(
 // HELPER FUNCTIONS - TMWE API CALLS
 // ============================================
 
-async function getFolderInfo(folder: string, tmweAccessToken: string): Promise<FolderInfo> {
-  const response = await fetch('https://api.tmwe.it/email', {
+async function getFolderInfo(userEmail: string, folder: string, tmweAccessToken: string): Promise<FolderInfo> {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/tmwe-api-proxy`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${tmweAccessToken}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
-      handler: 'get_folder_info',
-      folder: folder
+      endpoint: '/email',
+      data: {
+        handler: 'get_folder_info',
+        folder: folder,
+        user_email: userEmail
+      },
+      bearerToken: tmweAccessToken
     })
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to get folder info: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to get folder info: ${response.statusText} - ${errorText}`);
   }
 
   const data = await response.json();
@@ -273,38 +280,51 @@ async function getFolderInfo(folder: string, tmweAccessToken: string): Promise<F
   };
 }
 
-async function getFolderUIDs(folder: string, tmweAccessToken: string): Promise<number[]> {
-  const response = await fetch('https://api.tmwe.it/email', {
+async function getFolderUIDs(userEmail: string, folder: string, tmweAccessToken: string): Promise<number[]> {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/tmwe-api-proxy`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${tmweAccessToken}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
-      handler: 'get_folder_uids',
-      folder: folder
+      endpoint: '/email',
+      data: {
+        handler: 'get_folder_uids',
+        folder: folder,
+        user_email: userEmail
+      },
+      bearerToken: tmweAccessToken
     })
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to get UIDs: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to get UIDs: ${response.statusText} - ${errorText}`);
   }
 
   const data = await response.json();
   return data.uids || [];
 }
 
-async function downloadEmail(folder: string, uid: number, userEmail: string, tmweAccessToken: string): Promise<any> {
-  const response = await fetch('https://api.tmwe.it/email', {
+async function downloadEmail(userEmail: string, folder: string, uid: number, tmweAccessToken: string): Promise<any> {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/tmwe-api-proxy`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${tmweAccessToken}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'X-Service-Role-Call': 'true'
     },
     body: JSON.stringify({
-      handler: 'get_email_by_uid',
-      folder: folder,
-      uid: uid
+      endpoint: '/email',
+      data: {
+        handler: 'get_email_by_uid',
+        folder: folder,
+        uid: uid,
+        user_email: userEmail
+      },
+      bearerToken: tmweAccessToken
     })
   });
 

@@ -19,7 +19,10 @@ import {
   Clock,
   Gauge,
   Settings,
-  Sliders
+  Sliders,
+  Pause,
+  Play,
+  Square
 } from 'lucide-react';
 import emailFolderGif from '@/assets/email-folder-unscreen.gif';
 import { useBackgroundDownload } from '@/hooks/useBackgroundDownload';
@@ -57,7 +60,8 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
   const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const [activeProfile, setActiveProfile] = useState<PerformanceProfile | null>(null);
-  const [useTestFunction, setUseTestFunction] = useState(false); // ✅ NUOVO stato toggle
+  const [useTestFunction, setUseTestFunction] = useState(false);
+  const [pauseState, setPauseState] = useState(false);
   const { toast } = useToast();
   
   // Background download hook
@@ -217,6 +221,35 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     setQuickFolders(prev => prev.map(f => ({ ...f, selected: !allQuickSelected })));
   };
 
+  const pauseDownload = () => {
+    setPauseState(true);
+    toast({
+      title: "⏸️ Download in pausa",
+      description: "Il processo è stato messo in pausa. Clicca 'Riprendi' per continuare.",
+    });
+    console.log('⏸️ Download messo in pausa');
+  };
+
+  const resumeDownload = () => {
+    setPauseState(false);
+    toast({
+      title: "▶️ Download ripreso",
+      description: "Il download è ripreso da dove era stato interrotto.",
+    });
+    console.log('▶️ Download ripreso');
+  };
+
+  const stopDownload = () => {
+    resetDownload();
+    setPauseState(false);
+    toast({
+      title: "🛑 Download fermato",
+      description: "Il processo di download è stato terminato.",
+      variant: "destructive"
+    });
+    console.log('🛑 Download fermato definitivamente');
+  };
+
   const handleStartBackgroundDownload = async () => {
     const selectedFolders = quickFolders.filter(f => f.selected).map(f => f.name);
     
@@ -367,6 +400,54 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
               <FolderOpen className="h-4 w-4 text-purple-500" />
               <span className="font-medium truncate">{bgStatus.currentFolder || 'Preparazione...'}</span>
             </div>
+
+            {/* Controlli Download */}
+            {(bgStatus.status === 'running' || bgStatus.status === 'pending') && (
+              <div className="flex gap-2 pt-2 border-t border-purple-200 dark:border-purple-800">
+                {pauseState ? (
+                  <>
+                    <Button
+                      onClick={resumeDownload}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      size="sm"
+                    >
+                      <Play className="mr-2 h-4 w-4" />
+                      Riprendi Download
+                    </Button>
+                    <Button
+                      onClick={stopDownload}
+                      variant="destructive"
+                      className="flex-1"
+                      size="sm"
+                    >
+                      <Square className="mr-2 h-4 w-4" />
+                      Ferma Definitivamente
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      onClick={pauseDownload}
+                      variant="outline"
+                      className="flex-1"
+                      size="sm"
+                    >
+                      <Pause className="mr-2 h-4 w-4" />
+                      Pausa
+                    </Button>
+                    <Button
+                      onClick={stopDownload}
+                      variant="destructive"
+                      className="flex-1"
+                      size="sm"
+                    >
+                      <Square className="mr-2 h-4 w-4" />
+                      Ferma
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

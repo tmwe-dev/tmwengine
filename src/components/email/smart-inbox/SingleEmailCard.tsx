@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { cleanEmailBody } from '@/lib/email-thread-utils';
+import { processCidImages } from '@/lib/process-cid-images';
 import DOMPurify from 'dompurify';
 
 interface SingleEmailCardProps {
@@ -167,13 +168,19 @@ export const SingleEmailCard: React.FC<SingleEmailCardProps> = ({
             <div
               className={`prose prose-slate max-w-none email-body-content mt-4 ${cleanMode ? 'email-body-light' : ''}`}
               dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(cleanEmailBody(email.body_html || email.body_text || ''), {
-                  ADD_TAGS: ['img', 'table', 'tbody', 'thead', 'tr', 'td', 'th', 'a', 'span', 'div', 'p', 'br', 'strong', 'em', 'u', 'o:p', 'v:shapetype', 'w:anchorlock'],
-                  ADD_ATTR: ['src', 'alt', 'width', 'height', 'href', 'target', 'rel', 'title', 'style', 'lang', 'mso-fareast-language'],
-                  ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|cid|data):)/i,
-                  KEEP_CONTENT: true,
-                  ALLOW_DATA_ATTR: false
-                })
+                __html: DOMPurify.sanitize(
+                  processCidImages(
+                    cleanEmailBody(email.body_html || email.body_text || ''),
+                    email.attachments
+                  ),
+                  {
+                    ADD_TAGS: ['img', 'table', 'tbody', 'thead', 'tr', 'td', 'th', 'a', 'span', 'div', 'p', 'br', 'strong', 'em', 'u', 'o:p', 'v:shapetype', 'w:anchorlock'],
+                    ADD_ATTR: ['src', 'alt', 'width', 'height', 'href', 'target', 'rel', 'title', 'style', 'lang', 'mso-fareast-language'],
+                    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|data):)/i,
+                    KEEP_CONTENT: true,
+                    ALLOW_DATA_ATTR: false
+                  }
+                )
               }}
             />
           </div>

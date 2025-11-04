@@ -36,17 +36,19 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
             </span>
           )}
         </div>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={onToggleCleanView}
-          title="Torna alla vista intelligente"
-        >
-          <EyeOff className="h-4 w-4 text-black" />
-        </Button>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          <X className="h-4 w-4 text-black" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onToggleCleanView}
+            title="Torna alla vista intelligente"
+          >
+            <EyeOff className="h-4 w-4 text-black" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="h-4 w-4 text-black" />
+          </Button>
+        </div>
       </div>
 
       {/* Content scrollabile bianco */}

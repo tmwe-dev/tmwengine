@@ -212,13 +212,27 @@ export const EmailThreadView: React.FC<EmailThreadViewProps> = ({
                     {email.subject}
                   </h3>
 
+                  {/* Debug: HTML Raw Preview (solo in development) */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <details className="mb-2 text-xs">
+                      <summary className={`cursor-pointer ${cleanMode ? 'text-gray-500' : 'text-white/50'}`}>
+                        🔍 Debug: HTML Raw (primi 1000 caratteri)
+                      </summary>
+                      <pre className={`overflow-auto max-h-40 text-[10px] p-2 rounded mt-1 ${
+                        cleanMode ? 'bg-gray-100 text-gray-700' : 'bg-white/5 text-white/30'
+                      }`}>
+                        {email.body_html?.substring(0, 1000) || 'Nessun HTML'}
+                      </pre>
+                    </details>
+                  )}
+
                   {/* Contenuto HTML */}
                   <div
                     className={`prose prose-slate max-w-none email-body-content mt-4 ${cleanMode ? 'email-body-light' : ''}`}
                     dangerouslySetInnerHTML={{
                       __html: DOMPurify.sanitize(cleanEmailBody(email.body_html || email.body_text || ''), {
-                        ADD_TAGS: ['img', 'table', 'tbody', 'thead', 'tr', 'td', 'th', 'a', 'span', 'div', 'p', 'br', 'strong', 'em', 'u'],
-                        ADD_ATTR: ['src', 'alt', 'width', 'height', 'href', 'target', 'rel', 'title', 'style'],
+                        ADD_TAGS: ['img', 'table', 'tbody', 'thead', 'tr', 'td', 'th', 'a', 'span', 'div', 'p', 'br', 'strong', 'em', 'u', 'o:p', 'v:shapetype', 'w:anchorlock'],
+                        ADD_ATTR: ['src', 'alt', 'width', 'height', 'href', 'target', 'rel', 'title', 'style', 'lang', 'mso-fareast-language'],
                         ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|cid|data):)/i,
                         KEEP_CONTENT: true,
                         ALLOW_DATA_ATTR: false

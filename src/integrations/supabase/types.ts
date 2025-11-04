@@ -3260,15 +3260,23 @@ export type Database = {
         Row: {
           batch_size: number
           completed_at: string | null
+          completed_folders: Json | null
           current_batch: number
+          current_folder: string | null
+          downloaded_in_folder: number | null
           errors: Json | null
+          eta: number | null
           folder_name: string
+          folders_to_sync: Json | null
           id: string
+          job_id: string | null
           last_offset: number
           processed_messages: number
+          speed: number | null
           started_at: string
           status: string
           sync_log_id: string | null
+          total_in_folder: number | null
           total_messages: number
           updated_at: string
           user_email: string | null
@@ -3276,15 +3284,23 @@ export type Database = {
         Insert: {
           batch_size?: number
           completed_at?: string | null
+          completed_folders?: Json | null
           current_batch?: number
+          current_folder?: string | null
+          downloaded_in_folder?: number | null
           errors?: Json | null
+          eta?: number | null
           folder_name: string
+          folders_to_sync?: Json | null
           id?: string
+          job_id?: string | null
           last_offset?: number
           processed_messages?: number
+          speed?: number | null
           started_at?: string
           status?: string
           sync_log_id?: string | null
+          total_in_folder?: number | null
           total_messages?: number
           updated_at?: string
           user_email?: string | null
@@ -3292,15 +3308,23 @@ export type Database = {
         Update: {
           batch_size?: number
           completed_at?: string | null
+          completed_folders?: Json | null
           current_batch?: number
+          current_folder?: string | null
+          downloaded_in_folder?: number | null
           errors?: Json | null
+          eta?: number | null
           folder_name?: string
+          folders_to_sync?: Json | null
           id?: string
+          job_id?: string | null
           last_offset?: number
           processed_messages?: number
+          speed?: number | null
           started_at?: string
           status?: string
           sync_log_id?: string | null
+          total_in_folder?: number | null
           total_messages?: number
           updated_at?: string
           user_email?: string | null

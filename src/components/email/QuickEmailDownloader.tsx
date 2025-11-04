@@ -26,6 +26,7 @@ import {
   Sliders
 } from 'lucide-react';
 import emailFolderGif from '@/assets/email-folder-unscreen.gif';
+import { useBackgroundDownload } from '@/hooks/useBackgroundDownload';
 // ✅ Rimosso EmailSyncUnified - ora usa metodo Performance Test Suite
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
@@ -69,14 +70,15 @@ interface FolderQuickOption {
 
 export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSelectedFolders = [] }: QuickEmailDownloaderProps) {
   const [quickFolders, setQuickFolders] = useState<FolderQuickOption[]>([]);
-  const [quickProgress, setQuickProgress] = useState<QuickSyncProgress | null>(null);
   const [isQuickLoading, setIsQuickLoading] = useState(true);
   const [isPreferencesDialogOpen, setIsPreferencesDialogOpen] = useState(false);
   const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [activeProfile, setActiveProfile] = useState<PerformanceProfile | null>(null);
   const { toast } = useToast();
+  
+  // 🆕 Background download hook
+  const { status: bgStatus, startDownload, isDownloading, reset: resetDownload } = useBackgroundDownload();
 
   useEffect(() => {
     console.log('🔍 [QuickDownload] Received preSelectedFolders prop:', preSelectedFolders);
@@ -543,7 +545,7 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       ? quickSelectedFolders.map(f => f.name)
       : ['INBOX']; // Default fallback
     
-    console.log('🚀 [QuickDownload] STARTING SYNC');
+    console.log('🚀 [QuickDownload] STARTING BACKGROUND SYNC');
     console.log('🚀 [QuickDownload] foldersToSync:', foldersToSync);
 
     try {
@@ -560,19 +562,17 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         throw new Error('Email TMWE non configurata');
       }
 
-      setIsQuickLoading(true);
+      // 🆕 Avvia download in background
+      const result = await startDownload(foldersToSync, profile.tmwe_email);
 
-      // ✅ USA IL METODO DI PERFORMANCE TEST SUITE
-      const stats = await downloadEmailsLikePerformanceTest(foldersToSync, profile.tmwe_email);
-
-      toast({
-        title: `✅ Download completato!`,
-        description: `${stats.downloaded} email in ${Math.round(stats.duration)}s (${stats.avgSpeed.toFixed(1)} email/s)`,
-      });
-
-      setQuickProgress(null);
-      onDownloadComplete?.(stats);
-      loadQuickStats();
+      if (result.success) {
+        toast({
+          title: '🚀 Download in background avviato',
+          description: `Sincronizzazione di ${foldersToSync.length} cartelle in corso. Puoi continuare a navigare.`,
+        });
+      } else {
+        throw new Error(result.error || 'Errore sconosciuto');
+      }
 
     } catch (error: any) {
       console.error('❌ Quick start error:', error);
@@ -582,35 +582,24 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         description: error.message,
         variant: 'destructive',
       });
-
-      setQuickProgress(null);
-    } finally {
-      setIsQuickLoading(false);
-      setAbortController(null);
     }
   };
 
   const pauseQuickDownload = () => {
-    setQuickProgress(prev => prev ? { ...prev, status: 'paused' } : null);
-    toast({ title: '⏸️ Download in pausa' });
+    toast({ title: '⏸️ Pausa non ancora implementata per background jobs' });
   };
 
   const resumeQuickDownload = () => {
-    setQuickProgress(prev => prev ? { ...prev, status: 'running' } : null);
-    toast({ title: '▶️ Download ripreso' });
+    toast({ title: '▶️ Resume non ancora implementato per background jobs' });
   };
 
   const stopQuickDownload = () => {
-    if (abortController) {
-      abortController.abort();
-      toast({ title: '⏹️ Download interrotto' });
-    }
-    setQuickProgress(null);
-    setAbortController(null);
+    resetDownload();
+    toast({ title: '⏹️ Download resettato' });
   };
 
-  const quickOverallProgress = quickProgress && quickProgress.foldersToSync.length > 0
-    ? (quickProgress.completedFolders.length / quickProgress.foldersToSync.length) * 100
+  const quickOverallProgress = bgStatus.foldersToSync.length > 0
+    ? (bgStatus.completedFolders.length / bgStatus.foldersToSync.length) * 100
     : 0;
 
   // ✅ NUOVO: Download email basato su preferenze utente

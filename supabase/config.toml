@@ -305,3 +305,6 @@ verify_jwt = true
 [functions.ai-canvas-chat]
 verify_jwt = true
 
+[functions.background-email-sync]
+verify_jwt = true
+

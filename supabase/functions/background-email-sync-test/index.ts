@@ -290,7 +290,7 @@ async function processEmailsInBackground(
         }
         
         // 3. Download SOLO i nuovi UIDs in batch di 10
-        const batchSize = 10;
+        const batchSize = 5;  // 🔧 Ridotto da 10 per evitare timeout CPU
         let downloadedInFolder = 0;
 
         for (let j = 0; j < newUIDs.length; j += batchSize) {

@@ -30,11 +30,15 @@ export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle
 
   // ✅ Handler mouse nativo per controllo diretto
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    
     setIsManualDragging(true);
     setLocalPosition({ x: 0, y: 0 });
     setDragStart({
-      x: e.clientX,
-      y: e.clientY,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
     });
   };
 
@@ -74,8 +78,6 @@ export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle
   return (
     <div ref={setNodeRef} style={style} className="snap-start">
       <Card 
-        {...listeners}
-        {...attributes}
         onMouseDown={handleMouseDown}
         className={cn(
           "cursor-grab active:cursor-grabbing border-l-4 transition-transform",

@@ -11,10 +11,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { SingleFastLogViewer } from '@/components/email/SingleFastLogViewer';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
 import { useSingleFast } from '@/hooks/useSingleFast';
-import { Rocket, Settings, CheckCircle, XCircle } from 'lucide-react';
+import { Rocket, Settings, CheckCircle, XCircle, Pause, Play, Square } from 'lucide-react';
 
 export default function SingleFast() {
-  const { isRunning, logs, tempResults, startSingleFast } = useSingleFast();
+  const { 
+    isRunning, 
+    logs, 
+    tempResults, 
+    pauseState,
+    startSingleFast, 
+    pauseProcess,
+    resumeProcess,
+    stopProcess
+  } = useSingleFast();
   const [showPreferences, setShowPreferences] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
 
@@ -50,7 +59,7 @@ export default function SingleFast() {
     >
       <div className="space-y-6">
         {/* Bottoni Azioni */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center flex-wrap">
           <Button
             size="lg"
             onClick={startSingleFast}
@@ -69,15 +78,51 @@ export default function SingleFast() {
               </>
             )}
           </Button>
-
+          
+          {isRunning && (
+            <>
+              {pauseState ? (
+                <Button
+                  size="lg"
+                  onClick={resumeProcess}
+                  variant="outline"
+                  className="border-blue-500 text-blue-500 hover:bg-blue-500/10"
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Riprendi
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  onClick={pauseProcess}
+                  variant="outline"
+                  className="border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"
+                >
+                  <Pause className="mr-2 h-4 w-4" />
+                  Pausa
+                </Button>
+              )}
+              
+              <Button
+                size="lg"
+                onClick={stopProcess}
+                variant="destructive"
+              >
+                <Square className="mr-2 h-4 w-4" />
+                Stop
+              </Button>
+            </>
+          )}
+          
           <Button
             size="lg"
             variant="outline"
             onClick={() => setShowPreferences(true)}
             disabled={isRunning}
+            className="ml-auto"
           >
             <Settings className="h-5 w-5" />
-            <span className="ml-2">⚙️ Configura Cartelle</span>
+            <span className="ml-2">Configura Cartelle</span>
           </Button>
         </div>
 

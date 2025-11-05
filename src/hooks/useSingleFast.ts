@@ -2,7 +2,7 @@
  * HOOK SINGLE FAST - Gestione stato e log real-time
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   populateTempIndexForFolder,
@@ -36,6 +36,10 @@ export function useSingleFast() {
   const [isRunning, setIsRunning] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [tempResults, setTempResults] = useState<TempIndexResult[]>([]);
+  const [pauseState, setPauseState] = useState(false);
+  
+  const shouldStop = useRef(false);
+  const isPaused = useRef(false);
 
   const addLog = (entry: Omit<LogEntry, 'timestamp'>) => {
     setLogs(prev => [...prev, { ...entry, timestamp: new Date() }]);
@@ -59,6 +63,9 @@ export function useSingleFast() {
     setIsRunning(true);
     setLogs([]);
     setTempResults([]);
+    shouldStop.current = false;
+    isPaused.current = false;
+    setPauseState(false);
 
     try {
       const userEmail = await getUserEmail();
@@ -80,6 +87,12 @@ export function useSingleFast() {
 
       // 2. Loop cartelle
       for (let i = 0; i < foldersToSync.length; i++) {
+        // Check stop
+        if (shouldStop.current) {
+          addLog({ phase: 'error', message: '🛑 Processo interrotto dall\'utente' });
+          break;
+        }
+        
         const folder = foldersToSync[i];
         
         addLog({
@@ -136,6 +149,20 @@ export function useSingleFast() {
           let errorCount = 0;
 
           for (let j = 0; j < uids.length; j++) {
+            // Check stop
+            if (shouldStop.current) {
+              addLog({ phase: 'error', message: '🛑 Import interrotto' });
+              break;
+            }
+            
+            // Check pause
+            while (isPaused.current) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+              if (shouldStop.current) break;
+            }
+            
+            if (shouldStop.current) break;
+            
             try {
               addLog({
                 phase: 'importing',
@@ -207,13 +234,39 @@ export function useSingleFast() {
   const reset = () => {
     setLogs([]);
     setTempResults([]);
+    shouldStop.current = false;
+    isPaused.current = false;
+    setPauseState(false);
+  };
+  
+  const pauseProcess = () => {
+    isPaused.current = true;
+    setPauseState(true);
+    addLog({ phase: 'preparing', message: '⏸️ Processo in pausa...' });
+  };
+  
+  const resumeProcess = () => {
+    isPaused.current = false;
+    setPauseState(false);
+    addLog({ phase: 'preparing', message: '▶️ Processo ripreso' });
+  };
+  
+  const stopProcess = () => {
+    shouldStop.current = true;
+    isPaused.current = false;
+    setPauseState(false);
+    addLog({ phase: 'error', message: '🛑 Arresto processo in corso...' });
   };
 
   return {
     isRunning,
     logs,
     tempResults,
+    pauseState,
     startSingleFast,
-    reset
+    reset,
+    pauseProcess,
+    resumeProcess,
+    stopProcess
   };
 }

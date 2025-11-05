@@ -152,7 +152,7 @@ export function SingleMailImporter() {
     return normalized;
   };
 
-  // ✅ Query confronto UIDs mancanti (client-side)
+  // ✅ Query confronto UIDs mancanti + popola email_temp_index
   const {
     data: comparisonData,
     isLoading: isLoadingComparison,
@@ -176,24 +176,30 @@ export function SingleMailImporter() {
       if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
       const userEmail = profile.tmwe_email;
 
-      // 2️⃣ Fetch UIDs dal server TMWE (prime 500 email)
-      console.log('📡 Fetching server UIDs...');
-      console.warn('⚠️ ATTENZIONE: Confronto limitato alle prime 500 email per evitare timeout Edge Function');
+      // 2️⃣ Svuota tabella temporanea per questa cartella
+      await supabase
+        .from('email_temp_index')
+        .delete()
+        .eq('user_email', userEmail)
+        .eq('folder', selectedFolder);
 
+      // 3️⃣ Fetch UIDs dal server TMWE (prime 500 email)
+      console.log('📡 Fetching server UIDs (only metadata, no body)...');
+      
       const serverResponse = await emailMessageApi.getMessages({
         folder: selectedFolder,
         page: 1,
-        limit: 500,  // ✅ Ridotto da 5000 → 500 per evitare timeout
-        format: 'text',  // ✅ Più leggero di 'html' (body plain text)
-        include_attachments: false,  // ✅ Esclude allegati per ridurre payload
+        limit: 500,
+        format: 'text',
+        include_attachments: false,
       });
 
       const serverUIDs = new Set<string>(
         serverResponse.messages.map((msg: any) => String(msg.uid))
       );
-      console.log(`✅ Server UIDs count: ${serverUIDs.size} (limite 500 - potrebbero esserci più email sul server)`);
+      console.log(`✅ Server UIDs count: ${serverUIDs.size}`);
 
-      // 3️⃣ Fetch UIDs dal DB locale
+      // 4️⃣ Fetch UIDs dal DB locale
       console.log('💾 Fetching local DB UIDs...');
       const { data: dbMessages, error } = await supabase
         .from('email_messages')
@@ -207,62 +213,118 @@ export function SingleMailImporter() {
         (dbMessages || [])
           .map((msg: any) => {
             const messageId = String(msg.message_id);
-            // Estrai solo UID dalla struttura "CARTELLA/UID"
             const parts = messageId.split('/');
-            return parts.length > 1 ? parts[1] : messageId;  // ✅ "99844" invece di "INBOX/99844"
+            return parts.length > 1 ? parts[1] : messageId;
           })
           .filter((uid: string) => uid && uid !== 'null')
       );
-      console.log(`✅ DB UIDs count: ${dbUIDs.size} (estratti da message_id come CARTELLA/UID)`);
+      console.log(`✅ DB UIDs count: ${dbUIDs.size}`);
 
-      // 4️⃣ Calcola UIDs mancanti
+      // 5️⃣ Calcola UIDs mancanti
       const missing = Array.from(serverUIDs).filter(uid => !dbUIDs.has(uid));
       console.log(`🎯 Missing UIDs: ${missing.length}`);
 
-      // 5️⃣ Fetch metadata delle email mancanti (parallelo batch di 10)
-      const missingDetails: MissingEmailItem[] = [];
+      // 6️⃣ Popola email_temp_index con metadati leggeri (batch paralleli)
       const batchSize = 10;
+      const tempIndexRecords = [];
 
-      for (let i = 0; i < missing.slice(0, displayLimit).length; i += batchSize) {
+      for (let i = 0; i < missing.length; i += batchSize) {
         const batch = missing.slice(i, i + batchSize);
         const batchPromises = batch.map(async (uid) => {
           try {
             const email = await emailMessageApi.getMessage(uid, selectedFolder, false);
             return {
               uid,
-              subject: email?.subject || email?.data?.header?.subject || '(No Subject)',
+              folder: selectedFolder,
+              user_email: userEmail,
+              subject: email?.subject || email?.data?.header?.subject || null,
               from_email: email?.from || email?.data?.header?.from || 'Unknown',
-              from_name: email?.from_name || email?.data?.header?.from_name || '',
+              from_name: email?.from_name || email?.data?.header?.from_name || null,
               date: email?.date || email?.data?.header?.date || new Date().toISOString(),
-              selected: false,
+              size: null, // Non disponibile dall'API
+              status: 'pending',
             };
           } catch (err) {
             console.warn(`⚠️ Failed to fetch metadata for UID ${uid}:`, err);
             return {
               uid,
+              folder: selectedFolder,
+              user_email: userEmail,
               subject: '(Error loading)',
               from_email: 'Unknown',
-              from_name: '',
+              from_name: null,
               date: new Date().toISOString(),
-              selected: false,
+              size: null,
+              status: 'pending',
             };
           }
         });
 
         const batchResults = await Promise.all(batchPromises);
-        missingDetails.push(...batchResults);
+        tempIndexRecords.push(...batchResults);
+      }
+
+      // 7️⃣ Inserisci in batch in email_temp_index
+      if (tempIndexRecords.length > 0) {
+        const { error: insertError } = await supabase
+          .from('email_temp_index')
+          .insert(tempIndexRecords);
+
+        if (insertError) {
+          console.error('❌ Error inserting to email_temp_index:', insertError);
+        } else {
+          console.log(`✅ Inserted ${tempIndexRecords.length} records into email_temp_index`);
+        }
       }
 
       return {
         totalServer: serverUIDs.size,
         totalDB: dbUIDs.size,
         totalMissing: missing.length,
-        missingEmails: missingDetails,
-        displayLimit,
-        hasMore: missing.length > displayLimit,
       };
     },
     enabled: !!selectedFolder,
+    refetchOnWindowFocus: false,
+  });
+
+  // ✅ Query email da email_temp_index (lettura leggera dal DB)
+  const { data: tempIndexEmails } = useQuery({
+    queryKey: ['email-temp-index', selectedFolder, displayLimit],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.tmwe_email) return [];
+
+      const { data, error } = await supabase
+        .from('email_temp_index')
+        .select('*')
+        .eq('user_email', profile.tmwe_email)
+        .eq('folder', selectedFolder)
+        .order('date', { ascending: false })
+        .limit(displayLimit);
+
+      if (error) {
+        console.error('❌ Error fetching temp index:', error);
+        return [];
+      }
+
+      return data.map((item: any) => ({
+        uid: item.uid,
+        subject: item.subject || '(No Subject)',
+        from_email: item.from_email,
+        from_name: item.from_name || '',
+        date: item.date,
+        selected: item.status === 'selected',
+      }));
+    },
+    enabled: !!selectedFolder && !!comparisonData,
     refetchOnWindowFocus: false,
   });
 
@@ -271,28 +333,68 @@ export function SingleMailImporter() {
     setDisplayLimit(100);
   }, [selectedFolder]);
 
-  // ✅ Aggiorna lista locale quando cambia comparisonData
+  // ✅ Aggiorna lista locale quando cambia tempIndexEmails
   useEffect(() => {
-    if (comparisonData?.missingEmails) {
-      setMissingEmails(comparisonData.missingEmails);
+    if (tempIndexEmails) {
+      setMissingEmails(tempIndexEmails);
     }
-  }, [comparisonData]);
+  }, [tempIndexEmails]);
 
-  // ✅ Toggle singola email
-  const toggleEmailSelection = (uid: string) => {
+  // ✅ Toggle singola email (aggiorna DB temp_index)
+  const toggleEmailSelection = async (uid: string) => {
+    const email = missingEmails.find(e => e.uid === uid);
+    if (!email) return;
+
+    const newStatus = email.selected ? 'pending' : 'selected';
+
     setMissingEmails(prev =>
-      prev.map(email =>
-        email.uid === uid ? { ...email, selected: !email.selected } : email
-      )
+      prev.map(e => e.uid === uid ? { ...e, selected: !e.selected } : e)
     );
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('tmwe_email')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile?.tmwe_email) return;
+
+    await supabase
+      .from('email_temp_index')
+      .update({ status: newStatus })
+      .eq('uid', uid)
+      .eq('folder', selectedFolder)
+      .eq('user_email', profile.tmwe_email);
   };
 
-  // ✅ Select All / Deselect All
-  const toggleSelectAll = () => {
+  // ✅ Select All / Deselect All (aggiorna DB temp_index)
+  const toggleSelectAll = async () => {
     const allSelected = missingEmails.every(e => e.selected);
+    const newStatus = allSelected ? 'pending' : 'selected';
+
     setMissingEmails(prev =>
       prev.map(email => ({ ...email, selected: !allSelected }))
     );
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('tmwe_email')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile?.tmwe_email) return;
+
+    await supabase
+      .from('email_temp_index')
+      .update({ status: newStatus })
+      .eq('folder', selectedFolder)
+      .eq('user_email', profile.tmwe_email);
   };
 
   // ✅ Visualizza email completa
@@ -395,7 +497,14 @@ export function SingleMailImporter() {
 
       toast.success(`✅ Email UID ${uid} importata con successo`);
 
-      // Rimuovi dalla lista
+      // Aggiorna status in temp_index + rimuovi dalla lista
+      await supabase
+        .from('email_temp_index')
+        .update({ status: 'imported' })
+        .eq('uid', uid)
+        .eq('folder', selectedFolder)
+        .eq('user_email', profile.tmwe_email);
+
       setMissingEmails(prev => prev.filter(e => e.uid !== uid));
     } catch (error: any) {
       toast.error(`❌ Errore import: ${error.message}`);
@@ -440,6 +549,15 @@ export function SingleMailImporter() {
           if (exists) {
             console.warn(`⚠️ [SingleMailImporter] Email ${uid} già presente, skip`);
             skippedCount++;
+            
+            // Aggiorna status in temp_index
+            await supabase
+              .from('email_temp_index')
+              .update({ status: 'imported' })
+              .eq('uid', uid)
+              .eq('folder', selectedFolder)
+              .eq('user_email', profile.tmwe_email);
+            
             setMissingEmails(prev => prev.filter(e => e.uid !== uid));
             continue; // ✅ SALTA QUESTA EMAIL
           }
@@ -685,32 +803,22 @@ export function SingleMailImporter() {
             <div className="flex items-center justify-between gap-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                  {missingEmails.length} di {comparisonData.totalMissing} caricate
+                  {missingEmails.length} di {comparisonData.totalMissing} visibili
                 </Badge>
-                {comparisonData.hasMore && (
+                {missingEmails.length < comparisonData.totalMissing && (
                   <span className="text-xs text-muted-foreground">
-                    ({comparisonData.totalMissing - missingEmails.length} rimanenti)
+                    ({comparisonData.totalMissing - missingEmails.length} rimanenti in cache)
                   </span>
                 )}
               </div>
-              {comparisonData.hasMore && (
+              {missingEmails.length < comparisonData.totalMissing && (
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => setDisplayLimit(prev => Math.min(prev + 100, comparisonData.totalMissing))}
-                  disabled={isLoadingComparison}
                 >
-                  {isLoadingComparison ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Caricamento...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4" />
-                      Carica altre 100
-                    </>
-                  )}
+                  <Download className="h-4 w-4" />
+                  Carica altre 100
                 </Button>
               )}
             </div>

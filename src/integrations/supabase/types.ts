@@ -3339,6 +3339,45 @@ export type Database = {
           },
         ]
       }
+      email_temp_index: {
+        Row: {
+          created_at: string
+          date: string
+          folder: string
+          from_email: string
+          from_name: string | null
+          size: number | null
+          status: string
+          subject: string | null
+          uid: string
+          user_email: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          folder: string
+          from_email: string
+          from_name?: string | null
+          size?: number | null
+          status?: string
+          subject?: string | null
+          uid: string
+          user_email: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          folder?: string
+          from_email?: string
+          from_name?: string | null
+          size?: number | null
+          status?: string
+          subject?: string | null
+          uid?: string
+          user_email?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           attivo: boolean

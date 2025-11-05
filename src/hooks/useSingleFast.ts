@@ -325,16 +325,20 @@ export function useSingleFast() {
                   cartella: folder.folderName,
                   subject: emailData.subject,
                   from_email: emailData.from_email,
+                  from_name: emailData.from_name,
                   to_email: emailData.to_email,
                   cc_email: emailData.cc_email,
                   bcc_email: emailData.bcc_email,
-                  data_ricezione: emailData.data_ricezione,
+                  data_ricezione: emailData.data_ricezione 
+                    ? new Date(emailData.data_ricezione).toISOString() 
+                    : new Date().toISOString(),
                   body_text: emailData.body_text,
                   body_html: emailData.body_html,
                   flags: emailData.flags,
                   attachments: emailData.attachments,
                   direzione: 'inbound',
-                  stato: 'active'
+                  sync_status: 'sincronizzato',
+                  stato: emailData.flags?.includes('\\Seen') ? 'letto' : 'nuovo'
                 });
 
               if (insertError) {

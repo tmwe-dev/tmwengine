@@ -309,25 +309,25 @@ export function SingleMailImporter() {
       // Fetch email dal server (nuova funzione isolata)
       const email = await fetchAndNormalizeSingleEmail(uid, selectedFolder);
 
-      // ✅ Mapping campi - usa direttamente i campi normalizzati
+      // ✅ Mapping campi - ESATTAMENTE come FunEmailDownloader
       const emailToSave = {
         message_id: `${selectedFolder}/${uid}`,
-        user_email: profile.tmwe_email,
-        cartella: selectedFolder,
-        subject: email.subject || '',
         from_email: email.from_email || '',
-        from_name: email.from_name || '',
         to_email: email.to_email || '',
         cc_email: email.cc_email || null,
-        data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
+        bcc_email: email.bcc_email || null,
+        subject: email.subject || '',
         body_text: email.body_text || '',
         body_html: email.body_html || '',
-        attachments: email.attachments || [],
+        data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
+        cartella: selectedFolder,
+        direzione: 'inbound',
+        stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
         flags: email.flags || [],
-        stato: email.flags?.includes('\\Seen') ? 'letto' : 'non_letto',
+        attachments: email.attachments || [],
+        provider_id: '00000000-0000-0000-0000-000000000000',
+        user_email: profile.tmwe_email,
         sync_status: 'single_mail_import',
-        direzione: 'ricevuta',
-        provider_id: null,
       };
 
       const { error } = await supabase
@@ -375,25 +375,25 @@ export function SingleMailImporter() {
         try {
           const email = await fetchAndNormalizeSingleEmail(uid, selectedFolder);
 
-          // ✅ Mapping campi - usa direttamente i campi normalizzati
+          // ✅ Mapping campi - ESATTAMENTE come FunEmailDownloader
           const emailToSave = {
             message_id: `${selectedFolder}/${uid}`,
-            user_email: profile.tmwe_email,
-            cartella: selectedFolder,
-            subject: email.subject || '',
             from_email: email.from_email || '',
-            from_name: email.from_name || '',
             to_email: email.to_email || '',
             cc_email: email.cc_email || null,
-            data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
+            bcc_email: email.bcc_email || null,
+            subject: email.subject || '',
             body_text: email.body_text || '',
             body_html: email.body_html || '',
-            attachments: email.attachments || [],
+            data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
+            cartella: selectedFolder,
+            direzione: 'inbound',
+            stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
             flags: email.flags || [],
-            stato: email.flags?.includes('\\Seen') ? 'letto' : 'non_letto',
+            attachments: email.attachments || [],
+            provider_id: '00000000-0000-0000-0000-000000000000',
+            user_email: profile.tmwe_email,
             sync_status: 'single_mail_import',
-            direzione: 'ricevuta',
-            provider_id: null,
           };
 
           const { error } = await supabase

@@ -315,30 +315,29 @@ export function useSingleFast() {
                 attachments: header.attachments || []
               };
 
-              // 💾 INSERISCI IN DATABASE (usando i campi corretti del database)
+              // 💾 INSERISCI IN DATABASE (copiato esattamente da single-fast-core.ts)
               const { error: insertError } = await supabase
                 .from('email_messages')
                 .insert({
-                  user_email: userEmail,
-                  message_id: emailData.message_id,
-                  provider_id: TMWE_PROVIDER_ID,
-                  cartella: folder.folderName,
-                  subject: emailData.subject,
-                  from_email: emailData.from_email,
-                  from_name: emailData.from_name,
-                  to_email: emailData.to_email,
-                  cc_email: emailData.cc_email,
-                  bcc_email: emailData.bcc_email,
+                  message_id: `${folder.folderName}/${uid}`,
+                  from_email: emailData.from_email || '',
+                  to_email: emailData.to_email || '',
+                  cc_email: emailData.cc_email || null,
+                  bcc_email: emailData.bcc_email || null,
+                  subject: emailData.subject || '',
+                  body_text: emailData.body_text || '',
+                  body_html: emailData.body_html || '',
                   data_ricezione: emailData.data_ricezione 
                     ? new Date(emailData.data_ricezione).toISOString() 
                     : new Date().toISOString(),
-                  body_text: emailData.body_text,
-                  body_html: emailData.body_html,
-                  flags: emailData.flags,
-                  attachments: emailData.attachments,
+                  cartella: folder.folderName,
                   direzione: 'inbound',
+                  stato: emailData.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
+                  flags: Array.isArray(emailData.flags) ? emailData.flags : [],
+                  attachments: Array.isArray(emailData.attachments) ? emailData.attachments : [],
+                  provider_id: '00000000-0000-0000-0000-000000000000',
+                  user_email: userEmail,
                   sync_status: 'sincronizzato',
-                  stato: emailData.flags?.includes('\\Seen') ? 'letto' : 'nuovo'
                 });
 
               if (insertError) {

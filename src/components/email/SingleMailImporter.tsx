@@ -221,24 +221,24 @@ export function SingleMailImporter() {
       // Fetch email dal server
       const email = await emailMessageApi.getMessage(uid, selectedFolder, false);
 
-      // ✅ Mapping campi (stesso di FunEmailDownloader)
+      // ✅ Mapping campi (allineato con FunEmailDownloader)
       const emailToSave = {
-        message_id: uid,
+        message_id: `${selectedFolder}/${uid}`,
         user_email: profile.tmwe_email,
         cartella: selectedFolder,
-        subject: email?.subject || email?.data?.header?.subject || '(No Subject)',
-        from_email: email?.from?.address || email?.data?.header?.from?.[0]?.address || '',
-        from_name: email?.from?.name || email?.data?.header?.from?.[0]?.name || '',
+        subject: email?.subject || '',
+        from_email: email?.from?.address || email?.from || email?.from_email || '',
+        from_name: email?.from?.name || email?.from_name || '',
         to_email: Array.isArray(email?.to)
-          ? email.to.map((t: any) => t.address || t.email || t).join(', ')
-          : (email?.data?.header?.to?.[0]?.address || ''),
+          ? email.to.map((t: any) => t.address || t).join(',')
+          : email?.to || email?.to_email || '',
         cc_email: Array.isArray(email?.cc)
-          ? email.cc.map((c: any) => c.address || c.email || c).join(', ')
-          : (email?.data?.header?.cc?.[0]?.address || null),
-        data_ricezione: email?.date || email?.data?.header?.date || new Date().toISOString(),
-        body_text: email?.body_text || email?.text || email?.data?.body_plain || null,
-        body_html: email?.body_html || email?.html || email?.data?.body_html || null,
-        attachments: email?.attachments || email?.data?.attachments || [],
+          ? email.cc.map((c: any) => c.address || c).join(',')
+          : email?.cc || email?.cc_email || null,
+        data_ricezione: email?.date ? new Date(email.date).toISOString() : new Date().toISOString(),
+        body_text: email?.body_text || email?.text || '',
+        body_html: email?.body_html || email?.html || '',
+        attachments: email?.attachments || [],
         flags: email?.flags || [],
         stato: email?.flags?.includes('\\Seen') ? 'letto' : 'non_letto',
         sync_status: 'single_mail_import',
@@ -292,22 +292,22 @@ export function SingleMailImporter() {
           const email = await emailMessageApi.getMessage(uid, selectedFolder, false);
 
           const emailToSave = {
-            message_id: uid,
+            message_id: `${selectedFolder}/${uid}`,
             user_email: profile.tmwe_email,
             cartella: selectedFolder,
-            subject: email?.subject || email?.data?.header?.subject || '(No Subject)',
-            from_email: email?.from?.address || email?.data?.header?.from?.[0]?.address || '',
-            from_name: email?.from?.name || email?.data?.header?.from?.[0]?.name || '',
+            subject: email?.subject || '',
+            from_email: email?.from?.address || email?.from || email?.from_email || '',
+            from_name: email?.from?.name || email?.from_name || '',
             to_email: Array.isArray(email?.to)
-              ? email.to.map((t: any) => t.address || t.email || t).join(', ')
-              : (email?.data?.header?.to?.[0]?.address || ''),
+              ? email.to.map((t: any) => t.address || t).join(',')
+              : email?.to || email?.to_email || '',
             cc_email: Array.isArray(email?.cc)
-              ? email.cc.map((c: any) => c.address || c.email || c).join(', ')
-              : (email?.data?.header?.cc?.[0]?.address || null),
-            data_ricezione: email?.date || email?.data?.header?.date || new Date().toISOString(),
-            body_text: email?.body_text || email?.text || email?.data?.body_plain || null,
-            body_html: email?.body_html || email?.html || email?.data?.body_html || null,
-            attachments: email?.attachments || email?.data?.attachments || [],
+              ? email.cc.map((c: any) => c.address || c).join(',')
+              : email?.cc || email?.cc_email || null,
+            data_ricezione: email?.date ? new Date(email.date).toISOString() : new Date().toISOString(),
+            body_text: email?.body_text || email?.text || '',
+            body_html: email?.body_html || email?.html || '',
+            attachments: email?.attachments || [],
             flags: email?.flags || [],
             stato: email?.flags?.includes('\\Seen') ? 'letto' : 'non_letto',
             sync_status: 'single_mail_import',
@@ -323,8 +323,14 @@ export function SingleMailImporter() {
 
           successCount++;
           setMissingEmails(prev => prev.filter(e => e.uid !== uid));
-        } catch (err) {
-          console.error(`❌ Error importing UID ${uid}:`, err);
+        } catch (err: any) {
+          console.error(`❌ Error importing UID ${uid}:`, {
+            message: err?.message,
+            code: err?.code,
+            details: err?.details,
+            hint: err?.hint,
+            fullError: err
+          });
           errorCount++;
         }
       }

@@ -37,6 +37,10 @@ export function useSingleFast() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [tempResults, setTempResults] = useState<TempIndexResult[]>([]);
   const [pauseState, setPauseState] = useState(false);
+  const [currentFolder, setCurrentFolder] = useState<string>('');
+  const [currentPhase, setCurrentPhase] = useState<string>('');
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [emailProgress, setEmailProgress] = useState({ imported: 0, total: 0 });
   
   const shouldStop = useRef(false);
   const isPaused = useRef(false);
@@ -66,6 +70,10 @@ export function useSingleFast() {
     shouldStop.current = false;
     isPaused.current = false;
     setPauseState(false);
+    setCurrentFolder('');
+    setCurrentPhase('');
+    setProgress({ current: 0, total: 0 });
+    setEmailProgress({ imported: 0, total: 0 });
 
     try {
       const userEmail = await getUserEmail();
@@ -74,16 +82,33 @@ export function useSingleFast() {
       // 1. Get folders from preferences
       const folders = await getSingleFastFolders(userEmail);
       const foldersToSync = folders.filter(f => f.included);
-      
-      addLog({ 
-        phase: 'preparing', 
-        message: `📁 Cartelle da sincronizzare: ${foldersToSync.length}` 
-      });
 
       if (foldersToSync.length === 0) {
         addLog({ phase: 'completed', message: '⚠️ Nessuna cartella configurata per la sincronizzazione' });
         return;
       }
+
+      // 📋 PRE-FLIGHT SUMMARY
+      const totalMissing = foldersToSync.reduce((sum, f) => sum + f.missing, 0);
+      setProgress({ current: 0, total: foldersToSync.length });
+      setEmailProgress({ imported: 0, total: totalMissing });
+      
+      addLog({ 
+        phase: 'preparing', 
+        message: `📋 PIANO: ${foldersToSync.length} cartelle, ${totalMissing} email totali da importare` 
+      });
+      
+      // Dettaglio cartelle
+      foldersToSync.forEach((f, i) => {
+        addLog({
+          phase: 'preparing',
+          message: `  ${i + 1}. ${f.folderName} → ${f.missing} email da scaricare`
+        });
+      });
+
+      // Pausa 3 secondi per permettere all'utente di leggere il piano
+      addLog({ phase: 'preparing', message: '⏳ Avvio tra 3 secondi...' });
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // 2. Loop cartelle
       for (let i = 0; i < foldersToSync.length; i++) {
@@ -95,10 +120,15 @@ export function useSingleFast() {
         
         const folder = foldersToSync[i];
         
+        // Aggiorna stato cartella corrente e fase
+        setCurrentFolder(folder.folderName);
+        setCurrentPhase('FASE 1/2: Preparazione indice');
+        setProgress({ current: i + 1, total: foldersToSync.length });
+        
         addLog({
           phase: 'preparing',
           folder: folder.folderName,
-          message: `🔍 [${i + 1}/${foldersToSync.length}] Preparazione ${folder.folderName}...`
+          message: `🔍 FASE 1/2: Preparazione indice per ${folder.folderName} [${i + 1}/${foldersToSync.length}]`
         });
 
         try {
@@ -139,10 +169,13 @@ export function useSingleFast() {
           // 4. Import da temp index
           const uids = await fetchUIDsFromTempIndex(folder.folderName, userEmail);
 
+          // Aggiorna fase
+          setCurrentPhase('FASE 2/2: Import completo');
+          
           addLog({
             phase: 'importing',
             folder: folder.folderName,
-            message: `📥 Inizio import ${uids.length} email da ${folder.folderName}...`
+            message: `📧 FASE 2/2: Import completo da ${folder.folderName} (${uids.length} email)`
           });
 
           let successCount = 0;
@@ -173,6 +206,9 @@ export function useSingleFast() {
 
               await importEmailFromTempIndex(uids[j], folder.folderName, userEmail);
               successCount++;
+              
+              // Aggiorna contatore email importate
+              setEmailProgress(prev => ({ ...prev, imported: prev.imported + 1 }));
 
               // Throttle per non sovraccaricare
               if (j % 10 === 0) {
@@ -263,6 +299,10 @@ export function useSingleFast() {
     logs,
     tempResults,
     pauseState,
+    currentFolder,
+    currentPhase,
+    progress,
+    emailProgress,
     startSingleFast,
     reset,
     pauseProcess,

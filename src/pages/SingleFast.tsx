@@ -12,7 +12,8 @@ import { SingleFastLogViewer } from '@/components/email/SingleFastLogViewer';
 import { SingleFastDatabaseViewer } from '@/components/email/SingleFastDatabaseViewer';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
 import { useSingleFast } from '@/hooks/useSingleFast';
-import { Rocket, Settings, CheckCircle, XCircle, Pause, Play, Square } from 'lucide-react';
+import { Rocket, Settings, CheckCircle, XCircle, Pause, Play, Square, Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 export default function SingleFast() {
   const { 
@@ -20,6 +21,10 @@ export default function SingleFast() {
     logs, 
     tempResults, 
     pauseState,
+    currentFolder,
+    currentPhase,
+    progress,
+    emailProgress,
     startSingleFast, 
     pauseProcess,
     resumeProcess,
@@ -59,6 +64,52 @@ export default function SingleFast() {
       className="bg-gradient-to-b from-background to-background/50"
     >
       <div className="space-y-6">
+        {/* Indicatore Cartella Corrente & Progresso Globale */}
+        {isRunning && currentFolder && (
+          <Card className="bg-gradient-to-r from-blue-500/20 to-green-500/20 border-blue-500 sticky top-4 z-10 shadow-lg">
+            <CardContent className="py-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
+                  <div className="flex-1">
+                    <h3 className="font-bold text-xl mb-1">📁 {currentFolder}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Cartella {progress.current} di {progress.total} • {currentPhase}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Progress Bar Globale */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Progresso Cartelle</span>
+                    <span className="font-mono font-semibold">
+                      {progress.current}/{progress.total}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={progress.total > 0 ? (progress.current / progress.total) * 100 : 0} 
+                    className="h-3"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Email Importate</span>
+                    <span className="font-mono font-semibold">
+                      {emailProgress.imported}/{emailProgress.total}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={emailProgress.total > 0 ? (emailProgress.imported / emailProgress.total) * 100 : 0} 
+                    className="h-3"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Bottoni Azioni */}
         <div className="flex gap-4 items-center flex-wrap">
           <Button

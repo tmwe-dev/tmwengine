@@ -1,6 +1,6 @@
 /**
  * SINGLE FAST DATABASE VIEWER
- * Visualizzazione real-time delle righe caricate in email_temp_index
+ * Visualizzazione real-time delle email importate in email_messages
  * Con auto-scroll verso l'alto e contatori progressivi
  */
 
@@ -10,14 +10,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { Database, Mail } from 'lucide-react';
 
-interface TempIndexRow {
-  uid: string;
-  folder: string;
+interface EmailRow {
+  message_id: string;
+  cartella: string;
   subject: string | null;
   from_email: string;
-  from_name: string | null;
-  date: string;
-  status: string;
+  data_ricezione: string;
+  stato: string;
   created_at: string;
 }
 
@@ -27,7 +26,7 @@ interface SingleFastDatabaseViewerProps {
 }
 
 export function SingleFastDatabaseViewer({ userEmail, isRunning }: SingleFastDatabaseViewerProps) {
-  const [rows, setRows] = useState<TempIndexRow[]>([]);
+  const [rows, setRows] = useState<EmailRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const previousCountRef = useRef(0);
@@ -38,10 +37,10 @@ export function SingleFastDatabaseViewer({ userEmail, isRunning }: SingleFastDat
 
     const fetchRows = async () => {
       try {
-        // Query per ottenere le righe ordinate per created_at DESC (più recenti in alto)
+        // Query per ottenere le email importate da email_messages (tabella finale)
         const { data, error, count } = await supabase
-          .from('email_temp_index')
-          .select('uid, folder, subject, from_email, from_name, date, status, created_at', { count: 'exact' })
+          .from('email_messages')
+          .select('message_id, cartella, subject, from_email, data_ricezione, stato, created_at', { count: 'exact' })
           .eq('user_email', userEmail)
           .order('created_at', { ascending: false })
           .limit(100); // Limita a ultime 100 per performance
@@ -112,13 +111,13 @@ export function SingleFastDatabaseViewer({ userEmail, isRunning }: SingleFastDat
             {rows.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>Nessuna email nella tabella temporanea</p>
-                <p className="text-sm mt-2">Avvia il processo per iniziare</p>
+                <p>Nessuna email importata nel database</p>
+                <p className="text-sm mt-2">Avvia il processo per iniziare l'import</p>
               </div>
             ) : (
               rows.map((row, index) => (
                 <div
-                  key={`${row.uid}-${row.created_at}`}
+                  key={`${row.message_id}-${row.created_at}`}
                   className="p-4 rounded-lg bg-accent/20 border border-border/50 hover:bg-accent/30 transition-all animate-in fade-in slide-in-from-top-2"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
@@ -126,18 +125,15 @@ export function SingleFastDatabaseViewer({ userEmail, isRunning }: SingleFastDat
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded">
-                          {row.folder}
+                          {row.cartella}
                         </span>
                         <span className="text-xs font-mono text-muted-foreground">
-                          UID: {row.uid}
+                          ID: {row.message_id.substring(0, 20)}...
                         </span>
                       </div>
                       
                       <div className="mb-2">
                         <p className="font-semibold text-sm truncate">
-                          {row.from_name || row.from_email}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
                           {row.from_email}
                         </p>
                       </div>
@@ -147,8 +143,8 @@ export function SingleFastDatabaseViewer({ userEmail, isRunning }: SingleFastDat
                       </p>
                       
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>📅 {formatDate(row.date)}</span>
-                        <span className="text-primary">✓ {row.status}</span>
+                        <span>📅 {formatDate(row.data_ricezione)}</span>
+                        <span className="text-primary">✓ {row.stato}</span>
                       </div>
                     </div>
                     

@@ -27,7 +27,7 @@ export function useSingleFastPerformance() {
   const [currentFolder, setCurrentFolder] = useState<string>('');
   const [currentPhase, setCurrentPhase] = useState<string>('');
   const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [emailProgress, setEmailProgress] = useState({ imported: 0, total: 0 });
+  const [emailProgress, setEmailProgress] = useState({ imported: 0, total: 0, skipped: 0 });
   const [activeProfile, setActiveProfile] = useState<PerformanceProfile | null>(null);
   
   const shouldStop = useRef(false);
@@ -62,7 +62,7 @@ export function useSingleFastPerformance() {
     setCurrentFolder('');
     setCurrentPhase('');
     setProgress({ current: 0, total: 0 });
-    setEmailProgress({ imported: 0, total: 0 });
+    setEmailProgress({ imported: 0, total: 0, skipped: 0 });
 
     try {
       const userEmail = await getUserEmail();
@@ -114,7 +114,7 @@ export function useSingleFastPerformance() {
       // 📋 PRE-FLIGHT SUMMARY
       const totalMissing = foldersToSync.reduce((sum, f) => sum + f.missing, 0);
       setProgress({ current: 0, total: foldersToSync.length });
-      setEmailProgress({ imported: 0, total: totalMissing });
+      setEmailProgress({ imported: 0, total: totalMissing, skipped: 0 });
       
       addLog({ 
         phase: 'preparing', 
@@ -363,11 +363,16 @@ export function useSingleFastPerformance() {
                 } catch (err: any) {
                   console.error(`❌ Error importing UID ${uid}:`, err);
                   errorCount++;
+                  
+                  // 🔕 LOG SILENZIOSO (no toast rosso)
+                  setEmailProgress(prev => ({ ...prev, skipped: prev.skipped + 1 }));
                   addLog({
-                    phase: 'error',
+                    phase: 'skip',
                     folder: folder.folderName,
-                    message: `❌ Errore UID ${uid}: ${err.message}`
+                    message: `⚠️ Skip UID ${uid} (retry automatico): ${err.message.substring(0, 50)}...`
                   });
+                  
+                  // Continua con la prossima email (no throw)
                 }
               });
             }
@@ -483,11 +488,16 @@ export function useSingleFastPerformance() {
               } catch (err: any) {
                 console.error(`❌ Error importing UID ${uid}:`, err);
                 errorCount++;
+                
+                // 🔕 LOG SILENZIOSO (no toast rosso)
+                setEmailProgress(prev => ({ ...prev, skipped: prev.skipped + 1 }));
                 addLog({
-                  phase: 'error',
+                  phase: 'skip',
                   folder: folder.folderName,
-                  message: `❌ Errore UID ${uid}: ${err.message}`
+                  message: `⚠️ Skip UID ${uid} (retry automatico): ${err.message.substring(0, 50)}...`
                 });
+                
+                // Continua con la prossima email (no throw)
               }
             }
           }

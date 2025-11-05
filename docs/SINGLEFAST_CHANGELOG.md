@@ -224,3 +224,139 @@ downloadController.current.download(async () => {
 **File Modificati:** 1 (SingleFast.tsx)  
 **Status:** ✅ STEP 2 Completato  
 **Testing:** ⏳ In attesa validazione utente
+
+---
+
+## [2025-11-05 18:00] - GESTIONE ERRORI SILENZIOSA
+
+### 🎯 Obiettivo
+Implementare gestione intelligente errori Edge Function: skip silenzioso delle email problematiche con contatore visibile e retry automatico nelle sessioni successive.
+
+### 🔧 Modifiche Implementate
+
+#### 1. **src/hooks/useSingleFast.ts**
+**Modifiche:**
+- ➕ Aggiunto `'skip'` al tipo `LogEntry.phase` (linea 15)
+- ➕ Aggiunto campo `skipped: number` a `emailProgress` state (linea 42)
+- 🔄 Modificato catch block (linee 379-387): 
+  - Cambiato da `phase: 'error'` a `phase: 'skip'`
+  - Aggiunto incremento contatore `skipped`
+  - Rimosso throw (continua con prossima email)
+  - Log formato: `⚠️ Skip UID ${uid} (retry automatico prossima sessione): ${err.message}`
+
+**Comportamento:**
+```typescript
+catch (err: any) {
+  errorCount++;
+  setEmailProgress(prev => ({ ...prev, skipped: prev.skipped + 1 }));
+  addLog({
+    phase: 'skip', // 👈 NO toast rosso
+    folder: folder.folderName,
+    message: `⚠️ Skip UID ${uid} (retry automatico): ${err.message.substring(0, 50)}...`
+  });
+  // Continua con la prossima email (no throw)
+}
+```
+
+#### 2. **src/hooks/useSingleFastPerformance.ts**
+**Modifiche Identiche:**
+- ➕ Campo `skipped: number` a `emailProgress` state
+- 🔄 Modificato catch block in modalità PARALLELA (linee 363-371)
+- 🔄 Modificato catch block in modalità SEQUENZIALE (linee 488-496)
+- Stesso comportamento di skip silenzioso
+
+#### 3. **src/pages/SingleFast.tsx**
+**Modifiche UI:**
+- ➕ Visualizzazione contatore skipped nell'UI progress (linee 115-133):
+  ```tsx
+  <span className="font-mono font-semibold">
+    {emailProgress.imported}/{emailProgress.total}
+    {emailProgress.skipped > 0 && (
+      <span className="text-yellow-600 ml-2">
+        ({emailProgress.skipped} skippate)
+      </span>
+    )}
+  </span>
+  ```
+- ➕ Messaggio sotto progress bar (visibile solo se skipped > 0):
+  ```tsx
+  {emailProgress.skipped > 0 && (
+    <p className="text-xs text-yellow-600">
+      ⚠️ {emailProgress.skipped} email temporaneamente skippate (retry automatico prossima sessione)
+    </p>
+  )}
+  ```
+
+### ✅ Vantaggi Implementazione
+
+1. **UX Migliorata:**
+   - ❌ NO toast rossi invasivi durante import
+   - ✅ Contatore skipped visibile in tempo reale
+   - ✅ Messaggio informativo senza bloccare workflow
+
+2. **Affidabilità:**
+   - ✅ Errori Edge Function non bloccano l'import
+   - ✅ Email problematiche skippatə automaticamente
+   - ✅ Retry automatico alla sessione successiva (logica esistente `missingUIDs`)
+
+3. **Debugging:**
+   - ✅ Log console mantengono errori dettagliati (`console.error`)
+   - ✅ Log UI mostra UID e messaggio errore troncato (primi 50 char)
+   - ✅ Contatore `errorCount` incrementato per statistiche finali
+
+### 📊 Esempio Output
+
+**Durante Import:**
+```
+📧 Inizio import da INBOX (150 email)
+✅ john@example.com
+⚠️ Skip UID 12345 (retry automatico): FetchError: request timed out...
+✅ jane@example.com
+...
+
+UI Progress:
+Email Importate: 148/150 (2 skippate)
+⚠️ 2 email temporaneamente skippate (retry automatico prossima sessione)
+```
+
+**Prossima Sessione:**
+- Sistema ricalcola `missingUIDs` (confronto server vs DB)
+- Email skippate vengono ritentate automaticamente
+- Nessun intervento manuale richiesto
+
+### 🔄 Alternativa NON Implementata
+
+❌ **Sistema con tabella `email_import_errors` e max retry:**
+- Pro: Tracciabilità errori, limite retry configurabile
+- Contro: Complessità maggiore, richiede nuova tabella DB
+- Decisione: **Non necessario** per ora, versione semplificata sufficiente
+
+### 🧪 Testing Raccomandato
+
+1. **Test Errore Edge Function:**
+   - Simula edge function instabile
+   - Verifica email skippate senza toast
+   - Verifica contatore UI aggiornato
+
+2. **Test Retry Automatico:**
+   - Avvia import con errori
+   - Stoppa processo
+   - Riavvia → verifica email skippate vengono ritentate
+
+3. **Test UI:**
+   - Verifica messaggio giallo appare solo se skipped > 0
+   - Verifica contatore (X skippate) appare in linea
+
+### 📝 Note Implementazione
+
+- ⚠️ `phase: 'skip'` NON triggera toast rosso (solo log console + UI warning giallo)
+- ⚠️ Contatore `skipped` reset ad ogni nuova sessione (tramite `setEmailProgress({ imported: 0, total: 0, skipped: 0 })`)
+- ⚠️ Errori duplicati (23505) già gestiti prima del catch block
+- ✅ 100% backward compatible (nessuna breaking change)
+
+---
+
+**Timestamp Implementazione:** 2025-11-05 18:00  
+**File Modificati:** 3 (useSingleFast.ts, useSingleFastPerformance.ts, SingleFast.tsx)  
+**Status:** ✅ Gestione Errori Silenziosa Implementata  
+**Breaking Changes:** Nessuna

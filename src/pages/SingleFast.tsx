@@ -117,12 +117,22 @@ export default function SingleFast() {
                     <span className="text-muted-foreground">Email Importate</span>
                     <span className="font-mono font-semibold">
                       {emailProgress.imported}/{emailProgress.total}
+                      {emailProgress.skipped > 0 && (
+                        <span className="text-yellow-600 ml-2">
+                          ({emailProgress.skipped} skippate)
+                        </span>
+                      )}
                     </span>
                   </div>
                   <Progress 
                     value={emailProgress.total > 0 ? (emailProgress.imported / emailProgress.total) * 100 : 0} 
                     className="h-3"
                   />
+                  {emailProgress.skipped > 0 && (
+                    <p className="text-xs text-yellow-600">
+                      ⚠️ {emailProgress.skipped} email temporaneamente skippate (retry automatico prossima sessione)
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>

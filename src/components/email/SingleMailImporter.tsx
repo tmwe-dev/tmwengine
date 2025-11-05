@@ -106,7 +106,7 @@ export function SingleMailImporter() {
             return {
               uid,
               subject: email?.subject || email?.data?.header?.subject || '(No Subject)',
-              from_email: email?.from?.address || email?.data?.header?.from?.[0]?.address || 'Unknown',
+              from_email: email?.from?.address || email?.from?.email || email?.data?.header?.from?.[0]?.address || email?.data?.header?.from?.[0]?.email || 'Unknown',
               date: email?.date || email?.data?.header?.date || new Date().toISOString(),
               selected: false,
             };
@@ -324,7 +324,7 @@ export function SingleMailImporter() {
                 <SelectTrigger className="w-64">
                   <SelectValue placeholder="Seleziona cartella" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[9999] bg-background">
                   {foldersData?.map((folder: any) => (
                     <SelectItem key={folder.name} value={folder.name}>
                       {folder.display_name || folder.name}
@@ -419,12 +419,12 @@ export function SingleMailImporter() {
                     checked={email.selected}
                     onCheckedChange={() => toggleEmailSelection(email.uid)}
                   />
-                  <div className="flex-1 grid grid-cols-4 gap-4 text-sm">
-                    <div className="font-mono text-muted-foreground">{email.uid}</div>
-                    <div className="truncate">{email.from_email}</div>
+                  <div className="flex-1 grid grid-cols-[100px_1fr_2fr_200px] gap-4 text-sm">
+                    <div className="font-mono text-muted-foreground text-xs">{email.uid}</div>
+                    <div className="truncate font-medium">{email.from_email || 'N/A'}</div>
                     <div className="truncate">{email.subject}</div>
-                    <div className="text-muted-foreground">
-                      {new Date(email.date).toLocaleString('it-IT')}
+                    <div className="text-muted-foreground text-xs">
+                      {new Date(email.date).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

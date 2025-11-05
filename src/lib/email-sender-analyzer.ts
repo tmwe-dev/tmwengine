@@ -46,17 +46,38 @@ export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[
   console.log('🔍 Analisi mittenti per:', userEmail);
   
   try {
-    // ✅ Query diretta ottimizzata - solo campi essenziali
-    const { data: emailsData, error: emailError } = await supabase
-      .from('email_messages')
-      .select('from_email, data_ricezione')
-      .eq('user_email', userEmail)
-      .order('data_ricezione', { ascending: false })
-      .limit(5000); // Limita a 5000 email più recenti per evitare timeout
+    // ✅ Paginazione manuale per superare limite implicito client Supabase (~1000 rows)
+    const pageSize = 1000;
+    const allEmails: any[] = [];
+    let page = 0;
+    let hasMore = true;
+
+    console.log('🔄 Inizio caricamento email con paginazione...');
+
+    while (hasMore && allEmails.length < 20000) { // Max 20k email per evitare timeout
+      const rangeStart = page * pageSize;
+      const rangeEnd = (page + 1) * pageSize - 1;
+      
+      const { data: emailsData, error: emailError } = await supabase
+        .from('email_messages')
+        .select('from_email, data_ricezione')
+        .eq('user_email', userEmail)
+        .order('data_ricezione', { ascending: false })
+        .range(rangeStart, rangeEnd);
+      
+      if (emailError) throw emailError;
+      if (!emailsData || emailsData.length === 0) break;
+      
+      allEmails.push(...emailsData);
+      hasMore = emailsData.length === pageSize;
+      page++;
+      
+      console.log(`📄 Pagina ${page}: +${emailsData.length} email (totale: ${allEmails.length})`);
+    }
+
+    console.log(`✅ Caricamento completato: ${allEmails.length} email totali`);
     
-    if (emailError) throw emailError;
-    
-    if (!emailsData || emailsData.length === 0) {
+    if (allEmails.length === 0) {
       console.warn('⚠️ Nessun mittente trovato nel DB');
       return [];
     }
@@ -68,7 +89,7 @@ export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[
       lastSeen: Date;
     }>();
     
-    emailsData.forEach(email => {
+    allEmails.forEach(email => {
       if (!email.from_email) return;
       
       const existing = senderMap.get(email.from_email);

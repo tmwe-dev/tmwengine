@@ -34,20 +34,6 @@ export function SingleMailImporter() {
   const [isImporting, setIsImporting] = useState(false);
   const [importingUid, setImportingUid] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState(100); // ✅ Lazy loading: inizialmente 100 email
-  
-  // 🆕 Single Fast State
-  const [isSingleFastRunning, setIsSingleFastRunning] = useState(false);
-  const [singleFastProgress, setSingleFastProgress] = useState({
-    currentFolder: '',
-    folderIndex: 0,
-    totalFolders: 0,
-    emailIndex: 0,
-    totalEmailsInFolder: 0,
-    globalProcessed: 0,
-    globalTotal: 0
-  });
-  const [isPreferencesDialogOpen, setIsPreferencesDialogOpen] = useState(false);
-  const [userEmail, setUserEmail] = useState<string>('');
 
   // ✅ Query cartelle disponibili (API DEDICATA - NO CACHE CONDIVISA)
   const { data: foldersData } = useQuery({
@@ -171,118 +157,6 @@ export function SingleMailImporter() {
     return normalized;
   };
 
-  // ✅ Funzione helper per popolare email_temp_index per una cartella specifica
-  const populateTempIndexForFolder = async (folderName: string, userEmail: string) => {
-    console.log(`🔍 [populateTempIndex] Processing folder: ${folderName}`);
-
-    // 1️⃣ Svuota tabella temporanea per questa cartella
-    await supabase
-      .from('email_temp_index')
-      .delete()
-      .eq('user_email', userEmail)
-      .eq('folder', folderName);
-
-    // 2️⃣ Fetch UIDs dal server TMWE (prime 500 email)
-    console.log('📡 Fetching server UIDs (only metadata, no body)...');
-    
-    const serverResponse = await emailMessageApi.getMessages({
-      folder: folderName,
-      page: 1,
-      limit: 500,
-      format: 'text',
-      include_attachments: false,
-    });
-
-    const serverUIDs = new Set<string>(
-      serverResponse.messages.map((msg: any) => String(msg.uid))
-    );
-    console.log(`✅ Server UIDs count: ${serverUIDs.size}`);
-
-    // 3️⃣ Fetch UIDs dal DB locale
-    console.log('💾 Fetching local DB UIDs...');
-    const { data: dbMessages, error } = await supabase
-      .from('email_messages')
-      .select('message_id')
-      .eq('user_email', userEmail)
-      .eq('cartella', folderName);
-
-    if (error) throw error;
-
-    const dbUIDs = new Set<string>(
-      (dbMessages || [])
-        .map((msg: any) => {
-          const messageId = String(msg.message_id);
-          const parts = messageId.split('/');
-          return parts.length > 1 ? parts[1] : messageId;
-        })
-        .filter((uid: string) => uid && uid !== 'null')
-    );
-    console.log(`✅ DB UIDs count: ${dbUIDs.size}`);
-
-    // 4️⃣ Calcola UIDs mancanti
-    const missing = Array.from(serverUIDs).filter(uid => !dbUIDs.has(uid));
-    console.log(`🎯 Missing UIDs: ${missing.length}`);
-
-    // 5️⃣ Popola email_temp_index con metadati leggeri (batch paralleli)
-    const batchSize = 10;
-    const tempIndexRecords = [];
-
-    for (let i = 0; i < missing.length; i += batchSize) {
-      const batch = missing.slice(i, i + batchSize);
-      const batchPromises = batch.map(async (uid) => {
-        try {
-          const email = await emailMessageApi.getMessage(uid, folderName, false);
-          return {
-            uid,
-            folder: folderName,
-            user_email: userEmail,
-            subject: email?.subject || email?.data?.header?.subject || null,
-            from_email: email?.from || email?.data?.header?.from || 'Unknown',
-            from_name: email?.from_name || email?.data?.header?.from_name || null,
-            date: email?.date || email?.data?.header?.date || new Date().toISOString(),
-            size: null,
-            status: 'pending',
-          };
-        } catch (err) {
-          console.warn(`⚠️ Failed to fetch metadata for UID ${uid}:`, err);
-          return {
-            uid,
-            folder: folderName,
-            user_email: userEmail,
-            subject: '(Error loading)',
-            from_email: 'Unknown',
-            from_name: null,
-            date: new Date().toISOString(),
-            size: null,
-            status: 'pending',
-          };
-        }
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-      tempIndexRecords.push(...batchResults);
-    }
-
-    // 6️⃣ Inserisci in batch in email_temp_index
-    if (tempIndexRecords.length > 0) {
-      const { error: insertError } = await supabase
-        .from('email_temp_index')
-        .insert(tempIndexRecords);
-
-      if (insertError) {
-        console.error('❌ Error inserting to email_temp_index:', insertError);
-        throw insertError;
-      } else {
-        console.log(`✅ Inserted ${tempIndexRecords.length} records into email_temp_index`);
-      }
-    }
-
-    return {
-      totalServer: serverUIDs.size,
-      totalDB: dbUIDs.size,
-      totalMissing: missing.length,
-    };
-  };
 
   // ✅ Query confronto UIDs mancanti + popola email_temp_index
   const {
@@ -341,12 +215,32 @@ export function SingleMailImporter() {
 
       if (error) throw error;
 
+      // ✅ Estrazione UID robusta con fallback multipli
       const dbUIDs = new Set<string>(
         (dbMessages || [])
           .map((msg: any) => {
             const messageId = String(msg.message_id);
-            const parts = messageId.split('/');
-            return parts.length > 1 ? parts[1] : messageId;
+            
+            // Priorità 1: Se contiene "/", prendi l'ultima parte
+            if (messageId.includes('/')) {
+              const parts = messageId.split('/');
+              return parts[parts.length - 1];
+            }
+            
+            // Priorità 2: Se è un numero, usalo direttamente
+            if (/^\d+$/.test(messageId)) {
+              return messageId;
+            }
+            
+            // Priorità 3: Se è formato RFC, prova a estrarre UID
+            if (messageId.startsWith('<') && messageId.endsWith('>')) {
+              const match = messageId.match(/\/(\d+)@/);
+              if (match) return match[1];
+            }
+            
+            // Fallback: usa il valore completo e logga warning
+            console.warn('⚠️ [SingleMailImporter] Formato message_id non riconosciuto:', messageId);
+            return messageId;
           })
           .filter((uid: string) => uid && uid !== 'null')
       );
@@ -471,30 +365,6 @@ export function SingleMailImporter() {
       setMissingEmails(tempIndexEmails);
     }
   }, [tempIndexEmails]);
-
-  // 🆕 Carica email utente per Single Fast
-  useEffect(() => {
-    loadUserEmail();
-  }, []);
-
-  const loadUserEmail = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (profile?.tmwe_email) {
-        setUserEmail(profile.tmwe_email);
-      }
-    } catch (error) {
-      console.error('❌ [SingleFast] Error loading user email:', error);
-    }
-  };
 
   // ✅ Toggle singola email (aggiorna DB temp_index)
   const toggleEmailSelection = async (uid: string) => {
@@ -784,153 +654,6 @@ export function SingleMailImporter() {
     }
   };
 
-  // 🆕 Single Fast - Sincronizzazione automatica tutte le cartelle
-  const handleSingleFastImport = async () => {
-    if (!userEmail) {
-      toast.error('Email utente non disponibile');
-      return;
-    }
-
-    try {
-      // 1. Carica preferenze
-      const preferences = await getSyncPreferences(userEmail);
-      
-      // 2. Filtra cartelle con email mancanti
-      const foldersWithMissing = (folderCounts || []).filter(f => f.missing > 0);
-      
-      if (foldersWithMissing.length === 0) {
-        toast.info('✅ Nessuna email mancante da sincronizzare');
-        return;
-      }
-      
-      // 3. Applica filtro preferenze
-      let foldersToSync = foldersWithMissing;
-      
-      if (preferences.included_folders.length > 0) {
-        // Filtra solo cartelle incluse nelle preferenze
-        foldersToSync = foldersWithMissing.filter(f => 
-          preferences.included_folders.includes(f.folderName)
-        );
-        
-        if (foldersToSync.length === 0) {
-          toast.warning('⚠️ Nessuna cartella configurata ha email mancanti');
-          return;
-        }
-        
-        console.log(`✅ [SingleFast] Preferenze attive: ${foldersToSync.length}/${foldersWithMissing.length} cartelle`);
-      } else {
-        // Nessuna preferenza → sincronizza TUTTE
-        console.log(`⚠️ [SingleFast] Nessuna preferenza → sync TUTTE le ${foldersToSync.length} cartelle`);
-      }
-      
-      // 4. Calcola totale globale
-      const globalTotal = foldersToSync.reduce((sum, f) => sum + f.missing, 0);
-      
-      // 5. Conferma utente
-      const confirmMessage = preferences.included_folders.length > 0
-        ? `Sincronizzare ${globalTotal} email da ${foldersToSync.length} cartelle configurate?\n\nCartelle: ${foldersToSync.map(f => `${f.folderName} (${f.missing})`).join(', ')}`
-        : `Sincronizzare ${globalTotal} email da TUTTE le ${foldersToSync.length} cartelle?`;
-      
-      if (!window.confirm(confirmMessage)) {
-        return;
-      }
-      
-      // 6. Avvia sincronizzazione
-      setIsSingleFastRunning(true);
-      setSingleFastProgress({
-        currentFolder: '',
-        folderIndex: 0,
-        totalFolders: foldersToSync.length,
-        emailIndex: 0,
-        totalEmailsInFolder: 0,
-        globalProcessed: 0,
-        globalTotal
-      });
-      
-      toast.info(`🚀 Single Fast: ${globalTotal} email da ${foldersToSync.length} cartelle`);
-      
-      let globalProcessed = 0;
-      let totalErrorCount = 0;
-      
-      // 7. Loop cartelle
-      for (let i = 0; i < foldersToSync.length; i++) {
-        const folder = foldersToSync[i];
-        
-        setSingleFastProgress(prev => ({
-          ...prev,
-          currentFolder: folder.folderName,
-          folderIndex: i + 1,
-          emailIndex: 0,
-          totalEmailsInFolder: folder.missing
-        }));
-        
-        console.log(`📁 [SingleFast] Folder ${i + 1}/${foldersToSync.length}: ${folder.folderName} (${folder.missing} missing)`);
-        
-        // 8. Popola temp index direttamente per questa cartella
-        await populateTempIndexForFolder(folder.folderName, userEmail);
-        
-        // 9. Fetch UIDs mancanti dalla tabella temporanea
-        const { data: tempData } = await supabase
-          .from('email_temp_index')
-          .select('uid, subject, from_email, from_name, date')
-          .eq('user_email', userEmail)
-          .eq('folder', folder.folderName)
-          .order('date', { ascending: false });
-        
-        const uids = tempData || [];
-        
-        if (uids.length === 0) {
-          console.warn(`⚠️ [SingleFast] No UIDs found for ${folder.folderName}`);
-          continue;
-        }
-        
-        // 10. Loop email nella cartella
-        let errorCount = 0;
-        
-        for (let j = 0; j < uids.length; j++) {
-          const uid = uids[j].uid;
-          
-          setSingleFastProgress(prev => ({
-            ...prev,
-            emailIndex: j + 1,
-            globalProcessed: globalProcessed
-          }));
-          
-          try {
-            // 11. Import singola email con parametro folder esplicito
-            await handleImportSingle(uid, folder.folderName);
-            globalProcessed++;
-            
-            // 12. Delay anti-overload (50ms)
-            await new Promise(resolve => setTimeout(resolve, 50));
-            
-          } catch (error: any) {
-            console.error(`❌ [SingleFast] Failed to import UID ${uid}:`, error);
-            errorCount++;
-            totalErrorCount++;
-          }
-        }
-        
-        console.log(`✅ [SingleFast] Completed folder ${folder.folderName}`);
-      }
-      
-      // 13. Completamento
-      const successMessage = totalErrorCount > 0
-        ? `✅ Single Fast completato: ${globalProcessed}/${globalTotal} email (${totalErrorCount} errori)`
-        : `✅ Single Fast completato: ${globalProcessed}/${globalTotal} email`;
-      
-      toast.success(successMessage);
-      
-      // 14. Invalida cache conteggi per refresh UI
-      queryClient.invalidateQueries({ queryKey: ['email-folder-counts-single'] });
-      
-    } catch (error: any) {
-      console.error('❌ [SingleFast] Error:', error);
-      toast.error(`Errore: ${error.message}`);
-    } finally {
-      setIsSingleFastRunning(false);
-    }
-  };
 
   // ✅ Helper per trovare statistiche cartella
   const getFolderStats = (folderName: string) => {
@@ -948,41 +671,21 @@ export function SingleMailImporter() {
         <CardHeader>
           <CardTitle className="flex flex-col items-center gap-4">
             <div className="flex items-center justify-between w-full">
-              <span>Single Mail Importer</span>
-              <div className="flex items-center gap-2">
-                {/* Pulsante Configura Preferenze */}
-                <Dialog open={isPreferencesDialogOpen} onOpenChange={setIsPreferencesDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      ⚙️ Configura Cartelle
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>⚙️ Preferenze Sincronizzazione</DialogTitle>
-                    </DialogHeader>
-                    {userEmail && (
-                      <FolderSyncPreferencesManager
-                        userEmail={userEmail}
-                        onPreferencesChanged={() => {
-                          setIsPreferencesDialogOpen(false);
-                          toast.success('✅ Preferenze salvate');
-                          queryClient.invalidateQueries({ queryKey: ['email-folder-counts-single'] });
-                        }}
-                      />
-                    )}
-                  </DialogContent>
-                </Dialog>
-                
-                {/* Pulsante Single Fast */}
-                <Button 
-                  onClick={handleSingleFastImport}
-                  disabled={isSingleFastRunning || !folderCounts || folderCounts.filter(f => f.missing > 0).length === 0}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  🚀 Single Fast
-                </Button>
+              <div className="flex items-center gap-3">
+                <span>Single Mail Importer</span>
+                <Badge variant="outline" className="text-xs">
+                  Confronto manuale per cartella
+                </Badge>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.href = '/single-fast'}
+                className="gap-2"
+              >
+                🚀 Vai a Single Fast
+                <span className="text-xs text-muted-foreground ml-1">(sincronizzazione massiva)</span>
+              </Button>
             </div>
             <div className="flex items-center gap-4 justify-center w-full">
               <Select value={selectedFolder} onValueChange={setSelectedFolder}>
@@ -1132,9 +835,22 @@ export function SingleMailImporter() {
 
           {/* Warning se limite 500 raggiunto */}
           {comparisonData && comparisonData.totalServer >= 500 && (
-            <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-sm text-orange-600 dark:text-orange-400">
-              ⚠️ <strong>Limite raggiunto:</strong> Confronto limitato alle prime 500 email per evitare timeout. 
-              Potrebbero esserci altre email mancanti non visibili qui.
+            <div className="p-4 bg-orange-500/10 border-2 border-orange-500/30 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">⚠️</div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-orange-700 dark:text-orange-400 mb-1">
+                    Limite 500 email raggiunto
+                  </h4>
+                  <p className="text-sm text-orange-600 dark:text-orange-300 mb-2">
+                    Il confronto è limitato alle <strong>prime 500 email</strong> della cartella per evitare timeout del server.
+                  </p>
+                  <p className="text-sm text-orange-600 dark:text-orange-300">
+                    💡 <strong>Suggerimento:</strong> Usa la pagina <strong>Single Fast</strong> per sincronizzare 
+                    l'intera cartella senza limiti.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1166,37 +882,6 @@ export function SingleMailImporter() {
         </CardContent>
       </Card>
 
-      {/* 🆕 Single Fast Progress */}
-      {isSingleFastRunning && (
-        <Card className="border-purple-500 bg-purple-50/50 dark:bg-purple-950/20">
-          <CardHeader>
-            <CardTitle className="text-purple-700 dark:text-purple-400 flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Single Fast in corso...
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span>📁 Cartella: {singleFastProgress.currentFolder}</span>
-                <span className="font-semibold">{singleFastProgress.folderIndex}/{singleFastProgress.totalFolders}</span>
-              </div>
-              <div className="flex justify-between text-sm mb-1">
-                <span>📧 Email cartella corrente</span>
-                <span className="font-semibold">{singleFastProgress.emailIndex}/{singleFastProgress.totalEmailsInFolder}</span>
-              </div>
-              <div className="flex justify-between text-sm font-bold mb-2">
-                <span>🌐 Totale globale</span>
-                <span className="text-purple-700 dark:text-purple-400">{singleFastProgress.globalProcessed}/{singleFastProgress.globalTotal}</span>
-              </div>
-              <Progress 
-                value={(singleFastProgress.globalProcessed / singleFastProgress.globalTotal) * 100} 
-                className="h-2"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Lista email mancanti */}
       {isLoadingComparison ? (

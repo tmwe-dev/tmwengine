@@ -7,6 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { getSingleFastFolders } from '@/lib/single-fast-core';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 
+// Costante per provider TMWE (ID dalla tabella email_provider)
+const TMWE_PROVIDER_ID = '00000000-0000-0000-0000-000000000000';
+
 export interface LogEntry {
   timestamp: Date;
   phase: 'preparing' | 'importing' | 'completed' | 'error';
@@ -318,7 +321,7 @@ export function useSingleFast() {
                 .insert({
                   user_email: userEmail,
                   message_id: emailData.message_id,
-                  provider_id: 'tmwe',
+                  provider_id: TMWE_PROVIDER_ID,
                   cartella: folder.folderName,
                   subject: emailData.subject,
                   from_email: emailData.from_email,
@@ -339,6 +342,15 @@ export function useSingleFast() {
                 if (insertError.code === '23505') {
                   console.log(`⚠️ Email ${uid} già esistente, skip`);
                 } else {
+                  // Log dettagliato per altri errori
+                  console.error('❌ Errore inserimento DB:', {
+                    uid,
+                    folder: folder.folderName,
+                    error: insertError,
+                    code: insertError.code,
+                    message: insertError.message,
+                    details: insertError.details
+                  });
                   throw insertError;
                 }
               }

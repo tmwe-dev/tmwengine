@@ -1594,7 +1594,10 @@ export function PerformanceTestSuite() {
                       </div>
                     </div>
                     <Badge className="mt-2">
-                      {(result.metadataComparison.withBody.totalTime / result.metadataComparison.metadataOnly.totalTime).toFixed(1)}x Faster
+                      {result.metadataComparison?.metadataOnly?.totalTime > 0 
+                        ? `${(result.metadataComparison.withBody.totalTime / result.metadataComparison.metadataOnly.totalTime).toFixed(1)}x Faster`
+                        : 'N/A'
+                      }
                     </Badge>
                   </Card>
                 </div>
@@ -1637,19 +1640,31 @@ export function PerformanceTestSuite() {
                     <div className="grid grid-cols-3 gap-4">
                       <div className={`p-4 border rounded-lg ${result.healthCheck.accountConnection ? 'bg-green-50 dark:bg-green-950 border-green-200' : 'bg-red-50 dark:bg-red-950 border-red-200'}`}>
                         <div className="font-semibold">Account Connection</div>
-                        <div className="text-sm text-muted-foreground">{result.healthCheck.accountConnectionTime.toFixed(0)}ms</div>
+                        <div className="text-sm text-muted-foreground">
+                          {result.healthCheck?.accountConnectionTime != null 
+                            ? `${result.healthCheck.accountConnectionTime.toFixed(0)}ms` 
+                            : 'N/A'}
+                        </div>
                         <div className="mt-2 text-lg">{result.healthCheck.accountConnection ? '✅' : '❌'}</div>
                       </div>
                       
                       <div className={`p-4 border rounded-lg ${result.healthCheck.folderAccess ? 'bg-green-50 dark:bg-green-950 border-green-200' : 'bg-red-50 dark:bg-red-950 border-red-200'}`}>
                         <div className="font-semibold">Folder Access</div>
-                        <div className="text-sm text-muted-foreground">{result.healthCheck.folderAccessTime.toFixed(0)}ms</div>
+                        <div className="text-sm text-muted-foreground">
+                          {result.healthCheck?.folderAccessTime != null 
+                            ? `${result.healthCheck.folderAccessTime.toFixed(0)}ms` 
+                            : 'N/A'}
+                        </div>
                         <div className="mt-2 text-lg">{result.healthCheck.folderAccess ? '✅' : '❌'}</div>
                       </div>
                       
                       <div className={`p-4 border rounded-lg ${result.healthCheck.emailRetrieval ? 'bg-green-50 dark:bg-green-950 border-green-200' : 'bg-red-50 dark:bg-red-950 border-red-200'}`}>
                         <div className="font-semibold">Email Retrieval</div>
-                        <div className="text-sm text-muted-foreground">{result.healthCheck.emailRetrievalTime.toFixed(0)}ms</div>
+                        <div className="text-sm text-muted-foreground">
+                          {result.healthCheck?.emailRetrievalTime != null 
+                            ? `${result.healthCheck.emailRetrievalTime.toFixed(0)}ms` 
+                            : 'N/A'}
+                        </div>
                         <div className="mt-2 text-lg">{result.healthCheck.emailRetrieval ? '✅' : '❌'}</div>
                       </div>
                     </div>
@@ -1787,7 +1802,10 @@ export function PerformanceTestSuite() {
                     const savedReport = localStorage.getItem('last-suite-report');
                     if (savedReport) {
                       const { report } = JSON.parse(savedReport);
-                      return `Overall Success: ${report.overallSuccessRate}% | Peak Throughput: ${Math.max(...suiteResults.map(r => r.metrics.throughput)).toFixed(1)}/s`;
+                      const peakThroughput = suiteResults.length > 0 
+                        ? Math.max(...suiteResults.map(r => r.metrics.throughput)).toFixed(1)
+                        : '0';
+                      return `Overall Success: ${report.overallSuccessRate}% | Peak Throughput: ${peakThroughput}/s`;
                     }
                     return 'Results from current session';
                   })()}
@@ -1878,13 +1896,19 @@ export function PerformanceTestSuite() {
                     <StatCard
                       icon={TrendingUp}
                       label="Avg Success Rate"
-                      value={`${(suiteResults.reduce((acc, r) => acc + r.metrics.successRate, 0) / suiteResults.length).toFixed(1)}%`}
+                      value={suiteResults.length > 0
+                        ? `${(suiteResults.reduce((acc, r) => acc + r.metrics.successRate, 0) / suiteResults.length).toFixed(1)}%`
+                        : '0%'
+                      }
                       trend={suiteResults.every(r => r.metrics.successRate === 100) ? 'up' : undefined}
                     />
                     <StatCard
                       icon={Zap}
                       label="Avg Throughput"
-                      value={`${(suiteResults.reduce((acc, r) => acc + r.metrics.throughput, 0) / suiteResults.length).toFixed(1)}/s`}
+                      value={suiteResults.length > 0
+                        ? `${(suiteResults.reduce((acc, r) => acc + r.metrics.throughput, 0) / suiteResults.length).toFixed(1)}/s`
+                        : '0/s'
+                      }
                     />
                     <StatCard
                       icon={Clock}
@@ -1975,8 +1999,14 @@ export function PerformanceTestSuite() {
                         <div>• <strong>Best Method:</strong> {suiteResults.reduce((best, r) => r.metrics.throughput > best.metrics.throughput ? r : best).config.testType}</div>
                         <div>• <strong>Optimal Batch Size:</strong> {suiteResults.reduce((best, r) => r.metrics.throughput > best.metrics.throughput ? r : best).config.batchSize || 25}</div>
                         <div>• <strong>Best Folder:</strong> {suiteResults.reduce((best, r) => r.metrics.successRate > best.metrics.successRate ? r : best).config.folder}</div>
-                        <div>• <strong>Overall Success Rate:</strong> {(suiteResults.reduce((acc, r) => acc + r.metrics.successRate, 0) / suiteResults.length).toFixed(1)}%</div>
-                        <div>• <strong>Peak Throughput:</strong> {Math.max(...suiteResults.map(r => r.metrics.throughput)).toFixed(1)} email/s</div>
+                        <div>• <strong>Overall Success Rate:</strong> {suiteResults.length > 0 
+                          ? `${(suiteResults.reduce((acc, r) => acc + r.metrics.successRate, 0) / suiteResults.length).toFixed(1)}%`
+                          : '0%'
+                        }</div>
+                        <div>• <strong>Peak Throughput:</strong> {suiteResults.length > 0 
+                          ? `${Math.max(...suiteResults.map(r => r.metrics.throughput)).toFixed(1)} email/s`
+                          : '0 email/s'
+                        }</div>
                       </div>
                     </AlertDescription>
                   </Alert>

@@ -332,7 +332,7 @@ export function SingleMailImporter() {
         attachments: email.attachments || [],
         provider_id: '00000000-0000-0000-0000-000000000000',
         user_email: profile.tmwe_email,
-        sync_status: 'single_mail_import',
+        sync_status: 'sincronizzato',  // ✅ Valore valido per check constraint
       };
 
       // ✅ Sanitizza array prima dell'insert
@@ -408,7 +408,7 @@ export function SingleMailImporter() {
             attachments: email.attachments || [],
             provider_id: '00000000-0000-0000-0000-000000000000',
             user_email: profile.tmwe_email,
-            sync_status: 'single_mail_import',
+            sync_status: 'sincronizzato',  // ✅ Valore valido per check constraint
           };
 
           // ✅ Sanitizza array prima dell'insert

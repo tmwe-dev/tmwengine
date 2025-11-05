@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Mail, Menu, Settings2, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight, Brain } from 'lucide-react';
+import { Search, Plus, Mail, Menu, Settings2, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight, Brain, Download, CheckCircle, Bug, MailOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 interface EmailHeaderProps {
@@ -31,6 +33,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
   const [searchQuery, setSearchQuery] = useState('');
   const [emailCount, setEmailCount] = useState<number>(0);
   const [syncPopupOpen, setSyncPopupOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Fetch initial count and subscribe to realtime updates
   useEffect(() => {
@@ -156,6 +159,34 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
                       {!isMobile && 'Inbox AI'}
                     </Button>
                   )}
+
+                  {/* Tools Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Settings2 className="h-4 w-4 mr-1" />
+                        {!isMobile && 'Tools'}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => navigate('/funnemail?view=quick-download')}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Quick Download
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/funnemail?view=integrity')}>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Verifica Integrità
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/funnemail?view=debugger')}>
+                        <Bug className="h-4 w-4 mr-2" />
+                        Backend Debugger
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/funnemail?view=single-mail')}>
+                        <MailOpen className="h-4 w-4 mr-2" />
+                        Single Mail
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
                   {/* Progress indicator */}
                   {downloadProgressComponent && (

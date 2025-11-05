@@ -63,6 +63,7 @@ import DesignLabScanner from "./pages/DesignLabScanner";
 import PromptSystemManager from "./pages/PromptSystemManager";
 import FunEmail from "./pages/FunEmail";
 import ApiFunctionsReference from "./pages/ApiFunctionsReference";
+import { SingleMailImporter } from "./components/email/SingleMailImporter";
 
 const queryClient = new QueryClient();
 
@@ -291,6 +292,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <FunEmail />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/single-mail" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <SingleMailImporter />
                 </CRMLayout>
               </ProtectedRoute>
             } />

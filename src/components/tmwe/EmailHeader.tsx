@@ -182,7 +182,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
                         <Bug className="h-4 w-4 mr-2" />
                         Backend Debugger
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate('/funnemail?view=single-mail')}>
+                      <DropdownMenuItem onClick={() => navigate('/single-mail')}>
                         <MailOpen className="h-4 w-4 mr-2" />
                         Single Mail
                       </DropdownMenuItem>

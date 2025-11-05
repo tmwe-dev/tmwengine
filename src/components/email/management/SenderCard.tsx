@@ -3,6 +3,7 @@
  */
 
 import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
 import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -21,8 +22,9 @@ export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle
     data: sender,
   });
 
-  // ✅ Nasconde immediatamente la card originale durante il drag
+  // ✅ Applica transform per seguire il mouse + nasconde card originale durante drag
   const style = {
+    transform: CSS.Transform.toString(transform),
     opacity: dragActive && !isDragging ? 0 : 1,
     transition: 'opacity 0.15s ease-out'
   };

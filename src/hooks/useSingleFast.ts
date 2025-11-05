@@ -4,12 +4,8 @@
 
 import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  populateTempIndexForFolder,
-  importEmailFromTempIndex,
-  getSingleFastFolders,
-  fetchUIDsFromTempIndex
-} from '@/lib/single-fast-core';
+import { getSingleFastFolders } from '@/lib/single-fast-core';
+import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 
 export interface LogEntry {
   timestamp: Date;
@@ -110,8 +106,19 @@ export function useSingleFast() {
       addLog({ phase: 'preparing', message: '⏳ Avvio tra 3 secondi...' });
       await new Promise(resolve => setTimeout(resolve, 3000));
 
+      // 📌 RECUPERO PROGRESSO SALVATO (Resume intelligente)
+      const savedProgress = JSON.parse(localStorage.getItem('singlefast_progress') || '{}');
+      const startIndex = savedProgress.currentFolderIndex || 0;
+      
+      if (startIndex > 0) {
+        addLog({ 
+          phase: 'preparing', 
+          message: `🔄 Ripresa dal progresso salvato: cartella ${startIndex + 1}/${foldersToSync.length}` 
+        });
+      }
+
       // 2. Loop cartelle
-      for (let i = 0; i < foldersToSync.length; i++) {
+      for (let i = startIndex; i < foldersToSync.length; i++) {
         // Check stop
         if (shouldStop.current) {
           addLog({ phase: 'error', message: '🛑 Processo interrotto dall\'utente' });
@@ -120,68 +127,128 @@ export function useSingleFast() {
         
         const folder = foldersToSync[i];
         
+        // 💾 SALVA PROGRESSO IN LOCALSTORAGE
+        localStorage.setItem('singlefast_progress', JSON.stringify({
+          currentFolderIndex: i,
+          currentFolder: folder.folderName,
+          totalFolders: foldersToSync.length
+        }));
+        
         // Aggiorna stato cartella corrente e fase
         setCurrentFolder(folder.folderName);
-        setCurrentPhase('FASE 1/2: Preparazione indice');
+        setCurrentPhase('Calcolo email mancanti');
         setProgress({ current: i + 1, total: foldersToSync.length });
         
         addLog({
           phase: 'preparing',
           folder: folder.folderName,
-          message: `🔍 FASE 1/2: Preparazione indice per ${folder.folderName} [${i + 1}/${foldersToSync.length}]`
+          message: `🔍 Analisi cartella ${folder.folderName} [${i + 1}/${foldersToSync.length}]`
         });
 
         try {
-          // 3. Popola temp index CON CALLBACK PROGRESS
-          const result = await populateTempIndexForFolder(
-            folder.folderName,
-            userEmail,
-            (details) => {
-              const formattedDate = new Date(details.date).toLocaleString('it-IT', {
-                day: '2-digit',
-                month: '2-digit', 
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              });
-              
-              addLog({
-                phase: 'preparing',
-                folder: folder.folderName,
-                message: `📧 ${details.from_name || details.from_email}`,
-                count: { current: details.current, total: details.total },
-                emailDetails: {
-                  from_name: details.from_name,
-                  from_email: details.from_email,
-                  subject: details.subject,
-                  date: formattedDate
-                }
-              });
-            }
+          // 📊 STEP 1: Ottieni UIDs dal server (chiamata leggera, solo lista UIDs)
+          addLog({
+            phase: 'preparing',
+            folder: folder.folderName,
+            message: `📡 Recupero lista UIDs dal server...`
+          });
+          
+          const serverResponse = await emailMessageApi.getMessages({
+            folder: folder.folderName,
+            page: 1,
+            limit: 5000, // Aumentato da 500 a 5000
+            format: 'text',
+            include_attachments: false
+          });
+
+          const serverUIDs = new Set(
+            serverResponse.messages.map(m => String(m.id || m.uid))
           );
 
           addLog({
             phase: 'preparing',
             folder: folder.folderName,
-            message: `✅ Preparate ${result.totalMissing} email da ${folder.folderName}`
+            message: `✅ ${serverUIDs.size} email sul server`
           });
 
-          // 4. Import da temp index
-          const uids = await fetchUIDsFromTempIndex(folder.folderName, userEmail);
+          // 📊 STEP 2: Ottieni message_ids dal DB locale
+          addLog({
+            phase: 'preparing',
+            folder: folder.folderName,
+            message: `💾 Controllo database locale...`
+          });
+
+          const { data: dbMessages } = await supabase
+            .from('email_messages')
+            .select('message_id')
+            .eq('user_email', userEmail)
+            .eq('cartella', folder.folderName);
+
+          // Estrai UID da message_id (formato: "folder/uid" o direttamente "uid")
+          const dbUIDs = new Set(
+            (dbMessages || []).map((msg: any) => {
+              const messageId = String(msg.message_id);
+              
+              // Se contiene "/", prendi l'ultima parte
+              if (messageId.includes('/')) {
+                const parts = messageId.split('/');
+                return parts[parts.length - 1];
+              }
+              
+              // Se è un numero, usalo direttamente
+              if (/^\d+$/.test(messageId)) {
+                return messageId;
+              }
+              
+              // Se è formato RFC, prova a estrarre UID
+              if (messageId.startsWith('<') && messageId.endsWith('>')) {
+                const match = messageId.match(/\/(\d+)@/);
+                if (match) return match[1];
+              }
+              
+              // Fallback: usa il valore completo
+              return messageId;
+            })
+          );
+
+          addLog({
+            phase: 'preparing',
+            folder: folder.folderName,
+            message: `✅ ${dbUIDs.size} email già nel database`
+          });
+
+          // 📊 STEP 3: Calcola UIDs mancanti
+          const missingUIDs = Array.from(serverUIDs).filter((uid): uid is string => !dbUIDs.has(String(uid)));
+
+          if (missingUIDs.length === 0) {
+            addLog({
+              phase: 'completed',
+              folder: folder.folderName,
+              message: `✅ Cartella ${folder.folderName} già sincronizzata (0 email mancanti)`
+            });
+            continue;
+          }
+
+          addLog({
+            phase: 'preparing',
+            folder: folder.folderName,
+            message: `📧 ${missingUIDs.length} email da importare`
+          });
 
           // Aggiorna fase
-          setCurrentPhase('FASE 2/2: Import completo');
+          setCurrentPhase('Import email');
           
           addLog({
             phase: 'importing',
             folder: folder.folderName,
-            message: `📧 FASE 2/2: Import completo da ${folder.folderName} (${uids.length} email)`
+            message: `📧 Inizio import da ${folder.folderName} (${missingUIDs.length} email)`
           });
 
           let successCount = 0;
           let errorCount = 0;
 
-          for (let j = 0; j < uids.length; j++) {
+          // 📧 IMPORT DIRETTO: Scarica e salva ogni email (1 chiamata API per email)
+          for (let j = 0; j < missingUIDs.length; j++) {
             // Check stop
             if (shouldStop.current) {
               addLog({ phase: 'error', message: '🛑 Import interrotto' });
@@ -196,31 +263,111 @@ export function useSingleFast() {
             
             if (shouldStop.current) break;
             
+            const uid = missingUIDs[j];
+            
             try {
-              addLog({
-                phase: 'importing',
-                folder: folder.folderName,
-                message: `📧 Import email ${j + 1}/${uids.length}`,
-                count: { current: j + 1, total: uids.length }
+              // 🔽 SCARICA EMAIL COMPLETA (1 sola volta!)
+              const uidNumber = parseInt(String(uid), 10);
+              const { data: response, error: fetchError } = await supabase.functions.invoke('tmwe-api-proxy', {
+                body: {
+                  endpoint: '/email_message',
+                  data: {
+                    handler: 'get_message',
+                    uid: uidNumber,
+                    folder: folder.folderName,
+                    mark_as_read: false
+                  }
+                }
               });
 
-              await importEmailFromTempIndex(uids[j], folder.folderName, userEmail);
+              if (fetchError) throw fetchError;
+              if (!response?.success) throw new Error(response?.error || 'Errore API');
+
+              const header = response.data?.header || {};
+              const body = response.data || {};
+
+              // Normalizza dati
+              const emailData = {
+                message_id: header.message_id || `${folder.folderName}/${uid}`,
+                subject: header.subject || '(nessun oggetto)',
+                from_email: typeof header.from === 'string' ? header.from : (header.from?.email || header.from?.address || ''),
+                from_name: header.from_name || header.from?.name || null,
+                to_email: Array.isArray(header.to)
+                  ? header.to.map((t: any) => t.email || t.address || t).join(',')
+                  : (header.to || ''),
+                cc_email: Array.isArray(header.cc) && header.cc.length > 0
+                  ? header.cc.map((c: any) => c.email || c.address || c).join(',')
+                  : null,
+                bcc_email: Array.isArray(header.bcc) && header.bcc.length > 0
+                  ? header.bcc.map((b: any) => b.email || b.address || b).join(',')
+                  : null,
+                data_ricezione: header.date || new Date().toISOString(),
+                body_text: body.body_plain || '',
+                body_html: body.body_html || '',
+                flags: [
+                  ...(header.seen ? ['\\Seen'] : []),
+                  ...(header.flagged ? ['\\Flagged'] : []),
+                  ...(header.answered ? ['\\Answered'] : [])
+                ],
+                attachments: header.attachments || []
+              };
+
+              // 💾 INSERISCI IN DATABASE (usando i campi corretti del database)
+              const { error: insertError } = await supabase
+                .from('email_messages')
+                .insert({
+                  user_email: userEmail,
+                  message_id: emailData.message_id,
+                  provider_id: 'tmwe',
+                  cartella: folder.folderName,
+                  subject: emailData.subject,
+                  from_email: emailData.from_email,
+                  to_email: emailData.to_email,
+                  cc_email: emailData.cc_email,
+                  bcc_email: emailData.bcc_email,
+                  data_ricezione: emailData.data_ricezione,
+                  body_text: emailData.body_text,
+                  body_html: emailData.body_html,
+                  flags: emailData.flags,
+                  attachments: emailData.attachments,
+                  direzione: 'received',
+                  stato: 'active'
+                });
+
+              if (insertError) {
+                // Ignora errori di duplicati
+                if (insertError.code === '23505') {
+                  console.log(`⚠️ Email ${uid} già esistente, skip`);
+                } else {
+                  throw insertError;
+                }
+              }
+
               successCount++;
               
               // Aggiorna contatore email importate
               setEmailProgress(prev => ({ ...prev, imported: prev.imported + 1 }));
+
+              // Log con dettagli email
+              const fromName = emailData.from_name || emailData.from_email;
+              addLog({
+                phase: 'importing',
+                folder: folder.folderName,
+                message: `✅ ${fromName}`,
+                count: { current: j + 1, total: missingUIDs.length }
+              });
 
               // Throttle per non sovraccaricare
               if (j % 10 === 0) {
                 await new Promise(resolve => setTimeout(resolve, 100));
               }
             } catch (err: any) {
-              console.error(`❌ Error importing UID ${uids[j]}:`, err);
+              console.error(`❌ Error importing UID ${uid}:`, err);
               errorCount++;
               addLog({
                 phase: 'error',
                 folder: folder.folderName,
-                message: `❌ Errore import UID ${uids[j]}: ${err.message}`
+                message: `❌ Errore import UID ${uid}: ${err.message}`
               });
             }
           }
@@ -238,7 +385,7 @@ export function useSingleFast() {
           addLog({
             phase: 'completed',
             folder: folder.folderName,
-            message: `✅ Completata ${folder.folderName}: ${successCount}/${uids.length} email importate${errorCount > 0 ? ` (${errorCount} errori)` : ''}`
+            message: `✅ Completata ${folder.folderName}: ${successCount}/${missingUIDs.length} email importate${errorCount > 0 ? ` (${errorCount} errori)` : ''}`
           });
         } catch (err: any) {
           addLog({
@@ -259,6 +406,9 @@ export function useSingleFast() {
         }
       }
 
+      // 🎉 COMPLETAMENTO: Pulisci localStorage
+      localStorage.removeItem('singlefast_progress');
+      
       addLog({ phase: 'completed', message: '🎉 Single Fast completato!' });
     } catch (error: any) {
       addLog({ phase: 'error', message: `❌ Errore: ${error.message}` });

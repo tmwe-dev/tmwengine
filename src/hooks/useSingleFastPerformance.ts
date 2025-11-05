@@ -267,7 +267,7 @@ export function useSingleFastPerformance() {
               }
               
               while (isPaused.current) {
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 100));
                 if (shouldStop.current) break;
               }
               
@@ -379,6 +379,15 @@ export function useSingleFastPerformance() {
             
             // Attendi che tutti i download completino
             while (downloadController.current.getStats().active > 0 || downloadController.current.getStats().queued > 0) {
+              // ✅ CHECK STOP DURANTE ATTESA
+              if (shouldStop.current) {
+                addLog({ phase: 'error', message: '🛑 Arresto forzato: cancellazione download in corso...' });
+                if (downloadController.current) {
+                  downloadController.current.cancel();
+                }
+                break;
+              }
+              
               await new Promise(resolve => setTimeout(resolve, 500));
             }
           } else {
@@ -390,7 +399,7 @@ export function useSingleFastPerformance() {
               }
               
               while (isPaused.current) {
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 100));
                 if (shouldStop.current) break;
               }
               
@@ -562,6 +571,12 @@ export function useSingleFastPerformance() {
     shouldStop.current = true;
     isPaused.current = false;
     setPauseState(false);
+    
+    // ✅ Cancella download paralleli in corso
+    if (downloadController.current) {
+      downloadController.current.cancel();
+    }
+    
     addLog({ phase: 'error', message: '🛑 Arresto processo in corso...' });
   };
 

@@ -8,6 +8,7 @@ export class ParallelDownloadController {
   private queue: Array<() => Promise<any>> = [];
   private maxConcurrent: number;
   private minDelay: number; // ms tra download
+  private cancelled = false;
   
   constructor(maxConcurrent = 10, minDelay = 0) {
     this.maxConcurrent = maxConcurrent;
@@ -34,20 +35,26 @@ export class ParallelDownloadController {
   }
   
   private async executeDownload<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.cancelled) {
+      throw new Error('Download cancelled');
+    }
+    
     this.activeDownloads++;
     
     try {
       const result = await fn();
       
       // Rate limiting delay
-      await new Promise(resolve => setTimeout(resolve, this.minDelay));
+      if (!this.cancelled) {
+        await new Promise(resolve => setTimeout(resolve, this.minDelay));
+      }
       
       return result;
     } finally {
       this.activeDownloads--;
       
       // Processa prossimo in coda
-      if (this.queue.length > 0) {
+      if (this.queue.length > 0 && !this.cancelled) {
         const next = this.queue.shift();
         if (next) next();
       }
@@ -70,5 +77,14 @@ export class ParallelDownloadController {
     this.maxConcurrent = maxConcurrent;
     this.minDelay = minDelay;
     console.log(`⚙️ [ParallelController] Updated limits: concurrent=${maxConcurrent}, delay=${minDelay}ms`);
+  }
+  
+  /**
+   * 🆕 V5: Cancella tutti i download in corso e svuota la coda
+   */
+  cancel() {
+    this.cancelled = true;
+    this.queue = [];
+    console.log('🛑 [ParallelController] Download cancellati');
   }
 }

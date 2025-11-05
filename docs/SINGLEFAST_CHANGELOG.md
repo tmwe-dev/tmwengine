@@ -4,6 +4,75 @@ Documentazione modifiche sistema SingleFast Email Sync
 
 ---
 
+## [2025-11-05] - Fix Completo Stop/Pause e Gestione Errori Silenziosa
+
+### 🎯 Obiettivo
+Implementazione completa di gestione errori silenziosa e fix per Stop/Pause non funzionanti.
+
+### 📝 File Modificati
+
+#### 1. `src/components/email/SingleFastLogViewer.tsx`
+**Modifiche:**
+- ✅ Aggiunto import `AlertTriangle` da lucide-react
+- ✅ Aggiunto `case 'skip'` in `getPhaseIcon()` con icona gialla ⚠️
+- ✅ Aggiunto `case 'skip'` in `getPhaseColor()` con colore giallo
+
+**Risultato:** Gli errori skippati ora mostrano icona gialla invece di rossa, nessun toast invasivo.
+
+#### 2. `src/lib/parallel-download-controller.ts`
+**Modifiche:**
+- ✅ Aggiunto flag `private cancelled = false`
+- ✅ Aggiunto metodo `cancel()` che setta flag e svuota coda
+- ✅ Aggiunto check `if (this.cancelled)` in `executeDownload()`
+- ✅ Aggiunto check `!this.cancelled` prima di processare coda
+
+**Risultato:** Download paralleli possono essere cancellati immediatamente quando Stop viene premuto.
+
+#### 3. `src/hooks/useSingleFast.ts`
+**Modifiche:**
+- ✅ Ridotto timeout pause da 500ms a 100ms (linea 263)
+- ✅ Aggiunto check stop dopo ogni email importata (dopo linea 392)
+
+**Risultato:** 
+- Pause più reattiva (100ms invece di 500ms)
+- Stop funziona immediatamente dopo ogni email
+
+#### 4. `src/hooks/useSingleFastPerformance.ts`
+**Modifiche:**
+- ✅ Ridotto timeout pause da 500ms a 100ms (linee 269, 392)
+- ✅ Aggiunto check stop nel loop di attesa finale (linee 380-392)
+- ✅ Chiamata a `downloadController.current.cancel()` in `stopProcess` (linea 567)
+- ✅ Terminazione immediata controller quando stop viene premuto
+
+**Risultato:**
+- Pause più reattiva in modalità parallela
+- Stop funziona IMMEDIATAMENTE anche durante batch paralleli
+- Nessun blocco in attesa di completamento batch
+
+### ✅ Vantaggi Finali
+- ✅ **Nessun toast rosso** per errori skippati (solo icona gialla)
+- ✅ **Stop immediato** in entrambe le modalità (normale e performance)
+- ✅ **Pause reattiva** (100ms invece di 500ms)
+- ✅ **Cancellazione download** paralleli in corso
+- ✅ **Nessun blocco** durante batch paralleli
+
+### 🧪 Testing Raccomandato
+1. **Test toast gialli:** Verificare che errori Edge Function mostrino ⚠️ giallo invece di ❌ rosso
+2. **Test pause normale:** Pause deve bloccare entro 100ms
+3. **Test stop performance:** Stop deve terminare IMMEDIATAMENTE anche durante batch paralleli
+4. **Test stop durante attesa:** Quando vedi "Attesa completamento batch...", Stop deve funzionare subito
+
+### 🔄 Rollback Plan
+```bash
+# Ripristina backup se necessario
+git restore src/components/email/SingleFastLogViewer.tsx
+git restore src/lib/parallel-download-controller.ts
+git restore src/hooks/useSingleFast.ts
+git restore src/hooks/useSingleFastPerformance.ts
+```
+
+---
+
 ## [2025-11-05 17:35] - BACKUP PRE-IMPLEMENTAZIONE PERFORMANCE
 
 ### 🎯 Motivo

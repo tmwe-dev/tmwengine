@@ -260,7 +260,7 @@ export function useSingleFast() {
             
             // Check pause
             while (isPaused.current) {
-              await new Promise(resolve => setTimeout(resolve, 500));
+              await new Promise(resolve => setTimeout(resolve, 100));
               if (shouldStop.current) break;
             }
             
@@ -389,6 +389,12 @@ export function useSingleFast() {
               });
               
               // Continua con la prossima email (no throw)
+            }
+            
+            // ✅ CHECK STOP DOPO OGNI EMAIL
+            if (shouldStop.current) {
+              addLog({ phase: 'error', message: '🛑 Arresto richiesto' });
+              break;
             }
           }
 

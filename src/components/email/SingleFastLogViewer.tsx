@@ -5,7 +5,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { LogEntry } from '@/hooks/useSingleFast';
-import { Loader2, CheckCircle, XCircle, Download } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Download, AlertTriangle } from 'lucide-react';
 
 interface SingleFastLogViewerProps {
   logs: LogEntry[];
@@ -22,6 +22,8 @@ export function SingleFastLogViewer({ logs }: SingleFastLogViewerProps) {
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'error':
         return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'skip':
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
     }
   };
 
@@ -35,6 +37,8 @@ export function SingleFastLogViewer({ logs }: SingleFastLogViewerProps) {
         return 'text-green-500';
       case 'error':
         return 'text-red-500';
+      case 'skip':
+        return 'text-yellow-500';
     }
   };
 

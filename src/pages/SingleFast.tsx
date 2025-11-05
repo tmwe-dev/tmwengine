@@ -7,15 +7,32 @@ import { useState } from 'react';
 import { PageLayout } from '@/components/design-system/layouts/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { SingleFastLogViewer } from '@/components/email/SingleFastLogViewer';
 import { SingleFastDatabaseViewer } from '@/components/email/SingleFastDatabaseViewer';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
+import { PerformanceProfileConfigurator } from '@/components/testing/PerformanceProfileConfigurator';
 import { useSingleFast } from '@/hooks/useSingleFast';
-import { Rocket, Settings, CheckCircle, XCircle, Pause, Play, Square, Loader2 } from 'lucide-react';
+import { useSingleFastPerformance } from '@/hooks/useSingleFastPerformance';
+import { Rocket, Settings, CheckCircle, XCircle, Pause, Play, Square, Loader2, Sliders, Zap } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 
 export default function SingleFast() {
+  // 🎯 STATO: Modalità normale o performance
+  const [usePerformanceMode, setUsePerformanceMode] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
+  
+  // ⚡ HOOK NORMALE (default)
+  const normalMode = useSingleFast();
+  
+  // 🚀 HOOK PERFORMANCE (con ParallelDownloadController)
+  const performanceMode = useSingleFastPerformance();
+  
+  // Seleziona quale hook usare basato sulla modalità
+  const activeHook = usePerformanceMode ? performanceMode : normalMode;
+  
   const { 
     isRunning, 
     logs, 
@@ -25,13 +42,15 @@ export default function SingleFast() {
     currentPhase,
     progress,
     emailProgress,
-    startSingleFast, 
     pauseProcess,
     resumeProcess,
     stopProcess
-  } = useSingleFast();
-  const [showPreferences, setShowPreferences] = useState(false);
-  const [userEmail, setUserEmail] = useState<string>('');
+  } = activeHook;
+  
+  // Cast per accedere a startSingleFast o startSingleFastPerformance
+  const startFunction = usePerformanceMode 
+    ? (performanceMode as any).startSingleFastPerformance 
+    : (normalMode as any).startSingleFast;
 
   // Carica email utente
   useState(() => {
@@ -112,9 +131,39 @@ export default function SingleFast() {
 
         {/* Bottoni Azioni */}
         <div className="flex gap-4 items-center flex-wrap">
+          {/* Switch Modalità */}
+          <div className="flex items-center gap-2 p-2 border rounded-lg bg-card">
+            <Button
+              size="sm"
+              variant={!usePerformanceMode ? "default" : "ghost"}
+              onClick={() => setUsePerformanceMode(false)}
+              disabled={isRunning}
+            >
+              <Rocket className="h-4 w-4 mr-2" />
+              Normale
+            </Button>
+            <Button
+              size="sm"
+              variant={usePerformanceMode ? "default" : "ghost"}
+              onClick={() => setUsePerformanceMode(true)}
+              disabled={isRunning}
+              className="gap-2"
+            >
+              <Zap className="h-4 w-4" />
+              Performance
+            </Button>
+          </div>
+          
+          {/* Badge Profilo Attivo (solo in modalità Performance) */}
+          {usePerformanceMode && 'activeProfile' in activeHook && (activeHook as any).activeProfile && (
+            <Badge variant="outline" className="text-sm border-primary text-primary">
+              ⚡ {(activeHook as any).activeProfile.profile_name}
+            </Badge>
+          )}
+          
           <Button
             size="lg"
-            onClick={startSingleFast}
+            onClick={startFunction}
             disabled={isRunning}
             className="min-w-[200px]"
           >
@@ -125,8 +174,10 @@ export default function SingleFast() {
               </>
             ) : (
               <>
-                <Rocket className="h-5 w-5" />
-                <span className="ml-2">🚀 Single Fast</span>
+                {usePerformanceMode ? <Zap className="h-5 w-5" /> : <Rocket className="h-5 w-5" />}
+                <span className="ml-2">
+                  {usePerformanceMode ? '⚡ Avvia Performance' : '🚀 Avvia Normale'}
+                </span>
               </>
             )}
           </Button>
@@ -165,6 +216,27 @@ export default function SingleFast() {
               </Button>
             </>
           )}
+          
+          {/* Bottone Performance Configurator */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                size="lg"
+                variant="outline"
+                disabled={isRunning}
+                className="border-primary text-primary hover:bg-primary/10"
+              >
+                <Sliders className="h-5 w-5" />
+                <span className="ml-2">Performance</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>🎯 Performance Profile Configurator</DialogTitle>
+              </DialogHeader>
+              <PerformanceProfileConfigurator />
+            </DialogContent>
+          </Dialog>
           
           <Button
             size="lg"

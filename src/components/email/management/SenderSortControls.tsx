@@ -18,7 +18,9 @@ export type SortOption =
   | 'name-asc' 
   | 'name-desc' 
   | 'count-asc' 
-  | 'count-desc';
+  | 'count-desc'
+  | 'ai-group-asc'
+  | 'ai-group-desc';
 
 interface SenderSortControlsProps {
   currentSort: SortOption;
@@ -31,6 +33,8 @@ export function SenderSortControls({ currentSort, onSortChange }: SenderSortCont
     { value: 'name-desc' as SortOption, label: '📛 Nome Z → A', icon: SortDesc },
     { value: 'count-desc' as SortOption, label: '📧 Email: Più email', icon: SortDesc },
     { value: 'count-asc' as SortOption, label: '📧 Email: Meno email', icon: SortAsc },
+    { value: 'ai-group-asc' as SortOption, label: '🤖 Gruppo AI: A → Z', icon: SortAsc },
+    { value: 'ai-group-desc' as SortOption, label: '🤖 Gruppo AI: Z → A', icon: SortDesc },
   ];
 
   const currentLabel = sortOptions.find(opt => opt.value === currentSort)?.label || 'Ordina';

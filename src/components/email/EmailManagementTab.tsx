@@ -587,10 +587,38 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         return sorted.sort((a, b) => a.emailCount - b.emailCount);
       case 'count-desc':
         return sorted.sort((a, b) => b.emailCount - a.emailCount);
+      
+      // 🆕 Ordinamento per gruppo suggerito AI
+      case 'ai-group-asc':
+        return sorted.sort((a, b) => {
+          const suggestionA = aiSuggestions.find(s => s.sender_email === a.email);
+          const suggestionB = aiSuggestions.find(s => s.sender_email === b.email);
+          
+          // Mittenti senza suggerimento vanno in fondo
+          if (!suggestionA && !suggestionB) return 0;
+          if (!suggestionA) return 1;
+          if (!suggestionB) return -1;
+          
+          return suggestionA.suggested_group.name.localeCompare(suggestionB.suggested_group.name);
+        });
+      
+      case 'ai-group-desc':
+        return sorted.sort((a, b) => {
+          const suggestionA = aiSuggestions.find(s => s.sender_email === a.email);
+          const suggestionB = aiSuggestions.find(s => s.sender_email === b.email);
+          
+          // Mittenti senza suggerimento vanno in fondo
+          if (!suggestionA && !suggestionB) return 0;
+          if (!suggestionA) return 1;
+          if (!suggestionB) return -1;
+          
+          return suggestionB.suggested_group.name.localeCompare(suggestionA.suggested_group.name);
+        });
+      
       default:
         return sorted;
     }
-  }, [filteredSenders, sortOption]);
+  }, [filteredSenders, sortOption, aiSuggestions]);
   
   // 🤖 AI Categorization Handlers
   const handleAISuggestions = async () => {
@@ -884,39 +912,10 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
             {/* Suggestions list */}
             {aiSuggestions.length > 0 && (
               <div className="space-y-3 pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-yellow-500" />
-                    Suggerimenti AI ({aiSuggestions.length})
-                  </h3>
-                  
-                  {/* Batch actions */}
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm"
-                      variant="default"
-                      onClick={async () => {
-                        for (const s of aiSuggestions) {
-                          await handleAcceptSuggestion(s);
-                        }
-                      }}
-                    >
-                      <CheckCheck className="w-4 h-4 mr-1" />
-                      Accetta Tutti
-                    </Button>
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        for (const s of aiSuggestions) {
-                          await handleRejectSuggestion(s.id);
-                        }
-                      }}
-                    >
-                      Rifiuta Tutti
-                    </Button>
-                  </div>
-                </div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-yellow-500" />
+                  Suggerimenti AI ({aiSuggestions.length})
+                </h3>
                 
                 {/* Suggestion cards */}
                 <div className="space-y-2">

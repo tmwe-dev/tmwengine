@@ -380,6 +380,7 @@ const FunEmail = () => {
             </div>
           ) : currentView === 'single-mail' ? (
             <div className="p-6">
+              {/* Force rebuild - SingleMailImporter - 2025-11-05 07:55 */}
               <SingleMailImporter />
             </div>
           ) : currentView === 'inbox' ? (

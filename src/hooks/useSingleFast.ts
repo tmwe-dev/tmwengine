@@ -333,7 +333,7 @@ export function useSingleFast() {
                   body_html: emailData.body_html,
                   flags: emailData.flags,
                   attachments: emailData.attachments,
-                  direzione: 'received',
+                  direzione: 'inbound',
                   stato: 'active'
                 });
 

@@ -332,6 +332,27 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
               `Timeout recupero email ${folder}/${uid}`
             );
             
+            // ✅ LOGGING DIAGNOSTICO DETTAGLIATO
+            console.log('╔════════════════════════════════════════════════════════╗');
+            console.log('║ 📧 DIAGNOSTIC: API Response Structure                 ║');
+            console.log('╚════════════════════════════════════════════════════════╝');
+            console.log('📧 Full Response:', JSON.stringify(email, null, 2));
+            console.log('---');
+            console.log('📧 email.subject:', email?.subject);
+            console.log('📧 email.from:', email?.from);
+            console.log('📧 email.from?.address:', email?.from?.address);
+            console.log('---');
+            console.log('📧 email.data:', email?.data ? 'exists' : 'missing');
+            console.log('📧 email.data?.header:', email?.data?.header ? 'exists' : 'missing');
+            console.log('📧 email.data?.header?.subject:', email?.data?.header?.subject);
+            console.log('📧 email.data?.header?.from:', email?.data?.header?.from);
+            console.log('---');
+            console.log('📧 email.body_text:', email?.body_text ? `${String(email.body_text).substring(0, 50)}...` : 'missing');
+            console.log('📧 email.body_html:', email?.body_html ? `${String(email.body_html).substring(0, 50)}...` : 'missing');
+            console.log('📧 email.text:', email?.text ? `${String(email.text).substring(0, 50)}...` : 'missing');
+            console.log('📧 email.html:', email?.html ? `${String(email.html).substring(0, 50)}...` : 'missing');
+            console.log('╚════════════════════════════════════════════════════════╝');
+            
             if (!email) {
               console.warn(`⚠️ Email ${folder}/${uid} non trovata`);
               globalFailed++;

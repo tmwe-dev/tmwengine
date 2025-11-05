@@ -6,7 +6,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { LoadingState } from '@/components/design-system/data-display/LoadingState';
 import { supabase } from '@/integrations/supabase/client';
-import { emailFolderApi, emailMessageApi } from '@/lib/tmwe-api-integrated';
+import { emailMessageApi } from '@/lib/tmwe-api-integrated';
+import { getSingleMailFolders } from '@/lib/single-mail-api';
 import { toast } from 'sonner';
 import { RefreshCw, Eye, Download, CheckSquare, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,13 +29,13 @@ export function SingleMailImporter() {
   const [isImporting, setIsImporting] = useState(false);
   const [importingUid, setImportingUid] = useState<string | null>(null);
 
-  // ✅ Query cartelle disponibili
+  // ✅ Query cartelle disponibili (API DEDICATA - NO CACHE CONDIVISA)
   const { data: foldersData } = useQuery({
-    queryKey: ['email-folders-single'],
+    queryKey: ['email-folders-single-dedicated'],
     queryFn: async () => {
-      const folders = await emailFolderApi.getFolders({ include_counts: false });
-      console.log('📁 Folders fetched:', folders.length, folders.map((f: any) => f.name));
-      return folders; // ✅ Rimosso filtro [Gmail]/
+      const folders = await getSingleMailFolders({ include_counts: false });
+      console.log('📁 [SingleMail] Folders fetched:', folders.length, folders.map((f: any) => f.name));
+      return folders;
     },
     staleTime: 5 * 60 * 1000,
   });

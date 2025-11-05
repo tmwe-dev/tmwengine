@@ -330,11 +330,21 @@ export function SingleMailImporter() {
         sync_status: 'single_mail_import',
       };
 
+      // ✅ Sanitizza array prima dell'insert
+      emailToSave.flags = Array.isArray(emailToSave.flags) ? emailToSave.flags : [];
+      emailToSave.attachments = Array.isArray(emailToSave.attachments) ? emailToSave.attachments : [];
+
+      console.log('📤 [SingleMailImporter] INSERT BODY:', JSON.stringify(emailToSave, null, 2));
+
+      // ✅ Usa .insert() con singolo oggetto (come FunEmailDownloader)
       const { error } = await supabase
         .from('email_messages')
-        .upsert([emailToSave], { onConflict: 'message_id,user_email,cartella' });
+        .insert(emailToSave);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [SingleMailImporter] Supabase error:', error);
+        throw error;
+      }
 
       toast.success(`✅ Email UID ${uid} importata con successo`);
 
@@ -396,11 +406,21 @@ export function SingleMailImporter() {
             sync_status: 'single_mail_import',
           };
 
+          // ✅ Sanitizza array prima dell'insert
+          emailToSave.flags = Array.isArray(emailToSave.flags) ? emailToSave.flags : [];
+          emailToSave.attachments = Array.isArray(emailToSave.attachments) ? emailToSave.attachments : [];
+
+          console.log('📤 [SingleMailImporter] INSERT BODY:', JSON.stringify(emailToSave, null, 2));
+
+          // ✅ Usa .insert() con singolo oggetto (come FunEmailDownloader)
           const { error } = await supabase
             .from('email_messages')
-            .upsert([emailToSave], { onConflict: 'message_id,user_email,cartella' });
+            .insert(emailToSave);
 
-          if (error) throw error;
+          if (error) {
+            console.error('❌ [SingleMailImporter] Supabase error:', error);
+            throw error;
+          }
 
           successCount++;
           setMissingEmails(prev => prev.filter(e => e.uid !== uid));

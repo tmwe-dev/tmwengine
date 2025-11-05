@@ -32,13 +32,11 @@ export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    const rect = e.currentTarget.getBoundingClientRect();
-    
     setIsManualDragging(true);
     setLocalPosition({ x: 0, y: 0 });
     setDragStart({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: e.clientX,
+      y: e.clientY,
     });
   };
 

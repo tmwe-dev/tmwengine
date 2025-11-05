@@ -16,6 +16,7 @@ interface MissingEmailItem {
   uid: string;
   subject: string;
   from_email: string;
+  from_name: string;
   date: string;
   selected: boolean;
 }
@@ -32,7 +33,8 @@ export function SingleMailImporter() {
     queryKey: ['email-folders-single'],
     queryFn: async () => {
       const folders = await emailFolderApi.getFolders({ include_counts: false });
-      return folders.filter((f: any) => !f.name.startsWith('[Gmail]/'));
+      console.log('📁 Folders fetched:', folders.length, folders.map((f: any) => f.name));
+      return folders; // ✅ Rimosso filtro [Gmail]/
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -106,7 +108,8 @@ export function SingleMailImporter() {
             return {
               uid,
               subject: email?.subject || email?.data?.header?.subject || '(No Subject)',
-              from_email: email?.from?.address || email?.from?.email || email?.data?.header?.from?.[0]?.address || email?.data?.header?.from?.[0]?.email || 'Unknown',
+              from_email: email?.from || email?.data?.header?.from || 'Unknown',
+              from_name: email?.from_name || email?.data?.header?.from_name || '',
               date: email?.date || email?.data?.header?.date || new Date().toISOString(),
               selected: false,
             };
@@ -116,6 +119,7 @@ export function SingleMailImporter() {
               uid,
               subject: '(Error loading)',
               from_email: 'Unknown',
+              from_name: '',
               date: new Date().toISOString(),
               selected: false,
             };
@@ -421,7 +425,7 @@ export function SingleMailImporter() {
                   />
                   <div className="flex-1 grid grid-cols-[100px_1fr_2fr_200px] gap-4 text-sm">
                     <div className="font-mono text-muted-foreground text-xs">{email.uid}</div>
-                    <div className="truncate font-medium">{email.from_email || 'N/A'}</div>
+                    <div className="truncate font-medium">{email.from_name || email.from_email || 'N/A'}</div>
                     <div className="truncate">{email.subject}</div>
                     <div className="text-muted-foreground text-xs">
                       {new Date(email.date).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}

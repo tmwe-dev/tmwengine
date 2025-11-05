@@ -169,6 +169,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-background border border-border z-[200] shadow-lg">
+                      {/* Force rebuild - 2025-11-05 07:53 */}
                       <DropdownMenuItem onClick={() => navigate('/funnemail?view=quick-download')}>
                         <Download className="h-4 w-4 mr-2" />
                         Quick Download

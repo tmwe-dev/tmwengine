@@ -204,10 +204,15 @@ export function SingleMailImporter() {
 
       const dbUIDs = new Set<string>(
         (dbMessages || [])
-          .map((msg: any) => String(msg.message_id))
+          .map((msg: any) => {
+            const messageId = String(msg.message_id);
+            // Estrai solo UID dalla struttura "CARTELLA/UID"
+            const parts = messageId.split('/');
+            return parts.length > 1 ? parts[1] : messageId;  // ✅ "99844" invece di "INBOX/99844"
+          })
           .filter((uid: string) => uid && uid !== 'null')
       );
-      console.log(`✅ DB UIDs count: ${dbUIDs.size}`);
+      console.log(`✅ DB UIDs count: ${dbUIDs.size} (estratti da message_id come CARTELLA/UID)`);
 
       // 4️⃣ Calcola UIDs mancanti
       const missing = Array.from(serverUIDs).filter(uid => !dbUIDs.has(uid));
@@ -619,40 +624,51 @@ export function SingleMailImporter() {
               
               {/* Progress bar sincronizzazione */}
               <div>
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Sincronizzazione</span>
-                  <span className="font-semibold">{getFolderStats(selectedFolder)!.syncPercentage}%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={cn(
-                      "h-full transition-all duration-500",
-                      getFolderStats(selectedFolder)!.syncPercentage === 100 
-                        ? "bg-green-500" 
-                        : "bg-orange-500"
-                    )}
-                    style={{ width: `${getFolderStats(selectedFolder)!.syncPercentage}%` }}
-                  />
-                </div>
+                {(() => {
+                  const stats = getFolderStats(selectedFolder)!;
+                  const syncPercentage = Math.min(100, stats.syncPercentage);  // ✅ Cap a 100%
+                  const isOverSynced = stats.dbCount > stats.serverCount;  // ✅ Rileva se DB ha più email
+                  
+                  return (
+                    <>
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>Sincronizzazione</span>
+                        <span className={cn(
+                          "font-semibold",
+                          isOverSynced && "text-orange-600 dark:text-orange-400"
+                        )}>
+                          {isOverSynced 
+                            ? `+${stats.dbCount - stats.serverCount} extra` 
+                            : `${syncPercentage}%`
+                          }
+                        </span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full transition-all duration-500",
+                            syncPercentage === 100 ? "bg-green-500" : "bg-orange-500"
+                          )}
+                          style={{ width: `${syncPercentage}%` }}
+                        />
+                      </div>
+                      {isOverSynced && (
+                        <div className="mt-2 text-xs text-orange-600 dark:text-orange-400">
+                          ⚠️ Il database locale ha {stats.dbCount - stats.serverCount} email in più rispetto al server
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
 
-          {/* Statistiche dalla comparazione dettagliata (se disponibili) */}
-          {comparisonData && (
-            <div className="grid grid-cols-3 gap-4 text-center p-3 bg-accent/30 rounded-lg border border-dashed">
-              <div>
-                <div className="text-xl font-bold text-primary">{comparisonData.totalServer}</div>
-                <div className="text-xs text-muted-foreground">Comparazione Server</div>
-              </div>
-              <div>
-                <div className="text-xl font-bold text-blue-600">{comparisonData.totalDB}</div>
-                <div className="text-xs text-muted-foreground">Comparazione DB</div>
-              </div>
-              <div>
-                <div className="text-xl font-bold text-destructive">{comparisonData.totalMissing}</div>
-                <div className="text-xs text-muted-foreground">Comparazione Mancanti</div>
-              </div>
+          {/* Warning se limite 500 raggiunto */}
+          {comparisonData && comparisonData.totalServer >= 500 && (
+            <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-sm text-orange-600 dark:text-orange-400">
+              ⚠️ <strong>Limite raggiunto:</strong> Confronto limitato alle prime 500 email per evitare timeout. 
+              Potrebbero esserci altre email mancanti non visibili qui.
             </div>
           )}
         </CardContent>

@@ -443,7 +443,7 @@ const FunEmail = () => {
           onToggle={handleToggleAI}
           senderEmail={selectedSenderForAI}
           onPromptCreated={handlePromptCreatedGlobal}
-          hideButton={currentView === 'inbox'}
+          hideButton={true}
         />
       )}
 

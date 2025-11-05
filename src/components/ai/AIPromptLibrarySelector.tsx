@@ -42,8 +42,7 @@ export function AIPromptLibrarySelector({ onSelect }: AIPromptLibrarySelectorPro
       // Fetch diretto con type bypass
       const response = await (supabase as any)
         .from('ai_prompt_library')
-        .select('*')
-        .eq('is_active', true);
+        .select('*');
       
       if (response.error) throw response.error;
 

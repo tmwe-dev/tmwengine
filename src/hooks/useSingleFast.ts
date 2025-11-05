@@ -17,6 +17,12 @@ export interface LogEntry {
   folder?: string;
   message: string;
   count?: { current: number; total: number };
+  emailDetails?: {
+    from_name: string | null;
+    from_email: string;
+    subject: string | null;
+    date: string;
+  };
 }
 
 export interface TempIndexResult {
@@ -87,12 +93,26 @@ export function useSingleFast() {
           const result = await populateTempIndexForFolder(
             folder.folderName,
             userEmail,
-            (current, total) => {
+            (details) => {
+              const formattedDate = new Date(details.date).toLocaleString('it-IT', {
+                day: '2-digit',
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+              
               addLog({
                 phase: 'preparing',
                 folder: folder.folderName,
-                message: `📦 Metadati caricati`,
-                count: { current, total }
+                message: `📧 ${details.from_name || details.from_email}`,
+                count: { current: details.current, total: details.total },
+                emailDetails: {
+                  from_name: details.from_name,
+                  from_email: details.from_email,
+                  subject: details.subject,
+                  date: formattedDate
+                }
               });
             }
           );

@@ -21,7 +21,14 @@ export interface PopulateTempIndexResult {
 export async function populateTempIndexForFolder(
   folderName: string,
   userEmail: string,
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (details: {
+    from_name: string | null;
+    from_email: string;
+    subject: string | null;
+    date: string;
+    current: number;
+    total: number;
+  }) => void
 ): Promise<PopulateTempIndexResult> {
   console.log(`🔍 [populateTempIndex] Processing folder: ${folderName}`);
 
@@ -79,16 +86,11 @@ export async function populateTempIndexForFolder(
 
   for (let i = 0; i < missing.length; i += batchSize) {
     const batch = missing.slice(i, i + batchSize);
-    
-    // ✅ Callback progress
-    if (onProgress) {
-      onProgress(Math.min(i + batchSize, missing.length), missing.length);
-    }
 
-    const batchPromises = batch.map(async (uid) => {
+    const batchPromises = batch.map(async (uid, idx) => {
       try {
         const email = await emailMessageApi.getMessage(uid, folderName, false);
-        return {
+        const record = {
           uid,
           folder: folderName,
           user_email: userEmail,
@@ -99,9 +101,23 @@ export async function populateTempIndexForFolder(
           size: null,
           status: 'pending',
         };
+        
+        // Callback per OGNI singola email elaborata
+        if (onProgress) {
+          onProgress({
+            from_name: record.from_name,
+            from_email: record.from_email,
+            subject: record.subject,
+            date: record.date,
+            current: i + idx + 1,
+            total: missing.length
+          });
+        }
+        
+        return record;
       } catch (err) {
         console.warn(`⚠️ Failed to fetch metadata for UID ${uid}:`, err);
-        return {
+        const errorRecord = {
           uid,
           folder: folderName,
           user_email: userEmail,
@@ -112,6 +128,20 @@ export async function populateTempIndexForFolder(
           size: null,
           status: 'pending',
         };
+        
+        // Callback anche per errori
+        if (onProgress) {
+          onProgress({
+            from_name: null,
+            from_email: 'Error',
+            subject: '(Error loading)',
+            date: new Date().toISOString(),
+            current: i + idx + 1,
+            total: missing.length
+          });
+        }
+        
+        return errorRecord;
       }
     });
 

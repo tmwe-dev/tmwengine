@@ -54,7 +54,7 @@ export function SingleFastLogViewer({ logs }: SingleFastLogViewerProps) {
             </div>
           )}
           {logs.map((log, i) => (
-            <div key={i} className="flex items-start gap-3 mb-2 text-sm font-mono">
+            <div key={i} className="flex items-start gap-3 mb-3 text-sm font-mono border-b border-gray-800 pb-2">
               <span className="text-gray-600 shrink-0 w-[80px]">
                 {log.timestamp.toLocaleTimeString()}
               </span>
@@ -62,13 +62,25 @@ export function SingleFastLogViewer({ logs }: SingleFastLogViewerProps) {
                 {getPhaseIcon(log.phase)}
               </div>
               <div className="flex-1">
-                <span className={getPhaseColor(log.phase)}>
-                  {log.message}
-                </span>
-                {log.count && (
-                  <span className="text-blue-400 ml-2">
-                    [{log.count.current}/{log.count.total}]
+                <div className="flex items-center gap-2">
+                  <span className={getPhaseColor(log.phase)}>
+                    {log.message}
                   </span>
+                  {log.count && (
+                    <span className="text-blue-400">
+                      [{log.count.current}/{log.count.total}]
+                    </span>
+                  )}
+                </div>
+                
+                {log.emailDetails && (
+                  <div className="text-gray-400 text-xs mt-1 space-y-0.5">
+                    <div>📧 {log.emailDetails.from_email}</div>
+                    {log.emailDetails.subject && (
+                      <div className="truncate">📄 {log.emailDetails.subject}</div>
+                    )}
+                    <div>🕒 {log.emailDetails.date}</div>
+                  </div>
                 )}
               </div>
             </div>

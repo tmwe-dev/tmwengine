@@ -63,6 +63,94 @@ export function SingleMailImporter() {
     enabled: !!foldersData, // Esegui solo dopo aver caricato le cartelle
   });
 
+  /**
+   * 🆕 FUNZIONE ISOLATA PER SINGLE MAIL IMPORTER
+   * Fetch + normalizzazione email senza toccare codice esistente
+   */
+  const fetchAndNormalizeSingleEmail = async (uid: string, folder: string) => {
+    console.log(`🔍 [SingleMailImporter] Fetching email UID ${uid} from ${folder}`);
+    
+    // ✅ Chiamata diretta all'Edge Function
+    const { data: response, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      body: {
+        endpoint: '/email_message',
+        data: {
+          handler: 'get_message',
+          uid: parseInt(uid, 10),
+          folder: folder,
+          mark_as_read: false
+        }
+      }
+    });
+
+    if (error) throw error;
+    if (!response?.success) throw new Error(response?.error || 'Errore API');
+
+    console.log(`📦 [SingleMailImporter] Raw API response:`, {
+      hasData: !!response.data,
+      hasHeader: !!response.data?.header,
+      subject: response.data?.header?.subject,
+      from: response.data?.header?.from
+    });
+
+    // ✅ Normalizza struttura wrapped → flat
+    const header = response.data?.header || {};
+    const body = response.data || {};
+
+    const normalized = {
+      uid: header.uid,
+      message_id: header.message_id || `<${uid}@tmwe.local>`,
+      subject: header.subject || '',
+      
+      // From (può essere stringa o oggetto)
+      from: header.from,
+      from_email: typeof header.from === 'string' ? header.from : header.from,
+      from_name: header.from_name || '',
+      
+      // To/CC/BCC (array di oggetti {email, name})
+      to: header.to || [],
+      to_email: Array.isArray(header.to) 
+        ? header.to.map((t: any) => t.email || t.address || t).join(',')
+        : '',
+      
+      cc: header.cc || [],
+      cc_email: Array.isArray(header.cc) && header.cc.length > 0
+        ? header.cc.map((c: any) => c.email || c.address || c).join(',')
+        : null,
+      
+      bcc: header.bcc || [],
+      bcc_email: Array.isArray(header.bcc) && header.bcc.length > 0
+        ? header.bcc.map((b: any) => b.email || b.address || b).join(',')
+        : null,
+      
+      // Date
+      date: header.date,
+      
+      // Body
+      body_text: body.body_plain || '',
+      body_html: body.body_html || '',
+      
+      // Metadata
+      flags: [
+        ...(header.seen ? ['\\Seen'] : []),
+        ...(header.flagged ? ['\\Flagged'] : []),
+        ...(header.answered ? ['\\Answered'] : [])
+      ],
+      attachments: header.attachments || [],
+      has_attachments: header.has_attachments || header.attachments_count > 0,
+    };
+
+    console.log(`✅ [SingleMailImporter] Normalized email:`, {
+      message_id: normalized.message_id,
+      subject: normalized.subject,
+      from_email: normalized.from_email,
+      to_email: normalized.to_email,
+      has_body: normalized.body_html?.length > 0 || normalized.body_text?.length > 0
+    });
+
+    return normalized;
+  };
+
   // ✅ Query confronto UIDs mancanti (client-side)
   const {
     data: comparisonData,
@@ -218,8 +306,8 @@ export function SingleMailImporter() {
 
       if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
 
-      // Fetch email dal server
-      const email = await emailMessageApi.getMessage(uid, selectedFolder, false);
+      // Fetch email dal server (nuova funzione isolata)
+      const email = await fetchAndNormalizeSingleEmail(uid, selectedFolder);
 
       // ✅ Mapping campi (allineato con FunEmailDownloader)
       const emailToSave = {
@@ -236,8 +324,8 @@ export function SingleMailImporter() {
           ? email.cc.map((c: any) => c.address || c).join(',')
           : email?.cc || email?.cc_email || null,
         data_ricezione: email?.date ? new Date(email.date).toISOString() : new Date().toISOString(),
-        body_text: email?.body_text || email?.text || '',
-        body_html: email?.body_html || email?.html || '',
+        body_text: email?.body_text || '',
+        body_html: email?.body_html || '',
         attachments: email?.attachments || [],
         flags: email?.flags || [],
         stato: email?.flags?.includes('\\Seen') ? 'letto' : 'non_letto',
@@ -289,7 +377,7 @@ export function SingleMailImporter() {
 
       for (const uid of selectedUIDs) {
         try {
-          const email = await emailMessageApi.getMessage(uid, selectedFolder, false);
+          const email = await fetchAndNormalizeSingleEmail(uid, selectedFolder);
 
           const emailToSave = {
             message_id: `${selectedFolder}/${uid}`,
@@ -305,8 +393,8 @@ export function SingleMailImporter() {
               ? email.cc.map((c: any) => c.address || c).join(',')
               : email?.cc || email?.cc_email || null,
             data_ricezione: email?.date ? new Date(email.date).toISOString() : new Date().toISOString(),
-            body_text: email?.body_text || email?.text || '',
-            body_html: email?.body_html || email?.html || '',
+            body_text: email?.body_text || '',
+            body_html: email?.body_html || '',
             attachments: email?.attachments || [],
             flags: email?.flags || [],
             stato: email?.flags?.includes('\\Seen') ? 'letto' : 'non_letto',

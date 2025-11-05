@@ -55,38 +55,52 @@ const OAuthCallback = () => {
 
         console.log('✅ Edge function response:', data);
 
-        // ✅ FIX: Extraer access_token y refresh_token en lugar de magic link
-        const { access_token, refresh_token, email, profile, tmwe_access_token } = data;
+        // ✅ CORRECCIÓN: Extraer token_hash del magic link
+        const { magicLink, email, profile, tmwe_access_token } = data;
         
         // Guardar TMWE token para visualización
         if (tmwe_access_token) {
           setTmweToken(tmwe_access_token);
         }
 
-        if (!access_token || !refresh_token) {
-          throw new Error('Missing Supabase tokens in response');
+        if (!magicLink) {
+          throw new Error('Magic link not received');
         }
 
-        console.log('🔑 Supabase tokens received');
-        console.log('  - Access token length:', access_token.length);
-        console.log('  - Refresh token length:', refresh_token.length);
+        console.log('🔗 Magic link received:', magicLink);
 
-        // Guardar indicador di sessione attiva per visualizzazione
-        setExtractedToken(access_token.substring(0, 20) + '...');
+        // ✅ CORRECCIÓN: El magic link tiene formato query params, no hash
+        // Formato: https://.../auth/v1/verify?token=XXX&type=magiclink&redirect_to=...
+        const magicLinkUrl = new URL(magicLink);
+        const token = magicLinkUrl.searchParams.get('token');
+        const type = magicLinkUrl.searchParams.get('type') || 'magiclink';
 
-        // ✅ FIX: Usare setSession() invece di verifyOtp()
-        console.log('🔐 Setting Supabase session...');
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
+        if (!token) {
+          console.error('❌ Failed to extract token from magic link');
+          console.error('   Magic link:', magicLink);
+          console.error('   URL params:', Array.from(magicLinkUrl.searchParams.entries()));
+          throw new Error('Failed to extract token from magic link');
+        }
+
+        console.log('🔑 Extracted token:', token.substring(0, 20) + '...');
+        console.log('🔑 Type:', type);
+        console.log('🔑 Verifying OTP with Supabase...');
+        
+        // Guardar token estratto per visualizzazione
+        setExtractedToken(token);
+
+        // ✅ Verificar el OTP con Supabase usando el token
+        const { data: sessionData, error: sessionError } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: type as any,
         });
 
         if (sessionError) {
-          console.error('❌ Session setup error:', sessionError);
+          console.error('❌ OTP verification error:', sessionError);
           throw sessionError;
         }
 
-        console.log('✅ Session established successfully');
+        console.log('✅ OTP verified, session established:', sessionData);
 
         // ✅ MEJORA OPCIONAL: Guardar TMWE access token en localStorage
         if (tmwe_access_token) {

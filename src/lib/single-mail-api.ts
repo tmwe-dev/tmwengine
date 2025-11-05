@@ -70,15 +70,31 @@ export const getSingleMailFolders = async (options?: {
       sample: responseData?.[0]
     });
 
-    // 4. Validazione risultato
-    if (!Array.isArray(responseData) || responseData.length === 0) {
-      console.warn('⚠️ [SingleMailAPI] Empty or invalid result from TMWE API');
+    // 4. Validazione e gestione formati multipli
+    let folders: any[];
+    
+    if (Array.isArray(responseData)) {
+      // Formato 1: array diretto
+      folders = responseData;
+    } else if (responseData?.data && Array.isArray(responseData.data)) {
+      // Formato 2: { success: true, data: [...] }
+      folders = responseData.data;
+    } else if (responseData?.folders && Array.isArray(responseData.folders)) {
+      // Formato 3: { folders: [...] }
+      folders = responseData.folders;
+    } else {
+      console.warn('⚠️ [SingleMailAPI] Empty or invalid result from TMWE API', responseData);
       return [];
     }
 
-    console.log('📁 [SingleMailAPI] Returning', responseData.length, 'folders');
+    if (folders.length === 0) {
+      console.warn('⚠️ [SingleMailAPI] No folders found');
+      return [];
+    }
+
+    console.log('📁 [SingleMailAPI] Returning', folders.length, 'folders');
     
-    return responseData;
+    return folders;
   } catch (error: any) {
     console.error('🔥 [SingleMailAPI] Error fetching folders:', error);
     throw error;

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,6 +23,7 @@ interface MissingEmailItem {
 }
 
 export function SingleMailImporter() {
+  const queryClient = useQueryClient();
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [missingEmails, setMissingEmails] = useState<MissingEmailItem[]>([]);
   const [selectedEmailDetail, setSelectedEmailDetail] = useState<any>(null);
@@ -60,7 +61,7 @@ export function SingleMailImporter() {
       const { getUnifiedFolderCounts } = await import('@/lib/email-count-service');
       return await getUnifiedFolderCounts(profile.tmwe_email);
     },
-    staleTime: 2 * 60 * 1000, // Cache 2 minuti
+    staleTime: 0, // ✅ Forza refresh immediato per vedere conteggi aggiornati
     enabled: !!foldersData, // Esegui solo dopo aver caricato le cartelle
   });
 
@@ -506,6 +507,9 @@ export function SingleMailImporter() {
         .eq('user_email', profile.tmwe_email);
 
       setMissingEmails(prev => prev.filter(e => e.uid !== uid));
+      
+      // ✅ Invalida cache conteggi per riflettere nuova email importata
+      queryClient.invalidateQueries({ queryKey: ['email-folder-counts-single'] });
     } catch (error: any) {
       toast.error(`❌ Errore import: ${error.message}`);
     } finally {
@@ -625,6 +629,9 @@ export function SingleMailImporter() {
       toast.error(`❌ Errore import: ${error.message}`);
     } finally {
       setIsImporting(false);
+      
+      // ✅ Invalida cache conteggi per riflettere nuove email importate
+      queryClient.invalidateQueries({ queryKey: ['email-folder-counts-single'] });
     }
   };
 

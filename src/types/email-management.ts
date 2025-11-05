@@ -74,3 +74,27 @@ export const DEFAULT_GROUPS: Array<{
   { name: 'Documenti', type: 'documenti', color: '#6366F1', icon: '📄', description: 'Contratti, certificati' },
   { name: 'Offerte', type: 'offerte', color: '#14B8A6', icon: '💰', description: 'Quotazioni, preventivi' },
 ];
+
+// AI Sender Categorization
+export interface AISuggestion {
+  id: string; // DB id
+  sender_email: string;
+  suggested_group: {
+    id: string | null;
+    name: string;
+    type: GroupType | 'altro';
+    color?: string;
+    icon?: string;
+    is_new: boolean;
+    description?: string;
+  };
+  confidence: number;
+  reasoning: string;
+  cost: {
+    tokens_input: number;
+    tokens_output: number;
+    eur: number;
+    is_free: boolean;
+  };
+  status: 'pending' | 'accepted' | 'rejected';
+}

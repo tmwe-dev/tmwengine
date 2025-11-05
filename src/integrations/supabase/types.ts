@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_categorization_suggestions: {
+        Row: {
+          accepted_at: string | null
+          batch_id: string
+          confidence: number | null
+          cost_eur: number | null
+          created_at: string | null
+          id: string
+          is_new_group: boolean | null
+          model_used: string
+          reasoning: string | null
+          rejected_at: string | null
+          sender_email: string
+          status: string | null
+          suggested_group_color: string | null
+          suggested_group_icon: string | null
+          suggested_group_id: string | null
+          suggested_group_name: string
+          suggested_group_type: string
+          tokens_input: number | null
+          tokens_output: number | null
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          batch_id: string
+          confidence?: number | null
+          cost_eur?: number | null
+          created_at?: string | null
+          id?: string
+          is_new_group?: boolean | null
+          model_used: string
+          reasoning?: string | null
+          rejected_at?: string | null
+          sender_email: string
+          status?: string | null
+          suggested_group_color?: string | null
+          suggested_group_icon?: string | null
+          suggested_group_id?: string | null
+          suggested_group_name: string
+          suggested_group_type: string
+          tokens_input?: number | null
+          tokens_output?: number | null
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          batch_id?: string
+          confidence?: number | null
+          cost_eur?: number | null
+          created_at?: string | null
+          id?: string
+          is_new_group?: boolean | null
+          model_used?: string
+          reasoning?: string | null
+          rejected_at?: string | null
+          sender_email?: string
+          status?: string | null
+          suggested_group_color?: string | null
+          suggested_group_icon?: string | null
+          suggested_group_id?: string | null
+          suggested_group_name?: string
+          suggested_group_type?: string
+          tokens_input?: number | null
+          tokens_output?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_categorization_suggestions_suggested_group_id_fkey"
+            columns: ["suggested_group_id"]
+            isOneToOne: false
+            referencedRelation: "email_sender_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_collaboration_tasks: {
         Row: {
           approved_at: string | null
@@ -76,6 +153,7 @@ export type Database = {
       }
       ai_cost_tracking: {
         Row: {
+          batch_id: string | null
           conversation_id: string | null
           cost_input_eur: number | null
           cost_output_eur: number | null
@@ -85,12 +163,15 @@ export type Database = {
           input_tokens: number
           lab_conversation_id: string | null
           model: string
+          operation_metadata: Json | null
           operation_type: string | null
           output_tokens: number
           provider: string
           room_id: string | null
+          user_id: string | null
         }
         Insert: {
+          batch_id?: string | null
           conversation_id?: string | null
           cost_input_eur?: number | null
           cost_output_eur?: number | null
@@ -100,12 +181,15 @@ export type Database = {
           input_tokens?: number
           lab_conversation_id?: string | null
           model: string
+          operation_metadata?: Json | null
           operation_type?: string | null
           output_tokens?: number
           provider: string
           room_id?: string | null
+          user_id?: string | null
         }
         Update: {
+          batch_id?: string | null
           conversation_id?: string | null
           cost_input_eur?: number | null
           cost_output_eur?: number | null
@@ -115,10 +199,12 @@ export type Database = {
           input_tokens?: number
           lab_conversation_id?: string | null
           model?: string
+          operation_metadata?: Json | null
           operation_type?: string | null
           output_tokens?: number
           provider?: string
           room_id?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

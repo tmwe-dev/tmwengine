@@ -22,6 +22,13 @@ import { CreateCategoryDialog } from './management/CreateCategoryDialog';
 import { SenderSortControls, SortOption } from './management/SenderSortControls';
 import { FloatingZoomControl } from './management/FloatingZoomControl';
 import { AISidebarSlider } from '../ai/AISidebarSlider';
+import { SenderAISuggestionCard } from './management/SenderAISuggestionCard';
+import type { AISuggestion } from '@/types/email-management';
+import { calculateEstimatedCost, getDefaultColorForType, getDefaultIconForType } from '@/lib/ai-categorization-utils';
+import { Sparkles, Lightbulb, CheckCheck, X as XIcon, Loader2 as LoaderIcon } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 // Collisione personalizzata 70%
 const carousel70PercentCollision: CollisionDetection = (args) => {
@@ -92,6 +99,12 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   // 🆕 Map callbacks per aggiornamento ottimistico card gruppi
   const groupUpdateCallbacksRef = useRef<Map<string, (senderEmail: string) => void>>(new Map());
   const groupUpdateCallbacks = groupUpdateCallbacksRef.current;
+  
+  // 🤖 AI Categorization State
+  const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
+  const [selectedAIModel, setSelectedAIModel] = useState('google/gemini-2.5-flash'); // Default gratuito
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [estimatedCost, setEstimatedCost] = useState<{ eur: number; is_free: boolean } | null>(null);
   
   // Persist carousel zoom in localStorage
   const [carouselZoom, setCarouselZoom] = useState(() => {
@@ -578,6 +591,205 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         return sorted;
     }
   }, [filteredSenders, sortOption]);
+  
+  // 🤖 AI Categorization Handlers
+  const handleAISuggestions = async () => {
+    setIsAnalyzing(true);
+    
+    try {
+      // 1. Get unclassified senders (TUTTI - utente decide)
+      const unclassifiedSenders = senders.filter(s => !s.isClassified);
+      
+      if (unclassifiedSenders.length === 0) {
+        toast({
+          title: 'ℹ️ Nessun mittente da classificare',
+          description: 'Tutti i mittenti sono già stati assegnati a gruppi',
+        });
+        return;
+      }
+      
+      // 2. Fetch email samples per sender (max 5 email - configurabile)
+      const MAX_EMAILS_PER_SENDER = 5;
+      
+      const sendersWithEmails = await Promise.all(
+        unclassifiedSenders.map(async (sender) => {
+          const { data: emails } = await supabase
+            .from('email_messages')
+            .select('subject, body_text, data_ricezione')
+            .eq('from_email', sender.email)
+            .order('data_ricezione', { ascending: false })
+            .limit(MAX_EMAILS_PER_SENDER);
+          
+          return {
+            email: sender.email,
+            email_samples: (emails || []).map(e => ({
+              subject: e.subject || '',
+              body_preview: e.body_text?.substring(0, 600) || '',
+              date: e.data_ricezione
+            }))
+          };
+        })
+      );
+      
+      // 3. Get existing groups
+      const existingGroups = groups.map(g => ({
+        id: g.id,
+        name: g.nome_gruppo,
+        type: 'custom' as const,
+        color: g.colore,
+        icon: g.icon,
+        description: g.descrizione
+      }));
+      
+      // 4. Calculate cost preview
+      const cost = calculateEstimatedCost(
+        unclassifiedSenders.length, 
+        MAX_EMAILS_PER_SENDER,
+        selectedAIModel
+      );
+      setEstimatedCost(cost);
+      
+      // 5. Show preview and confirm
+      const confirmMessage = cost.is_free 
+        ? `Vuoi analizzare ${unclassifiedSenders.length} mittenti con AI gratuita?`
+        : `Vuoi analizzare ${unclassifiedSenders.length} mittenti?\n\nCosto stimato: €${cost.eur.toFixed(4)}`;
+      
+      if (!window.confirm(confirmMessage)) {
+        setIsAnalyzing(false);
+        return;
+      }
+      
+      // 6. Call edge function
+      const batchId = crypto.randomUUID();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase.functions.invoke(
+        'fun-email-sender-categorization',
+        {
+          body: {
+            user_id: user?.id,
+            user_email: user?.email,
+            batch_id: batchId,
+            model: selectedAIModel,
+            existing_groups: existingGroups,
+            senders: sendersWithEmails,
+            max_emails_per_sender: MAX_EMAILS_PER_SENDER
+          }
+        }
+      );
+      
+      if (error) throw error;
+      
+      // 7. Update state
+      setAiSuggestions(data.suggestions);
+      
+      // 8. Show results
+      const summary = data.batch_summary;
+      toast({
+        title: '✨ Analisi completata',
+        description: summary.total_cost.is_free
+          ? `${summary.successful}/${summary.total_senders} mittenti analizzati (GRATIS)`
+          : `${summary.successful}/${summary.total_senders} mittenti • €${summary.total_cost.eur.toFixed(4)}`
+      });
+      
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      toast({
+        title: '❌ Errore nell\'analisi AI',
+        description: error instanceof Error ? error.message : 'Errore sconosciuto',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+  
+  const handleAcceptSuggestion = async (suggestion: AISuggestion) => {
+    try {
+      let groupId = suggestion.suggested_group.id;
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Se nuovo gruppo, crealo
+      if (suggestion.suggested_group.is_new) {
+        const { data: newGroup, error: createError } = await supabase
+          .from('email_sender_groups')
+          .insert({
+            nome_gruppo: suggestion.suggested_group.name,
+            descrizione: suggestion.suggested_group.description,
+            colore: suggestion.suggested_group.color || getDefaultColorForType(suggestion.suggested_group.type),
+            icon: suggestion.suggested_group.icon || getDefaultIconForType(suggestion.suggested_group.type),
+          })
+          .select()
+          .single();
+        
+        if (createError) throw createError;
+        groupId = newGroup.id;
+        
+        toast({
+          title: '✨ Nuovo gruppo creato',
+          description: `Gruppo "${newGroup.nome_gruppo}" creato con successo`
+        });
+        await loadData();
+      }
+      
+      // Associa mittente
+      const { error: assignError } = await supabase
+        .from('email_sender_rules')
+        .insert({
+          sender_email: suggestion.sender_email,
+          group_id: groupId,
+          user_id: user?.id
+        });
+      
+      if (assignError) throw assignError;
+      
+      // Update suggestion status
+      await supabase
+        .from('ai_categorization_suggestions')
+        .update({ 
+          status: 'accepted',
+          accepted_at: new Date().toISOString()
+        })
+        .eq('id', suggestion.id);
+      
+      // Remove from UI
+      setAiSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+      
+      // Refresh
+      await loadData();
+      
+      toast({
+        title: `✅ ${suggestion.sender_email}`,
+        description: `Assegnato a "${suggestion.suggested_group.name}"`
+      });
+      
+    } catch (error) {
+      console.error('Accept error:', error);
+      toast({
+        title: '❌ Errore nell\'accettazione',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  const handleRejectSuggestion = async (suggestionId: string) => {
+    try {
+      await supabase
+        .from('ai_categorization_suggestions')
+        .update({ 
+          status: 'rejected',
+          rejected_at: new Date().toISOString()
+        })
+        .eq('id', suggestionId);
+      
+      setAiSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+      toast({
+        title: 'ℹ️ Suggerimento rifiutato'
+      });
+    } catch (error) {
+      console.error('Reject error:', error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -592,7 +804,139 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   }
 
   return (
-    <div className="flex h-full w-full gap-4 max-w-[1920px] mx-auto">
+    <div className="flex flex-col h-full w-full gap-4 max-w-[1920px] mx-auto p-4">
+      {/* 🤖 AI Categorization Section */}
+      {senders.filter(s => !s.isClassified).length > 0 && (
+        <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-500" />
+                Categorizzazione AI Automatica
+              </CardTitle>
+              
+              {/* Cost preview */}
+              {estimatedCost && (
+                <div className="text-sm">
+                  {estimatedCost.is_free ? (
+                    <Badge variant="secondary" className="bg-green-50 text-green-700">
+                      ✅ GRATIS
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">
+                      💰 ~€{estimatedCost.eur.toFixed(4)}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <CardDescription>
+              L'AI analizza gli ultimi 5 messaggi per mittente e suggerisce la categoria più appropriata.
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
+            {/* Model selector */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">Modello AI:</span>
+              <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="google/gemini-2.5-flash">
+                    ✅ Gemini Flash (GRATIS)
+                  </SelectItem>
+                  <SelectItem value="google/gemini-2.5-pro">
+                    💰 Gemini Pro (€€)
+                  </SelectItem>
+                  <SelectItem value="openai/gpt-5-mini">
+                    💰 GPT-5 Mini (€€)
+                  </SelectItem>
+                  <SelectItem value="openai/gpt-5">
+                    💰💰 GPT-5 (€€€)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Analyze button */}
+            <Button 
+              onClick={handleAISuggestions}
+              disabled={isAnalyzing || senders.filter(s => !s.isClassified).length === 0}
+              className="w-full"
+              size="lg"
+            >
+              {isAnalyzing ? (
+                <>
+                  <LoaderIcon className="w-5 h-5 mr-2 animate-spin" />
+                  Analisi in corso...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Analizza {senders.filter(s => !s.isClassified).length} mittenti non classificati
+                </>
+              )}
+            </Button>
+            
+            {/* Suggestions list */}
+            {aiSuggestions.length > 0 && (
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-yellow-500" />
+                    Suggerimenti AI ({aiSuggestions.length})
+                  </h3>
+                  
+                  {/* Batch actions */}
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm"
+                      variant="default"
+                      onClick={async () => {
+                        for (const s of aiSuggestions) {
+                          await handleAcceptSuggestion(s);
+                        }
+                      }}
+                    >
+                      <CheckCheck className="w-4 h-4 mr-1" />
+                      Accetta Tutti
+                    </Button>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        for (const s of aiSuggestions) {
+                          await handleRejectSuggestion(s.id);
+                        }
+                      }}
+                    >
+                      Rifiuta Tutti
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Suggestion cards */}
+                <div className="space-y-2">
+                  {aiSuggestions.map(suggestion => (
+                    <SenderAISuggestionCard
+                      key={suggestion.id}
+                      suggestion={suggestion}
+                      onAccept={handleAcceptSuggestion}
+                      onReject={handleRejectSuggestion}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Main Content Area */}
+      <div className="flex flex-1 h-full w-full gap-4 min-h-0">
       <DndContext
         collisionDetection={viewMode === 'carousel' ? carousel70PercentCollision : grid50PercentCollision}
         onDragEnd={handleDragEnd}
@@ -679,7 +1023,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         onSubmit={handleCreateCategory}
         existingNames={alphabeticGroups.map(g => g.nome_gruppo)}
       />
-
+      
+      </div>
     </div>
   );
 }

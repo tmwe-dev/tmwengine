@@ -311,3 +311,6 @@ verify_jwt = true
 [functions.background-email-sync-test]
 verify_jwt = true
 
+[functions.fun-email-sender-categorization]
+verify_jwt = true
+

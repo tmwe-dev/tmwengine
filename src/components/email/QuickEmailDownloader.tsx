@@ -349,14 +349,13 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         console.log(`📂 Inizio download cartella: ${folder}`);
         setCurrentFolder(`📂 ${folder}: recupero lista...`);
         
-        // ✅ FIX: Ridotto limit da 2000 a 500 per evitare timeout su cartelle grandi
         const uidListResponse = await fetchWithTimeout(
           emailMessageApi.getMessages({
             folder: folder,
-            limit: 500,
+            limit: 2000,
             offset: 0,
           }),
-          85000, // 85s: vicino al timeout edge function (90s) ma con margine
+          20000,
           `Timeout recupero UID per cartella ${folder}`
         );
         

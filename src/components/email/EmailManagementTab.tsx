@@ -807,7 +807,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     <div className="flex flex-col h-full w-full gap-4 max-w-[1920px] mx-auto p-4">
       {/* 🤖 AI Categorization Section */}
       {senders.filter(s => !s.isClassified).length > 0 && (
-        <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
+        <Card className="border-purple-200 bg-transparent">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
@@ -836,7 +836,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
             </CardDescription>
           </CardHeader>
           
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 bg-transparent">
             {/* Model selector */}
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium">Modello AI:</span>

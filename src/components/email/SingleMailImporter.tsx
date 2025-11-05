@@ -171,6 +171,119 @@ export function SingleMailImporter() {
     return normalized;
   };
 
+  // ✅ Funzione helper per popolare email_temp_index per una cartella specifica
+  const populateTempIndexForFolder = async (folderName: string, userEmail: string) => {
+    console.log(`🔍 [populateTempIndex] Processing folder: ${folderName}`);
+
+    // 1️⃣ Svuota tabella temporanea per questa cartella
+    await supabase
+      .from('email_temp_index')
+      .delete()
+      .eq('user_email', userEmail)
+      .eq('folder', folderName);
+
+    // 2️⃣ Fetch UIDs dal server TMWE (prime 500 email)
+    console.log('📡 Fetching server UIDs (only metadata, no body)...');
+    
+    const serverResponse = await emailMessageApi.getMessages({
+      folder: folderName,
+      page: 1,
+      limit: 500,
+      format: 'text',
+      include_attachments: false,
+    });
+
+    const serverUIDs = new Set<string>(
+      serverResponse.messages.map((msg: any) => String(msg.uid))
+    );
+    console.log(`✅ Server UIDs count: ${serverUIDs.size}`);
+
+    // 3️⃣ Fetch UIDs dal DB locale
+    console.log('💾 Fetching local DB UIDs...');
+    const { data: dbMessages, error } = await supabase
+      .from('email_messages')
+      .select('message_id')
+      .eq('user_email', userEmail)
+      .eq('cartella', folderName);
+
+    if (error) throw error;
+
+    const dbUIDs = new Set<string>(
+      (dbMessages || [])
+        .map((msg: any) => {
+          const messageId = String(msg.message_id);
+          const parts = messageId.split('/');
+          return parts.length > 1 ? parts[1] : messageId;
+        })
+        .filter((uid: string) => uid && uid !== 'null')
+    );
+    console.log(`✅ DB UIDs count: ${dbUIDs.size}`);
+
+    // 4️⃣ Calcola UIDs mancanti
+    const missing = Array.from(serverUIDs).filter(uid => !dbUIDs.has(uid));
+    console.log(`🎯 Missing UIDs: ${missing.length}`);
+
+    // 5️⃣ Popola email_temp_index con metadati leggeri (batch paralleli)
+    const batchSize = 10;
+    const tempIndexRecords = [];
+
+    for (let i = 0; i < missing.length; i += batchSize) {
+      const batch = missing.slice(i, i + batchSize);
+      const batchPromises = batch.map(async (uid) => {
+        try {
+          const email = await emailMessageApi.getMessage(uid, folderName, false);
+          return {
+            uid,
+            folder: folderName,
+            user_email: userEmail,
+            subject: email?.subject || email?.data?.header?.subject || null,
+            from_email: email?.from || email?.data?.header?.from || 'Unknown',
+            from_name: email?.from_name || email?.data?.header?.from_name || null,
+            date: email?.date || email?.data?.header?.date || new Date().toISOString(),
+            size: null,
+            status: 'pending',
+          };
+        } catch (err) {
+          console.warn(`⚠️ Failed to fetch metadata for UID ${uid}:`, err);
+          return {
+            uid,
+            folder: folderName,
+            user_email: userEmail,
+            subject: '(Error loading)',
+            from_email: 'Unknown',
+            from_name: null,
+            date: new Date().toISOString(),
+            size: null,
+            status: 'pending',
+          };
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      tempIndexRecords.push(...batchResults);
+    }
+
+    // 6️⃣ Inserisci in batch in email_temp_index
+    if (tempIndexRecords.length > 0) {
+      const { error: insertError } = await supabase
+        .from('email_temp_index')
+        .insert(tempIndexRecords);
+
+      if (insertError) {
+        console.error('❌ Error inserting to email_temp_index:', insertError);
+        throw insertError;
+      } else {
+        console.log(`✅ Inserted ${tempIndexRecords.length} records into email_temp_index`);
+      }
+    }
+
+    return {
+      totalServer: serverUIDs.size,
+      totalDB: dbUIDs.size,
+      totalMissing: missing.length,
+    };
+  };
+
   // ✅ Query confronto UIDs mancanti + popola email_temp_index
   const {
     data: comparisonData,
@@ -471,7 +584,7 @@ export function SingleMailImporter() {
   };
 
   // ✅ Importa singola email nel DB
-  const handleImportSingle = async (uid: string) => {
+  const handleImportSingle = async (uid: string, folder: string) => {
     setImportingUid(uid);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -486,7 +599,7 @@ export function SingleMailImporter() {
       if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
 
       // ✅ Controllo se email già esiste
-      const messageId = `${selectedFolder}/${uid}`;
+      const messageId = `${folder}/${uid}`;
       const exists = await checkEmailExists(messageId);
 
       if (exists) {
@@ -499,11 +612,11 @@ export function SingleMailImporter() {
       console.log(`✅ Email ${uid} non presente, procedo con import`);
 
       // Fetch email dal server (nuova funzione isolata)
-      const email = await fetchAndNormalizeSingleEmail(uid, selectedFolder);
+      const email = await fetchAndNormalizeSingleEmail(uid, folder);
 
       // ✅ Mapping campi - ESATTAMENTE come FunEmailDownloader
       const emailToSave = {
-        message_id: `${selectedFolder}/${uid}`,
+        message_id: `${folder}/${uid}`,
         from_email: email.from_email || '',
         to_email: email.to_email || '',
         cc_email: email.cc_email || null,
@@ -512,7 +625,7 @@ export function SingleMailImporter() {
         body_text: email.body_text || '',
         body_html: email.body_html || '',
         data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
-        cartella: selectedFolder,
+        cartella: folder,
         direzione: 'inbound',
         stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
         flags: email.flags || [],
@@ -545,7 +658,7 @@ export function SingleMailImporter() {
         .from('email_temp_index')
         .update({ status: 'imported' })
         .eq('uid', uid)
-        .eq('folder', selectedFolder)
+        .eq('folder', folder)
         .eq('user_email', profile.tmwe_email);
 
       setMissingEmails(prev => prev.filter(e => e.uid !== uid));
@@ -737,6 +850,7 @@ export function SingleMailImporter() {
       toast.info(`🚀 Single Fast: ${globalTotal} email da ${foldersToSync.length} cartelle`);
       
       let globalProcessed = 0;
+      let totalErrorCount = 0;
       
       // 7. Loop cartelle
       for (let i = 0; i < foldersToSync.length; i++) {
@@ -752,11 +866,10 @@ export function SingleMailImporter() {
         
         console.log(`📁 [SingleFast] Folder ${i + 1}/${foldersToSync.length}: ${folder.folderName} (${folder.missing} missing)`);
         
-        // 8. Imposta cartella corrente e ricarica temp index
-        setSelectedFolder(folder.folderName);
-        await refetch(); // Popola email_temp_index per questa cartella
+        // 8. Popola temp index direttamente per questa cartella
+        await populateTempIndexForFolder(folder.folderName, userEmail);
         
-        // 9. Fetch UIDs mancanti
+        // 9. Fetch UIDs mancanti dalla tabella temporanea
         const { data: tempData } = await supabase
           .from('email_temp_index')
           .select('uid, subject, from_email, from_name, date')
@@ -772,18 +885,20 @@ export function SingleMailImporter() {
         }
         
         // 10. Loop email nella cartella
+        let errorCount = 0;
+        
         for (let j = 0; j < uids.length; j++) {
           const uid = uids[j].uid;
           
           setSingleFastProgress(prev => ({
             ...prev,
             emailIndex: j + 1,
-            globalProcessed: globalProcessed + 1
+            globalProcessed: globalProcessed
           }));
           
           try {
-            // 11. Import singola email (riutilizza logica esistente)
-            await handleImportSingle(uid);
+            // 11. Import singola email con parametro folder esplicito
+            await handleImportSingle(uid, folder.folderName);
             globalProcessed++;
             
             // 12. Delay anti-overload (50ms)
@@ -791,7 +906,8 @@ export function SingleMailImporter() {
             
           } catch (error: any) {
             console.error(`❌ [SingleFast] Failed to import UID ${uid}:`, error);
-            // Continua con prossima email senza bloccare
+            errorCount++;
+            totalErrorCount++;
           }
         }
         
@@ -799,7 +915,11 @@ export function SingleMailImporter() {
       }
       
       // 13. Completamento
-      toast.success(`✅ Single Fast completato: ${globalProcessed}/${globalTotal} email sincronizzate`);
+      const successMessage = totalErrorCount > 0
+        ? `✅ Single Fast completato: ${globalProcessed}/${globalTotal} email (${totalErrorCount} errori)`
+        : `✅ Single Fast completato: ${globalProcessed}/${globalTotal} email`;
+      
+      toast.success(successMessage);
       
       // 14. Invalida cache conteggi per refresh UI
       queryClient.invalidateQueries({ queryKey: ['email-folder-counts-single'] });
@@ -1152,7 +1272,7 @@ export function SingleMailImporter() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleImportSingle(email.uid)}
+                      onClick={() => handleImportSingle(email.uid, selectedFolder)}
                       disabled={importingUid === email.uid}
                     >
                       <Download className={cn('h-4 w-4', importingUid === email.uid && 'animate-spin')} />

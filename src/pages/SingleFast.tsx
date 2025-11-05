@@ -14,6 +14,7 @@ import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSync
 import { PerformanceProfileConfigurator } from '@/components/testing/PerformanceProfileConfigurator';
 import { useSingleFast } from '@/hooks/useSingleFast';
 import { useSingleFastPerformance } from '@/hooks/useSingleFastPerformance';
+import { EmailErrorBin } from '@/components/email/EmailErrorBin';
 import { Rocket, Settings, CheckCircle, XCircle, Pause, Play, Square, Loader2, Sliders, Zap } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -247,6 +248,9 @@ export default function SingleFast() {
               <PerformanceProfileConfigurator />
             </DialogContent>
           </Dialog>
+          
+          {/* Bottone Cestino Errori */}
+          {userEmail && <EmailErrorBin userEmail={userEmail} />}
           
           <Button
             size="lg"

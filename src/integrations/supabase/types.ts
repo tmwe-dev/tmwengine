@@ -2710,6 +2710,54 @@ export type Database = {
         }
         Relationships: []
       }
+      email_import_errors: {
+        Row: {
+          created_at: string | null
+          error_message: string
+          error_type: string
+          first_error_at: string | null
+          folder_name: string
+          id: string
+          last_retry_at: string | null
+          metadata: Json | null
+          retry_count: number | null
+          status: string | null
+          uid: string
+          updated_at: string | null
+          user_email: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message: string
+          error_type: string
+          first_error_at?: string | null
+          folder_name: string
+          id?: string
+          last_retry_at?: string | null
+          metadata?: Json | null
+          retry_count?: number | null
+          status?: string | null
+          uid: string
+          updated_at?: string | null
+          user_email: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string
+          error_type?: string
+          first_error_at?: string | null
+          folder_name?: string
+          id?: string
+          last_retry_at?: string | null
+          metadata?: Json | null
+          retry_count?: number | null
+          status?: string | null
+          uid?: string
+          updated_at?: string | null
+          user_email?: string
+        }
+        Relationships: []
+      }
       email_messages: {
         Row: {
           attachments: Json | null

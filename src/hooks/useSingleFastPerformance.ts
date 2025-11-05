@@ -364,6 +364,9 @@ export function useSingleFastPerformance() {
                   console.error(`❌ Error importing UID ${uid}:`, err);
                   errorCount++;
                   
+                  // ✅ SALVA ERRORE IN DATABASE
+                  await saveErrorToDatabase(uid, folder.folderName, userEmail, err);
+                  
                   // 🔕 LOG SILENZIOSO (no toast rosso)
                   setEmailProgress(prev => ({ ...prev, skipped: prev.skipped + 1 }));
                   addLog({
@@ -595,4 +598,33 @@ export function useSingleFastPerformance() {
     resumeProcess,
     stopProcess
   };
+}
+
+// ✅ FUNZIONE HELPER PER SALVARE ERRORI IN DATABASE
+async function saveErrorToDatabase(uid: string, folder: string, userEmail: string, error: any) {
+  try {
+    const errorType = error.message.includes('map') ? 'map_undefined' 
+                    : error.message.includes('Edge function') || error.message.includes('Edge Function') ? 'edge_function'
+                    : error.message.includes('network') ? 'network' 
+                    : 'unknown';
+    
+    await supabase.from('email_import_errors').upsert({
+      uid,
+      folder_name: folder,
+      user_email: userEmail,
+      error_message: error.message || 'Unknown error',
+      error_type: errorType,
+      status: 'pending',
+      metadata: {
+        stack: error.stack?.substring(0, 500),
+        timestamp: new Date().toISOString()
+      }
+    }, { 
+      onConflict: 'uid,folder_name,user_email',
+      ignoreDuplicates: false 
+    });
+  } catch (dbErr) {
+    console.warn('⚠️ Non riesco a salvare errore in DB:', dbErr);
+    // Non blocchiamo il flusso principale
+  }
 }

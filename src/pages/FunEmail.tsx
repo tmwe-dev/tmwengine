@@ -32,7 +32,7 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'list' | 'fun' | 'management' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail'>('list');
+  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail'>('management');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
@@ -83,12 +83,19 @@ const FunEmail = () => {
   // Sincronizza currentView con query param "tab" dal CRMLayout
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['list', 'fun', 'management', 'inbox', 'automations'].includes(tabParam)) {
+    
+    // Redirect da 'list' deprecato a 'management'
+    if (tabParam === 'list') {
+      navigate('/funnemail?tab=management', { replace: true });
+      return;
+    }
+    
+    if (tabParam && ['fun', 'management', 'inbox', 'automations'].includes(tabParam)) {
       setCurrentView(tabParam as typeof currentView);
     } else if (!tabParam && !searchParams.get('view')) {
-      setCurrentView('list'); // Default
+      setCurrentView('management'); // Default = Management
     }
-  }, [searchParams]);
+  }, [searchParams, navigate]);
 
   // Chiudi AI sidebar quando cambia tab
   useEffect(() => {
@@ -253,8 +260,8 @@ const FunEmail = () => {
             variant="ghost"
             size="sm"
             onClick={() => {
-              setCurrentView('list');
-              navigate('/funnemail?tab=list');
+              setCurrentView('management');
+              navigate('/funnemail?tab=management');
             }}
             className="gap-2"
           >
@@ -299,17 +306,7 @@ const FunEmail = () => {
 
         {/* Content - condizionale in base alla view */}
         <div className="w-full">
-          {currentView === 'list' ? (
-            <EmailList
-              emails={emails}
-              selectedEmailId={selectedEmailId}
-              onEmailSelect={setSelectedEmailId}
-              loading={messagesLoading}
-              onLoadMore={() => hasNextPage && fetchNextPage()}
-              hasMore={hasNextPage}
-              isLoadingMore={isFetchingNextPage}
-            />
-          ) : currentView === 'fun' ? (
+          {currentView === 'fun' ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
               {/* COLONNA SINISTRA: Stats Globali + Downloader + Quick Stats */}
               <div className="lg:col-span-1 space-y-4">

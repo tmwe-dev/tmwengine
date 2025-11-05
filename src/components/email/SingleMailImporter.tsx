@@ -351,60 +351,62 @@ export function SingleMailImporter() {
       {/* Header con folder selector */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex flex-col items-center gap-4">
             <span>Single Mail Importer</span>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 justify-center w-full">
               <Select value={selectedFolder} onValueChange={setSelectedFolder}>
-                <SelectTrigger className="w-64">
+                <SelectTrigger className="w-96">
                   <SelectValue placeholder="Seleziona cartella" />
                 </SelectTrigger>
-                <SelectContent className="z-[9999] bg-background">
+                <SelectContent className="z-[9999] bg-background" align="center">
                   {foldersData?.map((folder: any) => {
                     const stats = getFolderStats(folder.name);
                     const hasMissing = stats && stats.missing > 0;
                     
                     return (
                       <SelectItem key={folder.name} value={folder.name}>
-                        <div className="flex items-center justify-between w-full gap-3">
+                        <div className="grid grid-cols-[1fr_auto_auto] items-center w-full gap-4 min-w-[400px]">
+                          {/* COLONNA 1: Nome Cartella */}
                           <span className={cn(
-                            "font-medium",
+                            "font-medium text-left truncate",
                             hasMissing && "text-orange-600 dark:text-orange-400"
                           )}>
                             {folder.display_name || folder.name}
                           </span>
                           
-                          {stats ? (
-                            <div className="flex items-center gap-2 ml-auto">
-                              {/* Badge conteggi */}
-                              <Badge variant="outline" className="text-xs">
+                          {/* COLONNA 2: Conteggi */}
+                          <div className="flex justify-end">
+                            {stats ? (
+                              <Badge variant="outline" className="text-xs tabular-nums">
                                 {stats.dbCount}/{stats.serverCount}
                               </Badge>
-                              
-                              {/* Badge email mancanti */}
-                              {hasMissing && (
-                                <Badge 
-                                  variant="destructive" 
-                                  className="bg-orange-500/10 text-orange-600 border-orange-500/20"
-                                >
-                                  📬 {stats.missing}
-                                </Badge>
-                              )}
-                              
-                              {/* Badge sincronizzato */}
-                              {stats.syncPercentage === 100 && (
-                                <Badge 
-                                  variant="outline" 
-                                  className="bg-green-500/10 text-green-600 border-green-500/20"
-                                >
-                                  ✓
-                                </Badge>
-                              )}
-                            </div>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs">
-                              ...
-                            </Badge>
-                          )}
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">
+                                ...
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          {/* COLONNA 3: Icone Status */}
+                          <div className="flex justify-end items-center gap-2 min-w-[80px]">
+                            {stats && hasMissing && (
+                              <Badge 
+                                variant="destructive" 
+                                className="bg-orange-500/10 text-orange-600 border-orange-500/20 text-xs"
+                              >
+                                📬 {stats.missing}
+                              </Badge>
+                            )}
+                            
+                            {stats && stats.syncPercentage === 100 && (
+                              <Badge 
+                                variant="outline" 
+                                className="bg-green-500/10 text-green-600 border-green-500/20 text-xs"
+                              >
+                                ✓
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </SelectItem>
                     );

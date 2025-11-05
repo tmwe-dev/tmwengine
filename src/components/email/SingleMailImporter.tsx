@@ -296,6 +296,22 @@ export function SingleMailImporter() {
     }
   };
 
+  // ✅ Funzione helper per verificare se email esiste già
+  const checkEmailExists = async (messageId: string): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from('email_messages')
+      .select('id')
+      .eq('message_id', messageId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('❌ Errore controllo duplicati:', error);
+      return false; // In caso di errore, procedi con import
+    }
+    
+    return !!data; // Ritorna true se esiste, false altrimenti
+  };
+
   // ✅ Importa singola email nel DB
   const handleImportSingle = async (uid: string) => {
     setImportingUid(uid);
@@ -310,6 +326,19 @@ export function SingleMailImporter() {
         .single();
 
       if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
+
+      // ✅ Controllo se email già esiste
+      const messageId = `${selectedFolder}/${uid}`;
+      const exists = await checkEmailExists(messageId);
+
+      if (exists) {
+        console.warn(`⚠️ Email ${uid} già presente nel database, skip import`);
+        toast.warning(`Email UID ${uid} già presente nel database locale`);
+        setMissingEmails(prev => prev.filter(e => e.uid !== uid));
+        return; // ✅ ESCI senza tentare insert
+      }
+
+      console.log(`✅ Email ${uid} non presente, procedo con import`);
 
       // Fetch email dal server (nuova funzione isolata)
       const email = await fetchAndNormalizeSingleEmail(uid, selectedFolder);
@@ -372,6 +401,7 @@ export function SingleMailImporter() {
 
     setIsImporting(true);
     let successCount = 0;
+    let skippedCount = 0;  // ✅ CONTATORE SKIP
     let errorCount = 0;
 
     try {
@@ -388,6 +418,19 @@ export function SingleMailImporter() {
 
       for (const uid of selectedUIDs) {
         try {
+          console.log(`🔍 [SingleMailImporter] Fetching email UID ${uid} from ${selectedFolder}`);
+          
+          // ✅ CONTROLLO DUPLICATO
+          const messageId = `${selectedFolder}/${uid}`;
+          const exists = await checkEmailExists(messageId);
+          
+          if (exists) {
+            console.warn(`⚠️ [SingleMailImporter] Email ${uid} già presente, skip`);
+            skippedCount++;
+            setMissingEmails(prev => prev.filter(e => e.uid !== uid));
+            continue; // ✅ SALTA QUESTA EMAIL
+          }
+          
           const email = await fetchAndNormalizeSingleEmail(uid, selectedFolder);
 
           // ✅ Mapping campi - ESATTAMENTE come FunEmailDownloader
@@ -441,7 +484,12 @@ export function SingleMailImporter() {
         }
       }
 
-      toast.success(`✅ Importate ${successCount} email (${errorCount} errori)`);
+      // ✅ TOAST CON CONTATORI
+      const message = skippedCount > 0 
+        ? `✅ Importate ${successCount} email (${skippedCount} già presenti${errorCount > 0 ? `, ${errorCount} errori` : ''})`
+        : `✅ Importate ${successCount} email${errorCount > 0 ? ` (${errorCount} errori)` : ''}`;
+      
+      toast.success(message);
     } catch (error: any) {
       toast.error(`❌ Errore import: ${error.message}`);
     } finally {

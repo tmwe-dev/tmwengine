@@ -1,9 +1,9 @@
 /**
- * Card draggable mittente - Sistema isolato FunEmail
+ * Card draggable mittente - Sistema nativo drag (come Design Lab)
  */
 
+import { useState, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
 import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -17,16 +17,58 @@ interface FunEmailSenderCardProps {
 }
 
 export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle }: FunEmailSenderCardProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging: dragActive } = useDraggable({
+  // ✅ useDraggable SOLO per logica drop detection (necessario per DndContext)
+  const { attributes, listeners, setNodeRef, isDragging: dragActive } = useDraggable({
     id: sender.email,
     data: sender,
   });
 
-  // ✅ Applica transform per seguire il mouse + nasconde card originale durante drag
+  // ✅ Sistema drag nativo (come Design Lab)
+  const [isManualDragging, setIsManualDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [localPosition, setLocalPosition] = useState({ x: 0, y: 0 });
+
+  // ✅ Handler mouse nativo per controllo diretto
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsManualDragging(true);
+    setLocalPosition({ x: 0, y: 0 });
+    setDragStart({
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
+  // ✅ Listener mouse nativi per movimento fluido
+  useEffect(() => {
+    if (!isManualDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newX = e.clientX - dragStart.x;
+      const newY = e.clientY - dragStart.y;
+      setLocalPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      setIsManualDragging(false);
+      setLocalPosition({ x: 0, y: 0 });
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isManualDragging, dragStart]);
+
+  // ✅ Style nativo con transform translate (come Design Lab)
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: isManualDragging ? `translate(${localPosition.x}px, ${localPosition.y}px)` : 'none',
+    willChange: isManualDragging ? 'transform' : 'auto',
     opacity: dragActive && !isDragging ? 0 : 1,
-    transition: 'opacity 0.15s ease-out'
+    transition: isManualDragging ? 'none' : 'opacity 0.15s ease-out',
+    cursor: isManualDragging ? 'grabbing' : 'grab',
   };
 
   return (
@@ -34,6 +76,7 @@ export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle
       <Card 
         {...listeners}
         {...attributes}
+        onMouseDown={handleMouseDown}
         className={cn(
           "cursor-grab active:cursor-grabbing border-l-4 transition-transform",
           "hover:scale-[1.02]",

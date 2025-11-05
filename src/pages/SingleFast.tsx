@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SingleFastLogViewer } from '@/components/email/SingleFastLogViewer';
+import { SingleFastDatabaseViewer } from '@/components/email/SingleFastDatabaseViewer';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
 import { useSingleFast } from '@/hooks/useSingleFast';
 import { Rocket, Settings, CheckCircle, XCircle, Pause, Play, Square } from 'lucide-react';
@@ -125,6 +126,14 @@ export default function SingleFast() {
             <span className="ml-2">Configura Cartelle</span>
           </Button>
         </div>
+
+        {/* Database Viewer Real-Time */}
+        {userEmail && (
+          <SingleFastDatabaseViewer 
+            userEmail={userEmail} 
+            isRunning={isRunning}
+          />
+        )}
 
         {/* Log Real-Time */}
         <SingleFastLogViewer logs={logs} />

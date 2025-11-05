@@ -64,6 +64,7 @@ import PromptSystemManager from "./pages/PromptSystemManager";
 import FunEmail from "./pages/FunEmail";
 import ApiFunctionsReference from "./pages/ApiFunctionsReference";
 import { SingleMailImporter } from "./components/email/SingleMailImporter";
+import SingleFast from "./pages/SingleFast";
 
 const queryClient = new QueryClient();
 
@@ -299,6 +300,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <SingleMailImporter />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/single-fast" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <SingleFast />
                 </CRMLayout>
               </ProtectedRoute>
             } />

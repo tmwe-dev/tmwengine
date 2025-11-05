@@ -1,0 +1,80 @@
+/**
+ * SINGLE FAST LOG VIEWER - Componente log real-time
+ */
+
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { LogEntry } from '@/hooks/useSingleFast';
+import { Loader2, CheckCircle, XCircle, Download } from 'lucide-react';
+
+interface SingleFastLogViewerProps {
+  logs: LogEntry[];
+}
+
+export function SingleFastLogViewer({ logs }: SingleFastLogViewerProps) {
+  const getPhaseIcon = (phase: LogEntry['phase']) => {
+    switch (phase) {
+      case 'preparing':
+        return <Loader2 className="h-4 w-4 animate-spin text-blue-400" />;
+      case 'importing':
+        return <Download className="h-4 w-4 text-green-400" />;
+      case 'completed':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'error':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+    }
+  };
+
+  const getPhaseColor = (phase: LogEntry['phase']) => {
+    switch (phase) {
+      case 'preparing':
+        return 'text-blue-400';
+      case 'importing':
+        return 'text-green-400';
+      case 'completed':
+        return 'text-green-500';
+      case 'error':
+        return 'text-red-500';
+    }
+  };
+
+  return (
+    <Card className="bg-black border-green-500/20">
+      <CardHeader>
+        <CardTitle className="text-green-400 font-mono flex items-center gap-2">
+          <span className="animate-pulse">█</span>
+          📋 LOG TEMPO REALE
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="h-[500px] pr-4">
+          {logs.length === 0 && (
+            <div className="text-gray-500 font-mono text-sm">
+              Attendi... Il log apparirà qui durante l'esecuzione
+            </div>
+          )}
+          {logs.map((log, i) => (
+            <div key={i} className="flex items-start gap-3 mb-2 text-sm font-mono">
+              <span className="text-gray-600 shrink-0 w-[80px]">
+                {log.timestamp.toLocaleTimeString()}
+              </span>
+              <div className="shrink-0">
+                {getPhaseIcon(log.phase)}
+              </div>
+              <div className="flex-1">
+                <span className={getPhaseColor(log.phase)}>
+                  {log.message}
+                </span>
+                {log.count && (
+                  <span className="text-blue-400 ml-2">
+                    [{log.count.current}/{log.count.total}]
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+}

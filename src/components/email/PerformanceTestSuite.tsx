@@ -1075,7 +1075,9 @@ export function PerformanceTestSuite() {
     const report = {
       totalTests: results.length,
       successfulTests: results.filter(r => r.metrics.successRate === 100).length,
-      overallSuccessRate: (results.reduce((acc, r) => acc + r.metrics.successRate, 0) / results.length).toFixed(1),
+      overallSuccessRate: results.length > 0 
+        ? (results.reduce((acc, r) => acc + r.metrics.successRate, 0) / results.length).toFixed(1)
+        : '0',
       
       fastestTest: results.reduce((best, r) => 
         r.metrics.throughput > (best?.metrics.throughput || 0) ? r : best
@@ -1423,11 +1425,15 @@ export function PerformanceTestSuite() {
               </div>
               <div className="text-center p-2 rounded-md bg-background/50">
                 <p className="text-xs text-muted-foreground">Speed</p>
-                <p className="text-lg font-bold">{liveMetrics.currentSpeed.toFixed(1)}/s</p>
+                <p className="text-lg font-bold">
+                  {liveMetrics.currentSpeed != null ? liveMetrics.currentSpeed.toFixed(1) : '0'}/s
+                </p>
               </div>
               <div className="text-center p-2 rounded-md bg-background/50">
                 <p className="text-xs text-muted-foreground">Elapsed</p>
-                <p className="text-lg font-bold">{liveMetrics.elapsed.toFixed(1)}s</p>
+                <p className="text-lg font-bold">
+                  {liveMetrics.elapsed != null ? liveMetrics.elapsed.toFixed(1) : '0'}s
+                </p>
               </div>
               <div className="text-center p-2 rounded-md bg-background/50">
                 <p className="text-xs text-muted-foreground">API Calls</p>
@@ -1850,12 +1856,16 @@ export function PerformanceTestSuite() {
                           <td className="p-3 text-right font-mono">{testResult.config.batchSize || '-'}</td>
                           <td className="p-3 text-right">
                             <span className={`font-mono font-bold ${isFastest ? 'text-green-600 dark:text-green-400' : ''}`}>
-                              {testResult.metrics.throughput.toFixed(1)}/s
+                              {testResult.metrics?.throughput != null ? testResult.metrics.throughput.toFixed(1) : '0'}/s
                             </span>
                             {isFastest && <span className="ml-1">🏆</span>}
                           </td>
-                          <td className="p-3 text-right font-mono text-xs">{testResult.metrics.avgTimePerEmail}ms</td>
-                          <td className="p-3 text-right font-mono text-xs">{(testResult.metrics.totalTime / 1000).toFixed(1)}s</td>
+                          <td className="p-3 text-right font-mono text-xs">
+                            {testResult.metrics?.avgTimePerEmail != null ? `${testResult.metrics.avgTimePerEmail}ms` : 'N/A'}
+                          </td>
+                          <td className="p-3 text-right font-mono text-xs">
+                            {testResult.metrics?.totalTime != null ? `${(testResult.metrics.totalTime / 1000).toFixed(1)}s` : 'N/A'}
+                          </td>
                           <td className="p-3 text-right">
                             <Badge 
                               variant={
@@ -1865,7 +1875,7 @@ export function PerformanceTestSuite() {
                               }
                               className="font-mono"
                             >
-                              {testResult.metrics.successRate.toFixed(0)}%
+                              {testResult.metrics?.successRate != null ? testResult.metrics.successRate.toFixed(0) : '0'}%
                             </Badge>
                           </td>
                           <td className="p-3 text-right">
@@ -1942,7 +1952,9 @@ export function PerformanceTestSuite() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Throughput:</span>
-                                <span className="text-lg font-bold text-green-600 dark:text-green-400">{fastest.metrics.throughput.toFixed(1)}/s</span>
+                                <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                                  {fastest.metrics?.throughput != null ? fastest.metrics.throughput.toFixed(1) : '0'}/s
+                                </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Batch Size:</span>
@@ -1977,7 +1989,9 @@ export function PerformanceTestSuite() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Success Rate:</span>
-                                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{mostReliable.metrics.successRate.toFixed(0)}%</span>
+                                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                  {mostReliable.metrics?.successRate != null ? mostReliable.metrics.successRate.toFixed(0) : '0'}%
+                                </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Errors:</span>

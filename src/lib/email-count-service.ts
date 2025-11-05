@@ -29,19 +29,21 @@ export async function getUnifiedFolderCounts(
 ): Promise<UnifiedFolderCount[]> {
   console.log('📊 [EmailCountService] Starting unified count check for:', userEmail);
   
-  // STEP 1: Get DB counts (fonte più affidabile)
-  const { data: dbCounts, error: dbError } = await supabase.rpc('get_email_folder_counts', {
-    p_user_email: userEmail,
-    p_sync_status: 'fun_email_backup'
-  });
+  // STEP 1: Get DB counts - COUNT ALL EMAILS regardless of sync_status
+  const { data: dbCounts, error: dbError } = await supabase
+    .from('email_messages')
+    .select('cartella')
+    .eq('user_email', userEmail);
   
   if (dbError) {
     console.error('❌ [EmailCountService] DB count failed:', dbError);
     throw new Error(`DB count failed: ${dbError.message}`);
   }
   
+  // Aggregate by folder manually
   const dbMap = (dbCounts || []).reduce((acc, row: any) => {
-    acc[row.cartella] = row.count;
+    const folder = row.cartella;
+    acc[folder] = (acc[folder] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
   

@@ -330,17 +330,33 @@ export async function getSingleFastFolders(userEmail: string): Promise<Array<{
   const { getUnifiedFolderCounts } = await import('./email-count-service');
   const folderCounts = await getUnifiedFolderCounts(userEmail);
 
-  // 3. Filtra cartelle con email mancanti
-  const foldersWithMissing = folderCounts.filter(f => f.missing > 0);
+  // 3. Se NON ci sono preferenze → sincronizza TUTTE
+  if (preferences.included_folders.length === 0) {
+    console.log('⚠️ Nessuna preferenza → sincronizza TUTTE le cartelle');
+    return folderCounts.map(f => ({
+      folderName: f.folderName,
+      missing: f.missing,
+      included: true
+    }));
+  }
 
-  // 4. Applica filtro preferenze
-  const includedSet = new Set(preferences.included_folders.map(f => f.toLowerCase()));
-  
-  return foldersWithMissing.map(f => ({
-    folderName: f.folderName,
+  // 4. Normalizzazione SOLO per confronto (non modifica i nomi originali)
+  const normalize = (name: string) => (name || '').trim().toLowerCase();
+  const includedSet = new Set(preferences.included_folders.map(normalize));
+
+  console.log('📂 Preferenze incluse:', preferences.included_folders.length, 'cartelle');
+  console.log('📂 Cartelle disponibili:', folderCounts.length);
+
+  // 5. Applica filtro preferenze (INCLUDE anche cartelle con missing = 0)
+  const result = folderCounts.map(f => ({
+    folderName: f.folderName, // ✅ Nome ORIGINALE non modificato
     missing: f.missing,
-    included: includedSet.size === 0 || includedSet.has(f.folderName.toLowerCase())
+    included: includedSet.has(normalize(f.folderName))
   }));
+
+  console.log('📂 Cartelle filtrate (included=true):', result.filter(f => f.included).length);
+
+  return result;
 }
 
 /**

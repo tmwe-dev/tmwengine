@@ -211,20 +211,6 @@ const CRMLayout = ({ children }) => {
                 {location.pathname === '/funnemail' && (
                   <div className="flex items-center gap-1">
                     <Button
-                      variant={searchParams.get('tab') === 'list' || !searchParams.get('tab') ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => navigate('/funnemail?tab=list')}
-                    >
-                      Lista
-                    </Button>
-                    <Button
-                      variant={searchParams.get('tab') === 'fun' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => navigate('/funnemail?tab=fun')}
-                    >
-                      FUN
-                    </Button>
-                    <Button
                       variant={searchParams.get('tab') === 'management' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => navigate('/funnemail?tab=management')}
@@ -267,7 +253,7 @@ const CRMLayout = ({ children }) => {
                     </Button>
                   )}
                   
-                  {/* Debug Utilities - Solo in FunEmail */}
+                  {/* Strumenti Email - Solo in FunEmail */}
                   {location.pathname === '/funnemail' && (
                     <Popover>
                       <PopoverTrigger asChild>
@@ -275,13 +261,22 @@ const CRMLayout = ({ children }) => {
                           variant="ghost"
                           size="sm"
                           className="p-0.5 h-6 w-6"
-                          title="Debug Utilities"
+                          title="Strumenti Email"
                         >
                           <Settings className="w-4 h-4" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent align="start" className="w-56 bg-popover">
                         <div className="space-y-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start"
+                            onClick={() => navigate('/funnemail?tab=fun')}
+                          >
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            FUN
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"

@@ -168,7 +168,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
                         {!isMobile && 'Tools'}
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="bg-background border border-border z-[200] shadow-lg">
                       <DropdownMenuItem onClick={() => navigate('/funnemail?view=quick-download')}>
                         <Download className="h-4 w-4 mr-2" />
                         Quick Download

@@ -175,17 +175,22 @@ export function SingleMailImporter() {
       if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
       const userEmail = profile.tmwe_email;
 
-      // 2️⃣ Fetch UIDs dal server TMWE
+      // 2️⃣ Fetch UIDs dal server TMWE (prime 500 email)
       console.log('📡 Fetching server UIDs...');
+      console.warn('⚠️ ATTENZIONE: Confronto limitato alle prime 500 email per evitare timeout Edge Function');
+
       const serverResponse = await emailMessageApi.getMessages({
         folder: selectedFolder,
         page: 1,
-        limit: 5000,
+        limit: 500,  // ✅ Ridotto da 5000 → 500 per evitare timeout
+        format: 'text',  // ✅ Più leggero di 'html' (body plain text)
+        include_attachments: false,  // ✅ Esclude allegati per ridurre payload
       });
+
       const serverUIDs = new Set<string>(
         serverResponse.messages.map((msg: any) => String(msg.uid))
       );
-      console.log(`✅ Server UIDs count: ${serverUIDs.size}`);
+      console.log(`✅ Server UIDs count: ${serverUIDs.size} (limite 500 - potrebbero esserci più email sul server)`);
 
       // 3️⃣ Fetch UIDs dal DB locale
       console.log('💾 Fetching local DB UIDs...');

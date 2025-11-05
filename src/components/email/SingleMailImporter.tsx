@@ -481,7 +481,10 @@ export function SingleMailImporter() {
               <div>
                 <div className="text-sm font-medium text-muted-foreground">From</div>
                 <div>
-                  {selectedEmailDetail.from?.address || selectedEmailDetail.data?.header?.from?.[0]?.address || 'Unknown'}
+                  {selectedEmailDetail.from_name 
+                    ? `${selectedEmailDetail.from_name} <${selectedEmailDetail.from || 'Unknown'}>`
+                    : (selectedEmailDetail.from || selectedEmailDetail.data?.header?.from || 'Unknown')
+                  }
                 </div>
               </div>
               <div>

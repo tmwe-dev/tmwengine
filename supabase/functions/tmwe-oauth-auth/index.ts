@@ -336,14 +336,6 @@ serve(async (req) => {
       }
     );
 
-    return new Response(
-      JSON.stringify(finalResponse),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
-
   } catch (error: any) {
     console.error('❌ OAuth authentication error:', error);
     console.error('   Error message:', error?.message || String(error));

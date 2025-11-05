@@ -273,25 +273,23 @@ const FunEmail = () => {
       actions={null}
     >
       <div className="relative w-full min-h-screen">
-        {/* Icone Verticali - in tutte le view principali */}
-        {!['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail'].includes(currentView) && (
+        {/* 2 Icone Verticali - solo in view inbox */}
+        {currentView === 'inbox' && (
           <>
-            {/* Inbox/Categories Icon - Solo in view inbox */}
-            {currentView === 'inbox' && (
-              <button
-                onClick={handleToggleCategories}
-                className={cn(
-                  "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
-                  "flex items-center justify-center transition-all duration-300 hover:bg-white/10",
-                  categoriesOpen && "translate-x-[280px]",
-                  !shouldShowLeftIcons && !categoriesOpen && "hidden"
-                )}
-              >
-                <span className="text-2xl">📬</span>
-              </button>
-            )}
+            {/* Inbox/Categories Icon - Top */}
+            <button
+              onClick={handleToggleCategories}
+              className={cn(
+                "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
+                "flex items-center justify-center transition-all duration-300 hover:bg-white/10",
+                categoriesOpen && "translate-x-[280px]",
+                !shouldShowLeftIcons && !categoriesOpen && "hidden"
+              )}
+            >
+              <span className="text-2xl">📬</span>
+            </button>
 
-            {/* AI Icon - Sempre visibile in tutte le view principali */}
+            {/* AI Icon - Bottom (20px gap) */}
             <button
               onClick={handleToggleAI}
               className={cn(
@@ -445,7 +443,7 @@ const FunEmail = () => {
           onToggle={handleToggleAI}
           senderEmail={selectedSenderForAI}
           onPromptCreated={handlePromptCreatedGlobal}
-          hideButton={true}
+          hideButton={currentView === 'inbox'}
         />
       )}
 

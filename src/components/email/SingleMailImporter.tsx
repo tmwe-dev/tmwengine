@@ -28,6 +28,7 @@ export function SingleMailImporter() {
   const [selectedEmailDetail, setSelectedEmailDetail] = useState<any>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importingUid, setImportingUid] = useState<string | null>(null);
+  const [displayLimit, setDisplayLimit] = useState(100); // ✅ Lazy loading: inizialmente 100 email
 
   // ✅ Query cartelle disponibili (API DEDICATA - NO CACHE CONDIVISA)
   const { data: foldersData } = useQuery({
@@ -222,7 +223,7 @@ export function SingleMailImporter() {
       const missingDetails: MissingEmailItem[] = [];
       const batchSize = 10;
 
-      for (let i = 0; i < missing.slice(0, 100).length; i += batchSize) {
+      for (let i = 0; i < missing.slice(0, displayLimit).length; i += batchSize) {
         const batch = missing.slice(i, i + batchSize);
         const batchPromises = batch.map(async (uid) => {
           try {
@@ -257,11 +258,18 @@ export function SingleMailImporter() {
         totalDB: dbUIDs.size,
         totalMissing: missing.length,
         missingEmails: missingDetails,
+        displayLimit,
+        hasMore: missing.length > displayLimit,
       };
     },
     enabled: !!selectedFolder,
     refetchOnWindowFocus: false,
   });
+
+  // ✅ Reset displayLimit quando cambia cartella
+  useEffect(() => {
+    setDisplayLimit(100);
+  }, [selectedFolder]);
 
   // ✅ Aggiorna lista locale quando cambia comparisonData
   useEffect(() => {
@@ -669,6 +677,42 @@ export function SingleMailImporter() {
             <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-sm text-orange-600 dark:text-orange-400">
               ⚠️ <strong>Limite raggiunto:</strong> Confronto limitato alle prime 500 email per evitare timeout. 
               Potrebbero esserci altre email mancanti non visibili qui.
+            </div>
+          )}
+
+          {/* Badge visualizzazione parziale + pulsante "Carica altre 100" */}
+          {comparisonData && comparisonData.totalMissing > 0 && (
+            <div className="flex items-center justify-between gap-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                  {missingEmails.length} di {comparisonData.totalMissing} caricate
+                </Badge>
+                {comparisonData.hasMore && (
+                  <span className="text-xs text-muted-foreground">
+                    ({comparisonData.totalMissing - missingEmails.length} rimanenti)
+                  </span>
+                )}
+              </div>
+              {comparisonData.hasMore && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setDisplayLimit(prev => Math.min(prev + 100, comparisonData.totalMissing))}
+                  disabled={isLoadingComparison}
+                >
+                  {isLoadingComparison ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Caricamento...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      Carica altre 100
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           )}
         </CardContent>

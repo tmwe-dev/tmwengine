@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { getSingleMailFolders } from '@/lib/single-mail-api';
 import { toast } from 'sonner';
-import { RefreshCw, Eye, Download, CheckSquare, Square } from 'lucide-react';
+import { RefreshCw, Eye, Download, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -38,6 +38,29 @@ export function SingleMailImporter() {
       return folders;
     },
     staleTime: 5 * 60 * 1000,
+  });
+
+  // ✅ Query conteggi unificati per tutte le cartelle
+  const { data: folderCounts } = useQuery({
+    queryKey: ['email-folder-counts-single'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Non autenticato');
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
+
+      // ✅ Usa servizio unificato
+      const { getUnifiedFolderCounts } = await import('@/lib/email-count-service');
+      return await getUnifiedFolderCounts(profile.tmwe_email);
+    },
+    staleTime: 2 * 60 * 1000, // Cache 2 minuti
+    enabled: !!foldersData, // Esegui solo dopo aver caricato le cartelle
   });
 
   // ✅ Query confronto UIDs mancanti (client-side)
@@ -314,6 +337,12 @@ export function SingleMailImporter() {
     }
   };
 
+  // ✅ Helper per trovare statistiche cartella
+  const getFolderStats = (folderName: string) => {
+    if (!folderCounts) return null;
+    return folderCounts.find(f => f.folderName === folderName);
+  };
+
   const allSelected = missingEmails.length > 0 && missingEmails.every(e => e.selected);
   const selectedCount = missingEmails.filter(e => e.selected).length;
 
@@ -330,11 +359,56 @@ export function SingleMailImporter() {
                   <SelectValue placeholder="Seleziona cartella" />
                 </SelectTrigger>
                 <SelectContent className="z-[9999] bg-background">
-                  {foldersData?.map((folder: any) => (
-                    <SelectItem key={folder.name} value={folder.name}>
-                      {folder.display_name || folder.name}
-                    </SelectItem>
-                  ))}
+                  {foldersData?.map((folder: any) => {
+                    const stats = getFolderStats(folder.name);
+                    const hasMissing = stats && stats.missing > 0;
+                    
+                    return (
+                      <SelectItem key={folder.name} value={folder.name}>
+                        <div className="flex items-center justify-between w-full gap-3">
+                          <span className={cn(
+                            "font-medium",
+                            hasMissing && "text-orange-600 dark:text-orange-400"
+                          )}>
+                            {folder.display_name || folder.name}
+                          </span>
+                          
+                          {stats ? (
+                            <div className="flex items-center gap-2 ml-auto">
+                              {/* Badge conteggi */}
+                              <Badge variant="outline" className="text-xs">
+                                {stats.dbCount}/{stats.serverCount}
+                              </Badge>
+                              
+                              {/* Badge email mancanti */}
+                              {hasMissing && (
+                                <Badge 
+                                  variant="destructive" 
+                                  className="bg-orange-500/10 text-orange-600 border-orange-500/20"
+                                >
+                                  📬 {stats.missing}
+                                </Badge>
+                              )}
+                              
+                              {/* Badge sincronizzato */}
+                              {stats.syncPercentage === 100 && (
+                                <Badge 
+                                  variant="outline" 
+                                  className="bg-green-500/10 text-green-600 border-green-500/20"
+                                >
+                                  ✓
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              ...
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <Button
@@ -349,20 +423,73 @@ export function SingleMailImporter() {
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Indicatore caricamento conteggi */}
+          {!folderCounts && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Caricamento conteggi cartelle...
+            </div>
+          )}
+
+          {/* Riepilogo statistiche cartella selezionata */}
+          {selectedFolder && getFolderStats(selectedFolder) && (
+            <div className="p-4 bg-muted/50 rounded-lg border">
+              <div className="grid grid-cols-3 gap-4 text-center mb-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Server</p>
+                  <p className="text-2xl font-bold text-primary">{getFolderStats(selectedFolder)!.serverCount}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">DB Locale</p>
+                  <p className="text-2xl font-bold text-blue-600">{getFolderStats(selectedFolder)!.dbCount}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Mancanti</p>
+                  <p className={cn(
+                    "text-2xl font-bold",
+                    getFolderStats(selectedFolder)!.missing > 0 ? "text-orange-600" : "text-green-600"
+                  )}>
+                    {getFolderStats(selectedFolder)!.missing}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Progress bar sincronizzazione */}
+              <div>
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Sincronizzazione</span>
+                  <span className="font-semibold">{getFolderStats(selectedFolder)!.syncPercentage}%</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className={cn(
+                      "h-full transition-all duration-500",
+                      getFolderStats(selectedFolder)!.syncPercentage === 100 
+                        ? "bg-green-500" 
+                        : "bg-orange-500"
+                    )}
+                    style={{ width: `${getFolderStats(selectedFolder)!.syncPercentage}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Statistiche dalla comparazione dettagliata (se disponibili) */}
           {comparisonData && (
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-3 gap-4 text-center p-3 bg-accent/30 rounded-lg border border-dashed">
               <div>
-                <div className="text-3xl font-bold text-primary">{comparisonData.totalServer}</div>
-                <div className="text-sm text-muted-foreground">Server</div>
+                <div className="text-xl font-bold text-primary">{comparisonData.totalServer}</div>
+                <div className="text-xs text-muted-foreground">Comparazione Server</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-success">{comparisonData.totalDB}</div>
-                <div className="text-sm text-muted-foreground">DB Locale</div>
+                <div className="text-xl font-bold text-blue-600">{comparisonData.totalDB}</div>
+                <div className="text-xs text-muted-foreground">Comparazione DB</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-destructive">{comparisonData.totalMissing}</div>
-                <div className="text-sm text-muted-foreground">Mancanti</div>
+                <div className="text-xl font-bold text-destructive">{comparisonData.totalMissing}</div>
+                <div className="text-xs text-muted-foreground">Comparazione Mancanti</div>
               </div>
             </div>
           )}

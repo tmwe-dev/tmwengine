@@ -309,26 +309,22 @@ export function SingleMailImporter() {
       // Fetch email dal server (nuova funzione isolata)
       const email = await fetchAndNormalizeSingleEmail(uid, selectedFolder);
 
-      // ✅ Mapping campi (allineato con FunEmailDownloader)
+      // ✅ Mapping campi - usa direttamente i campi normalizzati
       const emailToSave = {
         message_id: `${selectedFolder}/${uid}`,
         user_email: profile.tmwe_email,
         cartella: selectedFolder,
-        subject: email?.subject || '',
-        from_email: email?.from?.address || email?.from || email?.from_email || '',
-        from_name: email?.from?.name || email?.from_name || '',
-        to_email: Array.isArray(email?.to)
-          ? email.to.map((t: any) => t.address || t).join(',')
-          : email?.to || email?.to_email || '',
-        cc_email: Array.isArray(email?.cc)
-          ? email.cc.map((c: any) => c.address || c).join(',')
-          : email?.cc || email?.cc_email || null,
-        data_ricezione: email?.date ? new Date(email.date).toISOString() : new Date().toISOString(),
-        body_text: email?.body_text || '',
-        body_html: email?.body_html || '',
-        attachments: email?.attachments || [],
-        flags: email?.flags || [],
-        stato: email?.flags?.includes('\\Seen') ? 'letto' : 'non_letto',
+        subject: email.subject || '',
+        from_email: email.from_email || '',
+        from_name: email.from_name || '',
+        to_email: email.to_email || '',
+        cc_email: email.cc_email || null,
+        data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
+        body_text: email.body_text || '',
+        body_html: email.body_html || '',
+        attachments: email.attachments || [],
+        flags: email.flags || [],
+        stato: email.flags?.includes('\\Seen') ? 'letto' : 'non_letto',
         sync_status: 'single_mail_import',
         direzione: 'ricevuta',
         provider_id: null,
@@ -379,25 +375,22 @@ export function SingleMailImporter() {
         try {
           const email = await fetchAndNormalizeSingleEmail(uid, selectedFolder);
 
+          // ✅ Mapping campi - usa direttamente i campi normalizzati
           const emailToSave = {
             message_id: `${selectedFolder}/${uid}`,
             user_email: profile.tmwe_email,
             cartella: selectedFolder,
-            subject: email?.subject || '',
-            from_email: email?.from?.address || email?.from || email?.from_email || '',
-            from_name: email?.from?.name || email?.from_name || '',
-            to_email: Array.isArray(email?.to)
-              ? email.to.map((t: any) => t.address || t).join(',')
-              : email?.to || email?.to_email || '',
-            cc_email: Array.isArray(email?.cc)
-              ? email.cc.map((c: any) => c.address || c).join(',')
-              : email?.cc || email?.cc_email || null,
-            data_ricezione: email?.date ? new Date(email.date).toISOString() : new Date().toISOString(),
-            body_text: email?.body_text || '',
-            body_html: email?.body_html || '',
-            attachments: email?.attachments || [],
-            flags: email?.flags || [],
-            stato: email?.flags?.includes('\\Seen') ? 'letto' : 'non_letto',
+            subject: email.subject || '',
+            from_email: email.from_email || '',
+            from_name: email.from_name || '',
+            to_email: email.to_email || '',
+            cc_email: email.cc_email || null,
+            data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
+            body_text: email.body_text || '',
+            body_html: email.body_html || '',
+            attachments: email.attachments || [],
+            flags: email.flags || [],
+            stato: email.flags?.includes('\\Seen') ? 'letto' : 'non_letto',
             sync_status: 'single_mail_import',
             direzione: 'ricevuta',
             provider_id: null,

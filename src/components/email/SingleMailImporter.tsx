@@ -1,17 +1,21 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { LoadingState } from '@/components/design-system/data-display/LoadingState';
 import { supabase } from '@/integrations/supabase/client';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { getSingleMailFolders } from '@/lib/single-mail-api';
+import { getSyncPreferences } from '@/lib/email-sync-preferences';
 import { toast } from 'sonner';
 import { RefreshCw, Eye, Download, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
 
 interface MissingEmailItem {
   uid: string;
@@ -23,12 +27,27 @@ interface MissingEmailItem {
 }
 
 export function SingleMailImporter() {
+  const queryClient = useQueryClient();
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [missingEmails, setMissingEmails] = useState<MissingEmailItem[]>([]);
   const [selectedEmailDetail, setSelectedEmailDetail] = useState<any>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importingUid, setImportingUid] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState(100); // ✅ Lazy loading: inizialmente 100 email
+  
+  // 🆕 Single Fast State
+  const [isSingleFastRunning, setIsSingleFastRunning] = useState(false);
+  const [singleFastProgress, setSingleFastProgress] = useState({
+    currentFolder: '',
+    folderIndex: 0,
+    totalFolders: 0,
+    emailIndex: 0,
+    totalEmailsInFolder: 0,
+    globalProcessed: 0,
+    globalTotal: 0
+  });
+  const [isPreferencesDialogOpen, setIsPreferencesDialogOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
 
   // ✅ Query cartelle disponibili (API DEDICATA - NO CACHE CONDIVISA)
   const { data: foldersData } = useQuery({
@@ -340,6 +359,30 @@ export function SingleMailImporter() {
     }
   }, [tempIndexEmails]);
 
+  // 🆕 Carica email utente per Single Fast
+  useEffect(() => {
+    loadUserEmail();
+  }, []);
+
+  const loadUserEmail = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profile?.tmwe_email) {
+        setUserEmail(profile.tmwe_email);
+      }
+    } catch (error) {
+      console.error('❌ [SingleFast] Error loading user email:', error);
+    }
+  };
+
   // ✅ Toggle singola email (aggiorna DB temp_index)
   const toggleEmailSelection = async (uid: string) => {
     const email = missingEmails.find(e => e.uid === uid);
@@ -628,6 +671,147 @@ export function SingleMailImporter() {
     }
   };
 
+  // 🆕 Single Fast - Sincronizzazione automatica tutte le cartelle
+  const handleSingleFastImport = async () => {
+    if (!userEmail) {
+      toast.error('Email utente non disponibile');
+      return;
+    }
+
+    try {
+      // 1. Carica preferenze
+      const preferences = await getSyncPreferences(userEmail);
+      
+      // 2. Filtra cartelle con email mancanti
+      const foldersWithMissing = (folderCounts || []).filter(f => f.missing > 0);
+      
+      if (foldersWithMissing.length === 0) {
+        toast.info('✅ Nessuna email mancante da sincronizzare');
+        return;
+      }
+      
+      // 3. Applica filtro preferenze
+      let foldersToSync = foldersWithMissing;
+      
+      if (preferences.included_folders.length > 0) {
+        // Filtra solo cartelle incluse nelle preferenze
+        foldersToSync = foldersWithMissing.filter(f => 
+          preferences.included_folders.includes(f.folderName)
+        );
+        
+        if (foldersToSync.length === 0) {
+          toast.warning('⚠️ Nessuna cartella configurata ha email mancanti');
+          return;
+        }
+        
+        console.log(`✅ [SingleFast] Preferenze attive: ${foldersToSync.length}/${foldersWithMissing.length} cartelle`);
+      } else {
+        // Nessuna preferenza → sincronizza TUTTE
+        console.log(`⚠️ [SingleFast] Nessuna preferenza → sync TUTTE le ${foldersToSync.length} cartelle`);
+      }
+      
+      // 4. Calcola totale globale
+      const globalTotal = foldersToSync.reduce((sum, f) => sum + f.missing, 0);
+      
+      // 5. Conferma utente
+      const confirmMessage = preferences.included_folders.length > 0
+        ? `Sincronizzare ${globalTotal} email da ${foldersToSync.length} cartelle configurate?\n\nCartelle: ${foldersToSync.map(f => `${f.folderName} (${f.missing})`).join(', ')}`
+        : `Sincronizzare ${globalTotal} email da TUTTE le ${foldersToSync.length} cartelle?`;
+      
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+      
+      // 6. Avvia sincronizzazione
+      setIsSingleFastRunning(true);
+      setSingleFastProgress({
+        currentFolder: '',
+        folderIndex: 0,
+        totalFolders: foldersToSync.length,
+        emailIndex: 0,
+        totalEmailsInFolder: 0,
+        globalProcessed: 0,
+        globalTotal
+      });
+      
+      toast.info(`🚀 Single Fast: ${globalTotal} email da ${foldersToSync.length} cartelle`);
+      
+      let globalProcessed = 0;
+      
+      // 7. Loop cartelle
+      for (let i = 0; i < foldersToSync.length; i++) {
+        const folder = foldersToSync[i];
+        
+        setSingleFastProgress(prev => ({
+          ...prev,
+          currentFolder: folder.folderName,
+          folderIndex: i + 1,
+          emailIndex: 0,
+          totalEmailsInFolder: folder.missing
+        }));
+        
+        console.log(`📁 [SingleFast] Folder ${i + 1}/${foldersToSync.length}: ${folder.folderName} (${folder.missing} missing)`);
+        
+        // 8. Imposta cartella corrente e ricarica temp index
+        setSelectedFolder(folder.folderName);
+        await refetch(); // Popola email_temp_index per questa cartella
+        
+        // 9. Fetch UIDs mancanti
+        const { data: tempData } = await supabase
+          .from('email_temp_index')
+          .select('uid, subject, from_email, from_name, date')
+          .eq('user_email', userEmail)
+          .eq('folder', folder.folderName)
+          .order('date', { ascending: false });
+        
+        const uids = tempData || [];
+        
+        if (uids.length === 0) {
+          console.warn(`⚠️ [SingleFast] No UIDs found for ${folder.folderName}`);
+          continue;
+        }
+        
+        // 10. Loop email nella cartella
+        for (let j = 0; j < uids.length; j++) {
+          const uid = uids[j].uid;
+          
+          setSingleFastProgress(prev => ({
+            ...prev,
+            emailIndex: j + 1,
+            globalProcessed: globalProcessed + 1
+          }));
+          
+          try {
+            // 11. Import singola email (riutilizza logica esistente)
+            await handleImportSingle(uid);
+            globalProcessed++;
+            
+            // 12. Delay anti-overload (50ms)
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+          } catch (error: any) {
+            console.error(`❌ [SingleFast] Failed to import UID ${uid}:`, error);
+            // Continua con prossima email senza bloccare
+          }
+        }
+        
+        console.log(`✅ [SingleFast] Completed folder ${folder.folderName}`);
+      }
+      
+      // 13. Completamento
+      toast.success(`✅ Single Fast completato: ${globalProcessed}/${globalTotal} email sincronizzate`);
+      
+      // 14. Invalida cache conteggi per refresh UI
+      queryClient.invalidateQueries({ queryKey: ['email-folder-counts-single'] });
+      
+    } catch (error: any) {
+      console.error('❌ [SingleFast] Error:', error);
+      toast.error(`Errore: ${error.message}`);
+    } finally {
+      setIsSingleFastRunning(false);
+    }
+  };
+
   // ✅ Helper per trovare statistiche cartella
   const getFolderStats = (folderName: string) => {
     if (!folderCounts) return null;
@@ -643,7 +827,43 @@ export function SingleMailImporter() {
       <Card>
         <CardHeader>
           <CardTitle className="flex flex-col items-center gap-4">
-            <span>Single Mail Importer</span>
+            <div className="flex items-center justify-between w-full">
+              <span>Single Mail Importer</span>
+              <div className="flex items-center gap-2">
+                {/* Pulsante Configura Preferenze */}
+                <Dialog open={isPreferencesDialogOpen} onOpenChange={setIsPreferencesDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      ⚙️ Configura Cartelle
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>⚙️ Preferenze Sincronizzazione</DialogTitle>
+                    </DialogHeader>
+                    {userEmail && (
+                      <FolderSyncPreferencesManager
+                        userEmail={userEmail}
+                        onPreferencesChanged={() => {
+                          setIsPreferencesDialogOpen(false);
+                          toast.success('✅ Preferenze salvate');
+                          queryClient.invalidateQueries({ queryKey: ['email-folder-counts-single'] });
+                        }}
+                      />
+                    )}
+                  </DialogContent>
+                </Dialog>
+                
+                {/* Pulsante Single Fast */}
+                <Button 
+                  onClick={handleSingleFastImport}
+                  disabled={isSingleFastRunning || !folderCounts || folderCounts.filter(f => f.missing > 0).length === 0}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  🚀 Single Fast
+                </Button>
+              </div>
+            </div>
             <div className="flex items-center gap-4 justify-center w-full">
               <Select value={selectedFolder} onValueChange={setSelectedFolder}>
                 <SelectTrigger className="w-96">
@@ -825,6 +1045,38 @@ export function SingleMailImporter() {
           )}
         </CardContent>
       </Card>
+
+      {/* 🆕 Single Fast Progress */}
+      {isSingleFastRunning && (
+        <Card className="border-purple-500 bg-purple-50/50 dark:bg-purple-950/20">
+          <CardHeader>
+            <CardTitle className="text-purple-700 dark:text-purple-400 flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Single Fast in corso...
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span>📁 Cartella: {singleFastProgress.currentFolder}</span>
+                <span className="font-semibold">{singleFastProgress.folderIndex}/{singleFastProgress.totalFolders}</span>
+              </div>
+              <div className="flex justify-between text-sm mb-1">
+                <span>📧 Email cartella corrente</span>
+                <span className="font-semibold">{singleFastProgress.emailIndex}/{singleFastProgress.totalEmailsInFolder}</span>
+              </div>
+              <div className="flex justify-between text-sm font-bold mb-2">
+                <span>🌐 Totale globale</span>
+                <span className="text-purple-700 dark:text-purple-400">{singleFastProgress.globalProcessed}/{singleFastProgress.globalTotal}</span>
+              </div>
+              <Progress 
+                value={(singleFastProgress.globalProcessed / singleFastProgress.globalTotal) * 100} 
+                className="h-2"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Lista email mancanti */}
       {isLoadingComparison ? (

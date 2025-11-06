@@ -3,7 +3,7 @@
  * Real-time progress tracking con cancel support
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -28,11 +28,25 @@ export function AICategorizationProgressDialog({
   const [status, setStatus] = useState<'processing' | 'completed' | 'cancelled' | 'failed'>('processing');
   const [isCancelling, setIsCancelling] = useState(false);
 
+  // Use refs to avoid infinite polling loop
+  const onCompleteRef = useRef(onComplete);
+  const onCloseRef = useRef(onClose);
+
+  // Update refs when props change
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+    onCloseRef.current = onClose;
+  }, [onComplete, onClose]);
+
   useEffect(() => {
     if (!open || !batchId) return;
 
+    console.log(`🔄 Starting polling for batch: ${batchId}`);
+
     // Polling ogni 2 secondi
     const interval = setInterval(async () => {
+      console.log(`📡 Polling progress for batch: ${batchId}`);
+      
       const { data } = await supabase
         .from('ai_categorization_progress')
         .select('*')
@@ -40,25 +54,34 @@ export function AICategorizationProgressDialog({
         .single();
 
       if (data) {
+        console.log(`📊 Progress: ${data.processed_count}/${data.total_count} - Status: ${data.status}`);
+        
         setProcessed(data.processed_count);
         setTotal(data.total_count);
         setStatus(data.status as any);
 
         if (data.status === 'completed' || data.status === 'cancelled' || data.status === 'failed') {
+          console.log(`✅ Analysis ${data.status}! Stopping polling.`);
           clearInterval(interval);
+          
           if (data.status === 'completed') {
-            onComplete();
+            onCompleteRef.current();
             // Auto-close dialog after 2 seconds
             setTimeout(() => {
-              onClose();
+              onCloseRef.current();
             }, 2000);
           }
         }
+      } else {
+        console.warn(`⚠️ No progress data found for batch: ${batchId}`);
       }
     }, 2000);
 
-    return () => clearInterval(interval);
-  }, [open, batchId, onComplete]);
+    return () => {
+      console.log(`🛑 Stopping polling for batch: ${batchId}`);
+      clearInterval(interval);
+    };
+  }, [open, batchId]);
 
   const handleCancel = async () => {
     if (!batchId) return;

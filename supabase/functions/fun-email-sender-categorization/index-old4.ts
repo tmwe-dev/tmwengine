@@ -133,7 +133,7 @@ serve(async (req) => {
           user_id,
           batch_id,
           processed_count: 0,
-          total_count: validSenders.length, // 🐛 FIX: Use validSenders instead of senders
+          total_count: senders.length,
           status: 'processing',
           last_processed_index: 0,
         });
@@ -174,7 +174,7 @@ serve(async (req) => {
       // Update progress with absolute index
       processedCount++;
       const absoluteProcessed = batch_start_index + processedCount;
-      const isComplete = absoluteProcessed >= validSenders.length; // 🐛 FIX: Use validSenders
+      const isComplete = absoluteProcessed >= senders.length;
       
       await supabase
         .from('ai_categorization_progress')
@@ -271,8 +271,7 @@ serve(async (req) => {
       cost_output_eur: isFreeModel ? 0 : totalOutputTokens * getCostPerToken(aiConfig.modello, 'output'),
       cost_total_eur: totalCostEur,
       operation_metadata: {
-        senders_count: validSenders.length, // 🐛 FIX: Use validSenders
-        senders_filtered: senders.length - validSenders.length, // 🆕 Track filtered count
+        senders_count: senders.length,
         successful: successful.length,
         failed: failed.length,
         is_free: isFreeModel,
@@ -280,22 +279,21 @@ serve(async (req) => {
     });
 
     const nextBatchStart = batch_start_index + batch_size;
-    const isComplete = nextBatchStart >= validSenders.length; // 🐛 FIX: Use validSenders
+    const isComplete = nextBatchStart >= senders.length;
 
     return new Response(
       JSON.stringify({
         success: true,
         batch_id,
         processed_count: batchSenders.length,
-        remaining_count: Math.max(0, validSenders.length - nextBatchStart), // 🐛 FIX: Use validSenders
+        remaining_count: Math.max(0, senders.length - nextBatchStart),
         next_batch_start: nextBatchStart,
         is_complete: isComplete,
         suggestions: suggestionResults,
         batch_summary: {
           current_batch: Math.floor(batch_start_index / batch_size) + 1,
-          total_batches: Math.ceil(validSenders.length / batch_size), // 🐛 FIX: Use validSenders
-          total_senders: validSenders.length, // 🐛 FIX: Use validSenders
-          senders_filtered: senders.length - validSenders.length, // 🆕 Track filtered senders
+          total_batches: Math.ceil(senders.length / batch_size),
+          total_senders: senders.length,
           successful: successful.length,
           failed: failed.length,
           total_cost: {

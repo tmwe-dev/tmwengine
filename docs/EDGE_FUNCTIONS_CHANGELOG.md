@@ -9,6 +9,49 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-31] - FIX: Contatore Progress Bar usa validSenders
+
+### File Modificato
+- **Function:** `supabase/functions/fun-email-sender-categorization/index.ts`
+- **Backup Creato:** `index-old4.ts`
+
+### Bug Risolto
+**Problema:** Il contatore `total_count` in `ai_categorization_progress` usava `senders.length` (791) invece di `validSenders.length` (178), causando progress bar incorretta.
+
+### Modifiche Apportate
+1. **Linea 136**: `total_count: validSenders.length` (era `senders.length`)
+2. **Linea 177**: `isComplete = absoluteProcessed >= validSenders.length`
+3. **Linea 274**: `senders_count: validSenders.length` in metadata
+4. **Linea 275**: Aggiunto `senders_filtered` per tracking mittenti saltati
+5. **Linea 283**: `isComplete = nextBatchStart >= validSenders.length`
+6. **Linea 290**: `remaining_count: Math.max(0, validSenders.length - nextBatchStart)`
+7. **Linea 296**: `total_batches: Math.ceil(validSenders.length / batch_size)`
+8. **Linea 297**: `total_senders: validSenders.length`
+9. **Linea 298**: Aggiunto `senders_filtered` nel response summary
+
+### Impatto
+✅ Progress bar mostra correttamente 178 mittenti invece di 791  
+✅ Batch estimations corrette (59 batches invece di 264)  
+✅ ETA accurato (~20 minuti invece di 88 minuti)  
+✅ Tracking trasparente mittenti filtrati in metadata  
+
+### Testing
+```bash
+# Prima del fix
+total_count: 791 → progress bar 3/791 (0.4%)
+
+# Dopo il fix  
+total_count: 178 → progress bar 3/178 (1.7%)
+senders_filtered: 613 → tracking mittenti saltati
+```
+
+### Rollback Plan
+```bash
+cp index-old3.ts index.ts
+```
+
+---
+
 ## [2025-01-31] - Filtro Soglia Email Minime per AI Categorization
 
 ### File Modificato

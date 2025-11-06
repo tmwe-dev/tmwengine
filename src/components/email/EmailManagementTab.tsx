@@ -508,7 +508,14 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   };
 
   // 🤖 NUOVO SISTEMA - Genera suggerimenti raggruppamento
+  // TODO: Implementare quando schema email_messages sarà verificato
   const handleGenerateSuggestions = async () => {
+    toast({
+      title: 'Funzionalità in sviluppo',
+      description: 'I suggerimenti AI sono in fase di sviluppo',
+    });
+    
+    /* COMMENTATO TEMPORANEAMENTE - Schema database da verificare
     setIsGeneratingSuggestions(true);
     
     try {
@@ -527,12 +534,12 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
 
       // Per ogni mittente non classificato
       for (const sender of senders) {
-        // Get email samples
+        // Get email samples - VERIFICARE SCHEMA COLONNE
         const { data: emailSamples } = await supabase
           .from('email_messages')
-          .select('subject, snippet, date')
+          .select('subject, body_text, created_at')
           .eq('from_address', sender.email)
-          .order('date', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(5);
 
         if (!emailSamples || emailSamples.length === 0) continue;
@@ -543,8 +550,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
             sender_email: sender.email,
             email_samples: emailSamples.map(e => ({
               subject: e.subject || '',
-              body_preview: e.snippet || '',
-              date: e.date
+              body_preview: (e.body_text || '').substring(0, 200),
+              date: e.created_at
             })),
             existing_groups: groups.map(g => ({
               id: g.id,
@@ -580,6 +587,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     } finally {
       setIsGeneratingSuggestions(false);
     }
+    */
   };
 
   // 🤖 Handler accetta suggerimento

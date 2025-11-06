@@ -126,20 +126,6 @@ serve(async (req) => {
 
     for (const sender of batchSenders) {
       try {
-        // ✅ SAFETY CHECK: Skip if suggestion already exists (avoid reprocessing)
-        const { data: existingSuggestion } = await supabase
-          .from('ai_categorization_suggestions')
-          .select('id')
-          .eq('batch_id', batch_id)
-          .eq('sender_email', sender.email)
-          .maybeSingle();
-
-        if (existingSuggestion) {
-          console.log(`⏭️ Skipping ${sender.email} (already processed in this batch)`);
-          suggestions.push({ status: 'fulfilled', value: { sender_email: sender.email, skipped: true } });
-          continue;
-        }
-
         const result = await processSender(
           sender,
           existing_groups,
@@ -184,13 +170,6 @@ serve(async (req) => {
 
     for (const result of successful) {
       const data = result.value;
-      
-      // Skip if already processed (safety check results)
-      if (data.skipped) {
-        console.log(`⏭️ Skipped result: ${data.sender_email}`);
-        continue;
-      }
-      
       totalInputTokens += data.tokens_input;
       totalOutputTokens += data.tokens_output;
       totalCostEur += data.cost_eur;

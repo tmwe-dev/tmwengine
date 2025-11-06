@@ -666,9 +666,92 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       const unclassifiedSenders = senders.filter(s => !s.isClassified);
       const MAX_EMAILS_PER_SENDER = 5;
       
-      // Fetch email samples
+      // 🆕 SMART RESUME: Check for already processed senders
+      let batchId = resumeFromIndex === 0 ? crypto.randomUUID() : currentBatchId;
+      let sendersToProcess = unclassifiedSenders;
+      
+      if (resumeFromIndex > 0 && currentBatchId) {
+        // Resuming: exclude already processed senders
+        const { data: alreadyProcessed } = await supabase
+          .from('ai_categorization_suggestions')
+          .select('sender_email')
+          .eq('batch_id', currentBatchId);
+        
+        const processedEmails = new Set(alreadyProcessed?.map(s => s.sender_email) || []);
+        
+        sendersToProcess = unclassifiedSenders.filter(
+          s => !processedEmails.has(s.email)
+        );
+        
+        console.log(`♻️ Resuming batch ${currentBatchId}: ${processedEmails.size} already processed, ${sendersToProcess.length} remaining`);
+        toast({
+          title: '♻️ Ripresa analisi',
+          description: `${processedEmails.size} mittenti già processati, continuo con ${sendersToProcess.length} rimanenti`,
+        });
+      } else {
+        // New analysis: check for orphaned suggestions from previous failed batch
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        const { data: recentBatch } = await supabase
+          .from('ai_categorization_progress')
+          .select('*')
+          .eq('user_id', user?.id)
+          .in('status', ['processing', 'failed'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (recentBatch) {
+          // Found incomplete batch, load already processed senders
+          const { data: alreadyProcessed } = await supabase
+            .from('ai_categorization_suggestions')
+            .select('sender_email')
+            .eq('batch_id', recentBatch.batch_id);
+          
+          if (alreadyProcessed && alreadyProcessed.length > 0) {
+            // Ask user if they want to continue or start fresh
+            const costSavings = (alreadyProcessed.length * 0.03).toFixed(2);
+            const shouldContinue = window.confirm(
+              `🔍 Trovata analisi precedente con ${alreadyProcessed.length} mittenti già analizzati.\n\n` +
+              `💰 Continuare ti farà risparmiare circa €${costSavings}\n\n` +
+              `✅ Clicca OK per continuare da dove ti eri interrotto\n` +
+              `❌ Clicca Annulla per ricominciare da capo`
+            );
+            
+            if (shouldContinue) {
+              batchId = recentBatch.batch_id;
+              setCurrentBatchId(batchId);
+              
+              const processedEmails = new Set(alreadyProcessed.map(s => s.sender_email));
+              sendersToProcess = unclassifiedSenders.filter(
+                s => !processedEmails.has(s.email)
+              );
+              
+              // Load existing suggestions
+              await loadPartialSuggestions(batchId);
+              
+              console.log(`✅ Continuing batch ${batchId}: ${alreadyProcessed.length} already done, ${sendersToProcess.length} remaining`);
+              toast({
+                title: '✅ Analisi ripresa',
+                description: `Continuando da ${alreadyProcessed.length} mittenti già elaborati. Risparmio: €${costSavings}`,
+              });
+            }
+          }
+        }
+      }
+      
+      if (sendersToProcess.length === 0) {
+        toast({
+          title: '✅ Analisi già completata',
+          description: 'Tutti i mittenti sono già stati elaborati',
+        });
+        setIsAnalyzing(false);
+        return;
+      }
+      
+      // Fetch email samples (only for senders to process)
       const sendersWithEmails = await Promise.all(
-        unclassifiedSenders.map(async (sender) => {
+        sendersToProcess.map(async (sender) => {
           const { data: emails } = await supabase
             .from('email_messages')
             .select('subject, body_text, data_ricezione')
@@ -696,21 +779,21 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         description: g.descrizione
       }));
       
-      const batchId = resumeFromIndex === 0 ? crypto.randomUUID() : currentBatchId;
-      if (resumeFromIndex === 0) {
+      // Set batch ID if new analysis
+      if (resumeFromIndex === 0 && !currentBatchId) {
         setCurrentBatchId(batchId);
-        setShowProgressDialog(true);
       }
+      setShowProgressDialog(true);
       
       const { data: { user } } = await supabase.auth.getUser();
       
       // Mini-batch recursive loop
       let currentIndex = resumeFromIndex;
-      const totalBatches = Math.ceil(unclassifiedSenders.length / BATCH_SIZE);
+      const totalBatches = Math.ceil(sendersToProcess.length / BATCH_SIZE);
       
-      while (currentIndex < unclassifiedSenders.length) {
+      while (currentIndex < sendersToProcess.length) {
         const currentBatchNumber = Math.floor(currentIndex / BATCH_SIZE) + 1;
-        console.log(`🔄 Batch ${currentBatchNumber}/${totalBatches} (mittenti ${currentIndex}-${Math.min(currentIndex + BATCH_SIZE, unclassifiedSenders.length)})`);
+        console.log(`🔄 Batch ${currentBatchNumber}/${totalBatches} (mittenti ${currentIndex}-${Math.min(currentIndex + BATCH_SIZE, sendersToProcess.length)})`);
         
         let retryCount = 0;
         let batchSuccess = false;
@@ -749,7 +832,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
               console.log('✅ All batches completed!');
               toast({
                 title: '✅ Analisi AI completata!',
-                description: `${unclassifiedSenders.length} mittenti classificati con successo`,
+                description: `${sendersToProcess.length} mittenti classificati con successo`,
               });
               await handleAnalysisComplete();
             }

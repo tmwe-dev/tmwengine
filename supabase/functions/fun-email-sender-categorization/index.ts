@@ -168,6 +168,10 @@ serve(async (req) => {
         );
         suggestions.push({ status: 'fulfilled', value: result });
       } catch (error) {
+        console.error(`❌ [AI Categorization] Error processing ${sender.email}:`, error);
+        console.error(`   Error type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+        console.error(`   Error message: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(`   Error stack: ${error instanceof Error ? error.stack : 'N/A'}`);
         suggestions.push({ status: 'rejected', reason: error });
       }
 
@@ -328,7 +332,10 @@ async function processSender(
   aiConfig: any,
   supabase: any
 ) {
-  // Build dynamic system prompt with existing groups context
+  try {
+    console.log(`[AI Categorization] 🚀 Starting processing: ${sender.email}`);
+    
+    // Build dynamic system prompt with existing groups context
   const systemPrompt = `${baseSystemPrompt}
 
 GRUPPI ESISTENTI:
@@ -414,6 +421,7 @@ Analizza e categorizza questo mittente.`;
     }
 
     aiData = await response.json();
+    console.log(`[AI Categorization] ✅ Lovable/Google API Response received for ${sender.email}:`, JSON.stringify(aiData).substring(0, 200));
     usage = aiData.usage;
 
   } else if (aiConfig.provider === 'openai') {
@@ -443,6 +451,7 @@ Analizza e categorizza questo mittente.`;
     }
 
     aiData = await response.json();
+    console.log(`[AI Categorization] ✅ OpenAI API Response received for ${sender.email}:`, JSON.stringify(aiData).substring(0, 200));
     usage = aiData.usage;
 
   } else if (aiConfig.provider === 'anthropic') {
@@ -476,6 +485,7 @@ Analizza e categorizza questo mittente.`;
     }
 
     const claudeData = await response.json();
+    console.log(`[AI Categorization] ✅ Anthropic API Response received for ${sender.email}:`, JSON.stringify(claudeData).substring(0, 200));
     const toolUse = claudeData.content?.find((c: any) => c.type === 'tool_use');
     if (!toolUse) throw new Error('No tool use in Claude response');
 
@@ -499,7 +509,10 @@ Analizza e categorizza questo mittente.`;
 
   // Parse tool call result
   const toolCall = aiData.choices[0]?.message?.tool_calls?.[0];
+  console.log(`[AI Categorization] 🔧 Tool call for ${sender.email}:`, toolCall ? 'found' : 'NOT FOUND');
+  
   if (!toolCall) {
+    console.error(`[AI Categorization] ❌ No tool call in response for ${sender.email}. Full response:`, JSON.stringify(aiData));
     throw new Error('No tool call in AI response');
   }
 
@@ -537,6 +550,8 @@ Analizza e categorizza questo mittente.`;
     : ((usage.prompt_tokens || 0) * getCostPerToken(aiConfig.modello, 'input') +
         (usage.completion_tokens || 0) * getCostPerToken(aiConfig.modello, 'output'));
 
+  console.log(`[AI Categorization] ✅ Successfully processed ${sender.email}`);
+
   return {
     sender_email: sender.email,
     suggested_group: parsedResult.suggested_group,
@@ -546,6 +561,10 @@ Analizza e categorizza questo mittente.`;
     tokens_output: usage.completion_tokens || 0,
     cost_eur: costEur,
   };
+  } catch (error) {
+    console.error(`[AI Categorization] 💥 FATAL ERROR in processSender for ${sender.email}:`, error);
+    throw error; // Re-throw per permettere catch esterno
+  }
 }
 
 function getCostPerToken(model: string, type: 'input' | 'output'): number {

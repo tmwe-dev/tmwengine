@@ -280,6 +280,32 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         return;
       }
 
+      // 🆕 Auto-reset batch stuck (oltre 2 ore)
+      const { data: stuckBatches } = await supabase
+        .from('ai_categorization_progress')
+        .select('batch_id, started_at')
+        .eq('status', 'processing')
+        .eq('user_id', user.id);
+
+      if (stuckBatches && stuckBatches.length > 0) {
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+        
+        for (const batch of stuckBatches) {
+          if (new Date(batch.started_at) < twoHoursAgo) {
+            console.warn(`⚠️ Resetting stuck batch: ${batch.batch_id}`);
+            
+            await supabase
+              .from('ai_categorization_progress')
+              .update({ 
+                status: 'failed', 
+                error_message: 'Timeout automatico - batch bloccato oltre 2 ore',
+                updated_at: new Date().toISOString()
+              })
+              .eq('batch_id', batch.batch_id);
+          }
+        }
+      }
+
       const { data: groupsData, error: groupsError } = await supabase
         .from('email_sender_groups')
         .select('*')
@@ -319,6 +345,45 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         .eq('user_id', user.id);
       
       setPendingSuggestionsCount(pendingSuggestions?.length || 0);
+
+      // 🆕 Carica TUTTI i suggerimenti pending (non solo batch corrente)
+      const { data: allPendingSuggestions } = await supabase
+        .from('ai_categorization_suggestions')
+        .select('*')
+        .eq('status', 'pending')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (allPendingSuggestions && allPendingSuggestions.length > 0) {
+        setAiSuggestions(allPendingSuggestions.map(s => ({
+          id: s.id,
+          sender_email: s.sender_email,
+          suggested_group: {
+            id: s.suggested_group_id,
+            name: s.suggested_group_name,
+            type: s.suggested_group_type as any,
+            color: s.suggested_group_color,
+            icon: s.suggested_group_icon,
+            is_new: s.is_new_group
+          },
+          confidence: s.confidence,
+          reasoning: s.reasoning,
+          cost: {
+            tokens_input: s.tokens_input || 0,
+            tokens_output: s.tokens_output || 0,
+            eur: s.cost_eur || 0,
+            is_free: s.model_used?.includes('gemini-2.5-flash') || false
+          },
+          status: 'pending' as const
+        })));
+
+        // Mostra toast informativo
+        toast({
+          title: '💡 Suggerimenti AI disponibili',
+          description: `Hai ${allPendingSuggestions.length} suggerimenti in attesa di revisione. Clicca l'icona 💡 per vederli.`,
+          duration: 8000,
+        });
+      }
 
       // Carica mittenti assegnati per gruppo via email_sender_rules
       const { data: rulesData } = await supabase
@@ -1174,20 +1239,35 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
                 Categorizzazione AI Automatica
               </CardTitle>
               
-              {/* Cost preview */}
-              {estimatedCost && (
-                <div className="text-sm">
-                  {estimatedCost.is_free ? (
-                    <Badge variant="secondary" className="bg-green-50 text-green-700">
-                      ✅ GRATIS
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary">
-                      💰 ~€{estimatedCost.eur.toFixed(4)}
-                    </Badge>
-                  )}
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                {/* 🆕 Bottone Vedi Suggerimenti */}
+                {aiSuggestions.length > 0 && (
+                  <Button
+                    onClick={() => setShowAISuggestionsDialog(true)}
+                    variant="default"
+                    size="sm"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+                  >
+                    <Lightbulb className="mr-2 h-4 w-4" />
+                    Vedi {aiSuggestions.length} Suggerimenti
+                  </Button>
+                )}
+                
+                {/* Cost preview */}
+                {estimatedCost && (
+                  <div className="text-sm">
+                    {estimatedCost.is_free ? (
+                      <Badge variant="secondary" className="bg-green-50 text-green-700">
+                        ✅ GRATIS
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">
+                        💰 ~€{estimatedCost.eur.toFixed(4)}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             
             <CardDescription>

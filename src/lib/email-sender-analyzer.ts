@@ -148,6 +148,12 @@ export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[
       const domain = extractDomain(email);
       const companyName = extractCompanyName(email);
       const currentGroup = rulesMap.get(email.toLowerCase());
+      const hasAISuggestion = aiSuggestionsSet.has(email.toLowerCase());
+      
+      // 🔍 Debug logging per suggerimenti AI
+      if (hasAISuggestion) {
+        console.log(`🤖 Sender with AI suggestion: ${email} - isClassified: true`);
+      }
       
       return {
         email,
@@ -159,15 +165,20 @@ export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[
         hasAttachments: false, // Rimosso per performance
         topSubjectKeywords: [],
         avgSubjectLength: 0,
-        isClassified: !!currentGroup || aiSuggestionsSet.has(email.toLowerCase()),
+        isClassified: !!currentGroup || hasAISuggestion,
         currentGroup,
       };
     });
     
-    console.log(`✅ Analisi completata: ${analyses.length} mittenti`);
-    console.log(`📊 Classificati (con regola): ${analyses.filter(a => !!rulesMap.get(a.email.toLowerCase())).length}`);
-    console.log(`🤖 Classificati (con suggerimento AI): ${analyses.filter(a => aiSuggestionsSet.has(a.email.toLowerCase())).length}`);
-    console.log(`❓ Non classificati: ${analyses.filter(a => !a.isClassified).length}`);
+  const classifiedWithRule = analyses.filter(a => !!rulesMap.get(a.email.toLowerCase())).length;
+  const classifiedWithAI = analyses.filter(a => aiSuggestionsSet.has(a.email.toLowerCase())).length;
+  const unclassified = analyses.filter(a => !a.isClassified).length;
+  
+  console.log(`✅ Analisi completata: ${analyses.length} mittenti totali`);
+  console.log(`📊 Classificati con regola: ${classifiedWithRule}`);
+  console.log(`🤖 Classificati con suggerimento AI: ${classifiedWithAI}`);
+  console.log(`✅ Totale classificati: ${classifiedWithRule + classifiedWithAI}`);
+  console.log(`❓ Non classificati: ${unclassified}`);
     
     return analyses;
     

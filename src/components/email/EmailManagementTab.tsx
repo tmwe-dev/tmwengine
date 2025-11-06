@@ -302,6 +302,12 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       }
 
       const analysis = await analyzeSenders(profile.tmwe_email);
+      
+      // 🔍 Debug logging per conteggio mittenti
+      console.log(`📊 Total senders analyzed: ${analysis.length}`);
+      console.log(`✅ Classified senders: ${analysis.filter(s => s.isClassified).length}`);
+      console.log(`❓ Unclassified senders: ${analysis.filter(s => !s.isClassified).length}`);
+      
       const unclassified = analysis.filter(s => !s.isClassified);
       setSenders(unclassified);
       

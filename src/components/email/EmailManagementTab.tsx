@@ -21,6 +21,7 @@ import { SortOption } from './management/SenderSortControls';
 import type { GroupingSuggestion } from '@/types/email-management';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { GroupingSuggestionCard } from './management/GroupingSuggestionCard';
+import { AIConfigurationGuide } from './management/AIConfigurationGuide';
 
 // Collisione personalizzata 70%
 const carousel70PercentCollision: CollisionDetection = (args) => {
@@ -94,6 +95,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [groupingSuggestions, setGroupingSuggestions] = useState<GroupingSuggestion[]>([]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
+  const [aiConfigError, setAiConfigError] = useState<string | null>(null);
   
   const [carouselZoom, setCarouselZoom] = useState(() => {
     const saved = localStorage.getItem('email-carousel-zoom');
@@ -223,6 +225,30 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     };
   }, []);
 
+  // 🤖 Carica suggerimenti AI dalla tabella
+  const loadGroupingSuggestions = async (userEmail: string) => {
+    try {
+      const { data: suggestions, error } = await supabase
+        .from('email_sender_grouping_suggestions' as any)
+        .select('*')
+        .eq('user_email', userEmail)
+        .eq('status', 'pending')
+        .order('analyzed_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (suggestions && suggestions.length > 0) {
+        setGroupingSuggestions(suggestions as GroupingSuggestion[]);
+        console.log(`🤖 Caricati ${suggestions.length} suggerimenti AI pending`);
+        
+        // Auto-mostra dialog se ci sono suggerimenti
+        setShowSuggestionsDialog(true);
+      }
+    } catch (error: any) {
+      console.error('❌ Errore caricamento suggerimenti:', error);
+    }
+  };
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -290,6 +316,9 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       setAssignedSenders(sendersMap);
       
       console.log(`👥 Mittenti non classificati: ${unclassified.length} / ${analysis.length}`);
+
+      // 🤖 Carica suggerimenti AI pending
+      await loadGroupingSuggestions(profile.tmwe_email);
 
       toast({
         title: '✅ Dati caricati',
@@ -866,6 +895,19 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           </DialogHeader>
 
           <div className="space-y-4">
+            {aiConfigError && (
+              <AIConfigurationGuide 
+                error={aiConfigError} 
+                onDismiss={() => setAiConfigError(null)}
+              />
+            )}
+            
+            {groupingSuggestions.length === 0 && !aiConfigError && (
+              <p className="text-center text-muted-foreground py-8">
+                Nessun suggerimento disponibile. Genera suggerimenti AI per iniziare.
+              </p>
+            )}
+
             {groupingSuggestions.map((suggestion) => (
               <GroupingSuggestionCard
                 key={suggestion.id}

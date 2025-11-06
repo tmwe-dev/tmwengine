@@ -75,26 +75,19 @@ export const DEFAULT_GROUPS: Array<{
   { name: 'Offerte', type: 'offerte', color: '#14B8A6', icon: '💰', description: 'Quotazioni, preventivi' },
 ];
 
-// AI Sender Categorization
-export interface AISuggestion {
-  id: string; // DB id
+// AI Raggruppamento Suggerito (nuovo sistema)
+export interface GroupingSuggestion {
+  id: string;
+  user_email: string;
   sender_email: string;
-  suggested_group: {
-    id: string | null;
-    name: string;
-    type: GroupType | 'altro';
-    color?: string;
-    icon?: string;
-    is_new: boolean;
-    description?: string;
-  };
-  confidence: number;
-  reasoning: string;
-  cost: {
-    tokens_input: number;
-    tokens_output: number;
-    eur: number;
-    is_free: boolean;
-  };
-  status: 'pending' | 'accepted' | 'rejected';
+  suggested_groups: Array<{
+    group_id: string | null;
+    group_name: string;
+    confidence: number;
+    reason: string;
+  }>;
+  analyzed_at: string;
+  status: 'pending' | 'accepted' | 'dismissed';
+  created_at: string;
+  updated_at: string;
 }

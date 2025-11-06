@@ -22,14 +22,9 @@ import { CreateCategoryDialog } from './management/CreateCategoryDialog';
 import { SenderSortControls, SortOption } from './management/SenderSortControls';
 import { FloatingZoomControl } from './management/FloatingZoomControl';
 import { AISidebarSlider } from '../ai/AISidebarSlider';
-import { SenderAISuggestionCard } from './management/SenderAISuggestionCard';
-import type { AISuggestion } from '@/types/email-management';
-import { calculateEstimatedCost, getDefaultColorForType, getDefaultIconForType } from '@/lib/ai-categorization-utils';
-import { Sparkles, Lightbulb, CheckCheck, X as XIcon, Loader2 as LoaderIcon } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { AICategorizationProgressDialog } from './management/AICategorizationProgressDialog';
+import { GroupingSuggestionCard } from './management/GroupingSuggestionCard';
+import type { GroupingSuggestion } from '@/types/email-management';
+import { Sparkles, Loader2 as LoaderIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Collisione personalizzata 70%
@@ -102,27 +97,10 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const groupUpdateCallbacksRef = useRef<Map<string, (senderEmail: string) => void>>(new Map());
   const groupUpdateCallbacks = groupUpdateCallbacksRef.current;
   
-  // 🤖 AI Categorization State
-  const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
-  const [selectedAIModel, setSelectedAIModel] = useState('google/gemini-2.5-flash'); // Default gratuito
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [estimatedCost, setEstimatedCost] = useState<{ eur: number; is_free: boolean } | null>(null);
-  const [showAIConfirmDialog, setShowAIConfirmDialog] = useState(false);
-  const [showProgressDialog, setShowProgressDialog] = useState(false);
-  const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
-  const [unclassifiedCount, setUnclassifiedCount] = useState(0);
-  const [showResumeButton, setShowResumeButton] = useState(false);
-  const [hasShownResumeToast, setHasShownResumeToast] = useState(false);
-  const lastLoadRef = useRef(0);
-  const [showAISuggestionsDialog, setShowAISuggestionsDialog] = useState(false);
-  const [suggestionFilterMinEmails, setSuggestionFilterMinEmails] = useState(1);
-  const [pendingSuggestionsCount, setPendingSuggestionsCount] = useState(0);
-  
-  // 🆕 Soglia minima email per analisi AI (persistita in localStorage)
-  const [minEmailsThreshold, setMinEmailsThreshold] = useState(() => {
-    const saved = localStorage.getItem('ai-min-emails-threshold');
-    return saved ? parseInt(saved) : 2; // Default: analizza mittenti con almeno 2 email
-  });
+  // 🤖 Nuovo Sistema Raggruppamento Suggerito
+  const [groupingSuggestions, setGroupingSuggestions] = useState<GroupingSuggestion[]>([]);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
   
   // Persist carousel zoom in localStorage
   const [carouselZoom, setCarouselZoom] = useState(() => {
@@ -280,32 +258,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         return;
       }
 
-      // 🆕 Auto-reset batch stuck (oltre 2 ore)
-      const { data: stuckBatches } = await supabase
-        .from('ai_categorization_progress')
-        .select('batch_id, started_at')
-        .eq('status', 'processing')
-        .eq('user_id', user.id);
-
-      if (stuckBatches && stuckBatches.length > 0) {
-        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-        
-        for (const batch of stuckBatches) {
-          if (new Date(batch.started_at) < twoHoursAgo) {
-            console.warn(`⚠️ Resetting stuck batch: ${batch.batch_id}`);
-            
-            await supabase
-              .from('ai_categorization_progress')
-              .update({ 
-                status: 'failed', 
-                error_message: 'Timeout automatico - batch bloccato oltre 2 ore',
-                updated_at: new Date().toISOString()
-              })
-              .eq('batch_id', batch.batch_id);
-          }
-        }
-      }
-
       const { data: groupsData, error: groupsError } = await supabase
         .from('email_sender_groups')
         .select('*')
@@ -336,49 +288,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       
       const unclassified = analysis.filter(s => !s.isClassified);
       setSenders(unclassified);
-      
-      // 🆕 Conta suggerimenti pending
-      const { data: pendingSuggestions } = await supabase
-        .from('ai_categorization_suggestions')
-        .select('id')
-        .eq('status', 'pending')
-        .eq('user_id', user.id);
-      
-      setPendingSuggestionsCount(pendingSuggestions?.length || 0);
-
-      // 🆕 Carica TUTTI i suggerimenti pending (non solo batch corrente)
-      const { data: allPendingSuggestions } = await supabase
-        .from('ai_categorization_suggestions')
-        .select('*')
-        .eq('status', 'pending')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (allPendingSuggestions && allPendingSuggestions.length > 0) {
-        setAiSuggestions(allPendingSuggestions.map(s => ({
-          id: s.id,
-          sender_email: s.sender_email,
-          suggested_group: {
-            id: s.suggested_group_id,
-            name: s.suggested_group_name,
-            type: s.suggested_group_type as any,
-            color: s.suggested_group_color,
-            icon: s.suggested_group_icon,
-            is_new: s.is_new_group
-          },
-          confidence: s.confidence,
-          reasoning: s.reasoning,
-          cost: {
-            tokens_input: s.tokens_input || 0,
-            tokens_output: s.tokens_output || 0,
-            eur: s.cost_eur || 0,
-            is_free: s.model_used?.includes('gemini-2.5-flash') || false
-          },
-          status: 'pending' as const
-        })));
-
-        // 🔥 FIX: Rimosso toast da loadData() - verrà mostrato solo in handleAnalysisComplete
-      }
 
       // Carica mittenti assegnati per gruppo via email_sender_rules
       const { data: rulesData } = await supabase

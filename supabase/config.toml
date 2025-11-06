@@ -159,10 +159,8 @@ secret = ""
 enabled = false
 port = 54327
 vector_port = 54328
-# Setup
 backend = "postgres"
 
-# Edge Functions Configuration
 [functions.tmwe-email-webhook]
 verify_jwt = false
 
@@ -311,6 +309,5 @@ verify_jwt = true
 [functions.background-email-sync-test]
 verify_jwt = true
 
-[functions.fun-email-sender-categorization]
+[functions.suggest-sender-grouping]
 verify_jwt = true
-

@@ -199,11 +199,18 @@ Suggerisci i gruppi più appropriati per questo mittente.`;
             })
           });
         } else if (aiConfig.provider === 'lovable') {
+          // 🔑 Lovable AI usa LOVABLE_API_KEY dal env (non dalla tabella)
+          const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+          if (!lovableApiKey) {
+            console.log(`⏭️ Skipping lovable: LOVABLE_API_KEY not configured`);
+            continue;
+          }
+          
           aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${aiConfig.api_key}`
+              'Authorization': `Bearer ${lovableApiKey}`
             },
             body: JSON.stringify({
               model: aiConfig.modello,

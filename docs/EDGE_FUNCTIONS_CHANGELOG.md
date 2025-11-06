@@ -9,6 +9,133 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-30] - Fix Multiple Active AI Configs
+
+### File Modificato
+- **Function:** `supabase/functions/suggest-sender-grouping/index.ts`
+- **Backup Creato:** `index-old1.ts`
+
+### Motivo Modifica
+L'edge function falliva con errore 500 quando nella tabella `config_ai` c'erano multiple configurazioni attive (`attivo: true`).
+
+**Errore PGRST116**: "Cannot coerce the result to a single JSON object" causato da `.single()` con 3 righe risultanti.
+
+**Comportamento errato:**
+```
+config_ai: 3 configurazioni con attivo=true
+→ Query con .single() → Errore PGRST116
+→ Edge function ritorna 500
+→ Tutte le chiamate AI falliscono
+```
+
+### Modifiche Apportate
+
+**Prima (buggy) - Lines 61-65:**
+```typescript
+const { data: aiConfig, error: configError } = await supabase
+  .from('config_ai')
+  .select('*')
+  .eq('attivo', true)
+  .single(); // ❌ Fallisce con multiple righe
+```
+
+**Dopo (fixed) - Lines 61-69:**
+```typescript
+const { data: aiConfigs, error: configError } = await supabase
+  .from('config_ai')
+  .select('*')
+  .eq('attivo', true)
+  .order('created_at', { ascending: false })
+  .limit(1);
+
+const aiConfig = aiConfigs?.[0]; // ✅ Seleziona la più recente
+```
+
+**Razionale:**
+1. `.single()` richiede esattamente 1 riga → fallisce con 0 o 2+ righe
+2. `.order('created_at', { ascending: false })` ordina per data creazione (più recente prima)
+3. `.limit(1)` prende solo la prima riga
+4. `aiConfigs?.[0]` accede al primo elemento dell'array in modo sicuro
+
+### Comportamento Atteso
+
+**Prima del fix:**
+```
+config_ai: 3 active configs
+→ suggest-sender-grouping → Error 500
+→ Console: "PGRST116: Cannot coerce..."
+→ Analisi AI fallisce completamente
+```
+
+**Dopo il fix:**
+```
+config_ai: 3 active configs
+→ suggest-sender-grouping → Usa Anthropic Claude Sonnet 4.5 (più recente)
+→ Analisi procede normalmente
+→ Suggerimenti salvati in email_sender_grouping_suggestions
+```
+
+### Testing
+
+#### Test 1: Verifica Configurazioni Attive
+```sql
+-- Verifica quante config sono attive
+SELECT id, provider, modello, attivo, created_at 
+FROM config_ai 
+WHERE attivo = true 
+ORDER BY created_at DESC;
+```
+**Atteso:** 3 righe (Anthropic Claude Sonnet 4.5, OpenAI GPT-4o, DeepSeek)
+
+#### Test 2: Edge Function Usa Config Corretta
+```bash
+1. Vai su /funnemail
+2. Click "🤖 Suggerisci Raggruppamenti"
+3. Apri Developer Tools → Console
+4. Verifica log edge function:
+   "✅ AI Config: { provider: 'anthropic', model: 'claude-sonnet-4-5' }"
+5. Conferma nessun errore 500
+6. Verifica suggerimenti salvati in database
+```
+
+#### Test 3: Verifica Priorità Configurazione
+```bash
+# Edge function deve usare la configurazione più recente
+1. Crea nuova config_ai con attivo=true e data recente
+2. Ripeti analisi AI
+3. Verifica console log usa la nuova configurazione
+4. Rollback se necessario
+```
+
+### Impatto
+
+✅ **Fix errore 500:** Edge function non fallisce più con multiple config attive  
+✅ **Priorità automatica:** Usa sempre la configurazione più recente  
+✅ **Robustezza:** Gestisce 0, 1 o N configurazioni senza crash  
+✅ **Retrocompatibilità:** Funziona anche con 1 sola config attiva  
+✅ **Costi stabili:** Analisi AI riprende normalmente  
+
+### Rollback Plan
+
+```bash
+cp supabase/functions/suggest-sender-grouping/index-old1.ts \
+   supabase/functions/suggest-sender-grouping/index.ts
+```
+
+### Note Aggiuntive
+
+**Considerazione futura (opzionale):**
+- Aggiungere colonna `priority` in `config_ai` per controllo esplicito priorità
+- Modificare UI per permettere selezione manuale configurazione
+- Disattivare configurazioni non utilizzate impostando `attivo: false`
+
+**Alternative valutate:**
+- ❌ Modificare UI per disattivare config non usate → Richiede intervento manuale
+- ❌ Usare `.maybeSingle()` → Fallisce comunque con 2+ righe
+- ✅ `.order().limit(1)` → Soluzione robusta e automatica
+
+---
+
 ## [2025-11-06] - Fix Riprocessamento Duplicati AI Categorization
 
 ### File Modificato

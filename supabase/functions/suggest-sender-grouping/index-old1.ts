@@ -57,15 +57,12 @@ serve(async (req) => {
       );
     }
 
-    // Get active AI config (most recent if multiple)
-    const { data: aiConfigs, error: configError } = await supabase
+    // Get active AI config
+    const { data: aiConfig, error: configError } = await supabase
       .from('config_ai')
       .select('*')
       .eq('attivo', true)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    const aiConfig = aiConfigs?.[0];
+      .single();
 
     if (configError || !aiConfig) {
       console.error('❌ No active AI config:', configError);

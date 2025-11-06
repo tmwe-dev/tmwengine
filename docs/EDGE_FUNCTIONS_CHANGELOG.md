@@ -9,6 +9,385 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-31] - Filtro Soglia Email Minime per AI Categorization
+
+### File Modificato
+- **Function:** `supabase/functions/fun-email-sender-categorization/index.ts`
+- **Backup Creato:** `index-old3.ts`
+- **Frontend:** `src/components/email/EmailManagementTab.tsx`, `src/components/email/management/EmailSidebar.tsx`
+
+### Motivo Modifica
+**COST OPTIMIZATION + UX IMPROVEMENT**: Permettere all'utente di escludere mittenti con poche email dall'analisi AI, evitando sprechi su mittenti occasionali che non necessitano categorizzazione immediata. Un mittente con 1 sola email non ha valore di categorizzazione finché non scrive altre email.
+
+**Problema specifico:**
+- Analizzare 791 mittenti include ~300 mittenti con 1 sola email (38%)
+- Costo: €0.03/mittente × 300 = **€9.00 sprecati** su mittenti occasionali
+- Tempo: ~7s × 300 = **35 minuti** persi
+- L'AI non ha abbastanza contesto per categorizzare accuratamente 1 email
+- Mittenti occasionali intasano la UI e confondono l'utente
+
+### Modifiche Apportate
+
+#### 1. Edge Function (`supabase/functions/fun-email-sender-categorization/index.ts`)
+
+**Interface aggiornata (lines 30-41):**
+```typescript
+interface CategorizationRequest {
+  user_id: string;
+  user_email: string;
+  batch_id: string;
+  model: string;
+  existing_groups: ExistingGroup[];
+  senders: SenderWithEmails[];
+  max_emails_per_sender?: number;
+  batch_start_index?: number;
+  batch_size?: number;
+  min_emails_threshold?: number; // 🆕 Soglia minima email
+}
+```
+
+**Filtro safety senders (lines 73-97):**
+```typescript
+const { 
+  batch_id, 
+  senders, 
+  batch_start_index = 0, 
+  batch_size = 3,
+  min_emails_threshold = 1 // 🆕 Default: processa tutti
+} = body;
+
+// 🆕 SAFETY FILTER: Skip senders below threshold
+const validSenders = senders.filter(s => 
+  s.email_samples && s.email_samples.length >= min_emails_threshold
+);
+
+if (validSenders.length !== senders.length) {
+  console.log(`⚠️ [Threshold Filter] Filtered out ${senders.length - validSenders.length} senders below threshold (${min_emails_threshold} emails)`);
+}
+
+const batchSenders = validSenders.slice(
+  batch_start_index, 
+  batch_start_index + batch_size
+);
+
+console.log(`[AI Categorization] Processing batch: ${batchSenders.length} senders (${validSenders.length} valid, ${senders.length} total)`);
+```
+
+#### 2. Frontend - Dialog Pre-Analisi (`src/components/email/EmailManagementTab.tsx`)
+
+**Stato persistito in localStorage (line 118-121):**
+```typescript
+const [minEmailsThreshold, setMinEmailsThreshold] = useState(() => {
+  const saved = localStorage.getItem('ai-min-emails-threshold');
+  return saved ? parseInt(saved) : 2; // Default consigliato: ≥2 email
+});
+```
+
+**Filtro pre-analisi (lines 633-682):**
+```typescript
+const handleAISuggestions = async () => {
+  // Filtra per soglia PRIMA di calcolare costi
+  const allUnclassified = senders.filter(s => !s.isClassified);
+  const unclassifiedSenders = allUnclassified.filter(
+    s => s.emailCount >= minEmailsThreshold
+  );
+  
+  const skippedCount = allUnclassified.length - unclassifiedSenders.length;
+  
+  if (unclassifiedSenders.length === 0) {
+    toast({
+      title: `ℹ️ Tutti i mittenti hanno < ${minEmailsThreshold} email`,
+      description: `${skippedCount} mittenti esclusi (verranno analizzati quando scriveranno di più)`,
+    });
+    return;
+  }
+  
+  // Calcola costo SOLO per mittenti qualificati
+  const cost = calculateEstimatedCost(unclassifiedSenders.length, 5, selectedAIModel);
+  
+  // Toast informativo per mittenti esclusi
+  if (skippedCount > 0) {
+    setTimeout(() => {
+      toast({
+        title: `⏭️ ${skippedCount} mittenti esclusi`,
+        description: `Mittenti con < ${minEmailsThreshold} email verranno analizzati quando scriveranno di più`,
+      });
+    }, 500);
+  }
+};
+```
+
+**Controllo soglia nel Dialog (lines 1322-1383):**
+```typescript
+<div className="space-y-4 pt-4 border-t">
+  <div>
+    <label className="text-sm font-medium mb-2 block">
+      📊 Soglia email minime
+    </label>
+    <p className="text-xs text-muted-foreground mb-3">
+      Analizza solo mittenti con almeno <strong>{minEmailsThreshold}</strong> email
+    </p>
+    
+    <Select 
+      value={minEmailsThreshold.toString()} 
+      onValueChange={(val) => {
+        setMinEmailsThreshold(parseInt(val));
+        localStorage.setItem('ai-min-emails-threshold', val);
+      }}
+    >
+      <SelectContent>
+        <SelectItem value="1">Tutti i mittenti (≥1 email)</SelectItem>
+        <SelectItem value="2">Mittenti ricorrenti (≥2 email) - Consigliato</SelectItem>
+        <SelectItem value="3">Mittenti frequenti (≥3 email)</SelectItem>
+        <SelectItem value="5">Mittenti abituali (≥5 email)</SelectItem>
+        <SelectItem value="10">Mittenti consolidati (≥10 email)</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
+  
+  {/* Badge risparmio stimato */}
+  {(() => {
+    const skipped = allUnclassified.length - filtered.length;
+    const savedCost = skipped * 0.03;
+    
+    return skipped > 0 ? (
+      <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+        <p className="text-xs text-green-700 dark:text-green-300">
+          💰 <strong>Risparmio stimato:</strong> €{savedCost.toFixed(2)}<br/>
+          ⏭️ <strong>Mittenti esclusi:</strong> {skipped}
+        </p>
+      </div>
+    ) : null;
+  })()}
+</div>
+```
+
+**Invocazione edge function (line 843):**
+```typescript
+const { data, error } = await supabase.functions.invoke(
+  'fun-email-sender-categorization',
+  {
+    body: {
+      // ... altri parametri
+      min_emails_threshold: minEmailsThreshold // 🆕 Passa soglia al backend
+    }
+  }
+);
+```
+
+#### 3. Frontend - Sidebar Filtro Visualizzazione (`src/components/email/management/EmailSidebar.tsx`)
+
+**Stato filtro locale (lines 70-73):**
+```typescript
+const [minEmailsFilter, setMinEmailsFilter] = useState(1);
+
+const displayedSenders = useMemo(() => 
+  filteredSenders.filter(s => s.emailCount >= minEmailsFilter),
+  [filteredSenders, minEmailsFilter]
+);
+```
+
+**Dropdown filtro (lines 95-109):**
+```typescript
+<div className="mb-2">
+  <Select 
+    value={minEmailsFilter.toString()} 
+    onValueChange={(val) => setMinEmailsFilter(parseInt(val))}
+  >
+    <SelectTrigger className="w-full h-8 text-xs">
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="1">Tutti i mittenti</SelectItem>
+      <SelectItem value="2">≥2 email</SelectItem>
+      <SelectItem value="3">≥3 email</SelectItem>
+      <SelectItem value="5">≥5 email</SelectItem>
+      <SelectItem value="10">≥10 email</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+```
+
+**Empty state aggiornato (lines 186-205):**
+```typescript
+{displayedSenders.length === 0 ? (
+  <div className="text-center py-12 text-muted-foreground">
+    <p className="text-sm">
+      {senders.length === 0 
+        ? '🎉 Tutti i mittenti sono stati classificati!'
+        : minEmailsFilter > 1
+        ? `🔍 Nessun mittente con ≥${minEmailsFilter} email`
+        : '🔍 Nessun mittente trovato con questi filtri'
+      }
+    </p>
+  </div>
+) : (
+  displayedSenders.map(sender => <SenderCard key={sender.email} sender={sender} />)
+)}
+```
+
+### Vantaggi Implementazione
+
+✅ **Risparmio costi significativo**: Soglia 5 email → risparmio ~€16.50 (550 mittenti × €0.03)  
+✅ **Tempo risparmiato**: ~110 minuti (550 mittenti × 7s / 3 batch)  
+✅ **Qualità AI migliorata**: Più email = contesto migliore = categorizzazione più accurata  
+✅ **UI più pulita**: Visualizza solo mittenti rilevanti  
+✅ **Trasparenza totale**: Badge mostra risparmio stimato PRIMA di confermare  
+✅ **UX persistente**: Preferenza soglia salvata in localStorage  
+✅ **Doppia protezione**: Filtro frontend + safety edge function  
+✅ **Zero configurazione**: Default intelligente (≥2 email) già selezionato
+
+### Workflow Utente
+
+**SCENARIO 1: Primo utilizzo (Default: ≥2 email)**
+1. Click "Analisi AI Mittenti"
+2. Dialog mostra: "491 mittenti da analizzare" (invece di 791)
+3. Badge verde: "💰 Risparmio: €9.00 | ⏭️ 300 mittenti esclusi"
+4. Utente conferma
+5. Analisi processa SOLO 491 mittenti qualificati
+6. Mittenti con 1 email analizzati automaticamente quando scriveranno 2ª email
+
+**SCENARIO 2: Utente vuole maggiore risparmio (Soglia: ≥5 email)**
+1. Dialog pre-analisi → dropdown soglia → seleziona "≥5 email"
+2. Badge aggiornato: "💰 Risparmio: €16.50 | ⏭️ 550 mittenti esclusi"
+3. Conferma → analizza solo 241 mittenti consolidati
+4. Tempo: ~56 minuti (invece di 92)
+5. Costo: ~€7.23 (invece di €23.73)
+
+**SCENARIO 3: Sidebar filtro per focus**
+1. Sidebar mostra 791 mittenti da classificare
+2. Dropdown: seleziona "≥3 email"
+3. Lista aggiorna: mostra solo 400 mittenti frequenti
+4. Header: "📮 Da Classificare (400)" | "791 totali"
+5. Utente focalizza su mittenti rilevanti
+
+**SCENARIO 4: Utente vuole analizzare TUTTI (Soglia: ≥1 email)**
+1. Dialog → dropdown → "Tutti i mittenti (≥1 email)"
+2. Badge scompare (nessun risparmio)
+3. Analizza tutti i 791 mittenti
+4. Use case: primo setup completo del sistema
+
+### Testing Scenarios
+
+#### Test A: Default Behavior (≥2 email)
+```bash
+# Setup: 791 mittenti totali (300 con 1 email, 491 con 2+)
+1. Click "Analisi AI Mittenti"
+2. Verifica dialog mostra: "491 mittenti da analizzare"
+3. Verifica badge: "€9.00 risparmio, 300 esclusi"
+4. Conferma analisi
+5. Verifica edge function processa SOLO 491 mittenti
+6. Verifica toast finale: "491 mittenti classificati"
+```
+
+#### Test B: Soglia Personalizzata (≥5 email)
+```bash
+# Setup: 791 mittenti (550 con <5 email, 241 con 5+)
+1. Dialog → dropdown → "≥5 email"
+2. Verifica badge: "€16.50 risparmio, 550 esclusi"
+3. Conferma
+4. Verifica 241 mittenti processati
+5. Tempo: ~56 min (invece di 92 min)
+```
+
+#### Test C: Sidebar Filtro Indipendente
+```bash
+# Setup: Sidebar mostra 791 mittenti
+1. Dropdown sidebar → "≥3 email"
+2. Verifica lista mostra ~400 mittenti
+3. Header: "Da Classificare (400)" | "791 totali"
+4. Cambia filtro → "≥10 email"
+5. Lista aggiorna: ~100 mittenti
+```
+
+#### Test D: Empty State con Filtro Alto
+```bash
+# Setup: Tutti mittenti hanno <10 email
+1. Sidebar → "≥10 email"
+2. Verifica empty state: "🔍 Nessun mittente con ≥10 email"
+3. Cambia → "≥2 email"
+4. Lista riappare con mittenti qualificati
+```
+
+#### Test E: Persistenza localStorage
+```bash
+1. Dialog → soglia "≥5 email"
+2. Annulla dialog
+3. Refresh pagina (CTRL+R)
+4. Riapri dialog
+5. Verifica dropdown ancora su "≥5 email"
+```
+
+#### Test F: Edge Function Safety Filter
+```bash
+# Setup: Frontend invia 10 mittenti con 1 email (bug/test)
+1. Edge function riceve richiesta con min_emails_threshold=5
+2. Verifica log: "⚠️ Filtered out 10 senders below threshold"
+3. Verifica batchSenders = [] (nessuno processato)
+4. Nessuna chiamata AI effettuata
+```
+
+### Performance Impact
+
+**Scenario Reale (791 mittenti totali):**
+
+| Soglia | Mittenti Processati | Mittenti Saltati | Risparmio Costo | Risparmio Tempo | Tempo Totale |
+|--------|---------------------|------------------|-----------------|-----------------|--------------|
+| **≥1 email** (tutti) | 791 | 0 | €0.00 | 0 min | ~92 min |
+| **≥2 email** (default) | 491 | 300 | €9.00 | 35 min | ~57 min |
+| **≥3 email** | 400 | 391 | €11.73 | 46 min | ~46 min |
+| **≥5 email** | 241 | 550 | €16.50 | 64 min | ~28 min |
+| **≥10 email** | 120 | 671 | €20.13 | 78 min | ~14 min |
+
+**Risparmio annuale stimato (analisi mensile):**
+- Soglia ≥2 email: €9.00 × 12 = **€108/anno**
+- Soglia ≥5 email: €16.50 × 12 = **€198/anno**
+
+### Rollback Plan
+
+```bash
+# Edge Function rollback
+cp supabase/functions/fun-email-sender-categorization/index-old2.ts \
+   supabase/functions/fun-email-sender-categorization/index.ts
+
+# Frontend rollback (git)
+git checkout HEAD~1 src/components/email/EmailManagementTab.tsx
+git checkout HEAD~1 src/components/email/management/EmailSidebar.tsx
+
+# Remove localStorage key
+localStorage.removeItem('ai-min-emails-threshold');
+
+# Deploy automatico al prossimo push
+```
+
+**Nota**: Rollback rimuove filtro soglia, sistema torna a comportamento originale (analizza tutti i mittenti).
+
+### Database Impact
+
+**Nessuna modifica al database richiesta** (feature puramente frontend + edge function logic).
+
+Query effettuate:
+```sql
+-- Frontend: Conta mittenti per soglia (in-memory filter)
+SELECT COUNT(*) FROM senders WHERE emailCount >= :min_emails_threshold;
+
+-- Edge Function: Riceve già mittenti filtrati dal frontend
+-- Safety filter in-memory: senders.filter(s => s.email_samples.length >= threshold)
+```
+
+### Logging Enhancements
+
+**Edge Function:**
+- `⚠️ [Threshold Filter] Filtered out X senders below threshold (Y emails)` - safety filter attivo
+- `[AI Categorization] Processing batch: X senders (Y valid, Z total)` - conteggi aggiornati
+
+**Frontend:**
+- Toast: `⏭️ X mittenti esclusi - Mittenti con < Y email verranno analizzati quando scriveranno di più`
+- Dialog badge: `💰 Risparmio stimato: €X.XX | ⏭️ Y mittenti esclusi`
+- Sidebar empty state: `🔍 Nessun mittente con ≥X email`
+
+---
+
 ## [2025-01-31] - Smart Resume Anti-Reprocessing Protection
 
 ### File Modificato

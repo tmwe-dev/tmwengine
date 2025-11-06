@@ -2,6 +2,7 @@
  * Sidebar Email Management - Lista mittenti da classificare
  */
 
+import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -66,14 +67,23 @@ export function EmailSidebar({
   isLoading,
   onSenderDoubleClick,
 }: EmailSidebarProps) {
+  // 🆕 Filtro soglia email per visualizzazione
+  const [minEmailsFilter, setMinEmailsFilter] = useState(1);
+  
+  // Applica filtro soglia ai mittenti visualizzati
+  const displayedSenders = useMemo(() => 
+    filteredSenders.filter(s => s.emailCount >= minEmailsFilter),
+    [filteredSenders, minEmailsFilter]
+  );
+  
   return (
     <div className="flex-shrink-0 w-[416px] z-20">
       <div className="h-full flex flex-col">
         {/* Header semplificato */}
         <div className="px-4 pb-2 flex-shrink-0">
           <h3 className="font-semibold mb-1 flex items-center justify-between">
-            <span>📮 Da Classificare ({filteredSenders.length})</span>
-            {senders.length !== filteredSenders.length && (
+            <span>📮 Da Classificare ({displayedSenders.length})</span>
+            {senders.length !== displayedSenders.length && (
               <span className="text-xs text-muted-foreground">
                 {senders.length} totali
               </span>
@@ -89,6 +99,25 @@ export function EmailSidebar({
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
             />
+          </div>
+          
+          {/* 🆕 Filtro soglia email minime per visualizzazione */}
+          <div className="mb-2">
+            <Select 
+              value={minEmailsFilter.toString()} 
+              onValueChange={(val) => setMinEmailsFilter(parseInt(val))}
+            >
+              <SelectTrigger className="w-full h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Tutti i mittenti</SelectItem>
+                <SelectItem value="2">≥2 email</SelectItem>
+                <SelectItem value="3">≥3 email</SelectItem>
+                <SelectItem value="5">≥5 email</SelectItem>
+                <SelectItem value="10">≥10 email</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           {/* Riga: Ordina + 4 IconButton toolbar */}
@@ -183,17 +212,19 @@ export function EmailSidebar({
         
         {/* Lista indirizzi */}
         <div className="flex-1 overflow-y-auto px-4 space-y-4">
-          {filteredSenders.length === 0 ? (
+          {displayedSenders.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-sm">
                 {senders.length === 0 
                   ? '🎉 Tutti i mittenti sono stati classificati!'
+                  : minEmailsFilter > 1
+                  ? `🔍 Nessun mittente con ≥${minEmailsFilter} email`
                   : '🔍 Nessun mittente trovato con questi filtri'
                 }
               </p>
             </div>
           ) : (
-            filteredSenders.map(sender => (
+            displayedSenders.map(sender => (
               <SenderCard 
                 key={sender.email} 
                 sender={sender}

@@ -113,6 +113,12 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [unclassifiedCount, setUnclassifiedCount] = useState(0);
   const [showResumeButton, setShowResumeButton] = useState(false);
   
+  // 🆕 Soglia minima email per analisi AI (persistita in localStorage)
+  const [minEmailsThreshold, setMinEmailsThreshold] = useState(() => {
+    const saved = localStorage.getItem('ai-min-emails-threshold');
+    return saved ? parseInt(saved) : 2; // Default: analizza mittenti con almeno 2 email
+  });
+  
   // Persist carousel zoom in localStorage
   const [carouselZoom, setCarouselZoom] = useState(() => {
     const saved = localStorage.getItem('email-carousel-zoom');
@@ -629,18 +635,29 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   
   // 🤖 AI Categorization Handlers - Step 1: Prepare and show confirm dialog
   const handleAISuggestions = async () => {
-    // 1. Get unclassified senders
-    const unclassifiedSenders = senders.filter(s => !s.isClassified);
+    // 1. Get all unclassified senders
+    const allUnclassified = senders.filter(s => !s.isClassified);
+    
+    // 🆕 2. Filter by minimum emails threshold
+    const unclassifiedSenders = allUnclassified.filter(
+      s => s.emailCount >= minEmailsThreshold
+    );
+    
+    const skippedCount = allUnclassified.length - unclassifiedSenders.length;
     
     if (unclassifiedSenders.length === 0) {
       toast({
-        title: 'ℹ️ Nessun mittente da classificare',
-        description: 'Tutti i mittenti sono già stati assegnati a gruppi',
+        title: skippedCount > 0 
+          ? `ℹ️ Tutti i mittenti hanno < ${minEmailsThreshold} email`
+          : 'ℹ️ Nessun mittente da classificare',
+        description: skippedCount > 0
+          ? `${skippedCount} mittenti esclusi (soglia: ${minEmailsThreshold}+ email). Verranno analizzati quando scriveranno di più.`
+          : 'Tutti i mittenti sono già stati assegnati a gruppi',
       });
       return;
     }
     
-    // 2. Calculate cost preview
+    // 3. Calculate cost preview
     const MAX_EMAILS_PER_SENDER = 5;
     const cost = calculateEstimatedCost(
       unclassifiedSenders.length, 
@@ -651,6 +668,17 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     setEstimatedCost(cost);
     setUnclassifiedCount(unclassifiedSenders.length);
     setShowAIConfirmDialog(true);
+    
+    // 🆕 Show info about skipped senders
+    if (skippedCount > 0) {
+      setTimeout(() => {
+        toast({
+          title: `⏭️ ${skippedCount} mittenti esclusi`,
+          description: `Mittenti con < ${minEmailsThreshold} email verranno analizzati automaticamente quando scriveranno di più`,
+          duration: 5000,
+        });
+      }, 500);
+    }
   };
 
   // Step 2: Execute analysis after confirmation with mini-batch processing
@@ -811,7 +839,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
                   senders: sendersWithEmails,
                   batch_start_index: currentIndex,
                   batch_size: BATCH_SIZE,
-                  max_emails_per_sender: MAX_EMAILS_PER_SENDER
+                  max_emails_per_sender: MAX_EMAILS_PER_SENDER,
+                  min_emails_threshold: minEmailsThreshold // 🆕 Passa soglia al backend
                 }
               }
             );
@@ -1319,6 +1348,65 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
                 </div>
               </div>
             )}
+            
+            {/* 🆕 Filtro soglia email minime */}
+            <div className="space-y-4 pt-4 border-t">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  📊 Soglia email minime
+                </label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Analizza solo mittenti con almeno <strong>{minEmailsThreshold}</strong> email ricevute
+                </p>
+                
+                <Select 
+                  value={minEmailsThreshold.toString()} 
+                  onValueChange={(val) => {
+                    const newValue = parseInt(val);
+                    setMinEmailsThreshold(newValue);
+                    localStorage.setItem('ai-min-emails-threshold', val);
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">
+                      Tutti i mittenti (≥1 email)
+                    </SelectItem>
+                    <SelectItem value="2">
+                      Mittenti ricorrenti (≥2 email) - Consigliato
+                    </SelectItem>
+                    <SelectItem value="3">
+                      Mittenti frequenti (≥3 email)
+                    </SelectItem>
+                    <SelectItem value="5">
+                      Mittenti abituali (≥5 email)
+                    </SelectItem>
+                    <SelectItem value="10">
+                      Mittenti consolidati (≥10 email)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Info risparmio */}
+              {(() => {
+                const allUnclassified = senders.filter(s => !s.isClassified);
+                const filtered = allUnclassified.filter(s => s.emailCount >= minEmailsThreshold);
+                const skipped = allUnclassified.length - filtered.length;
+                const savedCost = skipped * 0.03;
+                
+                return skipped > 0 ? (
+                  <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                    <p className="text-xs text-green-700 dark:text-green-300">
+                      💰 <strong>Risparmio stimato:</strong> €{savedCost.toFixed(2)}<br/>
+                      ⏭️ <strong>Mittenti esclusi:</strong> {skipped} (verranno analizzati quando scriveranno di più)
+                    </p>
+                  </div>
+                ) : null;
+              })()}
+            </div>
           </div>
 
           <DialogFooter>

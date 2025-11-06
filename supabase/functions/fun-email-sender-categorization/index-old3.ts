@@ -37,7 +37,6 @@ interface CategorizationRequest {
   max_emails_per_sender?: number;
   batch_start_index?: number;
   batch_size?: number;
-  min_emails_threshold?: number; // 🆕 Soglia minima email per elaborazione
 }
 
 serve(async (req) => {
@@ -71,30 +70,12 @@ serve(async (req) => {
     }
 
     const body: CategorizationRequest = await req.json();
-    const { 
-      user_id, 
-      user_email, 
-      batch_id, 
-      existing_groups, 
-      senders, 
-      batch_start_index = 0, 
-      batch_size = 3,
-      min_emails_threshold = 1 // 🆕 Default: processa tutti i mittenti
-    } = body;
+    const { user_id, user_email, batch_id, existing_groups, senders, batch_start_index = 0, batch_size = 3 } = body;
 
-    // 🆕 SAFETY FILTER: Skip senders below threshold (frontend should already filter, but double protection)
-    const validSenders = senders.filter(s => 
-      s.email_samples && s.email_samples.length >= min_emails_threshold
-    );
-
-    if (validSenders.length !== senders.length) {
-      console.log(`⚠️ [Threshold Filter] Filtered out ${senders.length - validSenders.length} senders below threshold (${min_emails_threshold} emails)`);
-    }
-
-    // Process only subset of valid senders
-    const batchSenders = validSenders.slice(batch_start_index, batch_start_index + batch_size);
+    // Process only subset of senders
+    const batchSenders = senders.slice(batch_start_index, batch_start_index + batch_size);
     
-    console.log(`[AI Categorization] Processing batch ${batch_id}: ${batchSenders.length} senders (index ${batch_start_index}-${batch_start_index + batch_size} of ${validSenders.length} valid senders, ${senders.length} total)`);
+    console.log(`[AI Categorization] Processing batch ${batch_id}: ${batchSenders.length} senders (index ${batch_start_index}-${batch_start_index + batch_size} of ${senders.length})`);
 
     // ✅ NEW: Load AI configuration from DB (multi-provider support)
     const { data: aiConfig, error: configError } = await supabase

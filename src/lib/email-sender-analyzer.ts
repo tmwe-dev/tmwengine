@@ -126,6 +126,23 @@ export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[
       }
     });
     
+    // 🆕 Load AI suggestions pending
+    const { data: aiSuggestions, error: aiError } = await supabase
+      .from('ai_categorization_suggestions')
+      .select('sender_email, status')
+      .eq('status', 'pending');
+    
+    if (aiError) console.warn('Warn loading AI suggestions:', aiError);
+    
+    const aiSuggestionsSet = new Set<string>();
+    aiSuggestions?.forEach(suggestion => {
+      if (suggestion.sender_email) {
+        aiSuggestionsSet.add(suggestion.sender_email.toLowerCase());
+      }
+    });
+    
+    console.log(`🤖 Trovati ${aiSuggestionsSet.size} mittenti con suggerimenti AI pending`);
+    
     // Mappa i mittenti aggregati in SenderAnalysis
     const analyses: SenderAnalysis[] = Array.from(senderMap.entries()).map(([email, stats]) => {
       const domain = extractDomain(email);
@@ -142,13 +159,14 @@ export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[
         hasAttachments: false, // Rimosso per performance
         topSubjectKeywords: [],
         avgSubjectLength: 0,
-        isClassified: !!currentGroup,
+        isClassified: !!currentGroup || aiSuggestionsSet.has(email.toLowerCase()),
         currentGroup,
       };
     });
     
     console.log(`✅ Analisi completata: ${analyses.length} mittenti`);
-    console.log(`📊 Classificati: ${analyses.filter(a => a.isClassified).length}`);
+    console.log(`📊 Classificati (con regola): ${analyses.filter(a => !!rulesMap.get(a.email.toLowerCase())).length}`);
+    console.log(`🤖 Classificati (con suggerimento AI): ${analyses.filter(a => aiSuggestionsSet.has(a.email.toLowerCase())).length}`);
     console.log(`❓ Non classificati: ${analyses.filter(a => !a.isClassified).length}`);
     
     return analyses;

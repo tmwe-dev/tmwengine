@@ -116,6 +116,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const lastLoadRef = useRef(0);
   const [showAISuggestionsDialog, setShowAISuggestionsDialog] = useState(false);
   const [suggestionFilterMinEmails, setSuggestionFilterMinEmails] = useState(1);
+  const [pendingSuggestionsCount, setPendingSuggestionsCount] = useState(0);
   
   // 🆕 Soglia minima email per analisi AI (persistita in localStorage)
   const [minEmailsThreshold, setMinEmailsThreshold] = useState(() => {
@@ -303,6 +304,15 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       const analysis = await analyzeSenders(profile.tmwe_email);
       const unclassified = analysis.filter(s => !s.isClassified);
       setSenders(unclassified);
+      
+      // 🆕 Conta suggerimenti pending
+      const { data: pendingSuggestions } = await supabase
+        .from('ai_categorization_suggestions')
+        .select('id')
+        .eq('status', 'pending')
+        .eq('user_id', user.id);
+      
+      setPendingSuggestionsCount(pendingSuggestions?.length || 0);
 
       // Carica mittenti assegnati per gruppo via email_sender_rules
       const { data: rulesData } = await supabase
@@ -715,7 +725,19 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           s => !processedEmails.has(s.email)
         );
         
-        console.log(`♻️ Resuming batch ${currentBatchId}: ${processedEmails.size} already processed, ${sendersToProcess.length} remaining`);
+        // 🆕 Escludi anche mittenti con suggerimenti pending/accepted
+        const { data: anySuggestions } = await supabase
+          .from('ai_categorization_suggestions')
+          .select('sender_email')
+          .in('status', ['pending', 'accepted']);
+        
+        const alreadySuggestedEmails = new Set(anySuggestions?.map(s => s.sender_email) || []);
+        
+        sendersToProcess = sendersToProcess.filter(
+          s => !alreadySuggestedEmails.has(s.email)
+        );
+        
+        console.log(`♻️ Resuming batch ${currentBatchId}: ${processedEmails.size} already processed, ${alreadySuggestedEmails.size} with suggestions, ${sendersToProcess.length} remaining`);
         toast({
           title: '♻️ Ripresa analisi',
           description: `${processedEmails.size} mittenti già processati, continuo con ${sendersToProcess.length} rimanenti`,
@@ -759,6 +781,18 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
                 s => !processedEmails.has(s.email)
               );
               
+              // 🆕 Escludi anche mittenti con suggerimenti pending/accepted
+              const { data: anySuggestions } = await supabase
+                .from('ai_categorization_suggestions')
+                .select('sender_email')
+                .in('status', ['pending', 'accepted']);
+              
+              const alreadySuggestedEmails = new Set(anySuggestions?.map(s => s.sender_email) || []);
+              
+              sendersToProcess = sendersToProcess.filter(
+                s => !alreadySuggestedEmails.has(s.email)
+              );
+              
               // Load existing suggestions
               await loadPartialSuggestions(batchId);
               
@@ -775,6 +809,22 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
             }
           }
         }
+      }
+      
+      // 🆕 Per brand new batch: escludi mittenti con suggerimenti esistenti
+      if (resumeFromIndex === 0 && !currentBatchId) {
+        const { data: anySuggestions } = await supabase
+          .from('ai_categorization_suggestions')
+          .select('sender_email')
+          .in('status', ['pending', 'accepted']);
+        
+        const alreadySuggestedEmails = new Set(anySuggestions?.map(s => s.sender_email) || []);
+        
+        sendersToProcess = sendersToProcess.filter(
+          s => !alreadySuggestedEmails.has(s.email)
+        );
+        
+        console.log(`🆕 New batch: ${alreadySuggestedEmails.size} senders already have suggestions, ${sendersToProcess.length} to process`);
       }
       
       if (sendersToProcess.length === 0) {
@@ -1177,6 +1227,11 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
                 <>
                   <Sparkles className="w-5 h-5 mr-2" />
                   Analizza {senders.filter(s => !s.isClassified).length} mittenti non classificati
+                  {pendingSuggestionsCount > 0 && (
+                    <span className="ml-2 text-xs opacity-70">
+                      (+ {pendingSuggestionsCount} con suggerimenti)
+                    </span>
+                  )}
                 </>
               )}
             </Button>

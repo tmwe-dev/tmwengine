@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_categorization_progress: {
+        Row: {
+          batch_id: string
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          processed_count: number
+          started_at: string
+          status: string
+          total_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          batch_id: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_count?: number
+          started_at?: string
+          status?: string
+          total_count: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          batch_id?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_count?: number
+          started_at?: string
+          status?: string
+          total_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_categorization_suggestions: {
         Row: {
           accepted_at: string | null

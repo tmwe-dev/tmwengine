@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -43,14 +44,22 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    // Verify user via Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
@@ -59,20 +68,79 @@ serve(async (req) => {
     }
 
     const body: CategorizationRequest = await req.json();
-    const { user_id, user_email, batch_id, model, existing_groups, senders } = body;
+    const { user_id, user_email, batch_id, existing_groups, senders } = body;
 
     console.log(`[AI Categorization] Starting batch ${batch_id} for ${senders.length} senders`);
 
-    // Get Lovable AI key
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    // ✅ NEW: Load AI configuration from DB (multi-provider support)
+    const { data: aiConfig, error: configError } = await supabase
+      .from('config_ai')
+      .select('*')
+      .eq('attivo', true)
+      .order('provider', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (configError || !aiConfig) {
+      throw new Error('No active AI configuration found. Please configure AI provider in settings.');
     }
 
-    // Process all senders in parallel (NO LIMITS)
-    const suggestions = await Promise.allSettled(
-      senders.map((sender) => processSender(sender, existing_groups, model, LOVABLE_API_KEY))
-    );
+    console.log(`🤖 Using AI config: ${aiConfig.provider}/${aiConfig.modello}`);
+
+    // ✅ NEW: Load prompt from DB
+    const { data: promptData } = await supabase
+      .from('chat_laboratory_composed_prompts')
+      .select('content')
+      .eq('target_agent', 'email_sender_categorizer')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Fallback to hardcoded prompt if not found
+    const baseSystemPrompt = promptData?.content || `Sei un esperto di categorizzazione email business per PMI italiane.`;
+
+    console.log(`📝 Prompt loaded: ${baseSystemPrompt.substring(0, 100)}...`);
+
+    // ✅ NEW: Initialize progress tracking
+    await supabase
+      .from('ai_categorization_progress')
+      .insert({
+        user_id,
+        batch_id,
+        processed_count: 0,
+        total_count: senders.length,
+        status: 'processing',
+      });
+
+    // ✅ NEW: Process senders with progress updates
+    const suggestions: any[] = [];
+    let processedCount = 0;
+
+    for (const sender of senders) {
+      try {
+        const result = await processSender(
+          sender,
+          existing_groups,
+          baseSystemPrompt,
+          aiConfig,
+          supabase
+        );
+        suggestions.push({ status: 'fulfilled', value: result });
+      } catch (error) {
+        suggestions.push({ status: 'rejected', reason: error });
+      }
+
+      // Update progress
+      processedCount++;
+      await supabase
+        .from('ai_categorization_progress')
+        .update({
+          processed_count: processedCount,
+          status: processedCount === senders.length ? 'completed' : 'processing',
+          completed_at: processedCount === senders.length ? new Date().toISOString() : null,
+        })
+        .eq('batch_id', batch_id);
+    }
 
     // Separate successful and failed
     const successful = suggestions.filter((r) => r.status === 'fulfilled') as PromiseFulfilledResult<any>[];
@@ -84,7 +152,7 @@ serve(async (req) => {
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
     let totalCostEur = 0;
-    const isFreeModel = model.includes('gemini-2.5-flash');
+    const isFreeModel = aiConfig.modello.includes('gemini-2.5-flash');
 
     const suggestionResults = [];
 
@@ -95,7 +163,7 @@ serve(async (req) => {
       totalCostEur += data.cost_eur;
 
       // Save to database
-      const { data: savedSuggestion, error: saveError } = await supabaseClient
+      const { data: savedSuggestion, error: saveError } = await supabase
         .from('ai_categorization_suggestions')
         .insert({
           user_id,
@@ -109,7 +177,7 @@ serve(async (req) => {
           is_new_group: data.suggested_group.is_new,
           confidence: data.confidence,
           reasoning: data.reasoning,
-          model_used: model,
+          model_used: `${aiConfig.provider}/${aiConfig.modello}`,
           tokens_input: data.tokens_input,
           tokens_output: data.tokens_output,
           cost_eur: data.cost_eur,
@@ -139,16 +207,16 @@ serve(async (req) => {
     }
 
     // Track batch cost
-    await supabaseClient.from('ai_cost_tracking').insert({
+    await supabase.from('ai_cost_tracking').insert({
       user_id,
       batch_id,
       operation_type: 'email_categorization',
-      model_used: model,
-      provider: model.split('/')[0],
+      model_used: `${aiConfig.provider}/${aiConfig.modello}`,
+      provider: aiConfig.provider,
       input_tokens: totalInputTokens,
       output_tokens: totalOutputTokens,
-      cost_input_eur: isFreeModel ? 0 : totalInputTokens * getCostPerToken(model, 'input'),
-      cost_output_eur: isFreeModel ? 0 : totalOutputTokens * getCostPerToken(model, 'output'),
+      cost_input_eur: isFreeModel ? 0 : totalInputTokens * getCostPerToken(aiConfig.modello, 'input'),
+      cost_output_eur: isFreeModel ? 0 : totalOutputTokens * getCostPerToken(aiConfig.modello, 'output'),
       cost_total_eur: totalCostEur,
       operation_metadata: {
         senders_count: senders.length,
@@ -193,40 +261,15 @@ serve(async (req) => {
 async function processSender(
   sender: SenderWithEmails,
   existingGroups: ExistingGroup[],
-  model: string,
-  apiKey: string
+  baseSystemPrompt: string,
+  aiConfig: any,
+  supabase: any
 ) {
-  const systemPrompt = `Sei un esperto di categorizzazione email business per PMI italiane.
-
-COMPITO:
-Analizza i messaggi del mittente e suggerisci la categoria più appropriata tra quelle esistenti, oppure proponi una nuova categoria se necessario.
+  // Build dynamic system prompt with existing groups context
+  const systemPrompt = `${baseSystemPrompt}
 
 GRUPPI ESISTENTI:
-${existingGroups.map((g) => `- ${g.name} (${g.type})${g.description ? ': ' + g.description : ''}`).join('\n')}
-
-CRITERI DECISIONE:
-1. Se il mittente si adatta bene a un gruppo esistente (confidence > 0.75) → scegli quello
-2. Se nessun gruppo esistente è appropriato → suggerisci nuovo gruppo con nome/tipo/descrizione
-3. Tipi validi: clienti, fornitori, partner, newsletter, servizi, banche, notifiche, spam, altro
-
-REGOLE OUTPUT:
-- Rispondi SEMPRE con JSON valido
-- Reasoning: max 100 parole, focus su motivo principale
-- Confidence: 0.0-1.0 (usa tutto lo spettro)
-- Se nuovo gruppo: fornisci name, type, description breve
-
-OUTPUT FORMAT (JSON):
-{
-  "suggested_group": {
-    "id": "uuid-esistente" | null,
-    "name": "Nome Gruppo",
-    "type": "clienti|fornitori|...",
-    "is_new": boolean,
-    "description": "Breve descrizione"
-  },
-  "confidence": 0.85,
-  "reasoning": "Spiegazione concisa..."
-}`;
+${existingGroups.map((g) => `- ${g.name} (${g.type})${g.description ? ': ' + g.description : ''}`).join('\n')}`;
 
   const userPrompt = `MITTENTE: ${sender.email}
 
@@ -244,40 +287,164 @@ Anteprima: ${e.body_preview}
 
 Analizza e categorizza questo mittente.`;
 
-  console.log(`[AI Categorization] Processing ${sender.email} with ${model}`);
+  console.log(`[AI Categorization] Processing ${sender.email} with ${aiConfig.provider}/${aiConfig.modello}`);
 
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
-    }),
-  });
+  // ✅ NEW: Tool definition for structured output
+  const tools = [{
+    type: 'function',
+    function: {
+      name: 'categorize_sender',
+      description: 'Categorizza il mittente email in un gruppo esistente o nuovo',
+      parameters: {
+        type: 'object',
+        properties: {
+          suggested_group: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'UUID gruppo esistente o null se nuovo' },
+              name: { type: 'string', description: 'Nome del gruppo' },
+              type: { type: 'string', description: 'Tipo gruppo (clienti, fornitori, partner, ecc.)' },
+              is_new: { type: 'boolean', description: 'True se è un nuovo gruppo da creare' },
+              description: { type: 'string', description: 'Breve descrizione del gruppo' },
+              color: { type: 'string', description: 'Colore hex suggerito per il gruppo (es: #3b82f6)' },
+              icon: { type: 'string', description: 'Icona Lucide suggerita (es: Users, Package)' }
+            },
+            required: ['name', 'type', 'is_new']
+          },
+          confidence: { type: 'number', description: 'Confidenza 0.0-1.0', minimum: 0, maximum: 1 },
+          reasoning: { type: 'string', description: 'Motivo della scelta (max 100 parole)' }
+        },
+        required: ['suggested_group', 'confidence', 'reasoning']
+      }
+    }
+  }];
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`AI API error: ${response.status} - ${errorText}`);
+  // ✅ NEW: Multi-provider support
+  let aiData;
+  let usage: any;
+
+  if (aiConfig.provider === 'lovable' || aiConfig.provider === 'google') {
+    // Lovable AI Gateway (Gemini)
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) throw new Error('LOVABLE_API_KEY not configured');
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: aiConfig.modello,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        tools,
+        tool_choice: { type: 'function', function: { name: 'categorize_sender' } },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Lovable AI error: ${response.status} - ${errorText}`);
+    }
+
+    aiData = await response.json();
+    usage = aiData.usage;
+
+  } else if (aiConfig.provider === 'openai') {
+    const apiKey = aiConfig.api_key;
+    if (!apiKey) throw new Error('OpenAI API key missing');
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: aiConfig.modello,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        tools,
+        tool_choice: { type: 'function', function: { name: 'categorize_sender' } },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenAI error: ${response.status} - ${errorText}`);
+    }
+
+    aiData = await response.json();
+    usage = aiData.usage;
+
+  } else if (aiConfig.provider === 'anthropic') {
+    const apiKey = aiConfig.api_key;
+    if (!apiKey) throw new Error('Anthropic API key missing');
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: aiConfig.modello,
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+        tools: tools.map(t => ({
+          name: t.function.name,
+          description: t.function.description,
+          input_schema: t.function.parameters
+        })),
+        tool_choice: { type: 'tool', name: 'categorize_sender' }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Anthropic error: ${response.status} - ${errorText}`);
+    }
+
+    const claudeData = await response.json();
+    const toolUse = claudeData.content?.find((c: any) => c.type === 'tool_use');
+    if (!toolUse) throw new Error('No tool use in Claude response');
+
+    aiData = {
+      choices: [{
+        message: {
+          tool_calls: [{
+            function: {
+              name: toolUse.name,
+              arguments: JSON.stringify(toolUse.input)
+            }
+          }]
+        }
+      }]
+    };
+    usage = { prompt_tokens: claudeData.usage?.input_tokens || 0, completion_tokens: claudeData.usage?.output_tokens || 0 };
+
+  } else {
+    throw new Error(`Unsupported provider: ${aiConfig.provider}`);
   }
 
-  const aiResponse = await response.json();
-  const content = aiResponse.choices[0].message.content;
-  const usage = aiResponse.usage;
+  // Parse tool call result
+  const toolCall = aiData.choices[0]?.message?.tool_calls?.[0];
+  if (!toolCall) {
+    throw new Error('No tool call in AI response');
+  }
 
-  // Parse JSON response
   let parsedResult;
   try {
-    parsedResult = JSON.parse(content);
+    parsedResult = JSON.parse(toolCall.function.arguments);
   } catch {
-    // Fallback if AI didn't return valid JSON
+    // Fallback if parsing fails
     parsedResult = {
       suggested_group: {
         id: null,
@@ -286,7 +453,7 @@ Analizza e categorizza questo mittente.`;
         is_new: true,
       },
       confidence: 0.5,
-      reasoning: 'Impossibile analizzare automaticamente',
+      reasoning: 'Parsing error, auto-categorized',
     };
   }
 
@@ -301,19 +468,19 @@ Analizza e categorizza questo mittente.`;
   }
 
   // Calculate cost
-  const isFree = model.includes('gemini-2.5-flash');
+  const isFree = aiConfig.modello.includes('gemini-2.5-flash');
   const costEur = isFree
     ? 0
-    : (usage.prompt_tokens * getCostPerToken(model, 'input') +
-        usage.completion_tokens * getCostPerToken(model, 'output'));
+    : ((usage.prompt_tokens || 0) * getCostPerToken(aiConfig.modello, 'input') +
+        (usage.completion_tokens || 0) * getCostPerToken(aiConfig.modello, 'output'));
 
   return {
     sender_email: sender.email,
     suggested_group: parsedResult.suggested_group,
     confidence: parsedResult.confidence,
     reasoning: parsedResult.reasoning,
-    tokens_input: usage.prompt_tokens,
-    tokens_output: usage.completion_tokens,
+    tokens_input: usage.prompt_tokens || 0,
+    tokens_output: usage.completion_tokens || 0,
     cost_eur: costEur,
   };
 }

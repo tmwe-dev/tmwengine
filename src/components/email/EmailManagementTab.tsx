@@ -29,6 +29,8 @@ import { Sparkles, Lightbulb, CheckCheck, X as XIcon, Loader2 as LoaderIcon } fr
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AICategorizationProgressDialog } from './management/AICategorizationProgressDialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Collisione personalizzata 70%
 const carousel70PercentCollision: CollisionDetection = (args) => {
@@ -105,6 +107,10 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [selectedAIModel, setSelectedAIModel] = useState('google/gemini-2.5-flash'); // Default gratuito
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [estimatedCost, setEstimatedCost] = useState<{ eur: number; is_free: boolean } | null>(null);
+  const [showAIConfirmDialog, setShowAIConfirmDialog] = useState(false);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
+  const [unclassifiedCount, setUnclassifiedCount] = useState(0);
   
   // Persist carousel zoom in localStorage
   const [carouselZoom, setCarouselZoom] = useState(() => {
@@ -620,25 +626,42 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     }
   }, [filteredSenders, sortOption, aiSuggestions]);
   
-  // 🤖 AI Categorization Handlers
+  // 🤖 AI Categorization Handlers - Step 1: Prepare and show confirm dialog
   const handleAISuggestions = async () => {
+    // 1. Get unclassified senders
+    const unclassifiedSenders = senders.filter(s => !s.isClassified);
+    
+    if (unclassifiedSenders.length === 0) {
+      toast({
+        title: 'ℹ️ Nessun mittente da classificare',
+        description: 'Tutti i mittenti sono già stati assegnati a gruppi',
+      });
+      return;
+    }
+    
+    // 2. Calculate cost preview
+    const MAX_EMAILS_PER_SENDER = 5;
+    const cost = calculateEstimatedCost(
+      unclassifiedSenders.length, 
+      MAX_EMAILS_PER_SENDER,
+      selectedAIModel
+    );
+    
+    setEstimatedCost(cost);
+    setUnclassifiedCount(unclassifiedSenders.length);
+    setShowAIConfirmDialog(true);
+  };
+
+  // Step 2: Execute analysis after confirmation
+  const startAIAnalysis = async () => {
+    setShowAIConfirmDialog(false);
     setIsAnalyzing(true);
     
     try {
-      // 1. Get unclassified senders (TUTTI - utente decide)
       const unclassifiedSenders = senders.filter(s => !s.isClassified);
-      
-      if (unclassifiedSenders.length === 0) {
-        toast({
-          title: 'ℹ️ Nessun mittente da classificare',
-          description: 'Tutti i mittenti sono già stati assegnati a gruppi',
-        });
-        return;
-      }
-      
-      // 2. Fetch email samples per sender (max 5 email - configurabile)
       const MAX_EMAILS_PER_SENDER = 5;
       
+      // Fetch email samples
       const sendersWithEmails = await Promise.all(
         unclassifiedSenders.map(async (sender) => {
           const { data: emails } = await supabase
@@ -659,7 +682,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         })
       );
       
-      // 3. Get existing groups
+      // Get existing groups
       const existingGroups = groups.map(g => ({
         id: g.id,
         name: g.nome_gruppo,
@@ -669,36 +692,21 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         description: g.descrizione
       }));
       
-      // 4. Calculate cost preview
-      const cost = calculateEstimatedCost(
-        unclassifiedSenders.length, 
-        MAX_EMAILS_PER_SENDER,
-        selectedAIModel
-      );
-      setEstimatedCost(cost);
-      
-      // 5. Show preview and confirm
-      const confirmMessage = cost.is_free 
-        ? `Vuoi analizzare ${unclassifiedSenders.length} mittenti con AI gratuita?`
-        : `Vuoi analizzare ${unclassifiedSenders.length} mittenti?\n\nCosto stimato: €${cost.eur.toFixed(4)}`;
-      
-      if (!window.confirm(confirmMessage)) {
-        setIsAnalyzing(false);
-        return;
-      }
-      
-      // 6. Call edge function
+      // Generate batch ID and show progress dialog
       const batchId = crypto.randomUUID();
+      setCurrentBatchId(batchId);
+      setShowProgressDialog(true);
+      
+      // Call edge function (non-blocking)
       const { data: { user } } = await supabase.auth.getUser();
       
-      const { data, error } = await supabase.functions.invoke(
+      const { error } = await supabase.functions.invoke(
         'fun-email-sender-categorization',
         {
           body: {
             user_id: user?.id,
             user_email: user?.email,
             batch_id: batchId,
-            model: selectedAIModel,
             existing_groups: existingGroups,
             senders: sendersWithEmails,
             max_emails_per_sender: MAX_EMAILS_PER_SENDER
@@ -708,18 +716,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       
       if (error) throw error;
       
-      // 7. Update state
-      setAiSuggestions(data.suggestions);
-      
-      // 8. Show results
-      const summary = data.batch_summary;
-      toast({
-        title: '✨ Analisi completata',
-        description: summary.total_cost.is_free
-          ? `${summary.successful}/${summary.total_senders} mittenti analizzati (GRATIS)`
-          : `${summary.successful}/${summary.total_senders} mittenti • €${summary.total_cost.eur.toFixed(4)}`
-      });
-      
     } catch (error) {
       console.error('AI analysis error:', error);
       toast({
@@ -727,9 +723,53 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         description: error instanceof Error ? error.message : 'Errore sconosciuto',
         variant: 'destructive'
       });
+      setShowProgressDialog(false);
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // Step 3: Handle completion
+  const handleAnalysisComplete = async () => {
+    // Reload suggestions from DB
+    const { data: suggestions } = await supabase
+      .from('ai_categorization_suggestions')
+      .select('*')
+      .eq('batch_id', currentBatchId)
+      .eq('status', 'pending');
+    
+    if (suggestions) {
+      setAiSuggestions(suggestions.map(s => ({
+        id: s.id,
+        sender_email: s.sender_email,
+        suggested_group: {
+          id: s.suggested_group_id,
+          name: s.suggested_group_name,
+          type: s.suggested_group_type as any,
+          color: s.suggested_group_color,
+          icon: s.suggested_group_icon,
+          is_new: s.is_new_group,
+          description: null
+        },
+        confidence: s.confidence,
+        reasoning: s.reasoning,
+        cost: {
+          tokens_input: s.tokens_input || 0,
+          tokens_output: s.tokens_output || 0,
+          eur: s.cost_eur || 0,
+          is_free: (s.cost_eur || 0) === 0
+        },
+        status: 'pending' as const
+      })));
+    }
+
+    toast({
+      title: '✨ Analisi completata',
+      description: `${suggestions?.length || 0} mittenti analizzati`,
+    });
+
+    setShowProgressDialog(false);
+    setCurrentBatchId(null);
   };
   
   const handleAcceptSuggestion = async (suggestion: AISuggestion) => {
@@ -1021,6 +1061,81 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         onOpenChange={setShowCreateDialog}
         onSubmit={handleCreateCategory}
         existingNames={alphabeticGroups.map(g => g.nome_gruppo)}
+      />
+
+      {/* AI Confirm Dialog */}
+      <Dialog open={showAIConfirmDialog} onOpenChange={setShowAIConfirmDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              Conferma Analisi AI
+            </DialogTitle>
+            <DialogDescription>
+              Analizza {unclassifiedCount} mittenti non classificati con intelligenza artificiale
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Modello AI</label>
+              <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="google/gemini-2.5-flash">
+                    Gemini Flash (Gratuito)
+                  </SelectItem>
+                  <SelectItem value="google/gemini-2.5-pro">
+                    Gemini Pro (€0.125/1M tokens)
+                  </SelectItem>
+                  <SelectItem value="openai/gpt-5-mini">
+                    GPT-5 Mini (€0.15/1M tokens)
+                  </SelectItem>
+                  <SelectItem value="openai/gpt-5">
+                    GPT-5 (€5/1M tokens)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {estimatedCost && (
+              <div className="rounded-lg bg-muted p-4">
+                <div className="text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Mittenti da analizzare</span>
+                    <span className="font-medium">{unclassifiedCount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Costo stimato</span>
+                    <span className={cn("font-medium", estimatedCost.is_free ? "text-green-600" : "")}>
+                      {estimatedCost.is_free ? 'GRATIS' : `€${estimatedCost.eur.toFixed(4)}`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAIConfirmDialog(false)}>
+              Annulla
+            </Button>
+            <Button onClick={startAIAnalysis}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Avvia Analisi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Progress Dialog */}
+      <AICategorizationProgressDialog
+        open={showProgressDialog}
+        batchId={currentBatchId}
+        onClose={() => setShowProgressDialog(false)}
+        onComplete={handleAnalysisComplete}
       />
       
       </div>

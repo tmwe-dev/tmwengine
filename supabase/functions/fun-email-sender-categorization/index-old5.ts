@@ -127,14 +127,13 @@ serve(async (req) => {
 
     // ✅ NEW: Initialize or update progress tracking
     if (batch_start_index === 0) {
-      console.log(`📊 Progress init: ${validSenders.length} valid senders (${senders.length} before filter)`);
       await supabase
         .from('ai_categorization_progress')
         .insert({
           user_id,
           batch_id,
           processed_count: 0,
-          total_count: validSenders.length, // ✅ FIXED: Use validSenders instead of senders
+          total_count: validSenders.length, // 🐛 FIX: Use validSenders instead of senders
           status: 'processing',
           last_processed_index: 0,
         });

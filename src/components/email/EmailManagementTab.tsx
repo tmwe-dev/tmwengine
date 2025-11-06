@@ -2,7 +2,7 @@
  * Tab Email Management - Sistema completamente isolato FunEmail
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, closestCenter, CollisionDetection } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -112,6 +112,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [unclassifiedCount, setUnclassifiedCount] = useState(0);
   const [showResumeButton, setShowResumeButton] = useState(false);
+  const [hasShownResumeToast, setHasShownResumeToast] = useState(false);
+  const lastLoadRef = useRef(0);
   
   // 🆕 Soglia minima email per analisi AI (persistita in localStorage)
   const [minEmailsThreshold, setMinEmailsThreshold] = useState(() => {
@@ -759,10 +761,15 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
               await loadPartialSuggestions(batchId);
               
               console.log(`✅ Continuing batch ${batchId}: ${alreadyProcessed.length} already done, ${sendersToProcess.length} remaining`);
-              toast({
-                title: '✅ Analisi ripresa',
-                description: `Continuando da ${alreadyProcessed.length} mittenti già elaborati. Risparmio: €${costSavings}`,
-              });
+              
+              if (!hasShownResumeToast) {
+                setHasShownResumeToast(true);
+                toast({
+                  title: '✅ Analisi ripresa',
+                  description: `Continuando da ${alreadyProcessed.length} mittenti già elaborati. Risparmio: €${costSavings}`,
+                  duration: 5000,
+                });
+              }
             }
           }
         }
@@ -902,7 +909,15 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     }
   };
 
-  const loadPartialSuggestions = async (batchId: string) => {
+  const loadPartialSuggestions = useCallback(async (batchId: string) => {
+    // Debouncing: evita chiamate duplicate ravvicinate
+    const now = Date.now();
+    if (now - lastLoadRef.current < 3000) {
+      console.log('⏭️ Skip loadPartialSuggestions (too soon)');
+      return;
+    }
+    lastLoadRef.current = now;
+    
     const { data } = await supabase
       .from('ai_categorization_suggestions')
       .select('*')
@@ -934,16 +949,24 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           status: 'pending' as const
         }));
         
-        return [
-          ...prev.filter(p => !newSuggestions.find(n => n.sender_email === p.sender_email)),
-          ...newSuggestions
-        ];
+        // Merge più efficiente senza duplicati temporanei
+        const merged = new Map<string, AISuggestion>();
+        
+        // Prima aggiungi i vecchi
+        prev.forEach(p => merged.set(p.sender_email, p));
+        
+        // Poi sovrascrivi con i nuovi
+        newSuggestions.forEach(n => merged.set(n.sender_email, n));
+        
+        return Array.from(merged.values());
       });
     }
-  };
+  }, []);
 
   // Step 3: Handle completion
   const handleAnalysisComplete = async () => {
+    setHasShownResumeToast(false); // Reset flag per future analisi
+    
     // Reload suggestions from DB
     const { data: suggestions } = await supabase
       .from('ai_categorization_suggestions')

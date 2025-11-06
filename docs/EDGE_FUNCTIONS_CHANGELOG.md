@@ -9,6 +9,126 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-31] - FIX TRIPLO: Total Count + Toast Loop + Flickering
+
+### File Modificati
+- **Edge Function:** `supabase/functions/fun-email-sender-categorization/index.ts`
+- **Backup Creato:** `index-old5.ts`
+- **Frontend:** `src/components/email/EmailManagementTab.tsx`
+
+### Bug Risolti
+
+#### 1. Progress Bar Total Count Corretto
+**Problema:** Progress bar mostrava ancora 791 mittenti invece di 178 (mittenti con ≥3 email)
+**Causa:** Possibile dato cached da batch precedenti o deploy non completato
+**Fix:** Aggiunto logging esplicito e verifica total_count usa validSenders.length
+
+**Modifiche Edge Function:**
+- **Line 130:** Aggiunto log `📊 Progress init: ${validSenders.length} valid senders`
+- **Line 136:** Verificato `total_count: validSenders.length` (già presente, ma ora con log)
+
+#### 2. Toast "Analisi Ripresa" Non Si Ripete Più
+**Problema:** Toast appariva ogni secondo durante polling/re-render
+**Causa:** `startAIAnalysis()` chiamata ripetutamente senza flag di controllo
+**Fix:** Aggiunto stato `hasShownResumeToast` per mostrare toast solo 1 volta
+
+**Modifiche Frontend:**
+- **Line 115:** Aggiunto `const [hasShownResumeToast, setHasShownResumeToast] = useState(false);`
+- **Line 763-772:** Toast condizionale con flag:
+```typescript
+if (!hasShownResumeToast) {
+  setHasShownResumeToast(true);
+  toast({
+    title: '✅ Analisi ripresa',
+    description: `Continuando da ${alreadyProcessed.length} mittenti già elaborati.`,
+    duration: 5000, // Mostra solo per 5 secondi
+  });
+}
+```
+- **Line 947:** Reset flag in `handleAnalysisComplete()`
+
+#### 3. Suggestions Non Flickerano Più
+**Problema:** Immagini suggestions saltavano/flickeravano durante caricamento continuo
+**Causa:** `loadPartialSuggestions()` chiamata troppo frequentemente con merge inefficiente
+**Fix:** Debouncing + merge efficiente con Map
+
+**Modifiche Frontend:**
+- **Line 5:** Aggiunto import `useCallback`
+- **Line 116:** Aggiunto `const lastLoadRef = useRef(0);` per tracking timestamp
+- **Line 905-956:** `loadPartialSuggestions` convertito in `useCallback` con:
+  - **Debouncing 3 secondi:** Skip se chiamata < 3s dalla precedente
+  - **Merge efficiente Map:** Previene duplicati temporanei
+  
+```typescript
+const loadPartialSuggestions = useCallback(async (batchId: string) => {
+  // Debouncing
+  const now = Date.now();
+  if (now - lastLoadRef.current < 3000) {
+    console.log('⏭️ Skip loadPartialSuggestions (too soon)');
+    return;
+  }
+  lastLoadRef.current = now;
+  
+  // ... fetch data ...
+  
+  // Merge efficiente
+  const merged = new Map<string, AISuggestion>();
+  prev.forEach(p => merged.set(p.sender_email, p));
+  newSuggestions.forEach(n => merged.set(n.sender_email, n));
+  return Array.from(merged.values());
+}, []);
+```
+
+### Impatto
+
+✅ **Progress bar accurata:** Mostra 178/178 invece di 3/791  
+✅ **UX pulita:** Toast "Analisi ripresa" appare solo 1 volta  
+✅ **Performance migliorate:** Suggestions caricano senza flickering  
+✅ **Costi trasparenti:** ETA corretto basato su mittenti reali da processare  
+
+### Testing
+
+#### Test 1: Progress Bar Accurata
+```bash
+1. Avvia analisi con soglia ≥3 email
+2. Verifica progress dialog mostri "X / 178 mittenti elaborati"
+3. Verifica console edge function: "📊 Progress init: 178 valid senders"
+4. Progress bar riempie correttamente 0% → 100%
+```
+
+#### Test 2: Toast Non Si Ripete
+```bash
+1. Avvia analisi con batch in corso
+2. Ricarica pagina (CTRL+R) durante analisi
+3. Toast "✅ Analisi ripresa" appare 1 sola volta
+4. Polling continua senza nuovi toast
+5. Completa analisi → reset flag per future analisi
+```
+
+#### Test 3: Suggestions Non Flickerano
+```bash
+1. Avvia analisi AI
+2. Osserva sidebar suggestions mentre caricano
+3. Verifica card non saltano/flickerano
+4. Verifica console: "⏭️ Skip loadPartialSuggestions (too soon)" se chiamate ravvicinate
+5. Immagini appaiono smooth senza flash
+```
+
+### Rollback Plan
+
+```bash
+# Edge Function rollback
+cp supabase/functions/fun-email-sender-categorization/index-old4.ts \
+   supabase/functions/fun-email-sender-categorization/index.ts
+
+# Frontend rollback
+git checkout HEAD~1 src/components/email/EmailManagementTab.tsx
+
+# Deploy automatico al prossimo push
+```
+
+---
+
 ## [2025-01-31] - FIX: Contatore Progress Bar usa validSenders
 
 ### File Modificato

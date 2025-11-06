@@ -508,14 +508,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   };
 
   // 🤖 NUOVO SISTEMA - Genera suggerimenti raggruppamento
-  // TODO: Implementare quando schema email_messages sarà verificato
   const handleGenerateSuggestions = async () => {
-    toast({
-      title: 'Funzionalità in sviluppo',
-      description: 'I suggerimenti AI sono in fase di sviluppo',
-    });
-    
-    /* COMMENTATO TEMPORANEAMENTE - Schema database da verificare
     setIsGeneratingSuggestions(true);
     
     try {
@@ -532,50 +525,90 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         throw new Error('Email TMWE non configurata');
       }
 
-      // Per ogni mittente non classificato
-      for (const sender of senders) {
-        // Get email samples - VERIFICARE SCHEMA COLONNE
-        const { data: emailSamples } = await supabase
-          .from('email_messages')
-          .select('subject, body_text, created_at')
-          .eq('from_address', sender.email)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (!emailSamples || emailSamples.length === 0) continue;
-
-        // Call edge function
-        const { data, error } = await supabase.functions.invoke('suggest-sender-grouping', {
-          body: {
-            sender_email: sender.email,
-            email_samples: emailSamples.map(e => ({
-              subject: e.subject || '',
-              body_preview: (e.body_text || '').substring(0, 200),
-              date: e.created_at
-            })),
-            existing_groups: groups.map(g => ({
-              id: g.id,
-              nome_gruppo: g.nome_gruppo,
-              colore: g.colore,
-              icon: g.icon,
-              descrizione: g.descrizione
-            })),
-            user_email: profile.tmwe_email
-          }
+      // Filtra solo mittenti non classificati
+      const unclassifiedSenders = senders.filter(s => !s.isClassified);
+      
+      if (unclassifiedSenders.length === 0) {
+        toast({
+          title: 'Nessun mittente da classificare',
+          description: 'Tutti i mittenti sono già assegnati a un gruppo',
         });
-
-        if (error) {
-          console.error(`❌ Errore suggerimento per ${sender.email}:`, error);
-          continue;
-        }
-
-        console.log(`✅ Suggerimenti generati per ${sender.email}:`, data);
+        return;
       }
 
-      toast({
-        title: '✅ Suggerimenti generati',
-        description: `Controlla la tabella database per i risultati`,
-      });
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Per ogni mittente non classificato
+      for (const sender of unclassifiedSenders) {
+        try {
+          // Get email samples - SCHEMA VERIFICATO ✅
+          const { data: emailSamples, error: emailError } = await supabase
+            .from('email_messages')
+            .select('subject, body_text, data_ricezione')
+            .eq('from_email', sender.email)
+            .eq('user_email', profile.tmwe_email)
+            .order('data_ricezione', { ascending: false })
+            .limit(5);
+
+          if (emailError) {
+            console.error(`❌ Errore lettura email per ${sender.email}:`, emailError);
+            errorCount++;
+            continue;
+          }
+
+          if (!emailSamples || emailSamples.length === 0) {
+            console.log(`⚠️ Nessuna email trovata per ${sender.email}`);
+            continue;
+          }
+
+          // Call edge function
+          const { data, error } = await supabase.functions.invoke('suggest-sender-grouping', {
+            body: {
+              sender_email: sender.email,
+              email_samples: emailSamples.map(e => ({
+                subject: e.subject || '',
+                body_preview: (e.body_text || '').substring(0, 200),
+                date: e.data_ricezione
+              })),
+              existing_groups: groups.map(g => ({
+                id: g.id,
+                nome_gruppo: g.nome_gruppo,
+                colore: g.colore,
+                icon: g.icon,
+                descrizione: g.descrizione
+              })),
+              user_email: profile.tmwe_email
+            }
+          });
+
+          if (error) {
+            console.error(`❌ Errore suggerimento per ${sender.email}:`, error);
+            errorCount++;
+            continue;
+          }
+
+          console.log(`✅ Suggerimenti generati per ${sender.email}:`, data);
+          successCount++;
+
+        } catch (senderError: any) {
+          console.error(`❌ Errore processando ${sender.email}:`, senderError);
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast({
+          title: '✅ Suggerimenti generati',
+          description: `${successCount} mittenti processati. Controlla la tabella email_sender_grouping_suggestions`,
+        });
+      } else {
+        toast({
+          title: '⚠️ Nessun suggerimento generato',
+          description: errorCount > 0 ? 'Si sono verificati degli errori' : 'Nessuna email trovata per i mittenti',
+          variant: 'destructive',
+        });
+      }
 
     } catch (error: any) {
       console.error('❌ Errore generazione suggerimenti:', error);
@@ -587,7 +620,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     } finally {
       setIsGeneratingSuggestions(false);
     }
-    */
   };
 
   // 🤖 Handler accetta suggerimento

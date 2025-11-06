@@ -146,16 +146,15 @@ serve(async (req) => {
 
     for (const sender of batchSenders) {
       try {
-        // ✅ SAFETY CHECK: Skip if suggestion already exists (avoid reprocessing)
+        // ✅ SAFETY CHECK: Skip if suggestion already exists globally (avoid reprocessing)
         const { data: existingSuggestion } = await supabase
           .from('ai_categorization_suggestions')
           .select('id')
-          .eq('batch_id', batch_id)
           .eq('sender_email', sender.email)
           .maybeSingle();
 
         if (existingSuggestion) {
-          console.log(`⏭️ Skipping ${sender.email} (already processed in this batch)`);
+          console.log(`⏭️ Skipping ${sender.email} (already has suggestion in database)`);
           suggestions.push({ status: 'fulfilled', value: { sender_email: sender.email, skipped: true } });
           continue;
         }

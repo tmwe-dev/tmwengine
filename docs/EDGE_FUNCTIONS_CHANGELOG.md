@@ -9,6 +9,142 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-11-06] - Fix Riprocessamento Duplicati AI Categorization
+
+### File Modificato
+- **Function:** `supabase/functions/fun-email-sender-categorization/index.ts`
+- **Backup Creato:** `index-old3.ts` (già esistente)
+
+### Motivo Modifica
+Sistema riprocessava continuamente gli stessi 150 mittenti perché il check duplicati verificava solo il batch corrente (`.eq('batch_id', batch_id)`), ignorando suggerimenti di batch precedenti con `batch_id` diverso.
+
+**Comportamento errato:**
+1. Analisi crea 150 suggerimenti con `batch_id = "abc123"`
+2. Nuova analisi usa `batch_id = "def456"`
+3. Check duplicati cerca suggerimenti con `batch_id = "def456"` → non trova nulla
+4. Sistema riprocessa gli stessi 150 mittenti → crea duplicati
+5. Loop infinito
+
+### Modifiche Apportate
+
+#### 1. Edge Function (`index.ts` riga 149-158)
+**Prima (buggy):**
+```typescript
+const { data: existingSuggestion } = await supabase
+  .from('ai_categorization_suggestions')
+  .select('id')
+  .eq('batch_id', batch_id)  // ❌ Cerca solo nel batch corrente
+  .eq('sender_email', sender.email)
+  .maybeSingle();
+```
+
+**Dopo (fixed):**
+```typescript
+const { data: existingSuggestion } = await supabase
+  .from('ai_categorization_suggestions')
+  .select('id')
+  .eq('sender_email', sender.email)  // ✅ Check globale
+  .maybeSingle();
+```
+
+**Log aggiornato:** "already has suggestion in database" (invece di "already processed in this batch")
+
+#### 2. Frontend (`EmailManagementTab.tsx` riga 1060)
+Aggiunto `await loadData()` dopo completamento analisi per ricaricare lista senders e rimuovere automaticamente quelli con nuovi suggerimenti:
+
+```typescript
+const handleAnalysisComplete = async () => {
+  // ... existing code ...
+  
+  // 🆕 FIX: Reload data to update sender list
+  await loadData();
+  
+  setShowProgressDialog(false);
+};
+```
+
+### Comportamento Atteso
+
+**Prima del fix:**
+```
+843 mittenti totali
+→ Analizza 150 → Crea 150 suggerimenti
+→ Rianalizza gli stessi 150 → Crea 150 duplicati
+→ Loop infinito
+```
+
+**Dopo il fix:**
+```
+843 mittenti totali
+→ Analizza 150 → Crea 150 suggerimenti → Lista aggiornata a 693 mittenti
+→ Analizza i 693 rimanenti → Skippa i 150 già processati
+→ Processo continua correttamente
+```
+
+**Console logs attesi:**
+```
+⏭️ Skipping user@example.com (already has suggestion in database)
+📊 Total senders analyzed: 843
+✅ Classified senders: 78 (50 regole + 28 suggerimenti)
+❓ Unclassified senders: 693 (765 - 72 nuovi suggerimenti)
+```
+
+### Testing
+
+#### Test 1: Verifica Nessun Duplicato
+```sql
+-- Query per verificare duplicati per sender_email
+SELECT sender_email, COUNT(*) as count
+FROM ai_categorization_suggestions 
+GROUP BY sender_email 
+HAVING COUNT(*) > 1;
+```
+**Atteso:** 0 righe (nessun duplicato)
+
+#### Test 2: Comportamento Analisi
+```bash
+1. Hard reload (Ctrl+Shift+R) per svuotare cache
+2. Verifica conteggio: "📊 843 mittenti totali, 78 classificati, 765 non classificati"
+3. Click "Analizza AI Mittenti"
+4. Conferma analisi (es. batch di 150 mittenti)
+5. Verifica edge function skippa mittenti già con suggerimenti:
+   Console: "⏭️ Skipping xxx@domain.com (already has suggestion in database)"
+6. Dopo completamento, verifica lista senders aggiornata automaticamente
+7. Conteggio scende a 615 non classificati (765 - 150 nuovi)
+```
+
+#### Test 3: Continuità Analisi
+```bash
+1. Dopo primo batch (150 mittenti), lista mostra 615 rimanenti
+2. Click "Analizza" di nuovo
+3. Processa i 615 rimanenti (NON riprocessa i 150 precedenti)
+4. Verifica nessun duplicato in database
+```
+
+### Impatto
+
+✅ **Risolto loop infinito**: Sistema non riprocessa più mittenti già analizzati  
+✅ **Performance**: Analisi procede in modo lineare (843 → 693 → 543 → ...)  
+✅ **Database pulito**: Nessun suggerimento duplicato per sender  
+✅ **UX migliorata**: Lista senders aggiorna automaticamente dopo analisi  
+✅ **Costi ottimizzati**: Nessuno spreco su re-analisi duplicate  
+
+### Rollback Plan
+
+**Edge Function:**
+```bash
+cp supabase/functions/fun-email-sender-categorization/index-old2.ts \
+   supabase/functions/fun-email-sender-categorization/index.ts
+```
+
+**Frontend:**
+Rimuovere da `src/components/email/EmailManagementTab.tsx` riga 1060:
+```typescript
+// await loadData();  // <-- Rimuovere questa riga
+```
+
+---
+
 ## [2025-01-31] - FIX TRIPLO: Total Count + Toast Loop + Flickering
 
 ### File Modificati

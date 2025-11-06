@@ -1057,6 +1057,9 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       }, 500);
     }
     
+    // 🆕 FIX: Reload data to update sender list
+    await loadData();
+    
     setShowProgressDialog(false);
   };
   

@@ -42,6 +42,9 @@ export function AICategorizationProgressDialog({
     if (!open || !batchId) return;
 
     console.log(`🔄 Starting polling for batch: ${batchId}`);
+    
+    // 🔥 FIX: Flag per garantire una sola chiamata a onComplete
+    let hasCalledOnComplete = false;
 
     // Polling ogni 2 secondi
     const interval = setInterval(async () => {
@@ -60,8 +63,12 @@ export function AICategorizationProgressDialog({
         setTotal(data.total_count);
         setStatus(data.status as any);
 
-        if (data.status === 'completed' || data.status === 'cancelled' || data.status === 'failed') {
+        // 🔥 FIX: Chiama onComplete UNA VOLTA SOLA quando status diventa finale
+        const isFinalStatus = data.status === 'completed' || data.status === 'cancelled' || data.status === 'failed';
+        
+        if (isFinalStatus && !hasCalledOnComplete) {
           console.log(`✅ Analysis ${data.status}! Stopping polling.`);
+          hasCalledOnComplete = true;
           clearInterval(interval);
           
           if (data.status === 'completed') {

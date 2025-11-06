@@ -377,12 +377,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           status: 'pending' as const
         })));
 
-        // Mostra toast informativo
-        toast({
-          title: '💡 Suggerimenti AI disponibili',
-          description: `Hai ${allPendingSuggestions.length} suggerimenti in attesa di revisione. Clicca l'icona 💡 per vederli.`,
-          duration: 8000,
-        });
+        // 🔥 FIX: Rimosso toast da loadData() - verrà mostrato solo in handleAnalysisComplete
       }
 
       // Carica mittenti assegnati per gruppo via email_sender_rules
@@ -1086,6 +1081,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const handleAnalysisComplete = async () => {
     setHasShownResumeToast(false); // Reset flag per future analisi
     
+    console.log(`🎯 handleAnalysisComplete called for batch: ${currentBatchId}`);
+    
     // Reload suggestions from DB
     const { data: suggestions } = await supabase
       .from('ai_categorization_suggestions')
@@ -1093,8 +1090,10 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       .eq('batch_id', currentBatchId)
       .eq('status', 'pending');
     
-    if (suggestions) {
-      setAiSuggestions(suggestions.map(s => ({
+    console.log(`📊 Found ${suggestions?.length || 0} pending suggestions for batch ${currentBatchId}`);
+    
+    if (suggestions && suggestions.length > 0) {
+      const mappedSuggestions = suggestions.map(s => ({
         id: s.id,
         sender_email: s.sender_email,
         suggested_group: {
@@ -1114,12 +1113,30 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           is_free: s.model_used?.includes('gemini-2.5-flash') || false
         },
         status: 'pending' as const
-      })));
+      }));
+      
+      setAiSuggestions(mappedSuggestions);
+      
+      // 🔥 FIX: Toast e dialog apertura UNA VOLTA SOLA
+      toast({
+        title: '✅ Analisi completata',
+        description: `${suggestions.length} suggerimenti pronti per la revisione`,
+        duration: 5000,
+      });
       
       // Auto-open suggestions dialog after brief delay
       setTimeout(() => {
+        console.log(`🚀 Opening suggestions dialog with ${mappedSuggestions.length} suggestions`);
         setShowAISuggestionsDialog(true);
       }, 500);
+    } else {
+      console.warn(`⚠️ No suggestions found for batch ${currentBatchId}`);
+      
+      toast({
+        title: 'ℹ️ Analisi completata',
+        description: 'Nessun suggerimento generato per questo batch',
+        duration: 3000,
+      });
     }
     
     // 🆕 FIX: Reload data to update sender list
@@ -1633,12 +1650,28 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
 
           {/* Lista suggerimenti scrollabile */}
           <div className="flex-1 overflow-y-auto space-y-2 py-2">
-            {aiSuggestions
-              .filter(suggestion => {
+            {(() => {
+              // 🔍 Debug: Log totali suggerimenti e filtrati
+              const filteredSuggestions = aiSuggestions.filter(suggestion => {
                 const sender = senders.find(s => s.email === suggestion.sender_email);
-                return sender && sender.emailCount >= suggestionFilterMinEmails;
-              })
-              .map(suggestion => (
+                const matches = sender && sender.emailCount >= suggestionFilterMinEmails;
+                
+                if (!sender) {
+                  console.warn(`⚠️ Sender not found for suggestion: ${suggestion.sender_email}`);
+                }
+                
+                return matches;
+              });
+              
+              console.log(`📊 Suggestions Dialog State:`, {
+                total: aiSuggestions.length,
+                totalSenders: senders.length,
+                filterThreshold: suggestionFilterMinEmails,
+                filtered: filteredSuggestions.length,
+                dialogOpen: showAISuggestionsDialog
+              });
+              
+              return filteredSuggestions.map(suggestion => (
                 <SenderAISuggestionCard
                   key={suggestion.id}
                   suggestion={suggestion}
@@ -1649,7 +1682,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
                     handleRejectSuggestion(id);
                   }}
                 />
-              ))}
+              ));
+            })()}
             
             {/* Empty state */}
             {aiSuggestions.filter(s => {
@@ -1659,10 +1693,14 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <Lightbulb className="h-12 w-12 text-muted-foreground/30 mb-3" />
                 <p className="text-sm text-muted-foreground">
-                  Nessun suggerimento con ≥{suggestionFilterMinEmails} email
+                  {aiSuggestions.length > 0 
+                    ? `Nessun suggerimento con ≥${suggestionFilterMinEmails} email`
+                    : 'Nessun suggerimento disponibile'}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Riduci la soglia per vedere più suggerimenti
+                  {aiSuggestions.length > 0 
+                    ? 'Riduci la soglia per vedere più suggerimenti'
+                    : 'Avvia un\'analisi AI per generare suggerimenti'}
                 </p>
               </div>
             )}

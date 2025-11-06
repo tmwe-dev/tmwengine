@@ -6,7 +6,7 @@ import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Search, Filter, Plus, LayoutGrid, Box, RefreshCw } from 'lucide-react';
+import { Search, Filter, Plus, LayoutGrid, Box, RefreshCw, Lightbulb } from 'lucide-react';
 import { SenderCard } from './SenderCard';
 import type { SenderAnalysis, EmailSenderGroup } from '@/types/email-management';
 import { SenderSortControls, SortOption } from './SenderSortControls';
@@ -42,6 +42,8 @@ interface EmailSidebarProps {
   isSyncing: boolean;
   isLoading: boolean;
   onSenderDoubleClick?: (sender: SenderAnalysis) => void;
+  aiSuggestionsCount?: number;
+  onOpenAISuggestions?: () => void;
 }
 
 export function EmailSidebar({
@@ -66,6 +68,8 @@ export function EmailSidebar({
   isSyncing,
   isLoading,
   onSenderDoubleClick,
+  aiSuggestionsCount = 0,
+  onOpenAISuggestions,
 }: EmailSidebarProps) {
   // 🆕 Filtro soglia email per visualizzazione
   const [minEmailsFilter, setMinEmailsFilter] = useState(1);
@@ -162,6 +166,20 @@ export function EmailSidebar({
                 disabled={isLoading || isSyncing}
                 className={cn(isLoading && "animate-spin")}
               />
+              {onOpenAISuggestions && aiSuggestionsCount > 0 && (
+                <div className="relative">
+                  <IconButton
+                    icon={Lightbulb}
+                    tooltip={`${aiSuggestionsCount} Suggerimenti AI`}
+                    variant="ghost"
+                    size="sm"
+                    onClick={onOpenAISuggestions}
+                  />
+                  <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center pointer-events-none">
+                    {aiSuggestionsCount}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           

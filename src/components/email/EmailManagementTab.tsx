@@ -114,6 +114,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [showResumeButton, setShowResumeButton] = useState(false);
   const [hasShownResumeToast, setHasShownResumeToast] = useState(false);
   const lastLoadRef = useRef(0);
+  const [showAISuggestionsDialog, setShowAISuggestionsDialog] = useState(false);
+  const [suggestionFilterMinEmails, setSuggestionFilterMinEmails] = useState(1);
   
   // 🆕 Soglia minima email per analisi AI (persistita in localStorage)
   const [minEmailsThreshold, setMinEmailsThreshold] = useState(() => {
@@ -1204,27 +1206,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
               </Button>
             )}
             
-            {/* Suggestions list */}
-            {aiSuggestions.length > 0 && (
-              <div className="space-y-3 pt-4 border-t">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-yellow-500" />
-                  Suggerimenti AI ({aiSuggestions.length})
-                </h3>
-                
-                {/* Suggestion cards */}
-                <div className="space-y-2">
-                  {aiSuggestions.map(suggestion => (
-                    <SenderAISuggestionCard
-                      key={suggestion.id}
-                      suggestion={suggestion}
-                      onAccept={handleAcceptSuggestion}
-                      onReject={handleRejectSuggestion}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Suggestions list - RIMOSSO: ora in dialog separato */}
           </CardContent>
         </Card>
       )}
@@ -1260,6 +1242,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           isSyncing={isSyncing}
           isLoading={isLoading}
           onSenderDoubleClick={handleDoubleClickSender}
+          aiSuggestionsCount={aiSuggestions.length}
+          onOpenAISuggestions={() => setShowAISuggestionsDialog(true)}
         />
         
         {/* Area principale condizionale */}
@@ -1451,6 +1435,133 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         onClose={() => setShowProgressDialog(false)}
         onComplete={handleAnalysisComplete}
       />
+
+      {/* 🆕 Dialog Suggerimenti AI */}
+      <Dialog open={showAISuggestionsDialog} onOpenChange={setShowAISuggestionsDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              Suggerimenti AI ({aiSuggestions.length})
+            </DialogTitle>
+            <DialogDescription>
+              Gestisci i suggerimenti di categorizzazione generati dall'intelligenza artificiale
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Filtro soglia email */}
+          <div className="flex gap-3 items-center pb-3 border-b">
+            <label className="text-sm font-medium whitespace-nowrap">
+              📊 Mostra mittenti con:
+            </label>
+            <Select 
+              value={suggestionFilterMinEmails.toString()} 
+              onValueChange={(val) => setSuggestionFilterMinEmails(parseInt(val))}
+            >
+              <SelectTrigger className="w-[200px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                <SelectItem value="1">≥1 email</SelectItem>
+                <SelectItem value="2">≥2 email</SelectItem>
+                <SelectItem value="3">≥3 email</SelectItem>
+                <SelectItem value="5">≥5 email</SelectItem>
+                <SelectItem value="10">≥10 email</SelectItem>
+                <SelectItem value="20">≥20 email</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Info mittenti filtrati */}
+            {(() => {
+              const filteredCount = aiSuggestions.filter(s => {
+                const sender = senders.find(snd => snd.email === s.sender_email);
+                return sender && sender.emailCount >= suggestionFilterMinEmails;
+              }).length;
+              
+              return filteredCount !== aiSuggestions.length ? (
+                <span className="text-xs text-muted-foreground">
+                  ({filteredCount}/{aiSuggestions.length} visibili)
+                </span>
+              ) : null;
+            })()}
+          </div>
+
+          {/* Lista suggerimenti scrollabile */}
+          <div className="flex-1 overflow-y-auto space-y-2 py-2">
+            {aiSuggestions
+              .filter(suggestion => {
+                const sender = senders.find(s => s.email === suggestion.sender_email);
+                return sender && sender.emailCount >= suggestionFilterMinEmails;
+              })
+              .map(suggestion => (
+                <SenderAISuggestionCard
+                  key={suggestion.id}
+                  suggestion={suggestion}
+                  onAccept={(s) => {
+                    handleAcceptSuggestion(s);
+                  }}
+                  onReject={(id) => {
+                    handleRejectSuggestion(id);
+                  }}
+                />
+              ))}
+            
+            {/* Empty state */}
+            {aiSuggestions.filter(s => {
+              const sender = senders.find(snd => snd.email === s.sender_email);
+              return sender && sender.emailCount >= suggestionFilterMinEmails;
+            }).length === 0 && (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Lightbulb className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  Nessun suggerimento con ≥{suggestionFilterMinEmails} email
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Riduci la soglia per vedere più suggerimenti
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer con azioni */}
+          <div className="flex justify-between items-center pt-3 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAISuggestionsDialog(false)}
+            >
+              Chiudi
+            </Button>
+            
+            {aiSuggestions.length > 0 && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  const filtered = aiSuggestions.filter(s => {
+                    const sender = senders.find(snd => snd.email === s.sender_email);
+                    return sender && sender.emailCount >= suggestionFilterMinEmails;
+                  });
+                  
+                  filtered.forEach(s => handleAcceptSuggestion(s));
+                  toast({
+                    title: '✅ Suggerimenti accettati',
+                    description: `${filtered.length} mittenti assegnati ai gruppi`,
+                  });
+                  setShowAISuggestionsDialog(false);
+                }}
+                disabled={aiSuggestions.filter(s => {
+                  const sender = senders.find(snd => snd.email === s.sender_email);
+                  return sender && sender.emailCount >= suggestionFilterMinEmails;
+                }).length === 0}
+              >
+                <CheckCheck className="mr-2 h-4 w-4" />
+                Accetta Tutti Visibili
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
       
       </div>
     </div>

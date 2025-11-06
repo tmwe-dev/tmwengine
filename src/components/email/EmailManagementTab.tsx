@@ -238,7 +238,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       if (error) throw error;
 
       if (suggestions && suggestions.length > 0) {
-        setGroupingSuggestions(suggestions as GroupingSuggestion[]);
+        setGroupingSuggestions(suggestions as unknown as GroupingSuggestion[]);
         console.log(`🤖 Caricati ${suggestions.length} suggerimenti AI pending`);
         
         // Auto-mostra dialog se ci sono suggerimenti

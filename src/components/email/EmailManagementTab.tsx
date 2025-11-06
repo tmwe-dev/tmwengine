@@ -111,6 +111,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [unclassifiedCount, setUnclassifiedCount] = useState(0);
+  const [showResumeButton, setShowResumeButton] = useState(false);
   
   // Persist carousel zoom in localStorage
   const [carouselZoom, setCarouselZoom] = useState(() => {
@@ -652,10 +653,14 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     setShowAIConfirmDialog(true);
   };
 
-  // Step 2: Execute analysis after confirmation
-  const startAIAnalysis = async () => {
+  // Step 2: Execute analysis after confirmation with mini-batch processing
+  const startAIAnalysis = async (resumeFromIndex: number = 0) => {
     setShowAIConfirmDialog(false);
     setIsAnalyzing(true);
+    
+    const BATCH_SIZE = 3;
+    const DELAY_BETWEEN_BATCHES = 500;
+    const MAX_RETRIES_PER_BATCH = 3;
     
     try {
       const unclassifiedSenders = senders.filter(s => !s.isClassified);
@@ -682,7 +687,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         })
       );
       
-      // Get existing groups
       const existingGroups = groups.map(g => ({
         id: g.id,
         name: g.nome_gruppo,
@@ -692,29 +696,86 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         description: g.descrizione
       }));
       
-      // Generate batch ID and show progress dialog
-      const batchId = crypto.randomUUID();
-      setCurrentBatchId(batchId);
-      setShowProgressDialog(true);
+      const batchId = resumeFromIndex === 0 ? crypto.randomUUID() : currentBatchId;
+      if (resumeFromIndex === 0) {
+        setCurrentBatchId(batchId);
+        setShowProgressDialog(true);
+      }
       
-      // Call edge function (non-blocking)
       const { data: { user } } = await supabase.auth.getUser();
       
-      const { error } = await supabase.functions.invoke(
-        'fun-email-sender-categorization',
-        {
-          body: {
-            user_id: user?.id,
-            user_email: user?.email,
-            batch_id: batchId,
-            existing_groups: existingGroups,
-            senders: sendersWithEmails,
-            max_emails_per_sender: MAX_EMAILS_PER_SENDER
+      // Mini-batch recursive loop
+      let currentIndex = resumeFromIndex;
+      const totalBatches = Math.ceil(unclassifiedSenders.length / BATCH_SIZE);
+      
+      while (currentIndex < unclassifiedSenders.length) {
+        const currentBatchNumber = Math.floor(currentIndex / BATCH_SIZE) + 1;
+        console.log(`🔄 Batch ${currentBatchNumber}/${totalBatches} (mittenti ${currentIndex}-${Math.min(currentIndex + BATCH_SIZE, unclassifiedSenders.length)})`);
+        
+        let retryCount = 0;
+        let batchSuccess = false;
+        
+        while (retryCount <= MAX_RETRIES_PER_BATCH && !batchSuccess) {
+          try {
+            const { data, error } = await supabase.functions.invoke(
+              'fun-email-sender-categorization',
+              {
+                body: {
+                  user_id: user?.id,
+                  user_email: user?.email,
+                  batch_id: batchId,
+                  existing_groups: existingGroups,
+                  senders: sendersWithEmails,
+                  batch_start_index: currentIndex,
+                  batch_size: BATCH_SIZE,
+                  max_emails_per_sender: MAX_EMAILS_PER_SENDER
+                }
+              }
+            );
+            
+            if (error) throw error;
+            
+            // Batch completed
+            currentIndex = data.next_batch_start;
+            batchSuccess = true;
+            
+            // Load partial suggestions
+            await loadPartialSuggestions(batchId);
+            
+            // Rate limiting delay
+            if (!data.is_complete) {
+              await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+            } else {
+              console.log('✅ All batches completed!');
+              toast({
+                title: '✅ Analisi AI completata!',
+                description: `${unclassifiedSenders.length} mittenti classificati con successo`,
+              });
+              await handleAnalysisComplete();
+            }
+            
+          } catch (batchError) {
+            retryCount++;
+            console.error(`❌ Batch ${currentBatchNumber} error (attempt ${retryCount}/${MAX_RETRIES_PER_BATCH + 1}):`, batchError);
+            
+            if (retryCount <= MAX_RETRIES_PER_BATCH) {
+              console.log(`🔁 Retrying in 2 seconds...`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            } else {
+              await supabase
+                .from('ai_categorization_progress')
+                .update({ 
+                  status: 'failed', 
+                  error_message: `Failed at batch ${currentBatchNumber} after ${MAX_RETRIES_PER_BATCH} retries`,
+                  last_processed_index: currentIndex
+                })
+                .eq('batch_id', batchId);
+              
+              throw new Error(`Batch ${currentBatchNumber} failed after ${MAX_RETRIES_PER_BATCH} retries`);
+            }
           }
         }
-      );
-      
-      if (error) throw error;
+      }
       
     } catch (error) {
       console.error('AI analysis error:', error);
@@ -723,9 +784,49 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         description: error instanceof Error ? error.message : 'Errore sconosciuto',
         variant: 'destructive'
       });
-      setShowProgressDialog(false);
+      setShowResumeButton(true);
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const loadPartialSuggestions = async (batchId: string) => {
+    const { data } = await supabase
+      .from('ai_categorization_suggestions')
+      .select('*')
+      .eq('batch_id', batchId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    
+    if (data) {
+      setAiSuggestions(prev => {
+        const newSuggestions = data.map(s => ({
+          id: s.id,
+          sender_email: s.sender_email,
+          suggested_group: {
+            id: s.suggested_group_id,
+            name: s.suggested_group_name,
+            type: s.suggested_group_type as any,
+            color: s.suggested_group_color,
+            icon: s.suggested_group_icon,
+            is_new: s.is_new_group
+          },
+          confidence: s.confidence,
+          reasoning: s.reasoning,
+          cost: {
+            tokens_input: s.tokens_input || 0,
+            tokens_output: s.tokens_output || 0,
+            eur: s.cost_eur || 0,
+            is_free: s.model_used?.includes('gemini-2.5-flash') || false
+          },
+          status: 'pending' as const
+        }));
+        
+        return [
+          ...prev.filter(p => !newSuggestions.find(n => n.sender_email === p.sender_email)),
+          ...newSuggestions
+        ];
+      });
     }
   };
 
@@ -748,8 +849,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           type: s.suggested_group_type as any,
           color: s.suggested_group_color,
           icon: s.suggested_group_icon,
-          is_new: s.is_new_group,
-          description: null
+          is_new: s.is_new_group
         },
         confidence: s.confidence,
         reasoning: s.reasoning,
@@ -757,19 +857,13 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           tokens_input: s.tokens_input || 0,
           tokens_output: s.tokens_output || 0,
           eur: s.cost_eur || 0,
-          is_free: (s.cost_eur || 0) === 0
+          is_free: s.model_used?.includes('gemini-2.5-flash') || false
         },
         status: 'pending' as const
       })));
     }
-
-    toast({
-      title: '✨ Analisi completata',
-      description: `${suggestions?.length || 0} mittenti analizzati`,
-    });
-
+    
     setShowProgressDialog(false);
-    setCurrentBatchId(null);
   };
   
   const handleAcceptSuggestion = async (suggestion: AISuggestion) => {
@@ -949,6 +1043,32 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
               )}
             </Button>
             
+            {/* Resume button (shown only after failure) */}
+            {showResumeButton && (
+              <Button 
+                onClick={async () => {
+                  const { data: progress } = await supabase
+                    .from('ai_categorization_progress')
+                    .select('last_processed_index')
+                    .eq('batch_id', currentBatchId)
+                    .maybeSingle();
+                  
+                  if (progress) {
+                    setShowResumeButton(false);
+                    const batchNum = Math.floor(progress.last_processed_index / 3) + 1;
+                    console.log(`Resuming from batch ${batchNum}`);
+                    await startAIAnalysis(progress.last_processed_index);
+                  }
+                }}
+                variant="outline"
+                size="lg"
+                className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Riprendi Analisi Interrotta
+              </Button>
+            )}
+            
             {/* Suggestions list */}
             {aiSuggestions.length > 0 && (
               <div className="space-y-3 pt-4 border-t">
@@ -1122,7 +1242,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
             <Button variant="outline" onClick={() => setShowAIConfirmDialog(false)}>
               Annulla
             </Button>
-            <Button onClick={startAIAnalysis}>
+            <Button onClick={() => startAIAnalysis()}>
               <Sparkles className="mr-2 h-4 w-4" />
               Avvia Analisi
             </Button>

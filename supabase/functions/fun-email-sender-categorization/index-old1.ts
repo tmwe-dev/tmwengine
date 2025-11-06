@@ -35,8 +35,6 @@ interface CategorizationRequest {
   existing_groups: ExistingGroup[];
   senders: SenderWithEmails[];
   max_emails_per_sender?: number;
-  batch_start_index?: number;
-  batch_size?: number;
 }
 
 serve(async (req) => {
@@ -70,12 +68,9 @@ serve(async (req) => {
     }
 
     const body: CategorizationRequest = await req.json();
-    const { user_id, user_email, batch_id, existing_groups, senders, batch_start_index = 0, batch_size = 3 } = body;
+    const { user_id, user_email, batch_id, existing_groups, senders } = body;
 
-    // Process only subset of senders
-    const batchSenders = senders.slice(batch_start_index, batch_start_index + batch_size);
-    
-    console.log(`[AI Categorization] Processing batch ${batch_id}: ${batchSenders.length} senders (index ${batch_start_index}-${batch_start_index + batch_size} of ${senders.length})`);
+    console.log(`[AI Categorization] Starting batch ${batch_id} for ${senders.length} senders`);
 
     // ✅ NEW: Load AI configuration from DB (multi-provider support)
     const { data: aiConfig, error: configError } = await supabase
@@ -106,25 +101,22 @@ serve(async (req) => {
 
     console.log(`📝 Prompt loaded: ${baseSystemPrompt.substring(0, 100)}...`);
 
-    // ✅ NEW: Initialize or update progress tracking
-    if (batch_start_index === 0) {
-      await supabase
-        .from('ai_categorization_progress')
-        .insert({
-          user_id,
-          batch_id,
-          processed_count: 0,
-          total_count: senders.length,
-          status: 'processing',
-          last_processed_index: 0,
-        });
-    }
+    // ✅ NEW: Initialize progress tracking
+    await supabase
+      .from('ai_categorization_progress')
+      .insert({
+        user_id,
+        batch_id,
+        processed_count: 0,
+        total_count: senders.length,
+        status: 'processing',
+      });
 
-    // ✅ NEW: Process only batch subset with progress updates
+    // ✅ NEW: Process senders with progress updates
     const suggestions: any[] = [];
     let processedCount = 0;
 
-    for (const sender of batchSenders) {
+    for (const sender of senders) {
       try {
         const result = await processSender(
           sender,
@@ -138,18 +130,14 @@ serve(async (req) => {
         suggestions.push({ status: 'rejected', reason: error });
       }
 
-      // Update progress with absolute index
+      // Update progress
       processedCount++;
-      const absoluteProcessed = batch_start_index + processedCount;
-      const isComplete = absoluteProcessed >= senders.length;
-      
       await supabase
         .from('ai_categorization_progress')
         .update({
-          processed_count: absoluteProcessed,
-          last_processed_index: absoluteProcessed,
-          status: isComplete ? 'completed' : 'processing',
-          completed_at: isComplete ? new Date().toISOString() : null,
+          processed_count: processedCount,
+          status: processedCount === senders.length ? 'completed' : 'processing',
+          completed_at: processedCount === senders.length ? new Date().toISOString() : null,
         })
         .eq('batch_id', batch_id);
     }
@@ -238,21 +226,12 @@ serve(async (req) => {
       },
     });
 
-    const nextBatchStart = batch_start_index + batch_size;
-    const isComplete = nextBatchStart >= senders.length;
-
     return new Response(
       JSON.stringify({
         success: true,
         batch_id,
-        processed_count: batchSenders.length,
-        remaining_count: Math.max(0, senders.length - nextBatchStart),
-        next_batch_start: nextBatchStart,
-        is_complete: isComplete,
         suggestions: suggestionResults,
         batch_summary: {
-          current_batch: Math.floor(batch_start_index / batch_size) + 1,
-          total_batches: Math.ceil(senders.length / batch_size),
           total_senders: senders.length,
           successful: successful.length,
           failed: failed.length,

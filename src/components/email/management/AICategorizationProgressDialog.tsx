@@ -75,8 +75,11 @@ export function AICategorizationProgressDialog({
   };
 
   const progressPercentage = total > 0 ? (processed / total) * 100 : 0;
+  const BATCH_SIZE = 3;
+  const currentBatch = processed > 0 ? Math.floor(processed / BATCH_SIZE) : 0;
+  const totalBatches = total > 0 ? Math.ceil(total / BATCH_SIZE) : 0;
   const estimatedTimeRemaining = total > 0 && processed > 0
-    ? Math.ceil(((total - processed) * 3)) // ~3 sec per sender
+    ? Math.ceil((total - processed) * 7) // ~7 sec per sender (API call + processing)
     : null;
 
   return (
@@ -101,13 +104,22 @@ export function AICategorizationProgressDialog({
                 {progressPercentage.toFixed(0)}%
               </span>
             </div>
+            {/* Batch info */}
+            {status === 'processing' && totalBatches > 1 && (
+              <p className="text-xs text-center text-muted-foreground">
+                📦 Batch {currentBatch} / {totalBatches} completato
+              </p>
+            )}
           </div>
 
           {/* Tempo stimato */}
           {estimatedTimeRemaining && status === 'processing' && (
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
-              <span>Tempo stimato rimanente: {estimatedTimeRemaining}s</span>
+              <span>
+                Tempo stimato rimanente: ~{Math.ceil(estimatedTimeRemaining / 60)} min
+                {estimatedTimeRemaining < 120 && ` (${estimatedTimeRemaining}s)`}
+              </span>
             </div>
           )}
 

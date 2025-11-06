@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          last_processed_index: number | null
           processed_count: number
           started_at: string
           status: string
@@ -34,6 +35,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          last_processed_index?: number | null
           processed_count?: number
           started_at?: string
           status?: string
@@ -47,6 +49,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          last_processed_index?: number | null
           processed_count?: number
           started_at?: string
           status?: string

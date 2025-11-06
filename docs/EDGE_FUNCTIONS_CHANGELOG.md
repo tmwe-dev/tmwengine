@@ -9,6 +9,211 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-11-06] - Mini-Batch Processing per AI Sender Categorization
+
+### File Modificato
+- **Function:** `supabase/functions/fun-email-sender-categorization/index.ts`
+- **Backup Creato:** `index-old1.ts`
+- **Tipo:** Upgrade architetturale per resilienza
+
+### Motivo Modifica
+Risolvere timeout critici durante elaborazione di 791 mittenti non classificati. L'implementazione monolitica causava:
+- ❌ Timeout dopo 5 minuti (limite Supabase Edge Functions)
+- ❌ Perdita completa del lavoro svolto (~27 mittenti elaborati, €0.10 sprecati)
+- ❌ Nessuna possibilità di riprendere analisi interrotta
+
+### Problema Risolto
+**Comportamento vecchio:**
+1. Frontend invia TUTTI i 791 mittenti in una chiamata
+2. Edge function processa sequenzialmente (~7s per mittente)
+3. Tempo totale stimato: 791 × 7s = ~92 minuti
+4. **TIMEOUT** dopo 5 minuti → tutto perso
+
+### Soluzione Implementata: Mini-Batch Processing
+
+#### Modifiche Edge Function (index.ts)
+
+1. **Nuovi parametri request** (linee 30-39):
+```typescript
+interface CategorizationRequest {
+  // ... parametri esistenti
+  batch_start_index?: number;  // 🆕 Indice di partenza
+  batch_size?: number;          // 🆕 Dimensione batch (default: 3)
+}
+```
+
+2. **Elaborazione subset** (linee 70-76):
+```typescript
+const { batch_start_index = 0, batch_size = 3 } = body;
+const batchSenders = senders.slice(batch_start_index, batch_start_index + batch_size);
+// Processa SOLO 3 mittenti invece di tutti
+```
+
+3. **Progress tracking con checkpoint** (linee 104-147):
+```typescript
+// Salva posizione dopo ogni mittente
+await supabase
+  .from('ai_categorization_progress')
+  .update({
+    processed_count: absoluteProcessed,
+    last_processed_index: absoluteProcessed,  // 🆕 Checkpoint per resume
+    status: isComplete ? 'completed' : 'processing',
+  })
+  .eq('batch_id', batch_id);
+```
+
+4. **Response estesa** (linee 229-257):
+```typescript
+return {
+  processed_count: 3,               // Mittenti batch corrente
+  remaining_count: 788,             // Rimanenti
+  next_batch_start: 3,              // Prossimo indice
+  is_complete: false,               // Flag completamento
+  batch_summary: {
+    current_batch: 1,
+    total_batches: 264
+  }
+}
+```
+
+#### Modifiche Frontend (EmailManagementTab.tsx)
+
+1. **Loop ricorsivo con retry** (linee 656-790):
+```typescript
+const startAIAnalysis = async (resumeFromIndex: number = 0) => {
+  const BATCH_SIZE = 3;
+  const MAX_RETRIES_PER_BATCH = 3;
+  
+  while (currentIndex < totalSenders) {
+    // Retry automatico per batch falliti
+    while (retryCount <= MAX_RETRIES && !batchSuccess) {
+      try {
+        const { data } = await supabase.functions.invoke(
+          'fun-email-sender-categorization',
+          { body: { batch_start_index: currentIndex, batch_size: 3 } }
+        );
+        currentIndex = data.next_batch_start;
+        batchSuccess = true;
+      } catch (error) {
+        retryCount++;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+  }
+}
+```
+
+2. **Pulsante Resume** (linee 1053-1075):
+```typescript
+{showResumeButton && (
+  <Button onClick={async () => {
+    const { data } = await supabase
+      .from('ai_categorization_progress')
+      .select('last_processed_index')
+      .eq('batch_id', currentBatchId)
+      .maybeSingle();
+    
+    await startAIAnalysis(progress.last_processed_index);
+  }}>
+    Riprendi Analisi Interrotta
+  </Button>
+)}
+```
+
+3. **Caricamento progressivo suggerimenti** (linee 791-825):
+```typescript
+const loadPartialSuggestions = async (batchId: string) => {
+  // Ricarica suggerimenti dopo ogni batch
+  // Mostra risultati parziali in tempo reale
+}
+```
+
+#### Modifiche Database (Migration)
+```sql
+-- Aggiungi checkpoint column
+ALTER TABLE ai_categorization_progress 
+ADD COLUMN last_processed_index INTEGER DEFAULT 0;
+
+-- Indice per query ottimizzate
+CREATE INDEX idx_progress_status_batch 
+ON ai_categorization_progress(batch_id, status);
+```
+
+#### Modifiche Progress Dialog (AICategorizationProgressDialog.tsx)
+- Mostra batch corrente: "📦 Batch 5 / 264 completato"
+- Tempo stimato aggiornato: ~7s per mittente
+- Display in minuti per lunghe elaborazioni
+
+### Vantaggi Implementazione
+
+✅ **Nessun timeout:** Batch 3 mittenti × 7s = ~21s < limite 5 min  
+✅ **Resilienza:** Retry automatico 3 volte per batch fallito  
+✅ **Progress reale:** Salvataggio checkpoint ogni 3 mittenti  
+✅ **Resumable:** Riprendi da ultimo batch fallito via `last_processed_index`  
+✅ **Cancellabile:** Batch corrente termina, poi stop  
+✅ **Zero spreco:** Suggerimenti salvati progressivamente  
+✅ **Rate-limit safe:** 500ms pausa tra batch (evita throttling API AI)  
+✅ **Real-time feedback:** UI aggiornata dopo ogni batch
+
+### Workflow Utente Migliorato
+
+**PRIMA:**
+1. Click "Analizza 791 mittenti"
+2. Attendi... ⏳ (nessun feedback)
+3. ❌ TIMEOUT dopo 5 min → tutto perso
+
+**DOPO:**
+1. Click "Analizza 791 mittenti"
+2. Dialog conferma: "~90 minuti, 264 batch"
+3. Progress live: "📦 Batch 5/264 completato (15 mittenti)"
+4. Se errore → pulsante "Riprendi Analisi"
+5. ✅ Completamento: tutti i 791 suggerimenti salvati
+
+### Testing Raccomandato
+
+1. **Batch piccolo:** 10 mittenti (4 batch) → verifica funzionamento base
+2. **Interruzione rete:** Spegni WiFi a batch 5 → verifica retry automatico
+3. **Cancellazione:** Click "Annulla" a metà → verifica stop pulito
+4. **Resume:** Dopo fallimento → verifica ripartenza da checkpoint
+5. **Completamento:** 791 mittenti → ~90 min, verifica tutti salvati
+
+### Rollback Plan
+
+Se necessario rollback:
+```bash
+# Ripristina versione precedente
+cp supabase/functions/fun-email-sender-categorization/index-old1.ts \
+   supabase/functions/fun-email-sender-categorization/index.ts
+
+# Deploy automatico al prossimo push
+git add . && git commit -m "Rollback: restore monolithic processing"
+```
+
+**Nota:** Rollback ripristina comportamento originale ma mantiene problema timeout.
+
+### Performance Stimata
+
+- **791 mittenti non classificati:**
+  - Batch size: 3 mittenti
+  - Total batches: 264
+  - Tempo per batch: ~21s (7s × 3)
+  - Tempo totale: ~92 minuti
+  - Delay tra batch: 0.5s
+  - Total wall time: ~93 minuti
+
+- **Robustezza:**
+  - Max retries per batch: 3
+  - Tolleranza errori: ~3% (fallimento finale solo dopo 3 tentativi)
+  - Resume capability: sì, da qualsiasi batch
+
+### Impatto Costi
+
+- **Costi invariati:** Stesso numero di chiamate AI
+- **Beneficio:** Zero spreco su timeout (prima perdita €0.10 su fallimento)
+- **Overhead:** Trascurabile (500ms × 264 batch = 132s totali di pause)
+
+---
+
 ## [2025-11-04] - Background Email Sync TEST - Pre-Check Duplicate Optimization
 
 ### File Creato

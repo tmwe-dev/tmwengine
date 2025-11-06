@@ -57,23 +57,25 @@ serve(async (req) => {
       );
     }
 
-    // Get ALL active AI configs for fallback system
+    // Get active AI config (most recent if multiple)
     const { data: aiConfigs, error: configError } = await supabase
       .from('config_ai')
       .select('*')
       .eq('attivo', true)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-    if (configError || !aiConfigs || aiConfigs.length === 0) {
-      console.error('❌ No active AI configs:', configError);
+    const aiConfig = aiConfigs?.[0];
+
+    if (configError || !aiConfig) {
+      console.error('❌ No active AI config:', configError);
       return new Response(
         JSON.stringify({ error: 'No active AI configuration found' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`🔄 Found ${aiConfigs.length} active AI configs, will try in order:`, 
-      aiConfigs.map(c => `${c.provider}/${c.modello}`).join(', '));
+    console.log('✅ AI Config:', { provider: aiConfig.provider, model: aiConfig.modello });
 
     // Build system prompt
     const systemPrompt = `Sei un assistente AI specializzato nella categorizzazione di mittenti email per un sistema di gestione email aziendale.
@@ -106,11 +108,8 @@ ${body.email_samples.map((email, i) => `${i + 1}. "${email.subject}" - ${email.b
 
 Suggerisci i gruppi più appropriati per questo mittente.`;
 
-    // 🔄 FALLBACK SYSTEM: Try each AI config until one works
+    // Call AI with tool calling
     let aiResponse: any;
-    let successfulConfig: any = null;
-    let lastError: string = '';
-    
     const requestBody: any = {
       messages: [
         { role: 'system', content: systemPrompt },
@@ -167,91 +166,44 @@ Suggerisci i gruppi più appropriati per questo mittente.`;
       tool_choice: { type: 'function', function: { name: 'suggest_groups' } }
     };
 
-    // Try each config in order
-    for (const aiConfig of aiConfigs) {
-      try {
-        console.log(`🔄 Trying ${aiConfig.provider}/${aiConfig.modello}...`);
-
-        if (aiConfig.provider === 'anthropic') {
-          aiResponse = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': aiConfig.api_key,
-              'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-              model: aiConfig.modello,
-              max_tokens: 1000,
-              ...requestBody
-            })
-          });
-        } else if (aiConfig.provider === 'openai') {
-          aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${aiConfig.api_key}`
-            },
-            body: JSON.stringify({
-              model: aiConfig.modello,
-              ...requestBody
-            })
-          });
-        } else if (aiConfig.provider === 'lovable') {
-          aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${aiConfig.api_key}`
-            },
-            body: JSON.stringify({
-              model: aiConfig.modello,
-              ...requestBody
-            })
-          });
-        } else {
-          console.log(`⏭️ Skipping unsupported provider: ${aiConfig.provider}`);
-          continue;
-        }
-
-        if (aiResponse.ok) {
-          successfulConfig = aiConfig;
-          console.log(`✅ Success with ${aiConfig.provider}/${aiConfig.modello}`);
-          break;
-        } else {
-          const errorText = await aiResponse.text();
-          lastError = errorText;
-          
-          // Check if it's a credit/quota error - if so, try next config
-          if (errorText.includes('credit balance') || 
-              errorText.includes('quota') || 
-              errorText.includes('insufficient_quota') ||
-              errorText.includes('rate_limit')) {
-            console.log(`⚠️ ${aiConfig.provider} failed (no credits/quota), trying next...`);
-            continue;
-          } else {
-            // Other error - log but still try next config
-            console.error(`❌ ${aiConfig.provider} error:`, aiResponse.status, errorText);
-            continue;
-          }
-        }
-      } catch (error: any) {
-        console.error(`❌ Exception with ${aiConfig.provider}:`, error.message);
-        lastError = error.message;
-        continue;
-      }
+    if (aiConfig.provider === 'anthropic') {
+      aiResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': aiConfig.api_key,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: aiConfig.modello,
+          max_tokens: 1000,
+          ...requestBody
+        })
+      });
+    } else if (aiConfig.provider === 'openai') {
+      aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${aiConfig.api_key}`
+        },
+        body: JSON.stringify({
+          model: aiConfig.modello,
+          ...requestBody
+        })
+      });
+    } else {
+      return new Response(
+        JSON.stringify({ error: `Unsupported AI provider: ${aiConfig.provider}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // If no config worked, return error
-    if (!successfulConfig || !aiResponse?.ok) {
-      console.error('❌ All AI configs failed. Last error:', lastError);
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('❌ AI API Error:', aiResponse.status, errorText);
       return new Response(
-        JSON.stringify({ 
-          error: 'All AI providers failed', 
-          details: lastError,
-          hint: 'Try activating Lovable AI in /configurazione-ai'
-        }),
+        JSON.stringify({ error: 'AI API request failed', details: errorText }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -261,12 +213,12 @@ Suggerisci i gruppi più appropriati per questo mittente.`;
 
     // Extract suggestions from tool call
     let suggestions: GroupingSuggestion[] = [];
-    if (successfulConfig.provider === 'anthropic') {
+    if (aiConfig.provider === 'anthropic') {
       const toolUse = aiData.content?.find((c: any) => c.type === 'tool_use');
       if (toolUse?.input?.suggestions) {
         suggestions = toolUse.input.suggestions;
       }
-    } else if (successfulConfig.provider === 'openai' || successfulConfig.provider === 'lovable') {
+    } else if (aiConfig.provider === 'openai') {
       const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
       if (toolCall?.function?.arguments) {
         const parsed = JSON.parse(toolCall.function.arguments);

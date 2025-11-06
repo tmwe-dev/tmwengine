@@ -9,6 +9,247 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-30] - Sistema Fallback Automatico Multi-Provider
+
+### File Modificato
+- **Function:** `supabase/functions/suggest-sender-grouping/index.ts`
+- **Backup Creato:** `index-old2.ts`
+
+### Motivo Modifica
+L'edge function falliva sempre quando la configurazione AI più recente (Anthropic) non aveva crediti sufficienti. Non c'era alcun sistema di fallback per provare altre configurazioni attive.
+
+**Comportamento errato:**
+```
+3 config attive: Anthropic (no credits), Lovable AI, OpenAI
+→ Prova solo Anthropic → Errore 500 "credit balance too low"
+→ Funzione fallisce, non prova mai Lovable AI o OpenAI
+→ Utente bloccato, deve disattivare manualmente Anthropic
+```
+
+**Errori ripetuti:**
+- 40+ errori 500 identici in 2 minuti
+- "Your credit balance is too low to access the Anthropic API"
+- Nessun fallback automatico implementato
+
+### Modifiche Apportate
+
+#### 1. Caricamento Multiple Configurazioni (Lines 60-74)
+
+**Prima (buggy):**
+```typescript
+const { data: aiConfigs } = await supabase
+  .from('config_ai')
+  .select('*')
+  .eq('attivo', true)
+  .order('created_at', { ascending: false })
+  .limit(1);  // ❌ Prende solo la prima
+
+const aiConfig = aiConfigs?.[0];
+```
+
+**Dopo (fixed):**
+```typescript
+const { data: aiConfigs } = await supabase
+  .from('config_ai')
+  .select('*')
+  .eq('attivo', true)
+  .order('created_at', { ascending: false });  // ✅ Tutte le config attive
+
+console.log(`🔄 Found ${aiConfigs.length} active AI configs, will try in order`);
+```
+
+#### 2. Sistema Fallback Loop (Lines 111-209)
+
+**Implementazione completa:**
+```typescript
+let successfulConfig: any = null;
+let lastError: string = '';
+
+// Try each config in order
+for (const aiConfig of aiConfigs) {
+  try {
+    console.log(`🔄 Trying ${aiConfig.provider}/${aiConfig.modello}...`);
+    
+    // Call API based on provider
+    if (aiConfig.provider === 'anthropic') { ... }
+    else if (aiConfig.provider === 'openai') { ... }
+    else if (aiConfig.provider === 'lovable') { ... }  // 🆕 Lovable AI support
+    
+    if (aiResponse.ok) {
+      successfulConfig = aiConfig;
+      console.log(`✅ Success with ${aiConfig.provider}/${aiConfig.modello}`);
+      break;  // Stop at first successful config
+    } else {
+      const errorText = await aiResponse.text();
+      
+      // Check if it's a credit/quota error
+      if (errorText.includes('credit balance') || 
+          errorText.includes('quota') || 
+          errorText.includes('insufficient_quota') ||
+          errorText.includes('rate_limit')) {
+        console.log(`⚠️ ${aiConfig.provider} failed (no credits), trying next...`);
+        continue;  // Try next config
+      }
+    }
+  } catch (error) {
+    console.error(`❌ Exception with ${aiConfig.provider}:`, error);
+    continue;  // Try next config
+  }
+}
+
+// Final check
+if (!successfulConfig) {
+  return new Response(
+    JSON.stringify({ 
+      error: 'All AI providers failed',
+      hint: 'Try activating Lovable AI in /configurazione-ai'
+    }),
+    { status: 500 }
+  );
+}
+```
+
+#### 3. Supporto Lovable AI Gateway (Lines 192-199)
+
+**Aggiunto provider 'lovable':**
+```typescript
+else if (aiConfig.provider === 'lovable') {
+  aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${aiConfig.api_key}`
+    },
+    body: JSON.stringify({
+      model: aiConfig.modello,
+      ...requestBody
+    })
+  });
+}
+```
+
+#### 4. Gestione Risposte Multi-Provider (Lines 215-227)
+
+**Aggiornato parsing per usare `successfulConfig`:**
+```typescript
+if (successfulConfig.provider === 'anthropic') { ... }
+else if (successfulConfig.provider === 'openai' || successfulConfig.provider === 'lovable') {
+  // ✅ Lovable usa formato OpenAI-compatible
+  const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+  ...
+}
+```
+
+### Comportamento Atteso
+
+**Prima del fix:**
+```
+Anthropic (no credits) → Errore 500
+Lovable AI (disponibile) → Mai provato
+OpenAI (disponibile) → Mai provato
+Risultato: 40+ errori identici in 2 minuti
+```
+
+**Dopo il fix:**
+```
+Anthropic (no credits) → Errore credit balance
+  ↓ Fallback automatico
+Lovable AI (disponibile) → ✅ Success!
+Risultato: Funziona al primo colpo senza intervento manuale
+```
+
+**Console logs attesi:**
+```
+🔄 Found 3 active AI configs, will try in order: anthropic/claude-sonnet-4-5, lovable/google/gemini-2.5-flash, openai/gpt-5
+🔄 Trying anthropic/claude-sonnet-4-5...
+⚠️ anthropic failed (no credits), trying next...
+🔄 Trying lovable/google/gemini-2.5-flash...
+✅ Success with lovable/google/gemini-2.5-flash
+```
+
+### Vantaggi
+
+✅ **Zero downtime**: Fallback automatico senza intervento utente  
+✅ **Multi-provider resilience**: Supporta Anthropic, OpenAI, Lovable AI  
+✅ **Smart error handling**: Distingue errori crediti da altri errori  
+✅ **Logging dettagliato**: Facile diagnosticare quale provider funziona  
+✅ **No breaking changes**: Funziona con configurazioni esistenti  
+✅ **Cost optimization**: Usa provider gratuiti (Lovable) come fallback  
+
+### Testing
+
+#### Test 1: Verifica Fallback Funziona
+```bash
+# Scenario: Anthropic senza crediti, Lovable AI attivo
+1. Vai su /funnemail
+2. Click "🤖 Suggerisci Raggruppamenti"
+3. Apri Console Dev Tools
+4. Verifica logs:
+   - "⚠️ anthropic failed (no credits), trying next..."
+   - "✅ Success with lovable/google/gemini-2.5-flash"
+5. Nessun errore 500
+6. Suggerimenti salvati correttamente
+```
+
+#### Test 2: Verifica Supporto Lovable AI
+```bash
+# Scenario: Solo Lovable AI attivo
+1. Disattiva Anthropic e OpenAI
+2. Attiva solo Lovable AI (google/gemini-2.5-flash)
+3. Genera suggerimenti
+4. Verifica funziona al primo tentativo
+5. Console: "✅ Success with lovable/google/gemini-2.5-flash"
+```
+
+#### Test 3: Verifica Tutti Falliscono
+```bash
+# Scenario: Tutte le config senza crediti/API key errata
+1. Imposta API keys invalide per tutte le config
+2. Genera suggerimenti
+3. Verifica errore finale:
+   {
+     "error": "All AI providers failed",
+     "hint": "Try activating Lovable AI in /configurazione-ai"
+   }
+4. Console mostra tentativi per tutti i provider
+```
+
+### Impatto
+
+✅ **Risolve 40+ errori identici al secondo**: Fallback automatico previene loop errori  
+✅ **UX migliorata drasticamente**: Funziona senza intervento manuale utente  
+✅ **Riduzione costi**: Lovable AI gratuito usato come fallback intelligente  
+✅ **Resilienza sistema**: Non dipende da un solo provider AI  
+✅ **Diagnostica migliorata**: Logs chiari mostrano quale provider funziona  
+
+### Rollback Plan
+
+```bash
+cp supabase/functions/suggest-sender-grouping/index-old1.ts \
+   supabase/functions/suggest-sender-grouping/index.ts
+```
+
+### Note Aggiuntive
+
+**Provider supportati:**
+- ✅ Anthropic Claude (tutti i modelli)
+- ✅ OpenAI GPT (tutti i modelli)
+- ✅ Lovable AI (google/gemini-2.5-flash, etc.)
+
+**Errori gestiti per fallback:**
+- `credit balance too low` (Anthropic)
+- `insufficient_quota` (OpenAI)
+- `rate_limit` (qualsiasi provider)
+- `quota` (qualsiasi provider)
+
+**Priorità fallback:**
+1. Configurazione più recente (`created_at DESC`)
+2. Se fallisce per crediti → Prossima configurazione
+3. Continua fino a trovarne una funzionante
+4. Se tutte falliscono → Errore finale con hint
+
+---
+
 ## [2025-01-30] - Fix Multiple Active AI Configs
 
 ### File Modificato

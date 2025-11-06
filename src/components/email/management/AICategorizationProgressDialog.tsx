@@ -48,6 +48,10 @@ export function AICategorizationProgressDialog({
           clearInterval(interval);
           if (data.status === 'completed') {
             onComplete();
+            // Auto-close dialog after 2 seconds
+            setTimeout(() => {
+              onClose();
+            }, 2000);
           }
         }
       }

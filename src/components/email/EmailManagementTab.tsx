@@ -868,10 +868,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
               await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
             } else {
               console.log('✅ All batches completed!');
-              toast({
-                title: '✅ Analisi AI completata!',
-                description: `${sendersToProcess.length} mittenti classificati con successo`,
-              });
               await handleAnalysisComplete();
             }
             
@@ -998,6 +994,11 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         },
         status: 'pending' as const
       })));
+      
+      // Auto-open suggestions dialog after brief delay
+      setTimeout(() => {
+        setShowAISuggestionsDialog(true);
+      }, 500);
     }
     
     setShowProgressDialog(false);

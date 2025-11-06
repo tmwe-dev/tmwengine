@@ -22,6 +22,7 @@ import type { GroupingSuggestion } from '@/types/email-management';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { GroupingSuggestionCard } from './management/GroupingSuggestionCard';
 import { AIConfigurationGuide } from './management/AIConfigurationGuide';
+import { SuggestionProgressDialog, SuggestionProgress } from './management/SuggestionProgressDialog';
 
 // Collisione personalizzata 70%
 const carousel70PercentCollision: CollisionDetection = (args) => {
@@ -96,6 +97,10 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
   const [aiConfigError, setAiConfigError] = useState<string | null>(null);
+  
+  // 🎯 Progress Dialog per generazione suggerimenti
+  const [suggestionProgress, setSuggestionProgress] = useState<SuggestionProgress | null>(null);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
   
   const [carouselZoom, setCarouselZoom] = useState(() => {
     const saved = localStorage.getItem('email-carousel-zoom');
@@ -536,7 +541,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     onOpenAISidebar?.(sender.email);
   };
 
-  // 🤖 NUOVO SISTEMA - Genera suggerimenti raggruppamento
+  // 🤖 NUOVO SISTEMA - Genera suggerimenti raggruppamento con progresso live
   const handleGenerateSuggestions = async () => {
     setIsGeneratingSuggestions(true);
     
@@ -565,11 +570,43 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         return;
       }
 
+      // Inizializza progresso e mostra dialog
+      setSuggestionProgress({
+        current: 0,
+        total: unclassifiedSenders.length,
+        currentSender: '',
+        currentCompany: '',
+        successCount: 0,
+        errorCount: 0,
+        logs: [{
+          timestamp: new Date().toISOString(),
+          type: 'info',
+          message: `🚀 Avvio analisi di ${unclassifiedSenders.length} mittenti non classificati`
+        }]
+      });
+      setShowProgressDialog(true);
+
       let successCount = 0;
       let errorCount = 0;
 
       // Per ogni mittente non classificato
-      for (const sender of unclassifiedSenders) {
+      for (let index = 0; index < unclassifiedSenders.length; index++) {
+        const sender = unclassifiedSenders[index];
+        
+        // Update current sender
+        setSuggestionProgress(prev => prev ? {
+          ...prev,
+          current: index + 1,
+          currentSender: sender.email,
+          currentCompany: sender.companyName,
+          logs: [...prev.logs, {
+            timestamp: new Date().toISOString(),
+            type: 'info',
+            message: `📧 Analisi ${sender.companyName} (${sender.email})...`,
+            senderEmail: sender.email
+          }]
+        } : null);
+
         try {
           // Get email samples - SCHEMA VERIFICATO ✅
           const { data: emailSamples, error: emailError } = await supabase
@@ -583,13 +620,42 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           if (emailError) {
             console.error(`❌ Errore lettura email per ${sender.email}:`, emailError);
             errorCount++;
+            setSuggestionProgress(prev => prev ? {
+              ...prev,
+              errorCount: prev.errorCount + 1,
+              logs: [...prev.logs, {
+                timestamp: new Date().toISOString(),
+                type: 'error',
+                message: `❌ Errore lettura email per ${sender.companyName}: ${emailError.message}`,
+                senderEmail: sender.email
+              }]
+            } : null);
             continue;
           }
 
           if (!emailSamples || emailSamples.length === 0) {
             console.log(`⚠️ Nessuna email trovata per ${sender.email}`);
+            setSuggestionProgress(prev => prev ? {
+              ...prev,
+              logs: [...prev.logs, {
+                timestamp: new Date().toISOString(),
+                type: 'info',
+                message: `⚠️ Nessuna email trovata per ${sender.companyName}, skip`,
+                senderEmail: sender.email
+              }]
+            } : null);
             continue;
           }
+
+          // Log email samples found
+          setSuggestionProgress(prev => prev ? {
+            ...prev,
+            logs: [...prev.logs, {
+              timestamp: new Date().toISOString(),
+              type: 'info',
+              message: `📊 Trovate ${emailSamples.length} email per analisi`
+            }]
+          } : null);
 
           // Call edge function
           const { data, error } = await supabase.functions.invoke('suggest-sender-grouping', {
@@ -614,22 +680,67 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           if (error) {
             console.error(`❌ Errore suggerimento per ${sender.email}:`, error);
             errorCount++;
+            setSuggestionProgress(prev => prev ? {
+              ...prev,
+              errorCount: prev.errorCount + 1,
+              logs: [...prev.logs, {
+                timestamp: new Date().toISOString(),
+                type: 'error',
+                message: `❌ Errore AI per ${sender.companyName}: ${error.message}`,
+                senderEmail: sender.email
+              }]
+            } : null);
             continue;
           }
 
           console.log(`✅ Suggerimenti generati per ${sender.email}:`, data);
           successCount++;
+          
+          // Log success
+          setSuggestionProgress(prev => prev ? {
+            ...prev,
+            successCount: prev.successCount + 1,
+            logs: [...prev.logs, {
+              timestamp: new Date().toISOString(),
+              type: 'success',
+              message: `✅ Suggerimenti generati per ${sender.companyName}`,
+              senderEmail: sender.email
+            }]
+          } : null);
 
         } catch (senderError: any) {
           console.error(`❌ Errore processando ${sender.email}:`, senderError);
           errorCount++;
+          setSuggestionProgress(prev => prev ? {
+            ...prev,
+            errorCount: prev.errorCount + 1,
+            logs: [...prev.logs, {
+              timestamp: new Date().toISOString(),
+              type: 'error',
+              message: `❌ Errore imprevisto per ${sender.companyName}: ${senderError.message}`,
+              senderEmail: sender.email
+            }]
+          } : null);
         }
       }
+
+      // Final summary log
+      setSuggestionProgress(prev => prev ? {
+        ...prev,
+        logs: [...prev.logs, {
+          timestamp: new Date().toISOString(),
+          type: 'info',
+          message: `🎯 Completato: ${successCount} successi, ${errorCount} errori su ${unclassifiedSenders.length} mittenti totali`
+        }]
+      } : null);
+
+      // Ricarica suggerimenti salvati
+      await loadGroupingSuggestions(profile.tmwe_email);
 
       if (successCount > 0) {
         toast({
           title: '✅ Suggerimenti generati',
-          description: `${successCount} mittenti processati. Controlla la tabella email_sender_grouping_suggestions`,
+          description: `${successCount} mittenti processati con successo`,
         });
       } else {
         toast({
@@ -641,6 +752,14 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
 
     } catch (error: any) {
       console.error('❌ Errore generazione suggerimenti:', error);
+      setSuggestionProgress(prev => prev ? {
+        ...prev,
+        logs: [...prev.logs, {
+          timestamp: new Date().toISOString(),
+          type: 'error',
+          message: `❌ Errore critico: ${error.message}`
+        }]
+      } : null);
       toast({
         title: '❌ Errore',
         description: error.message || 'Impossibile generare i suggerimenti',
@@ -879,6 +998,14 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         onOpenChange={setShowCreateDialog}
         onSubmit={handleCreateCategory}
         existingNames={groups.map(g => g.nome_gruppo)}
+      />
+
+      {/* 🎯 Progress Dialog */}
+      <SuggestionProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        progress={suggestionProgress}
+        isGenerating={isGeneratingSuggestions}
       />
 
       {/* 🤖 Suggestions Dialog */}

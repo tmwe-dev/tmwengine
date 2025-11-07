@@ -75,36 +75,100 @@ serve(async (req) => {
     console.log(`🔄 Found ${aiConfigs.length} active AI configs, will try in order:`, 
       aiConfigs.map(c => `${c.provider}/${c.modello}`).join(', '));
 
-    // Build system prompt
-    const systemPrompt = `Sei un assistente AI specializzato nella categorizzazione di mittenti email per un sistema di gestione email aziendale.
+    // 🧠 STEP 1: Carica Knowledge Base gruppi esistenti
+    const { data: groupContexts, error: contextError } = await supabase
+      .from('email_sender_groups_context')
+      .select('group_id, context_summary, sender_patterns, quality_score')
+      .eq('user_email', body.user_email);
 
-Il tuo compito è analizzare un mittente email e suggerire 1-3 gruppi possibili dove categorizzarlo.
+    if (contextError) {
+      console.warn('⚠️ Impossibile caricare knowledge base gruppi:', contextError);
+    }
+
+    // Crea mappa group_id → context per arricchire prompt
+    const contextsMap = new Map<string, any>();
+    (groupContexts || []).forEach(ctx => {
+      contextsMap.set(ctx.group_id, ctx);
+    });
+
+    console.log(`📊 Knowledge Base: ${contextsMap.size} gruppi con context caricati`);
+
+    // Build system prompt CON KNOWLEDGE BASE
+    const systemPrompt = `Sei un assistente AI specializzato nella categorizzazione di MITTENTI email (non contenuti).
+
+Il tuo compito è analizzare CHI È IL MITTENTE e suggerire 1-3 gruppi dove classificarlo.
+
+🎯 FOCUS: Analizza la NATURA DEL MITTENTE, non il contenuto delle email.
 
 GRUPPI ESISTENTI:
-${body.existing_groups.map(g => `- ${g.nome_gruppo} (${g.tipo || 'custom'}): ${g.descrizione || 'Gruppo personalizzato'}`).join('\n')}
+${body.existing_groups.map(g => {
+  const context = contextsMap.get(g.id);
+  const contextInfo = context 
+    ? `\n   📊 PATTERN: ${context.context_summary}\n   🔍 SENDER PATTERNS: ${JSON.stringify(context.sender_patterns)}`
+    : '';
+  return `- ${g.nome_gruppo} (${g.tipo || 'custom'}): ${g.descrizione || 'Gruppo personalizzato'}${contextInfo}`;
+}).join('\n')}
 
-REGOLE:
-1. Proponi MASSIMO 3 suggerimenti, ordinati per rilevanza (primo = più rilevante)
-2. Per ogni suggerimento, indica:
-   - group_id: ID del gruppo esistente (o null se suggerisci un nuovo gruppo)
-   - group_name: Nome del gruppo (esistente o proposto)
-   - confidence: Valore 0-1 che indica quanto sei sicuro
-   - reason: Spiegazione breve (max 50 caratteri)
-3. Preferisci SEMPRE gruppi esistenti quando possibile
-4. Puoi suggerire un nuovo gruppo solo se nessuno di quelli esistenti è appropriato
-5. Basati su: dominio email, oggetti email, contenuti preview, pattern comuni
+REGOLE DI ANALISI:
+1. 🏢 ANALIZZA IL MITTENTE (NON IL CONTENUTO):
+   - Dominio email (es. @cliente.com = esterno, @tuaazienda.com = interno)
+   - Nome azienda/persona dal display name
+   - Pattern di invio (frequenza, orari, volumi)
+   - Tipo business (cliente, fornitore, partner, spedizioniere, autorità)
+
+2. ❌ NON ANALIZZARE:
+   - Oggetti email (es. "preventivo" non significa che mittente sia "Commerciale")
+   - Contenuto body (es. "documenti doganali" non significa che sia "Operativo")
+   - Argomenti discussi (un cliente può scrivere di operatività ma resta CLIENTE)
+
+3. ✅ ESEMPI CORRETTI:
+   - mittente@asmlogistics.com + "ASM Logistics" → CLIENTE (azienda esterna che ci scrive)
+   - fatture@spedizioniexpress.it + invii frequenti → FORNITORI/SPEDIZIONIERI
+   - noreply@agenziamaritime.it + pattern automatico → AUTORITÀ/ENTI
+   - collega@tuaazienda.com → TEAM INTERNO (se esiste gruppo)
+
+4. 📊 USA KNOWLEDGE BASE:
+   - Se gruppo ha context_summary con "mittenti clienti B2B", usa quel pattern
+   - Se sender_patterns mostra domini "@cliente.*", preferisci quel gruppo per nuovi @cliente
+   - Quality score alto = pattern affidabile, usalo come riferimento
+
+5. 🎯 CONFIDENCE:
+   - >0.85: Mittente match chiaro con pattern gruppo (es. dominio cliente match pattern clienti)
+   - 0.60-0.85: Indicatori parziali ma non definitivi
+   - <0.60: Incerto, servono più dati
+
+6. 🔢 SUGGERIMENTI:
+   - Proponi MASSIMO 3 suggerimenti, ordinati per rilevanza
+   - Preferisci SEMPRE gruppi esistenti quando appropriati
+   - Suggerisci nuovo gruppo SOLO se NESSUNO dei ${body.existing_groups.length}+ esistenti calza
+
+7. 📋 FORMATO RISPOSTA:
+   - group_id: ID del gruppo esistente (o null per nuovo gruppo)
+   - group_name: Nome del gruppo
+   - confidence: Valore 0-1
+   - reason: Spiegazione breve (max 50 caratteri) che menziona TIPO MITTENTE (non contenuto)
 
 Rispondi SOLO con JSON valido usando la funzione suggest_groups.`;
 
-    // Build user prompt
-    const userPrompt = `Analizza questo mittente e suggerisci 1-3 gruppi appropriati:
+    // Build user prompt (focus su CHI È il mittente)
+    const userPrompt = `Analizza questo MITTENTE e suggerisci 1-3 gruppi appropriati:
 
-MITTENTE: ${body.sender_email}
+🏢 MITTENTE: ${body.sender_email}
+📊 VOLUME: ${body.email_samples.length} email campionate
 
-CAMPIONI EMAIL (ultimi ${body.email_samples.length}):
-${body.email_samples.map((email, i) => `${i + 1}. "${email.subject}" - ${email.body_preview?.substring(0, 100) || '(no preview)'}`).join('\n')}
+CAMPIONI EMAIL (per rilevare pattern temporali/formali, NON per contenuto):
+${body.email_samples.map((email, i) => {
+  const date = new Date(email.date);
+  const dayOfWeek = date.toLocaleDateString('it-IT', { weekday: 'short' });
+  const hour = date.getHours();
+  return `${i + 1}. [${dayOfWeek} ${hour}:00] "${email.subject.substring(0, 60)}"`;
+}).join('\n')}
 
-Suggerisci i gruppi più appropriati per questo mittente.`;
+🎯 FOCUS: Chi è questo mittente? È un cliente che ci scrive? Un fornitore? Un'autorità? Un collega?
+📧 DOMINIO: ${body.sender_email.split('@')[1]}
+🔍 PATTERN TEMPORALE: ${body.email_samples.length} email, orari ${body.email_samples.map(e => new Date(e.date).getHours()).join(', ')}
+
+Suggerisci i gruppi più appropriati basandoti sulla NATURA DEL MITTENTE (non su cosa scrive).`;
 
     // 🔄 FALLBACK SYSTEM: Try each AI config until one works
     let aiResponse: any;

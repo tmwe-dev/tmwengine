@@ -3275,6 +3275,39 @@ export type Database = {
         }
         Relationships: []
       }
+      email_sender_grouping_suggestions_backup_20250107: {
+        Row: {
+          analyzed_at: string | null
+          created_at: string | null
+          id: string | null
+          sender_email: string | null
+          status: string | null
+          suggested_groups: Json | null
+          updated_at: string | null
+          user_email: string | null
+        }
+        Insert: {
+          analyzed_at?: string | null
+          created_at?: string | null
+          id?: string | null
+          sender_email?: string | null
+          status?: string | null
+          suggested_groups?: Json | null
+          updated_at?: string | null
+          user_email?: string | null
+        }
+        Update: {
+          analyzed_at?: string | null
+          created_at?: string | null
+          id?: string | null
+          sender_email?: string | null
+          status?: string | null
+          suggested_groups?: Json | null
+          updated_at?: string | null
+          user_email?: string | null
+        }
+        Relationships: []
+      }
       email_sender_groups: {
         Row: {
           colore: string | null

@@ -141,8 +141,24 @@ export function EmailGroupingSuggestionsTab() {
       if (error) throw error;
 
       if (suggestions && suggestions.length > 0) {
-        setGroupingSuggestions(suggestions as unknown as GroupingSuggestion[]);
-        console.log(`🤖 Caricati ${suggestions.length} suggerimenti AI pending`);
+        // 🔴 FILTRO: Rimuovi suggerimenti per mittenti già classificati
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: existingRules } = await supabase
+            .from('email_sender_rules')
+            .select('sender_email')
+            .eq('user_id', user.id)
+            .in('sender_email', suggestions.map((s: any) => s.sender_email));
+          
+          const classifiedEmails = new Set(existingRules?.map(r => r.sender_email) || []);
+          const validSuggestions = suggestions.filter((s: any) => !classifiedEmails.has(s.sender_email));
+          
+          console.log(`🤖 Caricati ${validSuggestions.length} suggerimenti validi (${classifiedEmails.size} mittenti già classificati)`);
+          setGroupingSuggestions(validSuggestions as unknown as GroupingSuggestion[]);
+        } else {
+          setGroupingSuggestions(suggestions as unknown as GroupingSuggestion[]);
+          console.log(`🤖 Caricati ${suggestions.length} suggerimenti AI pending`);
+        }
         
         // 🔴 DISABILITATO - Popup ora si apre solo su richiesta utente
         // setShowSuggestionsDialog(true);
@@ -549,45 +565,70 @@ export function EmailGroupingSuggestionsTab() {
         console.log(`🆕 Auto-registrazione ${newGroupNames.size} nuovi gruppi suggeriti...`);
         
         for (const groupName of newGroupNames) {
-          // Verifica se esiste già (case-insensitive)
+          // ✅ Verifica case-insensitive + trim
+          const normalizedName = groupName.trim().toLowerCase();
           const existing = groups.find(g => 
-            g.nome_gruppo.toLowerCase() === groupName.toLowerCase()
+            g.nome_gruppo.trim().toLowerCase() === normalizedName
           );
           
-          if (!existing) {
-            const { data: newGroup, error: createError } = await supabase
-              .from('email_sender_groups')
-              .insert({
-                nome_gruppo: groupName,
-                colore: '#3B82F6',
-                icon: '📧'
-              })
-              .select()
-              .single();
+          if (existing) {
+            console.log(`⏭️ Gruppo "${groupName}" già esistente (${existing.id}), skip`);
             
-            if (createError) {
-              console.error(`❌ Errore auto-registrazione gruppo "${groupName}":`, createError);
-            } else {
-              console.log(`✅ Auto-registrato gruppo: ${groupName} (${newGroup.id})`);
-              
-              // Aggiorna state locale
-              setGroups(prev => [...prev, newGroup]);
-              
-              // Update suggestions con nuovo group_id
-              await supabase
-                .from('email_sender_grouping_suggestions' as any)
-                .update({
-                  suggested_groups: groupingSuggestions
-                    .find(s => s.suggested_groups.some(sg => sg.group_name === groupName))
-                    ?.suggested_groups.map(sg => 
-                      sg.group_name === groupName 
-                        ? { ...sg, group_id: newGroup.id } 
-                        : sg
-                    )
-                })
-                .eq('user_email', profile.tmwe_email)
-                .contains('suggested_groups', [{ group_name: groupName }]);
-            }
+            // Aggiorna suggerimenti con group_id esistente
+            await supabase
+              .from('email_sender_grouping_suggestions' as any)
+              .update({
+                suggested_groups: groupingSuggestions
+                  .find(s => s.suggested_groups.some(sg => sg.group_name === groupName))
+                  ?.suggested_groups.map(sg => 
+                    sg.group_name === groupName 
+                      ? { ...sg, group_id: existing.id } 
+                      : sg
+                  )
+              })
+              .eq('user_email', profile.tmwe_email)
+              .contains('suggested_groups', [{ group_name: groupName }]);
+            
+            continue;
+          }
+          
+          // Crea gruppo solo se NON esiste
+          const { data: newGroup, error: createError } = await supabase
+            .from('email_sender_groups')
+            .insert({
+              nome_gruppo: groupName.trim(),
+              colore: '#3B82F6',
+              icon: '📧'
+            })
+            .select()
+            .single();
+          
+          if (createError) {
+            console.error(`❌ Errore auto-registrazione gruppo "${groupName}":`, {
+              message: createError.message,
+              code: createError.code,
+              details: createError.details
+            });
+          } else {
+            console.log(`✅ Auto-registrato gruppo: ${groupName} (${newGroup.id})`);
+            
+            // Aggiorna state locale
+            setGroups(prev => [...prev, newGroup]);
+            
+            // Update suggestions con nuovo group_id
+            await supabase
+              .from('email_sender_grouping_suggestions' as any)
+              .update({
+                suggested_groups: groupingSuggestions
+                  .find(s => s.suggested_groups.some(sg => sg.group_name === groupName))
+                  ?.suggested_groups.map(sg => 
+                    sg.group_name === groupName 
+                      ? { ...sg, group_id: newGroup.id } 
+                      : sg
+                  )
+              })
+              .eq('user_email', profile.tmwe_email)
+              .contains('suggested_groups', [{ group_name: groupName }]);
           }
         }
       }
@@ -654,7 +695,12 @@ export function EmailGroupingSuggestionsTab() {
           .single();
 
         if (createError) {
-          console.error('❌ Errore creazione gruppo:', createError);
+          console.error('❌ Errore creazione gruppo:', {
+            message: createError.message,
+            code: createError.code,
+            details: createError.details,
+            hint: createError.hint
+          });
           toast({
             title: '❌ Errore',
             description: 'Impossibile creare il nuovo gruppo',
@@ -665,6 +711,30 @@ export function EmailGroupingSuggestionsTab() {
 
         targetGroupId = newGroup.id;
         setGroups(prev => [...prev, newGroup]);
+      }
+
+      // ✅ Verifica se regola già esistente
+      const { data: existingRule } = await supabase
+        .from('email_sender_rules')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('sender_email', sender.email)
+        .eq('group_id', targetGroupId)
+        .maybeSingle();
+
+      if (existingRule) {
+        console.log('⚠️ Regola già esistente, skip insert');
+        
+        // Rimuovi suggerimento comunque (già classificato)
+        setGroupingSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+        
+        toast({
+          title: '✅ Mittente già classificato',
+          description: `${sender.companyName} è già in ${groupName}`,
+        });
+        
+        await loadData();
+        return;
       }
 
       // Create classification rule
@@ -688,10 +758,26 @@ export function EmailGroupingSuggestionsTab() {
       await loadData();
 
     } catch (error: any) {
-      console.error('❌ Errore accettazione suggerimento:', error);
+      console.error('❌ Errore accettazione suggerimento:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        fullError: error
+      });
+      
+      // Messaggio user-friendly basato sul tipo di errore
+      let userMessage = 'Impossibile accettare il suggerimento';
+      
+      if (error.code === '23505') {
+        userMessage = 'Questo mittente è già assegnato a questo gruppo';
+      } else if (error.message) {
+        userMessage = error.message;
+      }
+      
       toast({
         title: '❌ Errore',
-        description: 'Impossibile accettare il suggerimento',
+        description: userMessage,
         variant: 'destructive',
       });
     }
@@ -709,10 +795,23 @@ export function EmailGroupingSuggestionsTab() {
       await handleAcceptSuggestion(suggestionId, groupId, group.nome_gruppo);
       
     } catch (error: any) {
-      console.error('❌ Errore selezione manuale:', error);
+      console.error('❌ Errore selezione manuale:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      
+      let userMessage = 'Impossibile assegnare gruppo';
+      if (error.code === '23505') {
+        userMessage = 'Questo mittente è già assegnato a questo gruppo';
+      } else if (error.message) {
+        userMessage = error.message;
+      }
+      
       toast({
         title: '❌ Errore',
-        description: 'Impossibile assegnare gruppo',
+        description: userMessage,
         variant: 'destructive',
       });
     }
@@ -729,10 +828,14 @@ export function EmailGroupingSuggestionsTab() {
       });
 
     } catch (error: any) {
-      console.error('❌ Errore rifiuto suggerimento:', error);
+      console.error('❌ Errore rifiuto suggerimento:', {
+        message: error.message,
+        code: error.code,
+        details: error.details
+      });
       toast({
         title: '❌ Errore',
-        description: 'Impossibile ignorare il suggerimento',
+        description: error.message || 'Impossibile ignorare il suggerimento',
         variant: 'destructive',
       });
     }

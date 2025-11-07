@@ -3,11 +3,12 @@
  * Con logo aziendale, bandiera paese, badge cliente/WCA
  */
 
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Mail, Check, X, Sparkles, TrendingUp, Building2, Star, Users } from 'lucide-react';
+import { Mail, Check, X, Sparkles, TrendingUp, Building2, Star, Users, Loader2 } from 'lucide-react';
 import type { GroupingSuggestion } from '@/types/email-management';
 import { cn } from '@/lib/utils';
 import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
@@ -30,6 +31,10 @@ export const GroupingSuggestionCard = ({
   onDismiss,
   disabled = false,
 }: GroupingSuggestionCardProps) => {
+  // State per processing e debouncing
+  const [isProcessing, setIsProcessing] = useState(false);
+  const lastClickTime = useRef<number>(0);
+  
   // 🆕 Hook per logo aziendale
   const { data: logoData } = useCompanyLogo(suggestion.sender_email);
   
@@ -56,6 +61,43 @@ export const GroupingSuggestionCard = ({
   });
   
   const initials = extractInitials(suggestion.sender_email);
+  
+  // Handler con debouncing
+  const handleAccept = async (groupId: string | null, groupName: string) => {
+    const now = Date.now();
+    
+    if (now - lastClickTime.current < 1000) {
+      console.log('⏭️ Click troppo rapido, ignorato');
+      return;
+    }
+    
+    lastClickTime.current = now;
+    setIsProcessing(true);
+    
+    try {
+      await onAccept(suggestion.id, groupId, groupName);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
+  const handleDismiss = async () => {
+    const now = Date.now();
+    
+    if (now - lastClickTime.current < 1000) {
+      console.log('⏭️ Click troppo rapido, ignorato');
+      return;
+    }
+    
+    lastClickTime.current = now;
+    setIsProcessing(true);
+    
+    try {
+      await onDismiss(suggestion.id);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
   
   return (
     <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
@@ -160,20 +202,28 @@ export const GroupingSuggestionCard = ({
                 <div className="flex gap-2 mt-3">
                   <Button
                     size="sm"
-                    onClick={() => onAccept(suggestion.id, group.group_id, group.group_name)}
-                    disabled={disabled}
+                    onClick={() => handleAccept(group.group_id, group.group_name)}
+                    disabled={disabled || isProcessing}
                     className="flex-1"
                   >
-                    <Check className="w-3 h-3 mr-1" />
+                    {isProcessing ? (
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <Check className="w-3 h-3 mr-1" />
+                    )}
                     Accetta
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onAccept(suggestion.id, group.group_id, group.group_name)}
-                    disabled={disabled}
+                    onClick={() => handleAccept(group.group_id, group.group_name)}
+                    disabled={disabled || isProcessing}
                   >
-                    <Check className="w-3 h-3" />
+                    {isProcessing ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Check className="w-3 h-3" />
+                    )}
                   </Button>
                 </div>
               )}
@@ -182,11 +232,15 @@ export const GroupingSuggestionCard = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => onAccept(suggestion.id, group.group_id, group.group_name)}
-                  disabled={disabled}
+                  onClick={() => handleAccept(group.group_id, group.group_name)}
+                  disabled={disabled || isProcessing}
                   className="w-full mt-2 text-xs h-7"
                 >
-                  <Check className="w-3 h-3 mr-1" />
+                  {isProcessing ? (
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  ) : (
+                    <Check className="w-3 h-3 mr-1" />
+                  )}
                   Usa questo
                 </Button>
               )}
@@ -198,11 +252,15 @@ export const GroupingSuggestionCard = ({
       <Button
         size="sm"
         variant="ghost"
-        onClick={() => onDismiss(suggestion.id)}
-        disabled={disabled}
+        onClick={handleDismiss}
+        disabled={disabled || isProcessing}
         className="w-full mt-3 text-xs text-muted-foreground hover:text-destructive"
       >
-        <X className="w-3 h-3 mr-1" />
+        {isProcessing ? (
+          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+        ) : (
+          <X className="w-3 h-3 mr-1" />
+        )}
         Ignora suggerimenti
       </Button>
     </Card>

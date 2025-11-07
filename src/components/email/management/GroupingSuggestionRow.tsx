@@ -3,11 +3,12 @@
  * Con logo, bandiera, badge e dropdown gruppi alternativi
  */
 
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mail, Check, TrendingUp, Building2, Star, Users } from 'lucide-react';
+import { Mail, Check, TrendingUp, Building2, Star, Users, Loader2 } from 'lucide-react';
 import type { GroupingSuggestion, EmailSenderGroup } from '@/types/email-management';
 import { cn } from '@/lib/utils';
 import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
@@ -16,7 +17,6 @@ import { detectCountryFromEmail, getCountryFlag } from '@/lib/email-utils';
 import { isWCAPartner } from '@/data/wca-partners';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useState } from 'react';
 
 interface GroupingSuggestionRowProps {
   suggestion: GroupingSuggestion;
@@ -33,7 +33,10 @@ export const GroupingSuggestionRow = ({
   onSelectGroup,
   disabled = false,
 }: GroupingSuggestionRowProps) => {
+  // State per dropdown, processing e debouncing
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const lastClickTime = useRef<number>(0);
   
   // Hook per logo aziendale
   const { data: logoData } = useCompanyLogo(suggestion.sender_email);
@@ -80,10 +83,46 @@ export const GroupingSuggestionRow = ({
     !newGroups.some(ng => ng.id === g.id)
   );
 
-  const handleManualAssign = () => {
-    if (selectedGroupId) {
-      onSelectGroup(suggestion.id, selectedGroupId);
+  // Handler per accettazione suggerimento primario con debouncing
+  const handleAccept = async () => {
+    const now = Date.now();
+    
+    // Previeni click multipli entro 1 secondo
+    if (now - lastClickTime.current < 1000) {
+      console.log('⏭️ Click troppo rapido, ignorato');
+      return;
+    }
+    
+    lastClickTime.current = now;
+    setIsProcessing(true);
+    
+    try {
+      await onAccept(suggestion.id, primarySuggestion.group_id, primarySuggestion.group_name);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
+  // Handler per assegnazione manuale con debouncing
+  const handleManualAssign = async () => {
+    if (!selectedGroupId) return;
+    
+    const now = Date.now();
+    
+    // Previeni click multipli entro 1 secondo
+    if (now - lastClickTime.current < 1000) {
+      console.log('⏭️ Click troppo rapido, ignorato');
+      return;
+    }
+    
+    lastClickTime.current = now;
+    setIsProcessing(true);
+    
+    try {
+      await onSelectGroup(suggestion.id, selectedGroupId);
       setSelectedGroupId('');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -160,15 +199,19 @@ export const GroupingSuggestionRow = ({
 
       {/* Azioni */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <Button
-          size="sm"
-          onClick={() => onAccept(suggestion.id, primarySuggestion.group_id, primarySuggestion.group_name)}
-          disabled={disabled}
-          className="h-8 px-3"
-        >
-          <Check className="w-3.5 h-3.5 mr-1" />
-          Accetta
-        </Button>
+            <Button
+              size="sm"
+              onClick={handleAccept}
+              disabled={disabled || isProcessing}
+              className="h-8 px-3"
+            >
+              {isProcessing ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+              ) : (
+                <Check className="w-3.5 h-3.5 mr-1" />
+              )}
+              Accetta
+            </Button>
 
         {/* Dropdown Gruppi Alternativi */}
         <div className="flex items-center gap-1.5">
@@ -211,11 +254,14 @@ export const GroupingSuggestionRow = ({
 
           <Button
             size="sm"
-            variant="secondary"
             onClick={handleManualAssign}
-            disabled={disabled || !selectedGroupId}
+            disabled={disabled || !selectedGroupId || isProcessing}
+            variant="secondary"
             className="h-8 px-3"
           >
+            {isProcessing ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+            ) : null}
             Assegna
           </Button>
         </div>

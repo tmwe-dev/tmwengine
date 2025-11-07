@@ -39,21 +39,50 @@ export async function populateTempIndexForFolder(
     .eq('user_email', userEmail)
     .eq('folder', folderName);
 
-  // 2️⃣ Fetch UIDs dal server TMWE (prime 500 email)
-  console.log('📡 Fetching server UIDs (only metadata, no body)...');
+  // 2️⃣ Fetch UIDs dal server TMWE in batch da 25
+  console.log('📡 Fetching server UIDs in batches of 25...');
 
-  const serverResponse = await emailMessageApi.getMessages({
-    folder: folderName,
-    page: 1,
-    limit: 500,
-    format: 'text',
-    include_attachments: false,
-  });
+  const serverUIDs = new Set<string>();
+  const uidBatchSize = 25;
+  let currentPage = 1;
+  let hasMore = true;
 
-  const serverUIDs = new Set<string>(
-    serverResponse.messages.map((msg: any) => String(msg.uid))
-  );
-  console.log(`✅ Server UIDs count: ${serverUIDs.size}`);
+  while (hasMore) {
+    try {
+      console.log(`📡 Fetching page ${currentPage} (batch size: ${uidBatchSize})...`);
+      
+      const serverResponse = await emailMessageApi.getMessages({
+        folder: folderName,
+        page: currentPage,
+        limit: uidBatchSize,
+        format: 'text',
+        include_attachments: false,
+      });
+
+      const batchUIDs = serverResponse.messages.map((msg: any) => String(msg.uid));
+      
+      if (batchUIDs.length === 0) {
+        hasMore = false;
+        console.log(`✅ No more UIDs found, stopping at page ${currentPage}`);
+      } else {
+        batchUIDs.forEach(uid => serverUIDs.add(uid));
+        console.log(`✅ Page ${currentPage}: found ${batchUIDs.length} UIDs (total: ${serverUIDs.size})`);
+        
+        // Se abbiamo ricevuto meno di uidBatchSize, siamo alla fine
+        if (batchUIDs.length < uidBatchSize) {
+          hasMore = false;
+          console.log(`✅ Last page reached (received ${batchUIDs.length} < ${uidBatchSize})`);
+        } else {
+          currentPage++;
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error fetching page ${currentPage}:`, error);
+      hasMore = false;
+    }
+  }
+
+  console.log(`✅ Total server UIDs count: ${serverUIDs.size}`);
 
   // 3️⃣ Fetch UIDs dal DB locale
   console.log('💾 Fetching local DB UIDs...');

@@ -65,6 +65,7 @@ import FunEmail from "./pages/FunEmail";
 import ApiFunctionsReference from "./pages/ApiFunctionsReference";
 import { SingleMailImporter } from "./components/email/SingleMailImporter";
 import SingleFast from "./pages/SingleFast";
+import DualDownload from "./pages/DualDownload";
 
 const queryClient = new QueryClient();
 
@@ -307,6 +308,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <SingleFast />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/dual-download" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <DualDownload />
                 </CRMLayout>
               </ProtectedRoute>
             } />

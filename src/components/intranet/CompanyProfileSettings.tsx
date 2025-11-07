@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Building2, Sparkles, Loader2 } from 'lucide-react';
+import { Building2, Sparkles, Loader2, Brain } from 'lucide-react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +12,7 @@ export function CompanyProfileSettings() {
   const [open, setOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isGeneratingKB, setIsGeneratingKB] = useState(false);
   const { profile, updateProfile } = useUserProfile();
   
   const [companyDescription, setCompanyDescription] = useState('');
@@ -48,6 +49,86 @@ export function CompanyProfileSettings() {
       toast.error('Errore durante l\'ottimizzazione AI');
     } finally {
       setIsOptimizing(false);
+    }
+  };
+
+  const handleGenerateKnowledgeBase = async () => {
+    setIsGeneratingKB(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) throw new Error('Non autenticato');
+
+      // Carica TUTTI i gruppi esistenti
+      const { data: groups, error: groupsError } = await supabase
+        .from('email_sender_groups')
+        .select('id, nome_gruppo');
+
+      if (groupsError) throw groupsError;
+      if (!groups || groups.length === 0) {
+        toast.error('Nessun gruppo trovato');
+        return;
+      }
+
+      // Conta mittenti per ogni gruppo
+      const { data: rulesCount, error: rulesError } = await supabase
+        .from('email_sender_rules')
+        .select('group_id, sender_email')
+        .in('group_id', groups.map(g => g.id));
+
+      if (rulesError) throw rulesError;
+
+      // Filtra gruppi con almeno 3 mittenti
+      const sendersByGroup = new Map();
+      (rulesCount || []).forEach(rule => {
+        sendersByGroup.set(rule.group_id, (sendersByGroup.get(rule.group_id) || 0) + 1);
+      });
+
+      const qualifiedGroups = groups.filter(g => (sendersByGroup.get(g.id) || 0) >= 3);
+
+      if (qualifiedGroups.length === 0) {
+        toast.error('Nessun gruppo ha almeno 3 mittenti assegnati');
+        return;
+      }
+
+      toast.info(`Generazione KB per ${qualifiedGroups.length} gruppi in corso...`);
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Genera KB per ogni gruppo qualificato
+      for (const group of qualifiedGroups) {
+        try {
+          const { error } = await supabase.functions.invoke('generate-group-context', {
+            body: {
+              group_id: group.id,
+              user_email: user.email
+            }
+          });
+
+          if (error) throw error;
+          successCount++;
+          
+          // Delay tra richieste (rate limiting)
+          if (qualifiedGroups.indexOf(group) < qualifiedGroups.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (err) {
+          console.error(`KB error for ${group.nome_gruppo}:`, err);
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`✅ Knowledge Base generata per ${successCount}/${qualifiedGroups.length} gruppi`);
+      } else {
+        toast.error('Generazione fallita. Verifica configurazione AI.');
+      }
+
+    } catch (error) {
+      console.error('KB generation error:', error);
+      toast.error(error.message || 'Errore generazione Knowledge Base');
+    } finally {
+      setIsGeneratingKB(false);
     }
   };
 
@@ -127,14 +208,14 @@ export function CompanyProfileSettings() {
             <Button
               variant="outline"
               onClick={() => setOpen(false)}
-              disabled={isSaving || isOptimizing}
+              disabled={isSaving || isOptimizing || isGeneratingKB}
             >
               Annulla
             </Button>
             <Button
               variant="secondary"
               onClick={handleOptimizeWithAI}
-              disabled={isSaving || isOptimizing || !companyDescription.trim()}
+              disabled={isSaving || isOptimizing || isGeneratingKB || !companyDescription.trim()}
             >
               {isOptimizing ? (
                 <>
@@ -149,8 +230,25 @@ export function CompanyProfileSettings() {
               )}
             </Button>
             <Button
+              variant="outline"
+              onClick={handleGenerateKnowledgeBase}
+              disabled={isSaving || isOptimizing || isGeneratingKB}
+            >
+              {isGeneratingKB ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generazione KB...
+                </>
+              ) : (
+                <>
+                  <Brain className="w-4 h-4 mr-2" />
+                  Genera Knowledge Base
+                </>
+              )}
+            </Button>
+            <Button
               onClick={handleSave}
-              disabled={isSaving || isOptimizing}
+              disabled={isSaving || isOptimizing || isGeneratingKB}
             >
               {isSaving ? (
                 <>

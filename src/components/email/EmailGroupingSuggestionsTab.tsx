@@ -714,7 +714,9 @@ export function EmailGroupingSuggestionsTab() {
         </CardContent>
       </Card>
       
-      {/* Sezione 2: Knowledge Base Generator */}
+      {/* Sezione 2: Knowledge Base Generator - RIMOSSA */}
+      {/* NOTA: Funzionalità spostata in Profilo Aziendale per maggiore coerenza */}
+      {/* 
       <Card>
         <CardHeader>
           <CardTitle>🧠 Knowledge Base Generator</CardTitle>
@@ -723,7 +725,6 @@ export function EmailGroupingSuggestionsTab() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Stats gruppi qualificati */}
           <div className="grid grid-cols-3 gap-4">
             <div className="p-3 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">Gruppi qualificati</p>
@@ -741,7 +742,6 @@ export function EmailGroupingSuggestionsTab() {
             </div>
           </div>
           
-          {/* Button genera KB */}
           <Button
             onClick={handleGenerateGroupKB}
             disabled={isGeneratingKB || qualifiedGroups.length === 0}
@@ -765,6 +765,7 @@ export function EmailGroupingSuggestionsTab() {
           </p>
         </CardContent>
       </Card>
+      */}
       
       {/* Sezione 3: Suggerimenti Raggruppamento */}
       <Card>

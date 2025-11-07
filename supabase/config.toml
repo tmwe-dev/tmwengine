@@ -314,3 +314,6 @@ verify_jwt = true
 
 [functions.generate-group-context]
 verify_jwt = true
+
+[functions.optimize-company-profile]
+verify_jwt = true

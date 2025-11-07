@@ -441,16 +441,19 @@ Rispondi SOLO con JSON usando la funzione generate_context.`;
       .from('email_sender_groups_context')
       .upsert({
         group_id: body.group_id,
-        user_id: body.user_id,
+        user_email: userEmail,
         context_summary: contextResult.context_summary,
         sender_patterns: contextResult.sender_patterns,
         quality_score: qualityScore,
+        data_sufficiency: contextResult.data_sufficiency,
+        pattern_clarity: contextResult.pattern_clarity,
         sender_count: senderEmails.length,
         sample_count: emailSamples.length,
+        model_used: `${successfulConfig.provider}/${successfulConfig.modello}`,
         generated_at: new Date().toISOString(),
         needs_refresh: false
       }, {
-        onConflict: 'group_id,user_id'
+        onConflict: 'group_id,user_email'
       })
       .select()
       .single();

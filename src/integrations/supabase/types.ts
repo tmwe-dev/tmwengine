@@ -3242,6 +3242,39 @@ export type Database = {
           },
         ]
       }
+      email_sender_grouping_suggestions: {
+        Row: {
+          analyzed_at: string | null
+          created_at: string | null
+          id: string
+          sender_email: string
+          status: string | null
+          suggested_groups: Json
+          updated_at: string | null
+          user_email: string
+        }
+        Insert: {
+          analyzed_at?: string | null
+          created_at?: string | null
+          id?: string
+          sender_email: string
+          status?: string | null
+          suggested_groups?: Json
+          updated_at?: string | null
+          user_email: string
+        }
+        Update: {
+          analyzed_at?: string | null
+          created_at?: string | null
+          id?: string
+          sender_email?: string
+          status?: string | null
+          suggested_groups?: Json
+          updated_at?: string | null
+          user_email?: string
+        }
+        Relationships: []
+      }
       email_sender_groups: {
         Row: {
           colore: string | null
@@ -5681,6 +5714,9 @@ export type Database = {
         Row: {
           auto_translate_writing: boolean
           availability_status: Database["public"]["Enums"]["user_availability_status"]
+          company_context_ai: string | null
+          company_context_updated_at: string | null
+          company_description: string | null
           created_at: string
           display_name: string | null
           enable_auto_speaker: boolean
@@ -5702,6 +5738,9 @@ export type Database = {
         Insert: {
           auto_translate_writing?: boolean
           availability_status?: Database["public"]["Enums"]["user_availability_status"]
+          company_context_ai?: string | null
+          company_context_updated_at?: string | null
+          company_description?: string | null
           created_at?: string
           display_name?: string | null
           enable_auto_speaker?: boolean
@@ -5723,6 +5762,9 @@ export type Database = {
         Update: {
           auto_translate_writing?: boolean
           availability_status?: Database["public"]["Enums"]["user_availability_status"]
+          company_context_ai?: string | null
+          company_context_updated_at?: string | null
+          company_description?: string | null
           created_at?: string
           display_name?: string | null
           enable_auto_speaker?: boolean

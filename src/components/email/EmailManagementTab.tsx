@@ -24,6 +24,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { GroupingSuggestionCard } from './management/GroupingSuggestionCard';
 import { AIConfigurationGuide } from './management/AIConfigurationGuide';
 import { SuggestionProgressDialog, SuggestionProgress } from './management/SuggestionProgressDialog';
+import { CompanyProfileSettings } from '../intranet/CompanyProfileSettings';
 
 // Collisione personalizzata 70%
 const carousel70PercentCollision: CollisionDetection = (args) => {
@@ -958,10 +959,13 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       {senders.filter(s => !s.isClassified).length > 0 && (
         <Card className="border-purple-200 bg-transparent">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-500" />
-              Suggerimenti AI Raggruppamento
-            </CardTitle>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-500" />
+                Suggerimenti AI Raggruppamento
+              </CardTitle>
+              <CompanyProfileSettings />
+            </div>
           </CardHeader>
           
           <CardContent className="space-y-4 bg-transparent">

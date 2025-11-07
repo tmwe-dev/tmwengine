@@ -12,6 +12,9 @@ interface UserProfile {
   autoTranslateWriting: boolean;
   enableAutoSpeaker: boolean;
   preferredCountry: string;
+  companyDescription: string | null;
+  companyContextAi: string | null;
+  companyContextUpdatedAt: string | null;
 }
 
 export const useUserProfile = () => {
@@ -71,6 +74,9 @@ export const useUserProfile = () => {
           autoTranslateWriting: data.auto_translate_writing,
           enableAutoSpeaker: data.enable_auto_speaker,
           preferredCountry: data.preferred_country || 'IT',
+          companyDescription: data.company_description,
+          companyContextAi: data.company_context_ai,
+          companyContextUpdatedAt: data.company_context_updated_at,
         });
       } else {
         // Crea profilo di default se non esiste
@@ -114,6 +120,9 @@ export const useUserProfile = () => {
           autoTranslateWriting: data.auto_translate_writing,
           enableAutoSpeaker: data.enable_auto_speaker,
           preferredCountry: data.preferred_country || 'IT',
+          companyDescription: data.company_description,
+          companyContextAi: data.company_context_ai,
+          companyContextUpdatedAt: data.company_context_updated_at,
         });
       }
     } catch (error) {
@@ -137,6 +146,9 @@ export const useUserProfile = () => {
           auto_translate_writing: updates.autoTranslateWriting,
           enable_auto_speaker: updates.enableAutoSpeaker,
           preferred_country: updates.preferredCountry,
+          company_description: updates.companyDescription,
+          company_context_ai: updates.companyContextAi,
+          company_context_updated_at: updates.companyContextUpdatedAt,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);

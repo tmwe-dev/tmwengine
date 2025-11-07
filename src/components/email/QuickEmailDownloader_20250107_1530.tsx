@@ -354,8 +354,6 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
             folder: folder,
             limit: 2000,
             offset: 0,
-            sort: 'date',
-            order: 'DESC',
           }),
           20000,
           `Timeout recupero UID per cartella ${folder}`

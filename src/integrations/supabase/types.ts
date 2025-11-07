@@ -3317,6 +3317,7 @@ export type Database = {
           id: string
           nome_gruppo: string
           updated_at: string
+          user_id: string
         }
         Insert: {
           colore?: string | null
@@ -3326,6 +3327,7 @@ export type Database = {
           id?: string
           nome_gruppo: string
           updated_at?: string
+          user_id: string
         }
         Update: {
           colore?: string | null
@@ -3335,6 +3337,7 @@ export type Database = {
           id?: string
           nome_gruppo?: string
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

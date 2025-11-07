@@ -559,14 +559,49 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         throw new Error('Email TMWE non configurata');
       }
 
-      // Filtra solo mittenti non classificati
-      const unclassifiedSenders = senders.filter(s => !s.isClassified);
+      // STEP 1: Carica suggerimenti esistenti per evitare duplicati
+      const { data: existingSuggestions, error: suggestionsError } = await supabase
+        .from('email_sender_grouping_suggestions' as any)
+        .select('sender_email')
+        .eq('user_email', profile.tmwe_email)
+        .in('status', ['pending', 'accepted']) as { data: Array<{ sender_email: string }> | null, error: any };
+
+      if (suggestionsError) {
+        console.error('❌ Errore caricamento suggerimenti esistenti:', suggestionsError);
+        throw suggestionsError;
+      }
+
+      // STEP 2: Crea Set di email già elaborate
+      const alreadyProcessedEmails = new Set(
+        (existingSuggestions || []).map(s => s.sender_email)
+      );
+
+      console.log(`📊 Mittenti già con suggerimento: ${alreadyProcessedEmails.size}`);
+
+      // STEP 3: Filtra mittenti non classificati E senza suggerimento esistente
+      const totalUnclassified = senders.filter(s => !s.isClassified);
+      const unclassifiedSenders = totalUnclassified.filter(s => !alreadyProcessedEmails.has(s.email));
+
+      console.log(`📊 Mittenti totali non classificati: ${totalUnclassified.length}`);
+      console.log(`✅ Mittenti già elaborati (skip): ${alreadyProcessedEmails.size}`);
+      console.log(`🆕 Mittenti nuovi da elaborare: ${unclassifiedSenders.length}`);
       
       if (unclassifiedSenders.length === 0) {
-        toast({
-          title: 'Nessun mittente da classificare',
-          description: 'Tutti i mittenti sono già assegnati a un gruppo',
-        });
+        if (alreadyProcessedEmails.size > 0) {
+          toast({
+            title: '✅ Tutti i mittenti già elaborati',
+            description: `${alreadyProcessedEmails.size} suggerimenti già presenti. Verifica il dialog suggerimenti.`,
+          });
+          
+          // Ricarica suggerimenti e mostra dialog
+          await loadGroupingSuggestions(profile.tmwe_email);
+          setShowSuggestionsDialog(true);
+        } else {
+          toast({
+            title: 'Nessun mittente da classificare',
+            description: 'Tutti i mittenti sono già assegnati a un gruppo',
+          });
+        }
         return;
       }
 
@@ -578,11 +613,23 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         currentCompany: '',
         successCount: 0,
         errorCount: 0,
-        logs: [{
-          timestamp: new Date().toISOString(),
-          type: 'info',
-          message: `🚀 Avvio analisi di ${unclassifiedSenders.length} mittenti non classificati`
-        }]
+        logs: [
+          {
+            timestamp: new Date().toISOString(),
+            type: 'info',
+            message: `📊 Trovati ${totalUnclassified.length} mittenti non classificati`
+          },
+          {
+            timestamp: new Date().toISOString(),
+            type: 'info',
+            message: `✅ ${alreadyProcessedEmails.size} mittenti già con suggerimento AI (skip)`
+          },
+          {
+            timestamp: new Date().toISOString(),
+            type: 'info',
+            message: `🚀 Avvio analisi di ${unclassifiedSenders.length} NUOVI mittenti`
+          }
+        ]
       });
       setShowProgressDialog(true);
 

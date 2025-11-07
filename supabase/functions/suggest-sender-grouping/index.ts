@@ -291,7 +291,30 @@ Suggerisci i gruppi più appropriati per questo mittente.`;
 
     console.log('✅ Extracted suggestions:', suggestions);
 
-    // Save to database
+    // Check for existing suggestion (anti-duplicate)
+    const { data: existing, error: checkError } = await supabase
+      .from('email_sender_grouping_suggestions')
+      .select('id, status')
+      .eq('sender_email', body.sender_email)
+      .eq('user_email', body.user_email)
+      .in('status', ['pending', 'accepted'])
+      .maybeSingle();
+
+    if (existing) {
+      console.log(`⚠️ Suggerimento già esistente per ${body.sender_email} (status: ${existing.status}), skip INSERT`);
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          message: 'Suggerimento già esistente',
+          suggestion_id: existing.id,
+          skipped: true,
+          status: existing.status
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    // Save to database (only if not exists)
     const { data: savedSuggestion, error: saveError } = await supabase
       .from('email_sender_grouping_suggestions')
       .insert({

@@ -284,10 +284,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       
       console.log(`👥 Mittenti non classificati: ${unclassified.length} / ${analysis.length}`);
 
-      toast({
-        title: '✅ Dati caricati',
-        description: `${unclassified.length} mittenti da classificare`,
-      });
+      // 🔴 Toast rimosso - comportamento silenzioso al caricamento dati
 
     } catch (error: any) {
       console.error('❌ Errore caricamento:', error);

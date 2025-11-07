@@ -139,8 +139,8 @@ export function EmailGroupingSuggestionsTab() {
         setGroupingSuggestions(suggestions as unknown as GroupingSuggestion[]);
         console.log(`🤖 Caricati ${suggestions.length} suggerimenti AI pending`);
         
-        // Auto-mostra dialog se ci sono suggerimenti
-        setShowSuggestionsDialog(true);
+        // 🔴 DISABILITATO - Popup ora si apre solo su richiesta utente
+        // setShowSuggestionsDialog(true);
       }
     } catch (error: any) {
       console.error('❌ Errore caricamento suggerimenti:', error);

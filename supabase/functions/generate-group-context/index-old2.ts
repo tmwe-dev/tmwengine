@@ -106,7 +106,7 @@ serve(async (req) => {
     // 3. Get email samples for each sender (3-5 per sender)
     const { data: emailSamples, error: samplesError } = await supabase
       .from('email_messages')
-      .select('from_email, subject, data_ricezione, cartella')
+      .select('from_email, oggetto, data_ricezione, cartella')
       .in('from_email', senderEmails)
       .eq('user_email', body.user_email)
       .order('data_ricezione', { ascending: false })
@@ -136,7 +136,7 @@ serve(async (req) => {
       }
       const sender = senderData.get(email.from_email);
       sender.samples.push({
-        subject: email.subject,
+        subject: email.oggetto,
         date: email.data_ricezione,
         folder: email.cartella
       });

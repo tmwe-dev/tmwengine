@@ -57,6 +57,16 @@ serve(async (req) => {
       );
     }
 
+    // Get user's company context (if available)
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('company_context_ai')
+      .eq('user_email', body.user_email)
+      .single();
+
+    const companyContext = userProfile?.company_context_ai || null;
+    console.log(`🏢 Company context: ${companyContext ? 'FOUND (' + companyContext.substring(0, 50) + '...)' : 'NOT FOUND'}`);
+
     // Get ALL active AI configs for fallback system
     const { data: aiConfigs, error: configError } = await supabase
       .from('config_ai')
@@ -95,7 +105,12 @@ serve(async (req) => {
 
     // Build system prompt CON KNOWLEDGE BASE
     const systemPrompt = `Sei un assistente AI specializzato nella categorizzazione di MITTENTI email (non contenuti).
+${companyContext ? `
+🏢 **CONTESTO AZIENDALE DELL'UTENTE**
+${companyContext}
 
+IMPORTANTE: Utilizza questo contesto per comprendere meglio il tipo di mittenti e classificarli secondo le categorie aziendali specifiche definite dall'utente. Le tue classificazioni devono essere coerenti con questo profilo aziendale.
+` : ''}
 Il tuo compito è analizzare CHI È IL MITTENTE e suggerire 1-3 gruppi dove classificarlo.
 
 🎯 FOCUS: Analizza la NATURA DEL MITTENTE, non il contenuto delle email.

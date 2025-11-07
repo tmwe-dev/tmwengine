@@ -9,6 +9,154 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-11-07] - FIX CRITICO: Colonna email_messages + Company Context in Suggest Sender Grouping
+
+### File Modificati
+
+#### 1. `supabase/functions/generate-group-context/index.ts`
+- **Backup Creato:** `index-old2.ts`
+
+#### 2. `supabase/functions/suggest-sender-grouping/index.ts`
+- **Backup Creato:** `index-old2.ts` (index-old1.ts già esistente)
+
+### Motivo Modifica
+
+**Problema 1 - BUG CRITICO:** `generate-group-context` cercava la colonna `oggetto` nella tabella `email_messages`, ma la colonna corretta è `subject`. Questo causava il fallimento completo della generazione Knowledge Base gruppi con errore 400.
+
+**Problema 2 - FUNZIONALITÀ MANCANTE:** `suggest-sender-grouping` non utilizzava il `company_context_ai` ottimizzato dall'utente, classificando mittenti solo con prompt generico invece che secondo categorie aziendali personalizzate.
+
+**Impatto:**
+```
+Bug 1: generate-group-context → ERROR: column email_messages.oggetto does not exist
+       ↓
+       NESSUNA knowledge base generata per i gruppi
+       ↓
+       suggest-sender-grouping lavora senza pattern affidabili
+
+Bug 2: suggest-sender-grouping → Ignora company_context_ai
+       ↓
+       Classificazioni generiche, non usa categorie personalizzate
+       ↓
+       Suggerimenti meno accurati per contesto aziendale specifico
+```
+
+### Modifiche Apportate
+
+#### Fix 1: generate-group-context/index.ts
+
+**A. Correzione query email_messages (Lines 107-109)**
+```typescript
+// PRIMA (ERRORE)
+.select('from_email, oggetto, data_ricezione, cartella')
+
+// DOPO (CORRETTO)
+.select('from_email, subject, data_ricezione, cartella')
+```
+
+**B. Correzione mapping samples (Lines 137-142)**
+```typescript
+// PRIMA (ERRORE)
+sender.samples.push({
+  subject: email.oggetto,
+
+// DOPO (CORRETTO)
+sender.samples.push({
+  subject: email.subject,
+```
+
+**Razionale:**
+- La tabella `email_messages` usa naming standard email (subject, from_email, to_email)
+- `oggetto` è naming italiano legacy che non esiste più in schema
+- Fix allinea codice a schema database reale
+
+#### Fix 2: suggest-sender-grouping/index.ts
+
+**A. Recupero Company Context (Lines 60-68)**
+```typescript
+// AGGIUNTO dopo validazione
+// Get user's company context (if available)
+const { data: userProfile } = await supabase
+  .from('user_profiles')
+  .select('company_context_ai')
+  .eq('user_email', body.user_email)
+  .single();
+
+const companyContext = userProfile?.company_context_ai || null;
+console.log(`🏢 Company context: ${companyContext ? 'FOUND (' + companyContext.substring(0, 50) + '...)' : 'NOT FOUND'}`);
+```
+
+**B. Integrazione nel System Prompt (Lines 107-113)**
+```typescript
+const systemPrompt = `Sei un assistente AI specializzato nella categorizzazione di MITTENTI email (non contenuti).
+${companyContext ? `
+🏢 **CONTESTO AZIENDALE DELL'UTENTE**
+${companyContext}
+
+IMPORTANTE: Utilizza questo contesto per comprendere meglio il tipo di mittenti e classificarli secondo le categorie aziendali specifiche definite dall'utente. Le tue classificazioni devono essere coerenti con questo profilo aziendale.
+` : ''}
+Il tuo compito è analizzare CHI È IL MITTENTE...
+```
+
+**Razionale:**
+- Recupera `company_context_ai` da `user_profiles` tramite `user_email` (presente in RequestBody)
+- Integra contesto nel prompt AI PRIMA delle istruzioni generiche
+- L'AI ora classifica mittenti secondo categorie aziendali specifiche dell'utente
+- Coerenza con `generate-group-context` che già usa company context
+
+### Comportamento Atteso
+
+**Fix 1 (generate-group-context):**
+```
+✅ Query email_messages funziona correttamente
+✅ Recupera subject, from_email, data_ricezione, cartella
+✅ Knowledge Base gruppi generata con successo
+✅ Logs mostrano: "📧 Analyzing X email samples"
+✅ Salvataggio in email_sender_groups_context completato
+```
+
+**Fix 2 (suggest-sender-grouping):**
+```
+✅ Logs mostrano: "🏢 Company context: FOUND (Prime 50 char...)"
+✅ AI riceve contesto aziendale prima delle istruzioni
+✅ Classificazioni coerenti con categorie personalizzate utente
+✅ Suggerimenti più accurati per settore/tipo business specifico
+```
+
+### Test Eseguiti
+
+**Test 1 - Generate Group Context:**
+1. ✅ Aprire `/profilo-aziendale`
+2. ✅ Cliccare "Genera Knowledge Base"
+3. ✅ Verificare nei logs Supabase: NESSUN errore `column oggetto does not exist`
+4. ✅ Verificare salvataggio in `email_sender_groups_context`
+
+**Test 2 - Suggest Sender Grouping:**
+1. ✅ Ottimizzare profilo aziendale (company_context_ai popolato)
+2. ✅ Aprire `/funnemail?tab=suggestions`
+3. ✅ Cliccare "Genera suggerimenti"
+4. ✅ Verificare nei logs edge function: `🏢 Company context: FOUND`
+5. ✅ Verificare che suggerimenti usino categorie personalizzate
+
+### Rollback Plan
+
+**generate-group-context:**
+```bash
+cp supabase/functions/generate-group-context/index-old1.ts supabase/functions/generate-group-context/index.ts
+```
+
+**suggest-sender-grouping:**
+```bash
+cp supabase/functions/suggest-sender-grouping/index-old1.ts supabase/functions/suggest-sender-grouping/index.ts
+```
+
+### Note di Sicurezza
+- ✅ Nessuna modifica a RLS policies
+- ✅ Company context accesso limitato a user_profiles.user_email = body.user_email
+- ✅ Fallback graceful se company_context_ai è NULL
+- ✅ Logs non espongono dati sensibili (substring primi 50 char)
+
+---
+
 ## [2025-11-07] - Integrazione Company Context AI in Group Context Generation
 
 ### File Modificato

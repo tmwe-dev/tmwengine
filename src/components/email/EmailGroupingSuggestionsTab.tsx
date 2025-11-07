@@ -7,17 +7,19 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Brain, RefreshCw } from 'lucide-react';
+import { Sparkles, Loader2, Brain, RefreshCw, LayoutGrid, List } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { analyzeSenders } from '@/lib/email-sender-analyzer';
 import type { EmailSenderGroup, SenderAnalysis, GroupingSuggestion } from '@/types/email-management';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { GroupingSuggestionCard } from './management/GroupingSuggestionCard';
+import { GroupingSuggestionRow } from './management/GroupingSuggestionRow';
 import { AIConfigurationGuide } from './management/AIConfigurationGuide';
 import { SuggestionProgressDialog, SuggestionProgress } from './management/SuggestionProgressDialog';
 import { CompanyProfileSettings } from '../intranet/CompanyProfileSettings';
 import { Badge } from '@/components/ui/badge';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export function EmailGroupingSuggestionsTab() {
   // 🆕 State per dati locali (self-contained)
@@ -37,6 +39,9 @@ export function EmailGroupingSuggestionsTab() {
   
   // 🔢 Filtro email minime per mittente
   const [minimumEmailCount, setMinimumEmailCount] = useState<number>(2);
+  
+  // 🆕 Vista griglia/elenco
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   
   // 🧠 Knowledge Base Generator (Phase 2)
   const [isGeneratingKB, setIsGeneratingKB] = useState(false);
@@ -530,6 +535,63 @@ export function EmailGroupingSuggestionsTab() {
         }]
       } : null);
 
+      // 🆕 AUTO-REGISTRAZIONE NUOVI GRUPPI SUGGERITI
+      const newGroupNames = new Set<string>();
+      for (const sugg of groupingSuggestions) {
+        for (const group of sugg.suggested_groups) {
+          if (group.group_id === null) {
+            newGroupNames.add(group.group_name);
+          }
+        }
+      }
+
+      if (newGroupNames.size > 0) {
+        console.log(`🆕 Auto-registrazione ${newGroupNames.size} nuovi gruppi suggeriti...`);
+        
+        for (const groupName of newGroupNames) {
+          // Verifica se esiste già (case-insensitive)
+          const existing = groups.find(g => 
+            g.nome_gruppo.toLowerCase() === groupName.toLowerCase()
+          );
+          
+          if (!existing) {
+            const { data: newGroup, error: createError } = await supabase
+              .from('email_sender_groups')
+              .insert({
+                nome_gruppo: groupName,
+                colore: '#3B82F6',
+                icon: '📧'
+              })
+              .select()
+              .single();
+            
+            if (createError) {
+              console.error(`❌ Errore auto-registrazione gruppo "${groupName}":`, createError);
+            } else {
+              console.log(`✅ Auto-registrato gruppo: ${groupName} (${newGroup.id})`);
+              
+              // Aggiorna state locale
+              setGroups(prev => [...prev, newGroup]);
+              
+              // Update suggestions con nuovo group_id
+              await supabase
+                .from('email_sender_grouping_suggestions' as any)
+                .update({
+                  suggested_groups: groupingSuggestions
+                    .find(s => s.suggested_groups.some(sg => sg.group_name === groupName))
+                    ?.suggested_groups.map(sg => 
+                      sg.group_name === groupName 
+                        ? { ...sg, group_id: newGroup.id } 
+                        : sg
+                    )
+                })
+                .eq('user_email', profile.tmwe_email)
+                .contains('suggested_groups', [{ group_name: groupName }]);
+            }
+          }
+        }
+      }
+
       // Ricarica suggerimenti salvati
       await loadGroupingSuggestions(profile.tmwe_email);
 
@@ -566,7 +628,7 @@ export function EmailGroupingSuggestionsTab() {
     }
   };
 
-  // 🤖 Handler accetta suggerimento
+  // 🤖 Handler accetta suggerimento (semplificato - auto-reg gestisce gruppi nuovi)
   const handleAcceptSuggestion = async (suggestionId: string, groupId: string | null, groupName: string) => {
     try {
       const suggestion = groupingSuggestions.find(s => s.id === suggestionId);
@@ -578,10 +640,9 @@ export function EmailGroupingSuggestionsTab() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // If group_id is null, we need to create a new group first
+      // Fallback: se group_id è null, crea gruppo on-demand (auto-reg dovrebbe averlo già fatto)
       let targetGroupId = groupId;
       if (!targetGroupId) {
-        // Create new group
         const { data: newGroup, error: createError } = await supabase
           .from('email_sender_groups')
           .insert({
@@ -603,6 +664,7 @@ export function EmailGroupingSuggestionsTab() {
         }
 
         targetGroupId = newGroup.id;
+        setGroups(prev => [...prev, newGroup]);
       }
 
       // Create classification rule
@@ -623,7 +685,6 @@ export function EmailGroupingSuggestionsTab() {
         description: `${sender.companyName} assegnato a ${groupName}`,
       });
 
-      // Refresh data locale
       await loadData();
 
     } catch (error: any) {
@@ -631,6 +692,27 @@ export function EmailGroupingSuggestionsTab() {
       toast({
         title: '❌ Errore',
         description: 'Impossibile accettare il suggerimento',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  // 🆕 Handler selezione manuale gruppo da dropdown
+  const handleManualGroupSelection = async (suggestionId: string, groupId: string) => {
+    try {
+      const suggestion = groupingSuggestions.find(s => s.id === suggestionId);
+      if (!suggestion) return;
+      
+      const group = groups.find(g => g.id === groupId);
+      if (!group) return;
+      
+      await handleAcceptSuggestion(suggestionId, groupId, group.nome_gruppo);
+      
+    } catch (error: any) {
+      console.error('❌ Errore selezione manuale:', error);
+      toast({
+        title: '❌ Errore',
+        description: 'Impossibile assegnare gruppo',
         variant: 'destructive',
       });
     }
@@ -832,19 +914,66 @@ export function EmailGroupingSuggestionsTab() {
             </Button>
           </div>
           
-          {/* Grid suggerimenti */}
-          {groupingSuggestions.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {groupingSuggestions.map(suggestion => (
-                <GroupingSuggestionCard
-                  key={suggestion.id}
-                  suggestion={suggestion}
-                  onAccept={handleAcceptSuggestion}
-                  onDismiss={handleRejectSuggestion}
-                  disabled={isGeneratingSuggestions}
-                />
-              ))}
+          {/* Toggle Vista Griglia/Elenco */}
+          {groupingSuggestions.length > 0 && (
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm text-muted-foreground">
+                {groupingSuggestions.length} suggerimenti disponibili
+              </p>
+              <ToggleGroup 
+                type="single" 
+                value={viewMode} 
+                onValueChange={(val) => val && setViewMode(val as 'grid' | 'list')}
+                className="bg-muted/30 border border-border rounded-lg p-0.5"
+              >
+                <ToggleGroupItem 
+                  value="list" 
+                  aria-label="Vista Elenco"
+                  className="h-8 px-3 text-xs data-[state=on]:bg-background data-[state=on]:text-foreground"
+                >
+                  <List className="h-3.5 w-3.5 mr-1.5" />
+                  Elenco
+                </ToggleGroupItem>
+                <ToggleGroupItem 
+                  value="grid" 
+                  aria-label="Vista Griglia"
+                  className="h-8 px-3 text-xs data-[state=on]:bg-background data-[state=on]:text-foreground"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
+                  Griglia
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
+          )}
+          
+          {/* Suggerimenti - Vista Elenco o Griglia */}
+          {groupingSuggestions.length > 0 ? (
+            viewMode === 'list' ? (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                {groupingSuggestions.map(suggestion => (
+                  <GroupingSuggestionRow
+                    key={suggestion.id}
+                    suggestion={suggestion}
+                    availableGroups={groups}
+                    onAccept={handleAcceptSuggestion}
+                    onSelectGroup={handleManualGroupSelection}
+                    disabled={isGeneratingSuggestions}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {groupingSuggestions.map(suggestion => (
+                  <GroupingSuggestionCard
+                    key={suggestion.id}
+                    suggestion={suggestion}
+                    onAccept={handleAcceptSuggestion}
+                    onDismiss={handleRejectSuggestion}
+                    disabled={isGeneratingSuggestions}
+                  />
+                ))}
+              </div>
+            )
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               Nessun suggerimento disponibile. Genera nuovi suggerimenti per iniziare.

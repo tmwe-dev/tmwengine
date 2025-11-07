@@ -9,6 +9,199 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-11-07] - Integrazione Company Context AI in Group Context Generation
+
+### File Modificato
+- **Function:** `supabase/functions/generate-group-context/index.ts`
+- **Backup Creato:** `index-old1.ts`
+
+### Motivo Modifica
+L'edge function `generate-group-context` non utilizzava il profilo aziendale ottimizzato (`company_context_ai`) generato da `optimize-company-profile`, rendendo l'ottimizzazione del profilo completamente inutile. L'AI classificava i gruppi di mittenti usando solo un prompt generico invece di categorie personalizzate per l'azienda dell'utente.
+
+**Problema identificato:**
+```
+User ottimizza profilo aziendale → company_context_ai salvato in user_profiles
+↓
+generate-group-context NON usa company_context_ai
+↓
+Classificazione generica, ignora contesto aziendale specifico
+↓
+Categorie personalizzate (cliente_diretto, partner_network) mai applicate
+```
+
+### Modifiche Apportate
+
+#### 1. Recupero Company Context AI (Lines 67-75)
+
+**Aggiunto dopo il recupero del gruppo:**
+```typescript
+// 1.5. Get user's company context (if available)
+const { data: userProfile } = await supabase
+  .from('user_profiles')
+  .select('company_context_ai')
+  .eq('user_id', body.user_id)
+  .single();
+
+const companyContext = userProfile?.company_context_ai || null;
+console.log(`🏢 Company context: ${companyContext ? 'FOUND (' + companyContext.substring(0, 50) + '...)' : 'NOT FOUND'}`);
+```
+
+**Razionale:**
+- Recupera il contesto aziendale ottimizzato salvato da `optimize-company-profile`
+- Usa `.single()` per ottenere il profilo utente specifico
+- Fallback a `null` se non disponibile (retrocompatibilità)
+- Logging chiaro per diagnostica
+
+#### 2. Integrazione nel Prompt AI (Lines 167-173)
+
+**Prima (generico):**
+```typescript
+const systemPrompt = `Sei un esperto di pattern analysis per email aziendali.
+
+Analizza questi ${senderEmails.length} mittenti assegnati al gruppo "${group.nome_gruppo}" e genera:
+...
+`;
+```
+
+**Dopo (personalizzato):**
+```typescript
+const systemPrompt = `Sei un esperto di pattern analysis per email aziendali.
+${companyContext ? `
+**CONTESTO AZIENDALE DELL'UTENTE**
+${companyContext}
+
+Utilizza questo contesto per comprendere meglio il tipo di mittenti e classificarli secondo le categorie aziendali specifiche definite dall'utente. Le tue analisi devono essere coerenti con questo profilo aziendale.
+` : ''}
+Analizza questi ${senderEmails.length} mittenti assegnati al gruppo "${group.nome_gruppo}" e genera:
+...
+`;
+```
+
+**Razionale:**
+- Inietta `company_context_ai` nel prompt solo se disponibile
+- Posizione strategica: all'inizio del prompt per massimo impatto
+- Istruzioni esplicite all'AI per usare categorie personalizzate
+- Fallback graceful: se `companyContext` è null, il prompt funziona normalmente (come prima)
+
+### Comportamento Atteso
+
+**Prima del fix:**
+```
+User: "Sono un'azienda di consulenza fiscale"
+↓
+optimize-company-profile genera:
+- Categoria: cliente_diretto (clienti attivi)
+- Categoria: prospect_interessato (lead)
+- Categoria: ente_fiscale (Agenzia Entrate)
+↓
+generate-group-context classifica mittenti con:
+- Categoria: customers (generico)
+- Categoria: authorities (generico)
+❌ Ignora categorie personalizzate
+```
+
+**Dopo il fix:**
+```
+User: "Sono un'azienda di consulenza fiscale"
+↓
+optimize-company-profile genera company_context_ai con categorie specifiche
+↓
+generate-group-context usa company_context_ai nel prompt
+↓
+AI classifica mittenti secondo:
+✅ cliente_diretto (specifico per consulenza fiscale)
+✅ prospect_interessato (lead qualificati)
+✅ ente_fiscale (Agenzia Entrate, INPS, etc.)
+```
+
+**Console logs attesi:**
+```
+📊 Group: Clienti Attivi
+🏢 Company context: FOUND (Sei un esperto in consulenza fiscale e ge...)
+👥 Found 8 senders in group
+📧 Analyzing 32 email samples
+🤖 AI Response received with company-specific categories
+✅ Context saved to database
+```
+
+### Vantaggi
+
+✅ **Coerenza classificazione**: Gruppi classificati secondo profilo aziendale  
+✅ **Categorie personalizzate**: Usa definizioni specifiche (non generiche)  
+✅ **Retrocompatibilità**: Funziona anche senza `company_context_ai`  
+✅ **Zero breaking changes**: Nessuna modifica a DB schema o API  
+✅ **Logging diagnostico**: Facile verificare se context è usato  
+✅ **Quality improvement**: Classificazioni più accurate e rilevanti  
+
+### Testing
+
+#### Test 1: Verifica Context Viene Usato
+```bash
+# Scenario: User con company_context_ai configurato
+1. Vai su /configurazione-profilo
+2. Compila descrizione azienda e clicca "Ottimizza con AI"
+3. Verifica company_context_ai salvato
+4. Vai su /funnemail
+5. Crea un gruppo e assegna mittenti
+6. Clicca "🔄 Genera Context AI"
+7. Apri Console Dev Tools
+8. Verifica log: "🏢 Company context: FOUND (...)"
+9. Verifica context_summary usa terminologia aziendale specifica
+```
+
+#### Test 2: Retrocompatibilità (Senza Context)
+```bash
+# Scenario: User senza company_context_ai
+1. Usa account nuovo senza profilo ottimizzato
+2. Crea gruppo e genera context
+3. Verifica log: "🏢 Company context: NOT FOUND"
+4. Verifica classificazione generica funziona normalmente
+5. Nessun errore, fallback graceful
+```
+
+#### Test 3: Qualità Classificazione
+```bash
+# Scenario: Confronto prima/dopo
+1. Genera context per stesso gruppo PRIMA del fix
+2. Salva context_summary generato
+3. Deploya fix con company_context_ai
+4. Rigenera context per stesso gruppo
+5. Confronta:
+   - Prima: "Mittenti clienti B2B, comunicazioni formali"
+   - Dopo: "Clienti diretti settore consulenza fiscale, richieste dichiarazioni"
+6. Verifica maggiore specificità e rilevanza
+```
+
+### Impatto
+
+✅ **Utilizzo effettivo optimize-company-profile**: Feature ora connessa a workflow  
+✅ **AI più intelligente**: Usa contesto aziendale per classificazioni  
+✅ **UX migliorata**: Suggerimenti più rilevanti per tipo di business  
+✅ **Data quality**: Classificazioni coerenti con dominio aziendale  
+✅ **No regression**: Funziona anche senza context (backward compatible)  
+
+### Rollback Plan
+
+```bash
+cp supabase/functions/generate-group-context/index-old1.ts \
+   supabase/functions/generate-group-context/index.ts
+```
+
+### Note Aggiuntive
+
+**Dipendenze:**
+- Richiede `user_profiles.company_context_ai` popolato (opzionale)
+- Edge function `optimize-company-profile` deve essere chiamato prima
+- Nessuna modifica DB schema necessaria
+
+**Future Improvements:**
+1. Aggiungere caching di `company_context_ai` per performance
+2. Versioning del context per tracking cambiamenti
+3. Validazione qualità context prima dell'uso
+4. Metriche A/B per misurare miglioramento classificazioni
+
+---
+
 ## [2025-01-30] - Fix Lovable AI API Key + Sistema Fallback
 
 ### File Modificato

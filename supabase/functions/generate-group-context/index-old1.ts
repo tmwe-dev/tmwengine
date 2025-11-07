@@ -64,16 +64,6 @@ serve(async (req) => {
 
     console.log(`📊 Group: ${group.nome_gruppo}`);
 
-    // 1.5. Get user's company context (if available)
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('company_context_ai')
-      .eq('user_id', body.user_id)
-      .single();
-
-    const companyContext = userProfile?.company_context_ai || null;
-    console.log(`🏢 Company context: ${companyContext ? 'FOUND (' + companyContext.substring(0, 50) + '...)' : 'NOT FOUND'}`);
-
     // 2. Get senders assigned to this group
     const { data: senderRules, error: rulesError } = await supabase
       .from('email_sender_rules')
@@ -165,12 +155,7 @@ serve(async (req) => {
 
     // 6. Build AI prompt
     const systemPrompt = `Sei un esperto di pattern analysis per email aziendali.
-${companyContext ? `
-**CONTESTO AZIENDALE DELL'UTENTE**
-${companyContext}
 
-Utilizza questo contesto per comprendere meglio il tipo di mittenti e classificarli secondo le categorie aziendali specifiche definite dall'utente. Le tue analisi devono essere coerenti con questo profilo aziendale.
-` : ''}
 Analizza questi ${senderEmails.length} mittenti assegnati al gruppo "${group.nome_gruppo}" e genera:
 
 1. CONTEXT SUMMARY (150-300 caratteri): Descrizione pattern comune dei mittenti

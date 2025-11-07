@@ -332,71 +332,68 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
               `Timeout recupero email ${folder}/${uid}`
             );
             
-            // ✅ Accedi alla struttura corretta dell'API TMWE
-            const emailData = email?.data;
-            const header = emailData?.header;
-            
             // ✅ LOGGING DIAGNOSTICO DETTAGLIATO
             console.log('╔════════════════════════════════════════════════════════╗');
             console.log('║ 📧 DIAGNOSTIC: API Response Structure                 ║');
             console.log('╚════════════════════════════════════════════════════════╝');
-            console.log('📧 email.data:', emailData ? 'exists ✅' : 'missing ❌');
-            console.log('📧 email.data.header:', header ? 'exists ✅' : 'missing ❌');
-            if (header) {
-              console.log('📧 header.subject:', header.subject || '(empty)');
-              console.log('📧 header.from:', header.from || '(empty)');
-              console.log('📧 header.to:', header.to || '(empty)');
-            }
-            console.log('📧 emailData.body_plain:', emailData?.body_plain ? `${String(emailData.body_plain).substring(0, 50)}...` : 'missing');
-            console.log('📧 emailData.body_html:', emailData?.body_html ? `${String(emailData.body_html).substring(0, 50)}...` : 'missing');
+            console.log('📧 Full Response:', JSON.stringify(email, null, 2));
+            console.log('---');
+            console.log('📧 email.subject:', email?.subject);
+            console.log('📧 email.from:', email?.from);
+            console.log('📧 email.from?.address:', email?.from?.address);
+            console.log('---');
+            console.log('📧 email.data:', email?.data ? 'exists' : 'missing');
+            console.log('📧 email.data?.header:', email?.data?.header ? 'exists' : 'missing');
+            console.log('📧 email.data?.header?.subject:', email?.data?.header?.subject);
+            console.log('📧 email.data?.header?.from:', email?.data?.header?.from);
+            console.log('---');
+            console.log('📧 email.body_text:', email?.body_text ? `${String(email.body_text).substring(0, 50)}...` : 'missing');
+            console.log('📧 email.body_html:', email?.body_html ? `${String(email.body_html).substring(0, 50)}...` : 'missing');
+            console.log('📧 email.text:', email?.text ? `${String(email.text).substring(0, 50)}...` : 'missing');
+            console.log('📧 email.html:', email?.html ? `${String(email.html).substring(0, 50)}...` : 'missing');
             console.log('╚════════════════════════════════════════════════════════╝');
             
-            if (!email || !emailData || !header) {
-              console.warn(`⚠️ Email ${folder}/${uid}: struttura API invalida o email non trovata`);
+            if (!email) {
+              console.warn(`⚠️ Email ${folder}/${uid} non trovata`);
               globalFailed++;
               setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
               continue;
             }
 
-            // Parsing data ISO
+            // Preparazione data ISO
             let isoDate = new Date().toISOString();
-            if (header.date) {
+            if (email.date) {
               try {
-                isoDate = new Date(header.date).toISOString();
+                isoDate = new Date(email.date).toISOString();
               } catch (e) {
-                console.error('Error parsing date:', header.date);
+                console.error('Error parsing date:', email.date);
               }
             }
 
-            // ✅ Mapping corretto secondo struttura API nested
             const { error: insertError } = await supabase.from('email_messages').insert({
               message_id: messageId,
-              from_email: header.from || '',
-              to_email: Array.isArray(header.to) 
-                ? header.to.map((t: any) => t.email || t.address || t).join(',')
-                : (header.to || ''),
-              cc_email: Array.isArray(header.cc)
-                ? header.cc.map((c: any) => c.email || c.address || c).join(',')
-                : (header.cc || null),
-              bcc_email: Array.isArray(header.bcc)
-                ? header.bcc.map((b: any) => b.email || b.address || b).join(',')
-                : (header.bcc || null),
-              subject: header.subject || '',
-              body_text: emailData.body_plain || emailData.body_text || emailData.text || '',
-              body_html: emailData.body_html || emailData.html || '',
+              from_email: email.from?.address || email.from || email.from_email || '',
+              to_email: Array.isArray(email.to) 
+                ? email.to.map((t: any) => t.address || t).join(',')
+                : email.to || email.to_email || '',
+              cc_email: email.cc || email.cc_email || null,
+              bcc_email: email.bcc || email.bcc_email || null,
+              subject: email.subject || '',
+              body_text: email.body_text || email.text || '',
+              body_html: email.body_html || email.html || '',
               data_ricezione: isoDate,
               cartella: folder,
               direzione: 'inbound',
-              stato: header.seen || header.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
-              flags: header.flags || emailData.flags || [],
-              attachments: emailData.attachments || [],
+              stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
+              flags: email.flags || [],
+              attachments: email.attachments || [],
               provider_id: '00000000-0000-0000-0000-000000000000',
               user_email: profile.tmwe_email,
               sync_status: 'fun_email_backup',
             });
 
             if (!insertError) {
-              console.log(`   ✅ Salvata ${folder}/${uid}: ${header.subject?.substring(0, 30)}`);
+              console.log(`   ✅ Salvata ${folder}/${uid}: ${email.subject?.substring(0, 30)}`);
               globalDownloaded++;
               setStats(prev => ({ ...prev, downloaded: prev.downloaded + 1 }));
             } else {

@@ -786,21 +786,43 @@ export function EmailGroupingSuggestionsTab() {
       await loadData();
 
     } catch (error: any) {
-      console.error('❌ Errore accettazione suggerimento:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        fullError: error
+      // 🔍 Logging dettagliato multi-format per debug
+      console.error('❌ ERRORE ACCETTAZIONE SUGGERIMENTO:');
+      console.error('Tipo:', typeof error);
+      console.error('Costruttore:', error?.constructor?.name);
+      
+      // Tentativo serializzazione JSON
+      try {
+        console.error('JSON:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      } catch (e) {
+        console.error('(non serializzabile)');
+      }
+      
+      // Proprietà individuali
+      console.error('Proprietà error:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        status: error?.status,
+        statusCode: error?.statusCode,
+        name: error?.name
       });
+      
+      // Stack trace se disponibile
+      if (error?.stack) {
+        console.error('Stack:', error.stack);
+      }
       
       // Messaggio user-friendly basato sul tipo di errore
       let userMessage = 'Impossibile accettare il suggerimento';
       
-      if (error.code === '23505') {
+      if (error?.code === '23505') {
         userMessage = 'Questo mittente è già assegnato a questo gruppo';
-      } else if (error.message) {
+      } else if (error?.message) {
         userMessage = error.message;
+      } else if (typeof error === 'string') {
+        userMessage = error;
       }
       
       toast({

@@ -50,7 +50,7 @@ serve(async (req) => {
     // 1. Get group info
     const { data: group, error: groupError } = await supabase
       .from('email_sender_groups')
-      .select('id, nome_gruppo, descrizione, tipo')
+      .select('id, nome_gruppo, descrizione')
       .eq('id', body.group_id)
       .eq('user_email', body.user_email)
       .single();
@@ -63,7 +63,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`📊 Group: ${group.nome_gruppo} (${group.tipo})`);
+    console.log(`📊 Group: ${group.nome_gruppo}`);
 
     // 2. Get senders assigned to this group
     const { data: senderRules, error: rulesError } = await supabase

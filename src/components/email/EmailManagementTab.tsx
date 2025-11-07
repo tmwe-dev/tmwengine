@@ -302,11 +302,15 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     try {
       console.log('📁 Creazione gruppi predefiniti...');
       
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
       const inserts = PREDEFINED_GROUPS.map(g => ({
         nome_gruppo: g.name,
         descrizione: g.description,
         colore: g.color,
         icon: g.icon,
+        user_id: user.id,
       }));
 
       const { error } = await supabase
@@ -382,9 +386,15 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     icon: string;
   }) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
       const { data, error } = await supabase
         .from('email_sender_groups')
-        .insert(categoryData)
+        .insert({
+          ...categoryData,
+          user_id: user.id
+        })
         .select()
         .single();
 

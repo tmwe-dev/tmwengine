@@ -155,12 +155,16 @@ export default function EmailSenders() {
   // Create group mutation
   const createGroupMutation = useMutation({
     mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
       const { data, error } = await supabase
         .from('email_sender_groups')
         .insert({
           nome_gruppo: newGroupName,
           descrizione: newGroupDescription,
           colore: newGroupColor,
+          user_id: user.id
         })
         .select()
         .single();

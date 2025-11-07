@@ -626,7 +626,8 @@ export function EmailGroupingSuggestionsTab() {
             .insert({
               nome_gruppo: groupName.trim(),
               colore: '#3B82F6',
-              icon: '📧'
+              icon: '📧',
+              user_id: user.id
             })
             .select()
             .single();
@@ -717,7 +718,8 @@ export function EmailGroupingSuggestionsTab() {
           .insert({
             nome_gruppo: groupName,
             colore: '#3B82F6',
-            icon: '📧'
+            icon: '📧',
+            user_id: user.id
           })
           .select()
           .single();

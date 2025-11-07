@@ -181,10 +181,14 @@ export const MailPageTemplate = ({
     }
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
       const { data, error } = await supabase
         .from('email_sender_groups')
         .insert({
-          nome_gruppo: newGroupName.trim()
+          nome_gruppo: newGroupName.trim(),
+          user_id: user.id
         })
         .select()
         .single();

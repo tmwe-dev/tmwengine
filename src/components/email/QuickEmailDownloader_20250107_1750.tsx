@@ -285,8 +285,9 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
     console.log('🛑 Download fermato definitivamente');
   };
 
-  // ✅ CLIENT-SIDE DOWNLOAD CON CARICAMENTO PROGRESSIVO A BATCH
+  // ✅ CLIENT-SIDE DOWNLOAD (copiato da FunEmailDownloader)
   const startDownload = async (explicitFolders?: string[]) => {
+    // ✅ Usa cartelle esplicite se fornite, altrimenti calcola da quickFolders
     const selectedFolders = explicitFolders || quickFolders.filter(f => f.selected).map(f => f.name);
     
     if (selectedFolders.length === 0) {
@@ -345,83 +346,38 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
       }
 
       try {
-        console.log(`📂 Inizio download cartella: ${folder} - MODALITÀ PROGRESSIVA`);
-        setCurrentFolder(`📂 ${folder}: conteggio email...`);
+        console.log(`📂 Inizio download cartella: ${folder}`);
+        setCurrentFolder(`📂 ${folder}: recupero lista...`);
         
-        // ✅ STEP 1: Recupera solo il conteggio totale (veloce)
-        const countResponse = await fetchWithTimeout(
+        const uidListResponse = await fetchWithTimeout(
           emailMessageApi.getMessages({
             folder: folder,
-            limit: 1, // Solo per avere il count
+            limit: 2000,
             offset: 0,
+            sort: 'date',
+            order: 'DESC',
           }),
-          10000,
-          `Timeout conteggio email per ${folder}`
+          20000,
+          `Timeout recupero UID per cartella ${folder}`
         );
         
-        const totalEmails = countResponse?.total || 0;
-        console.log(`📂 ${folder}: totale ${totalEmails} email sul server`);
+        const uidList = uidListResponse?.messages || [];
         
-        if (totalEmails === 0) {
-          console.log(`📂 ${folder}: cartella vuota`);
+        console.log(`📂 ${folder}: API ha restituito ${uidList.length} UID`);
+        
+        if (uidList.length === 0) {
+          console.log(`📂 ${folder}: nessuna email trovata`);
           continue;
         }
 
-        // ✅ STEP 2: Carica UIDs in batch progressivi da 100
-        const BATCH_SIZE = 100;
-        const allUidsToCheck: any[] = [];
+        // ✅ PRE-FILTRAGGIO BATCH: verifica quali email esistono già nel DB
+        const expectedMessageIds = uidList.map(u => `${folder}/${String(u.uid)}`);
         
-        for (let offset = 0; offset < totalEmails; offset += BATCH_SIZE) {
-          if (shouldStop.current) break;
-          
-          const batchNum = Math.floor(offset / BATCH_SIZE) + 1;
-          const totalBatches = Math.ceil(totalEmails / BATCH_SIZE);
-          
-          setCurrentFolder(`📂 ${folder}: caricamento lista ${batchNum}/${totalBatches}...`);
-          
-          try {
-            const batchResponse = await fetchWithTimeout(
-              emailMessageApi.getMessages({
-                folder: folder,
-                limit: BATCH_SIZE,
-                offset: offset,
-                sort: 'date',
-                order: 'DESC',
-              }),
-              15000,
-              `Timeout batch ${batchNum} per ${folder}`
-            );
-            
-            const batchUids = batchResponse?.messages || [];
-            allUidsToCheck.push(...batchUids);
-            
-            console.log(`📂 ${folder}: batch ${batchNum}/${totalBatches} - ${batchUids.length} UIDs caricati`);
-            
-            // Piccola pausa tra batch per non sovraccaricare
-            await new Promise(resolve => setTimeout(resolve, 200));
-            
-          } catch (batchError) {
-            console.error(`❌ Errore batch ${batchNum}:`, batchError);
-            // Continua con il prossimo batch invece di fermarsi
-          }
-        }
-        
-        console.log(`📂 ${folder}: recuperati ${allUidsToCheck.length}/${totalEmails} UIDs totali`);
-        
-        if (allUidsToCheck.length === 0) {
-          console.log(`📂 ${folder}: nessun UID recuperato`);
-          continue;
-        }
-
-        // ✅ STEP 3: PRE-FILTRAGGIO - verifica quali email esistono già
-        setCurrentFolder(`📂 ${folder}: verifica email esistenti...`);
-        
-        const expectedMessageIds = allUidsToCheck.map(u => `${folder}/${String(u.uid)}`);
-        const checkBatchSize = 1000;
+        const batchSize = 1000;
         const existingSet = new Set<string>();
         
-        for (let i = 0; i < expectedMessageIds.length; i += checkBatchSize) {
-          const batch = expectedMessageIds.slice(i, i + checkBatchSize);
+        for (let i = 0; i < expectedMessageIds.length; i += batchSize) {
+          const batch = expectedMessageIds.slice(i, i + batchSize);
           
           const { data: existingMessages } = await supabase
             .from('email_messages')
@@ -432,15 +388,15 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
           existingMessages?.forEach(m => existingSet.add(m.message_id));
         }
         
-        const uidsToDownload = allUidsToCheck.filter(u => {
+        const uidsToDownload = uidList.filter(u => {
           const messageId = `${folder}/${String(u.uid)}`;
           return !existingSet.has(messageId);
         });
         
-        const alreadyPresentCount = allUidsToCheck.length - uidsToDownload.length;
+        const alreadyPresentCount = uidList.length - uidsToDownload.length;
         
         console.log(`📂 ${folder}: ${uidsToDownload.length} nuove email da scaricare`);
-        console.log(`📂 ${folder}: ${alreadyPresentCount} già presenti nel DB`);
+        console.log(`📂 ${folder}: ${alreadyPresentCount} già presenti (saltate in batch)`);
         
         globalTotal += uidsToDownload.length;
         globalSkipped += alreadyPresentCount;
@@ -451,19 +407,13 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
         }));
 
         if (uidsToDownload.length === 0) {
-          toast({
-            title: `✅ ${folder} già completo`,
-            description: `Tutte le ${allUidsToCheck.length} email già presenti`,
-          });
+          console.log(`📂 ${folder}: tutte le ${uidList.length} email già presenti nel DB`);
           continue;
         }
 
-        // ✅ STEP 4: Download incrementale con processing parallelo
         console.log(`📂 ${folder}: inizio download ${uidsToDownload.length} nuove email...`);
-        
-        const DOWNLOAD_BATCH = (activeProfile?.optimization_flags as any)?.batchChunkSize || 10;
-        
-        for (let i = 0; i < uidsToDownload.length; i += DOWNLOAD_BATCH) {
+
+        for (let i = 0; i < uidsToDownload.length; i++) {
           if (shouldStop.current) {
             console.log('⏸️ Download fermato dall\'utente');
             break;
@@ -476,101 +426,85 @@ export function QuickEmailDownloader({ onDownloadComplete, onStatsUpdate, preSel
 
           if (shouldStop.current) break;
 
-          const batch = uidsToDownload.slice(i, i + DOWNLOAD_BATCH);
-          const batchNum = Math.floor(i / DOWNLOAD_BATCH) + 1;
-          const totalBatches = Math.ceil(uidsToDownload.length / DOWNLOAD_BATCH);
+          const uidInfo = uidsToDownload[i];
+          const uid = String(uidInfo.uid);
+          const messageId = `${folder}/${uid}`;
           
-          setCurrentFolder(`📂 ${folder}: batch ${batchNum}/${totalBatches} (${i + 1}-${Math.min(i + DOWNLOAD_BATCH, uidsToDownload.length)}/${uidsToDownload.length})`);
+          setCurrentFolder(`📂 ${folder}: ${i + 1}/${uidsToDownload.length} nuove`);
           
-          // Processing parallelo del batch
-          const batchPromises = batch.map(async (uidInfo) => {
-            const uid = String(uidInfo.uid);
-            const messageId = `${folder}/${uid}`;
+          try {
+            const email = await fetchWithTimeout(
+              emailMessageApi.getMessage(uid, folder, false),
+              30000,
+              `Timeout recupero email ${folder}/${uid}`
+            );
             
-            try {
-              const email = await fetchWithTimeout(
-                emailMessageApi.getMessage(uid, folder, false),
-                30000,
-                `Timeout recupero email ${folder}/${uid}`
-              );
-              
-              const emailData = email?.data;
-              const header = emailData?.header;
-              
-              if (!email || !emailData || !header) {
-                console.warn(`⚠️ Email ${folder}/${uid}: struttura API invalida`);
-                return { success: false, error: 'invalid_structure' };
-              }
-
-              let isoDate = new Date().toISOString();
-              if (header.date) {
-                try {
-                  isoDate = new Date(header.date).toISOString();
-                } catch (e) {
-                  console.error('Error parsing date:', header.date);
-                }
-              }
-
-              const { error: insertError } = await supabase.from('email_messages').insert({
-                message_id: messageId,
-                from_email: header.from || '',
-                to_email: Array.isArray(header.to) 
-                  ? header.to.map((t: any) => t.email || t.address || t).join(',')
-                  : (header.to || ''),
-                cc_email: Array.isArray(header.cc)
-                  ? header.cc.map((c: any) => c.email || c.address || c).join(',')
-                  : (header.cc || null),
-                bcc_email: Array.isArray(header.bcc)
-                  ? header.bcc.map((b: any) => b.email || b.address || b).join(',')
-                  : (header.bcc || null),
-                subject: header.subject || '',
-                body_text: emailData.body_plain || emailData.body_text || emailData.text || '',
-                body_html: emailData.body_html || emailData.html || '',
-                data_ricezione: isoDate,
-                cartella: folder,
-                direzione: 'inbound',
-                stato: header.seen || header.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
-                flags: header.flags || emailData.flags || [],
-                attachments: emailData.attachments || [],
-                provider_id: '00000000-0000-0000-0000-000000000000',
-                user_email: profile.tmwe_email,
-                sync_status: 'fun_email_backup',
-              });
-
-              if (!insertError) {
-                console.log(`   ✅ ${folder}/${uid}: ${header.subject?.substring(0, 30)}`);
-                return { success: true };
-              } else {
-                console.error(`❌ Insert error ${folder}/${uid}:`, insertError);
-                return { success: false, error: insertError.message };
-              }
-
-            } catch (error: any) {
-              console.error(`❌ Fetch error ${folder}/${uid}:`, error?.message);
-              return { success: false, error: error?.message };
+            // ✅ Accedi alla struttura corretta dell'API TMWE
+            const emailData = email?.data;
+            const header = emailData?.header;
+            
+            if (!email || !emailData || !header) {
+              console.warn(`⚠️ Email ${folder}/${uid}: struttura API invalida o email non trovata`);
+              globalFailed++;
+              setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
+              continue;
             }
-          });
-          
-          // Attende completamento batch
-          const results = await Promise.all(batchPromises);
-          
-          // Aggiorna statistiche
-          const successCount = results.filter(r => r.success).length;
-          const failCount = results.filter(r => !r.success).length;
-          
-          globalDownloaded += successCount;
-          globalFailed += failCount;
-          
-          setStats(prev => ({
-            ...prev,
-            downloaded: globalDownloaded,
-            failed: globalFailed
-          }));
-          
-          const progressPercent = ((globalDownloaded + globalFailed + globalSkipped) / (globalTotal + globalSkipped)) * 100;
+
+            // Parsing data ISO
+            let isoDate = new Date().toISOString();
+            if (header.date) {
+              try {
+                isoDate = new Date(header.date).toISOString();
+              } catch (e) {
+                console.error('Error parsing date:', header.date);
+              }
+            }
+
+            // ✅ Mapping corretto secondo struttura API nested
+            const { error: insertError } = await supabase.from('email_messages').insert({
+              message_id: messageId,
+              from_email: header.from || '',
+              to_email: Array.isArray(header.to) 
+                ? header.to.map((t: any) => t.email || t.address || t).join(',')
+                : (header.to || ''),
+              cc_email: Array.isArray(header.cc)
+                ? header.cc.map((c: any) => c.email || c.address || c).join(',')
+                : (header.cc || null),
+              bcc_email: Array.isArray(header.bcc)
+                ? header.bcc.map((b: any) => b.email || b.address || b).join(',')
+                : (header.bcc || null),
+              subject: header.subject || '',
+              body_text: emailData.body_plain || emailData.body_text || emailData.text || '',
+              body_html: emailData.body_html || emailData.html || '',
+              data_ricezione: isoDate,
+              cartella: folder,
+              direzione: 'inbound',
+              stato: header.seen || header.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
+              flags: header.flags || emailData.flags || [],
+              attachments: emailData.attachments || [],
+              provider_id: '00000000-0000-0000-0000-000000000000',
+              user_email: profile.tmwe_email,
+              sync_status: 'fun_email_backup',
+            });
+
+            if (!insertError) {
+              console.log(`   ✅ Salvata ${folder}/${uid}: ${header.subject?.substring(0, 30)}`);
+              globalDownloaded++;
+              setStats(prev => ({ ...prev, downloaded: prev.downloaded + 1 }));
+            } else {
+              console.error(`Errore inserimento ${folder}/${uid}:`, insertError);
+              globalFailed++;
+              setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
+            }
+
+          } catch (error) {
+            console.error(`Errore download ${folder}/${uid}:`, error);
+            globalFailed++;
+            setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
+          }
+
+          const progressPercent = ((globalDownloaded + globalFailed) / globalTotal) * 100;
           setProgress(Math.round(progressPercent));
-          
-          console.log(`📦 Batch ${batchNum}/${totalBatches}: ${successCount} successi, ${failCount} falliti`);
         }
         
         console.log(`✅ Cartella ${folder} completata:`);

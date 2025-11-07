@@ -311,3 +311,6 @@ verify_jwt = true
 
 [functions.suggest-sender-grouping]
 verify_jwt = true
+
+[functions.generate-group-context]
+verify_jwt = true

@@ -3305,6 +3305,71 @@ export type Database = {
         }
         Relationships: []
       }
+      email_sender_groups_context: {
+        Row: {
+          context_summary: string
+          created_at: string
+          data_sufficiency: number | null
+          generated_at: string
+          group_id: string
+          id: string
+          model_used: string | null
+          needs_refresh: boolean | null
+          pattern_clarity: number | null
+          quality_score: number | null
+          refresh_reason: string | null
+          sample_count: number
+          sender_count: number
+          sender_patterns: Json
+          updated_at: string
+          user_email: string
+        }
+        Insert: {
+          context_summary: string
+          created_at?: string
+          data_sufficiency?: number | null
+          generated_at?: string
+          group_id: string
+          id?: string
+          model_used?: string | null
+          needs_refresh?: boolean | null
+          pattern_clarity?: number | null
+          quality_score?: number | null
+          refresh_reason?: string | null
+          sample_count?: number
+          sender_count?: number
+          sender_patterns?: Json
+          updated_at?: string
+          user_email: string
+        }
+        Update: {
+          context_summary?: string
+          created_at?: string
+          data_sufficiency?: number | null
+          generated_at?: string
+          group_id?: string
+          id?: string
+          model_used?: string | null
+          needs_refresh?: boolean | null
+          pattern_clarity?: number | null
+          quality_score?: number | null
+          refresh_reason?: string | null
+          sample_count?: number
+          sender_count?: number
+          sender_patterns?: Json
+          updated_at?: string
+          user_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sender_groups_context_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "email_sender_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_sender_rules: {
         Row: {
           created_at: string

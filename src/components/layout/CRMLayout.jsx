@@ -203,7 +203,7 @@ const CRMLayout = ({ children }) => {
             <img 
               src={funEmailMascot} 
               alt="FunEmail Mascot" 
-              className="h-16 w-auto animate-in fade-in-0 slide-in-from-left-3 duration-300"
+              className="h-32 w-auto animate-in fade-in-0 slide-in-from-left-3 duration-300"
             />
           )}
 

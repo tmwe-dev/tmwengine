@@ -16,6 +16,7 @@ import { TokenKeyIndicator } from '@/components/ui/token-key-indicator';
 import { useNavigationGroups } from '@/hooks/useNavigationGroups';
 import findairLogo from '@/assets/findair-logo-header.png';
 import funEmailLogo from '@/assets/funnemail-logo.png';
+import funEmailMascot from '@/assets/funnemail-mascot.png';
 import {
   Users, 
   Calendar, 
@@ -199,13 +200,20 @@ const CRMLayout = ({ children }) => {
           </Button>
 
           {/* FunEmail Logo - visible only on /funnemail */}
-          {location.pathname === '/funnemail' && (
-            <img 
-              src={funEmailLogo} 
-              alt="FunnEmail" 
-              className="h-16 w-auto animate-in fade-in-0 slide-in-from-left-3 duration-300"
-            />
-          )}
+            {location.pathname === '/funnemail' && (
+              <div className="flex items-center gap-2 animate-in fade-in-0 slide-in-from-left-3 duration-300">
+                <img 
+                  src={funEmailMascot} 
+                  alt="FunnEmail Mascot" 
+                  className="h-16 w-auto"
+                />
+                <img 
+                  src={funEmailLogo} 
+                  alt="FunnEmail" 
+                  className="h-16 w-auto"
+                />
+              </div>
+            )}
 
           {/* Page Title */}
           <div className="flex items-center gap-4">

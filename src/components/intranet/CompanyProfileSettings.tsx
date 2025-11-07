@@ -31,8 +31,14 @@ export function CompanyProfileSettings() {
 
     setIsOptimizing(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('Non autenticato');
+
       const { data, error } = await supabase.functions.invoke('optimize-company-profile', {
-        body: { user_description: companyDescription }
+        body: { 
+          user_id: user.id,
+          company_description: companyDescription 
+        }
       });
 
       if (error) throw error;
@@ -101,7 +107,7 @@ export function CompanyProfileSettings() {
           const { error } = await supabase.functions.invoke('generate-group-context', {
             body: {
               group_id: group.id,
-              user_email: user.email
+              user_id: user.id
             }
           });
 

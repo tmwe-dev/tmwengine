@@ -9,7 +9,7 @@ const corsHeaders = {
 
 interface RequestBody {
   group_id: string;
-  user_email: string;
+  user_id: string;
 }
 
 interface SenderPatterns {
@@ -38,11 +38,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const body: RequestBody = await req.json();
-    console.log('📥 Request:', { group_id: body.group_id, user_email: body.user_email });
+    console.log('📥 Request:', { group_id: body.group_id, user_id: body.user_id });
 
-    if (!body.group_id || !body.user_email) {
+    if (!body.group_id || !body.user_id) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: group_id, user_email' }),
+        JSON.stringify({ error: 'Missing required fields: group_id, user_id' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -52,7 +52,6 @@ serve(async (req) => {
       .from('email_sender_groups')
       .select('id, nome_gruppo, descrizione')
       .eq('id', body.group_id)
-      .eq('user_email', body.user_email)
       .single();
 
     if (groupError || !group) {
@@ -70,7 +69,7 @@ serve(async (req) => {
       .from('email_sender_rules')
       .select('sender_email')
       .eq('group_id', body.group_id)
-      .eq('user_email', body.user_email);
+      .eq('user_id', body.user_id);
 
     if (rulesError || !senderRules || senderRules.length === 0) {
       console.error('❌ No senders found for this group:', rulesError);
@@ -387,7 +386,7 @@ Rispondi SOLO con JSON usando la funzione generate_context.`;
       .from('email_sender_groups_context')
       .upsert({
         group_id: body.group_id,
-        user_email: body.user_email,
+        user_id: body.user_id,
         context_summary: contextResult.context_summary,
         sender_patterns: contextResult.sender_patterns,
         quality_score: qualityScore,
@@ -396,7 +395,7 @@ Rispondi SOLO con JSON usando la funzione generate_context.`;
         generated_at: new Date().toISOString(),
         needs_refresh: false
       }, {
-        onConflict: 'group_id,user_email'
+        onConflict: 'group_id,user_id'
       })
       .select()
       .single();

@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
 
 interface RequestBody {
-  user_email: string;
+  user_id: string;
   company_description: string;
 }
 
@@ -14,11 +14,11 @@ serve(async (req) => {
 
   try {
     const body: RequestBody = await req.json();
-    console.log('📥 Optimize company profile request:', { user_email: body.user_email });
+    console.log('📥 Optimize company profile request:', { user_id: body.user_id });
 
-    if (!body.user_email || !body.company_description) {
+    if (!body.user_id || !body.company_description) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: user_email, company_description' }),
+        JSON.stringify({ error: 'Missing required fields: user_id, company_description' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -120,7 +120,7 @@ Genera ora il context prompt completo per classificare mittenti email in base a 
     const { error: updateError } = await supabase
       .from('user_profiles')
       .update({ company_context_ai: optimizedContext })
-      .eq('user_email', body.user_email);
+      .eq('user_id', body.user_id);
 
     if (updateError) {
       console.error('❌ Error updating profile:', updateError);

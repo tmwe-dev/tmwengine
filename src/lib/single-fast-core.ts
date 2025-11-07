@@ -74,6 +74,10 @@ export async function populateTempIndexForFolder(
           console.log(`✅ Last page reached (received ${batchUIDs.length} < ${uidBatchSize})`);
         } else {
           currentPage++;
+          
+          // ✅ Throttle: wait 800ms between pages to prevent edge function overload
+          console.log('⏳ Waiting 800ms before next batch...');
+          await new Promise(resolve => setTimeout(resolve, 800));
         }
       }
     } catch (error) {
@@ -109,8 +113,8 @@ export async function populateTempIndexForFolder(
   const missing = Array.from(serverUIDs).filter(uid => !dbUIDs.has(uid));
   console.log(`🎯 Missing UIDs: ${missing.length}`);
 
-  // 5️⃣ Popola email_temp_index con metadati leggeri (batch paralleli)
-  const batchSize = 10;
+  // 5️⃣ Popola email_temp_index con metadati leggeri (batch paralleli ridotti a 3)
+  const batchSize = 3;
   const tempIndexRecords = [];
 
   for (let i = 0; i < missing.length; i += batchSize) {
@@ -176,6 +180,12 @@ export async function populateTempIndexForFolder(
 
     const batchResults = await Promise.all(batchPromises);
     tempIndexRecords.push(...batchResults);
+    
+    // ✅ Throttle: wait 500ms between metadata batches to prevent edge function overload
+    if (i + batchSize < missing.length) {
+      console.log('⏳ Waiting 500ms before next metadata batch...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   }
 
   // 6️⃣ Inserisci in batch in email_temp_index

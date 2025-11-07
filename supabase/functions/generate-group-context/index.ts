@@ -64,7 +64,21 @@ serve(async (req) => {
 
     console.log(`📊 Group: ${group.nome_gruppo}`);
 
-    // 1.5. Get user's company context (if available)
+    // 1.5. Get user's email and company context
+    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(body.user_id);
+    
+    if (authError || !authUser?.user?.email) {
+      console.error('❌ Cannot retrieve user email:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Cannot retrieve user email' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userEmail = authUser.user.email;
+    console.log(`👤 User email: ${userEmail}`);
+
+    // Get company context (if available)
     const { data: userProfile } = await supabase
       .from('user_profiles')
       .select('company_context_ai')
@@ -108,7 +122,7 @@ serve(async (req) => {
       .from('email_messages')
       .select('from_email, subject, data_ricezione, cartella')
       .in('from_email', senderEmails)
-      .eq('user_email', body.user_email)
+      .eq('user_email', userEmail)
       .order('data_ricezione', { ascending: false })
       .limit(senderEmails.length * 5); // Max 5 samples per sender
 

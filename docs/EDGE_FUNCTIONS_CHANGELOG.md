@@ -9,7 +9,7 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
-## [2025-11-07] - FIX CRITICO: Colonna email_messages + Company Context in Suggest Sender Grouping
+## [2025-11-07] - FIX CRITICO: Colonna email_messages + Company Context + User Email Retrieval
 
 ### File Modificati
 
@@ -25,6 +25,8 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 **Problema 2 - FUNZIONALITÀ MANCANTE:** `suggest-sender-grouping` non utilizzava il `company_context_ai` ottimizzato dall'utente, classificando mittenti solo con prompt generico invece che secondo categorie aziendali personalizzate.
 
+**Problema 3 - BUG CRITICO (HOTFIX):** `generate-group-context` usava `body.user_email` che non esiste nel RequestBody (ha solo `user_id`), causando query vuote a `email_messages` con errore "No email samples found for analysis".
+
 **Impatto:**
 ```
 Bug 1: generate-group-context → ERROR: column email_messages.oggetto does not exist
@@ -38,6 +40,12 @@ Bug 2: suggest-sender-grouping → Ignora company_context_ai
        Classificazioni generiche, non usa categorie personalizzate
        ↓
        Suggerimenti meno accurati per contesto aziendale specifico
+
+Bug 3: generate-group-context → Query email_messages con user_email = undefined
+       ↓
+       Nessun campione email recuperato
+       ↓
+       Impossibile generare context per i gruppi
 ```
 
 ### Modifiche Apportate
@@ -64,10 +72,37 @@ sender.samples.push({
   subject: email.subject,
 ```
 
+**C. Recupero user_email da auth.users (Lines 67-79) - HOTFIX**
+```typescript
+// AGGIUNTO recupero email utente
+const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(body.user_id);
+
+if (authError || !authUser?.user?.email) {
+  console.error('❌ Cannot retrieve user email:', authError);
+  return new Response(
+    JSON.stringify({ error: 'Cannot retrieve user email' }),
+    { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+const userEmail = authUser.user.email;
+console.log(`👤 User email: ${userEmail}`);
+```
+
+**D. Uso user_email nella query (Line 125)**
+```typescript
+// PRIMA (ERRORE)
+.eq('user_email', body.user_email)  // body.user_email NON ESISTE
+
+// DOPO (CORRETTO)
+.eq('user_email', userEmail)  // userEmail recuperato da auth
+```
+
 **Razionale:**
-- La tabella `email_messages` usa naming standard email (subject, from_email, to_email)
-- `oggetto` è naming italiano legacy che non esiste più in schema
-- Fix allinea codice a schema database reale
+- `RequestBody` contiene solo `user_id` (UUID), non `user_email`
+- Usare `supabase.auth.admin.getUserById()` con service role key per recuperare email
+- Query `email_messages` richiede `user_email` per filtrare correttamente
+- Validazione esplicita per gestire errori di recupero email
 
 #### Fix 2: suggest-sender-grouping/index.ts
 
@@ -105,9 +140,11 @@ Il tuo compito è analizzare CHI È IL MITTENTE...
 
 ### Comportamento Atteso
 
-**Fix 1 (generate-group-context):**
+**Fix 1 + Fix 3 (generate-group-context):**
 ```
-✅ Query email_messages funziona correttamente
+✅ Recupera user_email da auth.users usando user_id
+✅ Logs mostrano: "👤 User email: luca@tmwe.it"
+✅ Query email_messages funziona con user_email corretto
 ✅ Recupera subject, from_email, data_ricezione, cartella
 ✅ Knowledge Base gruppi generata con successo
 ✅ Logs mostrano: "📧 Analyzing X email samples"
@@ -124,10 +161,13 @@ Il tuo compito è analizzare CHI È IL MITTENTE...
 
 ### Test Eseguiti
 
-**Test 1 - Generate Group Context:**
-1. ✅ Aprire `/profilo-aziendale`
+**Test 1 - Generate Group Context (con HOTFIX):**
+1. ✅ Aprire `/funnemail?tab=suggestions` → Sezione "Profilo Aziendale"
 2. ✅ Cliccare "Genera Knowledge Base"
-3. ✅ Verificare nei logs Supabase: NESSUN errore `column oggetto does not exist`
+3. ✅ Verificare nei logs Supabase: 
+   - ✅ NESSUN errore `column oggetto does not exist`
+   - ✅ Log `👤 User email: luca@tmwe.it`
+   - ✅ Log `📧 Analyzing X email samples`
 4. ✅ Verificare salvataggio in `email_sender_groups_context`
 
 **Test 2 - Suggest Sender Grouping:**
@@ -151,9 +191,11 @@ cp supabase/functions/suggest-sender-grouping/index-old1.ts supabase/functions/s
 
 ### Note di Sicurezza
 - ✅ Nessuna modifica a RLS policies
+- ✅ Usa `supabase.auth.admin.getUserById()` con service role key (sicuro lato server)
 - ✅ Company context accesso limitato a user_profiles.user_email = body.user_email
-- ✅ Fallback graceful se company_context_ai è NULL
-- ✅ Logs non espongono dati sensibili (substring primi 50 char)
+- ✅ Fallback graceful se company_context_ai è NULL o user email non trovata
+- ✅ Logs non espongono dati sensibili (substring primi 50 char per company context)
+- ✅ Validazione esplicita errori di recupero email utente
 
 ---
 

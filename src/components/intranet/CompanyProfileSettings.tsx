@@ -89,10 +89,10 @@ export function CompanyProfileSettings() {
         sendersByGroup.set(rule.group_id, (sendersByGroup.get(rule.group_id) || 0) + 1);
       });
 
-      const qualifiedGroups = groups.filter(g => (sendersByGroup.get(g.id) || 0) >= 3);
+      const qualifiedGroups = groups.filter(g => (sendersByGroup.get(g.id) || 0) >= 1);
 
       if (qualifiedGroups.length === 0) {
-        toast.error('Nessun gruppo ha almeno 3 mittenti assegnati');
+        toast.error('Nessun gruppo ha mittenti assegnati');
         return;
       }
 

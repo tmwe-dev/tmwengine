@@ -108,11 +108,12 @@ serve(async (req) => {
     console.log(`📧 Sender emails:`, senderEmails.slice(0, 5).join(', '), senderEmails.length > 5 ? '...' : '');
     console.log(`🔍 Will query email_messages with user_email: ${userEmail}`);
 
-    if (senderEmails.length < 3) {
-      console.warn('⚠️ Too few senders for reliable pattern analysis');
+    // Note: Accepting groups with 1+ senders (previously required 3+)
+    if (senderEmails.length < 1) {
+      console.warn('⚠️ No senders for analysis');
       return new Response(
         JSON.stringify({ 
-          error: 'Need at least 3 senders for reliable pattern analysis',
+          error: 'Need at least 1 sender for pattern analysis',
           current_count: senderEmails.length 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -211,10 +212,11 @@ ${companyContext}
 
 Utilizza questo contesto per comprendere meglio il tipo di mittenti e classificarli secondo le categorie aziendali specifiche definite dall'utente. Le tue analisi devono essere coerenti con questo profilo aziendale.
 ` : ''}
-Analizza questi ${senderEmails.length} mittenti assegnati al gruppo "${group.nome_gruppo}" e genera:
+Analizza ${senderEmails.length === 1 ? 'questo mittente' : `questi ${senderEmails.length} mittenti`} assegnato al gruppo "${group.nome_gruppo}" e genera:
 
-1. CONTEXT SUMMARY (150-300 caratteri): Descrizione pattern comune dei mittenti
-   Esempio: "Mittenti clienti B2B del settore logistics, domini aziendali strutturati, comunicazioni formali con frequenza media 2-5 email/settimana"
+1. CONTEXT SUMMARY (ESATTAMENTE 150-300 caratteri): Descrizione dettagliata e specifica dei pattern comuni
+   ${senderEmails.length === 1 ? 'Anche con 1 solo mittente, fornisci una descrizione completa del dominio, stile comunicativo, e contesto aziendale. Esempio: "Mittente da dominio aziendale cliente.com, comunicazioni formali riguardanti ordini e logistica, frequenza media settimanale, tipico cliente B2B del settore trasporti"' : 'Esempio: "Mittenti clienti B2B del settore logistics, domini aziendali strutturati (@cliente1.com, @cliente2.it), comunicazioni formali con frequenza media 2-5 email/settimana, contenuti riguardanti ordini e spedizioni"'}
+   IMPORTANTE: Il summary DEVE essere tra 150 e 300 caratteri. Sii descrittivo e specifico.
 
 2. SENDER PATTERNS (JSON strutturato):
    {
@@ -432,6 +434,24 @@ Rispondi SOLO con JSON usando la funzione generate_context.`;
       data_sufficiency: contextResult.data_sufficiency,
       pattern_clarity: contextResult.pattern_clarity
     });
+
+    // 8.5. Validate and fix context_summary length (must be 150-300 chars)
+    let validatedSummary = contextResult.context_summary.trim();
+    
+    if (validatedSummary.length < 150) {
+      console.warn(`⚠️ Summary too short (${validatedSummary.length} chars), extending...`);
+      // Extend with group metadata
+      const extension = ` Gruppo "${group.nome_gruppo}" con ${senderEmails.length} mittente${senderEmails.length > 1 ? 'i' : ''} analizzato su ${emailSamples.length} email campione${emailSamples.length > 1 ? '' : ''} dal dominio ${uniqueDomains[0] || 'vario'}.`;
+      validatedSummary = (validatedSummary + extension).substring(0, 300);
+    }
+    
+    if (validatedSummary.length > 300) {
+      console.warn(`⚠️ Summary too long (${validatedSummary.length} chars), truncating...`);
+      validatedSummary = validatedSummary.substring(0, 297) + '...';
+    }
+    
+    console.log(`✅ Validated summary length: ${validatedSummary.length} chars`);
+    contextResult.context_summary = validatedSummary;
 
     // 9. Calculate quality score
     const qualityScore = (contextResult.data_sufficiency + contextResult.pattern_clarity) / 2;

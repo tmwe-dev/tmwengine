@@ -105,6 +105,8 @@ serve(async (req) => {
 
     const senderEmails = senderRules.map(r => r.sender_email);
     console.log(`👥 Found ${senderEmails.length} senders in group`);
+    console.log(`📧 Sender emails:`, senderEmails.slice(0, 5).join(', '), senderEmails.length > 5 ? '...' : '');
+    console.log(`🔍 Will query email_messages with user_email: ${userEmail}`);
 
     if (senderEmails.length < 3) {
       console.warn('⚠️ Too few senders for reliable pattern analysis');
@@ -126,10 +128,34 @@ serve(async (req) => {
       .order('data_ricezione', { ascending: false })
       .limit(senderEmails.length * 5); // Max 5 samples per sender
 
-    if (samplesError || !emailSamples || emailSamples.length === 0) {
-      console.error('❌ No email samples found:', samplesError);
+    if (samplesError) {
+      console.error('❌ Error querying email_messages:', samplesError);
+      console.error('❌ Query details:', {
+        user_email: userEmail,
+        senders: senderEmails.slice(0, 3),
+        sender_count: senderEmails.length
+      });
       return new Response(
-        JSON.stringify({ error: 'No email samples found for analysis' }),
+        JSON.stringify({ 
+          error: 'Database error while fetching email samples',
+          details: samplesError.message 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!emailSamples || emailSamples.length === 0) {
+      console.warn('⚠️ No email samples found in email_messages table');
+      console.warn('⚠️ Query parameters:', {
+        user_email: userEmail,
+        senders_searched: senderEmails.slice(0, 5),
+        total_senders: senderEmails.length
+      });
+      return new Response(
+        JSON.stringify({ 
+          error: 'No email samples found for analysis',
+          hint: `No emails found in email_messages table for user ${userEmail} and ${senderEmails.length} senders of this group. Make sure email sync has been performed.`
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

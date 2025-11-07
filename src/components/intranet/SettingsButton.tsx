@@ -2,7 +2,6 @@ import { Settings } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { RoomAIPromptManager } from './RoomAIPromptManager';
-import { UserLanguageSettings } from './UserLanguageSettings';
 
 interface SettingsButtonProps {
   roomId: string;
@@ -29,7 +28,6 @@ export const SettingsButton = ({ roomId, isCreatorOrAdmin = false }: SettingsBut
               isCreatorOrAdmin={isCreatorOrAdmin}
             />
           )}
-          <UserLanguageSettings />
         </div>
       </PopoverContent>
     </Popover>

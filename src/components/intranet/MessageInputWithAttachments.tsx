@@ -10,6 +10,7 @@ import { VideoCallButton } from './VideoCallButton';
 import { AIChatInvoker } from './AIChatInvoker';
 import { TtsControls } from './TtsControls';
 import { useAutoSpeaker } from '@/hooks/useAutoSpeaker';
+import { UserLanguageSettings } from './UserLanguageSettings';
 
 interface FileAttachment {
   file: File;
@@ -374,6 +375,9 @@ export const MessageInputWithAttachments = ({
             
             {/* Settings button */}
             {settingsButton}
+            
+            {/* Language Settings button */}
+            <UserLanguageSettings />
           </div>
 
           {/* Input testo con VideoCall a sinistra e pulsante invio a destra */}

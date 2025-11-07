@@ -15,6 +15,7 @@ import { FunEmailChat } from '@/components/email/FunEmailChat';
 import { FunEmailGlobalStats } from '@/components/email/FunEmailGlobalStats';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { EmailManagementTab } from '@/components/email/EmailManagementTab';
+import { EmailGroupingSuggestionsTab } from '@/components/email/EmailGroupingSuggestionsTab';
 import { QuickEmailDownloader } from '@/components/email/QuickEmailDownloader';
 import { EmailIntegrityChecker } from '@/components/email/EmailIntegrityChecker';
 import { TmweBackendDebugger } from '@/components/email/TmweBackendDebugger';
@@ -32,7 +33,7 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail'>('management');
+  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail'>('management');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
@@ -90,7 +91,7 @@ const FunEmail = () => {
       return;
     }
     
-    if (tabParam && ['fun', 'management', 'inbox', 'automations'].includes(tabParam)) {
+    if (tabParam && ['fun', 'management', 'suggestions', 'inbox', 'automations'].includes(tabParam)) {
       setCurrentView(tabParam as typeof currentView);
     } else if (!tabParam && !searchParams.get('view')) {
       setCurrentView('management'); // Default = Management
@@ -334,6 +335,10 @@ const FunEmail = () => {
           ) : currentView === 'management' ? (
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
               <EmailManagementTab onOpenAISidebar={openAISidebarForSender} />
+            </GradientBackground>
+          ) : currentView === 'suggestions' ? (
+            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)]">
+              <EmailGroupingSuggestionsTab />
             </GradientBackground>
           ) : currentView === 'quick-download' ? (
             <div className="p-6">

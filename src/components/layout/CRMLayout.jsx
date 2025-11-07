@@ -218,6 +218,15 @@ const CRMLayout = ({ children }) => {
                       Management
                     </Button>
                     <Button
+                      variant={searchParams.get('tab') === 'suggestions' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => navigate('/funnemail?tab=suggestions')}
+                      className="gap-1"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Suggerimenti AI
+                    </Button>
+                    <Button
                       variant={searchParams.get('tab') === 'inbox' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => navigate('/funnemail?tab=inbox')}

@@ -1,224 +1,57 @@
 /**
- * Tab Email Management - Sistema completamente isolato FunEmail
+ * Tab Suggerimenti AI Raggruppamento - Sistema completamente isolato
+ * Estratto da EmailManagementTab per migliorare modularità
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, CollisionDetection } from '@dnd-kit/core';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { RefreshCw, Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Brain, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { analyzeSenders } from '@/lib/email-sender-analyzer';
-import { SenderCard } from './management/SenderCard';
-import type { EmailSenderGroup, SenderAnalysis } from '@/types/email-management';
-import { DEFAULT_GROUPS as PREDEFINED_GROUPS } from '@/types/email-management';
-import { EmailSidebar } from './management/EmailSidebar';
-import { EmailCarouselContainer } from './management/EmailCarouselContainer';
-import { EmailGridContainer } from './management/EmailGridContainer';
-import { CreateCategoryDialog } from './management/CreateCategoryDialog';
-import { SortOption } from './management/SenderSortControls';
+import type { EmailSenderGroup, SenderAnalysis, GroupingSuggestion } from '@/types/email-management';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { GroupingSuggestionCard } from './management/GroupingSuggestionCard';
+import { AIConfigurationGuide } from './management/AIConfigurationGuide';
+import { SuggestionProgressDialog, SuggestionProgress } from './management/SuggestionProgressDialog';
+import { CompanyProfileSettings } from '../intranet/CompanyProfileSettings';
+import { Badge } from '@/components/ui/badge';
 
-// Collisione personalizzata 70%
-const carousel70PercentCollision: CollisionDetection = (args) => {
-  const { droppableContainers, collisionRect } = args;
-  if (!collisionRect) return [];
-
-  const collisions = Array.from(droppableContainers).map((container) => {
-    const rect = container.rect.current;
-    if (!rect) return null;
-
-    const overlapX = Math.max(0, Math.min(collisionRect.right, rect.right) - Math.max(collisionRect.left, rect.left));
-    const overlapY = Math.max(0, Math.min(collisionRect.bottom, rect.bottom) - Math.max(collisionRect.top, rect.top));
-    const overlapArea = overlapX * overlapY;
-    const draggableArea = collisionRect.width * collisionRect.height;
-    const overlapPercentage = (overlapArea / draggableArea) * 100;
-
-    return overlapPercentage >= 70 ? { id: container.id, data: { percentage: overlapPercentage } } : null;
-  }).filter(Boolean) as { id: string | number; data: { percentage: number } }[];
-
-  return collisions;
-};
-
-// Collisione personalizzata 50% per Grid
-const grid50PercentCollision: CollisionDetection = (args) => {
-  const { droppableContainers, collisionRect } = args;
-  if (!collisionRect) return [];
-
-  const collisions = Array.from(droppableContainers).map((container) => {
-    const rect = container.rect.current;
-    if (!rect) return null;
-
-    const overlapX = Math.max(0, Math.min(collisionRect.right, rect.right) - Math.max(collisionRect.left, rect.left));
-    const overlapY = Math.max(0, Math.min(collisionRect.bottom, rect.bottom) - Math.max(collisionRect.top, rect.top));
-    const overlapArea = overlapX * overlapY;
-    const draggableArea = collisionRect.width * collisionRect.height;
-    const overlapPercentage = (overlapArea / draggableArea) * 100;
-
-    console.log(`🎯 Collision check ${container.id}: ${overlapPercentage.toFixed(1)}% overlap`);
-
-    return overlapPercentage >= 50 ? { id: container.id, data: { percentage: overlapPercentage } } : null;
-  }).filter(Boolean) as { id: string | number; data: { percentage: number } }[];
-
-  return collisions;
-};
-
-interface EmailManagementTabProps {
-  onOpenAISidebar?: (senderEmail: string) => void;
-}
-
-export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps) {
-  const [senders, setSenders] = useState<SenderAnalysis[]>([]);
+export function EmailGroupingSuggestionsTab() {
+  // 🆕 State per dati locali (self-contained)
   const [groups, setGroups] = useState<EmailSenderGroup[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncProgress, setSyncProgress] = useState<{ synced: number; total: number } | null>(null);
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterByAttachments, setFilterByAttachments] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'carousel'>('grid');
-  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const [senders, setSenders] = useState<SenderAnalysis[]>([]);
   const [assignedSenders, setAssignedSenders] = useState<Map<string, SenderAnalysis[]>>(new Map());
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [sortOption, setSortOption] = useState<SortOption>('count-desc');
-  const [lastUpdatedGroupId, setLastUpdatedGroupId] = useState<string | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  // 🤖 Sistema Raggruppamento Suggerito
+  const [groupingSuggestions, setGroupingSuggestions] = useState<GroupingSuggestion[]>([]);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
+  const [aiConfigError, setAiConfigError] = useState<string | null>(null);
   
-  // 🆕 Map callbacks per aggiornamento ottimistico card gruppi
-  const groupUpdateCallbacksRef = useRef<Map<string, (senderEmail: string) => void>>(new Map());
-  const groupUpdateCallbacks = groupUpdateCallbacksRef.current;
+  // 🎯 Progress Dialog per generazione suggerimenti
+  const [suggestionProgress, setSuggestionProgress] = useState<SuggestionProgress | null>(null);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
   
-  const [carouselZoom, setCarouselZoom] = useState(() => {
-    const saved = localStorage.getItem('email-carousel-zoom');
-    return saved ? parseFloat(saved) : 1.0;
-  });
-
-  const [carouselVerticalOffset, setCarouselVerticalOffset] = useState(0);
+  // 🔢 Filtro email minime per mittente
+  const [minimumEmailCount, setMinimumEmailCount] = useState<number>(2);
+  
+  // 🧠 Knowledge Base Generator (Phase 2)
+  const [isGeneratingKB, setIsGeneratingKB] = useState(false);
+  const [kbProgress, setKbProgress] = useState<{
+    current: number;
+    total: number;
+    currentGroup: string;
+    logs: string[];
+  } | null>(null);
   
   const { toast } = useToast();
 
-  // 🔄 Gruppi in ordine naturale (DB: created_at ASC) - per Carousel
-  const naturalOrderGroups = useMemo(() => [...groups], [groups]);
-
-  // 📝 Gruppi in ordine alfabetico - per Grid/Sidebar
-  const alphabeticGroups = useMemo(() => {
-    return [...groups].sort((a, b) => 
-      a.nome_gruppo.localeCompare(b.nome_gruppo, 'it', { sensitivity: 'base' })
-    );
-  }, [groups]);
-
-  const handleZoomChange = (zoom: number) => {
-    setCarouselZoom(zoom);
-    localStorage.setItem('email-carousel-zoom', zoom.toString());
-  };
-
-  // 🆕 Registrazione callback per aggiornamento ottimistico gruppi
-  const registerGroupCallback = (groupId: string, callback: (senderEmail: string) => void) => {
-    groupUpdateCallbacks.set(groupId, callback);
-    return () => groupUpdateCallbacks.delete(groupId);
-  };
-
-  // Navigazione manuale carousel
-  const handlePrevCategory = () => {
-    if (naturalOrderGroups.length === 0) return;
-    
-    const currentIndex = naturalOrderGroups.findIndex(g => g.id === activeCategoryId);
-    const newIndex = (currentIndex - 1 + naturalOrderGroups.length) % naturalOrderGroups.length;
-    setActiveCategoryId(naturalOrderGroups[newIndex].id);
-  };
-
-  const handleNextCategory = () => {
-    if (naturalOrderGroups.length === 0) return;
-    
-    const currentIndex = naturalOrderGroups.findIndex(g => g.id === activeCategoryId);
-    const newIndex = (currentIndex + 1) % naturalOrderGroups.length;
-    setActiveCategoryId(naturalOrderGroups[newIndex].id);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Real-time subscription per nuove categorie
-  useEffect(() => {
-    const channel = supabase
-      .channel('email-groups-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'email_sender_groups'
-        },
-        (payload) => {
-          console.log('🆕 Nuova categoria creata:', payload.new);
-          const newGroup = payload.new as EmailSenderGroup;
-          setGroups(prev => {
-            if (prev.some(g => g.id === newGroup.id)) return prev;
-            return [...prev, newGroup];
-          });
-          setActiveCategoryId(newGroup.id);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  // Real-time subscription per nuove regole di assegnazione
-  useEffect(() => {
-    const channel = supabase
-      .channel('email-rules-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'email_sender_rules'
-        },
-        async (payload) => {
-          console.log('🔗 Nuova regola assegnazione:', payload.new);
-          const rule = payload.new as { sender_email: string; group_id: string; user_id: string };
-          
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user || rule.user_id !== user.id) return;
-
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('tmwe_email')
-            .eq('user_id', user.id)
-            .single();
-          
-          if (profile?.tmwe_email) {
-            const analysis = await analyzeSenders(profile.tmwe_email);
-            const sender = analysis.find(s => s.email === rule.sender_email);
-            
-            if (sender) {
-              setAssignedSenders(prev => {
-                const newMap = new Map(prev);
-                const existing = newMap.get(rule.group_id) || [];
-                if (existing.some(s => s.email === sender.email)) return prev;
-                newMap.set(rule.group_id, [...existing, sender]);
-                return newMap;
-              });
-
-              setSenders(prev => prev.filter(s => s.email !== rule.sender_email));
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-
+  // 🆕 Carica dati completi (gruppi + mittenti + assegnazioni)
   const loadData = async () => {
-    setIsLoading(true);
+    setIsLoadingData(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non autenticato');
@@ -235,46 +68,31 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           description: 'Email TMWE non configurata nel profilo',
           variant: 'default',
         });
-        setIsLoading(false);
         return;
       }
 
+      // Carica gruppi
       const { data: groupsData, error: groupsError } = await supabase
         .from('email_sender_groups')
         .select('*')
         .order('created_at', { ascending: true });
 
       if (groupsError) throw groupsError;
+      setGroups(groupsData || []);
 
-      if (!groupsData || groupsData.length === 0) {
-        console.log('📁 Creazione gruppi di default...');
-        await createDefaultGroups();
-        return;
-      }
-
-      setGroups(groupsData);
-      console.log(`📁 Caricati ${groupsData.length} gruppi`);
-
-      if (groupsData.length > 0 && !activeCategoryId) {
-        setActiveCategoryId(groupsData[0].id);
-      }
-
+      // Analizza mittenti
       const analysis = await analyzeSenders(profile.tmwe_email);
-      
-      console.log(`📊 Total senders analyzed: ${analysis.length}`);
-      console.log(`✅ Classified senders: ${analysis.filter(s => s.isClassified).length}`);
-      console.log(`❓ Unclassified senders: ${analysis.filter(s => !s.isClassified).length}`);
-      
       const unclassified = analysis.filter(s => !s.isClassified);
       setSenders(unclassified);
 
+      // Carica assegnazioni
       const { data: rulesData } = await supabase
         .from('email_sender_rules')
         .select('sender_email, group_id')
         .eq('user_id', user.id);
 
       const sendersMap = new Map<string, SenderAnalysis[]>();
-      for (const group of groupsData) {
+      for (const group of (groupsData || [])) {
         const groupRules = rulesData?.filter(r => r.group_id === group.id) || [];
         const groupSenders = analysis.filter(s => 
           groupRules.some(r => r.sender_email === s.email)
@@ -282,224 +100,53 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         sendersMap.set(group.id, groupSenders);
       }
       setAssignedSenders(sendersMap);
-      
-      console.log(`👥 Mittenti non classificati: ${unclassified.length} / ${analysis.length}`);
 
-      toast({
-        title: '✅ Dati caricati',
-        description: `${unclassified.length} mittenti da classificare`,
-      });
+      // Carica suggerimenti
+      await loadGroupingSuggestions(profile.tmwe_email);
+
+      console.log(`✅ Dati caricati: ${groupsData?.length || 0} gruppi, ${unclassified.length} mittenti non classificati`);
 
     } catch (error: any) {
-      console.error('❌ Errore caricamento:', error);
+      console.error('❌ Errore caricamento dati:', error);
       toast({
         title: '❌ Errore',
         description: error.message || 'Impossibile caricare i dati',
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setIsLoadingData(false);
     }
   };
 
-  const createDefaultGroups = async () => {
-    try {
-      console.log('📁 Creazione gruppi predefiniti...');
-      
-      const inserts = PREDEFINED_GROUPS.map(g => ({
-        nome_gruppo: g.name,
-        descrizione: g.description,
-        colore: g.color,
-        icon: g.icon,
-      }));
+  // Carica dati all'avvio
+  useEffect(() => {
+    loadData();
+  }, []);
 
-      const { error } = await supabase
-        .from('email_sender_groups')
-        .insert(inserts);
+  // 🤖 Carica suggerimenti AI dalla tabella
+  const loadGroupingSuggestions = async (userEmail: string) => {
+    try {
+      const { data: suggestions, error } = await supabase
+        .from('email_sender_grouping_suggestions' as any)
+        .select('*')
+        .eq('user_email', userEmail)
+        .eq('status', 'pending')
+        .order('analyzed_at', { ascending: false });
 
       if (error) throw error;
 
-      console.log('✅ Gruppi predefiniti creati');
-      toast({
-        title: '✅ Gruppi creati',
-        description: `${PREDEFINED_GROUPS.length} gruppi predefiniti inizializzati`,
-      });
-
-      await loadData();
-
-    } catch (error: any) {
-      console.error('❌ Errore creazione gruppi:', error);
-      toast({
-        title: '❌ Errore',
-        description: 'Impossibile creare i gruppi predefiniti',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleSync = async () => {
-    setIsSyncing(true);
-    setSyncProgress(null);
-    
-    try {
-      toast({
-        title: '🔄 Sincronizzazione avviata',
-        description: 'Download email in corso...',
-      });
-
-      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
-        body: {
-          mode: 'incremental',
-          folder_name: 'INBOX',
-          max_emails: 50,
-        }
-      });
-
-      if (error) throw error;
-
-      console.log('✅ Sync completato:', data);
-
-      toast({
-        title: '✅ Sincronizzazione completata',
-        description: `${data?.synced_count || 0} nuove email sincronizzate`,
-      });
-
-      await loadData();
-
-    } catch (error: any) {
-      console.error('❌ Errore sync:', error);
-      toast({
-        title: '❌ Errore sincronizzazione',
-        description: error.message || 'Impossibile sincronizzare le email',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSyncing(false);
-      setSyncProgress(null);
-    }
-  };
-
-  const handleCreateCategory = async (categoryData: {
-    nome_gruppo: string;
-    descrizione?: string;
-    colore: string;
-    icon: string;
-  }) => {
-    try {
-      const { data, error } = await supabase
-        .from('email_sender_groups')
-        .insert(categoryData)
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      setGroups(prev => [...prev, data]);
-      setActiveCategoryId(data.id);
-      
-      toast({
-        title: '✅ Categoria creata',
-        description: `${data.nome_gruppo} aggiunta al carousel`,
-      });
-    } catch (error: any) {
-      console.error('❌ Errore creazione categoria:', error);
-      toast({
-        title: '❌ Errore',
-        description: 'Impossibile creare la categoria',
-        variant: 'destructive',
-      });
-      throw error;
-    }
-  };
-
-  // 🆕 FUNZIONE UNIFICATA PER CLASSIFICAZIONE (drag + doppio clic)
-  const handleClassifySender = async (sender: SenderAnalysis, targetGroupId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    
-    const targetGroup = groups.find(g => g.id === targetGroupId);
-    if (!targetGroup) {
-      console.error(`❌ Gruppo target non trovato: ${targetGroupId}`);
-      return;
-    }
-
-    try {
-      console.log(`🎯 Classificazione mittente: ${sender.email} → ${targetGroup.nome_gruppo}`);
-
-      const { error: ruleError } = await supabase
-        .from('email_sender_rules')
-        .insert({
-          user_id: user.id,
-          sender_email: sender.email,
-          group_id: targetGroup.id,
-        });
-
-      if (ruleError) {
-        console.error('❌ Errore inserimento regola:', ruleError);
-        toast({
-          title: '❌ Errore',
-          description: 'Impossibile classificare il mittente',
-          variant: 'destructive',
-        });
-        return;
+      if (suggestions && suggestions.length > 0) {
+        setGroupingSuggestions(suggestions as unknown as GroupingSuggestion[]);
+        console.log(`🤖 Caricati ${suggestions.length} suggerimenti AI pending`);
+        
+        // Auto-mostra dialog se ci sono suggerimenti
+        setShowSuggestionsDialog(true);
       }
-
-      setSenders(prev => prev.filter(s => s.email !== sender.email));
-
-      setAssignedSenders(prev => {
-        const newMap = new Map(prev);
-        const existing = newMap.get(targetGroup.id) || [];
-        newMap.set(targetGroup.id, [...existing, sender]);
-        return newMap;
-      });
-
-      setLastUpdatedGroupId(targetGroup.id);
-
-      const callback = groupUpdateCallbacks.get(targetGroup.id);
-      if (callback) {
-        callback(sender.email);
-      }
-
-      toast({
-        title: '✅ Mittente classificato',
-        description: `${sender.companyName} → ${targetGroup.nome_gruppo}`,
-      });
-
-    } catch (error) {
-      console.error('❌ Errore inaspettato:', error);
+    } catch (error: any) {
+      console.error('❌ Errore caricamento suggerimenti:', error);
     }
   };
 
-  // Handler drag-and-drop
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveDragId(null);
-
-    if (!over) {
-      console.log('🚫 Drop annullato (fuori zona)');
-      return;
-    }
-
-    const senderEmail = active.id as string;
-    const targetGroupId = over.id as string;
-
-    const sender = senders.find(s => s.email === senderEmail);
-    const targetGroup = groups.find(g => g.id === targetGroupId);
-
-    if (!sender || !targetGroup) {
-      console.error(`❌ Mittente o gruppo non valido: sender=${sender}, group=${targetGroup}`);
-      return;
-    }
-
-    console.log(`📦 Drop: ${sender.email} → ${targetGroup.nome_gruppo}`);
-    handleClassifySender(sender, targetGroupId);
-  };
-
-  // 🆕 Handler doppio clic su card mittente per assegnazione rapida via AI Sidebar
-  const handleDoubleClickSender = (sender: SenderAnalysis) => {
-    console.log(`🎯 Doppio click su mittente: ${sender.email}`);
-    onOpenAISidebar?.(sender.email);
-  };
 
   // 🧠 Handler generazione Knowledge Base (top 3 gruppi)
   const handleGenerateGroupKB = async () => {
@@ -928,6 +575,9 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       const sender = senders.find(s => s.email === suggestion.sender_email);
       if (!sender) return;
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       // If group_id is null, we need to create a new group first
       let targetGroupId = groupId;
       if (!targetGroupId) {
@@ -953,10 +603,18 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         }
 
         targetGroupId = newGroup.id;
-        setGroups(prev => [...prev, newGroup]);
       }
 
-      await handleClassifySender(sender, targetGroupId);
+      // Create classification rule
+      const { error: ruleError } = await supabase
+        .from('email_sender_rules')
+        .insert({
+          user_id: user.id,
+          sender_email: sender.email,
+          group_id: targetGroupId,
+        });
+
+      if (ruleError) throw ruleError;
 
       setGroupingSuggestions(prev => prev.filter(s => s.id !== suggestionId));
 
@@ -964,6 +622,9 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         title: '✅ Suggerimento accettato',
         description: `${sender.companyName} assegnato a ${groupName}`,
       });
+
+      // Refresh data locale
+      await loadData();
 
     } catch (error: any) {
       console.error('❌ Errore accettazione suggerimento:', error);
@@ -995,127 +656,202 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     }
   };
 
-  // Filter & sort senders
-  const filteredSenders = senders.filter(s => {
-    const matchesSearch = !searchQuery || 
-      s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.companyName.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesFilter = !filterByAttachments || s.hasAttachments;
-    
-    return matchesSearch && matchesFilter;
-  });
+  // Calcola stats
+  const unclassifiedSenders = senders.filter(s => !s.isClassified);
+  const qualifiedGroups = groups.filter(g => (assignedSenders.get(g.id) || []).length >= 3);
 
-  const sortedSenders = useMemo(() => {
-    const sorted = [...filteredSenders];
-    
-    switch (sortOption) {
-      case 'name-asc':
-        return sorted.sort((a, b) => a.companyName.localeCompare(b.companyName));
-      case 'name-desc':
-        return sorted.sort((a, b) => b.companyName.localeCompare(a.companyName));
-      case 'count-asc':
-        return sorted.sort((a, b) => a.emailCount - b.emailCount);
-      case 'count-desc':
-        return sorted.sort((a, b) => b.emailCount - a.emailCount);
-      default:
-        return sorted;
-    }
-  }, [filteredSenders, sortOption]);
-
-  if (isLoading) {
+  // Loading state
+  if (isLoadingData) {
     return (
       <div className="flex items-center justify-center h-full w-full">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Analisi mittenti in corso</p>
+          <p className="text-sm text-muted-foreground">Caricamento dati in corso...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full w-full gap-4 max-w-[1920px] mx-auto p-4">
-      {/* Main Content Area */}
-      <div className="flex flex-1 h-full w-full gap-4 min-h-0">
-      <DndContext
-        collisionDetection={viewMode === 'carousel' ? carousel70PercentCollision : grid50PercentCollision}
-        onDragEnd={handleDragEnd}
-        onDragStart={(e) => setActiveDragId(e.active.id as string)}
-        onDragCancel={() => setActiveDragId(null)}
-      >
-        {/* Sidebar */}
-        <EmailSidebar
-          senders={senders}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          filterByAttachments={filterByAttachments}
-          setFilterByAttachments={setFilterByAttachments}
-          filteredSenders={sortedSenders}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          carouselZoom={carouselZoom}
-          onCarouselZoomChange={handleZoomChange}
-          onCreateCategory={() => setShowCreateDialog(true)}
-          groups={alphabeticGroups}
-          activeCategoryId={activeCategoryId}
-          onCategorySelect={setActiveCategoryId}
-          sortOption={sortOption}
-          onSortChange={setSortOption}
-          onSync={handleSync}
-          onRefresh={loadData}
-          isSyncing={isSyncing}
-          isLoading={isLoading}
-          onSenderDoubleClick={handleDoubleClickSender}
-        />
-        
-        {/* Area principale condizionale */}
-        {viewMode === 'grid' ? (
-          <EmailGridContainer
-            groups={alphabeticGroups}
-            onRefresh={loadData}
-            lastUpdatedGroupId={lastUpdatedGroupId}
-            onRegisterGroupCallback={registerGroupCallback}
-          />
-        ) : (
-          <EmailCarouselContainer
-            categories={naturalOrderGroups}
-            assignedSenders={assignedSenders}
-            activeCategoryId={activeCategoryId}
-            zoom={carouselZoom}
-            verticalOffset={carouselVerticalOffset}
-            onPrevious={handlePrevCategory}
-            onNext={handleNextCategory}
-          />
-        )}
-
-        <DragOverlay 
-          dropAnimation={null}
-          adjustScale={false}
-          className="z-[100]"
-        >
-          {activeDragId ? (
-            (() => {
-              const sender = senders.find(s => s.email === activeDragId);
-              return sender ? (
-                <div className="rotate-[0.5deg] scale-[1.02] shadow-lg">
-                  <SenderCard sender={sender} isDragging dragOverlayStyle />
-                </div>
-              ) : null;
-            })()
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header con stats */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Suggerimenti AI Raggruppamento</h2>
+          <p className="text-muted-foreground">
+            Sistema intelligente per organizzare mittenti in gruppi
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={loadData}
+            variant="outline"
+            size="sm"
+            disabled={isLoadingData}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingData ? 'animate-spin' : ''}`} />
+            Aggiorna
+          </Button>
+          <Badge variant="outline">
+            {unclassifiedSenders.length} mittenti non assegnati
+          </Badge>
+          <Badge variant="outline">
+            {qualifiedGroups.length} gruppi qualificati
+          </Badge>
+        </div>
       </div>
-
-      {/* Create Category Dialog */}
-      <CreateCategoryDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        onSubmit={handleCreateCategory}
-        existingNames={groups.map(g => g.nome_gruppo)}
-      />
-
+      
+      {/* Sezione 1: Company Profile */}
+      <Card>
+        <CardHeader>
+          <CardTitle>📋 Profilo Aziendale</CardTitle>
+          <CardDescription>
+            Configura il contesto aziendale per migliorare i suggerimenti AI
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CompanyProfileSettings />
+        </CardContent>
+      </Card>
+      
+      {/* Sezione 2: Knowledge Base Generator */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🧠 Knowledge Base Generator</CardTitle>
+          <CardDescription>
+            Genera contesti AI per i gruppi esistenti (3+ mittenti)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Stats gruppi qualificati */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Gruppi qualificati</p>
+              <p className="text-2xl font-bold">{qualifiedGroups.length}</p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Top 3 gruppi</p>
+              <p className="text-2xl font-bold">
+                {Math.min(qualifiedGroups.length, 3)}
+              </p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Costo stimato</p>
+              <p className="text-2xl font-bold">€0.03</p>
+            </div>
+          </div>
+          
+          {/* Button genera KB */}
+          <Button
+            onClick={handleGenerateGroupKB}
+            disabled={isGeneratingKB || qualifiedGroups.length === 0}
+            className="w-full"
+            size="lg"
+          >
+            {isGeneratingKB ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generazione in corso... ({kbProgress?.current || 0}/{kbProgress?.total || 0})
+              </>
+            ) : (
+              <>
+                <Brain className="w-4 h-4 mr-2" />
+                🧠 Genera Knowledge Base (Top 3)
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            Tempo: ~2-3 minuti | Migliora accuratezza suggerimenti del 60-70%
+          </p>
+        </CardContent>
+      </Card>
+      
+      {/* Sezione 3: Suggerimenti Raggruppamento */}
+      <Card>
+        <CardHeader>
+          <CardTitle>✨ Suggerimenti Raggruppamento AI</CardTitle>
+          <CardDescription>
+            Suggerimenti personalizzati per assegnare mittenti ai gruppi
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* AI Config Guide se configurazione mancante */}
+          {aiConfigError && (
+            <AIConfigurationGuide 
+              error={aiConfigError} 
+              onDismiss={() => setAiConfigError(null)}
+            />
+          )}
+          
+          {/* Filtro Email Minimo */}
+          <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+            <label className="text-sm font-medium whitespace-nowrap">
+              Min. email per mittente:
+            </label>
+            <Input
+              type="number"
+              min={1}
+              max={10}
+              value={minimumEmailCount}
+              onChange={(e) => setMinimumEmailCount(Number(e.target.value))}
+              className="w-20"
+              disabled={isGeneratingSuggestions}
+            />
+            <span className="text-xs text-muted-foreground">
+              (Ignora mittenti con meno di {minimumEmailCount} email)
+            </span>
+          </div>
+          
+          {/* Stats mittenti */}
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div>
+              <p className="text-sm font-medium">
+                Mittenti non assegnati
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {unclassifiedSenders.filter(s => s.emailCount >= minimumEmailCount).length} mittenti con almeno {minimumEmailCount} email
+              </p>
+            </div>
+            <Button
+              onClick={handleGenerateSuggestions}
+              disabled={isGeneratingSuggestions || unclassifiedSenders.filter(s => s.emailCount >= minimumEmailCount).length === 0}
+              size="lg"
+            >
+              {isGeneratingSuggestions ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Generazione...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  🤖 Genera Suggerimenti ({unclassifiedSenders.filter(s => s.emailCount >= minimumEmailCount).length})
+                </>
+              )}
+            </Button>
+          </div>
+          
+          {/* Grid suggerimenti */}
+          {groupingSuggestions.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {groupingSuggestions.map(suggestion => (
+                <GroupingSuggestionCard
+                  key={suggestion.id}
+                  suggestion={suggestion}
+                  onAccept={handleAcceptSuggestion}
+                  onDismiss={handleRejectSuggestion}
+                  disabled={isGeneratingSuggestions}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Nessun suggerimento disponibile. Genera nuovi suggerimenti per iniziare.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
       {/* 🎯 Progress Dialog Suggerimenti */}
       <SuggestionProgressDialog
         open={showProgressDialog}

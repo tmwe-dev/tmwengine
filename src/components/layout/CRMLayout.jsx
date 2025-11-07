@@ -201,11 +201,11 @@ const CRMLayout = ({ children }) => {
 
           {/* FunEmail Logo - visible only on /funnemail */}
             {location.pathname === '/funnemail' && (
-              <div className="flex items-center gap-2 animate-in fade-in-0 slide-in-from-left-3 duration-300">
+              <div className="flex items-center gap-0.5 animate-in fade-in-0 slide-in-from-left-3 duration-300">
                 <img 
                   src={funEmailMascot} 
                   alt="FunnEmail Mascot" 
-                  className="h-16 w-auto"
+                  className="h-40 w-auto"
                 />
                 <img 
                   src={funEmailLogo} 

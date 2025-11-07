@@ -221,9 +221,11 @@ const CRMLayout = ({ children }) => {
               <Home className="h-6 w-6 text-foreground" />
             ) : (
               <>
-                <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
-                  {getCurrentPageTitle()}
-                </h1>
+                {location.pathname !== '/funnemail' && (
+                  <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
+                    {getCurrentPageTitle()}
+                  </h1>
+                )}
                 
                 {/* FunEmail Tabs - visibili solo su /funnemail */}
                 {location.pathname === '/funnemail' && (

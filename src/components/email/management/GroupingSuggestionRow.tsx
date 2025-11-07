@@ -130,7 +130,7 @@ export const GroupingSuggestionRow = ({
     <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg hover:border-primary/30 transition-all">
       {/* Logo + Email + Badge */}
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-        <Avatar className="h-9 w-9 border border-border flex-shrink-0">
+        <Avatar className="h-14 w-14 border border-border flex-shrink-0">
           {logoData?.logo_url ? (
             <AvatarImage src={logoData.logo_url} alt={suggestion.sender_email} />
           ) : null}

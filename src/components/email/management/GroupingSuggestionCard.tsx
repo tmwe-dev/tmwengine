@@ -103,7 +103,7 @@ export const GroupingSuggestionCard = ({
     <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
       <div className="flex items-start gap-3 mb-4">
         {/* 🆕 Logo aziendale */}
-        <Avatar className="h-10 w-10 border border-border">
+        <Avatar className="h-14 w-14 border border-border">
           {logoData?.logo_url ? (
             <AvatarImage src={logoData.logo_url} alt={suggestion.sender_email} />
           ) : null}

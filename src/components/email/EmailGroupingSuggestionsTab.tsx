@@ -3,11 +3,11 @@
  * Estratto da EmailManagementTab per migliorare modularità
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Brain, RefreshCw, LayoutGrid, List } from 'lucide-react';
+import { Sparkles, Loader2, Brain, RefreshCw, LayoutGrid, List, Mail, FolderKanban } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { analyzeSenders } from '@/lib/email-sender-analyzer';
@@ -29,6 +29,34 @@ export function EmailGroupingSuggestionsTab() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   // 🤖 Sistema Raggruppamento Suggerito
   const [groupingSuggestions, setGroupingSuggestions] = useState<GroupingSuggestion[]>([]);
+  
+  // 🔤 Ordinamento suggerimenti
+  const [sortBy, setSortBy] = useState<'domain' | 'group'>('domain');
+  
+  // 🔄 Suggerimenti ordinati in base a sortBy
+  const sortedSuggestions = useMemo(() => {
+    if (!groupingSuggestions || groupingSuggestions.length === 0) return [];
+    
+    const sorted = [...groupingSuggestions];
+    
+    if (sortBy === 'domain') {
+      // Ordina per dominio email (parte dopo @)
+      sorted.sort((a, b) => {
+        const domainA = a.sender_email.split('@')[1] || '';
+        const domainB = b.sender_email.split('@')[1] || '';
+        return domainA.localeCompare(domainB);
+      });
+    } else if (sortBy === 'group') {
+      // Ordina per nome gruppo primario (suggerimento con confidence più alta)
+      sorted.sort((a, b) => {
+        const groupA = a.suggested_groups[0]?.group_name || '';
+        const groupB = b.suggested_groups[0]?.group_name || '';
+        return groupA.localeCompare(groupB);
+      });
+    }
+    
+    return sorted;
+  }, [groupingSuggestions, sortBy]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
   const [aiConfigError, setAiConfigError] = useState<string | null>(null);
@@ -1017,43 +1045,76 @@ export function EmailGroupingSuggestionsTab() {
             </Button>
           </div>
           
-          {/* Toggle Vista Griglia/Elenco */}
+          {/* Toolbar: ViewMode + Ordinamento */}
           {groupingSuggestions.length > 0 && (
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-muted-foreground">
-                {groupingSuggestions.length} suggerimenti disponibili
-              </p>
-              <ToggleGroup 
-                type="single" 
-                value={viewMode} 
-                onValueChange={(val) => val && setViewMode(val as 'grid' | 'list')}
-                className="bg-muted/30 border border-border rounded-lg p-0.5"
-              >
-                <ToggleGroupItem 
-                  value="list" 
-                  aria-label="Vista Elenco"
-                  className="h-8 px-3 text-xs data-[state=on]:bg-background data-[state=on]:text-foreground"
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-3">
+                {/* Toggle Griglia/Elenco */}
+                <ToggleGroup 
+                  type="single" 
+                  value={viewMode} 
+                  onValueChange={(val) => val && setViewMode(val as 'grid' | 'list')}
+                  className="bg-muted/30 border border-border rounded-lg p-0.5"
                 >
-                  <List className="h-3.5 w-3.5 mr-1.5" />
-                  Elenco
-                </ToggleGroupItem>
-                <ToggleGroupItem 
-                  value="grid" 
-                  aria-label="Vista Griglia"
-                  className="h-8 px-3 text-xs data-[state=on]:bg-background data-[state=on]:text-foreground"
+                  <ToggleGroupItem 
+                    value="list" 
+                    aria-label="Vista Elenco"
+                    className="h-8 px-3 text-xs data-[state=on]:bg-background data-[state=on]:text-foreground"
+                  >
+                    <List className="h-3.5 w-3.5 mr-1.5" />
+                    Elenco
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="grid" 
+                    aria-label="Vista Griglia"
+                    className="h-8 px-3 text-xs data-[state=on]:bg-background data-[state=on]:text-foreground"
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
+                    Griglia
+                  </ToggleGroupItem>
+                </ToggleGroup>
+
+                {/* Separatore */}
+                <div className="h-6 w-px bg-border" />
+                
+                {/* Toggle Ordinamento */}
+                <ToggleGroup 
+                  type="single" 
+                  value={sortBy} 
+                  onValueChange={(val) => val && setSortBy(val as 'domain' | 'group')}
+                  className="bg-muted/30 border border-border rounded-lg p-0.5"
                 >
-                  <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
-                  Griglia
-                </ToggleGroupItem>
-              </ToggleGroup>
+                  <ToggleGroupItem 
+                    value="domain" 
+                    aria-label="Ordina per dominio"
+                    className="h-8 px-3 text-xs data-[state=on]:bg-background data-[state=on]:text-foreground"
+                  >
+                    <Mail className="h-3.5 w-3.5 mr-1.5" />
+                    Dominio
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="group" 
+                    aria-label="Ordina per gruppo"
+                    className="h-8 px-3 text-xs data-[state=on]:bg-background data-[state=on]:text-foreground"
+                  >
+                    <FolderKanban className="h-3.5 w-3.5 mr-1.5" />
+                    Gruppo
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+
+              {/* Badge contatore suggerimenti */}
+              <Badge variant="secondary" className="text-sm">
+                {sortedSuggestions.length} suggerimenti
+              </Badge>
             </div>
           )}
           
           {/* Suggerimenti - Vista Elenco o Griglia */}
-          {groupingSuggestions.length > 0 ? (
+          {sortedSuggestions.length > 0 ? (
             viewMode === 'list' ? (
               <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                {groupingSuggestions.map(suggestion => (
+                {sortedSuggestions.map(suggestion => (
                   <GroupingSuggestionRow
                     key={suggestion.id}
                     suggestion={suggestion}
@@ -1066,7 +1127,7 @@ export function EmailGroupingSuggestionsTab() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {groupingSuggestions.map(suggestion => (
+                {sortedSuggestions.map(suggestion => (
                   <GroupingSuggestionCard
                     key={suggestion.id}
                     suggestion={suggestion}

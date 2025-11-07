@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, CollisionDetection } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { RefreshCw, Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,6 +102,9 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   // 🎯 Progress Dialog per generazione suggerimenti
   const [suggestionProgress, setSuggestionProgress] = useState<SuggestionProgress | null>(null);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
+  
+  // 🔢 Filtro email minime per mittente
+  const [minimumEmailCount, setMinimumEmailCount] = useState<number>(2);
   
   const [carouselZoom, setCarouselZoom] = useState(() => {
     const saved = localStorage.getItem('email-carousel-zoom');
@@ -578,13 +582,24 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
 
       console.log(`📊 Mittenti già con suggerimento: ${alreadyProcessedEmails.size}`);
 
-      // STEP 3: Filtra mittenti non classificati E senza suggerimento esistente
+      // STEP 3: Filtra per non classificati + email count minimo
       const totalUnclassified = senders.filter(s => !s.isClassified);
-      const unclassifiedSenders = totalUnclassified.filter(s => !alreadyProcessedEmails.has(s.email));
+      const qualifiedSenders = totalUnclassified.filter(s => s.emailCount >= minimumEmailCount);
+      const unclassifiedSenders = qualifiedSenders.filter(s => !alreadyProcessedEmails.has(s.email));
 
       console.log(`📊 Mittenti totali non classificati: ${totalUnclassified.length}`);
+      console.log(`🔢 Mittenti con almeno ${minimumEmailCount} email: ${qualifiedSenders.length}`);
       console.log(`✅ Mittenti già elaborati (skip): ${alreadyProcessedEmails.size}`);
       console.log(`🆕 Mittenti nuovi da elaborare: ${unclassifiedSenders.length}`);
+      
+      // Gestione caso "Nessun mittente qualificato"
+      if (qualifiedSenders.length === 0) {
+        toast({
+          title: '⚠️ Nessun mittente ripetitivo trovato',
+          description: `Tutti i mittenti non classificati hanno meno di ${minimumEmailCount} email. Prova ad abbassare il limite minimo.`,
+        });
+        return;
+      }
       
       if (unclassifiedSenders.length === 0) {
         if (alreadyProcessedEmails.size > 0) {
@@ -622,12 +637,17 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           {
             timestamp: new Date().toISOString(),
             type: 'info',
+            message: `🔢 Filtrati ${qualifiedSenders.length} mittenti con almeno ${minimumEmailCount} email`
+          },
+          {
+            timestamp: new Date().toISOString(),
+            type: 'info',
             message: `✅ ${alreadyProcessedEmails.size} mittenti già con suggerimento AI (skip)`
           },
           {
             timestamp: new Date().toISOString(),
             type: 'info',
-            message: `🚀 Avvio analisi di ${unclassifiedSenders.length} NUOVI mittenti`
+            message: `🚀 Avvio analisi di ${unclassifiedSenders.length} NUOVI mittenti ripetitivi`
           }
         ]
       });
@@ -945,9 +965,28 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           </CardHeader>
           
           <CardContent className="space-y-4 bg-transparent">
+            {/* 🆕 Filtro Email Minimo */}
+            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+              <label className="text-sm font-medium whitespace-nowrap">
+                Min. email per mittente:
+              </label>
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                value={minimumEmailCount}
+                onChange={(e) => setMinimumEmailCount(Number(e.target.value))}
+                className="w-20"
+                disabled={isGeneratingSuggestions}
+              />
+              <span className="text-xs text-muted-foreground">
+                (Ignora mittenti con meno di {minimumEmailCount} email)
+              </span>
+            </div>
+
             <Button 
               onClick={handleGenerateSuggestions}
-              disabled={isGeneratingSuggestions || senders.filter(s => !s.isClassified).length === 0}
+              disabled={isGeneratingSuggestions || senders.filter(s => !s.isClassified && s.emailCount >= minimumEmailCount).length === 0}
               className="w-full"
               size="lg"
             >
@@ -959,7 +998,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 mr-2" />
-                  🤖 Suggerisci Raggruppamenti ({senders.filter(s => !s.isClassified).length} mittenti)
+                  🤖 Suggerisci Raggruppamenti ({senders.filter(s => !s.isClassified && s.emailCount >= minimumEmailCount).length} mittenti)
                 </>
               )}
             </Button>

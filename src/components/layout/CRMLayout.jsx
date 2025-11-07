@@ -15,7 +15,7 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 import { TokenKeyIndicator } from '@/components/ui/token-key-indicator';
 import { useNavigationGroups } from '@/hooks/useNavigationGroups';
 import findairLogo from '@/assets/findair-logo-header.png';
-import funEmailMascot from '@/assets/funemail-mascot.png';
+import funEmailLogo from '@/assets/funnemail-logo.png';
 import {
   Users, 
   Calendar, 
@@ -198,12 +198,12 @@ const CRMLayout = ({ children }) => {
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
-          {/* FunEmail Mascot Logo - visible only on /funnemail */}
+          {/* FunEmail Logo - visible only on /funnemail */}
           {location.pathname === '/funnemail' && (
             <img 
-              src={funEmailMascot} 
-              alt="FunEmail Mascot" 
-              className="h-32 w-auto animate-in fade-in-0 slide-in-from-left-3 duration-300"
+              src={funEmailLogo} 
+              alt="FunnEmail" 
+              className="h-16 w-auto animate-in fade-in-0 slide-in-from-left-3 duration-300"
             />
           )}
 

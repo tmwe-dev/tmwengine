@@ -12,12 +12,25 @@ interface RequestBody {
   user_email: string;
 }
 
+interface SenderPatterns {
+  domain_patterns: string[];
+  business_type: string;
+  communication_style: string;
+  frequency: string;
+  common_indicators: string[];
+}
+
+interface ContextResponse {
+  context_summary: string;
+  sender_patterns: SenderPatterns;
+  data_sufficiency: number;
+  pattern_clarity: number;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-
-  const startTime = Date.now();
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -29,16 +42,17 @@ serve(async (req) => {
 
     if (!body.group_id || !body.user_email) {
       return new Response(
-        JSON.stringify({ error: 'Missing group_id or user_email' }),
+        JSON.stringify({ error: 'Missing required fields: group_id, user_email' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 1. Fetch group info
+    // 1. Get group info
     const { data: group, error: groupError } = await supabase
       .from('email_sender_groups')
-      .select('*')
+      .select('id, nome_gruppo, descrizione, tipo')
       .eq('id', body.group_id)
+      .eq('user_email', body.user_email)
       .single();
 
     if (groupError || !group) {
@@ -49,224 +63,192 @@ serve(async (req) => {
       );
     }
 
-    // 2. Fetch senders assigned to this group
-    const { data: { user } } = await supabase.auth.admin.getUserById(
-      (await supabase.from('user_profiles').select('user_id').eq('tmwe_email', body.user_email).single()).data?.user_id
-    );
+    console.log(`📊 Group: ${group.nome_gruppo} (${group.tipo})`);
 
-    const { data: rules, error: rulesError } = await supabase
+    // 2. Get senders assigned to this group
+    const { data: senderRules, error: rulesError } = await supabase
       .from('email_sender_rules')
       .select('sender_email')
       .eq('group_id', body.group_id)
-      .eq('user_id', user?.id || body.user_email);
+      .eq('user_email', body.user_email);
 
-    if (rulesError) {
-      console.error('❌ Rules fetch error:', rulesError);
+    if (rulesError || !senderRules || senderRules.length === 0) {
+      console.error('❌ No senders found for this group:', rulesError);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch group senders' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'No senders assigned to this group yet' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const senderEmails = rules?.map(r => r.sender_email) || [];
-    const senderCount = senderEmails.length;
+    const senderEmails = senderRules.map(r => r.sender_email);
+    console.log(`👥 Found ${senderEmails.length} senders in group`);
 
-    // Filter: only groups with 3+ senders
-    if (senderCount < 3) {
-      console.log(`⏭️ Skip group "${group.nome_gruppo}": only ${senderCount} senders (minimum 3)`);
+    if (senderEmails.length < 3) {
+      console.warn('⚠️ Too few senders for reliable pattern analysis');
       return new Response(
         JSON.stringify({ 
-          success: false,
-          error: 'Group has less than 3 senders',
-          sender_count: senderCount,
-          minimum_required: 3
+          error: 'Need at least 3 senders for reliable pattern analysis',
+          current_count: senderEmails.length 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`📧 Group "${group.nome_gruppo}": ${senderCount} senders`);
+    // 3. Get email samples for each sender (3-5 per sender)
+    const { data: emailSamples, error: samplesError } = await supabase
+      .from('email_messages')
+      .select('from_email, oggetto, data_ricezione, cartella')
+      .in('from_email', senderEmails)
+      .eq('user_email', body.user_email)
+      .order('data_ricezione', { ascending: false })
+      .limit(senderEmails.length * 5); // Max 5 samples per sender
 
-    // 3. Sample emails (random sampling, max 10 senders × 5 emails each)
-    const maxSenders = Math.min(senderCount, 10);
-    const sampledSenders = senderEmails.slice(0, maxSenders);
-    
-    let allEmailSamples: any[] = [];
-    let totalSampleCount = 0;
+    if (samplesError || !emailSamples || emailSamples.length === 0) {
+      console.error('❌ No email samples found:', samplesError);
+      return new Response(
+        JSON.stringify({ error: 'No email samples found for analysis' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    for (const senderEmail of sampledSenders) {
-      const { data: emails } = await supabase
-        .from('email_messages')
-        .select('subject, body_text, data_ricezione')
-        .eq('user_email', body.user_email)
-        .eq('from_email', senderEmail)
-        .not('subject', 'is', null)
-        .order('RANDOM()')
-        .limit(5);
+    console.log(`📧 Analyzing ${emailSamples.length} email samples`);
 
-      if (emails && emails.length > 0) {
-        allEmailSamples.push(...emails.map(e => ({
-          sender: senderEmail,
-          subject: e.subject,
-          body_preview: e.body_text?.substring(0, 150) || '',
-          date: e.data_ricezione
-        })));
-        totalSampleCount += emails.length;
+    // 4. Group samples by sender and extract domains
+    const senderData = new Map<string, any>();
+    emailSamples.forEach(email => {
+      if (!senderData.has(email.from_email)) {
+        const domain = email.from_email.split('@')[1] || 'unknown';
+        senderData.set(email.from_email, {
+          email: email.from_email,
+          domain: domain,
+          samples: [],
+          emailCount: 0
+        });
       }
-    }
+      const sender = senderData.get(email.from_email);
+      sender.samples.push({
+        subject: email.oggetto,
+        date: email.data_ricezione,
+        folder: email.cartella
+      });
+      sender.emailCount++;
+    });
 
-    if (allEmailSamples.length === 0) {
-      console.log(`⚠️ No email samples found for group "${group.nome_gruppo}"`);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'No email samples available',
-          sender_count: senderCount
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Extract unique domains
+    const uniqueDomains = Array.from(new Set(Array.from(senderData.values()).map(s => s.domain)));
 
-    console.log(`📬 Sampled ${allEmailSamples.length} emails from ${sampledSenders.length} senders`);
-
-    // 4. Fetch company context (if available)
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('company_context_ai')
-      .eq('tmwe_email', body.user_email)
-      .single();
-
-    const companyContext = profile?.company_context_ai || '';
-    if (!companyContext) {
-      console.log('⚠️ No company_context_ai found, proceeding without');
-    }
-
-    // 5. Build AI prompt
-    const systemPrompt = `Sei un assistente AI specializzato nell'analisi di gruppi di mittenti email aziendali.
-
-Il tuo compito è generare un CONTEXT SUMMARY (150-300 caratteri) e SENDER PATTERNS per un gruppo email esistente.
-
-ESEMPIO OUTPUT ATTESO:
-context_summary: "Gruppo fornitori IT (Microsoft, Adobe). Comunicazioni su rinnovi licenze, fatture software, support tecnico. Tone formale, urgenza media."
-
-sender_patterns: {
-  common_subjects: ["Fattura", "Rinnovo licenza", "Support ticket"],
-  typical_senders: ["billing@microsoft.com", "support@adobe.com"],
-  key_phrases: ["scadenza", "pagamento", "contratto"],
-  business_type: "IT Software Vendors",
-  communication_style: "formal",
-  urgency_level: "medium"
-}
-
-QUALITY INDICATORS:
-- data_sufficiency: 0-1 (hai abbastanza dati per analisi affidabile?)
-- pattern_clarity: 0-1 (i pattern sono chiari e distintivi?)
-
-${companyContext ? `CONTEXT AZIENDALE:\n${companyContext}\n` : ''}
-
-Rispondi SOLO con JSON valido usando la funzione generate_context.`;
-
-    const userPrompt = `Analizza questo gruppo e genera context summary + patterns:
-
-GRUPPO: ${group.nome_gruppo}
-DESCRIZIONE: ${group.descrizione || 'Nessuna descrizione'}
-TIPO: ${group.tipo || 'custom'}
-
-MITTENTI NEL GRUPPO (${senderCount} totali, campionati ${sampledSenders.length}):
-${sampledSenders.slice(0, 10).join(', ')}
-
-CAMPIONI EMAIL (${allEmailSamples.length} totali):
-${allEmailSamples.slice(0, 15).map((e, i) => 
-  `${i + 1}. [${e.sender}] "${e.subject}" - ${e.body_preview}`
-).join('\n')}
-
-Genera context summary conciso (150-300 caratteri) e sender patterns dettagliati.`;
-
-    // 6. Get AI config (fallback system)
-    const { data: aiConfigs } = await supabase
+    // 5. Get AI config (fallback system)
+    const { data: aiConfigs, error: configError } = await supabase
       .from('config_ai')
       .select('*')
       .eq('attivo', true)
       .order('created_at', { ascending: false });
 
-    if (!aiConfigs || aiConfigs.length === 0) {
-      console.error('❌ No active AI configs');
+    if (configError || !aiConfigs || aiConfigs.length === 0) {
+      console.error('❌ No active AI configs:', configError);
       return new Response(
-        JSON.stringify({ error: 'No active AI configuration' }),
+        JSON.stringify({ error: 'No active AI configuration found' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`🔄 Found ${aiConfigs.length} AI configs`);
+    console.log(`🔄 Found ${aiConfigs.length} active AI configs`);
 
-    // 7. AI request with tool calling
+    // 6. Build AI prompt
+    const systemPrompt = `Sei un esperto di pattern analysis per email aziendali.
+
+Analizza questi ${senderEmails.length} mittenti assegnati al gruppo "${group.nome_gruppo}" e genera:
+
+1. CONTEXT SUMMARY (150-300 caratteri): Descrizione pattern comune dei mittenti
+   Esempio: "Mittenti clienti B2B del settore logistics, domini aziendali strutturati, comunicazioni formali con frequenza media 2-5 email/settimana"
+
+2. SENDER PATTERNS (JSON strutturato):
+   {
+     "domain_patterns": ["@cliente1.com", "@cliente2.it", "*.logistics"],
+     "business_type": "customers|suppliers|authorities|partners|internal|mixed",
+     "communication_style": "formal|informal|automated|mixed",
+     "frequency": "low|medium|high",
+     "common_indicators": ["indicatori pattern comuni"]
+   }
+
+3. QUALITY METRICS (0-1):
+   - data_sufficiency: Quanti dati hai per l'analisi?
+   - pattern_clarity: Quanto sono chiari i pattern comuni?
+
+MITTENTI ANALIZZATI:
+${Array.from(senderData.values()).map(s => 
+  `- ${s.email} (${s.emailCount} email, domain: ${s.domain})`
+).join('\n')}
+
+DOMINI UNICI: ${uniqueDomains.join(', ')}
+
+CAMPIONI EMAIL (primi 20):
+${Array.from(senderData.values()).slice(0, 10).flatMap(s => 
+  s.samples.slice(0, 2).map((sample: any) => 
+    `From: ${s.email}\nSubject: ${sample.subject}\nDate: ${new Date(sample.date).toLocaleDateString('it-IT')}`
+  )
+).slice(0, 20).join('\n---\n')}
+
+Rispondi SOLO con JSON usando la funzione generate_context.`;
+
     const requestBody: any = {
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { 
+          role: 'user', 
+          content: `Genera context_summary e sender_patterns per il gruppo "${group.nome_gruppo}" analizzando i ${senderEmails.length} mittenti forniti.` 
+        }
       ],
       tools: [
         {
           type: 'function',
           function: {
             name: 'generate_context',
-            description: 'Generate context summary and sender patterns for email group',
+            description: 'Generate knowledge base context for email sender group',
             parameters: {
               type: 'object',
               properties: {
                 context_summary: {
                   type: 'string',
+                  description: 'Descrizione pattern comuni (150-300 caratteri)',
                   minLength: 150,
-                  maxLength: 300,
-                  description: 'Concise summary of the group (150-300 chars)'
+                  maxLength: 300
                 },
                 sender_patterns: {
                   type: 'object',
                   properties: {
-                    common_subjects: { 
-                      type: 'array', 
-                      items: { type: 'string' },
-                      description: 'Most common email subjects'
+                    domain_patterns: {
+                      type: 'array',
+                      items: { type: 'string' }
                     },
-                    typical_senders: { 
-                      type: 'array', 
-                      items: { type: 'string' },
-                      description: 'Representative sender emails'
-                    },
-                    key_phrases: { 
-                      type: 'array', 
-                      items: { type: 'string' },
-                      description: 'Important keywords/phrases'
-                    },
-                    business_type: { 
+                    business_type: {
                       type: 'string',
-                      description: 'Type of business/organization'
+                      enum: ['customers', 'suppliers', 'authorities', 'partners', 'internal', 'mixed']
                     },
-                    communication_style: { 
+                    communication_style: {
                       type: 'string',
-                      enum: ['formal', 'casual', 'mixed'],
-                      description: 'Communication tone'
+                      enum: ['formal', 'informal', 'automated', 'mixed']
                     },
-                    urgency_level: { 
+                    frequency: {
                       type: 'string',
-                      enum: ['low', 'medium', 'high', 'critical'],
-                      description: 'Typical urgency level'
+                      enum: ['low', 'medium', 'high']
+                    },
+                    common_indicators: {
+                      type: 'array',
+                      items: { type: 'string' }
                     }
                   },
-                  required: ['common_subjects', 'key_phrases', 'business_type', 'communication_style', 'urgency_level'],
-                  additionalProperties: false
+                  required: ['domain_patterns', 'business_type', 'communication_style', 'frequency', 'common_indicators']
                 },
                 data_sufficiency: {
                   type: 'number',
                   minimum: 0,
-                  maximum: 1,
-                  description: 'Quality indicator: sufficient data for analysis?'
+                  maximum: 1
                 },
                 pattern_clarity: {
                   type: 'number',
                   minimum: 0,
-                  maximum: 1,
-                  description: 'Quality indicator: patterns are clear and distinctive?'
+                  maximum: 1
                 }
               },
               required: ['context_summary', 'sender_patterns', 'data_sufficiency', 'pattern_clarity'],
@@ -278,7 +260,7 @@ Genera context summary conciso (150-300 caratteri) e sender patterns dettagliati
       tool_choice: { type: 'function', function: { name: 'generate_context' } }
     };
 
-    // Fallback system
+    // 7. Try each AI config until one works
     let aiResponse: any;
     let successfulConfig: any = null;
     let lastError = '';
@@ -287,14 +269,8 @@ Genera context summary conciso (150-300 caratteri) e sender patterns dettagliati
       try {
         console.log(`🔄 Trying ${aiConfig.provider}/${aiConfig.modello}...`);
 
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout 30s')), 30000)
-        );
-
-        let aiPromise: Promise<Response>;
-
         if (aiConfig.provider === 'anthropic') {
-          aiPromise = fetch('https://api.anthropic.com/v1/messages', {
+          aiResponse = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -308,7 +284,7 @@ Genera context summary conciso (150-300 caratteri) e sender patterns dettagliati
             })
           });
         } else if (aiConfig.provider === 'openai') {
-          aiPromise = fetch('https://api.openai.com/v1/chat/completions', {
+          aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -322,27 +298,25 @@ Genera context summary conciso (150-300 caratteri) e sender patterns dettagliati
         } else if (aiConfig.provider === 'lovable') {
           const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
           if (!lovableApiKey) {
-            console.log(`⏭️ Skip lovable: LOVABLE_API_KEY not configured`);
+            console.log(`⏭️ Skipping lovable: LOVABLE_API_KEY not configured`);
             continue;
           }
-
-          aiPromise = fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          
+          aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${lovableApiKey}`
             },
             body: JSON.stringify({
-              model: aiConfig.modello || 'google/gemini-2.5-flash',
+              model: aiConfig.modello,
               ...requestBody
             })
           });
         } else {
-          console.log(`⏭️ Skip unsupported provider: ${aiConfig.provider}`);
+          console.log(`⏭️ Skipping unsupported provider: ${aiConfig.provider}`);
           continue;
         }
-
-        aiResponse = await Promise.race([aiPromise, timeoutPromise]) as Response;
 
         if (aiResponse.ok) {
           successfulConfig = aiConfig;
@@ -362,9 +336,12 @@ Genera context summary conciso (150-300 caratteri) e sender patterns dettagliati
     }
 
     if (!successfulConfig || !aiResponse?.ok) {
-      console.error('❌ All AI configs failed');
+      console.error('❌ All AI configs failed. Last error:', lastError);
       return new Response(
-        JSON.stringify({ error: 'All AI providers failed', details: lastError }),
+        JSON.stringify({ 
+          error: 'All AI providers failed', 
+          details: lastError 
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -372,55 +349,52 @@ Genera context summary conciso (150-300 caratteri) e sender patterns dettagliati
     const aiData = await aiResponse.json();
     console.log('🤖 AI Response received');
 
-    // Extract context from tool call
-    let contextData: any;
+    // 8. Extract context from tool call
+    let contextResult: ContextResponse | null = null;
+
     if (successfulConfig.provider === 'anthropic') {
       const toolUse = aiData.content?.find((c: any) => c.type === 'tool_use');
-      contextData = toolUse?.input;
+      if (toolUse?.input) {
+        contextResult = toolUse.input;
+      }
     } else if (successfulConfig.provider === 'openai' || successfulConfig.provider === 'lovable') {
       const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
       if (toolCall?.function?.arguments) {
-        contextData = JSON.parse(toolCall.function.arguments);
+        contextResult = JSON.parse(toolCall.function.arguments);
       }
     }
 
-    if (!contextData?.context_summary || !contextData?.sender_patterns) {
-      console.error('❌ Invalid AI response structure');
+    if (!contextResult) {
+      console.error('❌ No context extracted from AI response');
       return new Response(
         JSON.stringify({ error: 'AI did not provide valid context' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Calculate quality score
-    const qualityScore = (
-      (contextData.data_sufficiency || 0) * 0.6 +
-      (contextData.pattern_clarity || 0) * 0.4
-    );
+    console.log('✅ Context extracted:', {
+      summary_length: contextResult.context_summary.length,
+      business_type: contextResult.sender_patterns.business_type,
+      data_sufficiency: contextResult.data_sufficiency,
+      pattern_clarity: contextResult.pattern_clarity
+    });
 
-    console.log(`📊 Quality Score: ${qualityScore.toFixed(2)} (data: ${contextData.data_sufficiency}, clarity: ${contextData.pattern_clarity})`);
+    // 9. Calculate quality score
+    const qualityScore = (contextResult.data_sufficiency + contextResult.pattern_clarity) / 2;
 
-    // Validation: quality_score > 0.6
-    if (qualityScore < 0.6) {
-      console.warn(`⚠️ Low quality score ${qualityScore.toFixed(2)} for group "${group.nome_gruppo}"`);
-    }
-
-    // 8. Save to database
+    // 10. Save to database (UPSERT)
     const { data: savedContext, error: saveError } = await supabase
       .from('email_sender_groups_context')
       .upsert({
         group_id: body.group_id,
         user_email: body.user_email,
-        context_summary: contextData.context_summary,
-        sender_patterns: contextData.sender_patterns,
+        context_summary: contextResult.context_summary,
+        sender_patterns: contextResult.sender_patterns,
         quality_score: qualityScore,
-        data_sufficiency: contextData.data_sufficiency,
-        pattern_clarity: contextData.pattern_clarity,
-        sender_count: senderCount,
-        sample_count: allEmailSamples.length,
-        model_used: `${successfulConfig.provider}/${successfulConfig.modello}`,
+        sender_count: senderEmails.length,
+        sample_count: emailSamples.length,
         generated_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        needs_refresh: false
       }, {
         onConflict: 'group_id,user_email'
       })
@@ -435,18 +409,18 @@ Genera context summary conciso (150-300 caratteri) e sender patterns dettagliati
       );
     }
 
-    const duration = Date.now() - startTime;
-    console.log(`✅ Context saved in ${duration}ms`);
+    console.log('✅ Context saved to database');
 
     return new Response(
       JSON.stringify({
         success: true,
+        group_name: group.nome_gruppo,
         context_id: savedContext.id,
-        context_summary: contextData.context_summary,
+        context_summary: contextResult.context_summary,
+        sender_patterns: contextResult.sender_patterns,
         quality_score: qualityScore,
-        sample_count: allEmailSamples.length,
-        sender_count: senderCount,
-        duration_ms: duration
+        sender_count: senderEmails.length,
+        sample_count: emailSamples.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

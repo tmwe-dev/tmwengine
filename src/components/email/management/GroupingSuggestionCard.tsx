@@ -1,13 +1,21 @@
 /**
  * Card per visualizzare suggerimenti AI di raggruppamento mittenti
+ * Con logo aziendale, bandiera paese, badge cliente/WCA
  */
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Check, X, Sparkles, TrendingUp } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Mail, Check, X, Sparkles, TrendingUp, Building2, Star, Users } from 'lucide-react';
 import type { GroupingSuggestion } from '@/types/email-management';
 import { cn } from '@/lib/utils';
+import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
+import { extractInitials } from '@/lib/smart-inbox-utils';
+import { detectCountryFromEmail, getCountryFlag } from '@/lib/email-utils';
+import { isWCAPartner } from '@/data/wca-partners';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface GroupingSuggestionCardProps {
   suggestion: GroupingSuggestion;
@@ -22,17 +30,85 @@ export const GroupingSuggestionCard = ({
   onDismiss,
   disabled = false,
 }: GroupingSuggestionCardProps) => {
+  // 🆕 Hook per logo aziendale
+  const { data: logoData } = useCompanyLogo(suggestion.sender_email);
+  
+  // 🆕 Rilevamento paese da email
+  const countryCode = detectCountryFromEmail(suggestion.sender_email);
+  const countryFlag = getCountryFlag(countryCode);
+  
+  // 🆕 Check WCA Partner
+  const isWCA = isWCAPartner(suggestion.sender_email);
+  
+  // 🆕 Query rubrica per badge Cliente/WCA/Partner
+  const { data: rubricaContact } = useQuery({
+    queryKey: ['rubrica-contact', suggestion.sender_email],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('rubrica')
+        .select('id, nome, azienda, origine, meta_client, meta_wca')
+        .ilike('email', suggestion.sender_email)
+        .maybeSingle();
+      
+      return data;
+    },
+    staleTime: 1000 * 60 * 5, // Cache 5 min
+  });
+  
+  const initials = extractInitials(suggestion.sender_email);
+  
   return (
     <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
       <div className="flex items-start gap-3 mb-4">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <Sparkles className="w-5 h-5 text-primary" />
-        </div>
+        {/* 🆕 Logo aziendale */}
+        <Avatar className="h-10 w-10 border border-border">
+          {logoData?.logo_url ? (
+            <AvatarImage src={logoData.logo_url} alt={suggestion.sender_email} />
+          ) : null}
+          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm flex items-center gap-2 mb-1">
-            <Mail className="w-4 h-4" />
-            <span className="truncate">{suggestion.sender_email}</span>
-          </h4>
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h4 className="font-medium text-sm flex items-center gap-1.5 truncate">
+              <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="truncate">{suggestion.sender_email}</span>
+            </h4>
+            
+            {/* 🆕 Bandiera paese */}
+            {countryFlag && (
+              <span className="text-base flex-shrink-0" title={countryCode || undefined}>
+                {countryFlag}
+              </span>
+            )}
+          </div>
+          
+          {/* 🆕 Badges contestuali */}
+          <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+            {rubricaContact?.meta_client && (
+              <Badge variant="secondary" className="text-xs bg-success/10 text-success border-success/20">
+                <Building2 className="w-3 h-3 mr-1" />
+                Cliente
+              </Badge>
+            )}
+            
+            {rubricaContact && rubricaContact.origine && !rubricaContact.meta_client && (
+              <Badge variant="secondary" className="text-xs bg-info/10 text-info border-info/20">
+                <Users className="w-3 h-3 mr-1" />
+                {rubricaContact.origine}
+              </Badge>
+            )}
+            
+            {(rubricaContact?.meta_wca || isWCA) && (
+              <Badge variant="secondary" className="text-xs bg-warning/10 text-warning border-warning/20">
+                <Star className="w-3 h-3 mr-1" />
+                WCA Partner
+              </Badge>
+            )}
+          </div>
+          
           <p className="text-xs text-muted-foreground">
             Analizzato {new Date(suggestion.analyzed_at).toLocaleString('it-IT', {
               day: '2-digit',

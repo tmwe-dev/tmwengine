@@ -105,9 +105,10 @@ const BrainOrchestrator = () => {
     });
 
     if (error) {
+      console.error('Brain Orchestrator Error:', error);
       toast({
         title: 'Errore',
-        description: error.message,
+        description: error.message || 'Errore sconosciuto durante l\'invocazione',
         variant: 'destructive'
       });
       return;

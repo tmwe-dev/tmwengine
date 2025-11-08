@@ -14,7 +14,21 @@ serve(async (req) => {
   try {
     const { conversation_id, user_message, technical_context, selected_agent = 'gemini' } = await req.json();
 
+    // Get user authentication from request header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) throw new Error('Missing authorization header');
+
     const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) throw new Error('Unauthorized');
+
+    // Create admin client for database operations
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
@@ -83,7 +97,7 @@ Rispondi in modo conciso e tecnico con suggerimenti concreti.
       const data = await response.json();
       aiResponse = data.choices[0].message.content;
     } else if (selected_agent === 'claude') {
-      const { data: config } = await supabaseClient
+      const { data: config } = await supabaseAdmin
         .from('config_ai')
         .select('api_key')
         .eq('provider', 'anthropic')
@@ -124,7 +138,7 @@ Rispondi in modo conciso e tecnico con suggerimenti concreti.
       );
     }
 
-    await supabaseClient.from('chat_laboratory_messages').insert({
+    await supabaseAdmin.from('chat_laboratory_messages').insert({
       conversation_id,
       sender_type: selected_agent,
       sender_name: selected_agent === 'gemini' ? 'Pitagora' : selected_agent === 'chatgpt' ? 'Albert' : 'Archimede',

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Square, Pause, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TestMethodCardProps {
@@ -9,10 +9,14 @@ interface TestMethodCardProps {
   icon: string;
   description: string;
   onTest: () => void;
+  onStop?: () => void;
+  onPause?: () => void;
+  onResume?: () => void;
   isRunning: boolean;
   disabled?: boolean;
   logs?: string[];
   status?: 'idle' | 'running' | 'success' | 'error';
+  isPaused?: boolean;
 }
 
 export function TestMethodCard({
@@ -20,10 +24,14 @@ export function TestMethodCard({
   icon,
   description,
   onTest,
+  onStop,
+  onPause,
+  onResume,
   isRunning,
   disabled = false,
   logs = [],
-  status = 'idle'
+  status = 'idle',
+  isPaused = false
 }: TestMethodCardProps) {
   const getStatusColor = () => {
     switch (status) {
@@ -51,22 +59,60 @@ export function TestMethodCard({
           </div>
         </div>
         
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onTest}
-          disabled={isRunning || disabled}
-          className="shrink-0"
-        >
-          {isRunning ? (
+        <div className="flex items-center gap-2 shrink-0">
+          {isRunning && (
             <>
-              <Loader2 className="h-3 w-3 animate-spin mr-1" />
-              Running
+              {onPause && onResume && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={isPaused ? onResume : onPause}
+                  className="shrink-0"
+                >
+                  {isPaused ? (
+                    <>
+                      <Play className="h-3 w-3 mr-1" />
+                      Resume
+                    </>
+                  ) : (
+                    <>
+                      <Pause className="h-3 w-3 mr-1" />
+                      Pause
+                    </>
+                  )}
+                </Button>
+              )}
+              {onStop && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={onStop}
+                  className="shrink-0"
+                >
+                  <Square className="h-3 w-3 mr-1" />
+                  Stop
+                </Button>
+              )}
             </>
-          ) : (
-            '▶ Test'
           )}
-        </Button>
+          
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onTest}
+            disabled={isRunning || disabled}
+            className="shrink-0"
+          >
+            {isRunning ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                Running
+              </>
+            ) : (
+              '▶ Test'
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Logs area */}

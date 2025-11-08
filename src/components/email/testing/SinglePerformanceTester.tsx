@@ -24,7 +24,9 @@ export function SinglePerformanceTester({
     emailProgress,
     activeProfile,
     startSingleFastPerformance,
-    stopProcess
+    stopProcess,
+    pauseProcess,
+    resumeProcess
   } = useSingleFastPerformance();
 
   const startTimeRef = useRef<number>(0);
@@ -59,6 +61,9 @@ export function SinglePerformanceTester({
       icon="🚀"
       description={`PARALLEL - ${activeProfile?.optimization_flags?.batchChunkSize || 10} concurrent`}
       onTest={handleTest}
+      onStop={stopProcess}
+      onPause={pauseProcess}
+      onResume={resumeProcess}
       isRunning={isRunning}
       disabled={!userEmail}
       logs={logsString}

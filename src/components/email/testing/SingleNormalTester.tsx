@@ -23,7 +23,9 @@ export function SingleNormalTester({
     logs: hookLogs,
     emailProgress,
     startSingleFast,
-    stopProcess
+    stopProcess,
+    pauseProcess,
+    resumeProcess
   } = useSingleFast();
 
   const startTimeRef = useRef<number>(0);
@@ -60,6 +62,9 @@ export function SingleNormalTester({
       icon="🔄"
       description="DUAL Logic - 800ms throttle, sequential"
       onTest={handleTest}
+      onStop={stopProcess}
+      onPause={pauseProcess}
+      onResume={resumeProcess}
       isRunning={isRunning}
       disabled={!userEmail}
       logs={logsString}

@@ -418,8 +418,8 @@ export const QuickEmailDownloader = forwardRef<{ startDownload: (folders?: strin
             
             console.log(`📂 ${folder}: batch ${batchNum}/${totalBatches} - ${batchUids.length} UIDs caricati`);
             
-            // Piccola pausa tra batch per non sovraccaricare
-            await new Promise(resolve => setTimeout(resolve, 200));
+            // Pausa ottimizzata per evitare sovraccarico Edge Function
+            await new Promise(resolve => setTimeout(resolve, 1500));
             
           } catch (batchError) {
             console.error(`❌ Errore batch ${batchNum}:`, batchError);
@@ -482,7 +482,7 @@ export const QuickEmailDownloader = forwardRef<{ startDownload: (folders?: strin
         // ✅ STEP 4: Download incrementale con processing parallelo
         console.log(`📂 ${folder}: inizio download ${uidsToDownload.length} nuove email...`);
         
-        const DOWNLOAD_BATCH = (activeProfile?.optimization_flags as any)?.batchChunkSize || 10;
+        const DOWNLOAD_BATCH = (activeProfile?.optimization_flags as any)?.batchChunkSize || 3;
         
         for (let i = 0; i < uidsToDownload.length; i += DOWNLOAD_BATCH) {
           if (shouldStop.current) {
@@ -501,19 +501,22 @@ export const QuickEmailDownloader = forwardRef<{ startDownload: (folders?: strin
           const batchNum = Math.floor(i / DOWNLOAD_BATCH) + 1;
           const totalBatches = Math.ceil(uidsToDownload.length / DOWNLOAD_BATCH);
           
-          setCurrentFolder(`📂 ${folder}: batch ${batchNum}/${totalBatches} (${i + 1}-${Math.min(i + DOWNLOAD_BATCH, uidsToDownload.length)}/${uidsToDownload.length})`);
+          const progressInfo = `${i + batch.length}/${uidsToDownload.length}`;
+          setCurrentFolder(`📂 ${folder}: ${progressInfo} scaricate (${globalDownloaded} totali)`);
           
-          // Processing parallelo del batch
+          // Processing parallelo del batch con retry logic
           const batchPromises = batch.map(async (uidInfo) => {
             const uid = String(uidInfo.uid);
             const messageId = `${folder}/${uid}`;
             
-            try {
-              const email = await fetchWithTimeout(
-                emailMessageApi.getMessage(uid, folder, false),
-                30000,
-                `Timeout recupero email ${folder}/${uid}`
-              );
+            // Retry logic con exponential backoff
+            for (let attempt = 1; attempt <= 3; attempt++) {
+              try {
+                const email = await fetchWithTimeout(
+                  emailMessageApi.getMessage(uid, folder, false),
+                  30000,
+                  `Timeout recupero email ${folder}/${uid}`
+                );
               
               const emailData = email?.data;
               const header = emailData?.header;
@@ -558,18 +561,29 @@ export const QuickEmailDownloader = forwardRef<{ startDownload: (folders?: strin
                 sync_status: 'fun_email_backup',
               });
 
-              if (!insertError) {
-                console.log(`   ✅ ${folder}/${uid}: ${header.subject?.substring(0, 30)}`);
-                return { success: true };
-              } else {
-                console.error(`❌ Insert error ${folder}/${uid}:`, insertError);
-                return { success: false, error: insertError.message };
-              }
+                if (!insertError) {
+                  console.log(`   ✅ ${folder}/${uid}: ${header.subject?.substring(0, 30)}`);
+                  return { success: true };
+                } else {
+                  console.error(`❌ Insert error ${folder}/${uid}:`, insertError);
+                  return { success: false, error: insertError.message };
+                }
 
-            } catch (error: any) {
-              console.error(`❌ Fetch error ${folder}/${uid}:`, error?.message);
-              return { success: false, error: error?.message };
+              } catch (error: any) {
+                // Se è l'ultimo tentativo, fallisce
+                if (attempt === 3) {
+                  console.error(`❌ Fetch error ${folder}/${uid} dopo 3 tentativi:`, error?.message);
+                  return { success: false, error: error?.message };
+                }
+                
+                // Altrimenti aspetta con exponential backoff e riprova
+                const backoffMs = Math.pow(2, attempt) * 1000; // 2s, 4s
+                console.warn(`⚠️ Retry ${attempt}/3 per ${folder}/${uid} dopo ${backoffMs}ms...`);
+                await new Promise(resolve => setTimeout(resolve, backoffMs));
+              }
             }
+            
+            return { success: false, error: 'max_retries_reached' };
           });
           
           // Attende completamento batch

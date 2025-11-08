@@ -317,3 +317,6 @@ verify_jwt = true
 
 [functions.optimize-company-profile]
 verify_jwt = true
+
+[functions.brain-code-scanner]
+verify_jwt = true

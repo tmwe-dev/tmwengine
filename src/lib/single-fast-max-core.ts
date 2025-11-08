@@ -151,10 +151,10 @@ async function downloadEmail(
         data_invio: full_email.date || new Date().toISOString(),
         data_ricezione: new Date().toISOString(),
         cartella: folder,
-        stato: 'non_letto',
+        stato: 'nuovo',
         direzione: 'inbound',
         provider_id: '00000000-0000-0000-0000-000000000000',
-        attachments: full_email.attachments || null,
+        attachments: Array.isArray(full_email.attachments) ? full_email.attachments : [],
         cc_email: Array.isArray(full_email.cc) 
           ? full_email.cc.map(c => c.email).join(', ') 
           : null,

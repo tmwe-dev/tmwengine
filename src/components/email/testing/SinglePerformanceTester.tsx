@@ -2,9 +2,10 @@
  * Single Performance Tester - Wrapper per testare useSingleFastPerformance
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { TestMethodCard } from '@/components/testing/TestMethodCard';
 import type { TestResult } from '@/lib/email-testing-utils';
+import { useSingleFastPerformance } from '@/hooks/useSingleFastPerformance';
 
 interface SinglePerformanceTesterProps {
   userEmail: string;
@@ -17,61 +18,51 @@ export function SinglePerformanceTester({
   stressTestMode, 
   onUpdateResult 
 }: SinglePerformanceTesterProps) {
-  const [isRunning, setIsRunning] = useState(false);
-  const [logs, setLogs] = useState<string[]>([]);
+  const {
+    isRunning,
+    logs: hookLogs,
+    emailProgress,
+    activeProfile,
+    startSingleFastPerformance,
+    stopProcess
+  } = useSingleFastPerformance();
+
   const startTimeRef = useRef<number>(0);
 
-  const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+  const handleTest = async () => {
+    startTimeRef.current = Date.now();
+    onUpdateResult({ status: 'running', downloaded: 0, failed: 0, duration: 0 });
+    
+    await startSingleFastPerformance();
   };
 
-  const handleTest = async () => {
-    setIsRunning(true);
-    setLogs([]);
-    startTimeRef.current = Date.now();
-    
-    onUpdateResult({ status: 'running', downloaded: 0, failed: 0, duration: 0 });
-    addLog('🚀 Avvio Single Performance Test...');
-    addLog(`⚙️ Modalità: ${stressTestMode ? 'Stress (100 email)' : 'Normal (30 email)'}`);
-    addLog('📊 DUAL Logic + Parallel Batch Processing');
+  const logsString = hookLogs.map(l => 
+    `[${l.timestamp.toLocaleTimeString()}] ${l.message}`
+  );
 
-    try {
-      // Simulazione test - In produzione integrare useSingleFastPerformance
-      await new Promise(resolve => setTimeout(resolve, 2500));
-      
-      const mockDownloaded = stressTestMode ? 100 : 30;
-      const mockFailed = 0;
+  useEffect(() => {
+    if (emailProgress.imported > 0 || emailProgress.skipped > 0) {
       const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
-
-      addLog(`✅ Test completato: ${mockDownloaded} downloaded, ${mockFailed} failed`);
-      addLog(`⚡ Velocità media: ${(mockDownloaded / duration).toFixed(2)} email/s`);
       
       onUpdateResult({
-        status: 'success',
-        downloaded: mockDownloaded,
-        failed: mockFailed,
-        duration,
+        status: isRunning ? 'running' : 'success',
+        downloaded: emailProgress.imported,
+        failed: emailProgress.skipped,
+        duration
       });
-
-    } catch (error: any) {
-      addLog(`❌ Errore: ${error.message}`);
-      onUpdateResult({ status: 'error' });
-    } finally {
-      setIsRunning(false);
     }
-  };
+  }, [emailProgress, isRunning, onUpdateResult]);
 
   return (
     <TestMethodCard
       name="Single Performance"
       icon="🚀"
-      description="DUAL Logic + Parallel batches, optimized"
+      description={`PARALLEL - ${activeProfile?.optimization_flags?.batchChunkSize || 10} concurrent`}
       onTest={handleTest}
       isRunning={isRunning}
       disabled={!userEmail}
-      logs={logs}
-      status={isRunning ? 'running' : 'idle'}
+      logs={logsString}
+      status={isRunning ? 'running' : (emailProgress.imported > 0 ? 'success' : 'idle')}
     />
   );
 }

@@ -2,9 +2,10 @@
  * Single Normal Tester - Wrapper per testare useSingleFast
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { TestMethodCard } from '@/components/testing/TestMethodCard';
 import type { TestResult } from '@/lib/email-testing-utils';
+import { useSingleFast } from '@/hooks/useSingleFast';
 
 interface SingleNormalTesterProps {
   userEmail: string;
@@ -17,49 +18,41 @@ export function SingleNormalTester({
   stressTestMode, 
   onUpdateResult 
 }: SingleNormalTesterProps) {
-  const [isRunning, setIsRunning] = useState(false);
-  const [logs, setLogs] = useState<string[]>([]);
+  const {
+    isRunning,
+    logs: hookLogs,
+    emailProgress,
+    startSingleFast,
+    stopProcess
+  } = useSingleFast();
+
   const startTimeRef = useRef<number>(0);
 
-  const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+  const handleTest = async () => {
+    startTimeRef.current = Date.now();
+    onUpdateResult({ status: 'running', downloaded: 0, failed: 0, duration: 0 });
+    
+    await startSingleFast();
   };
 
-  const handleTest = async () => {
-    setIsRunning(true);
-    setLogs([]);
-    startTimeRef.current = Date.now();
-    
-    onUpdateResult({ status: 'running', downloaded: 0, failed: 0, duration: 0 });
-    addLog('🚀 Avvio Single Normal Test...');
-    addLog(`⚙️ Modalità: ${stressTestMode ? 'Stress (100 email)' : 'Normal (30 email)'}`);
-    addLog('📊 DUAL Logic + 800ms throttle');
+  // Converti logs hook in formato string[] per TestMethodCard
+  const logsString = hookLogs.map(l => 
+    `[${l.timestamp.toLocaleTimeString()}] ${l.message}`
+  );
 
-    try {
-      // Simulazione test - In produzione integrare useSingleFast
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      const mockDownloaded = stressTestMode ? 98 : 30;
-      const mockFailed = 0;
+  // Aggiorna stats in tempo reale
+  useEffect(() => {
+    if (emailProgress.imported > 0 || emailProgress.skipped > 0) {
       const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
-
-      addLog(`✅ Test completato: ${mockDownloaded} downloaded, ${mockFailed} failed`);
       
       onUpdateResult({
-        status: 'success',
-        downloaded: mockDownloaded,
-        failed: mockFailed,
-        duration,
+        status: isRunning ? 'running' : 'success',
+        downloaded: emailProgress.imported,
+        failed: emailProgress.skipped,
+        duration
       });
-
-    } catch (error: any) {
-      addLog(`❌ Errore: ${error.message}`);
-      onUpdateResult({ status: 'error' });
-    } finally {
-      setIsRunning(false);
     }
-  };
+  }, [emailProgress, isRunning, onUpdateResult]);
 
   return (
     <TestMethodCard
@@ -69,8 +62,8 @@ export function SingleNormalTester({
       onTest={handleTest}
       isRunning={isRunning}
       disabled={!userEmail}
-      logs={logs}
-      status={isRunning ? 'running' : 'idle'}
+      logs={logsString}
+      status={isRunning ? 'running' : (emailProgress.imported > 0 ? 'success' : 'idle')}
     />
   );
 }

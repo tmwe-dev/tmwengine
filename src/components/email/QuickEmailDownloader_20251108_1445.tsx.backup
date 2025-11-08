@@ -1,6 +1,9 @@
 /**
  * Quick Email Downloader - Background download system
  * Componente UI completamente isolato
+ * 
+ * BACKUP CREATED: 2025-11-08 14:45
+ * REASON: Adding ref + useImperativeHandle for testing integration
  */
 
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';

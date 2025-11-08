@@ -81,7 +81,7 @@ async function fetchMetadataForUIDs(
         folder,
         user_email,
         subject: email?.subject || null,
-        from_email: email?.from || 'Unknown',
+        from_email: email?.from?.email || 'Unknown',
         from_name: email?.from_name || null,
         date: email?.date || new Date().toISOString(),
         status: 'pending',
@@ -141,8 +141,10 @@ async function downloadEmail(
       .insert({
         message_id,
         user_email,
-        from_email: full_email.from || 'Unknown',
-        to_email: full_email.to || user_email,
+        from_email: full_email.from?.email || 'Unknown',
+        to_email: Array.isArray(full_email.to) 
+          ? full_email.to.map(t => t.email).join(', ') 
+          : (full_email.to?.email || user_email),
         subject: full_email.subject || '(No Subject)',
         body_text: full_email.body || '',
         body_html: full_email.body_html || null,
@@ -150,11 +152,15 @@ async function downloadEmail(
         data_ricezione: new Date().toISOString(),
         cartella: folder,
         stato: 'non_letto',
-        direzione: 'ricevuta',
-        provider_id: '00000000-0000-0000-0000-000000000000', // Default provider ID
+        direzione: 'inbound',
+        provider_id: '00000000-0000-0000-0000-000000000000',
         attachments: full_email.attachments || null,
-        cc_email: full_email.cc || null,
-        bcc_email: full_email.bcc || null,
+        cc_email: Array.isArray(full_email.cc) 
+          ? full_email.cc.map(c => c.email).join(', ') 
+          : null,
+        bcc_email: Array.isArray(full_email.bcc) 
+          ? full_email.bcc.map(b => b.email).join(', ') 
+          : null,
         in_reply_to: full_email.in_reply_to || null,
         email_references: full_email.references || null,
       });

@@ -61,6 +61,7 @@ import DesignLab from "./pages/DesignLab";
 import DesignLabDashboard from "./pages/DesignLabDashboard";
 import DesignLabScanner from "./pages/DesignLabScanner";
 import BrainFunctionTree from "./pages/BrainFunctionTree";
+import BrainDashboard from "./pages/BrainDashboard";
 import PromptSystemManager from "./pages/PromptSystemManager";
 import FunEmail from "./pages/FunEmail";
 import ApiFunctionsReference from "./pages/ApiFunctionsReference";
@@ -433,6 +434,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <EmailDebugTester />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/brain" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <BrainDashboard />
                 </CRMLayout>
               </ProtectedRoute>
             } />

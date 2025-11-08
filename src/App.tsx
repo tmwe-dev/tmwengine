@@ -66,6 +66,7 @@ import ApiFunctionsReference from "./pages/ApiFunctionsReference";
 import { SingleMailImporter } from "./components/email/SingleMailImporter";
 import SingleFast from "./pages/SingleFast";
 import DualDownload from "./pages/DualDownload";
+import EmailDebugTester from "./pages/EmailDebugTester";
 
 const queryClient = new QueryClient();
 
@@ -424,6 +425,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <ApiFunctionsReference />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/email-debug-tester" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <EmailDebugTester />
                 </CRMLayout>
               </ProtectedRoute>
             } />

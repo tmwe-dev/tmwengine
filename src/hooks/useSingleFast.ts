@@ -12,7 +12,7 @@ const TMWE_PROVIDER_ID = '00000000-0000-0000-0000-000000000000';
 
 export interface LogEntry {
   timestamp: Date;
-  phase: 'preparing' | 'importing' | 'completed' | 'error' | 'skip';
+  phase: 'preparing' | 'importing' | 'completed' | 'error' | 'skip' | 'init' | 'warning' | 'stopped' | 'stopping';
   folder?: string;
   message: string;
   count?: { current: number; total: number };

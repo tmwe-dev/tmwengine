@@ -14,14 +14,16 @@ import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSync
 import { PerformanceProfileConfigurator } from '@/components/testing/PerformanceProfileConfigurator';
 import { useSingleFast } from '@/hooks/useSingleFast';
 import { useSingleFastPerformance } from '@/hooks/useSingleFastPerformance';
+import { useSingleFastMax } from '@/hooks/useSingleFastMax';
 import { EmailErrorBin } from '@/components/email/EmailErrorBin';
 import { Rocket, Settings, CheckCircle, XCircle, Pause, Play, Square, Loader2, Sliders, Zap } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 
 export default function SingleFast() {
-  // 🎯 STATO: Modalità normale o performance
+  // 🎯 STATO: Modalità normale, performance o MAX
   const [usePerformanceMode, setUsePerformanceMode] = useState(false);
+  const [useMaxMode, setUseMaxMode] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   
@@ -31,27 +33,38 @@ export default function SingleFast() {
   // 🚀 HOOK PERFORMANCE (con ParallelDownloadController)
   const performanceMode = useSingleFastPerformance();
   
+  // 💎 HOOK MAX (con DANZA: fetch 25 → download → ripeti)
+  const maxMode = useSingleFastMax();
+  
   // Seleziona quale hook usare basato sulla modalità
-  const activeHook = usePerformanceMode ? performanceMode : normalMode;
+  const activeHook = useMaxMode ? maxMode : (usePerformanceMode ? performanceMode : normalMode);
   
   const { 
     isRunning, 
     logs, 
-    tempResults, 
-    pauseState,
-    currentFolder,
-    currentPhase,
-    progress,
-    emailProgress,
-    pauseProcess,
-    resumeProcess,
     stopProcess
   } = activeHook;
   
-  // Cast per accedere a startSingleFast o startSingleFastPerformance
-  const startFunction = usePerformanceMode 
-    ? (performanceMode as any).startSingleFastPerformance 
-    : (normalMode as any).startSingleFast;
+  // Proprietà specifiche per Normal e Performance mode
+  const tempResults = 'tempResults' in activeHook ? (activeHook as any).tempResults : [];
+  const pauseState = 'pauseState' in activeHook ? (activeHook as any).pauseState : false;
+  const currentFolder = 'currentFolder' in activeHook ? (activeHook as any).currentFolder : (useMaxMode && 'progress' in maxMode ? maxMode.progress.current_folder : '');
+  const currentPhase = 'currentPhase' in activeHook ? (activeHook as any).currentPhase : '';
+  const progress = useMaxMode && 'progress' in maxMode 
+    ? { current: maxMode.progress.folders_completed, total: maxMode.progress.total_folders }
+    : ('progress' in activeHook ? (activeHook as any).progress : { current: 0, total: 0 });
+  const emailProgress = useMaxMode && 'progress' in maxMode
+    ? { imported: maxMode.progress.total_downloaded, total: maxMode.progress.total_downloaded, skipped: 0 }
+    : ('emailProgress' in activeHook ? (activeHook as any).emailProgress : { imported: 0, total: 0, skipped: 0 });
+  const pauseProcess = 'pauseProcess' in activeHook ? (activeHook as any).pauseProcess : () => {};
+  const resumeProcess = 'resumeProcess' in activeHook ? (activeHook as any).resumeProcess : () => {};
+  
+  // Cast per accedere a startSingleFast, startSingleFastPerformance o startSingleFastMax
+  const startFunction = useMaxMode 
+    ? (maxMode as any).startSingleFastMax
+    : (usePerformanceMode 
+      ? (performanceMode as any).startSingleFastPerformance 
+      : (normalMode as any).startSingleFast);
 
   // Carica email utente
   useState(() => {
@@ -146,8 +159,11 @@ export default function SingleFast() {
           <div className="flex items-center gap-2 p-2 border rounded-lg bg-card">
             <Button
               size="sm"
-              variant={!usePerformanceMode ? "default" : "ghost"}
-              onClick={() => setUsePerformanceMode(false)}
+              variant={!usePerformanceMode && !useMaxMode ? "default" : "ghost"}
+              onClick={() => {
+                setUsePerformanceMode(false);
+                setUseMaxMode(false);
+              }}
               disabled={isRunning}
             >
               <Rocket className="h-4 w-4 mr-2" />
@@ -156,12 +172,27 @@ export default function SingleFast() {
             <Button
               size="sm"
               variant={usePerformanceMode ? "default" : "ghost"}
-              onClick={() => setUsePerformanceMode(true)}
+              onClick={() => {
+                setUsePerformanceMode(true);
+                setUseMaxMode(false);
+              }}
               disabled={isRunning}
               className="gap-2"
             >
               <Zap className="h-4 w-4" />
               Performance
+            </Button>
+            <Button
+              size="sm"
+              variant={useMaxMode ? "default" : "ghost"}
+              onClick={() => {
+                setUseMaxMode(true);
+                setUsePerformanceMode(false);
+              }}
+              disabled={isRunning}
+              className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+            >
+              💎 MAX
             </Button>
           </div>
           
@@ -172,11 +203,18 @@ export default function SingleFast() {
             </Badge>
           )}
           
+          {/* Badge MAX Mode Info */}
+          {useMaxMode && (
+            <Badge variant="outline" className="text-sm border-purple-500 text-purple-500">
+              💎 DANZA: Fetch 25 UIDs → Download → Ripeti
+            </Badge>
+          )}
+          
           <Button
             size="lg"
             onClick={startFunction}
             disabled={isRunning}
-            className="min-w-[200px]"
+            className={useMaxMode ? "min-w-[200px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" : "min-w-[200px]"}
           >
             {isRunning ? (
               <>
@@ -185,9 +223,9 @@ export default function SingleFast() {
               </>
             ) : (
               <>
-                {usePerformanceMode ? <Zap className="h-5 w-5" /> : <Rocket className="h-5 w-5" />}
+                {useMaxMode ? '💎' : (usePerformanceMode ? <Zap className="h-5 w-5" /> : <Rocket className="h-5 w-5" />)}
                 <span className="ml-2">
-                  {usePerformanceMode ? '⚡ Avvia Performance' : '🚀 Avvia Normale'}
+                  {useMaxMode ? '💎 Avvia MAX' : (usePerformanceMode ? '⚡ Avvia Performance' : '🚀 Avvia Normale')}
                 </span>
               </>
             )}

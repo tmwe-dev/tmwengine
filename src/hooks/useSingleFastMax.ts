@@ -1,0 +1,232 @@
+/**
+ * useSingleFastMax Hook
+ * 
+ * React hook for Single Fast MAX email import with "dance" approach
+ * - Alternates between fetching UIDs and downloading emails
+ * - Starts downloading in 3-4 seconds (vs 45 minutes)
+ * - Progressive, resumable, memory efficient
+ */
+
+import { useState, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { processFolderWithDance, type DanceProgress } from "@/lib/single-fast-max-core";
+import { getSingleFastFolders } from "@/lib/single-fast-core";
+
+export interface LogEntry {
+  timestamp: Date;
+  phase: 'preparing' | 'importing' | 'completed' | 'error' | 'skip' | 'init' | 'warning' | 'stopped' | 'stopping';
+  folder?: string;
+  message: string;
+  email_details?: string;
+}
+
+export interface MaxProgress {
+  current_folder: string;
+  current_batch: number;
+  total_downloaded: number;
+  current_email: string;
+  folders_completed: number;
+  total_folders: number;
+}
+
+export function useSingleFastMax() {
+  const [isRunning, setIsRunning] = useState(false);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [progress, setProgress] = useState<MaxProgress>({
+    current_folder: '',
+    current_batch: 0,
+    total_downloaded: 0,
+    current_email: '',
+    folders_completed: 0,
+    total_folders: 0,
+  });
+
+  const shouldStop = useRef(false);
+
+  const addLog = (entry: Omit<LogEntry, 'timestamp'>) => {
+    const log_entry: LogEntry = {
+      timestamp: new Date(),
+      ...entry,
+    };
+    
+    setLogs(prev => [...prev, log_entry]);
+    console.log(`[useSingleFastMax] ${log_entry.timestamp.toLocaleTimeString('it-IT')} - ${log_entry.message}`);
+  };
+
+  const getUserEmail = async (): Promise<string> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user?.email) {
+      throw new Error('User not authenticated');
+    }
+
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('tmwe_email')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error || !profile?.tmwe_email) {
+      throw new Error('TMWE email not configured in user profile');
+    }
+
+    return profile.tmwe_email;
+  };
+
+  const startSingleFastMax = async () => {
+    setIsRunning(true);
+    setLogs([]);
+    shouldStop.current = false;
+
+    setProgress({
+      current_folder: '',
+      current_batch: 0,
+      total_downloaded: 0,
+      current_email: '',
+      folders_completed: 0,
+      total_folders: 0,
+    });
+
+    addLog({ 
+      phase: 'init', 
+      message: '🚀 Single Fast MAX avviato - Modalità DANZA attiva' 
+    });
+
+    try {
+      // Get user email
+      const user_email = await getUserEmail();
+      addLog({ phase: 'init', message: `📧 User email: ${user_email}` });
+
+      // Get folders to sync
+      const folders = await getSingleFastFolders(user_email);
+      const folders_to_sync = folders.filter(f => f.included);
+
+      if (folders_to_sync.length === 0) {
+        addLog({ 
+          phase: 'warning', 
+          message: '⚠️ Nessuna cartella selezionata per la sincronizzazione' 
+        });
+        return;
+      }
+
+      setProgress(prev => ({
+        ...prev,
+        total_folders: folders_to_sync.length,
+      }));
+
+      addLog({ 
+        phase: 'preparing', 
+        message: `📂 Cartelle da sincronizzare: ${folders_to_sync.length}` 
+      });
+
+      folders_to_sync.forEach(f => {
+        addLog({ 
+          phase: 'preparing', 
+          folder: f.folderName,
+          message: `   - ${f.folderName}: ${f.missing} email mancanti` 
+        });
+      });
+
+      // Process each folder with "dance"
+      for (let i = 0; i < folders_to_sync.length; i++) {
+        if (shouldStop.current) {
+          addLog({ phase: 'stopped', message: '🛑 Processo interrotto dall\'utente' });
+          break;
+        }
+
+        const folder = folders_to_sync[i];
+
+        addLog({ 
+          phase: 'preparing', 
+          folder: folder.folderName,
+          message: `🎯 Avvio DANZA per ${folder.folderName} (${i + 1}/${folders_to_sync.length})` 
+        });
+
+        setProgress(prev => ({
+          ...prev,
+          current_folder: folder.folderName,
+          current_batch: 0,
+          current_email: '',
+        }));
+
+        const result = await processFolderWithDance(
+          folder.folderName,
+          user_email,
+          (details: DanceProgress) => {
+            setProgress(prev => ({
+              ...prev,
+              current_batch: details.current_batch,
+              total_downloaded: prev.total_downloaded + (details.total_processed - prev.total_downloaded),
+              current_email: details.current_email || '',
+            }));
+
+            if (details.phase === 'downloading_emails' && details.current_email) {
+              addLog({
+                phase: 'importing',
+                folder: folder.folderName,
+                message: `✅ Batch ${details.current_batch}: ${details.current_email}`,
+                email_details: details.current_uid,
+              });
+            }
+          }
+        );
+
+        setProgress(prev => ({
+          ...prev,
+          folders_completed: prev.folders_completed + 1,
+        }));
+
+        addLog({ 
+          phase: 'completed', 
+          folder: folder.folderName,
+          message: `✅ ${folder.folderName} completata: ${result.total_downloaded} scaricate, ${result.errors} errori` 
+        });
+      }
+
+      addLog({ 
+        phase: 'completed', 
+        message: `🎉 Single Fast MAX completato! Totale: ${progress.total_downloaded} email scaricate` 
+      });
+
+    } catch (error: any) {
+      addLog({ 
+        phase: 'error', 
+        message: `❌ Errore: ${error.message}` 
+      });
+      console.error('[useSingleFastMax] Error:', error);
+    } finally {
+      setIsRunning(false);
+      shouldStop.current = false;
+    }
+  };
+
+  const stopProcess = () => {
+    shouldStop.current = true;
+    addLog({ 
+      phase: 'stopping', 
+      message: '⏸️ Arresto in corso... (completerà il batch corrente)' 
+    });
+  };
+
+  const reset = () => {
+    setLogs([]);
+    setProgress({
+      current_folder: '',
+      current_batch: 0,
+      total_downloaded: 0,
+      current_email: '',
+      folders_completed: 0,
+      total_folders: 0,
+    });
+    shouldStop.current = false;
+  };
+
+  return {
+    isRunning,
+    logs,
+    progress,
+    startSingleFastMax,
+    stopProcess,
+    reset,
+  };
+}

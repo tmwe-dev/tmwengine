@@ -60,10 +60,6 @@ import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import DesignLab from "./pages/DesignLab";
 import DesignLabDashboard from "./pages/DesignLabDashboard";
 import DesignLabScanner from "./pages/DesignLabScanner";
-import BrainFunctionTree from "./pages/BrainFunctionTree";
-import BrainDashboard from "./pages/BrainDashboard";
-import BrainOrchestrator from "./pages/BrainOrchestrator";
-import BrainChat from "./pages/BrainChat";
 import PromptSystemManager from "./pages/PromptSystemManager";
 import FunEmail from "./pages/FunEmail";
 import ApiFunctionsReference from "./pages/ApiFunctionsReference";
@@ -436,34 +432,6 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <EmailDebugTester />
-                </CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/brain" element={
-              <ProtectedRoute>
-                <CRMLayout>
-                  <BrainDashboard />
-                </CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/brain/function-tree" element={
-              <ProtectedRoute>
-                <CRMLayout>
-                  <BrainFunctionTree />
-                </CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/brain/orchestrator" element={
-              <ProtectedRoute>
-                <CRMLayout>
-                  <BrainOrchestrator />
-                </CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/brain/chat" element={
-              <ProtectedRoute>
-                <CRMLayout>
-                  <BrainChat />
                 </CRMLayout>
               </ProtectedRoute>
             } />

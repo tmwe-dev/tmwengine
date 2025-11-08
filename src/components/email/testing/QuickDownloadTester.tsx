@@ -6,6 +6,7 @@ import { useState, useRef } from 'react';
 import { TestMethodCard } from '@/components/testing/TestMethodCard';
 import type { TestResult } from '@/lib/email-testing-utils';
 import { QuickEmailDownloader } from '@/components/email/QuickEmailDownloader';
+import { getSyncPreferences } from '@/lib/email-sync-preferences';
 
 interface QuickDownloadTesterProps {
   userEmail: string;
@@ -77,10 +78,22 @@ export function QuickDownloadTester({
     }
   };
 
-  const handleTest = () => {
-    if (quickDownloaderRef.current) {
-      quickDownloaderRef.current.startDownload(['INBOX']);
-    }
+  const handleTest = async () => {
+    if (!quickDownloaderRef.current || !userEmail) return;
+
+    // Carica le preferenze dell'utente
+    const prefs = await getSyncPreferences(userEmail);
+    
+    // Se non ci sono cartelle configurate, usa INBOX come default
+    const foldersToSync = prefs.included_folders.length > 0 
+      ? prefs.included_folders 
+      : ['INBOX'];
+
+    addLog(`📂 Cartelle da sincronizzare: ${foldersToSync.length}`);
+    addLog(`📋 ${foldersToSync.join(', ')}`);
+
+    // Lancia download con le cartelle reali
+    quickDownloaderRef.current.startDownload(foldersToSync);
   };
 
   return (
@@ -92,7 +105,7 @@ export function QuickDownloadTester({
           onStatsUpdate={handleStatsUpdate}
           onDownloadComplete={handleDownloadComplete}
           onDownloadStatusChange={handleDownloadStatusChange}
-          preSelectedFolders={['INBOX']}
+          preSelectedFolders={[]}
         />
       </div>
 

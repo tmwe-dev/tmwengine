@@ -166,18 +166,38 @@ export const QuickEmailDownloader = forwardRef<{ startDownload: (folders?: strin
         ? quickResponse 
         : (quickResponse?.data || quickResponse?.folders || []);
       
+      // ✅ CARICA PREFERENZE UTENTE
+      let userPreferences = null;
+      if (userEmail) {
+        userPreferences = await getSyncPreferences(userEmail);
+      }
+      
       const quickMapped = quickFoldersList.map((f: any) => {
         const folderName = f.name || f;
         const normalizedName = (folderName || '').trim().toLowerCase();
         
+        // ✅ USA PREFERENZE invece di hardcode
+        let isSelected = false;
+        
+        if (preSelectedFolders.length > 0) {
+          // Se passato esplicitamente dal parent
+          isSelected = preSelectedFolders.some(pre => 
+            (pre || '').trim().toLowerCase() === normalizedName
+          );
+        } else if (userPreferences && userPreferences.included_folders.length > 0) {
+          // Altrimenti usa preferenze salvate
+          isSelected = userPreferences.included_folders.some(inc => 
+            (inc || '').trim().toLowerCase() === normalizedName
+          );
+        } else {
+          // Default: solo INBOX
+          isSelected = (normalizedName === 'inbox');
+        }
+        
         return {
           name: folderName,
           display: f.display_name || folderName,
-          selected: preSelectedFolders.length > 0 
-            ? preSelectedFolders.some(pre => 
-                (pre || '').trim().toLowerCase() === normalizedName
-              )
-            : (normalizedName === 'inbox')
+          selected: isSelected
         };
       });
 

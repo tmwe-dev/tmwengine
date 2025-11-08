@@ -4,7 +4,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
 serve(async (req) => {
@@ -55,7 +54,7 @@ Rispondi in modo conciso e tecnico con suggerimenti concreti.
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
+          model: 'google/gemini-2.0-flash-exp',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: user_message }
@@ -63,6 +62,16 @@ Rispondi in modo conciso e tecnico con suggerimenti concreti.
           max_tokens: 1000
         })
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Gemini API error ${response.status}:`, errorText);
+        return new Response(
+          JSON.stringify({ error: `Gemini API error ${response.status}: ${errorText}` }),
+          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       const data = await response.json();
       aiResponse = data.choices[0].message.content;
     } else if (selected_agent === 'chatgpt') {
@@ -73,7 +82,7 @@ Rispondi in modo conciso e tecnico con suggerimenti concreti.
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'openai/gpt-5-mini',
+          model: 'openai/gpt-4o-mini',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: user_message }
@@ -81,6 +90,16 @@ Rispondi in modo conciso e tecnico con suggerimenti concreti.
           max_tokens: 1000
         })
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ ChatGPT API error ${response.status}:`, errorText);
+        return new Response(
+          JSON.stringify({ error: `ChatGPT API error ${response.status}: ${errorText}` }),
+          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       const data = await response.json();
       aiResponse = data.choices[0].message.content;
     } else if (selected_agent === 'claude') {
@@ -113,6 +132,15 @@ Rispondi in modo conciso e tecnico con suggerimenti concreti.
           ]
         })
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Claude API error ${response.status}:`, errorText);
+        return new Response(
+          JSON.stringify({ error: `Claude API error ${response.status}: ${errorText}` }),
+          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       const data = await response.json();
       aiResponse = data.content[0].text;

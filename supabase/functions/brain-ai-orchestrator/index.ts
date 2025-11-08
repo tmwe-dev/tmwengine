@@ -4,7 +4,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
 serve(async (req) => {
@@ -88,7 +87,10 @@ serve(async (req) => {
             }
           }
 
-          if (!aiResult) continue;
+          if (!aiResult) {
+            console.error(`❌ Nessuna risposta da ${agentType} per task ${taskRecord.id}`);
+            continue;
+          }
 
           const duration = Date.now() - startTime;
 
@@ -233,7 +235,7 @@ async function callGemini(apiKey: string, systemPrompt: string, userMessage: str
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-2.0-flash-exp',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage }
@@ -241,6 +243,12 @@ async function callGemini(apiKey: string, systemPrompt: string, userMessage: str
       max_tokens: 500
     })
   });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ Gemini API error ${response.status}:`, errorText);
+    throw new Error(`Gemini API error ${response.status}: ${errorText}`);
+  }
 
   const data = await response.json();
   return {
@@ -258,7 +266,7 @@ async function callChatGPT(apiKey: string, systemPrompt: string, userMessage: st
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'openai/gpt-5-mini',
+      model: 'openai/gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage }
@@ -266,6 +274,12 @@ async function callChatGPT(apiKey: string, systemPrompt: string, userMessage: st
       max_tokens: 500
     })
   });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ ChatGPT API error ${response.status}:`, errorText);
+    throw new Error(`ChatGPT API error ${response.status}: ${errorText}`);
+  }
 
   const data = await response.json();
   return {
@@ -291,6 +305,12 @@ async function callClaude(apiKey: string, systemPrompt: string, userMessage: str
       ]
     })
   });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ Claude API error ${response.status}:`, errorText);
+    throw new Error(`Claude API error ${response.status}: ${errorText}`);
+  }
 
   const data = await response.json();
   return {

@@ -54,7 +54,7 @@ Rispondi in modo conciso e tecnico con suggerimenti concreti.
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.0-flash-exp',
+          model: 'google/gemini-2.5-flash',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: user_message }
@@ -82,7 +82,7 @@ Rispondi in modo conciso e tecnico con suggerimenti concreti.
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'openai/gpt-4o-mini',
+          model: 'openai/gpt-5-mini',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: user_message }
@@ -125,7 +125,7 @@ Rispondi in modo conciso e tecnico con suggerimenti concreti.
           'content-type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-5',
           max_tokens: 1000,
           messages: [
             { role: 'user', content: `${systemPrompt}\n\n${user_message}` }

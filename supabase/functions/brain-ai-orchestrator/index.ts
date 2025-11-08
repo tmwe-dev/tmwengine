@@ -235,7 +235,7 @@ async function callGemini(apiKey: string, systemPrompt: string, userMessage: str
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.0-flash-exp',
+      model: 'google/gemini-2.5-flash',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage }
@@ -266,7 +266,7 @@ async function callChatGPT(apiKey: string, systemPrompt: string, userMessage: st
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'openai/gpt-4o-mini',
+      model: 'openai/gpt-5-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage }
@@ -298,7 +298,7 @@ async function callClaude(apiKey: string, systemPrompt: string, userMessage: str
       'content-type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 500,
       messages: [
         { role: 'user', content: `${systemPrompt}\n\n${userMessage}` }

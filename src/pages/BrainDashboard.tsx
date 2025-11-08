@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
-import { Brain, Play, Clock, FileCode, Copy, Share2, AlertCircle } from 'lucide-react';
+import { Brain, Play, Clock, FileCode, Copy, Share2, AlertCircle, Bot, MessageSquare, Download } from 'lucide-react';
 import { PageLayout } from '@/components/design-system/layouts/PageLayout';
 import { StatsGrid } from '@/components/design-system/data-display/StatsGrid';
 import { LoadingState } from '@/components/design-system/data-display/LoadingState';
 import { Button } from '@/components/ui/button';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBrainScans } from '@/hooks/useBrainScans';
 import { FileSelectorDialog } from '@/components/brain/FileSelectorDialog';
 import { ScanHistoryTable } from '@/components/brain/ScanHistoryTable';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export default function BrainDashboard() {
+  const navigate = useNavigate();
   const { data: scans, isLoading, refetch } = useBrainScans();
   const [showFileSelector, setShowFileSelector] = useState(false);
 
@@ -63,6 +67,10 @@ export default function BrainDashboard() {
     },
   ];
 
+  const exportReport = () => {
+    toast.success('Export report feature coming soon!');
+  };
+
   if (isLoading) {
     return (
       <PageLayout
@@ -87,6 +95,61 @@ export default function BrainDashboard() {
         }
       >
         <div className="space-y-8">
+          {/* Navigation Cards */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Strumenti Avanzati</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => navigate('/brain/orchestrator')}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bot className="h-5 w-5" />
+                    AI Orchestrator
+                  </CardTitle>
+                  <CardDescription>Multi-agent collaborative debugging</CardDescription>
+                </CardHeader>
+              </Card>
+              
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => navigate('/brain/function-tree')}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileCode className="h-5 w-5" />
+                    Function Tree
+                  </CardTitle>
+                  <CardDescription>Visualizza analisi funzioni</CardDescription>
+                </CardHeader>
+              </Card>
+              
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => navigate('/brain/chat')}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Chat Brain
+                  </CardTitle>
+                  <CardDescription>Context-aware debugging assistant</CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
+          </section>
+
+          {/* Quick Actions */}
+          <div className="flex gap-2">
+            <Button onClick={() => setShowFileSelector(true)}>
+              <Play className="h-4 w-4 mr-2" />
+              Scan Codebase
+            </Button>
+            <Button variant="outline" onClick={exportReport}>
+              <Download className="h-4 w-4 mr-2" />
+              Export Report
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/brain/orchestrator')}>
+              <Brain className="h-4 w-4 mr-2" />
+              AI Multi-Agent
+            </Button>
+          </div>
+
           {/* Statistiche */}
           <section>
             <h2 className="text-xl font-semibold mb-4">Panoramica</h2>

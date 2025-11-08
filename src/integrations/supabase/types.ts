@@ -506,6 +506,71 @@ export type Database = {
         }
         Relationships: []
       }
+      brain_ai_tasks: {
+        Row: {
+          agent_order: number
+          assigned_agent: string
+          completed_at: string | null
+          conversation_id: string
+          created_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          input_data: Json
+          output_data: Json | null
+          previous_responses: Json | null
+          round_number: number | null
+          started_at: string | null
+          status: string | null
+          task_type: string
+          user_id: string | null
+        }
+        Insert: {
+          agent_order: number
+          assigned_agent: string
+          completed_at?: string | null
+          conversation_id: string
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_data: Json
+          output_data?: Json | null
+          previous_responses?: Json | null
+          round_number?: number | null
+          started_at?: string | null
+          status?: string | null
+          task_type: string
+          user_id?: string | null
+        }
+        Update: {
+          agent_order?: number
+          assigned_agent?: string
+          completed_at?: string | null
+          conversation_id?: string
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json
+          output_data?: Json | null
+          previous_responses?: Json | null
+          round_number?: number | null
+          started_at?: string | null
+          status?: string | null
+          task_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brain_ai_tasks_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brain_code_scans: {
         Row: {
           completed_at: string | null

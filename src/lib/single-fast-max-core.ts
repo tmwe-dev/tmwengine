@@ -215,9 +215,11 @@ export async function processFolderWithDance(
     let batch_uids: string[] = [];
     
     try {
+      const offset = (current_page - 1) * BATCH_SIZE;
+      
       const server_response = await emailMessageApi.getMessages({
         folder: folder_name,
-        page: current_page,
+        offset: offset,
         limit: BATCH_SIZE,
         format: 'text',
         include_attachments: false,

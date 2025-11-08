@@ -182,9 +182,6 @@ verify_jwt = true
 [functions.tmwe-email-list]
 verify_jwt = true
 
-[functions.tmwe-test-folder-info]
-verify_jwt = true
-
 [functions.tmwe-email-sync-master]
 verify_jwt = true
 
@@ -215,18 +212,11 @@ verify_jwt = true
 [functions.intranet-ai-processor]
 verify_jwt = true
 
-[functions.intranet-ai-chat-assistant]
-verify_jwt = true
-disabled = true
-
 [functions.tmwe-oauth-callback]
 verify_jwt = false
 
 [functions.email-campagne-scheduler]
 verify_jwt = false
-
-[functions.test-ai-connection]
-verify_jwt = true
 
 [functions.chat-laboratory-orchestrator]
 verify_jwt = true
@@ -304,9 +294,6 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.background-email-sync]
-verify_jwt = true
-
-[functions.background-email-sync-test]
 verify_jwt = true
 
 [functions.suggest-sender-grouping]

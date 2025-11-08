@@ -67,7 +67,7 @@ export function ComparisonTable({ results }: ComparisonTableProps) {
                 return (
                   <tr 
                     key={result.method} 
-                    className={`border-b ${isBest ? 'bg-green-50 dark:bg-green-950/20' : ''}`}
+                    className="border-b"
                   >
                     <td className="py-3 px-4 font-medium">
                       {result.method}
@@ -102,7 +102,7 @@ export function ComparisonTable({ results }: ComparisonTableProps) {
         </div>
 
         {bestMethod && (
-          <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
+          <div className="mt-4 p-3 border border-green-200 dark:border-green-800 rounded-md">
             <div className="flex items-start gap-2">
               <TrendingUp className="h-4 w-4 mt-0.5 text-green-600" />
               <div className="text-sm">
@@ -118,7 +118,7 @@ export function ComparisonTable({ results }: ComparisonTableProps) {
         )}
 
         {results.some(r => r.failed > 0) && (
-          <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-md">
+          <div className="mt-4 p-3 border border-orange-200 dark:border-orange-800 rounded-md">
             <div className="flex items-start gap-2">
               <AlertCircle className="h-4 w-4 mt-0.5 text-orange-600" />
               <span className="text-sm text-muted-foreground">

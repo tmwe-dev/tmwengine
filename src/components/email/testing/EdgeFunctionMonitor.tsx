@@ -129,7 +129,7 @@ export function EdgeFunctionMonitor() {
 
         {/* Alert */}
         {hasRecentCrash() && (
-          <div className="p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-md">
+          <div className="p-3 border border-orange-200 dark:border-orange-800 rounded-md">
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 mt-0.5 text-orange-600" />
               <div className="text-sm">

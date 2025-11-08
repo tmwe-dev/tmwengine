@@ -15,21 +15,7 @@ serve(async (req) => {
     const { conversation_id, task, agents, rounds = 2, technical_context } = await req.json();
     console.log(`🧠 Brain Orchestrator: ${agents.length} agents × ${rounds} rounds`);
 
-    // Get user authentication from request header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('Missing authorization header');
-
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) throw new Error('Unauthorized');
-
-    // Create admin client for database operations
-    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
@@ -47,7 +33,7 @@ serve(async (req) => {
         const agentType = agents[agentIdx];
         console.log(`\n🤖 Agent ${agentIdx + 1}/${agents.length}: ${agentType}`);
 
-        const { data: taskRecord } = await supabaseAdmin
+        const { data: taskRecord } = await supabaseClient
           .from('brain_ai_tasks')
           .insert({
             conversation_id,
@@ -70,12 +56,12 @@ serve(async (req) => {
           technical_context,
           round,
           total_rounds: rounds,
-          previous_round_responses: round > 1 ? await getPreviousRoundResponses(supabaseAdmin, conversation_id, round - 1) : [],
+          previous_round_responses: round > 1 ? await getPreviousRoundResponses(supabaseClient, conversation_id, round - 1) : [],
           current_round_responses: roundResponses,
           agent_type: agentType
         });
 
-        await supabaseAdmin
+        await supabaseClient
           .from('brain_ai_tasks')
           .update({ status: 'running', started_at: new Date().toISOString() })
           .eq('id', taskRecord.id);
@@ -90,7 +76,7 @@ serve(async (req) => {
           } else if (agentType === 'chatgpt') {
             aiResult = await callChatGPT(LOVABLE_API_KEY!, systemPrompt, task);
           } else if (agentType === 'claude') {
-            const { data: config } = await supabaseAdmin
+            const { data: config } = await supabaseClient
               .from('config_ai')
               .select('api_key')
               .eq('provider', 'anthropic')
@@ -106,7 +92,7 @@ serve(async (req) => {
 
           const duration = Date.now() - startTime;
 
-          await supabaseAdmin
+          await supabaseClient
             .from('brain_ai_tasks')
             .update({
               status: 'completed',
@@ -131,7 +117,7 @@ serve(async (req) => {
         } catch (error: any) {
           console.error(`❌ Errore ${agentType}:`, error);
           
-          await supabaseAdmin
+          await supabaseClient
             .from('brain_ai_tasks')
             .update({
               status: 'failed',

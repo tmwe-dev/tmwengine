@@ -19,7 +19,7 @@ import { ConsensusView } from '@/components/brain/ConsensusView';
 import { PageLayout } from '@/components/design-system/layouts/PageLayout';
 
 const BrainOrchestrator = () => {
-  const [selectedAgents, setSelectedAgents] = useState<string[]>(['gemini', 'chatgpt', 'claude']);
+  const [selectedAgents, setSelectedAgents] = useState<string[]>(['gemini', 'chatgpt']);
   const [taskInput, setTaskInput] = useState('');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [rounds, setRounds] = useState(2);
@@ -67,6 +67,37 @@ const BrainOrchestrator = () => {
     }
   });
 
+  const callAI = async (agent: string, prompt: string) => {
+    const model = agent === 'gemini' 
+      ? 'google/gemini-2.5-flash' 
+      : 'openai/gpt-5-mini';
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are an expert technical AI assistant analyzing code and suggesting improvements. Be concise but thorough.' 
+          },
+          { role: 'user', content: prompt }
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`AI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  };
+
   const startDiscussion = async () => {
     if (!taskInput || selectedAgents.length === 0 || !currentUser) return;
 
@@ -90,42 +121,90 @@ const BrainOrchestrator = () => {
 
     setCurrentConversationId(conv.id);
 
-    const { error } = await supabase.functions.invoke('brain-ai-orchestrator', {
-      body: {
-        conversation_id: conv.id,
-        task: taskInput,
-        agents: selectedAgents,
-        rounds: rounds,
-        technical_context: {
-          duplicates_count: stats?.duplicates || 0,
-          heavy_count: stats?.heavy || 0,
-          shared_count: stats?.shared || 0
-        }
-      }
-    });
-
-    if (error) {
-      console.error('Brain Orchestrator Error:', error);
-      toast({
-        title: 'Errore',
-        description: error.message || 'Errore sconosciuto durante l\'invocazione',
-        variant: 'destructive'
-      });
-      return;
-    }
-
     toast({
       title: '🚀 Discussione avviata',
       description: `${selectedAgents.length} AI × ${rounds} round = ${selectedAgents.length * rounds} chiamate`
     });
 
-    refetch();
+    // Orchestrazione multi-round direttamente nel frontend
+    try {
+      for (let round = 1; round <= rounds; round++) {
+        for (let agentIdx = 0; agentIdx < selectedAgents.length; agentIdx++) {
+          const agent = selectedAgents[agentIdx];
+
+          // Recupera risposte round precedenti
+          const { data: previousTasks } = await supabase
+            .from('brain_ai_tasks')
+            .select('*')
+            .eq('conversation_id', conv.id)
+            .lt('round_number', round)
+            .order('round_number', { ascending: true })
+            .order('agent_order', { ascending: true });
+
+          // Costruisci prompt dinamico
+          let prompt = `Task: ${taskInput}\n\nRound ${round}/${rounds}\n\n`;
+          
+          if (previousTasks && previousTasks.length > 0) {
+            prompt += 'Previous round responses:\n\n';
+            previousTasks.forEach(t => {
+              const content = (t.output_data as any)?.content || '';
+              prompt += `${t.assigned_agent}: ${content}\n\n`;
+            });
+          }
+
+          prompt += `Now provide your analysis as ${agent}.`;
+
+          // Segna task come running
+          const { data: task } = await supabase
+            .from('brain_ai_tasks')
+            .insert({
+              conversation_id: conv.id,
+              user_id: currentUser.id,
+              round_number: round,
+              assigned_agent: agent,
+              agent_order: agentIdx,
+              task_type: 'orchestration',
+              status: 'running',
+              input_data: { prompt }
+            })
+            .select()
+            .single();
+
+          refetch();
+
+          // Chiama AI direttamente
+          const aiResponse = await callAI(agent, prompt);
+
+          // Aggiorna con risposta
+          await supabase
+            .from('brain_ai_tasks')
+            .update({
+              status: 'completed',
+              output_data: { content: aiResponse }
+            })
+            .eq('id', task!.id);
+
+          refetch();
+        }
+      }
+
+      toast({
+        title: '✅ Discussione completata',
+        description: 'Tutti i round sono stati completati'
+      });
+    } catch (error) {
+      console.error('Brain Orchestrator Error:', error);
+      toast({
+        title: 'Errore',
+        description: error instanceof Error ? error.message : 'Errore durante la discussione',
+        variant: 'destructive'
+      });
+    }
   };
 
   const agentConfig = {
     gemini: { name: 'Pitagora (Gemini)', avatar: pitagoraGif, color: 'bg-purple-500' },
-    chatgpt: { name: 'Albert (GPT)', avatar: albertGif, color: 'bg-blue-500' },
-    claude: { name: 'Archimede (Claude)', avatar: archimedeGif, color: 'bg-orange-500' }
+    chatgpt: { name: 'Albert (GPT)', avatar: albertGif, color: 'bg-blue-500' }
   };
 
   const totalCalls = selectedAgents.length * rounds;

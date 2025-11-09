@@ -4,7 +4,7 @@
 
 import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { getSingleFastFolders } from '@/lib/single-fast-core';
+import { getSingleFastFoldersFromLocal } from '@/lib/single-fast-core';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 
 // Costante per provider TMWE (ID dalla tabella email_provider)
@@ -79,7 +79,7 @@ export function useSingleFast() {
       addLog({ phase: 'preparing', message: '🔍 Caricamento preferenze cartelle...' });
 
       // 1. Get folders from preferences
-      const folders = await getSingleFastFolders(userEmail);
+      const folders = await getSingleFastFoldersFromLocal(userEmail);
       const foldersToSync = folders.filter(f => f.included);
 
       if (foldersToSync.length === 0) {
@@ -88,7 +88,7 @@ export function useSingleFast() {
       }
 
       // 📋 PRE-FLIGHT SUMMARY
-      const totalMissing = foldersToSync.reduce((sum, f) => sum + f.missing, 0);
+      const totalMissing = foldersToSync.reduce((sum, f) => sum + f.pending, 0);
       setProgress({ current: 0, total: foldersToSync.length });
       setEmailProgress({ imported: 0, total: totalMissing, skipped: 0 });
       
@@ -101,7 +101,7 @@ export function useSingleFast() {
       foldersToSync.forEach((f, i) => {
         addLog({
           phase: 'preparing',
-          message: `  ${i + 1}. ${f.folderName} → ${f.missing} email da scaricare`
+          message: `  ${i + 1}. ${f.folderName} → ${f.pending} email da scaricare`
         });
       });
 

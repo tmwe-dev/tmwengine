@@ -135,14 +135,18 @@ async function downloadEmail(
       return false;
     }
 
+    // ✅ NORMALIZZA risposta API (estrai data.header)
+    const header = full_email.data?.header || {};
+    const body_data = full_email.data || {};
+
     // ✅ Verifica che API abbia ritornato dati completi
-    if (!full_email.subject && !full_email.from) {
+    if (!header.subject && !header.from) {
       console.error(`[downloadEmail] ⚠️ UID ${uid}: API returned incomplete data`);
       console.error(`[downloadEmail] Response:`, JSON.stringify(full_email, null, 2));
       return false;
     }
 
-    console.log(`[downloadEmail] ✅ UID ${uid}: subject="${full_email.subject?.substring(0, 50)}...", from=${full_email.from?.email}`);
+    console.log(`[downloadEmail] ✅ UID ${uid}: subject="${header.subject?.substring(0, 50)}...", from=${header.from}`);
 
     const message_id = `${folder}/${uid}`;
 
@@ -167,34 +171,34 @@ async function downloadEmail(
       return true;
     }
 
-    // Insert email into email_messages with correct schema
+    // Insert email into email_messages with CORRECTED mapping
     const { error: insert_error } = await supabase
       .from('email_messages')
       .insert({
         message_id,
         user_email,
-        from_email: full_email.from?.email || 'Unknown',
-        to_email: Array.isArray(full_email.to) 
-          ? full_email.to.map(t => t.email).join(', ') 
-          : (full_email.to?.email || user_email),
-        subject: full_email.subject || '(No Subject)',
-        body_text: full_email.body || '',
-        body_html: full_email.body_html || null,
-        data_invio: full_email.date || new Date().toISOString(),
+        from_email: header.from || 'Unknown',
+        to_email: Array.isArray(header.to) 
+          ? header.to.map((t: any) => t.email || t.address || t).join(', ') 
+          : (header.to?.email || user_email),
+        subject: header.subject || '(No Subject)',
+        body_text: body_data.body_plain || '',
+        body_html: body_data.body_html || null,
+        data_invio: header.date || new Date().toISOString(),
         data_ricezione: new Date().toISOString(),
         cartella: folder,
         stato: 'nuovo',
         direzione: 'inbound',
         provider_id: '00000000-0000-0000-0000-000000000000',
-        attachments: Array.isArray(full_email.attachments) ? full_email.attachments : [],
-        cc_email: Array.isArray(full_email.cc) 
-          ? full_email.cc.map(c => c.email).join(', ') 
+        attachments: Array.isArray(header.attachments) ? header.attachments : [],
+        cc_email: Array.isArray(header.cc) 
+          ? header.cc.map((c: any) => c.email || c.address || c).join(', ') 
           : null,
-        bcc_email: Array.isArray(full_email.bcc) 
-          ? full_email.bcc.map(b => b.email).join(', ') 
+        bcc_email: Array.isArray(header.bcc) 
+          ? header.bcc.map((b: any) => b.email || b.address || b).join(', ') 
           : null,
-        in_reply_to: full_email.in_reply_to || null,
-        email_references: full_email.references || null,
+        in_reply_to: header.in_reply_to || null,
+        email_references: header.references || null,
       });
 
     if (insert_error) {

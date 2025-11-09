@@ -14,8 +14,9 @@ import { toast } from 'sonner';
 import { RefreshCw, Eye, Download, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
+import { useUserEmail } from '@/hooks/useUserEmail';
+import { normalizeEmailMessage } from '@/lib/email/email-mapper';
+import { prepareEmailForDatabase } from '@/lib/email/email-database-mapper';
 
 interface MissingEmailItem {
   uid: string;
@@ -26,8 +27,12 @@ interface MissingEmailItem {
   selected: boolean;
 }
 
+// ✅ Logging solo in dev mode
+const DEBUG = import.meta.env.DEV;
+const log = DEBUG ? console.log : () => {};
+
 export function SingleMailImporter() {
-  const queryClient = useQueryClient();
+  const { data: userEmail } = useUserEmail();
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [missingEmails, setMissingEmails] = useState<MissingEmailItem[]>([]);
   const [selectedEmailDetail, setSelectedEmailDetail] = useState<any>(null);
@@ -40,7 +45,7 @@ export function SingleMailImporter() {
     queryKey: ['email-folders-single-dedicated'],
     queryFn: async () => {
       const folders = await getSingleMailFolders({ include_counts: false });
-      console.log('📁 [SingleMail] Folders fetched:', folders.length, folders.map((f: any) => f.name));
+      log('📁 [SingleMail] Folders fetched:', folders.length, folders.map((f: any) => f.name));
       return folders;
     },
     staleTime: 5 * 60 * 1000,
@@ -50,112 +55,16 @@ export function SingleMailImporter() {
   const { data: folderCounts } = useQuery({
     queryKey: ['email-folder-counts-single'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non autenticato');
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
+      if (!userEmail) throw new Error('User email non disponibile');
 
       // ✅ Usa servizio unificato
       const { getUnifiedFolderCounts } = await import('@/lib/email-count-service');
-      return await getUnifiedFolderCounts(profile.tmwe_email);
+      return await getUnifiedFolderCounts(userEmail);
     },
     staleTime: 2 * 60 * 1000, // Cache 2 minuti
-    enabled: !!foldersData, // Esegui solo dopo aver caricato le cartelle
+    enabled: !!foldersData && !!userEmail,
   });
 
-  /**
-   * 🆕 FUNZIONE ISOLATA PER SINGLE MAIL IMPORTER
-   * Fetch + normalizzazione email senza toccare codice esistente
-   */
-  const fetchAndNormalizeSingleEmail = async (uid: string, folder: string) => {
-    console.log(`🔍 [SingleMailImporter] Fetching email UID ${uid} from ${folder}`);
-    
-    // ✅ Chiamata diretta all'Edge Function
-    const { data: response, error } = await supabase.functions.invoke('tmwe-api-proxy', {
-      body: {
-        endpoint: '/email_message',
-        data: {
-          handler: 'get_message',
-          uid: parseInt(uid, 10),
-          folder: folder,
-          mark_as_read: false
-        }
-      }
-    });
-
-    if (error) throw error;
-    if (!response?.success) throw new Error(response?.error || 'Errore API');
-
-    console.log(`📦 [SingleMailImporter] Raw API response:`, {
-      hasData: !!response.data,
-      hasHeader: !!response.data?.header,
-      subject: response.data?.header?.subject,
-      from: response.data?.header?.from
-    });
-
-    // ✅ Normalizza struttura wrapped → flat
-    const header = response.data?.header || {};
-    const body = response.data || {};
-
-    const normalized = {
-      uid: header.uid,
-      message_id: header.message_id || `<${uid}@tmwe.local>`,
-      subject: header.subject || '',
-      
-      // From (può essere stringa o oggetto)
-      from: header.from,
-      from_email: typeof header.from === 'string' ? header.from : header.from,
-      from_name: header.from_name || '',
-      
-      // To/CC/BCC (array di oggetti {email, name})
-      to: header.to || [],
-      to_email: Array.isArray(header.to) 
-        ? header.to.map((t: any) => t.email || t.address || t).join(',')
-        : '',
-      
-      cc: header.cc || [],
-      cc_email: Array.isArray(header.cc) && header.cc.length > 0
-        ? header.cc.map((c: any) => c.email || c.address || c).join(',')
-        : null,
-      
-      bcc: header.bcc || [],
-      bcc_email: Array.isArray(header.bcc) && header.bcc.length > 0
-        ? header.bcc.map((b: any) => b.email || b.address || b).join(',')
-        : null,
-      
-      // Date
-      date: header.date,
-      
-      // Body
-      body_text: body.body_plain || '',
-      body_html: body.body_html || '',
-      
-      // Metadata
-      flags: [
-        ...(header.seen ? ['\\Seen'] : []),
-        ...(header.flagged ? ['\\Flagged'] : []),
-        ...(header.answered ? ['\\Answered'] : [])
-      ],
-      attachments: header.attachments || [],
-      has_attachments: header.has_attachments || header.attachments_count > 0,
-    };
-
-    console.log(`✅ [SingleMailImporter] Normalized email:`, {
-      message_id: normalized.message_id,
-      subject: normalized.subject,
-      from_email: normalized.from_email,
-      to_email: normalized.to_email,
-      has_body: normalized.body_html?.length > 0 || normalized.body_text?.length > 0
-    });
-
-    return normalized;
-  };
 
 
   // ✅ Query confronto UIDs mancanti + popola email_temp_index
@@ -167,20 +76,9 @@ export function SingleMailImporter() {
   } = useQuery({
     queryKey: ['single-mail-comparison', selectedFolder],
     queryFn: async () => {
-      console.log('🔍 [SingleMailImporter] Fetching comparison for folder:', selectedFolder);
-
-      // 1️⃣ Ottieni user email
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non autenticato');
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
-      const userEmail = profile.tmwe_email;
+      if (!userEmail) throw new Error('User email non disponibile');
+      
+      log('🔍 [SingleMailImporter] Fetching comparison for folder:', selectedFolder);
 
       // 2️⃣ Svuota tabella temporanea per questa cartella
       await supabase
@@ -189,8 +87,8 @@ export function SingleMailImporter() {
         .eq('user_email', userEmail)
         .eq('folder', selectedFolder);
 
-      // 3️⃣ Fetch UIDs dal server TMWE (prime 500 email)
-      console.log('📡 Fetching server UIDs (only metadata, no body)...');
+      // 2️⃣ Fetch UIDs dal server TMWE (prime 500 email)
+      log('📡 Fetching server UIDs (only metadata, no body)...');
       
       const serverResponse = await emailMessageApi.getMessages({
         folder: selectedFolder,
@@ -203,10 +101,10 @@ export function SingleMailImporter() {
       const serverUIDs = new Set<string>(
         serverResponse.messages.map((msg: any) => String(msg.uid))
       );
-      console.log(`✅ Server UIDs count: ${serverUIDs.size}`);
+      log(`✅ Server UIDs count: ${serverUIDs.size}`);
 
-      // 4️⃣ Fetch UIDs dal DB locale
-      console.log('💾 Fetching local DB UIDs...');
+      // 3️⃣ Fetch UIDs dal DB locale
+      log('💾 Fetching local DB UIDs...');
       const { data: dbMessages, error } = await supabase
         .from('email_messages')
         .select('message_id')
@@ -239,18 +137,18 @@ export function SingleMailImporter() {
             }
             
             // Fallback: usa il valore completo e logga warning
-            console.warn('⚠️ [SingleMailImporter] Formato message_id non riconosciuto:', messageId);
+            log('⚠️ [SingleMailImporter] Formato message_id non riconosciuto:', messageId);
             return messageId;
           })
           .filter((uid: string) => uid && uid !== 'null')
       );
-      console.log(`✅ DB UIDs count: ${dbUIDs.size}`);
+      log(`✅ DB UIDs count: ${dbUIDs.size}`);
 
-      // 5️⃣ Calcola UIDs mancanti
+      // 4️⃣ Calcola UIDs mancanti
       const missing = Array.from(serverUIDs).filter(uid => !dbUIDs.has(uid));
-      console.log(`🎯 Missing UIDs: ${missing.length}`);
+      log(`🎯 Missing UIDs: ${missing.length}`);
 
-      // 6️⃣ Popola email_temp_index con metadati leggeri (batch paralleli)
+      // 5️⃣ Popola email_temp_index con metadati leggeri (batch paralleli)
       const batchSize = 10;
       const tempIndexRecords = [];
 
@@ -271,7 +169,7 @@ export function SingleMailImporter() {
               status: 'pending',
             };
           } catch (err) {
-            console.warn(`⚠️ Failed to fetch metadata for UID ${uid}:`, err);
+            log(`⚠️ Failed to fetch metadata for UID ${uid}:`, err);
             return {
               uid,
               folder: selectedFolder,
@@ -290,7 +188,7 @@ export function SingleMailImporter() {
         tempIndexRecords.push(...batchResults);
       }
 
-      // 7️⃣ Inserisci in batch in email_temp_index
+      // 6️⃣ Inserisci in batch in email_temp_index
       if (tempIndexRecords.length > 0) {
         const { error: insertError } = await supabase
           .from('email_temp_index')
@@ -299,7 +197,7 @@ export function SingleMailImporter() {
         if (insertError) {
           console.error('❌ Error inserting to email_temp_index:', insertError);
         } else {
-          console.log(`✅ Inserted ${tempIndexRecords.length} records into email_temp_index`);
+          log(`✅ Inserted ${tempIndexRecords.length} records into email_temp_index`);
         }
       }
 
@@ -309,7 +207,7 @@ export function SingleMailImporter() {
         totalMissing: missing.length,
       };
     },
-    enabled: !!selectedFolder,
+    enabled: !!selectedFolder && !!userEmail,
     refetchOnWindowFocus: false,
   });
 
@@ -317,21 +215,12 @@ export function SingleMailImporter() {
   const { data: tempIndexEmails } = useQuery({
     queryKey: ['email-temp-index', selectedFolder, displayLimit],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.tmwe_email) return [];
+      if (!userEmail) return [];
 
       const { data, error } = await supabase
         .from('email_temp_index')
         .select('*')
-        .eq('user_email', profile.tmwe_email)
+        .eq('user_email', userEmail)
         .eq('folder', selectedFolder)
         .order('date', { ascending: false })
         .limit(displayLimit);
@@ -350,7 +239,7 @@ export function SingleMailImporter() {
         selected: item.status === 'selected',
       }));
     },
-    enabled: !!selectedFolder && !!comparisonData,
+    enabled: !!selectedFolder && !!comparisonData && !!userEmail,
     refetchOnWindowFocus: false,
   });
 
@@ -368,6 +257,8 @@ export function SingleMailImporter() {
 
   // ✅ Toggle singola email (aggiorna DB temp_index)
   const toggleEmailSelection = async (uid: string) => {
+    if (!userEmail) return;
+    
     const email = missingEmails.find(e => e.uid === uid);
     if (!email) return;
 
@@ -377,27 +268,18 @@ export function SingleMailImporter() {
       prev.map(e => e.uid === uid ? { ...e, selected: !e.selected } : e)
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('tmwe_email')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile?.tmwe_email) return;
-
     await supabase
       .from('email_temp_index')
       .update({ status: newStatus })
       .eq('uid', uid)
       .eq('folder', selectedFolder)
-      .eq('user_email', profile.tmwe_email);
+      .eq('user_email', userEmail);
   };
 
   // ✅ Select All / Deselect All (aggiorna DB temp_index)
   const toggleSelectAll = async () => {
+    if (!userEmail) return;
+    
     const allSelected = missingEmails.every(e => e.selected);
     const newStatus = allSelected ? 'pending' : 'selected';
 
@@ -405,22 +287,11 @@ export function SingleMailImporter() {
       prev.map(email => ({ ...email, selected: !allSelected }))
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('tmwe_email')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile?.tmwe_email) return;
-
     await supabase
       .from('email_temp_index')
       .update({ status: newStatus })
       .eq('folder', selectedFolder)
-      .eq('user_email', profile.tmwe_email);
+      .eq('user_email', userEmail);
   };
 
   // ✅ Visualizza email completa
@@ -455,63 +326,33 @@ export function SingleMailImporter() {
 
   // ✅ Importa singola email nel DB
   const handleImportSingle = async (uid: string, folder: string) => {
+    if (!userEmail) return;
+    
     setImportingUid(uid);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non autenticato');
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
-
       // ✅ Controllo se email già esiste
       const messageId = `${folder}/${uid}`;
       const exists = await checkEmailExists(messageId);
 
       if (exists) {
-        console.warn(`⚠️ Email ${uid} già presente nel database, skip import`);
+        log(`⚠️ Email ${uid} già presente nel database, skip import`);
         toast.warning(`Email UID ${uid} già presente nel database locale`);
         setMissingEmails(prev => prev.filter(e => e.uid !== uid));
-        return; // ✅ ESCI senza tentare insert
+        return;
       }
 
-      console.log(`✅ Email ${uid} non presente, procedo con import`);
+      log(`✅ Email ${uid} non presente, procedo con import`);
 
-      // Fetch email dal server (nuova funzione isolata)
-      const email = await fetchAndNormalizeSingleEmail(uid, folder);
+      // ✅ Fetch + normalizza email
+      const apiEmail = await emailMessageApi.getMessage(uid, folder, false);
+      const normalized = normalizeEmailMessage(apiEmail, uid, folder);
 
-      // ✅ Mapping campi - ESATTAMENTE come FunEmailDownloader
-      const emailToSave = {
-        message_id: `${folder}/${uid}`,
-        from_email: email.from_email || '',
-        to_email: email.to_email || '',
-        cc_email: email.cc_email || null,
-        bcc_email: email.bcc_email || null,
-        subject: email.subject || '',
-        body_text: email.body_text || '',
-        body_html: email.body_html || '',
-        data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
-        cartella: folder,
-        direzione: 'inbound',
-        stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
-        flags: email.flags || [],
-        attachments: email.attachments || [],
-        provider_id: '00000000-0000-0000-0000-000000000000',
-        user_email: profile.tmwe_email,
-        sync_status: 'sincronizzato',  // ✅ Valore valido per check constraint
-      };
+      // ✅ Prepara per database (funzione centralizzata)
+      const emailToSave = prepareEmailForDatabase(normalized, folder, userEmail);
 
-      // ✅ Sanitizza array prima dell'insert
-      emailToSave.flags = Array.isArray(emailToSave.flags) ? emailToSave.flags : [];
-      emailToSave.attachments = Array.isArray(emailToSave.attachments) ? emailToSave.attachments : [];
+      log('📤 [SingleMailImporter] INSERT BODY:', JSON.stringify(emailToSave, null, 2));
 
-      console.log('📤 [SingleMailImporter] INSERT BODY:', JSON.stringify(emailToSave, null, 2));
-
-      // ✅ Usa .insert() con singolo oggetto (come FunEmailDownloader)
+      // ✅ Insert in database
       const { error } = await supabase
         .from('email_messages')
         .insert(emailToSave);
@@ -529,7 +370,7 @@ export function SingleMailImporter() {
         .update({ status: 'imported' })
         .eq('uid', uid)
         .eq('folder', folder)
-        .eq('user_email', profile.tmwe_email);
+        .eq('user_email', userEmail);
 
       setMissingEmails(prev => prev.filter(e => e.uid !== uid));
     } catch (error: any) {
@@ -539,8 +380,10 @@ export function SingleMailImporter() {
     }
   };
 
-  // ✅ Importa tutte le email selezionate
+  // ✅ Importa tutte le email selezionate (BATCH PARALLELI)
   const handleImportSelected = async () => {
+    if (!userEmail) return;
+    
     const selectedUIDs = missingEmails.filter(e => e.selected).map(e => e.uid);
     if (selectedUIDs.length === 0) {
       toast.warning('Nessuna email selezionata');
@@ -549,96 +392,85 @@ export function SingleMailImporter() {
 
     setIsImporting(true);
     let successCount = 0;
-    let skippedCount = 0;  // ✅ CONTATORE SKIP
+    let skippedCount = 0;
     let errorCount = 0;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non autenticato');
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
-
-      for (const uid of selectedUIDs) {
-        try {
-          console.log(`🔍 [SingleMailImporter] Fetching email UID ${uid} from ${selectedFolder}`);
-          
-          // ✅ CONTROLLO DUPLICATO
-          const messageId = `${selectedFolder}/${uid}`;
-          const exists = await checkEmailExists(messageId);
-          
-          if (exists) {
-            console.warn(`⚠️ [SingleMailImporter] Email ${uid} già presente, skip`);
-            skippedCount++;
+      // ✅ BATCH PARALLELI: 5 email alla volta
+      const BATCH_SIZE = 5;
+      
+      for (let i = 0; i < selectedUIDs.length; i += BATCH_SIZE) {
+        const batch = selectedUIDs.slice(i, i + BATCH_SIZE);
+        
+        const results = await Promise.allSettled(
+          batch.map(async (uid) => {
+            // ✅ CONTROLLO DUPLICATO
+            const messageId = `${selectedFolder}/${uid}`;
+            const exists = await checkEmailExists(messageId);
             
+            if (exists) {
+              log(`⚠️ [SingleMailImporter] Email ${uid} già presente, skip`);
+              
+              // Aggiorna status in temp_index
+              await supabase
+                .from('email_temp_index')
+                .update({ status: 'imported' })
+                .eq('uid', uid)
+                .eq('folder', selectedFolder)
+                .eq('user_email', userEmail);
+              
+              return { status: 'skipped' as const, uid };
+            }
+            
+            log(`🔍 [SingleMailImporter] Fetching email UID ${uid} from ${selectedFolder}`);
+            
+            // ✅ Fetch + normalizza email
+            const apiEmail = await emailMessageApi.getMessage(uid, selectedFolder, false);
+            const normalized = normalizeEmailMessage(apiEmail, uid, selectedFolder);
+
+            // ✅ Prepara per database (funzione centralizzata)
+            const emailToSave = prepareEmailForDatabase(normalized, selectedFolder, userEmail);
+
+            log('📤 [SingleMailImporter] INSERT BODY:', JSON.stringify(emailToSave, null, 2));
+
+            // ✅ Insert in database
+            const { error } = await supabase
+              .from('email_messages')
+              .insert(emailToSave);
+
+            if (error) {
+              console.error('❌ [SingleMailImporter] Supabase error:', error);
+              throw error;
+            }
+
             // Aggiorna status in temp_index
             await supabase
               .from('email_temp_index')
               .update({ status: 'imported' })
               .eq('uid', uid)
               .eq('folder', selectedFolder)
-              .eq('user_email', profile.tmwe_email);
-            
-            setMissingEmails(prev => prev.filter(e => e.uid !== uid));
-            continue; // ✅ SALTA QUESTA EMAIL
-          }
+              .eq('user_email', userEmail);
+
+            return { status: 'success' as const, uid };
+          })
+        );
+
+        // ✅ Conta risultati batch
+        results.forEach((result, idx) => {
+          const uid = batch[idx];
           
-          const email = await fetchAndNormalizeSingleEmail(uid, selectedFolder);
-
-          // ✅ Mapping campi - ESATTAMENTE come FunEmailDownloader
-          const emailToSave = {
-            message_id: `${selectedFolder}/${uid}`,
-            from_email: email.from_email || '',
-            to_email: email.to_email || '',
-            cc_email: email.cc_email || null,
-            bcc_email: email.bcc_email || null,
-            subject: email.subject || '',
-            body_text: email.body_text || '',
-            body_html: email.body_html || '',
-            data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
-            cartella: selectedFolder,
-            direzione: 'inbound',
-            stato: email.flags?.includes('\\Seen') ? 'letto' : 'nuovo',
-            flags: email.flags || [],
-            attachments: email.attachments || [],
-            provider_id: '00000000-0000-0000-0000-000000000000',
-            user_email: profile.tmwe_email,
-            sync_status: 'sincronizzato',  // ✅ Valore valido per check constraint
-          };
-
-          // ✅ Sanitizza array prima dell'insert
-          emailToSave.flags = Array.isArray(emailToSave.flags) ? emailToSave.flags : [];
-          emailToSave.attachments = Array.isArray(emailToSave.attachments) ? emailToSave.attachments : [];
-
-          console.log('📤 [SingleMailImporter] INSERT BODY:', JSON.stringify(emailToSave, null, 2));
-
-          // ✅ Usa .insert() con singolo oggetto (come FunEmailDownloader)
-          const { error } = await supabase
-            .from('email_messages')
-            .insert(emailToSave);
-
-          if (error) {
-            console.error('❌ [SingleMailImporter] Supabase error:', error);
-            throw error;
+          if (result.status === 'fulfilled') {
+            if (result.value.status === 'skipped') {
+              skippedCount++;
+            } else {
+              successCount++;
+            }
+            setMissingEmails(prev => prev.filter(e => e.uid !== uid));
+          } else {
+            console.error(`❌ Error importing UID ${uid}:`, result.reason);
+            errorCount++;
           }
-
-          successCount++;
-          setMissingEmails(prev => prev.filter(e => e.uid !== uid));
-        } catch (err: any) {
-          console.error(`❌ Error importing UID ${uid}:`, {
-            message: err?.message,
-            code: err?.code,
-            details: err?.details,
-            hint: err?.hint,
-            fullError: err
-          });
-          errorCount++;
-        }
+        });
       }
 
       // ✅ TOAST CON CONTATORI
@@ -655,8 +487,8 @@ export function SingleMailImporter() {
   };
 
 
-  // ✅ Helper per trovare statistiche cartella (usa confronto UID-per-UID quando disponibile)
-  const getFolderStats = (folderName: string) => {
+  // ✅ Helper per trovare statistiche cartella (memoizzato)
+  const getFolderStats = useMemo(() => (folderName: string) => {
     // ✅ Se è la cartella selezionata E abbiamo comparisonData, usa quello (confronto UID-per-UID)
     if (folderName === selectedFolder && comparisonData) {
       const syncPercentage = comparisonData.totalServer > 0 
@@ -678,7 +510,7 @@ export function SingleMailImporter() {
     // ✅ Altrimenti usa folderCounts (conteggio generale per altre cartelle)
     if (!folderCounts) return null;
     return folderCounts.find(f => f.folderName === folderName);
-  };
+  }, [selectedFolder, comparisonData, folderCounts]);
 
   const allSelected = missingEmails.length > 0 && missingEmails.every(e => e.selected);
   const selectedCount = missingEmails.filter(e => e.selected).length;

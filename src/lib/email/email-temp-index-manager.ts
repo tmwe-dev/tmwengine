@@ -13,6 +13,7 @@ export interface PopulateConfig {
   metadata_batch_size?: number;
   page_throttle_ms?: number;
   metadata_throttle_ms?: number;
+  max_pages?: number; // ✅ NUOVO: limita numero pagine (0 = illimitato)
 }
 
 export interface PopulateProgress {
@@ -31,10 +32,11 @@ export interface PopulateTempIndexResult {
 }
 
 const DEFAULT_CONFIG: Required<PopulateConfig> = {
-  uid_batch_size: 50,              // ✅ Riduce il numero di chiamate API
+  uid_batch_size: 50,
   metadata_batch_size: 3,
-  page_throttle_ms: 2000,          // ✅ Aumentato per dare più tempo all'Edge Function
+  page_throttle_ms: 5000,          // ✅ Aumentato a 5s
   metadata_throttle_ms: 500,
+  max_pages: 0,                    // ✅ Default: illimitato
 };
 
 /**
@@ -96,9 +98,16 @@ async function fetchServerUIDs(
   let currentPage = 1;
   let hasMore = true;
   let retryCount = 0;
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 1; // ✅ Ridotto da 3 a 1
 
   while (hasMore) {
+    // ✅ CHECK: hai raggiunto il limite di pagine?
+    if (config.max_pages > 0 && currentPage > config.max_pages) {
+      console.log(`⚠️ Reached max_pages limit (${config.max_pages}). Stopping pagination.`);
+      hasMore = false;
+      break;
+    }
+    
     try {
       console.log(`📡 Fetching page ${currentPage} (batch size: ${config.uid_batch_size})...`);
       

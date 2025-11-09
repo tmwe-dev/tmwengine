@@ -105,62 +105,73 @@ export function useSingleFastPerformance() {
       const { getSyncPreferences } = await import('@/lib/email-sync-preferences');
       const preferences = await getSyncPreferences(userEmail);
 
-      // 2. Determina cartelle da pre-popolare
-      let baseFolders: string[];
-
       if (preferences.included_folders.length === 0) {
         addLog({ 
           phase: 'warning', 
-          message: '⚠️ Nessun profilo performance attivo o nessuna preferenza configurata. Usa Performance Configurator e configura le preferenze.' 
+          message: '⚠️ Nessuna preferenza configurata. Usa Unified/Turbo per inizializzare l\'indice.' 
         });
         setIsRunning(false);
         return;
       }
 
-      baseFolders = preferences.included_folders;
-      addLog({ 
-        phase: 'preparing', 
-        message: `📋 Cartelle da pre-popolare: ${baseFolders.length}` 
-      });
+      // 2. ✅ CHECK: l'indice ha già dati?
+      const existingFolders = await getSingleFastFoldersFromLocal(userEmail);
+      const foldersWithData = existingFolders.filter(f => f.pending > 0 || f.folderName);
 
-      // 4. Pre-popola SOLO le cartelle che esistono sul server
-      const { populateTempIndexForFolder } = await import('@/lib/single-fast-core');
-
-      for (let i = 0; i < baseFolders.length; i++) {
-        if (shouldStop.current) break;
-        
-        const folder = baseFolders[i];
+      if (foldersWithData.length > 0) {
+        // ✅ INDICE GIÀ POPOLATO: usa logica MAX (veloce)
         addLog({ 
           phase: 'preparing', 
-          message: `📦 Pre-caricamento ${i + 1}/${baseFolders.length}: ${folder}` 
+          message: `✅ Indice già popolato (${foldersWithData.length} cartelle). Skippo pre-popolazione.` 
+        });
+      } else {
+        // ⚠️ INDICE VUOTO: pre-popola con LIMITI AGGRESSIVI
+        addLog({ 
+          phase: 'preparing', 
+          message: `⚠️ Indice vuoto. Pre-popolamento LIMITATO (max 2 pagine/cartella)...` 
         });
         
-        try {
-          await populateTempIndexForFolder(folder, userEmail, {}, (details) => {
-            addLog({
-              phase: 'preparing',
-              folder: folder,
-              message: `   Batch ${details.current}/${details.total}: ${details.from_email}`
+        const baseFolders = preferences.included_folders;
+        const { populateTempIndexForFolder } = await import('@/lib/single-fast-core');
+        
+        for (let i = 0; i < baseFolders.length; i++) {
+          if (shouldStop.current) break;
+          
+          const folder = baseFolders[i];
+          addLog({ 
+            phase: 'preparing', 
+            message: `📦 Pre-caricamento PARZIALE ${i + 1}/${baseFolders.length}: ${folder}` 
+          });
+          
+          try {
+            await populateTempIndexForFolder(folder, userEmail, {
+              uid_batch_size: 50,
+              page_throttle_ms: 5000,
+              max_pages: 2
+            }, (details) => {
+              addLog({
+                phase: 'preparing',
+                folder: folder,
+                message: `   Batch ${details.current}/${details.total}: ${details.from_email}`
+              });
             });
-          });
-        } catch (error: any) {
-          console.error(`❌ Errore pre-caricamento ${folder}:`, error);
-          addLog({
-            phase: 'error',
-            folder: folder,
-            message: `⚠️ Pre-caricamento ${folder} fallito: ${error.message}`
-          });
-          // Continua con la prossima cartella
+          } catch (error: any) {
+            console.error(`❌ Errore pre-caricamento ${folder}:`, error);
+            addLog({
+              phase: 'error',
+              folder: folder,
+              message: `⚠️ Pre-caricamento ${folder} fallito: ${error.message}`
+            });
+          }
+          
+          // ✅ 10s tra cartelle
+          if (i < baseFolders.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 10000));
+          }
         }
         
-        // Delay tra cartelle (tranne l'ultima)
-        if (i < baseFolders.length - 1) {
-          console.log('⏳ Pausa 3 secondi prima della prossima cartella...');
-          await new Promise(resolve => setTimeout(resolve, 3000));
-        }
+        addLog({ phase: 'preparing', message: '✅ Pre-popolazione LIMITATA completata' });
       }
-
-      addLog({ phase: 'preparing', message: '✅ Pre-popolazione completata, lettura indice locale...' });
 
       // 3. Get folders from LOCAL index (FAST, NO API)
       const folders = await getSingleFastFoldersFromLocal(userEmail);

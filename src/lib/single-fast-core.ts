@@ -401,6 +401,71 @@ export async function getSingleFastFolders(userEmail: string): Promise<Array<{
 /**
  * Fetch UIDs dalla tabella email_temp_index
  */
+/**
+ * Versione VELOCE che usa SOLO dati locali da email_temp_index
+ * NO chiamate API esterne → avvio immediato della danza
+ */
+export async function getSingleFastFoldersFromLocal(userEmail: string): Promise<Array<{
+  folderName: string;
+  pending: number;
+  included: boolean;
+}>> {
+  console.log('🚀 [getSingleFastFoldersFromLocal] Caricamento cartelle da email_temp_index...');
+
+  // 1. Carica preferenze sync
+  const preferences = await getSyncPreferences(userEmail);
+  
+  // 2. Query cartelle con email pending da email_temp_index
+  const { data: pendingFolders, error } = await supabase
+    .from('email_temp_index')
+    .select('folder')
+    .eq('user_email', userEmail)
+    .eq('status', 'pending');
+
+  if (error) {
+    console.error('❌ Errore lettura email_temp_index:', error);
+    throw error;
+  }
+
+  // 3. Conta pending per folder
+  const folderMap = new Map<string, number>();
+  (pendingFolders || []).forEach((row: any) => {
+    const count = folderMap.get(row.folder) || 0;
+    folderMap.set(row.folder, count + 1);
+  });
+
+  console.log(`📂 Cartelle con pending trovate: ${folderMap.size}`);
+
+  // 4. Se NON ci sono preferenze → sincronizza TUTTE
+  if (preferences.included_folders.length === 0) {
+    console.log('⚠️ Nessuna preferenza → sincronizza TUTTE le cartelle con pending');
+    return Array.from(folderMap.entries()).map(([folderName, pending]) => ({
+      folderName,
+      pending,
+      included: true
+    }));
+  }
+
+  // 5. Normalizzazione per confronto
+  const normalize = (name: string) => (name || '').trim().toLowerCase();
+  const includedSet = new Set(preferences.included_folders.map(normalize));
+
+  // 6. Filtra in base a preferenze
+  const result = Array.from(folderMap.entries()).map(([folderName, pending]) => ({
+    folderName,
+    pending,
+    included: includedSet.has(normalize(folderName))
+  }));
+
+  const includedCount = result.filter(f => f.included).length;
+  console.log(`✅ Cartelle filtrate (included=true): ${includedCount}/${result.length}`);
+
+  return result;
+}
+
+/**
+ * Fetch UIDs dalla tabella email_temp_index
+ */
 export async function fetchUIDsFromTempIndex(
   folder: string,
   userEmail: string

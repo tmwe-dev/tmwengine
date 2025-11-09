@@ -10,7 +10,7 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { processFolderWithDance, type DanceProgress } from "@/lib/single-fast-max-core";
-import { getSingleFastFolders } from "@/lib/single-fast-core";
+import { getSingleFastFoldersFromLocal } from "@/lib/single-fast-core";
 
 export interface LogEntry {
   timestamp: Date;
@@ -97,8 +97,8 @@ export function useSingleFastMax() {
       const user_email = await getUserEmail();
       addLog({ phase: 'init', message: `📧 User email: ${user_email}` });
 
-      // Get folders to sync
-      const folders = await getSingleFastFolders(user_email);
+      // Get folders to sync (FAST: usa solo email_temp_index, NO chiamate API)
+      const folders = await getSingleFastFoldersFromLocal(user_email);
       const folders_to_sync = folders.filter(f => f.included);
 
       if (folders_to_sync.length === 0) {
@@ -123,7 +123,7 @@ export function useSingleFastMax() {
         addLog({ 
           phase: 'preparing', 
           folder: f.folderName,
-          message: `   - ${f.folderName}: ${f.missing} email mancanti` 
+          message: `   - ${f.folderName}: ${f.pending} email pending` 
         });
       });
 

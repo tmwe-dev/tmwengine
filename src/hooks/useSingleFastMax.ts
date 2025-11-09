@@ -150,24 +150,20 @@ export function useSingleFastMax() {
         }));
 
         const result = await processFolderWithDance(
-          folder.folderName,
           user_email,
-          (details: DanceProgress) => {
+          folder.folderName,
+          (folder_name: string, imported: number, total: number) => {
             setProgress(prev => ({
               ...prev,
-              current_batch: details.current_batch,
-              total_downloaded: prev.total_downloaded + (details.total_processed - prev.total_downloaded),
-              current_email: details.current_email || '',
+              total_downloaded: imported,
+              current_email: `Processing ${folder_name}...`,
             }));
 
-            if (details.phase === 'downloading_emails' && details.current_email) {
-              addLog({
-                phase: 'importing',
-                folder: folder.folderName,
-                message: `✅ Batch ${details.current_batch}: ${details.current_email}`,
-                email_details: details.current_uid,
-              });
-            }
+            addLog({
+              phase: 'importing',
+              folder: folder_name,
+              message: `📦 ${imported}/${total} downloaded`,
+            });
           }
         );
 

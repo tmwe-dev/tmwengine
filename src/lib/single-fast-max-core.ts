@@ -104,11 +104,34 @@ async function downloadEmail(
   user_email: string
 ): Promise<boolean> {
   try {
-    // Fetch full email with body
-    const full_email = await emailMessageApi.getMessage(uid, folder, true);
+    // 🔄 Retry logic con exponential backoff per timeout transitori
+    const MAX_RETRIES = 2;
+    let full_email: any = null;
+    let retries = 0;
+
+    while (retries <= MAX_RETRIES) {
+      try {
+        full_email = await emailMessageApi.getMessage(uid, folder, true);
+        break; // ✅ Successo, esci dal loop
+      } catch (error: any) {
+        retries++;
+        const is_timeout = error.message?.toLowerCase().includes('timeout') || 
+                          error.message?.toLowerCase().includes('504');
+        
+        if (is_timeout && retries <= MAX_RETRIES) {
+          const backoff_delay = 1000 * retries; // 1s, 2s
+          console.warn(`⏱️ Timeout downloading UID ${uid}, retry ${retries}/${MAX_RETRIES} dopo ${backoff_delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, backoff_delay));
+          continue;
+        }
+        
+        // Re-throw se non è timeout o max retries raggiunto
+        throw error;
+      }
+    }
     
     if (!full_email) {
-      console.warn(`[downloadEmail] No data for UID ${uid}`);
+      console.warn(`[downloadEmail] No data for UID ${uid} after retries`);
       return false;
     }
 

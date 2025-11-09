@@ -91,13 +91,14 @@ serve(async (req) => {
     
     const { endpoint, data, optimizationFlags, requestTimeout } = requestBody;
     
-    // ⏱️ Timeout dinamico basato su handler
+    // ⏱️ Timeout dinamico basato su handler (OTTIMIZZATO PER SINGLE FAST MAX)
     const getTimeoutForHandler = (handler: string): number => {
       switch (handler) {
+        case 'get_message': return 90000; // ✅ 90s per download singola email (email pesanti con allegati)
         case 'get_messages': return 90000; // 90s per operazioni lente
         case 'get_folders': return 60000; // 60s per cartelle
         case 'full_sync': return 120000; // 2 min per sync completo
-        default: return 30000; // 30s default
+        default: return 45000; // ✅ 45s default (aumentato da 30s)
       }
     };
     

@@ -101,41 +101,80 @@ export function useSingleFastPerformance() {
 
       addLog({ phase: 'preparing', message: '🔍 Caricamento preferenze cartelle...' });
 
-      // 1. Get base folder list from preferences
+      // 1. Ottieni cartelle REALI dal server (usa emailFolderApi come fanno Turbo/Unified)
+      addLog({ phase: 'preparing', message: '📡 Caricamento cartelle disponibili dal server...' });
+
+      const { emailFolderApi } = await import('@/lib/tmwe-api-integrated');
+      const serverFolders = await emailFolderApi.getFolders({ skipCache: true });
+
+      // Estrai nomi puliti
+      const serverFolderNames = serverFolders.map((f: any) => {
+        if (typeof f === 'string') return f;
+        return f.name || f.folder || String(f);
+      }).filter((name: string) => name && name.trim());
+
+      addLog({ 
+        phase: 'preparing', 
+        message: `✅ Cartelle disponibili sul server: ${serverFolderNames.length}` 
+      });
+
+      // 2. Carica preferenze sync
       const { getSyncPreferences } = await import('@/lib/email-sync-preferences');
       const preferences = await getSyncPreferences(userEmail);
 
+      // 3. Filtra in base a preferenze
       let baseFolders: string[];
+
+      const normalize = (name: string) => (name || '').trim().toLowerCase();
+
       if (preferences.included_folders.length === 0) {
-        addLog({ phase: 'preparing', message: '⚠️ Nessuna preferenza → sincronizzazione TUTTE le cartelle' });
-        // Fallback: usa cartelle già presenti in email_temp_index o tutte disponibili
-        const { data } = await supabase
-          .from('email_temp_index')
-          .select('folder')
-          .eq('user_email', userEmail);
-        const existingFolders = [...new Set((data || []).map((r: any) => r.folder))];
-        
-        if (existingFolders.length > 0) {
-          baseFolders = existingFolders;
-        } else {
-          // Se non ci sono cartelle in temp index, usa getUnifiedFolderCounts
-          const { getUnifiedFolderCounts } = await import('@/lib/email-count-service');
-          const folderCounts = await getUnifiedFolderCounts(userEmail);
-          baseFolders = folderCounts.map(f => f.folderName);
-        }
+        addLog({ 
+          phase: 'preparing', 
+          message: '⚠️ Nessuna preferenza → sincronizzazione TUTTE le cartelle' 
+        });
+        baseFolders = serverFolderNames;
       } else {
-        baseFolders = preferences.included_folders;
+        const includedSet = new Set(preferences.included_folders.map(normalize));
+        
+        // ✅ FILTRA: prendi solo cartelle che esistono SUL SERVER E sono nelle preferenze
+        baseFolders = serverFolderNames.filter((name: string) => 
+          includedSet.has(normalize(name))
+        );
+        
+        addLog({ 
+          phase: 'preparing', 
+          message: `📋 Filtrate ${baseFolders.length}/${serverFolderNames.length} cartelle da preferenze` 
+        });
+        
+        // ⚠️ WARN: cartelle nelle preferenze ma NON sul server
+        const missingFolders = preferences.included_folders.filter(pref => 
+          !serverFolderNames.some(name => normalize(name) === normalize(pref))
+        );
+        
+        if (missingFolders.length > 0) {
+          addLog({
+            phase: 'warning',
+            message: `⚠️ Cartelle in preferenze ma NON sul server: ${missingFolders.join(', ')}`
+          });
+        }
       }
 
       if (baseFolders.length === 0) {
-        addLog({ phase: 'completed', message: '⚠️ Nessuna cartella disponibile per la sincronizzazione' });
+        addLog({ 
+          phase: 'completed', 
+          message: '⚠️ Nessuna cartella disponibile per la sincronizzazione' 
+        });
         return;
       }
 
-      addLog({ phase: 'preparing', message: `📋 Pre-popolazione indice per ${baseFolders.length} cartelle...` });
+      addLog({ 
+        phase: 'preparing', 
+        message: `📦 Pre-popolazione indice per ${baseFolders.length} cartelle VERIFICATE...` 
+      });
 
-      // 2. Pre-populate email_temp_index for ALL folders
+      // 4. Pre-popola SOLO le cartelle che esistono sul server
       const { populateTempIndexForFolder } = await import('@/lib/single-fast-core');
+
       for (let i = 0; i < baseFolders.length; i++) {
         if (shouldStop.current) break;
         
@@ -158,7 +197,7 @@ export function useSingleFastPerformance() {
           addLog({
             phase: 'error',
             folder: folder,
-            message: `⚠️ Pre-caricamento ${folder} parzialmente fallito, continuo...`
+            message: `⚠️ Pre-caricamento ${folder} fallito: ${error.message}`
           });
           // Continua con la prossima cartella
         }

@@ -11,7 +11,7 @@
 
 import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { getSingleFastFolders } from '@/lib/single-fast-core';
+import { getSingleFastFoldersFromLocal } from '@/lib/single-fast-core';
 import { getActiveProfile, type PerformanceProfile } from '@/lib/performance-profiles';
 import { ParallelDownloadController } from '@/lib/parallel-download-controller';
 import type { LogEntry, TempIndexResult } from './useSingleFast';
@@ -101,17 +101,72 @@ export function useSingleFastPerformance() {
 
       addLog({ phase: 'preparing', message: '🔍 Caricamento preferenze cartelle...' });
 
-      // 1. Get folders from preferences
-      const folders = await getSingleFastFolders(userEmail);
-      const foldersToSync = folders.filter(f => f.included);
+      // 1. Get base folder list from preferences
+      const { getSyncPreferences } = await import('@/lib/email-sync-preferences');
+      const preferences = await getSyncPreferences(userEmail);
+
+      let baseFolders: string[];
+      if (preferences.included_folders.length === 0) {
+        addLog({ phase: 'preparing', message: '⚠️ Nessuna preferenza → sincronizzazione TUTTE le cartelle' });
+        // Fallback: usa cartelle già presenti in email_temp_index o tutte disponibili
+        const { data } = await supabase
+          .from('email_temp_index')
+          .select('folder')
+          .eq('user_email', userEmail);
+        const existingFolders = [...new Set((data || []).map((r: any) => r.folder))];
+        
+        if (existingFolders.length > 0) {
+          baseFolders = existingFolders;
+        } else {
+          // Se non ci sono cartelle in temp index, usa getUnifiedFolderCounts
+          const { getUnifiedFolderCounts } = await import('@/lib/email-count-service');
+          const folderCounts = await getUnifiedFolderCounts(userEmail);
+          baseFolders = folderCounts.map(f => f.folderName);
+        }
+      } else {
+        baseFolders = preferences.included_folders;
+      }
+
+      if (baseFolders.length === 0) {
+        addLog({ phase: 'completed', message: '⚠️ Nessuna cartella disponibile per la sincronizzazione' });
+        return;
+      }
+
+      addLog({ phase: 'preparing', message: `📋 Pre-popolazione indice per ${baseFolders.length} cartelle...` });
+
+      // 2. Pre-populate email_temp_index for ALL folders
+      const { populateTempIndexForFolder } = await import('@/lib/single-fast-core');
+      for (let i = 0; i < baseFolders.length; i++) {
+        if (shouldStop.current) break;
+        
+        const folder = baseFolders[i];
+        addLog({ 
+          phase: 'preparing', 
+          message: `📦 Pre-caricamento ${i + 1}/${baseFolders.length}: ${folder}` 
+        });
+        
+        await populateTempIndexForFolder(folder, userEmail, {}, (details) => {
+          addLog({
+            phase: 'preparing',
+            folder: folder,
+            message: `   Batch ${details.current}/${details.total}: ${details.from_email}`
+          });
+        });
+      }
+
+      addLog({ phase: 'preparing', message: '✅ Pre-popolazione completata, lettura indice locale...' });
+
+      // 3. Get folders from LOCAL index (FAST, NO API)
+      const folders = await getSingleFastFoldersFromLocal(userEmail);
+      const foldersToSync = folders.filter(f => f.included && f.pending > 0);
 
       if (foldersToSync.length === 0) {
-        addLog({ phase: 'completed', message: '⚠️ Nessuna cartella configurata per la sincronizzazione' });
+        addLog({ phase: 'completed', message: '✅ Nessuna email da importare' });
         return;
       }
 
       // 📋 PRE-FLIGHT SUMMARY
-      const totalMissing = foldersToSync.reduce((sum, f) => sum + f.missing, 0);
+      const totalMissing = foldersToSync.reduce((sum, f) => sum + f.pending, 0);
       setProgress({ current: 0, total: foldersToSync.length });
       setEmailProgress({ imported: 0, total: totalMissing, skipped: 0 });
       
@@ -123,7 +178,7 @@ export function useSingleFastPerformance() {
       foldersToSync.forEach((f, i) => {
         addLog({
           phase: 'preparing',
-          message: `  ${i + 1}. ${f.folderName} → ${f.missing} email`
+          message: `  ${i + 1}. ${f.folderName} → ${f.pending} email`
         });
       });
 
@@ -167,41 +222,14 @@ export function useSingleFastPerformance() {
         });
 
         try {
-          // ✅ FASE 1: Populate email_temp_index con batch progressivi da 25
+          // ✅ FASE 1: Fetch UIDs pendenti dalla tabella temporanea (già pre-popolata)
           addLog({
             phase: 'preparing',
             folder: folder.folderName,
-            message: `📦 FASE 1: Caricamento UIDs in batch da 25...`
+            message: `🔍 FASE 1: Recupero UIDs da importare...`
           });
 
-          const { populateTempIndexForFolder, fetchUIDsFromTempIndex, importEmailFromTempIndex } = await import('@/lib/single-fast-core');
-
-          await populateTempIndexForFolder(
-            folder.folderName,
-            userEmail,
-            {}, // config (usa defaults)
-            (details) => {
-              addLog({
-                phase: 'preparing',
-                folder: folder.folderName,
-                message: `📦 Batch ${details.current}/${details.total}: ${details.from_email}`
-              });
-            }
-          );
-
-          addLog({
-            phase: 'preparing',
-            folder: folder.folderName,
-            message: `✅ FASE 1 completata: indice temporaneo creato`
-          });
-
-          // ✅ FASE 2: Fetch UIDs pendenti dalla tabella temporanea
-          addLog({
-            phase: 'preparing',
-            folder: folder.folderName,
-            message: `🔍 FASE 2: Recupero UIDs da importare...`
-          });
-
+          const { fetchUIDsFromTempIndex, importEmailFromTempIndex } = await import('@/lib/single-fast-core');
           const uidsToImport = await fetchUIDsFromTempIndex(folder.folderName, userEmail);
 
           if (uidsToImport.length === 0) {
@@ -216,13 +244,13 @@ export function useSingleFastPerformance() {
           addLog({
             phase: 'importing',
             folder: folder.folderName,
-            message: `📧 FASE 3: Inizio import di ${uidsToImport.length} email (${useParallel ? 'parallel' : 'sequential'})...`
+            message: `📧 FASE 2: Inizio import di ${uidsToImport.length} email (${useParallel ? 'parallel' : 'sequential'})...`
           });
 
           let successCount = 0;
           let errorCount = 0;
 
-          // ✅ FASE 3: Import email dalla tabella temporanea
+          // ✅ FASE 2: Import email dalla tabella temporanea
           if (useParallel && downloadController.current) {
             // ⚡ MODO PARALLELO CON CONTROLLER
             for (let j = 0; j < uidsToImport.length; j++) {

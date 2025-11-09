@@ -298,9 +298,8 @@ export async function processFolderWithDance(
         // Gli UIDs da temp_index sono già "pending", scarica direttamente
         const missing_uids = batch_uids;
 
-        // 3. Salva metadata in email_temp_index (già fatto, ma aggiorniamo se necessario)
-        console.log(`[processFolderWithDance] 📦 Batch ${batch_idx + 1}: Fetching metadata for ${missing_uids.length} UIDs...`);
-        await fetchMetadataBatch(user_email, folder, missing_uids);
+        // ✅ SKIP fetchMetadataBatch: i metadati sono già in email_temp_index
+        console.log(`[processFolderWithDance] ✅ Metadata già presente in email_temp_index, skip fetch`);
 
         // 4. Download parallelo email complete
         console.log(`[processFolderWithDance] 📦 Batch ${batch_idx + 1}: Downloading ${missing_uids.length} emails (${MAX_CONCURRENT} concurrent)...`);

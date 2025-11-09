@@ -99,77 +99,28 @@ export function useSingleFastPerformance() {
         });
       }
 
+      // 1. Carica preferenze sync (NO chiamate API bloccanti)
       addLog({ phase: 'preparing', message: '🔍 Caricamento preferenze cartelle...' });
 
-      // 1. Ottieni cartelle REALI dal server (usa emailFolderApi come fanno Turbo/Unified)
-      addLog({ phase: 'preparing', message: '📡 Caricamento cartelle disponibili dal server...' });
-
-      const { emailFolderApi } = await import('@/lib/tmwe-api-integrated');
-      const serverFolders = await emailFolderApi.getFolders({ skipCache: true });
-
-      // Estrai nomi puliti
-      const serverFolderNames = serverFolders.map((f: any) => {
-        if (typeof f === 'string') return f;
-        return f.name || f.folder || String(f);
-      }).filter((name: string) => name && name.trim());
-
-      addLog({ 
-        phase: 'preparing', 
-        message: `✅ Cartelle disponibili sul server: ${serverFolderNames.length}` 
-      });
-
-      // 2. Carica preferenze sync
       const { getSyncPreferences } = await import('@/lib/email-sync-preferences');
       const preferences = await getSyncPreferences(userEmail);
 
-      // 3. Filtra in base a preferenze
+      // 2. Determina cartelle da pre-popolare
       let baseFolders: string[];
-
-      const normalize = (name: string) => (name || '').trim().toLowerCase();
 
       if (preferences.included_folders.length === 0) {
         addLog({ 
-          phase: 'preparing', 
-          message: '⚠️ Nessuna preferenza → sincronizzazione TUTTE le cartelle' 
+          phase: 'warning', 
+          message: '⚠️ Nessun profilo performance attivo o nessuna preferenza configurata. Usa Performance Configurator e configura le preferenze.' 
         });
-        baseFolders = serverFolderNames;
-      } else {
-        const includedSet = new Set(preferences.included_folders.map(normalize));
-        
-        // ✅ FILTRA: prendi solo cartelle che esistono SUL SERVER E sono nelle preferenze
-        baseFolders = serverFolderNames.filter((name: string) => 
-          includedSet.has(normalize(name))
-        );
-        
-        addLog({ 
-          phase: 'preparing', 
-          message: `📋 Filtrate ${baseFolders.length}/${serverFolderNames.length} cartelle da preferenze` 
-        });
-        
-        // ⚠️ WARN: cartelle nelle preferenze ma NON sul server
-        const missingFolders = preferences.included_folders.filter(pref => 
-          !serverFolderNames.some(name => normalize(name) === normalize(pref))
-        );
-        
-        if (missingFolders.length > 0) {
-          addLog({
-            phase: 'warning',
-            message: `⚠️ Cartelle in preferenze ma NON sul server: ${missingFolders.join(', ')}`
-          });
-        }
-      }
-
-      if (baseFolders.length === 0) {
-        addLog({ 
-          phase: 'completed', 
-          message: '⚠️ Nessuna cartella disponibile per la sincronizzazione' 
-        });
+        setIsRunning(false);
         return;
       }
 
+      baseFolders = preferences.included_folders;
       addLog({ 
         phase: 'preparing', 
-        message: `📦 Pre-popolazione indice per ${baseFolders.length} cartelle VERIFICATE...` 
+        message: `📋 Cartelle da pre-popolare: ${baseFolders.length}` 
       });
 
       // 4. Pre-popola SOLO le cartelle che esistono sul server

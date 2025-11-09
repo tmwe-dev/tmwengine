@@ -74,7 +74,7 @@ async function fetchMetadataForUIDs(
 
   for (const uid of uids) {
     try {
-      const email = await emailMessageApi.getMessage(uid, folder, false);
+      const email = await emailMessageApi.getMessage(uid, folder, false, true);
       
       metadata_batch.push({
         uid,
@@ -111,7 +111,7 @@ async function downloadEmail(
 
     while (retries <= MAX_RETRIES) {
       try {
-        full_email = await emailMessageApi.getMessage(uid, folder, true);
+        full_email = await emailMessageApi.getMessage(uid, folder, false, true);
         break; // ✅ Successo, esci dal loop
       } catch (error: any) {
         retries++;
@@ -134,6 +134,15 @@ async function downloadEmail(
       console.warn(`[downloadEmail] No data for UID ${uid} after retries`);
       return false;
     }
+
+    // ✅ Verifica che API abbia ritornato dati completi
+    if (!full_email.subject && !full_email.from) {
+      console.error(`[downloadEmail] ⚠️ UID ${uid}: API returned incomplete data`);
+      console.error(`[downloadEmail] Response:`, JSON.stringify(full_email, null, 2));
+      return false;
+    }
+
+    console.log(`[downloadEmail] ✅ UID ${uid}: subject="${full_email.subject?.substring(0, 50)}...", from=${full_email.from?.email}`);
 
     const message_id = `${folder}/${uid}`;
 

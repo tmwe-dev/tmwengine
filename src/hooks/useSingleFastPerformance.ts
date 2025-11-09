@@ -145,13 +145,29 @@ export function useSingleFastPerformance() {
           message: `📦 Pre-caricamento ${i + 1}/${baseFolders.length}: ${folder}` 
         });
         
-        await populateTempIndexForFolder(folder, userEmail, {}, (details) => {
-          addLog({
-            phase: 'preparing',
-            folder: folder,
-            message: `   Batch ${details.current}/${details.total}: ${details.from_email}`
+        try {
+          await populateTempIndexForFolder(folder, userEmail, {}, (details) => {
+            addLog({
+              phase: 'preparing',
+              folder: folder,
+              message: `   Batch ${details.current}/${details.total}: ${details.from_email}`
+            });
           });
-        });
+        } catch (error: any) {
+          console.error(`❌ Errore pre-caricamento ${folder}:`, error);
+          addLog({
+            phase: 'error',
+            folder: folder,
+            message: `⚠️ Pre-caricamento ${folder} parzialmente fallito, continuo...`
+          });
+          // Continua con la prossima cartella
+        }
+        
+        // Delay tra cartelle (tranne l'ultima)
+        if (i < baseFolders.length - 1) {
+          console.log('⏳ Pausa 3 secondi prima della prossima cartella...');
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
       }
 
       addLog({ phase: 'preparing', message: '✅ Pre-popolazione completata, lettura indice locale...' });

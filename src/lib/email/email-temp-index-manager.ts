@@ -31,9 +31,9 @@ export interface PopulateTempIndexResult {
 }
 
 const DEFAULT_CONFIG: Required<PopulateConfig> = {
-  uid_batch_size: 25,
+  uid_batch_size: 50,              // ✅ Riduce il numero di chiamate API
   metadata_batch_size: 3,
-  page_throttle_ms: 800,
+  page_throttle_ms: 2000,          // ✅ Aumentato per dare più tempo all'Edge Function
   metadata_throttle_ms: 500,
 };
 
@@ -95,6 +95,8 @@ async function fetchServerUIDs(
   const uids = new Set<string>();
   let currentPage = 1;
   let hasMore = true;
+  let retryCount = 0;
+  const MAX_RETRIES = 3;
 
   while (hasMore) {
     try {
@@ -107,6 +109,9 @@ async function fetchServerUIDs(
         format: 'text',
         include_attachments: false,
       });
+
+      // Reset retry counter on success
+      retryCount = 0;
 
       // ✅ VALIDAZIONE API RESPONSE (CRITICA)
       if (!response || !response.messages || !Array.isArray(response.messages)) {
@@ -141,7 +146,19 @@ async function fetchServerUIDs(
       }
     } catch (error) {
       console.error(`❌ Error fetching page ${currentPage}:`, error);
-      hasMore = false;
+      
+      // ✅ RETRY LOGIC con exponential backoff
+      if (retryCount < MAX_RETRIES) {
+        retryCount++;
+        const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 10000); // 2s, 4s, 8s (max 10s)
+        console.warn(`🔄 Retry ${retryCount}/${MAX_RETRIES} after ${backoffDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+        // Non incrementa currentPage, riprova la stessa pagina
+        continue;
+      } else {
+        console.error(`❌ Max retries reached for page ${currentPage}, stopping pagination`);
+        hasMore = false;
+      }
     }
   }
 

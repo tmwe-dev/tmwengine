@@ -142,6 +142,7 @@ export function DualPhaseDownloader() {
           const result = await populateTempIndexForFolder(
             folder.name,
             userEmail,
+            {}, // config (usa defaults)
             (progress) => {
               setStats(prev => ({
                 ...prev,

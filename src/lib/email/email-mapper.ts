@@ -16,6 +16,13 @@ export interface NormalizedEmail {
   attachments: any[];
   in_reply_to: string | null;
   email_references: string | null;
+  
+  // ✅ Extended fields from fetchAndNormalizeSingleEmail
+  uid?: string;
+  message_id?: string;
+  from_name?: string | null;
+  flags?: string[];
+  has_attachments?: boolean;
 }
 
 /**
@@ -52,16 +59,22 @@ function normalizeEmailList(field: any): string {
  * Normalizza una email dalla risposta API al formato DB
  * 
  * @param apiEmail - Risposta raw dall'API TMWE
+ * @param uid - UID opzionale per generare message_id
+ * @param folder - Folder opzionale per generare message_id
  * @returns Email normalizzata pronta per l'insert in DB
  */
-export function normalizeEmailMessage(apiEmail: any): NormalizedEmail {
+export function normalizeEmailMessage(
+  apiEmail: any,
+  uid?: string,
+  folder?: string
+): NormalizedEmail {
   // ✅ Gestisce ENTRAMBI i formati API
   const header = apiEmail?.data?.header || apiEmail || {};
   const body_data = apiEmail?.data || apiEmail || {};
   
   // Estrai campi con fallback multipli
   const subject = header.subject || apiEmail.subject || '(No Subject)';
-  const from_email = header.from || apiEmail.from?.email || apiEmail.from || 'Unknown';
+  const from_email = normalizeEmailList(header.from || apiEmail.from) || 'Unknown';
   const date = header.date || apiEmail.date || new Date().toISOString();
   
   return {
@@ -78,6 +91,18 @@ export function normalizeEmailMessage(apiEmail: any): NormalizedEmail {
       : [],
     in_reply_to: header.in_reply_to || apiEmail.in_reply_to || null,
     email_references: header.references || apiEmail.references || null,
+    
+    // ✅ Extended fields (optional)
+    uid: uid || header.uid || apiEmail.uid,
+    message_id: header.message_id || (uid && folder ? `${folder}/${uid}` : undefined),
+    from_name: header.from_name || apiEmail.from_name || null,
+    flags: [
+      ...(header.seen || apiEmail.seen ? ['\\Seen'] : []),
+      ...(header.flagged || apiEmail.flagged ? ['\\Flagged'] : []),
+      ...(header.answered || apiEmail.answered ? ['\\Answered'] : [])
+    ],
+    has_attachments: header.has_attachments || apiEmail.has_attachments || 
+                     (header.attachments_count || apiEmail.attachments_count || 0) > 0,
   };
 }
 

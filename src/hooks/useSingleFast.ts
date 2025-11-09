@@ -161,6 +161,7 @@ export function useSingleFast() {
           await populateTempIndexForFolder(
             folder.folderName,
             userEmail,
+            {}, // config (usa defaults)
             (details) => {
               addLog({
                 phase: 'preparing',

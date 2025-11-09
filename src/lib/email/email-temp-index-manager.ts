@@ -108,19 +108,36 @@ async function fetchServerUIDs(
         include_attachments: false,
       });
 
+      // ✅ VALIDAZIONE API RESPONSE (CRITICA)
+      if (!response || !response.messages || !Array.isArray(response.messages)) {
+        console.error(`❌ Invalid API response structure at page ${currentPage}:`, {
+          hasResponse: !!response,
+          hasMessages: !!response?.messages,
+          isArray: Array.isArray(response?.messages),
+          responseKeys: response ? Object.keys(response) : []
+        });
+        hasMore = false;
+        break;
+      }
+
       const batchUIDs = response.messages.map((msg: any) => String(msg.uid));
       
-      if (batchUIDs.length === 0 || batchUIDs.length < config.uid_batch_size) {
+      // ✅ RIPRISTINA LOGICA IF/ELSE (come vecchio codice)
+      if (batchUIDs.length === 0) {
         hasMore = false;
-        console.log(`✅ Last page reached (received ${batchUIDs.length})`);
-      }
-      
-      batchUIDs.forEach(uid => uids.add(uid));
-      console.log(`✅ Page ${currentPage}: ${batchUIDs.length} UIDs (total: ${uids.size})`);
-      
-      if (hasMore) {
-        currentPage++;
-        await new Promise(resolve => setTimeout(resolve, config.page_throttle_ms));
+        console.log(`✅ No more UIDs found at page ${currentPage}`);
+      } else {
+        batchUIDs.forEach(uid => uids.add(uid));
+        console.log(`✅ Page ${currentPage}: ${batchUIDs.length} UIDs (total: ${uids.size})`);
+        
+        if (batchUIDs.length < config.uid_batch_size) {
+          hasMore = false;
+          console.log(`✅ Last page reached (received ${batchUIDs.length} < ${config.uid_batch_size})`);
+        } else {
+          currentPage++;
+          console.log(`⏳ Waiting ${config.page_throttle_ms}ms before next page...`);
+          await new Promise(resolve => setTimeout(resolve, config.page_throttle_ms));
+        }
       }
     } catch (error) {
       console.error(`❌ Error fetching page ${currentPage}:`, error);

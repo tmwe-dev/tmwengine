@@ -655,8 +655,27 @@ export function SingleMailImporter() {
   };
 
 
-  // ✅ Helper per trovare statistiche cartella
+  // ✅ Helper per trovare statistiche cartella (usa confronto UID-per-UID quando disponibile)
   const getFolderStats = (folderName: string) => {
+    // ✅ Se è la cartella selezionata E abbiamo comparisonData, usa quello (confronto UID-per-UID)
+    if (folderName === selectedFolder && comparisonData) {
+      const syncPercentage = comparisonData.totalServer > 0 
+        ? Math.round((comparisonData.totalDB / comparisonData.totalServer) * 100)
+        : 0;
+      
+      return {
+        folderName,
+        serverCount: comparisonData.totalServer,
+        dbCount: comparisonData.totalDB,
+        missing: comparisonData.totalMissing,
+        syncPercentage,
+        serverSource: 'comparison' as const,
+        errors: [],
+        isTestable: true,
+      };
+    }
+    
+    // ✅ Altrimenti usa folderCounts (conteggio generale per altre cartelle)
     if (!folderCounts) return null;
     return folderCounts.find(f => f.folderName === folderName);
   };

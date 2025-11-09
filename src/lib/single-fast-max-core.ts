@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
+import { fetchUIDsFromTempIndex } from '@/lib/single-fast-core';
 
 // Definizione dei tipi
 interface EmailTempIndex {
@@ -267,73 +268,70 @@ export async function processFolderWithDance(
   const BATCH_SIZE = 50; // UIDs per batch
   const MAX_CONCURRENT = 3; // Download paralleli
 
-  let page = 1;
-  let has_more = true;
   let total_imported = 0;
 
-  while (has_more) {
-    try {
-      // 1. Scarica batch di UIDs dal server TMWE
-      console.log(`[processFolderWithDance] 📦 Batch ${page}: Fetching UIDs...`);
-      const response = await emailMessageApi.getMessages({
-        folder,
-        page,
-        limit: BATCH_SIZE
-      });
+  try {
+    // 1. Leggi UIDs pending da email_temp_index (NO chiamate API al server TMWE)
+    console.log(`[processFolderWithDance] 📦 Fetching pending UIDs from email_temp_index...`);
+    
+    const all_pending_uids_str = await fetchUIDsFromTempIndex(folder, user_email);
+    const all_pending_uids = all_pending_uids_str.map(uid => parseInt(uid, 10));
 
-      const uids: number[] = response?.messages?.map((m: any) => m.uid) || [];
-      
-      if (uids.length === 0) {
-        console.log(`[processFolderWithDance] ✅ No more UIDs for ${folder}`);
-        has_more = false;
-        break;
-      }
+    console.log(`[processFolderWithDance] ✅ Found ${all_pending_uids.length} pending UIDs in temp_index`);
 
-      console.log(`[processFolderWithDance] 📦 Batch ${page}: Fetched ${uids.length} UIDs`);
-
-      // 2. Trova UIDs mancanti (non ancora in email_messages)
-      const missing_uids = await findMissingUIDs(user_email, folder, uids);
-
-      if (missing_uids.length === 0) {
-        console.log(`[processFolderWithDance] ✅ Batch ${page}: All emails already imported`);
-        page++;
-        continue;
-      }
-
-      // 3. Salva metadata in email_temp_index
-      console.log(`[processFolderWithDance] 📦 Batch ${page}: Fetching metadata for ${missing_uids.length} missing UIDs...`);
-      await fetchMetadataBatch(user_email, folder, missing_uids);
-
-      // 4. Download parallelo email complete
-      console.log(`[processFolderWithDance] 📦 Batch ${page}: Downloading ${missing_uids.length} emails (${MAX_CONCURRENT} concurrent)...`);
-      
-      for (let i = 0; i < missing_uids.length; i += MAX_CONCURRENT) {
-        const chunk = missing_uids.slice(i, i + MAX_CONCURRENT);
-        
-        await Promise.all(
-          chunk.map(uid =>
-            downloadEmail(user_email, folder, uid, (imported) => {
-              total_imported += imported;
-              if (onProgress) {
-                onProgress(folder, total_imported, missing_uids.length);
-              }
-            })
-          )
-        );
-      }
-
-      console.log(`[processFolderWithDance] ✅ Batch ${page}: Completed ${missing_uids.length} emails`);
-      page++;
-
-      // Verifica se ci sono altri batch
-      if (uids.length < BATCH_SIZE) {
-        has_more = false;
-      }
-
-    } catch (error: any) {
-      console.error(`[processFolderWithDance] Error page ${page}:`, error.message);
-      has_more = false;
+    if (all_pending_uids.length === 0) {
+      console.log(`[processFolderWithDance] ✅ No pending UIDs for ${folder}`);
+      return { total_downloaded: 0, errors: 0 };
     }
+
+    // 2. Processa in batch da BATCH_SIZE
+    const total_batches = Math.ceil(all_pending_uids.length / BATCH_SIZE);
+
+    for (let batch_idx = 0; batch_idx < total_batches; batch_idx++) {
+      const start = batch_idx * BATCH_SIZE;
+      const end = Math.min(start + BATCH_SIZE, all_pending_uids.length);
+      const batch_uids = all_pending_uids.slice(start, end);
+
+      console.log(`[processFolderWithDance] 📦 Batch ${batch_idx + 1}/${total_batches}: Processing ${batch_uids.length} UIDs`);
+
+      try {
+        // Gli UIDs da temp_index sono già "pending", scarica direttamente
+        const missing_uids = batch_uids;
+
+        // 3. Salva metadata in email_temp_index (già fatto, ma aggiorniamo se necessario)
+        console.log(`[processFolderWithDance] 📦 Batch ${batch_idx + 1}: Fetching metadata for ${missing_uids.length} UIDs...`);
+        await fetchMetadataBatch(user_email, folder, missing_uids);
+
+        // 4. Download parallelo email complete
+        console.log(`[processFolderWithDance] 📦 Batch ${batch_idx + 1}: Downloading ${missing_uids.length} emails (${MAX_CONCURRENT} concurrent)...`);
+        
+        for (let i = 0; i < missing_uids.length; i += MAX_CONCURRENT) {
+          const chunk = missing_uids.slice(i, i + MAX_CONCURRENT);
+          
+          await Promise.all(
+            chunk.map(uid =>
+              downloadEmail(user_email, folder, uid, (imported) => {
+                total_imported += imported;
+                if (onProgress) {
+                  onProgress(folder, total_imported, all_pending_uids.length);
+                }
+              })
+            )
+          );
+        }
+
+        console.log(`[processFolderWithDance] ✅ Batch ${batch_idx + 1}: Completed ${missing_uids.length} emails`);
+
+        // Pausa tra batch
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+      } catch (error: any) {
+        console.error(`[processFolderWithDance] ❌ Batch ${batch_idx + 1} error:`, error.message);
+      }
+    }
+
+  } catch (error: any) {
+    console.error(`[processFolderWithDance] ❌ Error:`, error.message);
   }
 
   console.log(`[processFolderWithDance] 🎉 COMPLETE: ${folder} (${total_imported} imported)`);

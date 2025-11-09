@@ -135,13 +135,6 @@ async function downloadEmail(
       return false;
     }
 
-    // ✅ CRITICO: Verifica che l'API abbia ritornato dati completi
-    if (!full_email.subject && !full_email.from && !full_email.date) {
-      console.error(`❌ [downloadEmail] UID ${uid}: API returned incomplete data (missing subject/from/date)`);
-      console.error(`📄 [downloadEmail] Incomplete response:`, JSON.stringify(full_email, null, 2));
-      return false;
-    }
-
     const message_id = `${folder}/${uid}`;
 
     // Check if already exists

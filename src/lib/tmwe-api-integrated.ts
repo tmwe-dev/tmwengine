@@ -505,15 +505,14 @@ export const emailMessageApi = {
     ...(params.filter && { filter: params.filter })  // ✅ NEW
   }),
 
-  getMessage: (uid: string, folder?: string, includeBody: boolean = true) => {
+  getMessage: (uid: string, folder?: string, markAsRead: boolean = true) => {
     const uidInt = parseInt(uid, 10);
     if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
     return fetchApi('/email_message', { 
       handler: 'get_message', 
       uid: uidInt, 
       folder: folder || 'INBOX',
-      include_body: includeBody,      // ✅ CRITICO: Richiede subject, from, date, body da API
-      mark_as_read: false              // ✅ NON segnare come letto durante import
+      mark_as_read: markAsRead 
     });
   },
 

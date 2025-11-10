@@ -789,7 +789,7 @@ export function EmailGroupingSuggestionsTab() {
           description: `${sender.companyName} è già in ${groupName}`,
         });
         
-        await loadData();
+        // ✅ Nessun reload necessario, la lista è già aggiornata
         return;
       }
 
@@ -811,7 +811,7 @@ export function EmailGroupingSuggestionsTab() {
         description: `${sender.companyName} assegnato a ${groupName}`,
       });
 
-      await loadData();
+      // ✅ Nessun reload necessario, la lista è già aggiornata
 
     } catch (error: any) {
       // 🔍 Logging dettagliato multi-format per debug

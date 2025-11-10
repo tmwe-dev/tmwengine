@@ -83,6 +83,10 @@ export const GroupingSuggestionRow = ({
     !newGroups.some(ng => ng.id === g.id)
   );
 
+  // 🔤 ORDINA ALFABETICAMENTE
+  newGroups.sort((a, b) => a.nome_gruppo.localeCompare(b.nome_gruppo, 'it'));
+  existingGroups.sort((a, b) => a.nome_gruppo.localeCompare(b.nome_gruppo, 'it'));
+
   // Handler per accettazione suggerimento primario con debouncing
   const handleAccept = async () => {
     const now = Date.now();

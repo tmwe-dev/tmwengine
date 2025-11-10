@@ -710,8 +710,33 @@ export function EmailGroupingSuggestionsTab() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fallback: se group_id è null, crea gruppo on-demand (auto-reg dovrebbe averlo già fatto)
-      let targetGroupId = groupId;
+      // 🔍 Cerca gruppo per NOME invece di fidarsi del group_id dal suggerimento
+      let targetGroupId: string | null = null;
+
+      if (groupId) {
+        // Verifica se il group_id esiste ancora
+        const existingGroup = groups.find(g => g.id === groupId);
+        if (existingGroup) {
+          targetGroupId = groupId;
+          console.log(`✅ Gruppo trovato per ID: ${existingGroup.nome_gruppo}`);
+        } else {
+          console.warn(`⚠️ Group ID ${groupId} non trovato, cerco per nome: ${groupName}`);
+        }
+      }
+
+      // Se non trovato per ID, cerca per nome
+      if (!targetGroupId) {
+        const groupByName = groups.find(g => 
+          g.nome_gruppo.toLowerCase() === groupName.toLowerCase()
+        );
+        
+        if (groupByName) {
+          targetGroupId = groupByName.id;
+          console.log(`✅ Gruppo trovato per nome: ${groupByName.nome_gruppo}`);
+        }
+      }
+
+      // Se ancora non trovato, crea nuovo gruppo
       if (!targetGroupId) {
         const { data: newGroup, error: createError } = await supabase
           .from('email_sender_groups')
@@ -741,6 +766,7 @@ export function EmailGroupingSuggestionsTab() {
 
         targetGroupId = newGroup.id;
         setGroups(prev => [...prev, newGroup]);
+        console.log(`✅ Nuovo gruppo creato: ${newGroup.nome_gruppo}`);
       }
 
       // ✅ Verifica se regola già esistente

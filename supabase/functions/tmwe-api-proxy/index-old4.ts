@@ -515,7 +515,6 @@ serve(async (req) => {
       console.warn(`⚠️ Circuit Breaker OPEN per ${data.handler}, richiesta bloccata temporaneamente`);
       return new Response(
         JSON.stringify({ 
-          success: false,
           error: 'Service temporarily unavailable',
           details: 'IMAP server health check failed, retry after cooldown',
           handler: data.handler,
@@ -562,7 +561,6 @@ serve(async (req) => {
         if (data?.handler) recordFailure(data.handler, 'Timeout');
         return new Response(
           JSON.stringify({ 
-            success: false,
             error: 'TMWE API timeout',
             timeout_ms: timeout,
             handler: data?.handler,
@@ -664,7 +662,6 @@ serve(async (req) => {
       
       return new Response(
         JSON.stringify({ 
-          success: false,
           error: `TMWE API Error: ${tmweResponse.status}`,
           details: responseData,
           requestSent: data // Includi la richiesta per debug
@@ -685,10 +682,7 @@ serve(async (req) => {
       console.log('✅ Risposta TMWE API riuscita');
     }
 
-    return new Response(JSON.stringify({
-      success: responseData?.success !== false,
-      ...responseData
-    }), {
+    return new Response(JSON.stringify(responseData), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -702,10 +696,7 @@ serve(async (req) => {
     console.log('═══════════════════════════════════════════════════════');
     
     return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: error.message 
-      }),
+      JSON.stringify({ error: error.message }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

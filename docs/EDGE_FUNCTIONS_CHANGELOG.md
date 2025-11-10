@@ -9,6 +9,201 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-30] - Normalizzazione Risposte tmwe-api-proxy con Campo `success`
+
+### File Modificato
+- **Function:** `supabase/functions/tmwe-api-proxy/index.ts`
+- **Backup Creato:** `index-old4.ts`
+
+### Motivo Modifica
+
+**Problema:** L'edge function `tmwe-api-proxy` NON ritornava consistentemente un campo `success: true/false` nelle sue risposte, causando errori `undefined` nel frontend quando testava `get_messages` e altre operazioni.
+
+**Impatto:**
+```
+Frontend: if (data.success) { ... }
+           ↓
+           data.success = undefined (quando manca il campo)
+           ↓
+           Errore: "undefined" nel messaggio di errore
+           ↓
+           UX: "TMWE API ha risposto ma l'operazione è fallita: undefined"
+```
+
+**Inconsistenza con altre edge functions:**
+- ✅ `ai-email-actions` → Ritorna sempre `{ success: true/false }`
+- ✅ `tmwe-email-send` → Ritorna sempre `{ success: true/false }`
+- ❌ `tmwe-api-proxy` → Ritorna `responseData` raw senza campo `success`
+
+### Modifiche Apportate
+
+#### 1. Normalizzazione Risposta di Successo (Lines 685-691)
+
+**Prima (inconsistente):**
+```typescript
+return new Response(JSON.stringify(responseData), {
+  status: 200,
+  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+});
+```
+
+**Dopo (normalizzato):**
+```typescript
+return new Response(JSON.stringify({
+  success: responseData?.success !== false,  // true se success non è esplicitamente false
+  ...responseData  // spread dei dati originali
+}), {
+  status: 200,
+  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+});
+```
+
+**Logica:**
+- Se `responseData.success === false` → `{ success: false, ...altri campi }`
+- Se `responseData.success === true` o manca → `{ success: true, ...altri campi }`
+- Mantiene **tutti i campi originali** con spread (`...responseData`)
+- **Backward compatible**: aggiunge solo campo `success`, non rimuove niente
+
+#### 2. Aggiunta `success: false` negli Errori
+
+**A. Circuit Breaker (Lines 516-524):**
+```typescript
+return new Response(
+  JSON.stringify({ 
+    success: false,  // ⬅️ AGGIUNTO
+    error: 'Service temporarily unavailable',
+    details: 'IMAP server health check failed, retry after cooldown',
+    handler: data.handler,
+    retry_after_ms: 60000
+  }),
+  { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+);
+```
+
+**B. Timeout (Lines 562-570):**
+```typescript
+return new Response(
+  JSON.stringify({ 
+    success: false,  // ⬅️ AGGIUNTO
+    error: 'TMWE API timeout',
+    timeout_ms: timeout,
+    handler: data?.handler,
+    retry_suggested: true
+  }),
+  { status: 504, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+);
+```
+
+**C. HTTP Error (Lines 665-675):**
+```typescript
+return new Response(
+  JSON.stringify({ 
+    success: false,  // ⬅️ AGGIUNTO
+    error: `TMWE API Error: ${tmweResponse.status}`,
+    details: responseData,
+    requestSent: data
+  }),
+  {
+    status: tmweResponse.status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  }
+);
+```
+
+**D. Catch Error (Lines 698-706):**
+```typescript
+return new Response(
+  JSON.stringify({ 
+    success: false,  // ⬅️ AGGIUNTO
+    error: error.message 
+  }),
+  {
+    status: 500,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  }
+);
+```
+
+### Comportamento Atteso
+
+**Prima del fix:**
+```typescript
+// Risposta di successo
+{ messages: [...], total: 10 }  // ❌ Nessun campo success
+
+// Frontend
+if (data.success) { ... }  // ❌ data.success = undefined
+setError(`...fallita: ${data.errors?.join(', ')}`);  // ❌ Mostra "undefined"
+```
+
+**Dopo il fix:**
+```typescript
+// Risposta di successo
+{ success: true, messages: [...], total: 10 }  // ✅ success: true aggiunto
+
+// Risposta con errore dal backend
+{ success: false, errors: [...] }  // ✅ success: false preservato
+
+// Errore di timeout/circuit breaker
+{ success: false, error: "...", ... }  // ✅ success: false aggiunto
+
+// Frontend
+if (data.success) { ... }  // ✅ data.success = true/false sempre definito
+```
+
+### Vantaggi
+
+✅ **Consistenza API**: Tutte le edge function ritornano `{ success: true/false }`  
+✅ **Nessun "undefined"**: Frontend può fare `if (data.success)` senza errori  
+✅ **Backward compatible**: Campo `success` aggiunto, dati originali preservati  
+✅ **Coerenza con altre edge functions**: Stessa struttura di `ai-email-actions`, `tmwe-email-send`  
+✅ **Error handling migliorato**: Tutti gli errori hanno `success: false` esplicito  
+
+### Testing
+
+#### Test 1: get_messages Success
+```bash
+1. Aprire `/funnemail?view=debugger`
+2. Inserire folder valida (es: "INBOX") e UID esistente
+3. Cliccare "Test get_messages"
+4. Verificare risposta:
+   ✅ { success: true, messages: [...], ... }
+5. Nessun errore "undefined"
+```
+
+#### Test 2: get_messages Error
+```bash
+1. Inserire folder inesistente (es: "FAKE_FOLDER")
+2. Cliccare "Test get_messages"
+3. Verificare risposta:
+   ✅ { success: false, errors: [...] }
+4. Messaggio errore mostra dettagli, NON "undefined"
+```
+
+#### Test 3: Timeout
+```bash
+1. Simulare timeout (configurare timeout molto basso)
+2. Verificare risposta:
+   ✅ { success: false, error: "TMWE API timeout", timeout_ms: 5000, ... }
+```
+
+### Rollback Plan
+
+```bash
+cp supabase/functions/tmwe-api-proxy/index-old4.ts \
+   supabase/functions/tmwe-api-proxy/index.ts
+```
+
+### Note di Sicurezza
+
+- ✅ Nessuna modifica a RLS policies
+- ✅ Nessuna modifica logica business
+- ✅ Solo aggiunta campo `success` nelle risposte
+- ✅ Preserva tutti i campi originali con spread operator
+- ✅ Backward compatible: codice esistente continua a funzionare
+
+---
+
 ## [2025-11-07] - Accettazione Gruppi con 1+ Mittenti + Validazione Context Summary
 
 ### File Modificato

@@ -19,7 +19,7 @@
     "import": "Importation",
     "importTemplates": "Modèles d'Importation",
     "manageImport": "Gérer l'Importation",
-    "importedRecords": "Enregistrements Importés",
+    "importedRecords": "Import Templates",
     "importErrors": "Erreurs d'Importation",
     "tables": "Tables",
     "tmweEmail": "TMWE Email",

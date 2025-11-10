@@ -2,10 +2,8 @@
  * Container Carousel 3D - Wrapper per visualizzazione carousel
  */
 
-import { useDroppable } from '@dnd-kit/core';
 import { EmailCarousel3D } from './EmailCarousel3D';
 import type { EmailSenderGroup, SenderAnalysis } from '@/types/email-management';
-import { cn } from '@/lib/utils';
 
 interface EmailCarouselContainerProps {
   categories: EmailSenderGroup[];
@@ -15,6 +13,7 @@ interface EmailCarouselContainerProps {
   verticalOffset?: number;
   onPrevious: () => void;
   onNext: () => void;
+  hoveredGroupId?: string | null;
 }
 
 export function EmailCarouselContainer({
@@ -25,19 +24,11 @@ export function EmailCarouselContainer({
   verticalOffset = 0,
   onPrevious,
   onNext,
+  hoveredGroupId,
 }: EmailCarouselContainerProps) {
-  // 🆕 Registra carousel come zona droppable
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'email-carousel-canvas',
-  });
-  
   return (
     <div 
-      ref={setNodeRef}
-      className={cn(
-        "flex-1 overflow-visible relative min-h-[600px] transition-all duration-200",
-        isOver && "ring-4 ring-blue-500/50 ring-offset-4"
-      )}
+      className="flex-1 overflow-visible relative min-h-[600px]"
     >
       <EmailCarousel3D
         categories={categories}

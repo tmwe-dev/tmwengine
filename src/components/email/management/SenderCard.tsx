@@ -1,70 +1,129 @@
 /**
- * Card draggable mittente - Sistema nativo drag (come Design Lab)
+ * Card draggable mittente - Sistema nativo drag (stile Design Lab)
  */
 
-import { useDraggable } from '@dnd-kit/core';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SenderAnalysis } from '@/types/email-management';
 
-interface FunEmailSenderCardProps {
+interface SenderCardProps {
   sender: SenderAnalysis;
-  isDragging?: boolean;
+  onDragStart?: (sender: SenderAnalysis, offsetX: number, offsetY: number) => void;
+  onDragMove?: (sender: SenderAnalysis, clientX: number, clientY: number) => void;
+  onDragEnd?: (sender: SenderAnalysis, clientX: number, clientY: number) => void;
   onDoubleClick?: (sender: SenderAnalysis) => void;
-  dragOverlayStyle?: boolean;
 }
 
-export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle }: FunEmailSenderCardProps) {
-  // ✅ useDraggable per logica drop detection
-  const { attributes, listeners, setNodeRef, isDragging: dragActive } = useDraggable({
-    id: sender.email,
-    data: sender,
-  });
+export function SenderCard({ 
+  sender, 
+  onDragStart, 
+  onDragMove, 
+  onDragEnd, 
+  onDoubleClick 
+}: SenderCardProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [ghostPos, setGhostPos] = useState({ x: 0, y: 0 });
 
-  // 🎨 Card originale nascosta durante drag (DragOverlay la sostituisce)
-  const style = {
-    opacity: dragActive && !isDragging ? 0 : 1,
-    transition: 'opacity 0.15s ease-out',
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+    
+    setIsDragging(true);
+    onDragStart?.(sender, offsetX, offsetY);
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const newPos = {
+        x: moveEvent.clientX - offsetX,
+        y: moveEvent.clientY - offsetY,
+      };
+      setGhostPos(newPos);
+      onDragMove?.(sender, moveEvent.clientX, moveEvent.clientY);
+    };
+    
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      setIsDragging(false);
+      onDragEnd?.(sender, upEvent.clientX, upEvent.clientY);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="snap-start">
-      <Card 
-        {...listeners}
-        {...attributes}
-        className={cn(
-          "border-l-4 transition-shadow",
-          "hover:scale-[1.02]",
-          dragActive && "shadow-2xl",
-          sender.emailCount > 50 && "border-l-orange-500",
-          sender.emailCount > 100 && "border-l-red-500",
-          dragOverlayStyle && "bg-gradient-to-br from-blue-500/35 to-blue-400/25 backdrop-blur-sm border-blue-300/30"
-        )}
-        onDoubleClick={() => onDoubleClick?.(sender)}
-      >
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-4">
-            {/* SINISTRA: Grip + Company + Email */}
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              <GripVertical className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-lg truncate mb-1">
-                  {sender.companyName}
-                </div>
-                <div className="text-sm text-muted-foreground truncate">
-                  {sender.email}
+    <>
+      {/* Original card */}
+      <div className={cn("snap-start", isDragging && "opacity-30")}>
+        <Card 
+          onMouseDown={handleMouseDown}
+          onDoubleClick={() => onDoubleClick?.(sender)}
+          className={cn(
+            "border-l-4 transition-shadow cursor-grab",
+            "hover:scale-[1.02]",
+            sender.emailCount > 50 && "border-l-orange-500",
+            sender.emailCount > 100 && "border-l-red-500",
+            isDragging && "cursor-grabbing"
+          )}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <GripVertical className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-lg truncate mb-1">
+                    {sender.companyName}
+                  </div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    {sender.email}
+                  </div>
                 </div>
               </div>
+              <div className="text-2xl font-bold text-primary flex-shrink-0">
+                {sender.emailCount}
+              </div>
             </div>
-            
-            {/* DESTRA: Solo numero email */}
-            <div className="text-2xl font-bold text-primary flex-shrink-0">
-              {sender.emailCount}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Ghost element (solo durante drag) */}
+      {isDragging && (
+        <div
+          className="fixed pointer-events-none z-[9999]"
+          style={{
+            left: `${ghostPos.x}px`,
+            top: `${ghostPos.y}px`,
+            width: '380px',
+          }}
+        >
+          <Card className="shadow-2xl rotate-[0.5deg] bg-gradient-to-br from-blue-500/35 to-blue-400/25 backdrop-blur-sm border-blue-300/30">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <GripVertical className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-lg truncate mb-1">
+                      {sender.companyName}
+                    </div>
+                    <div className="text-sm text-muted-foreground truncate">
+                      {sender.email}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-primary flex-shrink-0">
+                  {sender.emailCount}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </>
   );
 }

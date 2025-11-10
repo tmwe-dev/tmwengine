@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { DndContext, DragEndEvent, DragOverlay, rectIntersection } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,8 @@ import { EmailGridContainer } from './management/EmailGridContainer';
 import { CreateCategoryDialog } from './management/CreateCategoryDialog';
 import { SortOption } from './management/SenderSortControls';
 
+// ✅ Collision detection nativa @dnd-kit (stabile e testata)
+
 interface EmailManagementTabProps {
   onOpenAISidebar?: (senderEmail: string) => void;
 }
@@ -29,6 +32,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<{ synced: number; total: number } | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterByAttachments, setFilterByAttachments] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'carousel'>('grid');
@@ -37,14 +41,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('count-desc');
   const [lastUpdatedGroupId, setLastUpdatedGroupId] = useState<string | null>(null);
-  
-  // 🆕 State per drag tracking nativo
-  const [activeDrag, setActiveDrag] = useState<{
-    sender: SenderAnalysis;
-    offsetX: number;
-    offsetY: number;
-  } | null>(null);
-  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
   
   // 🆕 Map callbacks per aggiornamento ottimistico card gruppi
   const groupUpdateCallbacksRef = useRef<Map<string, (senderEmail: string) => void>>(new Map());
@@ -380,68 +376,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     }
   };
 
-  // 🆕 NUOVO: Handler drag start
-  const handleDragStart = (sender: SenderAnalysis, offsetX: number, offsetY: number) => {
-    setActiveDrag({ sender, offsetX, offsetY });
-  };
-
-  // 🆕 NUOVO: Handler drag move con collision detection
-  const handleDragMove = (sender: SenderAnalysis, clientX: number, clientY: number) => {
-    const dropZones = document.querySelectorAll('[data-drop-zone="true"]');
-    let foundHover = false;
-    
-    dropZones.forEach(zone => {
-      const rect = zone.getBoundingClientRect();
-      const isOver = (
-        clientX >= rect.left &&
-        clientX <= rect.right &&
-        clientY >= rect.top &&
-        clientY <= rect.bottom
-      );
-      
-      if (isOver) {
-        const groupId = zone.getAttribute('data-group-id');
-        if (groupId) {
-          setHoveredGroupId(groupId);
-          foundHover = true;
-        }
-      }
-    });
-    
-    if (!foundHover) {
-      setHoveredGroupId(null);
-    }
-  };
-
-  // 🆕 NUOVO: Handler drag end con drop logic
-  const handleDragEnd = async (sender: SenderAnalysis, clientX: number, clientY: number) => {
-    const dropZones = document.querySelectorAll('[data-drop-zone="true"]');
-    let targetGroupId: string | null = null;
-    
-    dropZones.forEach(zone => {
-      const rect = zone.getBoundingClientRect();
-      const isOver = (
-        clientX >= rect.left &&
-        clientX <= rect.right &&
-        clientY >= rect.top &&
-        clientY <= rect.bottom
-      );
-      
-      if (isOver) {
-        targetGroupId = zone.getAttribute('data-group-id');
-      }
-    });
-    
-    if (targetGroupId) {
-      await handleClassifySender(sender, targetGroupId);
-    } else {
-      console.log('🚫 Drop annullato (fuori zona)');
-    }
-    
-    setActiveDrag(null);
-    setHoveredGroupId(null);
-  };
-
   // 🆕 FUNZIONE UNIFICATA PER CLASSIFICAZIONE (drag + doppio clic)
   const handleClassifySender = async (sender: SenderAnalysis, targetGroupId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -493,6 +427,31 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     }
   };
 
+  // Handler drag-and-drop
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragId(null);
+
+    if (!over) {
+      console.log('🚫 Drop annullato (fuori zona)');
+      return;
+    }
+
+    const senderEmail = active.id as string;
+    const targetGroupId = over.id as string;
+
+    const sender = senders.find(s => s.email === senderEmail);
+    const targetGroup = groups.find(g => g.id === targetGroupId);
+
+    if (!sender || !targetGroup) {
+      console.error(`❌ Mittente o gruppo non valido: sender=${sender}, group=${targetGroup}`);
+      return;
+    }
+
+    console.log(`📦 Drop: ${sender.email} → ${targetGroup.nome_gruppo}`);
+    handleClassifySender(sender, targetGroupId);
+  };
+
   // 🆕 Handler doppio clic su card mittente per assegnazione rapida via AI Sidebar
   const handleDoubleClickSender = (sender: SenderAnalysis) => {
     console.log(`🎯 Doppio click su mittente: ${sender.email}`);
@@ -542,6 +501,12 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     <div className="flex flex-col h-full w-full gap-4 max-w-[1920px] mx-auto p-4">
       {/* Main Content Area */}
       <div className="flex flex-1 h-full w-full gap-4 min-h-0">
+      <DndContext
+        collisionDetection={rectIntersection}
+        onDragEnd={handleDragEnd}
+        onDragStart={(e) => setActiveDragId(e.active.id as string)}
+        onDragCancel={() => setActiveDragId(null)}
+      >
         {/* Sidebar */}
         <EmailSidebar
           senders={senders}
@@ -565,9 +530,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           isSyncing={isSyncing}
           isLoading={isLoading}
           onSenderDoubleClick={handleDoubleClickSender}
-          onDragStart={handleDragStart}
-          onDragMove={handleDragMove}
-          onDragEnd={handleDragEnd}
         />
         
         {/* Area principale condizionale */}
@@ -577,7 +539,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
             onRefresh={loadData}
             lastUpdatedGroupId={lastUpdatedGroupId}
             onRegisterGroupCallback={registerGroupCallback}
-            hoveredGroupId={hoveredGroupId}
           />
         ) : (
           <EmailCarouselContainer
@@ -588,9 +549,28 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
             verticalOffset={carouselVerticalOffset}
             onPrevious={handlePrevCategory}
             onNext={handleNextCategory}
-            hoveredGroupId={hoveredGroupId}
           />
         )}
+
+        {/* DragOverlay attivo - mostra clone durante drag */}
+        <DragOverlay 
+          dropAnimation={null}
+          adjustScale={false}
+          className="z-[9999]"
+          style={{ position: 'fixed' }}
+        >
+          {activeDragId ? (
+            (() => {
+              const sender = senders.find(s => s.email === activeDragId);
+              return sender ? (
+                <div className="rotate-[0.5deg] scale-[1.02] shadow-lg">
+                  <SenderCard sender={sender} isDragging dragOverlayStyle />
+                </div>
+              ) : null;
+            })()
+          ) : null}
+        </DragOverlay>
+      </DndContext>
       </div>
 
       {/* Create Category Dialog */}

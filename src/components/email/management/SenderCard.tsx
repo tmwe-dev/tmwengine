@@ -16,21 +16,17 @@ interface FunEmailSenderCardProps {
 }
 
 export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle }: FunEmailSenderCardProps) {
-  // ✅ Estrai anche `transform` che contiene {x, y} dinamici per seguire il mouse
-  const { attributes, listeners, setNodeRef, isDragging: dragActive, transform } = useDraggable({
+  // ✅ useDraggable SOLO per logica drop detection (necessario per DndContext)
+  const { attributes, listeners, setNodeRef, isDragging: dragActive } = useDraggable({
     id: sender.email,
     data: sender,
   });
 
-  // 🎨 Style stile Design Lab: transform dinamico + opacity durante drag
+  // 🎨 Style stile Design Lab: transform + opacity durante drag
   const style = {
     opacity: dragActive ? 0.7 : 1,
-    // ✅ CHIAVE: combina translate (movimento) + scale + rotate
-    transform: transform 
-      ? `translate3d(${transform.x}px, ${transform.y}px, 0) scale(1.05) rotate(2deg)`
-      : 'scale(1)',
-    // ❌ RIMUOVI transition durante drag per smoothness
-    transition: transform ? 'none' : 'opacity 0.2s ease-out, transform 0.2s ease-out',
+    transform: dragActive ? 'scale(1.05) rotate(2deg)' : 'scale(1)',
+    transition: 'opacity 0.2s ease-out, transform 0.2s ease-out',
     cursor: dragActive ? 'grabbing' : 'grab',
     zIndex: dragActive ? 50 : 'auto',
     willChange: dragActive ? 'transform, opacity' : 'auto',

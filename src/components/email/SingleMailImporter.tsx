@@ -29,6 +29,15 @@ interface MissingEmailItem {
   selected: boolean;
 }
 
+interface OrphanFolderAnalysis {
+  name: string;
+  total_emails: number;
+  found_elsewhere: number;
+  not_found: number;
+  locations: Record<string, number>; // cartella -> count
+  analyzing: boolean;
+}
+
 // ✅ Logging solo in dev mode
 const DEBUG = import.meta.env.DEV;
 const log = DEBUG ? console.log : () => {};
@@ -276,18 +285,19 @@ export function SingleMailImporter() {
     refetchOnWindowFocus: false,
   });
 
-  // ✅ FASE 2: Rileva cartelle orfane (presenti in DB ma non sul server)
-  const { data: orphanFolders } = useQuery({
-    queryKey: ['orphan-folders', userEmail],
+  // ✅ FASE 2: Rileva cartelle orfane CON ANALISI INTELLIGENTE
+  const { data: orphanFolders, isLoading: isAnalyzingOrphans } = useQuery({
+    queryKey: ['orphan-folders-intelligent', userEmail],
     queryFn: async () => {
       if (!userEmail || !foldersData) return [];
 
       const serverFolderNames = foldersData.map((f: any) => f.name);
+      log('🔍 [Orphan Analysis] Server folders:', serverFolderNames);
 
-      // Trova cartelle nel DB che non esistono sul server
+      // 1️⃣ Trova cartelle nel DB che non esistono sul server
       const { data, error } = await supabase
         .from('email_messages')
-        .select('cartella')
+        .select('cartella, message_id')
         .eq('user_email', userEmail)
         .eq('deleted_from_server', false);
 
@@ -296,19 +306,96 @@ export function SingleMailImporter() {
         return [];
       }
 
-      // Conta email per cartella
-      const folderCounts = data.reduce((acc: Record<string, number>, msg: any) => {
-        acc[msg.cartella] = (acc[msg.cartella] || 0) + 1;
-        return acc;
-      }, {});
+      // 2️⃣ Raggruppa per cartella e estrai UIDs
+      const orphanData: Record<string, string[]> = {};
+      data.forEach((msg: any) => {
+        const folder = msg.cartella;
+        if (!serverFolderNames.includes(folder)) {
+          if (!orphanData[folder]) orphanData[folder] = [];
+          
+          // Estrai UID dal message_id
+          const messageId = String(msg.message_id);
+          let uid = '';
+          
+          if (messageId.includes('/')) {
+            const parts = messageId.split('/');
+            uid = parts[parts.length - 1];
+          } else if (/^\d+$/.test(messageId)) {
+            uid = messageId;
+          }
+          
+          if (uid && uid !== 'null') {
+            orphanData[folder].push(uid);
+          }
+        }
+      });
 
-      // Filtra cartelle orfane
-      return Object.entries(folderCounts)
-        .filter(([folder]) => !serverFolderNames.includes(folder))
-        .map(([folder, count]) => ({ name: folder, count }));
+      log('📂 [Orphan Analysis] Cartelle orfane trovate:', Object.keys(orphanData));
+
+      // 3️⃣ Per ogni cartella orfana, cerca UIDs su TUTTE le cartelle del server
+      const results: OrphanFolderAnalysis[] = [];
+      
+      for (const [folderName, uids] of Object.entries(orphanData)) {
+        log(`🔍 [Orphan Analysis] Analizzando ${folderName} con ${uids.length} UIDs`);
+        
+        const analysis: OrphanFolderAnalysis = {
+          name: folderName,
+          total_emails: uids.length,
+          found_elsewhere: 0,
+          not_found: 0,
+          locations: {},
+          analyzing: true,
+        };
+
+        // 4️⃣ Cerca ogni UID su TUTTE le cartelle del server (batch paralleli)
+        const BATCH_SIZE = 10;
+        const foundUIDs = new Set<string>();
+        
+        for (let i = 0; i < uids.length; i += BATCH_SIZE) {
+          const batch = uids.slice(i, i + BATCH_SIZE);
+          
+          const batchResults = await Promise.allSettled(
+            batch.map(async (uid) => {
+              // Cerca su tutte le cartelle server
+              for (const serverFolder of serverFolderNames) {
+                try {
+                  const response = await emailMessageApi.getMessage(uid, serverFolder, false);
+                  if (response && response.uid) {
+                    log(`✅ [Orphan Analysis] UID ${uid} trovato in ${serverFolder}`);
+                    foundUIDs.add(uid);
+                    analysis.locations[serverFolder] = (analysis.locations[serverFolder] || 0) + 1;
+                    return { uid, found: true, location: serverFolder };
+                  }
+                } catch (error) {
+                  // UID non trovato in questa cartella, continua
+                }
+              }
+              return { uid, found: false };
+            })
+          );
+
+          // Aggiorna conteggi intermedi
+          batchResults.forEach((result) => {
+            if (result.status === 'fulfilled' && !result.value.found) {
+              // UID non trovato su nessuna cartella
+            }
+          });
+        }
+
+        // 5️⃣ Calcola statistiche finali
+        analysis.found_elsewhere = foundUIDs.size;
+        analysis.not_found = uids.length - foundUIDs.size;
+        analysis.analyzing = false;
+
+        log(`✅ [Orphan Analysis] ${folderName}: ${analysis.found_elsewhere} trovate, ${analysis.not_found} eliminate`);
+        results.push(analysis);
+      }
+
+      return results;
     },
     enabled: !!userEmail && !!foldersData,
     refetchOnWindowFocus: false,
+    staleTime: 10 * 60 * 1000, // Cache 10 minuti (analisi pesante)
   });
 
   // ✅ Reset displayLimit quando cambia cartella
@@ -792,30 +879,94 @@ export function SingleMailImporter() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* ✅ FASE 2: Alert cartelle orfane */}
+          {/* ✅ FASE 2: Alert cartelle orfane CON ANALISI INTELLIGENTE */}
+          {isAnalyzingOrphans && (
+            <Alert className="border-blue-500/50 bg-blue-500/10">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <AlertTitle>Analisi cartelle in corso...</AlertTitle>
+              <AlertDescription>
+                Sto verificando se le email delle cartelle orfane sono presenti altrove sul server
+              </AlertDescription>
+            </Alert>
+          )}
+
           {orphanFolders && orphanFolders.length > 0 && (
             <Alert variant="destructive" className="border-orange-500/50 bg-orange-500/10">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Cartelle orfane rilevate</AlertTitle>
+              <AlertTitle>Cartelle orfane rilevate - Analisi intelligente completata</AlertTitle>
               <AlertDescription className="space-y-3 mt-2">
-                {orphanFolders.map((folder: any) => (
-                  <div key={folder.name} className="p-3 bg-background/50 rounded-lg border border-orange-500/20">
+                {orphanFolders.map((folder: OrphanFolderAnalysis) => (
+                  <div key={folder.name} className="p-4 bg-background/50 rounded-lg border border-orange-500/20">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm">📁 {folder.name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Contiene {folder.count} email nel database locale ma non esiste più sul server
-                        </p>
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <p className="font-semibold text-sm">📁 {folder.name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {folder.total_emails} email nel database locale, cartella non più presente sul server
+                          </p>
+                        </div>
+
+                        {/* Statistiche analisi */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="p-2 bg-green-500/10 border border-green-500/20 rounded">
+                            <p className="text-xs text-muted-foreground">Trovate altrove</p>
+                            <p className="text-lg font-bold text-green-600">
+                              {folder.found_elsewhere} 
+                              <span className="text-xs font-normal ml-1">
+                                ({Math.round((folder.found_elsewhere / folder.total_emails) * 100)}%)
+                              </span>
+                            </p>
+                          </div>
+                          <div className="p-2 bg-red-500/10 border border-red-500/20 rounded">
+                            <p className="text-xs text-muted-foreground">Eliminate dal server</p>
+                            <p className="text-lg font-bold text-red-600">
+                              {folder.not_found}
+                              <span className="text-xs font-normal ml-1">
+                                ({Math.round((folder.not_found / folder.total_emails) * 100)}%)
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Dettaglio posizioni */}
+                        {Object.keys(folder.locations).length > 0 && (
+                          <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded">
+                            <p className="text-xs text-muted-foreground mb-2">📍 Trovate in:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {Object.entries(folder.locations).map(([location, count]) => (
+                                <Badge key={location} variant="outline" className="text-xs">
+                                  {location}: {count}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Suggerimento azione */}
+                        <div className="p-2 bg-yellow-500/10 border border-yellow-500/20 rounded">
+                          <p className="text-xs font-semibold text-yellow-600 dark:text-yellow-400">
+                            💡 Azione suggerita:
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {folder.found_elsewhere > folder.not_found 
+                              ? `La maggior parte delle email (${folder.found_elsewhere}/${folder.total_emails}) è stata SPOSTATA altrove. → Suggerisco RINOMINA verso la cartella principale dove sono state trovate.`
+                              : folder.not_found === folder.total_emails
+                              ? `Tutte le email sono state ELIMINATE dal server. → Suggerisco ARCHIVIA per mantenerle nel DB locale o ELIMINA se non servono più.`
+                              : `Mix di email spostate (${folder.found_elsewhere}) ed eliminate (${folder.not_found}). → Suggerisco ARCHIVIA per mantenerle tutte nel DB locale, o ELIMINA se non servono più.`
+                            }
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
+
+                      <div className="flex flex-col gap-2">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            setOrphanFolderToRename({ name: folder.name, count: folder.count });
+                            setOrphanFolderToRename({ name: folder.name, count: folder.total_emails });
                             setRenameDialogOpen(true);
                           }}
-                          className="gap-2"
+                          className="gap-2 whitespace-nowrap"
                         >
                           <FolderEdit className="h-4 w-4" />
                           Rinomina
@@ -824,7 +975,7 @@ export function SingleMailImporter() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleArchiveFolder(folder.name)}
-                          className="gap-2"
+                          className="gap-2 whitespace-nowrap"
                         >
                           <Archive className="h-4 w-4" />
                           Archivia
@@ -833,7 +984,7 @@ export function SingleMailImporter() {
                           size="sm"
                           variant="destructive"
                           onClick={() => handleDeleteFolder(folder.name)}
-                          className="gap-2"
+                          className="gap-2 whitespace-nowrap"
                         >
                           <Trash2 className="h-4 w-4" />
                           Elimina

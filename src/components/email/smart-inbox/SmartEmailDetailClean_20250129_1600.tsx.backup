@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
@@ -23,21 +23,10 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
     emailId: classifiedEmail?.email?.email_id
   });
 
-  // 🆕 Ref per controllare scroll position
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
   // 🆕 State per tab attivo
   const [activeEmailId, setActiveEmailId] = useState(
     emails[currentEmailIndex]?.id || classifiedEmail?.email?.email_id
   );
-
-  // 🆕 Mantieni scroll position quando cambia activeEmailId
-  useEffect(() => {
-    if (scrollContainerRef.current && activeEmailId) {
-      // Mantieni la posizione di scroll naturale
-      console.log('📧 Clean view - email cambiata, scroll position mantenuta');
-    }
-  }, [activeEmailId]);
 
   const handlePrevEmail = () => {
     const currentIndex = emails.findIndex(e => e.id === activeEmailId);
@@ -134,7 +123,7 @@ export const SmartEmailDetailClean: React.FC<SmartEmailDetailCleanProps> = ({
               </Button>
             )}
 
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 px-8 bg-white">
+            <div className="flex-1 overflow-y-auto p-4 px-8 bg-white">
             {emails.map((email, index) => (
               <TabsContent key={email.id} value={email.id} className="mt-0">
                 <SingleEmailCard

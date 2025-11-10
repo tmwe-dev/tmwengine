@@ -51,9 +51,6 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
   // 🆕 Recupera logo HD con cache
   const { data: logoData, isLoading: logoLoading } = useCompanyLogo(classifiedEmail?.classification?.sender_email);
 
-  // 🆕 Ref per controllare scroll position
-  const scrollViewportRef = useRef<HTMLDivElement>(null);
-
   // 🆕 State per tab attivo
   const [activeEmailId, setActiveEmailId] = useState(
     emails[currentEmailIndex]?.id || classifiedEmail?.email?.email_id
@@ -66,15 +63,6 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
       setActiveEmailId(initialEmailId);
     }
   }, [classifiedEmail?.email?.email_id, emails, currentEmailIndex]);
-
-  // 🆕 Mantieni scroll position quando cambia activeEmailId
-  // NON scrollare automaticamente all'inizio
-  useEffect(() => {
-    if (scrollViewportRef.current && activeEmailId) {
-      // Mantieni la posizione di scroll naturale, non resettare
-      console.log('📧 Email cambiata, scroll position mantenuta');
-    }
-  }, [activeEmailId]);
 
   const handlePrevEmail = () => {
     const currentIndex = emails.findIndex(e => e.id === activeEmailId);
@@ -243,7 +231,7 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
               </Button>
             )}
 
-            <ScrollArea className="flex-1" viewportRef={scrollViewportRef}>
+            <ScrollArea className="flex-1">
               <div className="space-y-4 p-4 px-8">
               {emails.map((email, index) => {
                 const isCurrentOriginal = email.id === classifiedEmail.email.email_id;

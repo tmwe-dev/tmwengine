@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, CollisionDetection } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverlay, rectIntersection } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,65 +20,7 @@ import { EmailGridContainer } from './management/EmailGridContainer';
 import { CreateCategoryDialog } from './management/CreateCategoryDialog';
 import { SortOption } from './management/SenderSortControls';
 
-// Collisione personalizzata 70%
-const carousel70PercentCollision: CollisionDetection = (args) => {
-  const { droppableContainers, collisionRect } = args;
-  if (!collisionRect) return [];
-
-  const collisions = Array.from(droppableContainers).map((container) => {
-    const rect = container.rect.current;
-    if (!rect) return null;
-
-    const overlapX = Math.max(0, Math.min(collisionRect.right, rect.right) - Math.max(collisionRect.left, rect.left));
-    const overlapY = Math.max(0, Math.min(collisionRect.bottom, rect.bottom) - Math.max(collisionRect.top, rect.top));
-    const overlapArea = overlapX * overlapY;
-    const draggableArea = collisionRect.width * collisionRect.height;
-    const overlapPercentage = (overlapArea / draggableArea) * 100;
-
-    return overlapPercentage >= 70 ? { id: container.id, data: { percentage: overlapPercentage } } : null;
-  }).filter(Boolean) as { id: string | number; data: { percentage: number } }[];
-
-  return collisions;
-};
-
-// Collisione personalizzata 50% per Grid
-const grid50PercentCollision: CollisionDetection = (args) => {
-  const { droppableContainers, collisionRect } = args;
-  if (!collisionRect) return [];
-
-  const collisions = Array.from(droppableContainers).map((container) => {
-    const rect = container.rect.current;
-    if (!rect) return null;
-
-    const overlapX = Math.max(0, Math.min(collisionRect.right, rect.right) - Math.max(collisionRect.left, rect.left));
-    const overlapY = Math.max(0, Math.min(collisionRect.bottom, rect.bottom) - Math.max(collisionRect.top, rect.top));
-    const overlapArea = overlapX * overlapY;
-    const draggableArea = collisionRect.width * collisionRect.height;
-    const overlapPercentage = (overlapArea / draggableArea) * 100;
-
-    console.log(`🎯 Collision check ${container.id}: ${overlapPercentage.toFixed(1)}% overlap`);
-
-    return overlapPercentage >= 50 ? { id: container.id, data: { percentage: overlapPercentage } } : null;
-  }).filter(Boolean) as { id: string | number; data: { percentage: number } }[];
-
-  return collisions;
-};
-
-// 🔧 Modifier per compensare scroll offset del container sidebar
-const scrollOffsetModifier = (args: any) => {
-  const { transform } = args;
-  
-  // ✅ Selector specifico per sidebar scroll container
-  const scrollContainer = document.getElementById('email-sidebar-scroll-container');
-  const scrollTop = scrollContainer?.scrollTop || 0;
-  
-  console.log(`🎯 Scroll offset compensazione: ${scrollTop}px`);
-  
-  return {
-    ...transform,
-    y: transform.y - scrollTop,
-  };
-};
+// ✅ Collision detection nativa @dnd-kit (stabile e testata)
 
 interface EmailManagementTabProps {
   onOpenAISidebar?: (senderEmail: string) => void;
@@ -560,13 +502,9 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       {/* Main Content Area */}
       <div className="flex flex-1 h-full w-full gap-4 min-h-0">
       <DndContext
-        collisionDetection={viewMode === 'carousel' ? carousel70PercentCollision : grid50PercentCollision}
+        collisionDetection={rectIntersection}
         onDragEnd={handleDragEnd}
-        onDragStart={(e) => {
-          const scrollContainer = document.getElementById('email-sidebar-scroll-container');
-          console.log(`🎯 Drag Start - ScrollTop: ${scrollContainer?.scrollTop || 0}px`);
-          setActiveDragId(e.active.id as string);
-        }}
+        onDragStart={(e) => setActiveDragId(e.active.id as string)}
         onDragCancel={() => setActiveDragId(null)}
       >
         {/* Sidebar */}
@@ -618,8 +556,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         <DragOverlay 
           dropAnimation={null}
           adjustScale={false}
-          className="z-[100]"
-          modifiers={[scrollOffsetModifier]}
+          className="z-[9999]"
+          style={{ position: 'fixed' }}
         >
           {activeDragId ? (
             (() => {

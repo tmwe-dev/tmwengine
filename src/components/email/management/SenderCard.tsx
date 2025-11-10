@@ -10,7 +10,7 @@ import type { SenderAnalysis } from '@/types/email-management';
 
 interface SenderCardProps {
   sender: SenderAnalysis;
-  onDragStart?: (sender: SenderAnalysis, offsetX: number, offsetY: number) => void;
+  onDragStart?: (sender: SenderAnalysis, offsetX: number, offsetY: number, cardWidth: number) => void;
   onDragMove?: (sender: SenderAnalysis, clientX: number, clientY: number) => void;
   onDragEnd?: (sender: SenderAnalysis, clientX: number, clientY: number) => void;
   onDoubleClick?: (sender: SenderAnalysis) => void;
@@ -31,9 +31,10 @@ export function SenderCard({
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
+    const cardWidth = rect.width;
     
     setIsDragging(true);
-    onDragStart?.(sender, offsetX, offsetY);
+    onDragStart?.(sender, offsetX, offsetY, cardWidth);
     
     const handleMouseMove = (moveEvent: MouseEvent) => {
       onDragMove?.(sender, moveEvent.clientX, moveEvent.clientY);
@@ -59,7 +60,7 @@ export function SenderCard({
           onDoubleClick={() => onDoubleClick?.(sender)}
           className={cn(
             "border-l-4 transition-shadow cursor-grab",
-            "hover:scale-[1.02]",
+            !isDragging && "hover:scale-[1.02]",
             sender.emailCount > 50 && "border-l-orange-500",
             sender.emailCount > 100 && "border-l-red-500",
             isDragging && "cursor-grabbing"

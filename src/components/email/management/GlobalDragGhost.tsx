@@ -13,6 +13,7 @@ interface GlobalDragGhostProps {
   clientY: number;
   offsetX: number;
   offsetY: number;
+  width: number;
 }
 
 export function GlobalDragGhost({ 
@@ -20,15 +21,15 @@ export function GlobalDragGhost({
   clientX, 
   clientY, 
   offsetX, 
-  offsetY 
+  offsetY,
+  width
 }: GlobalDragGhostProps) {
   return (
     <div
       className="fixed pointer-events-none z-[9999]"
       style={{
-        left: `${clientX - offsetX}px`,
-        top: `${clientY - offsetY}px`,
-        width: '380px',
+        transform: `translate(${clientX - offsetX}px, ${clientY - offsetY}px)`,
+        width: `${width}px`,
       }}
     >
       <Card className="shadow-2xl rotate-[0.5deg] bg-gradient-to-br from-blue-500/35 to-blue-400/25 backdrop-blur-sm border-blue-300/30">

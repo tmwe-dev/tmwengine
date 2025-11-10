@@ -46,6 +46,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     offsetY: number;
     clientX: number;
     clientY: number;
+    width: number;
   } | null>(null);
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
   
@@ -384,11 +385,11 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   };
 
   // 🆕 NUOVO: Handler drag start
-  const handleDragStart = (sender: SenderAnalysis, offsetX: number, offsetY: number) => {
+  const handleDragStart = (sender: SenderAnalysis, offsetX: number, offsetY: number, cardWidth: number) => {
     // Inizializza activeDrag con posizione corrente del mouse (getBoundingClientRect + offset)
     const initialX = offsetX; // Sarà aggiornato al primo mousemove
     const initialY = offsetY;
-    setActiveDrag({ sender, offsetX, offsetY, clientX: initialX, clientY: initialY });
+    setActiveDrag({ sender, offsetX, offsetY, clientX: initialX, clientY: initialY, width: cardWidth });
   };
 
   // 🆕 NUOVO: Handler drag move con collision detection
@@ -618,6 +619,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           clientY={activeDrag.clientY}
           offsetX={activeDrag.offsetX}
           offsetY={activeDrag.offsetY}
+          width={activeDrag.width}
         />
       )}
     </div>

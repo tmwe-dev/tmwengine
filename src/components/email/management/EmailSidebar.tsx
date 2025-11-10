@@ -44,7 +44,7 @@ interface EmailSidebarProps {
   onSenderDoubleClick?: (sender: SenderAnalysis) => void;
   aiSuggestionsCount?: number;
   onOpenAISuggestions?: () => void;
-  onDragStart?: (sender: SenderAnalysis, offsetX: number, offsetY: number) => void;
+  onDragStart?: (sender: SenderAnalysis, offsetX: number, offsetY: number, cardWidth: number) => void;
   onDragMove?: (sender: SenderAnalysis, clientX: number, clientY: number) => void;
   onDragEnd?: (sender: SenderAnalysis, clientX: number, clientY: number) => void;
 }

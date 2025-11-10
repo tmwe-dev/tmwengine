@@ -64,6 +64,21 @@ const grid50PercentCollision: CollisionDetection = (args) => {
   return collisions;
 };
 
+// 🔧 Modifier per compensare scroll offset del container sidebar
+const scrollOffsetModifier = (args: any) => {
+  const { transform } = args;
+  
+  // Trova il container scroll della sidebar
+  const scrollContainer = document.querySelector('.overflow-y-auto');
+  const scrollTop = scrollContainer?.scrollTop || 0;
+  
+  return {
+    ...transform,
+    // Sottrai scrollTop per compensare il salto
+    y: transform.y - scrollTop,
+  };
+};
+
 interface EmailManagementTabProps {
   onOpenAISidebar?: (senderEmail: string) => void;
 }
@@ -598,6 +613,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         <DragOverlay 
           dropAnimation={null}
           adjustScale={false}
+          modifiers={[scrollOffsetModifier]}
           className="z-[100]"
         >
           {activeDragId ? (

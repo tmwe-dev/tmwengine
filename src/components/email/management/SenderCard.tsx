@@ -22,10 +22,14 @@ export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle
     data: sender,
   });
 
-  // ✅ Style per drag @dnd-kit
+  // 🎨 Style stile Design Lab: transform + opacity durante drag
   const style = {
-    opacity: dragActive && !isDragging ? 0 : 1,
-    transition: 'opacity 0.15s ease-out',
+    opacity: dragActive ? 0.7 : 1,
+    transform: dragActive ? 'scale(1.05) rotate(2deg)' : 'scale(1)',
+    transition: 'opacity 0.2s ease-out, transform 0.2s ease-out',
+    cursor: dragActive ? 'grabbing' : 'grab',
+    zIndex: dragActive ? 50 : 'auto',
+    willChange: dragActive ? 'transform, opacity' : 'auto',
   };
 
   return (
@@ -34,8 +38,9 @@ export function SenderCard({ sender, isDragging, onDoubleClick, dragOverlayStyle
         {...listeners}
         {...attributes}
         className={cn(
-          "cursor-grab active:cursor-grabbing border-l-4 transition-transform",
+          "border-l-4 transition-shadow",
           "hover:scale-[1.02]",
+          dragActive && "shadow-2xl",
           sender.emailCount > 50 && "border-l-orange-500",
           sender.emailCount > 100 && "border-l-red-500",
           dragOverlayStyle && "bg-gradient-to-br from-blue-500/35 to-blue-400/25 backdrop-blur-sm border-blue-300/30"

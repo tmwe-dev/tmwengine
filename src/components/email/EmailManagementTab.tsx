@@ -594,21 +594,9 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           />
         )}
 
-        <DragOverlay 
-          dropAnimation={null}
-          adjustScale={false}
-          className="z-[100]"
-        >
-          {activeDragId ? (
-            (() => {
-              const sender = senders.find(s => s.email === activeDragId);
-              return sender ? (
-                <div className="rotate-[0.5deg] scale-[1.02] shadow-lg">
-                  <SenderCard sender={sender} isDragging dragOverlayStyle />
-                </div>
-              ) : null;
-            })()
-          ) : null}
+        {/* DragOverlay disabilitato - usiamo solo CSS transform sulla card originale (stile Design Lab) */}
+        <DragOverlay dropAnimation={null}>
+          {null}
         </DragOverlay>
       </DndContext>
       </div>

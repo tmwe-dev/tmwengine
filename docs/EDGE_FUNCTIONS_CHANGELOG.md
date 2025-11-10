@@ -9,6 +9,172 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-29] - Mapping Compatibilità folder → folder_name
+
+### File Modificato
+- **Function:** `supabase/functions/tmwe-api-proxy/index.ts`
+- **Backup Creato:** `index-old5.ts`
+
+### Motivo Modifica
+
+**Problema:** Il debugger `TmweBackendDebugger.tsx` invia il parametro `folder` nelle richieste, ma il backend TMWE si aspetta `folder_name`. Questo causava l'errore IMAP:
+```
+failed to switch folder inbox mailbox inbox not exist
+imap_alerts(0) imap_errors(0)
+```
+
+**Root Cause:**
+```typescript
+// TmweBackendDebugger.tsx (line 142)
+endpoint: '/email_api.php',
+data: {
+  handler: 'get_messages',
+  folder,  // ❌ Backend TMWE NON riconosce "folder"
+  uid
+}
+
+// Backend TMWE si aspetta:
+{
+  handler: 'get_messages',
+  folder_name: 'INBOX',  // ✅ Parametro corretto
+  uid: 123
+}
+```
+
+**Impatto:**
+- ❌ Test `get_messages` in `/funnemail?view=debugger` → errore "mailbox not exist"
+- ❌ Impossibile testare download messaggi singoli
+- ⚠️ Inconsistenza parametri tra frontend e backend
+
+### Modifiche Apportate
+
+#### Aggiunto Mapping Automatico (Lines 527-535)
+
+**Posizione:** Dopo circuit breaker check, prima della chiamata API TMWE
+
+```typescript
+// 🔄 MAPPING COMPATIBILITÀ: folder → folder_name
+// Il frontend invia "folder" ma il backend TMWE si aspetta "folder_name"
+if (data && data.folder && !data.folder_name) {
+  if (enableLogging) {
+    console.log(`🔄 Mapping folder="${data.folder}" → folder_name="${data.folder}"`);
+  }
+  data.folder_name = data.folder;
+  delete data.folder; // Rimuovi il parametro originale per evitare confusione
+}
+```
+
+**Logica:**
+1. Verifica se esiste `data.folder` e NON esiste `data.folder_name`
+2. Copia il valore: `data.folder_name = data.folder`
+3. Rimuove `data.folder` per evitare parametri duplicati
+4. Log del mapping quando logging attivo
+
+### Comportamento Atteso
+
+**Prima del fix:**
+```typescript
+// Request inviata da debugger
+{ handler: 'get_messages', folder: 'INBOX', uid: 123 }
+  ↓
+// Backend TMWE riceve "folder" ma cerca "folder_name"
+  ↓
+❌ Error: "mailbox inbox not exist"
+```
+
+**Dopo il fix:**
+```typescript
+// Request inviata da debugger
+{ handler: 'get_messages', folder: 'INBOX', uid: 123 }
+  ↓
+// Edge function mappa automaticamente
+🔄 Mapping folder="INBOX" → folder_name="INBOX"
+  ↓
+// Request inviata a backend TMWE
+{ handler: 'get_messages', folder_name: 'INBOX', uid: 123 }
+  ↓
+✅ Success: messaggi scaricati correttamente
+```
+
+**Console logs attesi:**
+```
+🔄 Mapping folder="INBOX" → folder_name="INBOX"
+📤 Chiamata a TMWE API: https://findair.it/erp/tmwe_json/email_api.php
+📦 Request body: { handler: 'get_messages', folder_name: 'INBOX', uid: 123 }
+✅ Success
+```
+
+### Vantaggi
+
+✅ **Compatibilità retroattiva**: Funziona con `folder` (debugger) E `folder_name` (API production)  
+✅ **Zero breaking changes**: Codice esistente che usa `folder_name` continua a funzionare  
+✅ **Fix trasparente**: Mapping automatico, nessuna modifica frontend richiesta  
+✅ **Debugging migliorato**: Log chiari quando mapping applicato  
+✅ **Pulizia parametri**: Rimuove `folder` dopo mapping per evitare confusione  
+
+### Testing
+
+#### Test 1: Debugger get_messages
+```bash
+1. Aprire `/funnemail?view=debugger`
+2. Inserire:
+   - Folder: "INBOX"
+   - UID: 1 (o qualsiasi UID esistente)
+3. Cliccare "Test get_messages"
+4. Verificare:
+   ✅ Nessun errore "mailbox inbox not exist"
+   ✅ Risposta: { success: true, messages: [...] }
+   ✅ Log: "🔄 Mapping folder="INBOX" → folder_name="INBOX""
+```
+
+#### Test 2: Retrocompatibilità folder_name
+```bash
+1. Codice esistente che usa folder_name (es: tmwe-test-folder-info)
+2. Verifica funziona come prima
+3. Nessun mapping applicato (già corretto)
+4. Log NON mostra "🔄 Mapping" (perché folder_name già presente)
+```
+
+#### Test 3: Altri Handler
+```bash
+1. Test con handler che usano folder:
+   - get_message (singolo)
+   - sync_folder
+   - search_messages
+2. Verifica mapping funziona per tutti
+3. Nessun errore "mailbox not exist"
+```
+
+### Impatto
+
+✅ **Risolve bug critico**: Debugger ora funzionante  
+✅ **Nessuna regressione**: Codice esistente inalterato  
+✅ **Manutenibilità**: Mapping centralizzato in edge function  
+✅ **Estensibile**: Può essere ampliato per altri parametri se necessario  
+
+### Rollback Plan
+
+```bash
+cp supabase/functions/tmwe-api-proxy/index-old4.ts \
+   supabase/functions/tmwe-api-proxy/index.ts
+```
+
+### Note Tecniche
+
+- ✅ Mapping eseguito **prima** della chiamata API TMWE (line 527)
+- ✅ Non interferisce con batch operations (gestite separatamente)
+- ✅ Delete `data.folder` evita conflitti se backend legge entrambi
+- ✅ Condizione `!data.folder_name` previene override di parametro corretto
+
+### Note di Sicurezza
+
+- ✅ Nessuna modifica RLS policies
+- ✅ Nessuna modifica DB schema
+- ✅ Solo mapping parametri nella stessa richiesta
+- ✅ Nessun impatto su autenticazione/autorizzazione
+
+---
+
 ## [2025-01-30] - Normalizzazione Risposte tmwe-api-proxy con Campo `success`
 
 ### File Modificato

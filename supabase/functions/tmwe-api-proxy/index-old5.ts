@@ -525,16 +525,6 @@ serve(async (req) => {
       );
     }
     
-    // 🔄 MAPPING COMPATIBILITÀ: folder → folder_name
-    // Il frontend invia "folder" ma il backend TMWE si aspetta "folder_name"
-    if (data && data.folder && !data.folder_name) {
-      if (enableLogging) {
-        console.log(`🔄 Mapping folder="${data.folder}" → folder_name="${data.folder}"`);
-      }
-      data.folder_name = data.folder;
-      delete data.folder; // Rimuovi il parametro originale per evitare confusione
-    }
-    
     const tmweUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
     
     if (enableLogging) {

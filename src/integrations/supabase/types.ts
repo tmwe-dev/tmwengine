@@ -6244,7 +6244,7 @@ export type Database = {
         Returns: undefined
       }
       get_email_folder_counts: {
-        Args: { p_sync_status: string; p_user_email: string }
+        Args: { p_sync_status?: string; p_user_email: string }
         Returns: {
           cartella: string
           count: number

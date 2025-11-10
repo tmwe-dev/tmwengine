@@ -30,20 +30,21 @@ export async function getUnifiedFolderCounts(
   console.log('📊 [EmailCountService] Starting unified count check for:', userEmail);
   
   // STEP 1: Get DB counts - COUNT ALL EMAILS regardless of sync_status
+  // 🚀 Usa RPC esistente con aggregazione server-side (risolve limite 1000 righe)
   const { data: dbCounts, error: dbError } = await supabase
-    .from('email_messages')
-    .select('cartella')
-    .eq('user_email', userEmail);
+    .rpc('get_email_folder_counts', {
+      p_user_email: userEmail,
+      p_sync_status: null // NULL = conta TUTTE le email
+    });
   
   if (dbError) {
     console.error('❌ [EmailCountService] DB count failed:', dbError);
     throw new Error(`DB count failed: ${dbError.message}`);
   }
   
-  // Aggregate by folder manually
+  // Converti array [{cartella: "INBOX", count: 100}] in Map
   const dbMap = (dbCounts || []).reduce((acc, row: any) => {
-    const folder = row.cartella;
-    acc[folder] = (acc[folder] || 0) + 1;
+    acc[row.cartella] = row.count;
     return acc;
   }, {} as Record<string, number>);
   

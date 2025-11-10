@@ -17,6 +17,7 @@ import { EmailSidebar } from './management/EmailSidebar';
 import { EmailCarouselContainer } from './management/EmailCarouselContainer';
 import { EmailGridContainer } from './management/EmailGridContainer';
 import { CreateCategoryDialog } from './management/CreateCategoryDialog';
+import { GlobalDragGhost } from './management/GlobalDragGhost';
 import { SortOption } from './management/SenderSortControls';
 
 interface EmailManagementTabProps {
@@ -43,6 +44,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     sender: SenderAnalysis;
     offsetX: number;
     offsetY: number;
+    clientX: number;
+    clientY: number;
   } | null>(null);
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
   
@@ -382,11 +385,17 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
 
   // 🆕 NUOVO: Handler drag start
   const handleDragStart = (sender: SenderAnalysis, offsetX: number, offsetY: number) => {
-    setActiveDrag({ sender, offsetX, offsetY });
+    // Inizializza activeDrag con posizione corrente del mouse (getBoundingClientRect + offset)
+    const initialX = offsetX; // Sarà aggiornato al primo mousemove
+    const initialY = offsetY;
+    setActiveDrag({ sender, offsetX, offsetY, clientX: initialX, clientY: initialY });
   };
 
   // 🆕 NUOVO: Handler drag move con collision detection
   const handleDragMove = (sender: SenderAnalysis, clientX: number, clientY: number) => {
+    // Aggiorna posizione mouse in activeDrag per GlobalDragGhost
+    setActiveDrag(prev => prev ? { ...prev, clientX, clientY } : null);
+    
     const dropZones = document.querySelectorAll('[data-drop-zone="true"]');
     let foundHover = false;
     
@@ -600,6 +609,17 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         onSubmit={handleCreateCategory}
         existingNames={groups.map(g => g.nome_gruppo)}
       />
+
+      {/* Global Drag Ghost - portale fisso sopra tutto */}
+      {activeDrag && (
+        <GlobalDragGhost
+          sender={activeDrag.sender}
+          clientX={activeDrag.clientX}
+          clientY={activeDrag.clientY}
+          offsetX={activeDrag.offsetX}
+          offsetY={activeDrag.offsetY}
+        />
+      )}
     </div>
   );
 }

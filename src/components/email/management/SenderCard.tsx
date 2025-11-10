@@ -24,7 +24,6 @@ export function SenderCard({
   onDoubleClick 
 }: SenderCardProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [ghostPos, setGhostPos] = useState({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -33,38 +32,10 @@ export function SenderCard({
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
     
-    console.log('🐛 DEBUG MOUSEDOWN SenderCard:', {
-      'rect.left': rect.left,
-      'rect.top': rect.top,
-      'rect.width': rect.width,
-      'rect.height': rect.height,
-      'e.clientX': e.clientX,
-      'e.clientY': e.clientY,
-      'offsetX': offsetX,
-      'offsetY': offsetY,
-      'ghostPos.x (ATTUALE rect.left)': rect.left,
-      'ghostPos.y (ATTUALE rect.top)': rect.top,
-      'ghostPos.x (CORRETTO e.clientX - offsetX)': e.clientX - offsetX,
-      'ghostPos.y (CORRETTO e.clientY - offsetY)': e.clientY - offsetY,
-      'DIFFERENZA X': (e.clientX - offsetX) - rect.left,
-      'DIFFERENZA Y': (e.clientY - offsetY) - rect.top,
-    });
-    
-    // Inizializza ghostPos con coordinate cursore (evita offset da hover/scale)
-    setGhostPos({
-      x: e.clientX - offsetX,
-      y: e.clientY - offsetY
-    });
-    
     setIsDragging(true);
     onDragStart?.(sender, offsetX, offsetY);
     
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      const newPos = {
-        x: moveEvent.clientX - offsetX,
-        y: moveEvent.clientY - offsetY,
-      };
-      setGhostPos(newPos);
       onDragMove?.(sender, moveEvent.clientX, moveEvent.clientY);
     };
     
@@ -114,39 +85,6 @@ export function SenderCard({
           </CardContent>
         </Card>
       </div>
-
-      {/* Ghost element (solo durante drag) */}
-      {isDragging && (
-        <div
-          className="fixed pointer-events-none z-[9999]"
-          style={{
-            left: `${ghostPos.x}px`,
-            top: `${ghostPos.y}px`,
-            width: '380px',
-          }}
-        >
-          <Card className="shadow-2xl rotate-[0.5deg] bg-gradient-to-br from-blue-500/35 to-blue-400/25 backdrop-blur-sm border-blue-300/30">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <GripVertical className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-lg truncate mb-1">
-                      {sender.companyName}
-                    </div>
-                    <div className="text-sm text-muted-foreground truncate">
-                      {sender.email}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-primary flex-shrink-0">
-                  {sender.emailCount}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </>
   );
 }

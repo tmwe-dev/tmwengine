@@ -205,7 +205,7 @@ const CRMLayout = ({ children }) => {
                   src={funEmailMascot} 
                   alt="FunnEmail Mascot" 
                   className="w-auto"
-                  style={{ height: '50px', maxHeight: '50px' }}
+                  style={{ height: '100px', maxHeight: '100px' }}
                 />
                 <img 
                   src={funEmailLogo} 

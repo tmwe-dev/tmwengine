@@ -33,6 +33,12 @@ export function SenderCard({
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
     
+    // Inizializza ghostPos con posizione corrente (evita salto a 0,0)
+    setGhostPos({
+      x: rect.left,
+      y: rect.top
+    });
+    
     setIsDragging(true);
     onDragStart?.(sender, offsetX, offsetY);
     

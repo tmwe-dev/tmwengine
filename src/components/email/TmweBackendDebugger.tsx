@@ -79,7 +79,8 @@ export function TmweBackendDebugger() {
       }
 
       if (data && !data.success) {
-        setError(`⚠️ TMWE API ha risposto ma l'operazione è fallita: ${data.errors?.join(', ')}`);
+        const errorMessage = data.errors?.join(', ') || data.error || data.message || 'Nessun dettaglio disponibile';
+        setError(`⚠️ TMWE API ha risposto ma l'operazione è fallita: ${errorMessage}`);
         console.warn('⚠️ [TMWE Debug] TMWE API error:', data.errors);
       } else {
         console.log('✅ [TMWE Debug] Success:', data);
@@ -152,7 +153,8 @@ export function TmweBackendDebugger() {
       }
 
       if (data && !data.success) {
-        setError(`⚠️ TMWE API ha risposto ma l'operazione è fallita: ${data.errors?.join(', ')}`);
+        const errorMessage = data.errors?.join(', ') || data.error || data.message || 'Nessun dettaglio disponibile';
+        setError(`⚠️ TMWE API ha risposto ma l'operazione è fallita: ${errorMessage}`);
         console.warn('⚠️ [TMWE Debug] TMWE API error:', data.errors);
       } else {
         console.log('✅ [TMWE Debug] Success:', data);

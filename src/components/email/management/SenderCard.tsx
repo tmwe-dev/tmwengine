@@ -33,6 +33,23 @@ export function SenderCard({
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
     
+    console.log('🐛 DEBUG MOUSEDOWN SenderCard:', {
+      'rect.left': rect.left,
+      'rect.top': rect.top,
+      'rect.width': rect.width,
+      'rect.height': rect.height,
+      'e.clientX': e.clientX,
+      'e.clientY': e.clientY,
+      'offsetX': offsetX,
+      'offsetY': offsetY,
+      'ghostPos.x (ATTUALE rect.left)': rect.left,
+      'ghostPos.y (ATTUALE rect.top)': rect.top,
+      'ghostPos.x (CORRETTO e.clientX - offsetX)': e.clientX - offsetX,
+      'ghostPos.y (CORRETTO e.clientY - offsetY)': e.clientY - offsetY,
+      'DIFFERENZA X': (e.clientX - offsetX) - rect.left,
+      'DIFFERENZA Y': (e.clientY - offsetY) - rect.top,
+    });
+    
     // Inizializza ghostPos con posizione corrente (evita salto a 0,0)
     setGhostPos({
       x: rect.left,

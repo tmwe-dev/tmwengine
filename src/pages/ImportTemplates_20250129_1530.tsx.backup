@@ -11,7 +11,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe, Download, Lock, Unlock, User, Sparkles, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
@@ -27,13 +26,166 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { AliasPreviewDialog } from '@/components/import/AliasPreviewDialog';
-import { useImportFilters } from '@/hooks/useImportFilters';
-import { useImportSelection } from '@/hooks/useImportSelection';
-import { formatCellValue, getCountryFlag, applySortingToRecords } from '@/lib/utils/import-utils';
 import countriesData from '@/data/countries.json';
 
 
-// Utility functions moved to src/lib/utils/import-utils.ts
+// Utility function to format empty values
+const formatCellValue = (value: any, fieldKey?: string): string => {
+  if (value === null || value === undefined || value === '' || value === false || value === '-') {
+    return '';
+  }
+  if (typeof value === 'boolean') {
+    return value ? 'Sì' : '';
+  }
+  
+  // Format dates based on field type
+  if (fieldKey && (typeof value === 'string' || value instanceof Date)) {
+    const fieldLower = fieldKey.toLowerCase();
+    
+    // For scheduled_contact and next_contact_date: only day and month
+    if (fieldLower.includes('scheduled_contact') || fieldLower.includes('next_contact_date')) {
+      try {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+        }
+      } catch (e) {
+        // If date parsing fails, fall back to original value
+      }
+    }
+    
+    // For created_at and updated_at: time + short date
+    if (fieldLower.includes('created_at') || fieldLower.includes('updated_at')) {
+      try {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          const time = date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+          const shortDate = date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+          return `${time} - ${shortDate}`;
+        }
+      } catch (e) {
+        // If date parsing fails, fall back to original value
+      }
+    }
+  }
+  
+  return String(value);
+};
+
+// Function to get country flag emoji
+const getCountryFlag = (countryName: string): string => {
+  if (!countryName) return '';
+  
+  const countryFlags: { [key: string]: string } = {
+    // Italy
+    'italy': '🇮🇹', 'italia': '🇮🇹', 'it': '🇮🇹', 'ita': '🇮🇹',
+    // France
+    'france': '🇫🇷', 'francia': '🇫🇷', 'fr': '🇫🇷', 'fra': '🇫🇷',
+    // Germany
+    'germany': '🇩🇪', 'germania': '🇩🇪', 'de': '🇩🇪', 'deu': '🇩🇪', 'deutsch': '🇩🇪',
+    // Spain
+    'spain': '🇪🇸', 'spagna': '🇪🇸', 'es': '🇪🇸', 'esp': '🇪🇸', 'españa': '🇪🇸',
+    // UK
+    'united kingdom': '🇬🇧', 'uk': '🇬🇧', 'regno unito': '🇬🇧', 'gb': '🇬🇧', 'gbr': '🇬🇧',
+    'england': '🇬🇧', 'inghilterra': '🇬🇧', 'great britain': '🇬🇧',
+    // USA
+    'united states': '🇺🇸', 'usa': '🇺🇸', 'stati uniti': '🇺🇸', 'us': '🇺🇸',
+    'united states of america': '🇺🇸', 'america': '🇺🇸',
+    // China
+    'china': '🇨🇳', 'cina': '🇨🇳', 'cn': '🇨🇳', 'chn': '🇨🇳', 'people\'s republic of china': '🇨🇳',
+    // Japan
+    'japan': '🇯🇵', 'giappone': '🇯🇵', 'jp': '🇯🇵', 'jpn': '🇯🇵',
+    // Netherlands
+    'netherlands': '🇳🇱', 'olanda': '🇳🇱', 'paesi bassi': '🇳🇱', 'nl': '🇳🇱', 'nld': '🇳🇱', 'holland': '🇳🇱',
+    // Belgium
+    'belgium': '🇧🇪', 'belgio': '🇧🇪', 'be': '🇧🇪', 'bel': '🇧🇪',
+    // Switzerland
+    'switzerland': '🇨🇭', 'svizzera': '🇨🇭', 'ch': '🇨🇭', 'che': '🇨🇭',
+    // Austria
+    'austria': '🇦🇹', 'at': '🇦🇹', 'aut': '🇦🇹',
+    // Poland
+    'poland': '🇵🇱', 'polonia': '🇵🇱', 'pl': '🇵🇱', 'pol': '🇵🇱',
+    // Portugal
+    'portugal': '🇵🇹', 'portogallo': '🇵🇹', 'pt': '🇵🇹', 'prt': '🇵🇹',
+    // Greece
+    'greece': '🇬🇷', 'grecia': '🇬🇷', 'gr': '🇬🇷', 'grc': '🇬🇷',
+    // Turkey
+    'turkey': '🇹🇷', 'turchia': '🇹🇷', 'tr': '🇹🇷', 'tur': '🇹🇷',
+    // Russia
+    'russia': '🇷🇺', 'russian federation': '🇷🇺', 'ru': '🇷🇺', 'rus': '🇷🇺',
+    // Canada
+    'canada': '🇨🇦', 'ca': '🇨🇦', 'can': '🇨🇦',
+    // Australia
+    'australia': '🇦🇺', 'au': '🇦🇺', 'aus': '🇦🇺',
+    // Brazil
+    'brazil': '🇧🇷', 'brasile': '🇧🇷', 'br': '🇧🇷', 'bra': '🇧🇷', 'brasil': '🇧🇷',
+    // India
+    'india': '🇮🇳', 'in': '🇮🇳', 'ind': '🇮🇳',
+    // South Korea
+    'south korea': '🇰🇷', 'corea del sud': '🇰🇷', 'kr': '🇰🇷', 'kor': '🇰🇷', 'korea': '🇰🇷',
+    // Mexico
+    'mexico': '🇲🇽', 'messico': '🇲🇽', 'mx': '🇲🇽', 'mex': '🇲🇽',
+    // Argentina
+    'argentina': '🇦🇷', 'ar': '🇦🇷', 'arg': '🇦🇷',
+    // Nordic countries
+    'sweden': '🇸🇪', 'svezia': '🇸🇪', 'se': '🇸🇪', 'swe': '🇸🇪',
+    'norway': '🇳🇴', 'norvegia': '🇳🇴', 'no': '🇳🇴', 'nor': '🇳🇴',
+    'denmark': '🇩🇰', 'danimarca': '🇩🇰', 'dk': '🇩🇰', 'dnk': '🇩🇰',
+    'finland': '🇫🇮', 'finlandia': '🇫🇮', 'fi': '🇫🇮', 'fin': '🇫🇮',
+    'iceland': '🇮🇸', 'islanda': '🇮🇸', 'is': '🇮🇸', 'isl': '🇮🇸',
+    // Ireland
+    'ireland': '🇮🇪', 'irlanda': '🇮🇪', 'ie': '🇮🇪', 'irl': '🇮🇪',
+    // Eastern Europe
+    'czech republic': '🇨🇿', 'repubblica ceca': '🇨🇿', 'cz': '🇨🇿', 'cze': '🇨🇿', 'czechia': '🇨🇿',
+    'hungary': '🇭🇺', 'ungheria': '🇭🇺', 'hu': '🇭🇺', 'hun': '🇭🇺',
+    'romania': '🇷🇴', 'ro': '🇷🇴', 'rou': '🇷🇴',
+    'slovenia': '🇸🇮', 'si': '🇸🇮', 'svn': '🇸🇮',
+    'croatia': '🇭🇷', 'croazia': '🇭🇷', 'hr': '🇭🇷', 'hrv': '🇭🇷',
+    'slovakia': '🇸🇰', 'slovacchia': '🇸🇰', 'sk': '🇸🇰', 'svk': '🇸🇰',
+    'lithuania': '🇱🇹', 'lituania': '🇱🇹', 'lt': '🇱🇹', 'ltu': '🇱🇹',
+    'latvia': '🇱🇻', 'lettonia': '🇱🇻', 'lv': '🇱🇻', 'lva': '🇱🇻',
+    'estonia': '🇪🇪', 'ee': '🇪🇪', 'est': '🇪🇪',
+    // Middle East
+    'israel': '🇮🇱', 'il': '🇮🇱', 'isr': '🇮🇱',
+    'united arab emirates': '🇦🇪', 'ae': '🇦🇪', 'are': '🇦🇪', 'uae': '🇦🇪',
+    'saudi arabia': '🇸🇦', 'sa': '🇸🇦', 'sau': '🇸🇦',
+    // Africa
+    'south africa': '🇿🇦', 'za': '🇿🇦', 'zaf': '🇿🇦',
+    'egypt': '🇪🇬', 'egitto': '🇪🇬', 'eg': '🇪🇬', 'egy': '🇪🇬',
+    // Asia
+    'singapore': '🇸🇬', 'sg': '🇸🇬', 'sgp': '🇸🇬',
+    'thailand': '🇹🇭', 'th': '🇹🇭', 'tha': '🇹🇭',
+    'vietnam': '🇻🇳', 'vn': '🇻🇳', 'vnm': '🇻🇳',
+    'malaysia': '🇲🇾', 'my': '🇲🇾', 'mys': '🇲🇾',
+    'indonesia': '🇮🇩', 'id': '🇮🇩', 'idn': '🇮🇩',
+    'philippines': '🇵🇭', 'ph': '🇵🇭', 'phl': '🇵🇭',
+    // Others
+    'new zealand': '🇳🇿', 'nz': '🇳🇿', 'nzl': '🇳🇿',
+    'chile': '🇨🇱', 'cile': '🇨🇱', 'cl': '🇨🇱', 'chl': '🇨🇱',
+    'colombia': '🇨🇴', 'co': '🇨🇴', 'col': '🇨🇴',
+    'peru': '🇵🇪', 'perù': '🇵🇪', 'pe': '🇵🇪', 'per': '🇵🇪',
+    'uruguay': '🇺🇾', 'uy': '🇺🇾', 'ury': '🇺🇾',
+    'venezuela': '🇻🇪', 've': '🇻🇪', 'ven': '🇻🇪'
+  };
+  
+  // Normalize input: lowercase, trim, remove extra spaces
+  const normalizedCountry = countryName.toLowerCase().trim().replace(/\s+/g, ' ');
+  
+  // Try exact match first
+  if (countryFlags[normalizedCountry]) {
+    return countryFlags[normalizedCountry];
+  }
+  
+  // Try partial matches
+  for (const [key, flag] of Object.entries(countryFlags)) {
+    if (normalizedCountry.includes(key) || key.includes(normalizedCountry)) {
+      return flag;
+    }
+  }
+  
+  // If no match found, show the globe
+  return '🌍';
+};
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -3569,11 +3721,10 @@ export default function ImportTemplates() {
                       );
                     })}
                   </div>
-                ) : (
-                  /* Desktop View - Table with ScrollArea */
-                  <ScrollArea className="flex-1 border rounded-md">
-                    <div className="min-w-[1400px]">
-                      <Table>
+               ) : (
+                 /* Desktop View - Table */
+                 <div className="overflow-x-scroll overflow-y-auto flex-1 border rounded-md">
+                    <Table style={{ minWidth: '1400px' }}>
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                         <TableRow>
                            <TableHead className="w-12 bg-background border-b px-4 py-[10px]">
@@ -3908,7 +4059,6 @@ export default function ImportTemplates() {
                      </TableBody>
                    </Table>
                  </div>
-               </ScrollArea>
                )}
                 
                 {/* Footer - Responsive Controls */}

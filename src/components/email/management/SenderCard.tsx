@@ -50,10 +50,10 @@ export function SenderCard({
       'DIFFERENZA Y': (e.clientY - offsetY) - rect.top,
     });
     
-    // Inizializza ghostPos con posizione corrente (evita salto a 0,0)
+    // Inizializza ghostPos con coordinate cursore (evita offset da hover/scale)
     setGhostPos({
-      x: rect.left,
-      y: rect.top
+      x: e.clientX - offsetX,
+      y: e.clientY - offsetY
     });
     
     setIsDragging(true);

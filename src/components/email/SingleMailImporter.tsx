@@ -11,9 +11,11 @@ import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { getSingleMailFolders } from '@/lib/single-mail-api';
 import { getSyncPreferences } from '@/lib/email-sync-preferences';
 import { toast } from 'sonner';
-import { RefreshCw, Eye, Download, CheckSquare, Square, Loader2 } from 'lucide-react';
+import { RefreshCw, Eye, Download, CheckSquare, Square, Loader2, AlertTriangle, Archive, FolderEdit, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useUserEmail } from '@/hooks/useUserEmail';
 import { normalizeEmailMessage } from '@/lib/email/email-mapper';
 import { prepareEmailForDatabase } from '@/lib/email/email-database-mapper';
@@ -40,6 +42,10 @@ export function SingleMailImporter() {
   const [isImporting, setIsImporting] = useState(false);
   const [importingUid, setImportingUid] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState(100); // ✅ Lazy loading: inizialmente 100 email
+  const [showArchived, setShowArchived] = useState(false); // ✅ Filtro per visualizzare email archiviate
+  const [orphanFolderToRename, setOrphanFolderToRename] = useState<{ name: string; count: number } | null>(null);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
 
   // ✅ Query cartelle disponibili (API DEDICATA - NO CACHE CONDIVISA)
   const { data: foldersData } = useQuery({
@@ -149,24 +155,29 @@ export function SingleMailImporter() {
       const missing = Array.from(serverUIDs).filter(uid => !dbUIDs.has(uid));
       log(`🎯 Missing UIDs: ${missing.length}`);
 
-      // ✅ Elimina email "extra" (presenti in DB ma non sul server)
+      // ✅ FASE 1: Archivia email "extra" (presenti in DB ma non sul server)
       const extraUIDs = Array.from(dbUIDs).filter(uid => !serverUIDs.has(uid));
       if (extraUIDs.length > 0) {
-        log(`🗑️ Trovate ${extraUIDs.length} email extra nel DB (non più sul server), eliminazione...`);
+        log(`📦 Trovate ${extraUIDs.length} email extra nel DB (non più sul server), archivio...`);
         
-        // Elimina direttamente dal DB
-        const { error: deleteError } = await supabase
+        // Marca come archiviate (senza spostare in cartella "Archivio")
+        const { error: archiveError } = await supabase
           .from('email_messages')
-          .delete()
+          .update({
+            deleted_from_server: true,
+            deleted_from_server_at: new Date().toISOString(),
+            stato: 'archiviato',
+            updated_at: new Date().toISOString(),
+          })
           .eq('user_email', userEmail)
           .eq('cartella', selectedFolder)
           .in('message_id', extraUIDs.map(uid => `${selectedFolder}/${uid}`));
 
-        if (!deleteError) {
-          log(`✅ ${extraUIDs.length} email eliminate con successo`);
-          toast.success(`${extraUIDs.length} email eliminate (non più sul server)`);
+        if (!archiveError) {
+          log(`✅ ${extraUIDs.length} email archiviate con successo`);
+          toast.success(`${extraUIDs.length} email archiviate (eliminate dal server)`);
         } else {
-          console.error('❌ Errore eliminazione:', deleteError);
+          console.error('❌ Errore archiviazione:', archiveError);
         }
       }
 
@@ -265,11 +276,11 @@ export function SingleMailImporter() {
     refetchOnWindowFocus: false,
   });
 
-  // ✅ Elimina automaticamente cartelle orfane (presenti in DB ma non sul server)
-  useQuery({
-    queryKey: ['orphan-folders-cleanup', userEmail],
+  // ✅ FASE 2: Rileva cartelle orfane (presenti in DB ma non sul server)
+  const { data: orphanFolders } = useQuery({
+    queryKey: ['orphan-folders', userEmail],
     queryFn: async () => {
-      if (!userEmail || !foldersData) return null;
+      if (!userEmail || !foldersData) return [];
 
       const serverFolderNames = foldersData.map((f: any) => f.name);
 
@@ -277,53 +288,24 @@ export function SingleMailImporter() {
       const { data, error } = await supabase
         .from('email_messages')
         .select('cartella')
-        .eq('user_email', userEmail);
+        .eq('user_email', userEmail)
+        .eq('deleted_from_server', false);
 
       if (error) {
         console.error('❌ Error fetching orphan folders:', error);
-        return null;
+        return [];
       }
 
-      // Identifica cartelle orfane
-      const orphanFolders = Array.from(new Set(data.map((msg: any) => msg.cartella)))
-        .filter(folder => !serverFolderNames.includes(folder));
+      // Conta email per cartella
+      const folderCounts = data.reduce((acc: Record<string, number>, msg: any) => {
+        acc[msg.cartella] = (acc[msg.cartella] || 0) + 1;
+        return acc;
+      }, {});
 
-      if (orphanFolders.length === 0) {
-        log('✅ Nessuna cartella orfana rilevata');
-        return null;
-      }
-
-      log(`🗑️ Trovate ${orphanFolders.length} cartelle orfane, eliminazione automatica...`, orphanFolders);
-
-      // Elimina da email_messages
-      const { error: emailError } = await supabase
-        .from('email_messages')
-        .delete()
-        .eq('user_email', userEmail)
-        .in('cartella', orphanFolders);
-
-      if (emailError) {
-        console.error('❌ Error deleting orphan emails:', emailError);
-      }
-
-      // Elimina da email_temp_index
-      const { error: tempError } = await supabase
-        .from('email_temp_index')
-        .delete()
-        .eq('user_email', userEmail)
-        .in('folder', orphanFolders);
-
-      if (tempError) {
-        console.error('❌ Error deleting orphan temp index:', tempError);
-      }
-
-      if (!emailError && !tempError) {
-        log(`✅ ${orphanFolders.length} cartelle orfane eliminate con successo`);
-        toast.success(`${orphanFolders.length} cartelle orfane eliminate automaticamente`);
-        queryClient.invalidateQueries({ queryKey: ['email-folder-counts-single'] });
-      }
-
-      return orphanFolders;
+      // Filtra cartelle orfane
+      return Object.entries(folderCounts)
+        .filter(([folder]) => !serverFolderNames.includes(folder))
+        .map(([folder, count]) => ({ name: folder, count }));
     },
     enabled: !!userEmail && !!foldersData,
     refetchOnWindowFocus: false,
@@ -598,6 +580,118 @@ export function SingleMailImporter() {
     return folderCounts.find(f => f.folderName === folderName);
   }, [selectedFolder, comparisonData, folderCounts]);
 
+  // ✅ FASE 2: Handlers per cartelle orfane
+  const handleRenameFolder = async (oldName: string, newName: string) => {
+    if (!userEmail || !newName.trim()) return;
+
+    try {
+      // Prima, ottieni tutti i message_id da aggiornare
+      const { data: messages, error: fetchError } = await supabase
+        .from('email_messages')
+        .select('id, message_id')
+        .eq('user_email', userEmail)
+        .eq('cartella', oldName);
+
+      if (fetchError) throw fetchError;
+
+      // Aggiorna ogni messaggio individualmente
+      if (messages && messages.length > 0) {
+        for (const msg of messages) {
+          const newMessageId = msg.message_id.replace(`${oldName}/`, `${newName}/`);
+          
+          await supabase
+            .from('email_messages')
+            .update({
+              cartella: newName,
+              message_id: newMessageId,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', msg.id);
+        }
+      }
+
+      // Aggiorna email_temp_index
+      const { error: tempError } = await supabase
+        .from('email_temp_index')
+        .update({ folder: newName })
+        .eq('user_email', userEmail)
+        .eq('folder', oldName);
+
+      if (tempError) throw tempError;
+
+      toast.success(`✅ Cartella rinominata: ${oldName} → ${newName} (${messages?.length || 0} email aggiornate)`);
+      queryClient.invalidateQueries({ queryKey: ['orphan-folders'] });
+      queryClient.invalidateQueries({ queryKey: ['email-folder-counts-single'] });
+    } catch (error: any) {
+      toast.error(`❌ Errore rinominazione: ${error.message}`);
+    }
+  };
+
+  const handleArchiveFolder = async (folderName: string) => {
+    if (!userEmail) return;
+
+    try {
+      const { error } = await supabase
+        .from('email_messages')
+        .update({
+          deleted_from_server: true,
+          deleted_from_server_at: new Date().toISOString(),
+          stato: 'archiviato',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_email', userEmail)
+        .eq('cartella', folderName)
+        .eq('deleted_from_server', false);
+
+      if (error) throw error;
+
+      toast.success(`✅ Cartella "${folderName}" archiviata`);
+      queryClient.invalidateQueries({ queryKey: ['orphan-folders'] });
+    } catch (error: any) {
+      toast.error(`❌ Errore archiviazione: ${error.message}`);
+    }
+  };
+
+  const handleDeleteFolder = async (folderName: string) => {
+    if (!userEmail) return;
+
+    const confirmed = window.confirm(
+      `⚠️ ATTENZIONE: Stai per eliminare DEFINITIVAMENTE tutte le email dalla cartella "${folderName}".\n\nQuesta operazione è IRREVERSIBILE.\n\nSei sicuro?`
+    );
+
+    if (!confirmed) return;
+
+    const doubleConfirm = window.confirm(
+      `⚠️⚠️ ULTIMA CONFERMA ⚠️⚠️\n\nStai per eliminare permanentemente la cartella "${folderName}" e TUTTE le sue email.\n\nDigita "ELIMINA" per confermare (case sensitive).`
+    );
+
+    if (!doubleConfirm) return;
+
+    try {
+      // Elimina da email_messages
+      const { error: emailError } = await supabase
+        .from('email_messages')
+        .delete()
+        .eq('user_email', userEmail)
+        .eq('cartella', folderName);
+
+      if (emailError) throw emailError;
+
+      // Elimina da email_temp_index
+      const { error: tempError } = await supabase
+        .from('email_temp_index')
+        .delete()
+        .eq('user_email', userEmail)
+        .eq('folder', folderName);
+
+      if (tempError) throw tempError;
+
+      toast.success(`✅ Cartella "${folderName}" eliminata definitivamente`);
+      queryClient.invalidateQueries({ queryKey: ['orphan-folders'] });
+    } catch (error: any) {
+      toast.error(`❌ Errore eliminazione: ${error.message}`);
+    }
+  };
 
   const allSelected = missingEmails.length > 0 && missingEmails.every(e => e.selected);
   const selectedCount = missingEmails.filter(e => e.selected).length;
@@ -698,6 +792,60 @@ export function SingleMailImporter() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* ✅ FASE 2: Alert cartelle orfane */}
+          {orphanFolders && orphanFolders.length > 0 && (
+            <Alert variant="destructive" className="border-orange-500/50 bg-orange-500/10">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Cartelle orfane rilevate</AlertTitle>
+              <AlertDescription className="space-y-3 mt-2">
+                {orphanFolders.map((folder: any) => (
+                  <div key={folder.name} className="p-3 bg-background/50 rounded-lg border border-orange-500/20">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm">📁 {folder.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Contiene {folder.count} email nel database locale ma non esiste più sul server
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setOrphanFolderToRename({ name: folder.name, count: folder.count });
+                            setRenameDialogOpen(true);
+                          }}
+                          className="gap-2"
+                        >
+                          <FolderEdit className="h-4 w-4" />
+                          Rinomina
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleArchiveFolder(folder.name)}
+                          className="gap-2"
+                        >
+                          <Archive className="h-4 w-4" />
+                          Archivia
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteFolder(folder.name)}
+                          className="gap-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Elimina
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Indicatore caricamento conteggi */}
           {!folderCounts && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -791,6 +939,21 @@ export function SingleMailImporter() {
               </div>
             </div>
           )}
+
+          {/* ✅ FASE 1: Checkbox per mostrare email archiviate */}
+          <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border">
+            <Checkbox
+              id="show-archived"
+              checked={showArchived}
+              onCheckedChange={(checked) => setShowArchived(checked as boolean)}
+            />
+            <label
+              htmlFor="show-archived"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            >
+              Mostra email archiviate (eliminate dal server)
+            </label>
+          </div>
 
           {/* Badge visualizzazione parziale + pulsante "Carica altre 100" */}
           {comparisonData && comparisonData.totalMissing > 0 && (
@@ -967,6 +1130,53 @@ export function SingleMailImporter() {
         </div>
       )}
 
+      {/* ✅ FASE 2: Dialog rinominazione cartella */}
+      <AlertDialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rinomina cartella orfana</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                La cartella <strong>{orphanFolderToRename?.name}</strong> non esiste più sul server.
+              </p>
+              <p>
+                Contiene <strong>{orphanFolderToRename?.count} email</strong> nel database locale.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Inserisci il nuovo nome della cartella dal server:
+              </p>
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="Es: INBOX/Nuovo Nome"
+                className="w-full p-2 border rounded-md bg-background"
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setNewFolderName('');
+              setOrphanFolderToRename(null);
+            }}>
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (orphanFolderToRename && newFolderName.trim()) {
+                  handleRenameFolder(orphanFolderToRename.name, newFolderName.trim());
+                  setRenameDialogOpen(false);
+                  setNewFolderName('');
+                  setOrphanFolderToRename(null);
+                }
+              }}
+              disabled={!newFolderName.trim()}
+            >
+              Conferma rinominazione
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

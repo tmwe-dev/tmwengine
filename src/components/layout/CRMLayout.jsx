@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
 import { AnimatedGroupButton } from '@/components/ui/animated-group-button';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
+import { AIPromptsInspector } from '@/components/ai/AIPromptsInspector';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ProfileDialog } from '@/components/tmwe/ProfileDialog';
 import { GlobalCountrySelector } from '@/components/GlobalCountrySelector';
@@ -348,6 +349,9 @@ const CRMLayout = ({ children }) => {
 
         {/* Right side elements */}
         <div className="flex items-center gap-3">
+          {/* AI Prompts Inspector */}
+          <AIPromptsInspector />
+          
           {/* TMWE Profile Button - only show if user has profile */}
           {userProfile && (
             <Button

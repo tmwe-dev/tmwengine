@@ -77,7 +77,7 @@ export const useNavigationGroups = () => {
       icon: Upload,
       items: [
         { name: t('nav.importManagement'), href: '/gestisci-import', icon: Upload },
-        { name: t('nav.importedRecords'), href: '/record-importati', icon: FileText },
+        { name: t('nav.importedRecords'), href: '/import-templates', icon: FileText },
       ]
     },
     {

@@ -14,7 +14,6 @@ import { GlobalCountrySelector } from '@/components/GlobalCountrySelector';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { TokenKeyIndicator } from '@/components/ui/token-key-indicator';
 import { useNavigationGroups } from '@/hooks/useNavigationGroups';
-import findairLogo from '@/assets/findair-logo-header.png';
 import funEmailLogo from '@/assets/funnemail-logo.png';
 import funEmailMascot from '@/assets/funnemail-mascot.png';
 import {
@@ -349,14 +348,6 @@ const CRMLayout = ({ children }) => {
 
         {/* Right side elements */}
         <div className="flex items-center gap-3">
-          {/* Logo */}
-          <button 
-            onClick={() => navigate(-1)}
-            className="cursor-pointer hover:opacity-80 transition-opacity"
-          >
-            <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
-          </button>
-
           {/* TMWE Profile Button - only show if user has profile */}
           {userProfile && (
             <Button

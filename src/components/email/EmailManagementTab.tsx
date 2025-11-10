@@ -68,13 +68,14 @@ const grid50PercentCollision: CollisionDetection = (args) => {
 const scrollOffsetModifier = (args: any) => {
   const { transform } = args;
   
-  // Trova il container scroll della sidebar
-  const scrollContainer = document.querySelector('.overflow-y-auto');
+  // ✅ Selector specifico per sidebar scroll container
+  const scrollContainer = document.getElementById('email-sidebar-scroll-container');
   const scrollTop = scrollContainer?.scrollTop || 0;
+  
+  console.log(`🎯 Scroll offset compensazione: ${scrollTop}px`);
   
   return {
     ...transform,
-    // Sottrai scrollTop per compensare il salto
     y: transform.y - scrollTop,
   };
 };
@@ -561,7 +562,11 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       <DndContext
         collisionDetection={viewMode === 'carousel' ? carousel70PercentCollision : grid50PercentCollision}
         onDragEnd={handleDragEnd}
-        onDragStart={(e) => setActiveDragId(e.active.id as string)}
+        onDragStart={(e) => {
+          const scrollContainer = document.getElementById('email-sidebar-scroll-container');
+          console.log(`🎯 Drag Start - ScrollTop: ${scrollContainer?.scrollTop || 0}px`);
+          setActiveDragId(e.active.id as string);
+        }}
         onDragCancel={() => setActiveDragId(null)}
       >
         {/* Sidebar */}
@@ -614,6 +619,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           dropAnimation={null}
           adjustScale={false}
           className="z-[100]"
+          modifiers={[scrollOffsetModifier]}
         >
           {activeDragId ? (
             (() => {

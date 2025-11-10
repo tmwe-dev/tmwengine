@@ -229,7 +229,7 @@ export function EmailSidebar({
         </div>
         
         {/* Lista indirizzi */}
-        <div className="flex-1 overflow-y-auto px-4 space-y-4">
+        <div id="email-sidebar-scroll-container" className="flex-1 overflow-y-auto px-4 space-y-4">
           {displayedSenders.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-sm">

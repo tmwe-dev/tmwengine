@@ -613,7 +613,6 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         <DragOverlay 
           dropAnimation={null}
           adjustScale={false}
-          modifiers={[scrollOffsetModifier]}
           className="z-[100]"
         >
           {activeDragId ? (

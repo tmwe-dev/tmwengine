@@ -163,15 +163,6 @@ export const GroupingSuggestionRow = ({
           />
         </div>
         
-        {/* Bandiera GRANDE */}
-        {countryFlag && (
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-4xl" title={countryCode || undefined}>
-              {countryFlag}
-            </span>
-          </div>
-        )}
-        
         {/* Conteggio Email - solo numero */}
         {emailCount !== undefined && emailCount > 0 && (
           <div className="flex items-center justify-center px-4 py-2 bg-info/10 rounded-lg border border-info/20">
@@ -184,36 +175,47 @@ export const GroupingSuggestionRow = ({
       <div className="flex-1 min-w-0 space-y-3">
         {/* RIGA 1: Email + Badge contestuali */}
         <div>
-          <h4 
-            className="font-semibold text-base flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
-            onClick={() => setShowEmailsDialog(true)}
-            title="Clicca per vedere le email"
-          >
-            <Mail className="w-4 h-4 flex-shrink-0" />
-            <span className="break-all">{suggestion.sender_email}</span>
-          </h4>
-          
-          <div className="flex items-center gap-2 flex-wrap">
-            {rubricaContact?.meta_client && (
-              <Badge variant="secondary" className="text-xs bg-success/10 text-success border-success/20">
-                <Building2 className="w-3 h-3 mr-1" />
-                Cliente
-              </Badge>
+          <div className="flex items-start gap-2">
+            {/* Bandiera GRANDE spostata qui */}
+            {countryFlag && (
+              <span className="text-4xl flex-shrink-0" title={countryCode || undefined}>
+                {countryFlag}
+              </span>
             )}
             
-            {rubricaContact && rubricaContact.origine && !rubricaContact.meta_client && (
-              <Badge variant="secondary" className="text-xs bg-info/10 text-info border-info/20">
-                <Users className="w-3 h-3 mr-1" />
-                {rubricaContact.origine}
-              </Badge>
-            )}
-            
-            {(rubricaContact?.meta_wca || isWCA) && (
-              <Badge variant="secondary" className="text-xs bg-warning/10 text-warning border-warning/20">
-                <Star className="w-3 h-3 mr-1" />
-                WCA
-              </Badge>
-            )}
+            <div className="flex-1 min-w-0">
+              <h4 
+                className="font-semibold text-base flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+                onClick={() => setShowEmailsDialog(true)}
+                title="Clicca per vedere le email"
+              >
+                <Mail className="w-4 h-4 flex-shrink-0" />
+                <span className="break-all">{suggestion.sender_email}</span>
+              </h4>
+              
+              <div className="flex items-center gap-2 flex-wrap">
+                {rubricaContact?.meta_client && (
+                  <Badge variant="secondary" className="text-xs bg-success/10 text-success border-success/20">
+                    <Building2 className="w-3 h-3 mr-1" />
+                    Cliente
+                  </Badge>
+                )}
+                
+                {rubricaContact && rubricaContact.origine && !rubricaContact.meta_client && (
+                  <Badge variant="secondary" className="text-xs bg-info/10 text-info border-info/20">
+                    <Users className="w-3 h-3 mr-1" />
+                    {rubricaContact.origine}
+                  </Badge>
+                )}
+                
+                {(rubricaContact?.meta_wca || isWCA) && (
+                  <Badge variant="secondary" className="text-xs bg-warning/10 text-warning border-warning/20">
+                    <Star className="w-3 h-3 mr-1" />
+                    WCA
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

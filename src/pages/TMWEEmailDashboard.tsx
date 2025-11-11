@@ -101,6 +101,15 @@ const EmailDashboard = () => {
     }
   }, [selectedFolder, isMobile]);
 
+  // Auto-refresh email list every 30 seconds
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [queryClient]);
+
   // Handle email selection on mobile
   const handleEmailSelect = (emailId: string) => {
     setSelectedEmailId(emailId);

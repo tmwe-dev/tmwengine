@@ -131,12 +131,8 @@ export const SmartEmailCardIntelligent = ({
         "bg-gradient-to-br from-[#1c1c28]/80 via-[#23233a]/60 to-[#0e0e18]/70",
         "backdrop-blur-md border border-white/10",
         "hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(0,200,255,0.1)]",
-        isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl"
+        isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
       )}
-      style={{
-        zIndex: isSelected ? 50 : 1,
-        transform: isSelected ? 'scale(1.02)' : 'scale(1)'
-      }}
     >
       {/* Diagonal light reflection */}
       <div className="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden">

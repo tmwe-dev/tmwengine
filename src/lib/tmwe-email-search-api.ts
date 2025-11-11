@@ -146,5 +146,80 @@ export const emailSearchApi = {
    * Get folder tree structure
    */
   getFolderTree: (timeout = 10) =>
-    fetchApi('/email_search', { handler: 'get_folder_tree', timeout })
+    fetchApi('/email_search', { handler: 'get_folder_tree', timeout }),
+
+  /**
+   * Mark email as read (write operation via RPC)
+   */
+  markAsRead: (email_id: number, timeout = 10) =>
+    fetchApi('/email_message', { 
+      handler: 'mark_messages', 
+      uids: [email_id.toString()],
+      action: 'read',
+      timeout 
+    }),
+
+  /**
+   * Mark email as unread (write operation via RPC)
+   */
+  markAsUnread: (email_id: number, timeout = 10) =>
+    fetchApi('/email_message', { 
+      handler: 'mark_messages', 
+      uids: [email_id.toString()],
+      action: 'unread',
+      timeout 
+    }),
+
+  /**
+   * Star/flag email (write operation via RPC)
+   */
+  starEmail: (email_id: number, timeout = 10) =>
+    fetchApi('/email_message', { 
+      handler: 'mark_messages', 
+      uids: [email_id.toString()],
+      action: 'flagged',
+      timeout 
+    }),
+
+  /**
+   * Delete email (move to trash via RPC)
+   */
+  deleteEmail: (email_id: number, timeout = 10) =>
+    fetchApi('/email_message', { 
+      handler: 'move_to_trash', 
+      uids: [email_id.toString()],
+      timeout 
+    }),
+
+  /**
+   * Move email to folder (write operation via RPC)
+   */
+  moveEmail: (email_id: number, target_folder: string, timeout = 10) =>
+    fetchApi('/email_message', { 
+      handler: 'move_messages', 
+      uids: [email_id.toString()],
+      target_folder,
+      timeout 
+    }),
+
+  /**
+   * Bulk delete emails (move to trash via RPC)
+   */
+  deleteEmailsBulk: (email_ids: string[], timeout = 10) =>
+    fetchApi('/email_message', { 
+      handler: 'move_to_trash', 
+      uids: email_ids,
+      timeout 
+    }),
+
+  /**
+   * Bulk mark emails as read (write operation via RPC)
+   */
+  markAsReadBulk: (email_ids: string[], timeout = 10) =>
+    fetchApi('/email_message', { 
+      handler: 'mark_messages', 
+      uids: email_ids,
+      action: 'read',
+      timeout 
+    })
 };

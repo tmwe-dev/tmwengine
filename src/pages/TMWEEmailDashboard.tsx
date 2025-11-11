@@ -119,10 +119,10 @@ const EmailDashboard = () => {
   };
 
 
-  // Mark email as read
+  // Mark email as read using fast RPC API
   const handleMarkAsRead = async (emailId: string) => {
     try {
-      await emailMessageApi.getMessage(emailId, undefined, true);
+      await emailSearchApi.markAsRead(parseInt(emailId));
       queryClient.invalidateQueries({ queryKey: ['messages'] });
     } catch (error) {
       console.error('Error marking email as read:', error);
@@ -279,16 +279,9 @@ const EmailDashboard = () => {
       
       console.log('✅ Email detail received from /email_search:', result);
       
-      // ✅ ESCRITURA: Usar /email_message para marcar como leído (actualización en IMAP)
-      try {
-        await emailMessageApi.markMessages([selectedEmailId!], 'read');
-        console.log('✅ Email marked as read via /email_message');
-      } catch (markError) {
-        console.warn('⚠️ Failed to mark email as read:', markError);
-      }
+      // ✅ Mark as read will be handled automatically by EmailDetail component
+      // via onMarkAsRead callback using fast RPC API
       
-      // Invalidate messages query to update the read status in the list
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
       return result;
     },
     enabled: !!selectedEmailId,
@@ -458,8 +451,8 @@ const EmailDashboard = () => {
 
   const handleDelete = () => {
     if (selectedEmailId) {
-      // ✅ UPDATED: Use moveToTrash instead of permanent delete (according to API spec)
-      emailMessageApi.moveToTrash(selectedEmailId)
+      // ✅ Use fast RPC API for delete operation
+      emailSearchApi.deleteEmail(parseInt(selectedEmailId))
         .then(() => {
           toast.success('Email moved to trash');
           setSelectedEmailId(null);
@@ -470,8 +463,8 @@ const EmailDashboard = () => {
   };
 
   const handleBulkDelete = (emailIds: string[]) => {
-    // ✅ UPDATED: Use moveMessagesToTrash instead of permanent delete
-    emailMessageApi.moveMessagesToTrash(emailIds)
+    // ✅ Use fast RPC API for bulk delete operation
+    emailSearchApi.deleteEmailsBulk(emailIds)
       .then(() => {
         toast.success(`${emailIds.length} emails moved to trash`);
         queryClient.invalidateQueries({ queryKey: ['messages'] });
@@ -491,7 +484,8 @@ const EmailDashboard = () => {
 
   const handleBulkMarkAsRead = async (emailIds: string[]) => {
     try {
-      await emailMessageApi.markMessages(emailIds, 'read');
+      // ✅ Use fast RPC API for bulk mark as read operation
+      await emailSearchApi.markAsReadBulk(emailIds);
       queryClient.invalidateQueries({ queryKey: ['messages'] });
       toast.success('Email segnate come lette');
     } catch (error) {

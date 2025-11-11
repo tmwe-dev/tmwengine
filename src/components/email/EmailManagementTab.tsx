@@ -63,6 +63,28 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   
   const { toast } = useToast();
 
+  // 🆕 Listener globale per aggiornare posizione ghost durante drag HTML5
+  useEffect(() => {
+    if (!activeDrag) return;
+
+    const handleDrag = (e: DragEvent) => {
+      // Ignora eventi fake (clientX/Y = 0 durante drag)
+      if (e.clientX === 0 && e.clientY === 0) return;
+      
+      setActiveDrag(prev => prev ? {
+        ...prev,
+        clientX: e.clientX,
+        clientY: e.clientY,
+      } : null);
+
+      // Trigger collision detection
+      handleDragMove(activeDrag.sender, e.clientX, e.clientY);
+    };
+
+    document.addEventListener('drag', handleDrag);
+    return () => document.removeEventListener('drag', handleDrag);
+  }, [activeDrag]);
+
   // 🔄 Gruppi in ordine naturale (DB: created_at ASC) - per Carousel
   const naturalOrderGroups = useMemo(() => [...groups], [groups]);
 
@@ -384,12 +406,10 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     }
   };
 
-  // 🆕 NUOVO: Handler drag start
+  // 🆕 NUOVO: Handler drag start (HTML5 native)
   const handleDragStart = (sender: SenderAnalysis, offsetX: number, offsetY: number, cardWidth: number) => {
-    // Inizializza activeDrag con posizione corrente del mouse (getBoundingClientRect + offset)
-    const initialX = offsetX; // Sarà aggiornato al primo mousemove
-    const initialY = offsetY;
-    setActiveDrag({ sender, offsetX, offsetY, clientX: initialX, clientY: initialY, width: cardWidth });
+    // Inizializza activeDrag con posizione iniziale (sarà aggiornato da drag listener)
+    setActiveDrag({ sender, offsetX, offsetY, clientX: 0, clientY: 0, width: cardWidth });
   };
 
   // 🆕 NUOVO: Handler drag move con collision detection

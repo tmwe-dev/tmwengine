@@ -16,10 +16,9 @@ const OAUTH_CLIENT_SECRET = '04d26799b3ec0a82dec492c2cb4a17a9ff20cabcde13166bd33
 
 // Load credentials from Supabase database
 export const getApiConfigFromDB = async (): Promise<ApiConfig | null> => {
-  // Get authenticated user from session (fast, reads from localStorage)
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
-  if (!user) return null;
+  // Get authenticated user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return null;
 
   // Get tmwe_email from user profile
   const { data: profile, error: profileError } = await supabase

@@ -29,13 +29,8 @@ import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { AliasPreviewDialog } from '@/components/import/AliasPreviewDialog';
 import { useImportFilters } from '@/hooks/useImportFilters';
 import { useImportSelection } from '@/hooks/useImportSelection';
-import { useImportRecords } from '@/hooks/useImportRecords';
-import { formatCellValue, getCountryFlag, applySortingToRecords, getUniqueValuesWithCount as getUniqueValuesUtil } from '@/lib/utils/import-utils';
+import { formatCellValue, getCountryFlag, applySortingToRecords } from '@/lib/utils/import-utils';
 import countriesData from '@/data/countries.json';
-import { RecordFiltersDialog } from '@/components/import/RecordFiltersDialog';
-import { RecordImportedDialogHeader } from '@/components/import/RecordImportedDialogHeader';
-import { RecordPagination } from '@/components/import/RecordPagination';
-import { ImportLogsTable } from '@/components/import/ImportLogsTable';
 
 
 // Utility functions moved to src/lib/utils/import-utils.ts
@@ -2627,7 +2622,7 @@ export default function ImportTemplates() {
         </div>
       )}
 
-      {/* Dialog per visualizzare i record importati - REFACTORED */}
+      {/* Dialog per visualizzare i record importati */}
       <Dialog open={showRecordsDialog} onOpenChange={(open) => {
         if (!open) {
           setShowRecordsDialog(false);
@@ -2644,25 +2639,893 @@ export default function ImportTemplates() {
           setHasNotesFilter(false);
         }
       }}>
-        <DialogContent className="w-full max-w-7xl h-[90vh] flex flex-col p-4 sm:p-6">
+        <DialogContent className="w-full max-w-7xl h-[90vh] sm:h-[92vh] md:h-[95vh] flex flex-col p-4 sm:p-6">
           <DialogHeader>
-            <RecordImportedDialogHeader
-              totalRecords={allRecords.length}
-              filteredCount={filteredRecords.length}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              activeFiltersDisplay={[
-                ...(searchQuery ? [{ label: `🔍 ${searchQuery}`, value: searchQuery, onRemove: () => setSearchQuery('') }] : []),
-                ...(originFilter ? [{ label: `📂 ${originFilter}`, value: originFilter, onRemove: () => setOriginFilter('') }] : []),
-                ...(countryFilter ? [{ label: `🌍 ${getCountryFullName(countryFilter)}`, value: countryFilter, onRemove: () => setCountryFilter('') }] : []),
-                ...(hasNotesFilter ? [{ label: '📝 Con note', value: 'notes', onRemove: () => setHasNotesFilter(false) }] : []),
-                ...(myContactsWithActivitiesFilter ? [{ label: '👤 Mie attività', value: 'my', onRemove: () => setMyContactsWithActivitiesFilter(false) }] : []),
-              ]}
-              hasActiveFilters={Boolean(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter)}
-              onShowFilters={() => setShowFilters(true)}
-              isMobile={isMobile}
-            />
+            {isMobile ? (
+              /* Mobile Header - Compact */
+              <div className="space-y-1">
+                {/* Mobile Title with Filtered and Total Count */}
+                <div className="flex items-start justify-between relative pb-1">
+                  <div className="flex flex-col items-start gap-0.5">
+                    <div className="flex items-center gap-2">
+                      {/* Filtered count - only when filters are active */}
+                      {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && filteredRecords.length > 0 && (
+                        <span className={`font-medium ${
+                          searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter
+                            ? 'text-white text-lg' 
+                            : 'text-primary text-sm'
+                        }`}>
+                          {filteredRecords.length}
+                        </span>
+                      )}
+                      <DialogTitle></DialogTitle>
+                    </div>
+                    
+                    {/* Active Filters Badges - Below title, aligned left */}
+                    {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
+                      <div className="flex flex-wrap items-start gap-1">
+                        {searchQuery && (
+                          <Badge variant="secondary" className="text-[10px] h-6 px-2">
+                            🔍 {searchQuery}
+                            <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setSearchQuery('')}>
+                              <X className="h-2 w-2" />
+                            </Button>
+                          </Badge>
+                        )}
+                        {originFilter && (
+                          <Badge variant="outline" className="text-[10px] h-6 px-2 bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20 text-white">
+                            📂 {originFilter}
+                            <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setOriginFilter('')}>
+                              <X className="h-2 w-2 text-white" />
+                            </Button>
+                          </Badge>
+                        )}
+                        {countryFilter && (
+                          <Badge variant="secondary" className="text-[10px] h-6 px-2">
+                            🌍 {getCountryFullName(countryFilter)}
+                            <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setCountryFilter('')}>
+                              <X className="h-2 w-2" />
+                            </Button>
+                          </Badge>
+                        )}
+                        {hasNotesFilter && (
+                          <Badge variant="secondary" className="text-[10px] h-6 px-2">
+                            📝 Con note
+                            <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setHasNotesFilter(false)}>
+                              <X className="h-2 w-2" />
+                            </Button>
+                          </Badge>
+                        )}
+                        {myContactsWithActivitiesFilter && (
+                          <Badge variant="secondary" className="text-[10px] h-6 px-2">
+                            👤 Mie attività
+                            <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setMyContactsWithActivitiesFilter(false)}>
+                              <X className="h-2 w-2" />
+                            </Button>
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Search Field and Filter Buttons Container */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center justify-center gap-2 w-full">
+                    <div className="relative w-[65%]">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Cerca..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    {/* Filter Buttons */}
+                    <div className="flex items-center gap-1">
+                      <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 p-2"
+                          >
+                            <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? 'text-sky-500 animate-pulse' : ''}`} />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-[95vw] w-[95vw]">
+                          <DialogHeader>
+                            <DialogTitle>Filtri</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            {/* Filters */}
+                            <div className="space-y-3">
+                              <div className="space-y-2">
+                                <Label>Origine</Label>
+                                <Select value={originFilter} onValueChange={setOriginFilter}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Tutte le origini" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                    {getUniqueValuesWithCount('origin').map(({ value, count }) => (
+                                      <SelectItem key={value} value={value}>
+                                        {value} ({count})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Nazione</Label>
+                                <Select value={countryFilter} onValueChange={setCountryFilter}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Tutte le nazioni" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                    {getUniqueValuesWithCount('nazione').map(({ value, count }) => (
+                                      <SelectItem key={value} value={value}>
+                                        {getCountryFullName(value)} ({count})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Ordina per</Label>
+                                <Select 
+                                  value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : "NONE"} 
+                                  onValueChange={(value) => {
+                                    if (value === "NONE") {
+                                      setSortConfig({ primary: null, secondary: null });
+                                      return;
+                                    }
+                                    const [column, direction] = value.split('-');
+                                    setSortConfig(prev => ({ 
+                                      ...prev, 
+                                      primary: { column, direction: direction as 'asc' | 'desc' } 
+                                    }));
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Nessun ordinamento" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="NONE">Nessun ordinamento</SelectItem>
+                                    <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                                    <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                                    <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                                    <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                                    <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                                    <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {sortConfig.primary && (
+                                <div className="space-y-2">
+                                  <Label>Poi per</Label>
+                                  <Select 
+                                    value={sortConfig.secondary ? `${sortConfig.secondary.column}-${sortConfig.secondary.direction}` : "NONE"} 
+                                    onValueChange={(value) => {
+                                      if (value === "NONE") {
+                                        setSortConfig(prev => ({ ...prev, secondary: null }));
+                                        return;
+                                      }
+                                      const [column, direction] = value.split('-');
+                                      setSortConfig(prev => ({ 
+                                        ...prev, 
+                                        secondary: { column, direction: direction as 'asc' | 'desc' } 
+                                      }));
+                                    }}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Nessuno" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="NONE">Nessuno</SelectItem>
+                                      <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                                      <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                                      <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                                      <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                                      <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                                      <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+
+                              <div className="space-y-2">
+                                <Label>Filtra per attività</Label>
+                                <Select 
+                                  value={(() => {
+                                    // Determina il valore del filtro attività
+                                    const hasActivityFilter = activeFilters.find(f => f.field === 'has_activities');
+                                    if (hasActivityFilter) {
+                                      return hasActivityFilter.value ? 'with_activities' : 'without_activities';
+                                    }
+                                    return 'all';
+                                  })()} 
+                                  onValueChange={(value) => {
+                                    // Rimuovi eventuali filtri attività esistenti
+                                    setActiveFilters(prev => prev.filter(f => f.field !== 'has_activities'));
+                                    
+                                    // Aggiungi il nuovo filtro se non è "tutti"
+                                    if (value === 'with_activities') {
+                                      setActiveFilters(prev => [...prev, {
+                                        field: 'has_activities',
+                                        value: true,
+                                        displayValue: 'Con attività'
+                                      }]);
+                                    } else if (value === 'without_activities') {
+                                      setActiveFilters(prev => [...prev, {
+                                        field: 'has_activities',
+                                        value: false,
+                                        displayValue: 'Senza attività'
+                                      }]);
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Tutti" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all">Tutti</SelectItem>
+                                    <SelectItem value="with_activities">Con attività</SelectItem>
+                                    <SelectItem value="without_activities">Senza attività</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <Switch
+                                  id="hide-today-activities-mobile"
+                                  checked={hideContactsWithTodayActivities}
+                                  onCheckedChange={setHideContactsWithTodayActivities}
+                                />
+                                <Label htmlFor="hide-today-activities-mobile" className="cursor-pointer">
+                                  Nascondi attività oggi
+                                </Label>
+                                {hideContactsWithTodayActivities && (() => {
+                                  const hiddenCount = allRecords.filter(record => hasCompletedActivityToday(record.id)).length;
+                                  return hiddenCount > 0 ? (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {hiddenCount} nascosti
+                                    </Badge>
+                                  ) : null;
+                                })()}
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="has-notes-filter-mobile"
+                                  checked={hasNotesFilter}
+                                  onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                                />
+                                <Label htmlFor="has-notes-filter-mobile" className="flex items-center gap-2 cursor-pointer">
+                                  <StickyNote className="h-4 w-4 text-blue-500" />
+                                  Solo con note
+                                </Label>
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="my-contacts-activities-filter-mobile"
+                                  checked={myContactsWithActivitiesFilter}
+                                  onCheckedChange={(checked) => setMyContactsWithActivitiesFilter(checked as boolean)}
+                                />
+                                <Label htmlFor="my-contacts-activities-filter-mobile" className="flex items-center gap-2 cursor-pointer">
+                                  <User className="h-4 w-4 text-primary" />
+                                  Solo con mie attività
+                                </Label>
+                              </div>
+                            </div>
+                            
+                            {/* Confirm Button */}
+                            <div className="pt-4 border-t">
+                              <Button 
+                                className="w-full" 
+                                onClick={() => setShowFilters(false)}
+                              >
+                                Conferma
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      
+                      {/* Clear Filters Button */}
+                      {(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0 p-2"
+                          onClick={() => {
+                            setOriginFilter('');
+                            setCountryFilter('');
+                            setHasNotesFilter(false);
+                            setMyContactsWithActivitiesFilter(false);
+                          }}
+                        >
+                          <FilterX className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Total Count - Centered below search */}
+                  <div className="flex justify-center">
+                    <span className="text-lg text-muted-foreground">
+                      <span className="text-primary font-medium">{totalRecords}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Desktop Header - Con popup filtri */
+              <div className="flex flex-col gap-4">
+                <div className="flex items-start justify-between relative">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <DialogTitle>Record Importati</DialogTitle>
+                      <span className="text-sm font-medium text-muted-foreground">
+                        ({allRecords.length} record{allRecords.length !== 1 ? 's' : ''})
+                      </span>
+                      
+                      {/* Cestino accanto al titolo */}
+                      {selectedRecords.size > 0 && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={deleteSelectedRecords}
+                                className="h-8 w-8 p-0 border-red-500 hover:bg-red-500/10"
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Elimina {selectedRecords.size} record selezionati</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground mt-1">{selectedImport?.file_name}</p>
+                  </div>
+                </div>
+                
+                {/* Search and Filter buttons */}
+                <div className="flex items-center justify-center gap-2 relative">
+                  {/* Pulsante Refresh a sinistra del campo cerca */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => selectedImport && loadAllRecords(selectedImport)}
+                          className="h-auto px-2 py-1"
+                          disabled={loadingAllRecords}
+                        >
+                          <RefreshCw className={`h-4 w-4 text-blue-500 ${loadingAllRecords ? 'animate-spin' : ''}`} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Ricarica dati</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  {/* Campo di ricerca centrato */}
+                  <div className="relative w-96">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Cerca per nome azienda, alias, nome, città..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  
+                  {/* Filter Buttons */}
+                  <div className="flex items-center gap-1">
+                    <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant={(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? "default" : "outline"}
+                          size="sm"
+                          className={`shrink-0 p-2 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? 'border-yellow-500 bg-yellow-500 hover:bg-yellow-600 animate-pulse' : 'border-0'}`}
+                        >
+                          <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? 'text-white' : ''}`} />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Filtri e Opzioni</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+                          {/* Filters */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Origine</Label>
+                              <Select value={originFilter} onValueChange={setOriginFilter}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutte le origini" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                  {getUniqueValuesWithCount('origin').map(({ value, count }) => (
+                                    <SelectItem key={value} value={value}>
+                                      {value} ({count})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label>Nazione</Label>
+                                <div className="flex gap-1">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={countrySortMode === 'alpha' ? 'default' : 'ghost'}
+                                    onClick={() => setCountrySortMode('alpha')}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    A-Z
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={countrySortMode === 'count' ? 'default' : 'ghost'}
+                                    onClick={() => setCountrySortMode('count')}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    #
+                                  </Button>
+                                </div>
+                              </div>
+                              <Select value={countryFilter} onValueChange={setCountryFilter}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutte le nazioni" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                  {getCountryValuesSorted().map(({ value, count }) => (
+                                    <SelectItem key={value} value={value}>
+                                      {getCountryFullName(value)} ({count})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Ordina per</Label>
+                              <Select 
+                                value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : "NONE"} 
+                                onValueChange={(value) => {
+                                  if (value === "NONE") {
+                                    setSortConfig({ primary: null, secondary: null });
+                                    return;
+                                  }
+                                  const [column, direction] = value.split('-');
+                                  setSortConfig(prev => ({ 
+                                    ...prev, 
+                                    primary: { column, direction: direction as 'asc' | 'desc' } 
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Nessun ordinamento" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="NONE">Nessun ordinamento</SelectItem>
+                                  <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                                  <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                                  <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                                  <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                                  <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                                  <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {sortConfig.primary && (
+                              <div className="space-y-2">
+                                <Label>Poi per</Label>
+                                <Select 
+                                  value={sortConfig.secondary ? `${sortConfig.secondary.column}-${sortConfig.secondary.direction}` : "NONE"} 
+                                  onValueChange={(value) => {
+                                    if (value === "NONE") {
+                                      setSortConfig(prev => ({ ...prev, secondary: null }));
+                                      return;
+                                    }
+                                    const [column, direction] = value.split('-');
+                                    setSortConfig(prev => ({ 
+                                      ...prev, 
+                                      secondary: { column, direction: direction as 'asc' | 'desc' } 
+                                    }));
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Nessuno" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="NONE">Nessuno</SelectItem>
+                                    <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                                    <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                                    <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                                    <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                                    <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                                    <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            <div className="space-y-2">
+                              <Label>Record per pagina</Label>
+                              <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={`${recordsPerPage}`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="25">25</SelectItem>
+                                  <SelectItem value="50">50</SelectItem>
+                                  <SelectItem value="100">100</SelectItem>
+                                  <SelectItem value="250">250</SelectItem>
+                                  <SelectItem value="500">500</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Filtra per attività</Label>
+                              <Select 
+                                value={(() => {
+                                  const hasActivityFilter = activeFilters.find(f => f.field === 'has_activities');
+                                  if (hasActivityFilter) {
+                                    return hasActivityFilter.value ? 'with_activities' : 'without_activities';
+                                  }
+                                  return 'all';
+                                })()} 
+                                onValueChange={(value) => {
+                                  setActiveFilters(prev => prev.filter(f => f.field !== 'has_activities'));
+                                  if (value === 'with_activities') {
+                                    setActiveFilters(prev => [...prev, {
+                                      field: 'has_activities',
+                                      value: true,
+                                      displayValue: 'Con attività'
+                                    }]);
+                                  } else if (value === 'without_activities') {
+                                    setActiveFilters(prev => [...prev, {
+                                      field: 'has_activities',
+                                      value: false,
+                                      displayValue: 'Senza attività'
+                                    }]);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutti" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tutti</SelectItem>
+                                  <SelectItem value="with_activities">Con attività</SelectItem>
+                                  <SelectItem value="without_activities">Senza attività</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          {/* Toggle Options */}
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="has-notes-filter-desktop-popup"
+                                checked={hasNotesFilter}
+                                onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                              />
+                              <Label htmlFor="has-notes-filter-desktop-popup" className="flex items-center gap-2 cursor-pointer">
+                                <StickyNote className="h-4 w-4 text-blue-500" />
+                                Solo con note
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="my-contacts-activities-filter-desktop-popup"
+                                checked={myContactsWithActivitiesFilter}
+                                onCheckedChange={(checked) => setMyContactsWithActivitiesFilter(checked as boolean)}
+                              />
+                              <Label htmlFor="my-contacts-activities-filter-desktop-popup" className="flex items-center gap-2 cursor-pointer">
+                                <User className="h-4 w-4 text-primary" />
+                                Solo con mie attività
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id="filter-only-with-alias-desktop"
+                                checked={filterOnlyWithAlias}
+                                onCheckedChange={setFilterOnlyWithAlias}
+                              />
+                              <Label htmlFor="filter-only-with-alias-desktop" className="cursor-pointer">
+                                Solo con alias azienda
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id="hide-today-activities-desktop"
+                                checked={hideContactsWithTodayActivities}
+                                onCheckedChange={setHideContactsWithTodayActivities}
+                              />
+                              <Label htmlFor="hide-today-activities-desktop" className="cursor-pointer">
+                                Nascondi attività oggi
+                              </Label>
+                              {hideContactsWithTodayActivities && (() => {
+                                const hiddenCount = allRecords.filter(record => hasCompletedActivityToday(record.id)).length;
+                                return hiddenCount > 0 ? (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {hiddenCount} nascosti
+                                  </Badge>
+                                ) : null;
+                              })()}
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          {/* Column Visibility */}
+                          <div className="space-y-3">
+                            <Label className="text-sm font-medium">Visibilità Colonne</Label>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant={visibleColumns.details ? "default" : "outline"}
+                                onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
+                                className="flex items-center gap-2"
+                              >
+                                <Briefcase className="h-4 w-4" />
+                                Dettagli Commerciali
+                              </Button>
+                              
+                              <Button
+                                size="sm"
+                                variant={visibleColumns.metadata ? "default" : "outline"}
+                                onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
+                                className="flex items-center gap-2"
+                              >
+                                <Settings className="h-4 w-4" />
+                                Metadata & Sistema
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {/* Confirm Button */}
+                          <div className="pt-4 border-t">
+                            <Button 
+                              className="w-full" 
+                              onClick={() => setShowFilters(false)}
+                            >
+                              Applica Filtri
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    
+                    {/* Clear Filters Button */}
+                    {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 p-2"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setOriginFilter('');
+                          setCountryFilter('');
+                          setHasNotesFilter(false);
+                          setMyContactsWithActivitiesFilter(false);
+                          setFilterOnlyWithAlias(true);
+                        }}
+                      >
+                        <FilterX className="h-4 w-4 text-red-500" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </DialogHeader>
+
+
+          {/* Blocco azioni record selezionati - Desktop Only */}
+          {!isMobile && selectedRecords.size > 0 && (
+            <div className="flex items-center justify-between border-b py-3 px-4">
+              {/* Numero e X a sinistra */}
+              <div className="flex items-center gap-2">
+                <Badge variant="default" className="text-sm px-4 py-2">
+                  {selectedRecords.size}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setSelectedRecords(new Set())}
+                  className="h-10 px-4 text-sm"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* AI e Prompt al centro */}
+              <div className="flex items-center gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowPromptDialog(true)}
+                        className="h-10 w-10 p-0"
+                      >
+                        <Settings className="h-4 w-4 text-orange-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Modifica prompt AI per alias</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          const selectedIds = Array.from(selectedRecords);
+                          if (selectedIds.length === 0) {
+                            toast.error('Nessun record selezionato');
+                            return;
+                          }
+                          
+                          setGeneratingAliases(true);
+                          setShowAliasPreview(true);
+                          setAliasPreviewData([]);
+                          setAliasPreviewTotal(selectedIds.length);
+                          
+                          try {
+                            toast.info(`Generazione preview per ${selectedIds.length} contatti...`);
+                            const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
+                              body: { action: 'preview_aliases', data: {}, contact_ids: selectedIds }
+                            });
+                            
+                            if (error) throw error;
+                            
+                            setAliasPreviewData(data.previews || []);
+                            setGeneratingAliases(false);
+                          } catch (err: any) {
+                            console.error('Errore generazione preview:', err);
+                            toast.error('Errore generazione preview: ' + (err.message || 'Errore sconosciuto'));
+                            setGeneratingAliases(false);
+                            setShowAliasPreview(false);
+                          }
+                        }}
+                        disabled={generatingAliases || loadingAllRecords}
+                        className="h-10 w-10 p-0"
+                      >
+                        {generatingAliases ? (
+                          <Loader2 className="h-4 w-4 text-purple-500 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 text-purple-500" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Genera alias AI per {selectedRecords.size} selezionati</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
+              {/* Altre icone a destra */}
+              <div className="flex items-center gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowMultipleActivityDialog(true)}
+                        className="h-10 w-10 p-0"
+                      >
+                        <FileText className="h-4 w-4 text-blue-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Crea attività</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={importSelectedRecords}
+                        className="h-10 w-10 p-0"
+                      >
+                        <Database className="h-4 w-4 text-green-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Importa in rubrica</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          )}
+
+
+          {/* Area filtri attivi */}
+          {activeFilters.length > 0 && (
+            <div className="py-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm font-medium">Filtri attivi:</span>
+                {activeFilters.map((filter, index) => (
+                  <Badge 
+                    key={`${filter.field}-${filter.value}-${index}`}
+                    variant="outline" 
+                    className="text-blue-600 border-blue-200 bg-transparent cursor-pointer flex items-center gap-1"
+                    onClick={() => removeFilter(filter)}
+                  >
+                    <span className="capitalize">
+                      {filter.field.replace(/_/g, ' ')}: {filter.displayValue}
+                    </span>
+                    <X className="h-3 w-3" />
+                  </Badge>
+                ))}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearAllFilters}
+                  className="text-xs text-muted-foreground hover:text-destructive"
+                >
+                  Rimuovi tutti
+                </Button>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {filteredRecords.length} record corrispondenti
+                </span>
+              </div>
+            </div>
+           )}
+          
+          {/* Mobile Filters Button and Selection Controls - Above Cards */}
+          {isMobile && (
+            <div className="flex justify-between items-center pb-2 relative">
+              {/* Selection Controls rimosso da qui - ora nel footer */}
+            </div>
+          )}
+          
+          {/* Mobile Action Buttons - separate positioning */}
           
           {loadingAllRecords ? (
             <div className="flex items-center justify-center py-8">
@@ -2672,141 +3535,189 @@ export default function ImportTemplates() {
               </div>
             </div>
           ) : filteredRecords.length > 0 ? (
-            <div className="flex flex-col min-h-0 flex-1">
-              {isMobile ? (
-                /* Mobile View - Cards */
-                <div className="space-y-2 flex-1 overflow-auto pt-[20px] pb-[10px]">
-                  {viewingRecords.filter(r => r?.id).map((record, viewIndex) => {
-                    const actualIndex = currentPage * recordsPerPage + viewIndex;
-                    return (
-                      <CompactContactCard
-                        key={record.id}
-                        contact={record}
-                        index={actualIndex}
-                        isSelected={selectedRecords.has(record.id)}
-                        onSelect={() => toggleRecordSelection(record.id)}
-                        onView={() => openRecordDetail(record, actualIndex)}
-                        onCreateActivity={(activityType) => {
-                          setSelectedContactIdForActivities(record.id);
-                          setSelectedContactForActivity(record);
-                          setDefaultActivityType(activityType);
-                          setIsAttivitaDialogOpen(true);
-                        }}
-                        getCountryFlag={getCountryFlag}
-                        formatCellValue={formatCellValue}
-                      />
-                    );
-                  })}
-                </div>
-              ) : (
-                /* Desktop View - Table with native overflow */
-                <div className="flex-1 border rounded-md overflow-x-auto">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                      <TableRow>
-                        <TableHead className="w-12 bg-background border-b px-4 py-[10px]">
-                          <Checkbox
-                            checked={(() => {
-                              const currentPageIds = viewingRecords.filter(r => r?.id).map(r => r.id);
-                              return currentPageIds.length > 0 && currentPageIds.every(id => selectedRecords.has(id));
-                            })()}
-                            onCheckedChange={toggleSelectAll}
-                            aria-label="Seleziona tutti della pagina corrente"
-                          />
-                        </TableHead>
-                        <TableHead className="w-16 text-center bg-background border-b px-4 py-[10px]">#</TableHead>
-                        {(() => {
-                          const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
-                          const visibleCols = getVisibleColumns(allColumns);
-                          const companyNameIndex = visibleCols.indexOf('company_name');
-                          
-                          const headers = [];
-                          for (let i = 0; i < visibleCols.length; i++) {
-                            if (i === companyNameIndex) {
-                              headers.push(
-                                <TableHead key="attivita" className="w-20 bg-background border-b px-4 py-[10px] text-center cursor-pointer hover:bg-accent/50" onClick={() => handleColumnSort('attivita')}>
-                                  <div className="flex items-center justify-center gap-1">
-                                    <span>Attività</span>
-                                    {getSortIcon('attivita')}
-                                  </div>
-                                </TableHead>
-                              );
-                            }
-                            
-                            const key = visibleCols[i];
-                            headers.push(
-                              <TableHead 
-                                key={key} 
-                                className={`bg-background border-b cursor-pointer hover:bg-accent/50 px-4 py-[10px] ${
-                                  key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                  key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                  key === 'stato' ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
-                                  key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
-                                  (key === 'email' || key === 'phone' || key === 'cell') ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
-                                  'min-w-[120px]'
-                                }`}
-                                onClick={() => handleColumnSort(key)}
-                              >
-                                <div className="flex items-center gap-1">
-                                  <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                                  {getSortIcon(key)}
-                                </div>
-                              </TableHead>
-                            );
-                          }
-                          
-                          if (companyNameIndex === -1) {
-                            headers.unshift(
-                              <TableHead key="attivita" className="w-20 bg-background border-b px-4 py-[10px] text-center cursor-pointer hover:bg-accent/50" onClick={() => handleColumnSort('attivita')}>
+              <div className="flex flex-col min-h-0 flex-1">
+                {isMobile ? (
+                  /* Mobile View - Ultra-Compact Cards */
+                  <div className="space-y-2 flex-1 overflow-auto touch-pan-y touch-pan-x pt-[20px] pb-[10px]" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    {viewingRecords.filter(r => r?.id).map((record, viewIndex) => {
+                      const actualIndex = currentPage * recordsPerPage + viewIndex;
+                      return (
+                        <CompactContactCard
+                          key={record.id}
+                          contact={record}
+                          index={actualIndex}
+                          isSelected={selectedRecords.has(record.id)}
+                          onSelect={() => toggleRecordSelection(record.id)}
+                          onView={() => openRecordDetail(record, actualIndex)}
+                          onCreateActivity={(activityType) => {
+                            setSelectedContactIdForActivities(record.id);
+                            setSelectedContactForActivity(record);
+                            setDefaultActivityType(activityType);
+                            setIsAttivitaDialogOpen(true);
+                          }}
+                          getCountryFlag={getCountryFlag}
+                          formatCellValue={formatCellValue}
+                        />
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Desktop View - Table with ScrollArea */
+            <ScrollArea className="flex-1 border rounded-md h-full">
+              <div className="min-w-max">
+                      <Table>
+                      <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                        <TableRow>
+                           <TableHead className="w-12 bg-background border-b px-4 py-[10px]">
+                               <Checkbox
+                                  checked={(() => {
+                                    // Controlla se tutti i record della pagina corrente sono selezionati
+                                    const currentPageIds = viewingRecords.filter(r => r?.id).map(r => r.id);
+                                    return currentPageIds.length > 0 && currentPageIds.every(id => selectedRecords.has(id));
+                                  })()}
+                                  onCheckedChange={toggleSelectAll}
+                                  aria-label="Seleziona tutti della pagina corrente"
+                                />
+                            </TableHead>
+                            <TableHead className="w-16 text-center bg-background border-b px-4 py-[10px]"># 
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <FileText className="h-3 w-3 ml-1 inline" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Clicca l'icona per vedere le note</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </TableHead>
+                           {(() => {
+                              const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
+                              const visibleCols = getVisibleColumns(allColumns);
+                              
+                              // Trova l'indice di company_name
+                              const companyNameIndex = visibleCols.indexOf('company_name');
+                              
+                              // Se company_name esiste, inserisci la colonna Attività prima di essa
+                              const headers = [];
+                              for (let i = 0; i < visibleCols.length; i++) {
+                                if (i === companyNameIndex) {
+                                  // Prima di company_name, inserisci la colonna Attività
+                                  headers.push(
+                                    <TableHead key="attivita" className="w-20 bg-background border-b px-4 py-[10px] text-center cursor-pointer hover:bg-accent/50" onClick={() => handleColumnSort('attivita')}>
+                                      <div className="flex items-center justify-center gap-1">
+                                        <span>Attività</span>
+                                        {getSortIcon('attivita')}
+                                      </div>
+                                    </TableHead>
+                                  );
+                                }
+                                
+                                const key = visibleCols[i];
+                                headers.push(
+                                  <TableHead 
+                                    key={key} 
+                                     className={`bg-background border-b cursor-pointer hover:bg-accent/50 px-4 py-[10px] ${
+                                       key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                       key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                       key === 'stato' ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
+                                       key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
+                                       (key === 'email' || key === 'phone' || key === 'cell') ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
+                                       'min-w-[120px]'
+                                     }`}
+                                   onClick={() => handleColumnSort(key)}
+                                 >
+                                   <div className="flex items-center gap-1">
+                                     <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                     {getSortIcon(key)}
+                                   </div>
+                                 </TableHead>
+                                );
+                              }
+                              
+                              // Se company_name non c'è, aggiungi Attività all'inizio
+                              if (companyNameIndex === -1) {
+                                headers.unshift(
+                                  <TableHead key="attivita" className="w-20 bg-background border-b px-4 py-[10px] text-center cursor-pointer hover:bg-accent/50" onClick={() => handleColumnSort('attivita')}>
+                                    <div className="flex items-center justify-center gap-1">
+                                      <span>Attività</span>
+                                      {getSortIcon('attivita')}
+                                    </div>
+                                  </TableHead>
+                                );
+                              }
+                              
+                              return headers;
+                             })()}
+                              <TableHead className="w-16 bg-background border-b px-4 py-[10px] text-center">Azioni</TableHead>
+                         </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                         {viewingRecords.filter(r => r?.id).map((record, viewIndex) => {
+                           const actualIndex = currentPage * recordsPerPage + viewIndex;
+                           return (
+                           <TableRow key={record.id}>
+                               <TableCell className="w-12 px-4 py-[10px]">
+                                 <Checkbox
+                                  checked={selectedRecords.has(record.id)}
+                                  onCheckedChange={() => toggleRecordSelection(record.id)}
+                                  aria-label={`Seleziona record ${actualIndex + 1}`}
+                                />
+                              </TableCell>
+                              <TableCell className="w-16 text-center text-muted-foreground px-4 py-[10px]">
                                 <div className="flex items-center justify-center gap-1">
-                                  <span>Attività</span>
-                                  {getSortIcon('attivita')}
+                                  {record.note && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <FileText 
+                                            className="h-3 w-3 text-blue-500 cursor-pointer hover:text-blue-700" 
+                                            onClick={() => toast.info(record.note)}
+                                          />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Clicca per vedere le note</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+                                  <span className="text-xs">{actualIndex + 1}</span>
                                 </div>
-                              </TableHead>
-                            );
-                          }
-                          
-                          return headers;
-                        })()}
-                        <TableHead className="w-16 bg-background border-b px-4 py-[10px] text-center">Azioni</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {viewingRecords.filter(r => r?.id).map((record, viewIndex) => {
-                        const actualIndex = currentPage * recordsPerPage + viewIndex;
-                        return (
-                          <TableRow key={record.id}>
-                            <TableCell className="w-12 px-4 py-[10px]">
-                              <Checkbox
-                                checked={selectedRecords.has(record.id)}
-                                onCheckedChange={() => toggleRecordSelection(record.id)}
-                                aria-label={`Seleziona record ${actualIndex + 1}`}
-                              />
-                            </TableCell>
-                            <TableCell className="w-16 text-center text-muted-foreground px-4 py-[10px]">
-                              <span className="text-xs">{actualIndex + 1}</span>
-                            </TableCell>
+                               </TableCell>
                             {(() => {
                               const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
                               const visibleCols = getVisibleColumns(allColumns);
+                              
+                              // Trova l'indice di company_name
                               const companyNameIndex = visibleCols.indexOf('company_name');
                               
+                              // Se company_name esiste, inserisci la cella Attività prima di essa
                               const cells = [];
                               for (let i = 0; i < visibleCols.length; i++) {
                                 if (i === companyNameIndex) {
+                                  // Prima di company_name, inserisci la cella Attività
                                   cells.push(
                                     <TableCell key="attivita" className="w-20 px-4 py-[10px] text-center">
                                       {getActivityCount(record.id) > 0 && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate('/attivita', { state: { filterByContact: record.id } });
-                                          }}
-                                          className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
-                                        >
-                                          <Activity className="h-3 w-3" />
-                                          <span className="text-xs font-medium">{getActivityCount(record.id)}</span>
-                                        </button>
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  navigate('/attivita', { state: { filterByContact: record.id } });
+                                                }}
+                                                className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
+                                              >
+                                                <Activity className="h-3 w-3" />
+                                                <span className="text-xs font-medium">{getActivityCount(record.id)}</span>
+                                              </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>Visualizza {getActivityCount(record.id)} attività</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
                                       )}
                                     </TableCell>
                                   );
@@ -2817,103 +3728,377 @@ export default function ImportTemplates() {
                                   <TableCell 
                                     key={key} 
                                     className={`truncate transition-colors px-4 py-[10px] ${
+                                      key === 'country' || key === 'title' ? 'w-20 max-w-[80px]' : 
+                                      key === 'stato' ? 'w-20 max-w-[80px] text-center' :
+                                      key === 'agent_id' ? 'w-22 max-w-[84px]' :
+                                      (key === 'email' || key === 'phone' || key === 'cell') ? 'w-20 max-w-[80px] text-center' :
+                                      'max-w-[200px]'
+                                    } ${
                                       key === 'name' 
                                         ? 'cursor-pointer hover:bg-primary/10 text-primary font-medium' 
                                         : 'cursor-pointer hover:bg-accent/50'
                                     }`}
-                                    onClick={() => {
+                                   onClick={() => {
                                       if (key === 'name') {
                                         openRecordDetail(record, actualIndex);
                                       } else {
                                         addFilter(key, record[key]);
                                       }
                                     }}
-                                  >
-                                    {key === 'country' ? (
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-base">{getCountryFlag(record[key])}</span>
-                                        <span>{formatCellValue(record[key], key)}</span>
-                                      </div>
-                                    ) : (
-                                      formatCellValue(record[key], key)
+                                     title={key === 'name' ? 'Clicca per aprire dettaglio record' : 'Clicca per filtrare per questo valore'}
+                                   >
+                                      {key === 'country' ? (
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-base">{getCountryFlag(record[key])}</span>
+                                          <span>{formatCellValue(record[key], key)}</span>
+                                        </div>
+                                      ) : key === 'company_name' ? (
+                                        <div className="flex items-center gap-2">
+                                          {(!record.alias || !record.company_alias) && (
+                                            <TooltipProvider>
+                                              <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                  <button
+                                                    onClick={async (e) => {
+                                                      e.stopPropagation();
+                                                      setGeneratingAliases(true);
+                                                      try {
+                                                        toast.info('Generazione alias in corso...');
+                                                        const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
+                                                          body: { action: 'update_aliases', data: {}, contact_ids: [record.id] }
+                                                        });
+                                                        if (error) throw error;
+                                                        toast.success(data.message || 'Alias generati');
+                                                        await loadAllRecords(selectedImport!);
+                                                      } catch (err: any) {
+                                                        console.error('Errore generazione alias:', err);
+                                                        toast.error('Errore generazione alias: ' + (err.message || 'Errore sconosciuto'));
+                                                      } finally {
+                                                        setGeneratingAliases(false);
+                                                      }
+                                                    }}
+                                                    disabled={generatingAliases || loadingAllRecords}
+                                                    className="p-1 rounded hover:bg-purple-600/20 transition-colors"
+                                                  >
+                                                    {generatingAliases ? (
+                                                      <Loader2 className="h-4 w-4 text-purple-600 animate-spin" />
+                                                    ) : (
+                                                      <Sparkles className="h-4 w-4 text-purple-600" />
+                                                    )}
+                                                  </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p>Genera alias AI</p></TooltipContent>
+                                              </Tooltip>
+                                            </TooltipProvider>
+                                          )}
+                                          
+                                          <span>{formatCellValue(record[key], key)}</span>
+                                          
+                                          <div 
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedContactIdForActivities(record.id);
+                                              setIsAttivitaDialogOpen(true);
+                                            }}
+                                            className="cursor-pointer"
+                                          >
+                                            <ActivityIndicators 
+                                              companyId={record.id} 
+                                              activities={getCompanyActivities(record.id)}
+                                              size="sm"
+                                            />
+                                          </div>
+                                        </div>
+
+                                      ) : key === 'email' && record[key] ? (
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="flex items-center justify-center cursor-pointer">
+                                                <Mail className="h-4 w-4 text-blue-500" />
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>{formatCellValue(record[key], key)}</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      ) : (key === 'phone' || key === 'cell') && record[key] ? (
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="flex items-center justify-center cursor-pointer">
+                                                <Phone className="h-4 w-4 text-blue-500" />
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>{formatCellValue(record[key], key)}</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      ) : (
+                                        formatCellValue(record[key], key)
+                                      )}
+                                    </TableCell>
+                                );
+                              }
+                              
+                              // Se company_name non c'è, aggiungi Attività all'inizio
+                              if (companyNameIndex === -1) {
+                                cells.unshift(
+                                  <TableCell key="attivita" className="w-20 px-4 py-[10px] text-center">
+                                    {getActivityCount(record.id) > 0 && (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate('/attivita', { state: { filterByContact: record.id } });
+                                              }}
+                                              className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
+                                            >
+                                              <Activity className="h-3 w-3" />
+                                              <span className="text-xs font-medium">{getActivityCount(record.id)}</span>
+                                            </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Visualizza {getActivityCount(record.id)} attività</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
                                     )}
                                   </TableCell>
                                 );
                               }
                               
                               return cells;
-                            })()}
-                            <TableCell className="w-16 px-4 py-[10px]">
+                             })()}
+                              <TableCell className="w-16 px-4 py-[10px] text-center">
+                               <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          deleteImportedContact(record.id, actualIndex);
+                                        }}
+                                        className="flex items-center justify-center cursor-pointer hover:bg-red-100 rounded-full p-1 transition-colors"
+                                      >
+                                        <Trash2 className="h-4 w-4 text-red-500 hover:text-red-600" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Elimina record</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </TableCell>
+                           </TableRow>
+                          );
+                        })}
+                     </TableBody>
+                   </Table>
+                 </div>
+               </ScrollArea>
+               )}
+                
+                {/* Footer - Responsive Controls */}
+                <div className={cn(
+                  "pt-4 border-t flex-shrink-0",
+                  isMobile ? "space-y-3" : "flex justify-between items-center"
+                )}>
+                  {/* Stats - removed */}
+                    {/* Desktop Actions - keep existing */}
+                    {isMobile ? (
+                      /* Mobile Pagination - Footer */
+                      <div className="flex flex-col items-center relative">
+                        {/* Cestino - allineato a destra */}
+                        {selectedRecords.size > 0 && (
+                          <div className="absolute -top-[15px] right-0 z-10">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={deleteSelectedRecords}
+                                    className="p-2"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Elimina selezionati</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        )}
+                        
+                        {/* Animated Book */}
+                        <AnimatedBook currentPage={currentPage} className="w-full -mb-[41px] pointer-events-none" />
+                        
+                        {/* Pagination Controls */}
+                        <div className="flex items-center justify-center gap-[15px] relative w-full">
+                          {/* File Icon - a sinistra del badge */}
+                          {filteredRecords.length > 0 && (
+                            <div className="absolute left-0 -top-[90px] flex flex-col items-center">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => openRecordDetail(record, actualIndex)}
+                                onClick={toggleSelectAll}
+                                className="p-2 hover:bg-transparent"
+                                aria-label="Seleziona tutti della pagina"
                               >
-                                <Eye className="h-4 w-4" />
+                                <FileText 
+                                  className={(() => {
+                                    const currentPageIndexes = [];
+                                    for (let i = 0; i < viewingRecords.length; i++) {
+                                      const actualIndex = currentPage * recordsPerPage + i;
+                                      currentPageIndexes.push(actualIndex);
+                                    }
+                                    const isAllSelected = currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
+                                    return isAllSelected ? "h-5 w-5 text-green-500" : "h-5 w-5 text-blue-500";
+                                  })()}
+                                />
                               </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-              
-              {/* Pagination */}
-              <div className="pt-4">
-                <RecordPagination
-                  currentPage={currentPage}
-                  totalPages={Math.ceil(filteredRecords.length / recordsPerPage)}
-                  filteredCount={filteredRecords.length}
-                  totalCount={allRecords.length}
-                  onPageChange={setCurrentPage}
-                  selectedCount={selectedRecords.size}
-                  onCreateMultiple={() => setShowMultipleActivityDialog(true)}
-                  onImportToRubrica={importSelectedRecords}
-                  isMobile={isMobile}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Nessun record trovato.</p>
-            </div>
+                              {(() => {
+                                const currentPageIndexes = [];
+                                for (let i = 0; i < viewingRecords.length; i++) {
+                                  const actualIndex = currentPage * recordsPerPage + i;
+                                  currentPageIndexes.push(actualIndex);
+                                }
+                                const isAllSelected = currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
+                                return isAllSelected ? (
+                                  <span className="text-xs text-green-500 font-medium">full page</span>
+                                ) : null;
+                              })()}
+                            </div>
+                          )}
+                          
+          {/* Selected Records Badge - Centered */}
+          {selectedRecords.size > 0 && (
+            <span 
+              key={selectedRecords.size}
+              className="text-xs font-medium text-white bg-gradient-to-l from-purple-500/30 via-purple-500/15 via-35% to-purple-500/10 border border-purple-500/20 px-2 py-1 rounded cursor-pointer hover:from-purple-500/40 hover:via-purple-500/25 hover:to-purple-500/20 absolute left-1/2 -translate-x-1/2 -top-[90px] animate-[heartbeat_0.6s_ease-in-out_2]"
+              onClick={() => setSelectedRecords(new Set())}
+            >
+              {selectedRecords.size}
+            </span>
           )}
-        </DialogContent>
-      </Dialog>
-      
-      {/* Filters Dialog */}
-      <RecordFiltersDialog
-        open={showFilters}
-        onOpenChange={setShowFilters}
-        filters={{
-          searchQuery,
-          originFilter,
-          countryFilter,
-          hasNotesFilter,
-          myContactsWithActivitiesFilter,
-          hideContactsWithTodayActivities,
-          filterOnlyWithAlias,
-          sortConfig
-        }}
-        onFiltersChange={(newFilters) => {
-          if (newFilters.searchQuery !== undefined) setSearchQuery(newFilters.searchQuery);
-          if (newFilters.originFilter !== undefined) setOriginFilter(newFilters.originFilter);
-          if (newFilters.countryFilter !== undefined) setCountryFilter(newFilters.countryFilter);
-          if (newFilters.hasNotesFilter !== undefined) setHasNotesFilter(newFilters.hasNotesFilter);
-          if (newFilters.myContactsWithActivitiesFilter !== undefined) setMyContactsWithActivitiesFilter(newFilters.myContactsWithActivitiesFilter);
-          if (newFilters.hideContactsWithTodayActivities !== undefined) setHideContactsWithTodayActivities(newFilters.hideContactsWithTodayActivities);
-          if (newFilters.filterOnlyWithAlias !== undefined) setFilterOnlyWithAlias(newFilters.filterOnlyWithAlias);
-          if (newFilters.sortConfig !== undefined) setSortConfig(newFilters.sortConfig);
-        }}
-        allRecords={allRecords}
-        getUniqueValuesWithCount={getUniqueValuesWithCount}
-        getCountryFullName={getCountryFullName}
-        activeFilters={activeFilters}
-        setActiveFilters={setActiveFilters}
-        hasCompletedActivityToday={hasCompletedActivityToday}
-      />
+                          
+                          {/* Centered controls */}
+                          <div className="flex items-center gap-[15px]">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="px-[15px] hover:bg-transparent"
+                              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                              disabled={currentPage === 0}
+                            >
+                              <ChevronLeft className="h-10 w-10" />
+                            </Button>
+                            
+                            {/* Azioni multiple - a sinistra */}
+                            {selectedRecords.size > 0 && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setShowMultipleActivityDialog(true)}
+                                      className="p-2 absolute left-0"
+                                    >
+                                      <Pickaxe className="h-4 w-4 text-blue-500" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Crea attività multiple</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            
+                            <span className="text-sm px-3 py-1">
+                              {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="px-[15px] hover:bg-transparent"
+                              onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                              disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                            >
+                              <ChevronRight className="h-10 w-10" />
+                            </Button>
+                          </div>
+                          
+                          {/* Salva in rubrica - a destra della freccia, allineato a destra */}
+                          {selectedRecords.size > 0 && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={importSelectedRecords}
+                                    className="p-2 absolute right-0"
+                                  >
+                                    <Database className="h-4 w-4 text-green-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Importa in rubrica</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Desktop Pagination */
+                      <div className="flex items-start justify-between w-full max-w-2xl mx-auto">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                          disabled={currentPage === 0}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Precedente
+                        </Button>
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm px-3 py-1">
+                            Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                          </span>
+                          {filteredRecords.length !== allRecords.length && (
+                            <span className="text-xs text-red-500 font-medium mt-[25px]">
+                              {filteredRecords.length} records
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                          disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                        >
+                          Successivo
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                   </div>
+                  </div>
+               ) : (
+                 <div className="text-center py-8">
+                   <p className="text-muted-foreground">Nessun record trovato in questa importazione.</p>
+                 </div>
+               )}
+             </DialogContent>
+           </Dialog>
 
       {/* Dialog per dettaglio record singolo */}
       <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>

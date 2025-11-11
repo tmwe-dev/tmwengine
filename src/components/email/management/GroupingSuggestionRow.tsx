@@ -139,16 +139,14 @@ export const GroupingSuggestionRow = ({
     <div className="flex items-start gap-4 p-4 bg-card border border-border rounded-lg hover:border-primary/30 transition-all">
       {/* COLONNA SINISTRA: Logo + Info Visive */}
       <div className="flex items-center gap-3 flex-shrink-0">
-        {/* Logo più grande con mascotte fallback */}
-        <Avatar className="h-16 w-16 border-2 border-border flex-shrink-0">
-          <AvatarImage 
+        {/* Logo con sfondo bianco */}
+        <div className="h-16 w-16 bg-white rounded-lg p-2 flex items-center justify-center flex-shrink-0">
+          <img 
             src={logoData?.logo_url || funEmailMascot} 
-            alt={suggestion.sender_email} 
+            alt={suggestion.sender_email}
+            className="w-full h-full object-contain"
           />
-          <AvatarFallback className="bg-primary/10">
-            <img src={funEmailMascot} alt="FunnEmail" className="w-full h-full object-contain p-1" />
-          </AvatarFallback>
-        </Avatar>
+        </div>
         
         {/* Bandiera GRANDE */}
         {countryFlag && (
@@ -159,12 +157,10 @@ export const GroupingSuggestionRow = ({
           </div>
         )}
         
-        {/* Conteggio Email GRANDE */}
+        {/* Conteggio Email - solo numero */}
         {emailCount !== undefined && emailCount > 0 && (
-          <div className="flex flex-col items-center gap-1 px-3 py-2 bg-info/10 rounded-lg border border-info/20">
-            <Mail className="w-5 h-5 text-info" />
-            <span className="text-lg font-bold text-info">{emailCount}</span>
-            <span className="text-[10px] text-info/70 uppercase tracking-wider">Email</span>
+          <div className="flex items-center justify-center px-4 py-2 bg-info/10 rounded-lg border border-info/20">
+            <span className="text-2xl font-bold text-info">{emailCount}</span>
           </div>
         )}
       </div>

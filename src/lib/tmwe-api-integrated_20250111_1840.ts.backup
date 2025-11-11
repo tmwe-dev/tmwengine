@@ -492,31 +492,18 @@ export const emailMessageApi = {
       flagged_only?: boolean;
       has_attachments?: boolean;
     };
-  }) => {
-    const limit = params.limit || 50;
-    let offset = params.offset !== undefined ? params.offset : 0;
-    
-    // ✅ FIX: Calcola offset da page (solo se page >= 1 e offset non fornito)
-    if (params.page !== undefined && params.page >= 1 && params.offset === undefined) {
-      offset = (params.page - 1) * limit;
-      console.log(`📄 [API] Page ${params.page} → offset ${offset} (limit: ${limit})`);
-    } else if (params.offset !== undefined) {
-      console.log(`📄 [API] Using explicit offset ${offset} (limit: ${limit})`);
-    }
-    
-    return fetchApi('/email_message', { 
-      handler: 'get_messages', 
-      folder: params.folder || 'INBOX',
-      offset: offset,
-      limit: limit,
-      format: params.format || 'html',
-      include_attachments: params.include_attachments || false,  // ✅ NEW
-      // ✅ RIMOSSO: page non viene più passato all'API
-      ...(params.sort && { sort: params.sort }),
-      ...(params.order && { order: params.order }),
-      ...(params.filter && { filter: params.filter })  // ✅ NEW
-    });
-  },
+  }) => fetchApi('/email_message', { 
+    handler: 'get_messages', 
+    folder: params.folder || 'INBOX',
+    offset: params.offset || 0,
+    limit: params.limit || 50,
+    format: params.format || 'html',
+    include_attachments: params.include_attachments || false,  // ✅ NEW
+    ...(params.page && { page: params.page }),
+    ...(params.sort && { sort: params.sort }),
+    ...(params.order && { order: params.order }),
+    ...(params.filter && { filter: params.filter })  // ✅ NEW
+  }),
 
   getMessage: (uid: string, folder?: string, markAsRead: boolean = false, includeBody: boolean = true) => {
     const uidInt = parseInt(uid, 10);

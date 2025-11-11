@@ -71,6 +71,18 @@ const EmailDashboard = () => {
     navigate('/chat?page=/email-manager');
   };
 
+  // Listen for compose email event from CRMLayout
+  useEffect(() => {
+    const handleComposeEvent = () => {
+      setComposeOpen(true);
+    };
+    
+    window.addEventListener('open-email-compose', handleComposeEvent);
+    return () => {
+      window.removeEventListener('open-email-compose', handleComposeEvent);
+    };
+  }, []);
+
   // Reset selected email when folder changes
   useEffect(() => {
     setSelectedEmailId(null);
@@ -570,7 +582,6 @@ const EmailDashboard = () => {
     <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20">
       <EmailHeader
         onSearch={setSearchQuery} 
-        onCompose={() => setComposeOpen(true)} 
         onSync={handleSync}
         isSyncing={isDownloading}
         onMenuClick={() => setSidebarOpen(true)}

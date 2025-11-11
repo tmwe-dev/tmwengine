@@ -268,6 +268,26 @@ const CRMLayout = ({ children }) => {
                     className=""
                   />
                   
+                  {/* Compose Email Button - Solo in /email-manager */}
+                  {location.pathname === '/email-manager' && (
+                    <Button
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('open-email-compose'));
+                      }}
+                      size="icon"
+                      title="Compose new email"
+                      className="h-8 w-8"
+                    >
+                      <Mail
+                        className="h-4 w-4"
+                        style={{ 
+                          filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.4)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.3))',
+                          transform: 'perspective(100px) rotateX(15deg) rotateY(-10deg)'
+                        }} 
+                      />
+                    </Button>
+                  )}
+                  
                   {/* Debug Monitor - Solo in RadioChat */}
                   {import.meta.env.DEV && location.pathname === '/radio-chat' && (
                     <Button

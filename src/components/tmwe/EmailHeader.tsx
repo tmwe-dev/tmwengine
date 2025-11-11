@@ -8,7 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface EmailHeaderProps {
   onSearch: (query: string) => void;
-  onCompose: () => void;
   onSync: () => void;
   isSyncing?: boolean;
   onMenuClick?: () => void;
@@ -24,7 +23,7 @@ interface EmailHeaderProps {
   hasNext?: boolean;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onSync, isSyncing, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [emailCount, setEmailCount] = useState<number>(0);
   const [syncPopupOpen, setSyncPopupOpen] = useState(false);
@@ -107,22 +106,6 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
                     {isMobile ? 'Email' : 'TMWE Email'}
                   </h1>
                 </div>
-              </div>
-
-              {/* Mail compose button - in fondo a sinistra */}
-              <div className="flex items-center justify-start">
-                <Button 
-                  onClick={onCompose}
-                  size="icon"
-                  title="Compose new email"
-                >
-                  <Mail
-                    style={{ 
-                      filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.4)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.3))',
-                      transform: 'perspective(100px) rotateX(15deg) rotateY(-10deg)'
-                    }} 
-                  />
-                </Button>
               </div>
             </div>
           )}

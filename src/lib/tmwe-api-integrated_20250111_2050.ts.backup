@@ -67,8 +67,7 @@ export const setApiConfigToDB = async (config: ApiConfig & { email: string }): P
 
 // Clear credentials from database
 export const clearApiConfigFromDB = async (): Promise<void> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
   const { data: profile } = await supabase
@@ -175,9 +174,8 @@ export const authenticateWithJWT = async (): Promise<boolean> => {
   }
   
   // Get authenticated user
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
-  if (!user) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
     throw new Error('User not authenticated');
   }
 
@@ -290,8 +288,7 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   }
 
   // Get authenticated user
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
 
   // Get tmwe_email from user profile
@@ -342,24 +339,6 @@ export const refreshAccessToken = async (): Promise<boolean> => {
 
 // Ensure valid token (supporta sia OAuth2 che JWT)
 const ensureValidToken = async (): Promise<string | null> => {
-  // ✅ Verifica Supabase session prima di procedere
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  if (!session) {
-    console.error('🔴 No active Supabase session - forcing logout');
-    await supabase.auth.signOut();
-    window.location.href = '/login';
-    throw new Error('SUPABASE_SESSION_EXPIRED');
-  }
-  
-  // Verifica se session è scaduta
-  if (session.expires_at && Date.now() / 1000 > session.expires_at) {
-    console.error('🔴 Supabase session expired - forcing logout');
-    await supabase.auth.signOut();
-    window.location.href = '/login';
-    throw new Error('SUPABASE_SESSION_EXPIRED');
-  }
-
   const config = await getApiConfigFromDB();
   if (!config) {
     console.error('❌ TMWE credentials not found in database');

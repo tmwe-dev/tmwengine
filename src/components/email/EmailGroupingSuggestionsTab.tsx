@@ -20,6 +20,7 @@ import { SuggestionProgressDialog, SuggestionProgress } from './management/Sugge
 import { CompanyProfileSettings } from '../intranet/CompanyProfileSettings';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { detectCountryFromEmail } from '@/lib/email-utils';
 
 export function EmailGroupingSuggestionsTab() {
   // 🆕 State per dati locali (self-contained)
@@ -31,7 +32,10 @@ export function EmailGroupingSuggestionsTab() {
   const [groupingSuggestions, setGroupingSuggestions] = useState<GroupingSuggestion[]>([]);
   
   // 🔤 Ordinamento suggerimenti
-  const [sortBy, setSortBy] = useState<'domain' | 'group'>('domain');
+  const [sortBy, setSortBy] = useState<'domain' | 'group' | 'country' | 'email_count'>('domain');
+  
+  // 📧 Conteggi email per mittente (caricati in bulk)
+  const [emailCounts, setEmailCounts] = useState<Map<string, number>>(new Map());
   
   // 🔄 Suggerimenti ordinati in base a sortBy
   const sortedSuggestions = useMemo(() => {
@@ -53,10 +57,24 @@ export function EmailGroupingSuggestionsTab() {
         const groupB = b.suggested_groups[0]?.group_name || '';
         return groupA.localeCompare(groupB);
       });
+    } else if (sortBy === 'country') {
+      // Ordina per paese (bandiera)
+      sorted.sort((a, b) => {
+        const countryA = detectCountryFromEmail(a.sender_email) || 'ZZ';
+        const countryB = detectCountryFromEmail(b.sender_email) || 'ZZ';
+        return countryA.localeCompare(countryB);
+      });
+    } else if (sortBy === 'email_count') {
+      // Ordina per numero email (decrescente)
+      sorted.sort((a, b) => {
+        const countA = emailCounts.get(a.sender_email) || 0;
+        const countB = emailCounts.get(b.sender_email) || 0;
+        return countB - countA; // Decrescente
+      });
     }
     
     return sorted;
-  }, [groupingSuggestions, sortBy]);
+  }, [groupingSuggestions, sortBy, emailCounts]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
   const [aiConfigError, setAiConfigError] = useState<string | null>(null);
@@ -183,6 +201,25 @@ export function EmailGroupingSuggestionsTab() {
           
           console.log(`🤖 Caricati ${validSuggestions.length} suggerimenti validi (${classifiedEmails.size} mittenti già classificati)`);
           setGroupingSuggestions(validSuggestions as unknown as GroupingSuggestion[]);
+          
+          // 📧 Carica conteggi email in bulk per tutti i suggerimenti
+          if (validSuggestions.length > 0) {
+            const senderEmails = validSuggestions.map((s: any) => s.sender_email);
+            const { data: emailData } = await supabase
+              .from('email_messages')
+              .select('from_email')
+              .eq('user_email', userEmail)
+              .in('from_email', senderEmails);
+            
+            // Conta occorrenze
+            const counts = new Map<string, number>();
+            emailData?.forEach(row => {
+              counts.set(row.from_email, (counts.get(row.from_email) || 0) + 1);
+            });
+            
+            setEmailCounts(counts);
+            console.log(`📧 Caricati conteggi email per ${counts.size} mittenti`);
+          }
         } else {
           setGroupingSuggestions(suggestions as unknown as GroupingSuggestion[]);
           console.log(`🤖 Caricati ${suggestions.length} suggerimenti AI pending`);
@@ -1131,7 +1168,7 @@ export function EmailGroupingSuggestionsTab() {
                 <ToggleGroup 
                   type="single" 
                   value={sortBy} 
-                  onValueChange={(val) => val && setSortBy(val as 'domain' | 'group')}
+                  onValueChange={(val) => val && setSortBy(val as typeof sortBy)}
                   className="bg-muted/30 border border-border rounded-lg p-0.5"
                 >
                   <ToggleGroupItem 
@@ -1149,6 +1186,21 @@ export function EmailGroupingSuggestionsTab() {
                   >
                     <FolderKanban className="h-3.5 w-3.5 mr-1.5" />
                     Gruppo
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="country" 
+                    aria-label="Ordina per paese"
+                    className="h-8 px-3 text-xs data-[state=on]:bg-background data-[state=on]:text-foreground"
+                  >
+                    🌍 Paese
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="email_count" 
+                    aria-label="Ordina per numero email"
+                    className="h-8 px-3 text-xs data-[state=on]:bg-background data-[state=on]:text-foreground"
+                  >
+                    <Mail className="h-3.5 w-3.5 mr-1.5" />
+                    N. Email
                   </ToggleGroupItem>
                 </ToggleGroup>
               </div>
@@ -1172,6 +1224,7 @@ export function EmailGroupingSuggestionsTab() {
                     onAccept={handleAcceptSuggestion}
                     onSelectGroup={handleManualGroupSelection}
                     disabled={isGeneratingSuggestions}
+                    emailCount={emailCounts.get(suggestion.sender_email)}
                   />
                 ))}
               </div>
@@ -1184,6 +1237,7 @@ export function EmailGroupingSuggestionsTab() {
                     onAccept={handleAcceptSuggestion}
                     onDismiss={handleRejectSuggestion}
                     disabled={isGeneratingSuggestions}
+                    emailCount={emailCounts.get(suggestion.sender_email)}
                   />
                 ))}
               </div>

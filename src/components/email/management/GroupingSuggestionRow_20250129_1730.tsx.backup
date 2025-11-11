@@ -17,7 +17,6 @@ import { detectCountryFromEmail, getCountryFlag } from '@/lib/email-utils';
 import { isWCAPartner } from '@/data/wca-partners';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { SenderEmailsDialog } from './SenderEmailsDialog';
 
 interface GroupingSuggestionRowProps {
   suggestion: GroupingSuggestion;
@@ -25,7 +24,6 @@ interface GroupingSuggestionRowProps {
   onAccept: (suggestionId: string, groupId: string | null, groupName: string) => void;
   onSelectGroup: (suggestionId: string, groupId: string) => void;
   disabled?: boolean;
-  emailCount?: number;
 }
 
 export const GroupingSuggestionRow = ({
@@ -34,12 +32,10 @@ export const GroupingSuggestionRow = ({
   onAccept,
   onSelectGroup,
   disabled = false,
-  emailCount,
 }: GroupingSuggestionRowProps) => {
-  // State per dropdown, processing, debouncing e dialog email
+  // State per dropdown, processing e debouncing
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showEmailsDialog, setShowEmailsDialog] = useState(false);
   const lastClickTime = useRef<number>(0);
   
   // Hook per logo aziendale
@@ -149,11 +145,7 @@ export const GroupingSuggestionRow = ({
         
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <h4 
-              className="font-medium text-sm flex items-center gap-1.5 truncate cursor-pointer hover:text-primary transition-colors"
-              onClick={() => setShowEmailsDialog(true)}
-              title="Clicca per vedere le email"
-            >
+            <h4 className="font-medium text-sm flex items-center gap-1.5 truncate">
               <Mail className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{suggestion.sender_email}</span>
             </h4>
@@ -162,14 +154,6 @@ export const GroupingSuggestionRow = ({
               <span className="text-sm flex-shrink-0" title={countryCode || undefined}>
                 {countryFlag}
               </span>
-            )}
-            
-            {/* Badge conteggio email */}
-            {emailCount !== undefined && emailCount > 0 && (
-              <Badge variant="secondary" className="text-xs bg-info/10 text-info h-5">
-                <Mail className="w-2.5 h-2.5 mr-0.5" />
-                {emailCount}
-              </Badge>
             )}
           </div>
           
@@ -209,7 +193,7 @@ export const GroupingSuggestionRow = ({
               </Badge>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">{primarySuggestion.reason}</p>
+          <p className="text-xs text-muted-foreground truncate">{primarySuggestion.reason}</p>
         </div>
         <Badge variant="secondary" className={cn('text-xs font-medium flex-shrink-0', confidenceColor)}>
           <TrendingUp className="w-3 h-3 mr-0.5" />
@@ -286,14 +270,6 @@ export const GroupingSuggestionRow = ({
           </Button>
         </div>
       </div>
-      
-      {/* Dialog visualizzazione email */}
-      <SenderEmailsDialog
-        open={showEmailsDialog}
-        onOpenChange={setShowEmailsDialog}
-        senderEmail={suggestion.sender_email}
-        emailCount={emailCount}
-      />
     </div>
   );
 };

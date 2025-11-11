@@ -17,14 +17,12 @@ import { detectCountryFromEmail, getCountryFlag } from '@/lib/email-utils';
 import { isWCAPartner } from '@/data/wca-partners';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { SenderEmailsDialog } from './SenderEmailsDialog';
 
 interface GroupingSuggestionCardProps {
   suggestion: GroupingSuggestion;
   onAccept: (suggestionId: string, groupId: string | null, groupName: string) => void;
   onDismiss: (suggestionId: string) => void;
   disabled?: boolean;
-  emailCount?: number;
 }
 
 export const GroupingSuggestionCard = ({
@@ -32,11 +30,9 @@ export const GroupingSuggestionCard = ({
   onAccept,
   onDismiss,
   disabled = false,
-  emailCount,
 }: GroupingSuggestionCardProps) => {
-  // State per processing, debouncing e dialog email
+  // State per processing e debouncing
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showEmailsDialog, setShowEmailsDialog] = useState(false);
   const lastClickTime = useRef<number>(0);
   
   // 🆕 Hook per logo aziendale
@@ -118,11 +114,7 @@ export const GroupingSuggestionCard = ({
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h4 
-              className="font-medium text-sm flex items-center gap-1.5 truncate cursor-pointer hover:text-primary transition-colors"
-              onClick={() => setShowEmailsDialog(true)}
-              title="Clicca per vedere le email"
-            >
+            <h4 className="font-medium text-sm flex items-center gap-1.5 truncate">
               <Mail className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="truncate">{suggestion.sender_email}</span>
             </h4>
@@ -132,14 +124,6 @@ export const GroupingSuggestionCard = ({
               <span className="text-base flex-shrink-0" title={countryCode || undefined}>
                 {countryFlag}
               </span>
-            )}
-            
-            {/* 🆕 Badge conteggio email */}
-            {emailCount !== undefined && emailCount > 0 && (
-              <Badge variant="secondary" className="text-xs bg-info/10 text-info">
-                <Mail className="w-3 h-3 mr-1" />
-                {emailCount}
-              </Badge>
             )}
           </div>
           
@@ -279,14 +263,6 @@ export const GroupingSuggestionCard = ({
         )}
         Ignora suggerimenti
       </Button>
-      
-      {/* Dialog visualizzazione email */}
-      <SenderEmailsDialog
-        open={showEmailsDialog}
-        onOpenChange={setShowEmailsDialog}
-        senderEmail={suggestion.sender_email}
-        emailCount={emailCount}
-      />
     </Card>
   );
 };

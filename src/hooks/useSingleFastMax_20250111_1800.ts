@@ -54,25 +54,6 @@ export function useSingleFastMax() {
     console.log(`[useSingleFastMax] ${log_entry.timestamp.toLocaleTimeString('it-IT')} - ${log_entry.message}`);
   };
 
-  const waitForSession = async (): Promise<boolean> => {
-    // Check if session is already initialized
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) return true;
-
-    // Wait for session initialization (max 5 seconds)
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => resolve(false), 5000);
-      
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (session) {
-          clearTimeout(timeout);
-          subscription.unsubscribe();
-          resolve(true);
-        }
-      });
-    });
-  };
-
   const getUserEmail = async (): Promise<string> => {
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -113,21 +94,7 @@ export function useSingleFastMax() {
     });
 
     try {
-      // ✅ Wait for session to be initialized
-      addLog({ phase: 'init', message: '🔐 Verifica autenticazione...' });
-      const hasSession = await waitForSession();
-      
-      if (!hasSession) {
-        addLog({ 
-          phase: 'error', 
-          message: '❌ Sessione non valida. Ricarica la pagina e riprova.' 
-        });
-        return;
-      }
-      
-      addLog({ phase: 'init', message: '✅ Autenticazione verificata' });
-
-      // Get user email (session is now ready!)
+      // Get user email
       const user_email = await getUserEmail();
       addLog({ phase: 'init', message: `📧 User email: ${user_email}` });
 

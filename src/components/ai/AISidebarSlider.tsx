@@ -74,7 +74,7 @@ export function AISidebarSlider({
       <div className={cn(
         "fixed left-0 top-0 h-screen w-[500px] bg-background/90 backdrop-blur-md border-r shadow-2xl z-[61]",
         "transition-transform duration-300 ease-in-out flex flex-col",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        isOpen ? "translate-x-0" : "-translate-x-full opacity-0 pointer-events-none"
       )}>
         {/* Header */}
         <div className="p-4 border-b flex items-center justify-between shrink-0">
@@ -201,18 +201,17 @@ export function AISidebarSlider({
           onClick={onToggle}
           className={cn(
             "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
-            "bg-primary/90 hover:bg-primary p-3 rounded-r-lg shadow-lg",
+            "w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+            "flex items-center justify-center",
             "transition-all duration-300",
+            "hover:bg-white/5",
             isOpen && "translate-x-[500px]"
           )}
           aria-label="Toggle AI Assistant"
         >
-          <Sparkles className="h-5 w-5 text-primary-foreground" />
-          <ChevronRight 
-            className={cn(
-              "h-4 w-4 text-primary-foreground transition-transform mt-1",
-              isOpen && "rotate-180"
-            )}
+          <Sparkles 
+            className="w-6 h-6 text-primary/80 transition-colors duration-300" 
+            strokeWidth={1}
           />
         </button>
       )}

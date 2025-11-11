@@ -1,5 +1,57 @@
 # REFACTORING LOG - ImportTemplates.tsx
 
+## [2025-01-11 09:00] - Fix Scroll Orizzontale Dialog Record Importati
+
+### Problema
+Nella dialog "Record Importati" (desktop view), lo scroll orizzontale non funzionava con mouse/trackpad. Era possibile scrollare solo usando la scrollbar, mentre in "Gestisci Import" e "Attività" lo scroll funzionava naturalmente.
+
+### Causa Identificata
+Uso di `<ScrollArea>` di Radix UI che interferiva con lo scroll nativo del browser. ScrollArea è ottimo per custom scrollbar ma bloccava lo scroll orizzontale touch/drag.
+
+### Soluzione Applicata
+Sostituito `<ScrollArea>` con `<div className="overflow-auto">`, allineandosi all'implementazione di GestisciImport.tsx e Attivita.tsx che funzionano correttamente.
+
+### File Modificato
+- `src/pages/ImportTemplates.tsx` (linee 3106 e 3443)
+
+### Modifiche Tecniche
+```diff
+- <ScrollArea className="flex-1 border rounded-md h-full">
++ <div className="flex-1 overflow-auto border rounded-md">
+    <div className="min-w-max">
+      <Table>
+        {/* contenuto tabella */}
+      </Table>
+    </div>
+- </ScrollArea>
++ </div>
+```
+
+### Test da Eseguire
+✅ Scroll orizzontale con mouse (drag)
+✅ Scroll orizzontale con trackpad (swipe)
+✅ Scroll verticale con mouse (rotellina)
+✅ Scroll verticale con trackpad (swipe)
+✅ Funzionalità tabella (selezione, ordinamento, filtri)
+✅ Layout responsive mantenuto
+✅ Performance identiche
+
+### Compatibilità
+- ✅ Chrome/Edge
+- ✅ Firefox
+- ✅ Safari
+- ✅ Mobile browsers (scroll touch)
+
+### Backup
+- `backups/ImportTemplates_20250111_0900.tsx`
+
+### Rollback
+```bash
+cp backups/ImportTemplates_20250111_0900.tsx src/pages/ImportTemplates.tsx
+```
+
+---
+
 ## [2025-01-11 08:20] - Refactoring Conservativo UI Components
 
 ### Obiettivo

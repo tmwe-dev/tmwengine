@@ -3103,7 +3103,7 @@ export default function ImportTemplates() {
                   </div>
                 ) : (
                   /* Desktop View - Table with ScrollArea */
-            <div className="flex-1 overflow-auto border rounded-md">
+            <ScrollArea className="flex-1 border rounded-md h-full">
               <div className="min-w-max">
                       <Table>
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
@@ -3440,7 +3440,7 @@ export default function ImportTemplates() {
                      </TableBody>
                    </Table>
                  </div>
-               </div>
+               </ScrollArea>
                )}
                 
                  {/* Footer - Responsive Controls */}

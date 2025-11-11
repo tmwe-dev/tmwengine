@@ -10,7 +10,8 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { processFolderWithDance, type DanceProgress } from "@/lib/single-fast-max-core";
-import { getSingleFastFoldersFromLocal } from "@/lib/single-fast-core";
+import { getSingleFastFoldersFromLocal, populateTempIndexForFolder } from "@/lib/single-fast-core";
+import { getSyncPreferences } from "@/lib/email-sync-preferences";
 
 export interface LogEntry {
   timestamp: Date;
@@ -99,12 +100,59 @@ export function useSingleFastMax() {
 
       // Get folders to sync (FAST: usa solo email_temp_index, NO chiamate API)
       const folders = await getSingleFastFoldersFromLocal(user_email);
-      const folders_to_sync = folders.filter(f => f.included);
+      let folders_to_sync = folders.filter(f => f.included);
 
+      // ✅ NUOVO: Se nessuna cartella ha pending, popola prima email_temp_index
+      if (folders_to_sync.length === 0 || folders_to_sync.every(f => f.pending === 0)) {
+        const preferences = await getSyncPreferences(user_email);
+        
+        if (preferences.included_folders.length === 0) {
+          addLog({ 
+            phase: 'warning', 
+            message: '⚠️ Configura prima le cartelle in Impostazioni → Sincronizzazione Email' 
+          });
+          return;
+        }
+
+        addLog({ 
+          phase: 'preparing', 
+          message: `📦 Popolamento email_temp_index per ${preferences.included_folders.length} cartelle...` 
+        });
+
+        // Popola temp index per ogni cartella selezionata
+        for (const folder of preferences.included_folders) {
+          if (shouldStop.current) break;
+
+          addLog({ 
+            phase: 'preparing',
+            folder,
+            message: `🔍 Scansione ${folder}...` 
+          });
+
+          await populateTempIndexForFolder(folder, user_email, {
+            uid_batch_size: 100,
+            page_throttle_ms: 2000,
+            max_pages: undefined, // nessun limite
+          }, (progress) => {
+            addLog({
+              phase: 'preparing',
+              folder,
+              message: `📊 ${progress.current}/${progress.total} email processate`,
+              email_details: progress.subject || undefined,
+            });
+          });
+        }
+
+        // Ri-carica folders dopo popolamento
+        const refreshedFolders = await getSingleFastFoldersFromLocal(user_email);
+        folders_to_sync = refreshedFolders.filter(f => f.included);
+      }
+
+      // Controllo finale
       if (folders_to_sync.length === 0) {
         addLog({ 
           phase: 'warning', 
-          message: '⚠️ Nessuna cartella selezionata per la sincronizzazione' 
+          message: '⚠️ Nessuna cartella con email da sincronizzare' 
         });
         return;
       }

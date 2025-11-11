@@ -1,24 +1,37 @@
 /**
- * HOOK SINGLE FAST PERFORMANCE - Con ParallelDownloadController
- * Sistema parallelo per import massivo email ad alta velocità
- * 
- * ⚡ DIFFERENZE da useSingleFast.ts:
- * - Integrazione profili performance dal database
- * - ParallelDownloadController per download paralleli
- * - Batch dinamico basato su optimization_flags.batchChunkSize
- * - Velocità stimata 10-12x superiore
+ * HOOK SINGLE FAST - Gestione stato e log real-time
  */
 
 import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getSingleFastFoldersFromLocal } from '@/lib/single-fast-core';
-import { getActiveProfile, type PerformanceProfile } from '@/lib/performance-profiles';
-import { ParallelDownloadController } from '@/lib/parallel-download-controller';
-import type { LogEntry, TempIndexResult } from './useSingleFast';
+import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 
+// Costante per provider TMWE (ID dalla tabella email_provider)
 const TMWE_PROVIDER_ID = '00000000-0000-0000-0000-000000000000';
 
-export function useSingleFastPerformance() {
+export interface LogEntry {
+  timestamp: Date;
+  phase: 'preparing' | 'importing' | 'completed' | 'error' | 'skip' | 'init' | 'warning' | 'stopped' | 'stopping';
+  folder?: string;
+  message: string;
+  count?: { current: number; total: number };
+  emailDetails?: {
+    from_name: string | null;
+    from_email: string;
+    subject: string | null;
+    date: string;
+  };
+}
+
+export interface TempIndexResult {
+  folder: string;
+  uids: number;
+  status: 'completed' | 'error';
+  errorMessage?: string;
+}
+
+export function useSingleFast() {
   const [isRunning, setIsRunning] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [tempResults, setTempResults] = useState<TempIndexResult[]>([]);
@@ -27,11 +40,9 @@ export function useSingleFastPerformance() {
   const [currentPhase, setCurrentPhase] = useState<string>('');
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [emailProgress, setEmailProgress] = useState({ imported: 0, total: 0, skipped: 0 });
-  const [activeProfile, setActiveProfile] = useState<PerformanceProfile | null>(null);
   
   const shouldStop = useRef(false);
   const isPaused = useRef(false);
-  const downloadController = useRef<ParallelDownloadController | null>(null);
 
   const addLog = (entry: Omit<LogEntry, 'timestamp'>) => {
     setLogs(prev => [...prev, { ...entry, timestamp: new Date() }]);
@@ -51,7 +62,7 @@ export function useSingleFastPerformance() {
     return profile.tmwe_email;
   };
 
-  const startSingleFastPerformance = async () => {
+  const startSingleFast = async () => {
     setIsRunning(true);
     setLogs([]);
     setTempResults([]);
@@ -66,39 +77,6 @@ export function useSingleFastPerformance() {
     try {
       const userEmail = await getUserEmail();
       
-      // 🎯 CARICA PROFILO PERFORMANCE ATTIVO
-      addLog({ phase: 'preparing', message: '🎯 Caricamento profilo performance...' });
-      const profile = await getActiveProfile();
-      setActiveProfile(profile);
-      
-      if (!profile) {
-        addLog({ 
-          phase: 'error', 
-          message: '⚠️ Nessun profilo performance attivo. Usa Performance Configurator per attivarne uno.' 
-        });
-        setIsRunning(false);
-        return;
-      }
-
-      // 📊 ESTRAI CONFIGURAZIONI DAL PROFILO
-      const batchSize = profile.optimization_flags?.batchChunkSize || 10;
-      const useParallel = !profile.optimization_flags?.useSequentialExecution;
-      const minDelay = 50; // ms tra batch
-      
-      addLog({ 
-        phase: 'preparing', 
-        message: `✅ Profilo "${profile.profile_name}" attivo: ${useParallel ? `${batchSize} email parallele` : 'sequenziale'}` 
-      });
-
-      // 🚀 INIZIALIZZA PARALLEL DOWNLOAD CONTROLLER
-      if (useParallel) {
-        downloadController.current = new ParallelDownloadController(batchSize, minDelay);
-        addLog({ 
-          phase: 'preparing', 
-          message: `⚡ ParallelDownloadController inizializzato (max ${batchSize} concurrent, ${minDelay}ms delay)` 
-        });
-      }
-
       // 1. Carica preferenze sync (NO chiamate API bloccanti)
       addLog({ phase: 'preparing', message: '🔍 Caricamento preferenze cartelle...' });
 
@@ -147,7 +125,7 @@ export function useSingleFastPerformance() {
             await populateTempIndexForFolder(folder, userEmail, {
               uid_batch_size: 50,
               page_throttle_ms: 5000,
-              max_pages: undefined
+              max_pages: 2
             }, (details) => {
               addLog({
                 phase: 'preparing',
@@ -189,21 +167,23 @@ export function useSingleFastPerformance() {
       
       addLog({ 
         phase: 'preparing', 
-        message: `📋 PIANO: ${foldersToSync.length} cartelle, ${totalMissing} email totali (modo ${useParallel ? 'PARALLELO' : 'SEQUENZIALE'})` 
+        message: `📋 PIANO: ${foldersToSync.length} cartelle, ${totalMissing} email totali da importare` 
       });
       
+      // Dettaglio cartelle
       foldersToSync.forEach((f, i) => {
         addLog({
           phase: 'preparing',
-          message: `  ${i + 1}. ${f.folderName} → ${f.pending} email`
+          message: `  ${i + 1}. ${f.folderName} → ${f.pending} email da scaricare`
         });
       });
 
+      // Pausa 3 secondi per permettere all'utente di leggere il piano
       addLog({ phase: 'preparing', message: '⏳ Avvio tra 3 secondi...' });
       await new Promise(resolve => setTimeout(resolve, 3000));
 
-      // 📌 RECUPERO PROGRESSO SALVATO
-      const savedProgress = JSON.parse(localStorage.getItem('singlefast_performance_progress') || '{}');
+      // 📌 RECUPERO PROGRESSO SALVATO (Resume intelligente)
+      const savedProgress = JSON.parse(localStorage.getItem('singlefast_progress') || '{}');
       const startIndex = savedProgress.currentFolderIndex || 0;
       
       if (startIndex > 0) {
@@ -215,6 +195,7 @@ export function useSingleFastPerformance() {
 
       // 2. Loop cartelle
       for (let i = startIndex; i < foldersToSync.length; i++) {
+        // Check stop
         if (shouldStop.current) {
           addLog({ phase: 'error', message: '🛑 Processo interrotto dall\'utente' });
           break;
@@ -222,12 +203,14 @@ export function useSingleFastPerformance() {
         
         const folder = foldersToSync[i];
         
-        localStorage.setItem('singlefast_performance_progress', JSON.stringify({
+        // 💾 SALVA PROGRESSO IN LOCALSTORAGE
+        localStorage.setItem('singlefast_progress', JSON.stringify({
           currentFolderIndex: i,
           currentFolder: folder.folderName,
           totalFolders: foldersToSync.length
         }));
         
+        // Aggiorna stato cartella corrente e fase
         setCurrentFolder(folder.folderName);
         setCurrentPhase('Calcolo email mancanti');
         setProgress({ current: i + 1, total: foldersToSync.length });
@@ -261,122 +244,63 @@ export function useSingleFastPerformance() {
           addLog({
             phase: 'importing',
             folder: folder.folderName,
-            message: `📧 FASE 2: Inizio import di ${uidsToImport.length} email (${useParallel ? 'parallel' : 'sequential'})...`
+            message: `📧 FASE 2: Inizio import di ${uidsToImport.length} email...`
           });
 
           let successCount = 0;
           let errorCount = 0;
 
           // ✅ FASE 2: Import email dalla tabella temporanea
-          if (useParallel && downloadController.current) {
-            // ⚡ MODO PARALLELO CON CONTROLLER
-            for (let j = 0; j < uidsToImport.length; j++) {
-              if (shouldStop.current) {
-                addLog({ phase: 'error', message: '🛑 Import interrotto' });
-                break;
-              }
+          for (let j = 0; j < uidsToImport.length; j++) {
+            if (shouldStop.current) {
+              addLog({ phase: 'error', message: '🛑 Import interrotto' });
+              break;
+            }
 
-              while (isPaused.current) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                if (shouldStop.current) break;
-              }
-
+            while (isPaused.current) {
+              await new Promise(resolve => setTimeout(resolve, 100));
               if (shouldStop.current) break;
+            }
 
-              const uid = uidsToImport[j];
+            if (shouldStop.current) break;
 
-              // Usa ParallelDownloadController per gestire la concorrenza
-              downloadController.current.download(async () => {
-                try {
-                  await importEmailFromTempIndex(uid, folder.folderName, userEmail);
+            const uid = uidsToImport[j];
+            try {
+              await importEmailFromTempIndex(uid, folder.folderName, userEmail);
 
-                  successCount++;
-                  setEmailProgress(prev => ({ ...prev, imported: prev.imported + 1 }));
+              successCount++;
+              setEmailProgress(prev => ({ ...prev, imported: prev.imported + 1 }));
 
-                  addLog({
-                    phase: 'importing',
-                    folder: folder.folderName,
-                    message: `✅ [Parallel] Imported ${successCount}/${uidsToImport.length} - UID: ${uid}`,
-                    count: { current: successCount, total: uidsToImport.length }
-                  });
-                } catch (err: any) {
-                  console.error(`Error importing email UID ${uid}:`, err);
-                  errorCount++;
-                  setEmailProgress(prev => ({ ...prev, skipped: prev.skipped + 1 }));
-                  addLog({
-                    phase: 'skip',
-                    folder: folder.folderName,
-                    message: `⚠️ Skip UID ${uid}: ${err.message}`
-                  });
-                }
+              addLog({
+                phase: 'importing',
+                folder: folder.folderName,
+                message: `✅ Imported ${j + 1}/${uidsToImport.length} - UID: ${uid}`,
+                count: { current: j + 1, total: uidsToImport.length }
+              });
+
+              // Throttle ogni 20 email
+              if (j > 0 && j % 20 === 0) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+              }
+
+            } catch (error: any) {
+              console.error(`Error importing email UID ${uid}:`, error);
+              errorCount++;
+              setEmailProgress(prev => ({ ...prev, skipped: prev.skipped + 1 }));
+              addLog({
+                phase: 'skip',
+                folder: folder.folderName,
+                message: `⚠️ Skip UID ${uid}: ${error.message}`
               });
             }
 
-            // Attendi completamento parallelo
-            while (downloadController.current.getStats().active > 0 || downloadController.current.getStats().queued > 0) {
-              if (shouldStop.current) {
-                addLog({ phase: 'error', message: '🛑 Arresto forzato: cancellazione download in corso...' });
-                if (downloadController.current) {
-                  downloadController.current.cancel();
-                }
-                break;
-              }
-
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-          } else {
-            // 📦 MODO SEQUENZIALE
-            for (let j = 0; j < uidsToImport.length; j++) {
-              if (shouldStop.current) {
-                addLog({ phase: 'error', message: '🛑 Import interrotto' });
-                break;
-              }
-
-              while (isPaused.current) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                if (shouldStop.current) break;
-              }
-
-              if (shouldStop.current) break;
-
-              const uid = uidsToImport[j];
-
-              try {
-                await importEmailFromTempIndex(uid, folder.folderName, userEmail);
-
-                successCount++;
-                setEmailProgress(prev => ({ ...prev, imported: prev.imported + 1 }));
-
-                addLog({
-                  phase: 'importing',
-                  folder: folder.folderName,
-                  message: `✅ Imported ${j + 1}/${uidsToImport.length} - UID: ${uid}`,
-                  count: { current: j + 1, total: uidsToImport.length }
-                });
-
-                // Throttle ogni 20 email
-                if (j > 0 && j % 20 === 0) {
-                  await new Promise(resolve => setTimeout(resolve, 200));
-                }
-
-              } catch (err: any) {
-                console.error(`Error importing email UID ${uid}:`, err);
-                errorCount++;
-                setEmailProgress(prev => ({ ...prev, skipped: prev.skipped + 1 }));
-                addLog({
-                  phase: 'skip',
-                  folder: folder.folderName,
-                  message: `⚠️ Skip UID ${uid}: ${err.message}`
-                });
-              }
-
-              if (shouldStop.current) {
-                addLog({ phase: 'error', message: '🛑 Arresto richiesto' });
-                break;
-              }
+            if (shouldStop.current) {
+              addLog({ phase: 'error', message: '🛑 Arresto richiesto' });
+              break;
             }
           }
 
+          // Risultato finale cartella
           setTempResults(prev => [
             ...prev,
             {
@@ -389,7 +313,7 @@ export function useSingleFastPerformance() {
           addLog({
             phase: 'completed',
             folder: folder.folderName,
-            message: `✅ Completata ${folder.folderName}: ${successCount}/${uidsToImport.length} email${errorCount > 0 ? ` (${errorCount} errori)` : ''}`
+            message: `✅ Completata ${folder.folderName}: ${successCount}/${uidsToImport.length} email importate${errorCount > 0 ? ` (${errorCount} errori)` : ''}`
           });
         } catch (err: any) {
           addLog({
@@ -410,9 +334,10 @@ export function useSingleFastPerformance() {
         }
       }
 
-      localStorage.removeItem('singlefast_performance_progress');
+      // 🎉 COMPLETAMENTO: Pulisci localStorage
+      localStorage.removeItem('singlefast_progress');
       
-      addLog({ phase: 'completed', message: '🎉 Single Fast Performance completato!' });
+      addLog({ phase: 'completed', message: '🎉 Single Fast completato!' });
     } catch (error: any) {
       addLog({ phase: 'error', message: `❌ Errore: ${error.message}` });
     } finally {
@@ -456,11 +381,39 @@ export function useSingleFastPerformance() {
     currentPhase,
     progress,
     emailProgress,
-    activeProfile,
-    startSingleFastPerformance,
+    startSingleFast,
     reset,
     pauseProcess,
     resumeProcess,
     stopProcess
   };
+}
+
+// ✅ FUNZIONE HELPER PER SALVARE ERRORI IN DATABASE
+async function saveErrorToDatabase(uid: string, folder: string, userEmail: string, error: any) {
+  try {
+    const errorType = error.message.includes('map') ? 'map_undefined' 
+                    : error.message.includes('Edge function') || error.message.includes('Edge Function') ? 'edge_function'
+                    : error.message.includes('network') ? 'network' 
+                    : 'unknown';
+    
+    await supabase.from('email_import_errors').upsert({
+      uid,
+      folder_name: folder,
+      user_email: userEmail,
+      error_message: error.message || 'Unknown error',
+      error_type: errorType,
+      status: 'pending',
+      metadata: {
+        stack: error.stack?.substring(0, 500),
+        timestamp: new Date().toISOString()
+      }
+    }, { 
+      onConflict: 'uid,folder_name,user_email',
+      ignoreDuplicates: false 
+    });
+  } catch (dbErr) {
+    console.warn('⚠️ Non riesco a salvare errore in DB:', dbErr);
+    // Non blocchiamo il flusso principale
+  }
 }

@@ -125,7 +125,7 @@ export function useSingleFast() {
             await populateTempIndexForFolder(folder, userEmail, {
               uid_batch_size: 50,
               page_throttle_ms: 5000,
-              max_pages: 2
+              max_pages: undefined
             }, (details) => {
               addLog({
                 phase: 'preparing',

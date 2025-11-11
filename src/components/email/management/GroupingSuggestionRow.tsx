@@ -145,6 +145,9 @@ export const GroupingSuggestionRow = ({
             src={logoData?.logo_url || funEmailMascot} 
             alt={suggestion.sender_email}
             className="w-full h-full object-contain"
+            onError={(e) => {
+              e.currentTarget.src = funEmailMascot;
+            }}
           />
         </div>
         

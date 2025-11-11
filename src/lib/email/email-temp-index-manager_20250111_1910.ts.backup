@@ -13,7 +13,7 @@ export interface PopulateConfig {
   metadata_batch_size?: number;
   page_throttle_ms?: number;
   metadata_throttle_ms?: number;
-  max_pages?: number | undefined; // ✅ Opzionale: limita numero pagine (undefined = illimitato)
+  max_pages?: number; // ✅ NUOVO: limita numero pagine (0 = illimitato)
 }
 
 export interface PopulateProgress {
@@ -31,12 +31,12 @@ export interface PopulateTempIndexResult {
   totalMissing: number;
 }
 
-const DEFAULT_CONFIG: PopulateConfig = {
+const DEFAULT_CONFIG: Required<PopulateConfig> = {
   uid_batch_size: 50,
   metadata_batch_size: 3,
   page_throttle_ms: 5000,          // ✅ Aumentato a 5s
   metadata_throttle_ms: 500,
-  max_pages: undefined,            // ✅ Default: illimitato (undefined)
+  max_pages: 0,                    // ✅ Default: illimitato
 };
 
 /**
@@ -92,7 +92,7 @@ export async function populateTempIndexForFolder(
 
 async function fetchServerUIDs(
   folder: string,
-  config: PopulateConfig
+  config: Required<PopulateConfig>
 ): Promise<Set<string>> {
   const uids = new Set<string>();
   let currentPage = 1;
@@ -102,7 +102,7 @@ async function fetchServerUIDs(
 
   while (hasMore) {
     // ✅ CHECK: hai raggiunto il limite di pagine?
-    if (config.max_pages && config.max_pages > 0 && currentPage > config.max_pages) {
+    if (config.max_pages > 0 && currentPage > config.max_pages) {
       console.log(`⚠️ Reached max_pages limit (${config.max_pages}). Stopping pagination.`);
       hasMore = false;
       break;
@@ -197,7 +197,7 @@ async function populateMetadataInBatches(
   uids: string[],
   folder: string,
   userEmail: string,
-  config: PopulateConfig,
+  config: Required<PopulateConfig>,
   onProgress?: (details: PopulateProgress) => void
 ): Promise<void> {
   const records = [];

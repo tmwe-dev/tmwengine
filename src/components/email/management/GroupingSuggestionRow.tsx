@@ -143,7 +143,7 @@ export const GroupingSuggestionRow = ({
   };
 
   return (
-    <div className="flex items-start gap-4 p-4 bg-card border border-border rounded-lg hover:border-primary/30 transition-all">
+    <div className="flex items-center gap-4 p-4 bg-card border border-border rounded-lg hover:border-primary/30 transition-all">
       {/* COLONNA SINISTRA: Logo + Info Visive */}
       <div className="flex items-center gap-3 flex-shrink-0">
         {/* Logo con sfondo bianco */}
@@ -185,7 +185,7 @@ export const GroupingSuggestionRow = ({
         {/* RIGA 1: Email + Badge contestuali */}
         <div>
           <h4 
-            className="font-semibold text-base flex items-center gap-2 mb-1.5 cursor-pointer hover:text-primary transition-colors"
+            className="font-semibold text-base flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
             onClick={() => setShowEmailsDialog(true)}
             title="Clicca per vedere le email"
           >
@@ -217,9 +217,9 @@ export const GroupingSuggestionRow = ({
           </div>
         </div>
 
-        {/* RIGA 2: Suggerimento AI + Descrizione completa */}
+        {/* RIGA 2: Suggerimento AI + Descrizione completa + Pulsante Accetta */}
         <div className="space-y-2 bg-gradient-to-r from-primary/5 to-transparent p-3 rounded-lg border border-primary/10">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-base">{primarySuggestion.group_name}</span>
               {primarySuggestion.group_id === null && (
@@ -228,10 +228,28 @@ export const GroupingSuggestionRow = ({
                 </Badge>
               )}
             </div>
-            <Badge variant="secondary" className={cn('text-sm font-semibold px-2.5 py-1', confidenceColor)}>
-              <TrendingUp className="w-4 h-4 mr-1.5" />
-              {confidencePercent}%
-            </Badge>
+            
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className={cn('text-sm font-semibold px-2.5 py-1', confidenceColor)}>
+                <TrendingUp className="w-4 h-4 mr-1.5" />
+                {confidencePercent}%
+              </Badge>
+              
+              {/* Pulsante Accetta spostato qui */}
+              <Button
+                size="sm"
+                onClick={handleAccept}
+                disabled={disabled || isProcessing}
+                className="h-8 px-3 whitespace-nowrap"
+              >
+                {isProcessing ? (
+                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 mr-1.5" />
+                )}
+                Accetta
+              </Button>
+            </div>
           </div>
           
           {/* Descrizione AI COMPLETA (no truncate) */}
@@ -241,26 +259,16 @@ export const GroupingSuggestionRow = ({
         </div>
       </div>
 
-      {/* COLONNA DESTRA: Azioni */}
+      {/* COLONNA DESTRA: Selezione Alternativa */}
       <div className="flex flex-col gap-2 flex-shrink-0">
-        <Button
-          size="sm"
-          onClick={handleAccept}
-          disabled={disabled || isProcessing}
-          className="h-9 px-4 whitespace-nowrap"
-        >
-          {isProcessing ? (
-            <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-          ) : (
-            <Check className="w-4 h-4 mr-1.5" />
-          )}
-          Accetta
-        </Button>
-
+        <p className="text-xs text-muted-foreground font-medium">
+          Oppure scegli un altro gruppo:
+        </p>
+        
         {/* Dropdown Gruppi Alternativi */}
         <Select value={selectedGroupId} onValueChange={setSelectedGroupId} disabled={disabled}>
           <SelectTrigger className="h-9 w-[200px] text-xs">
-            <SelectValue placeholder="Oppure scegli..." />
+            <SelectValue placeholder="Seleziona gruppo..." />
           </SelectTrigger>
           <SelectContent>
             {newGroups.length > 0 && (
@@ -299,8 +307,11 @@ export const GroupingSuggestionRow = ({
           size="sm"
           onClick={handleManualAssign}
           disabled={disabled || !selectedGroupId || isProcessing}
-          variant="secondary"
-          className="h-9 px-4 whitespace-nowrap"
+          variant={selectedGroupId ? "default" : "secondary"}
+          className={cn(
+            "h-9 px-4 whitespace-nowrap transition-all",
+            selectedGroupId && "ring-2 ring-primary/20"
+          )}
         >
           {isProcessing ? (
             <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />

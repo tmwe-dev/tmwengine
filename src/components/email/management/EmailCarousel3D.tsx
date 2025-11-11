@@ -477,7 +477,7 @@ export const EmailCarousel3D = ({
     
     if (activeIndex === -1) return;
 
-    const targetAngle = -(activeIndex / MAX_SLOTS) * Math.PI * 2 + Math.PI;
+    const targetAngle = -(activeIndex / MAX_SLOTS) * Math.PI * 2 + Math.PI / 2;
     gsap.to(groupRef.current.rotation, {
       y: targetAngle,
       duration: 1.2,

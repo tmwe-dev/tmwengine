@@ -43,9 +43,6 @@ import { DocumentViewer } from '@/components/email/DocumentViewer';
 import { ImportedContactMobileCard } from '@/components/import/ImportedContactMobileCard';
 
 import { AIColumnMapper } from '@/components/import/AIColumnMapper';
-import { MobileFiltersDialog } from '@/components/import/MobileFiltersDialog';
-import { DesktopFiltersArea } from '@/components/import/DesktopFiltersArea';
-import { RecordImportedFooter } from '@/components/import/RecordImportedFooter';
 
 interface EmailTemplate {
   id: string;
@@ -2725,39 +2722,220 @@ export default function ImportTemplates() {
                       />
                     </div>
                     {/* Filter Buttons */}
-                    <MobileFiltersDialog
-                      open={showFilters}
-                      onOpenChange={setShowFilters}
-                      searchQuery={searchQuery}
-                      setSearchQuery={setSearchQuery}
-                      originFilter={originFilter}
-                      setOriginFilter={setOriginFilter}
-                      countryFilter={countryFilter}
-                      setCountryFilter={setCountryFilter}
-                      hasNotesFilter={hasNotesFilter}
-                      setHasNotesFilter={setHasNotesFilter}
-                      myContactsWithActivitiesFilter={myContactsWithActivitiesFilter}
-                      setMyContactsWithActivitiesFilter={setMyContactsWithActivitiesFilter}
-                      hideContactsWithTodayActivities={hideContactsWithTodayActivities}
-                      setHideContactsWithTodayActivities={setHideContactsWithTodayActivities}
-                      allRecords={allRecords}
-                      getUniqueValuesWithCount={getUniqueValuesWithCount}
-                      getCountryFullName={getCountryFullName}
-                      hasCompletedActivityToday={hasCompletedActivityToday}
-                      sortConfig={sortConfig}
-                      setSortConfig={setSortConfig}
-                      activeFilters={activeFilters}
-                      setActiveFilters={setActiveFilters}
-                    />
                     <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0 p-2"
-                        onClick={() => setShowFilters(true)}
-                      >
-                        <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? 'text-sky-500 animate-pulse' : ''}`} />
-                      </Button>
+                      <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 p-2"
+                          >
+                            <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? 'text-sky-500 animate-pulse' : ''}`} />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-[95vw] w-[95vw]">
+                          <DialogHeader>
+                            <DialogTitle>Filtri</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            {/* Filters */}
+                            <div className="space-y-3">
+                              <div className="space-y-2">
+                                <Label>Origine</Label>
+                                <Select value={originFilter} onValueChange={setOriginFilter}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Tutte le origini" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                    {getUniqueValuesWithCount('origin').map(({ value, count }) => (
+                                      <SelectItem key={value} value={value}>
+                                        {value} ({count})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Nazione</Label>
+                                <Select value={countryFilter} onValueChange={setCountryFilter}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Tutte le nazioni" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                    {getUniqueValuesWithCount('nazione').map(({ value, count }) => (
+                                      <SelectItem key={value} value={value}>
+                                        {getCountryFullName(value)} ({count})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Ordina per</Label>
+                                <Select 
+                                  value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : "NONE"} 
+                                  onValueChange={(value) => {
+                                    if (value === "NONE") {
+                                      setSortConfig({ primary: null, secondary: null });
+                                      return;
+                                    }
+                                    const [column, direction] = value.split('-');
+                                    setSortConfig(prev => ({ 
+                                      ...prev, 
+                                      primary: { column, direction: direction as 'asc' | 'desc' } 
+                                    }));
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Nessun ordinamento" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="NONE">Nessun ordinamento</SelectItem>
+                                    <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                                    <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                                    <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                                    <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                                    <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                                    <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {sortConfig.primary && (
+                                <div className="space-y-2">
+                                  <Label>Poi per</Label>
+                                  <Select 
+                                    value={sortConfig.secondary ? `${sortConfig.secondary.column}-${sortConfig.secondary.direction}` : "NONE"} 
+                                    onValueChange={(value) => {
+                                      if (value === "NONE") {
+                                        setSortConfig(prev => ({ ...prev, secondary: null }));
+                                        return;
+                                      }
+                                      const [column, direction] = value.split('-');
+                                      setSortConfig(prev => ({ 
+                                        ...prev, 
+                                        secondary: { column, direction: direction as 'asc' | 'desc' } 
+                                      }));
+                                    }}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Nessuno" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="NONE">Nessuno</SelectItem>
+                                      <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                                      <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                                      <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                                      <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                                      <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                                      <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+
+                              <div className="space-y-2">
+                                <Label>Filtra per attività</Label>
+                                <Select 
+                                  value={(() => {
+                                    // Determina il valore del filtro attività
+                                    const hasActivityFilter = activeFilters.find(f => f.field === 'has_activities');
+                                    if (hasActivityFilter) {
+                                      return hasActivityFilter.value ? 'with_activities' : 'without_activities';
+                                    }
+                                    return 'all';
+                                  })()} 
+                                  onValueChange={(value) => {
+                                    // Rimuovi eventuali filtri attività esistenti
+                                    setActiveFilters(prev => prev.filter(f => f.field !== 'has_activities'));
+                                    
+                                    // Aggiungi il nuovo filtro se non è "tutti"
+                                    if (value === 'with_activities') {
+                                      setActiveFilters(prev => [...prev, {
+                                        field: 'has_activities',
+                                        value: true,
+                                        displayValue: 'Con attività'
+                                      }]);
+                                    } else if (value === 'without_activities') {
+                                      setActiveFilters(prev => [...prev, {
+                                        field: 'has_activities',
+                                        value: false,
+                                        displayValue: 'Senza attività'
+                                      }]);
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Tutti" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all">Tutti</SelectItem>
+                                    <SelectItem value="with_activities">Con attività</SelectItem>
+                                    <SelectItem value="without_activities">Senza attività</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <Switch
+                                  id="hide-today-activities-mobile"
+                                  checked={hideContactsWithTodayActivities}
+                                  onCheckedChange={setHideContactsWithTodayActivities}
+                                />
+                                <Label htmlFor="hide-today-activities-mobile" className="cursor-pointer">
+                                  Nascondi attività oggi
+                                </Label>
+                                {hideContactsWithTodayActivities && (() => {
+                                  const hiddenCount = allRecords.filter(record => hasCompletedActivityToday(record.id)).length;
+                                  return hiddenCount > 0 ? (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {hiddenCount} nascosti
+                                    </Badge>
+                                  ) : null;
+                                })()}
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="has-notes-filter-mobile"
+                                  checked={hasNotesFilter}
+                                  onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                                />
+                                <Label htmlFor="has-notes-filter-mobile" className="flex items-center gap-2 cursor-pointer">
+                                  <StickyNote className="h-4 w-4 text-blue-500" />
+                                  Solo con note
+                                </Label>
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="my-contacts-activities-filter-mobile"
+                                  checked={myContactsWithActivitiesFilter}
+                                  onCheckedChange={(checked) => setMyContactsWithActivitiesFilter(checked as boolean)}
+                                />
+                                <Label htmlFor="my-contacts-activities-filter-mobile" className="flex items-center gap-2 cursor-pointer">
+                                  <User className="h-4 w-4 text-primary" />
+                                  Solo con mie attività
+                                </Label>
+                              </div>
+                            </div>
+                            
+                            {/* Confirm Button */}
+                            <div className="pt-4 border-t">
+                              <Button 
+                                className="w-full" 
+                                onClick={() => setShowFilters(false)}
+                              >
+                                Conferma
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                       
                       {/* Clear Filters Button */}
                       {(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
@@ -2857,36 +3035,318 @@ export default function ImportTemplates() {
                   </div>
                   
                   {/* Filter Buttons */}
-                  <DesktopFiltersArea
-                    showFilters={showFilters}
-                    setShowFilters={setShowFilters}
-                    originFilter={originFilter}
-                    setOriginFilter={setOriginFilter}
-                    countryFilter={countryFilter}
-                    setCountryFilter={setCountryFilter}
-                    countrySortMode={countrySortMode}
-                    setCountrySortMode={setCountrySortMode}
-                    hasNotesFilter={hasNotesFilter}
-                    setHasNotesFilter={setHasNotesFilter}
-                    myContactsWithActivitiesFilter={myContactsWithActivitiesFilter}
-                    setMyContactsWithActivitiesFilter={setMyContactsWithActivitiesFilter}
-                    hideContactsWithTodayActivities={hideContactsWithTodayActivities}
-                    setHideContactsWithTodayActivities={setHideContactsWithTodayActivities}
-                    filterOnlyWithAlias={filterOnlyWithAlias}
-                    setFilterOnlyWithAlias={setFilterOnlyWithAlias}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    allRecords={allRecords}
-                    getUniqueValuesWithCount={getUniqueValuesWithCount}
-                    getCountryFullName={getCountryFullName}
-                    hasCompletedActivityToday={hasCompletedActivityToday}
-                    sortConfig={sortConfig}
-                    setSortConfig={setSortConfig}
-                    activeFilters={activeFilters}
-                    setActiveFilters={setActiveFilters}
-                    visibleColumns={visibleColumns}
-                    setVisibleColumns={setVisibleColumns}
-                  />
+                  <div className="flex items-center gap-1">
+                    <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant={(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? "default" : "outline"}
+                          size="sm"
+                          className={`shrink-0 p-2 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? 'border-yellow-500 bg-yellow-500 hover:bg-yellow-600 animate-pulse' : 'border-0'}`}
+                        >
+                          <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? 'text-white' : ''}`} />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Filtri e Opzioni</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+                          {/* Filters */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Origine</Label>
+                              <Select value={originFilter} onValueChange={setOriginFilter}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutte le origini" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                  {getUniqueValuesWithCount('origin').map(({ value, count }) => (
+                                    <SelectItem key={value} value={value}>
+                                      {value} ({count})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label>Nazione</Label>
+                                <div className="flex gap-1">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={countrySortMode === 'alpha' ? 'default' : 'ghost'}
+                                    onClick={() => setCountrySortMode('alpha')}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    A-Z
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={countrySortMode === 'count' ? 'default' : 'ghost'}
+                                    onClick={() => setCountrySortMode('count')}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    #
+                                  </Button>
+                                </div>
+                              </div>
+                              <Select value={countryFilter} onValueChange={setCountryFilter}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutte le nazioni" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                  {getCountryValuesSorted().map(({ value, count }) => (
+                                    <SelectItem key={value} value={value}>
+                                      {getCountryFullName(value)} ({count})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Ordina per</Label>
+                              <Select 
+                                value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : "NONE"} 
+                                onValueChange={(value) => {
+                                  if (value === "NONE") {
+                                    setSortConfig({ primary: null, secondary: null });
+                                    return;
+                                  }
+                                  const [column, direction] = value.split('-');
+                                  setSortConfig(prev => ({ 
+                                    ...prev, 
+                                    primary: { column, direction: direction as 'asc' | 'desc' } 
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Nessun ordinamento" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="NONE">Nessun ordinamento</SelectItem>
+                                  <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                                  <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                                  <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                                  <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                                  <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                                  <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {sortConfig.primary && (
+                              <div className="space-y-2">
+                                <Label>Poi per</Label>
+                                <Select 
+                                  value={sortConfig.secondary ? `${sortConfig.secondary.column}-${sortConfig.secondary.direction}` : "NONE"} 
+                                  onValueChange={(value) => {
+                                    if (value === "NONE") {
+                                      setSortConfig(prev => ({ ...prev, secondary: null }));
+                                      return;
+                                    }
+                                    const [column, direction] = value.split('-');
+                                    setSortConfig(prev => ({ 
+                                      ...prev, 
+                                      secondary: { column, direction: direction as 'asc' | 'desc' } 
+                                    }));
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Nessuno" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="NONE">Nessuno</SelectItem>
+                                    <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                                    <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                                    <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                                    <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                                    <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                                    <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            <div className="space-y-2">
+                              <Label>Record per pagina</Label>
+                              <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={`${recordsPerPage}`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="25">25</SelectItem>
+                                  <SelectItem value="50">50</SelectItem>
+                                  <SelectItem value="100">100</SelectItem>
+                                  <SelectItem value="250">250</SelectItem>
+                                  <SelectItem value="500">500</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Filtra per attività</Label>
+                              <Select 
+                                value={(() => {
+                                  const hasActivityFilter = activeFilters.find(f => f.field === 'has_activities');
+                                  if (hasActivityFilter) {
+                                    return hasActivityFilter.value ? 'with_activities' : 'without_activities';
+                                  }
+                                  return 'all';
+                                })()} 
+                                onValueChange={(value) => {
+                                  setActiveFilters(prev => prev.filter(f => f.field !== 'has_activities'));
+                                  if (value === 'with_activities') {
+                                    setActiveFilters(prev => [...prev, {
+                                      field: 'has_activities',
+                                      value: true,
+                                      displayValue: 'Con attività'
+                                    }]);
+                                  } else if (value === 'without_activities') {
+                                    setActiveFilters(prev => [...prev, {
+                                      field: 'has_activities',
+                                      value: false,
+                                      displayValue: 'Senza attività'
+                                    }]);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutti" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tutti</SelectItem>
+                                  <SelectItem value="with_activities">Con attività</SelectItem>
+                                  <SelectItem value="without_activities">Senza attività</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          {/* Toggle Options */}
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="has-notes-filter-desktop-popup"
+                                checked={hasNotesFilter}
+                                onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                              />
+                              <Label htmlFor="has-notes-filter-desktop-popup" className="flex items-center gap-2 cursor-pointer">
+                                <StickyNote className="h-4 w-4 text-blue-500" />
+                                Solo con note
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="my-contacts-activities-filter-desktop-popup"
+                                checked={myContactsWithActivitiesFilter}
+                                onCheckedChange={(checked) => setMyContactsWithActivitiesFilter(checked as boolean)}
+                              />
+                              <Label htmlFor="my-contacts-activities-filter-desktop-popup" className="flex items-center gap-2 cursor-pointer">
+                                <User className="h-4 w-4 text-primary" />
+                                Solo con mie attività
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id="filter-only-with-alias-desktop"
+                                checked={filterOnlyWithAlias}
+                                onCheckedChange={setFilterOnlyWithAlias}
+                              />
+                              <Label htmlFor="filter-only-with-alias-desktop" className="cursor-pointer">
+                                Solo con alias azienda
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id="hide-today-activities-desktop"
+                                checked={hideContactsWithTodayActivities}
+                                onCheckedChange={setHideContactsWithTodayActivities}
+                              />
+                              <Label htmlFor="hide-today-activities-desktop" className="cursor-pointer">
+                                Nascondi attività oggi
+                              </Label>
+                              {hideContactsWithTodayActivities && (() => {
+                                const hiddenCount = allRecords.filter(record => hasCompletedActivityToday(record.id)).length;
+                                return hiddenCount > 0 ? (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {hiddenCount} nascosti
+                                  </Badge>
+                                ) : null;
+                              })()}
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          {/* Column Visibility */}
+                          <div className="space-y-3">
+                            <Label className="text-sm font-medium">Visibilità Colonne</Label>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant={visibleColumns.details ? "default" : "outline"}
+                                onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
+                                className="flex items-center gap-2"
+                              >
+                                <Briefcase className="h-4 w-4" />
+                                Dettagli Commerciali
+                              </Button>
+                              
+                              <Button
+                                size="sm"
+                                variant={visibleColumns.metadata ? "default" : "outline"}
+                                onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
+                                className="flex items-center gap-2"
+                              >
+                                <Settings className="h-4 w-4" />
+                                Metadata & Sistema
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {/* Confirm Button */}
+                          <div className="pt-4 border-t">
+                            <Button 
+                              className="w-full" 
+                              onClick={() => setShowFilters(false)}
+                            >
+                              Applica Filtri
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    
+                    {/* Clear Filters Button */}
+                    {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 p-2"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setOriginFilter('');
+                          setCountryFilter('');
+                          setHasNotesFilter(false);
+                          setMyContactsWithActivitiesFilter(false);
+                          setFilterOnlyWithAlias(true);
+                        }}
+                      >
+                        <FilterX className="h-4 w-4 text-red-500" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -3443,22 +3903,194 @@ export default function ImportTemplates() {
                </ScrollArea>
                )}
                 
-                 {/* Footer - Responsive Controls */}
-                 <RecordImportedFooter
-                   isMobile={isMobile}
-                   selectedRecords={selectedRecords}
-                   setSelectedRecords={setSelectedRecords}
-                   toggleSelectAll={toggleSelectAll}
-                   viewingRecords={viewingRecords}
-                   filteredRecords={filteredRecords}
-                   allRecords={allRecords}
-                   currentPage={currentPage}
-                   setCurrentPage={setCurrentPage}
-                   recordsPerPage={recordsPerPage}
-                   deleteSelectedRecords={deleteSelectedRecords}
-                   importSelectedRecords={importSelectedRecords}
-                   setShowMultipleActivityDialog={setShowMultipleActivityDialog}
-                 />
+                {/* Footer - Responsive Controls */}
+                <div className={cn(
+                  "pt-4 border-t flex-shrink-0",
+                  isMobile ? "space-y-3" : "flex justify-between items-center"
+                )}>
+                  {/* Stats - removed */}
+                    {/* Desktop Actions - keep existing */}
+                    {isMobile ? (
+                      /* Mobile Pagination - Footer */
+                      <div className="flex flex-col items-center relative">
+                        {/* Cestino - allineato a destra */}
+                        {selectedRecords.size > 0 && (
+                          <div className="absolute -top-[15px] right-0 z-10">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={deleteSelectedRecords}
+                                    className="p-2"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Elimina selezionati</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        )}
+                        
+                        {/* Animated Book */}
+                        <AnimatedBook currentPage={currentPage} className="w-full -mb-[41px] pointer-events-none" />
+                        
+                        {/* Pagination Controls */}
+                        <div className="flex items-center justify-center gap-[15px] relative w-full">
+                          {/* File Icon - a sinistra del badge */}
+                          {filteredRecords.length > 0 && (
+                            <div className="absolute left-0 -top-[90px] flex flex-col items-center">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={toggleSelectAll}
+                                className="p-2 hover:bg-transparent"
+                                aria-label="Seleziona tutti della pagina"
+                              >
+                                <FileText 
+                                  className={(() => {
+                                    const currentPageIndexes = [];
+                                    for (let i = 0; i < viewingRecords.length; i++) {
+                                      const actualIndex = currentPage * recordsPerPage + i;
+                                      currentPageIndexes.push(actualIndex);
+                                    }
+                                    const isAllSelected = currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
+                                    return isAllSelected ? "h-5 w-5 text-green-500" : "h-5 w-5 text-blue-500";
+                                  })()}
+                                />
+                              </Button>
+                              {(() => {
+                                const currentPageIndexes = [];
+                                for (let i = 0; i < viewingRecords.length; i++) {
+                                  const actualIndex = currentPage * recordsPerPage + i;
+                                  currentPageIndexes.push(actualIndex);
+                                }
+                                const isAllSelected = currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
+                                return isAllSelected ? (
+                                  <span className="text-xs text-green-500 font-medium">full page</span>
+                                ) : null;
+                              })()}
+                            </div>
+                          )}
+                          
+          {/* Selected Records Badge - Centered */}
+          {selectedRecords.size > 0 && (
+            <span 
+              key={selectedRecords.size}
+              className="text-xs font-medium text-white bg-gradient-to-l from-purple-500/30 via-purple-500/15 via-35% to-purple-500/10 border border-purple-500/20 px-2 py-1 rounded cursor-pointer hover:from-purple-500/40 hover:via-purple-500/25 hover:to-purple-500/20 absolute left-1/2 -translate-x-1/2 -top-[90px] animate-[heartbeat_0.6s_ease-in-out_2]"
+              onClick={() => setSelectedRecords(new Set())}
+            >
+              {selectedRecords.size}
+            </span>
+          )}
+                          
+                          {/* Centered controls */}
+                          <div className="flex items-center gap-[15px]">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="px-[15px] hover:bg-transparent"
+                              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                              disabled={currentPage === 0}
+                            >
+                              <ChevronLeft className="h-10 w-10" />
+                            </Button>
+                            
+                            {/* Azioni multiple - a sinistra */}
+                            {selectedRecords.size > 0 && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setShowMultipleActivityDialog(true)}
+                                      className="p-2 absolute left-0"
+                                    >
+                                      <Pickaxe className="h-4 w-4 text-blue-500" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Crea attività multiple</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            
+                            <span className="text-sm px-3 py-1">
+                              {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="px-[15px] hover:bg-transparent"
+                              onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                              disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                            >
+                              <ChevronRight className="h-10 w-10" />
+                            </Button>
+                          </div>
+                          
+                          {/* Salva in rubrica - a destra della freccia, allineato a destra */}
+                          {selectedRecords.size > 0 && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={importSelectedRecords}
+                                    className="p-2 absolute right-0"
+                                  >
+                                    <Database className="h-4 w-4 text-green-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Importa in rubrica</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Desktop Pagination */
+                      <div className="flex items-start justify-between w-full max-w-2xl mx-auto">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                          disabled={currentPage === 0}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Precedente
+                        </Button>
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm px-3 py-1">
+                            Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                          </span>
+                          {filteredRecords.length !== allRecords.length && (
+                            <span className="text-xs text-red-500 font-medium mt-[25px]">
+                              {filteredRecords.length} records
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                          disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                        >
+                          Successivo
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                   </div>
                   </div>
                ) : (
                  <div className="text-center py-8">

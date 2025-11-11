@@ -250,9 +250,22 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       if (groupsError) throw groupsError;
 
       if (!groupsData || groupsData.length === 0) {
-        console.log('📁 Creazione gruppi di default...');
-        await createDefaultGroups();
-        return;
+        console.log('📁 Nessun gruppo trovato per questo utente');
+        
+        // Verifica se è la prima chiamata (evita loop infinito)
+        const isFirstLoad = !localStorage.getItem(`groups_init_attempted_${user.id}`);
+        
+        if (isFirstLoad) {
+          console.log('📁 Tentativo creazione gruppi predefiniti...');
+          localStorage.setItem(`groups_init_attempted_${user.id}`, 'true');
+          await createDefaultGroups();
+          return;
+        } else {
+          console.warn('⚠️ Gruppi non creati, utente deve crearli manualmente');
+          setGroups([]);
+          setSenders([]);
+          return;
+        }
       }
 
       setGroups(groupsData);
@@ -332,10 +345,23 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       await loadData();
 
     } catch (error: any) {
-      console.error('❌ Errore creazione gruppi:', error);
+      console.error('❌ Errore creazione gruppi:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      
+      // Se errore di duplicazione (gruppi già esistenti), ricarica dati
+      if (error.code === '23505') {
+        console.warn('⚠️ Gruppi predefiniti già esistenti, ricarico...');
+        await loadData();
+        return;
+      }
+      
       toast({
         title: '❌ Errore',
-        description: 'Impossibile creare i gruppi predefiniti',
+        description: error.message || 'Impossibile creare i gruppi predefiniti',
         variant: 'destructive',
       });
     }

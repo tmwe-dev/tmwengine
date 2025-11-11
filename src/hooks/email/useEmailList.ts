@@ -5,6 +5,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { mapApiEmailToComponent } from '@/lib/email/email-transformers';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UseEmailListParams {
   selectedFolder: string;
@@ -41,12 +42,46 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
           limit: 30
         });
       } else {
-        // Use get_emails_metadata (only metadata, ~10x faster)
-        return emailSearchApi.getEmailsMetadata({ 
-          folder: selectedFolder, 
-          page: pageParam,
-          limit: 30
+        // ✅ READ FROM LOCAL DB: Same method as FunEmail.tsx (PROVEN & WORKING)
+        console.log('📂 Reading from local DB:', { cartella: selectedFolder, page: pageParam });
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Non autenticato');
+        
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('tmwe_email')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
+        
+        const { data, error, count } = await supabase
+          .from('email_messages')
+          .select('*', { count: 'exact' })
+          .eq('user_email', profile.tmwe_email)
+          .eq('cartella', selectedFolder)
+          .order('date', { ascending: false })
+          .range((pageParam - 1) * 30, pageParam * 30 - 1);
+        
+        if (error) throw error;
+        
+        console.log('📧 Loaded from DB:', { 
+          cartella: selectedFolder, 
+          count: data?.length, 
+          total: count,
+          page: pageParam 
         });
+        
+        return {
+          emails: data?.map(mapApiEmailToComponent) || [],
+          pagination: { 
+            page: pageParam, 
+            pages: Math.ceil((count || 0) / 30), 
+            total: count || 0,
+            limit: 30 
+          }
+        };
       }
     },
     getNextPageParam: (lastPage, allPages) => {

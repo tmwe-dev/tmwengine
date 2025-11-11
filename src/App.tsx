@@ -35,6 +35,7 @@ import GestisciImport from "./pages/GestisciImport";
 import AIConfig from "./pages/AIConfig";
 import GeneralConfig from "./pages/GeneralConfig";
 import RecordImportati from "./pages/RecordImportati";
+import ImportedRecords from "./pages/ImportedRecords";
 import Tables from "./pages/Tables";
 import TMWEEmailDashboard from "./pages/TMWEEmailDashboard";
 import TMWEAuthCallbackIntegrated from "./pages/TMWEAuthCallbackIntegrated";
@@ -269,6 +270,11 @@ const App = () => {
             <Route path="/record-importati" element={
               <ProtectedRoute>
                 <CRMLayout><RecordImportati /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/imported-records/:importLogId" element={
+              <ProtectedRoute>
+                <CRMLayout><ImportedRecords /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/tables" element={

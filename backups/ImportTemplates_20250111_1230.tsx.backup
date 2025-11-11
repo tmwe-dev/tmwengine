@@ -1689,8 +1689,70 @@ export default function ImportTemplates() {
   };
 
   const loadAllRecords = async (importLog: ImportLog) => {
-    // Naviga alla pagina dedicata per i record importati
-    navigate(`/imported-records/${importLog.id}`);
+    setLoadingAllRecords(true);
+    setSelectedImport(importLog);
+
+    try {
+      console.log('Caricamento tutti i record da imported_contacts per import_log_id:', importLog.id);
+      
+      // Prima ottieni il count totale
+      const { count } = await supabase
+        .from('imported_contacts')
+        .select('*', { count: 'exact', head: true })
+        .eq('import_log_id', importLog.id);
+      
+      console.log('Totale record nel database:', count);
+      
+      // Se ci sono molti record, carica in batch
+      const allRecords = [];
+      const batchSize = 1000;
+      let from = 0;
+      
+      while (from < (count || 0)) {
+        const to = Math.min(from + batchSize - 1, (count || 0) - 1);
+        
+        console.log(`Caricamento batch: ${from}-${to}`);
+        
+        const { data: batchData, error } = await supabase
+          .from('imported_contacts')
+          .select('*')
+          .eq('import_log_id', importLog.id)
+          .order('row_number', { ascending: true })
+          .range(from, to);
+        
+        if (error) {
+          console.error('Errore nel batch', from, to, error);
+          throw error;
+        }
+        
+        if (batchData) {
+          allRecords.push(...batchData);
+          console.log(`Batch caricato: ${batchData.length} record, totale: ${allRecords.length}`);
+        }
+        
+        from += batchSize;
+      }
+      
+      console.log('Record effettivamente caricati:', allRecords.length, 'di', count);
+      
+      setAllRecords(allRecords);
+      setTotalRecords(count || 0);
+      setShowRecordsDialog(true);
+      
+      // Reset filters and pagination
+      setSearchQuery('');
+      setOriginFilter('');
+      setCountryFilter('');
+      setHasNotesFilter(false);
+      setSelectedRecords(new Set());
+      setCurrentPage(0);
+    } catch (error) {
+      console.error('Errore nel caricamento record:', error);
+      toast.error('Errore nel caricamento dei record');
+      setAllRecords([]);
+    } finally {
+      setLoadingAllRecords(false);
+    }
   };
 
   // Mapping sigle paese a nomi completi usando i dati JSON

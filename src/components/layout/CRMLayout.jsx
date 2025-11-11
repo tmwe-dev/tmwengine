@@ -44,7 +44,8 @@ import {
   Bug,
   Download,
   CheckCircle2,
-  Brain
+  Brain,
+  Zap
  } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -385,6 +386,24 @@ const CRMLayout = ({ children }) => {
                       >
                         <Bug className="mr-2 h-4 w-4" />
                         Backend Debugger
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => navigate('/funnemail?view=single-mail')}
+                      >
+                        <Mail className="mr-2 h-4 w-4" />
+                        Single Mail
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => navigate('/single-fast')}
+                      >
+                        <Zap className="mr-2 h-4 w-4" />
+                        Single Fast
                       </Button>
                     </div>
                   </PopoverContent>

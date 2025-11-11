@@ -41,7 +41,7 @@ import { RecordDetailLayout } from '@/components/record-detail/RecordDetailLayou
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { DocumentViewer } from '@/components/email/DocumentViewer';
 import { ImportedContactMobileCard } from '@/components/import/ImportedContactMobileCard';
-import { AttivitaDialog } from '@/components/attivita/AttivitaDialog';
+
 import { AIColumnMapper } from '@/components/import/AIColumnMapper';
 
 interface EmailTemplate {
@@ -207,9 +207,6 @@ export default function ImportTemplates() {
   const [defaultActivityType, setDefaultActivityType] = useState<'chiamata' | 'email' | undefined>(undefined);
   const [selectedContactForActivity, setSelectedContactForActivity] = useState<any>(null);
   
-  // Stati per visualizzare attività esistenti
-  const [showActivitiesDialog, setShowActivitiesDialog] = useState(false);
-  const [viewActivitiesContactId, setViewActivitiesContactId] = useState<string | null>(null);
 
   useEffect(() => {
     loadEmailTemplates();
@@ -3708,8 +3705,7 @@ export default function ImportTemplates() {
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  setViewActivitiesContactId(record.id);
-                                                  setShowActivitiesDialog(true);
+                                                  navigate('/attivita', { state: { filterByContact: record.id } });
                                                 }}
                                                 className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
                                               >
@@ -3858,8 +3854,7 @@ export default function ImportTemplates() {
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                setViewActivitiesContactId(record.id);
-                                                setShowActivitiesDialog(true);
+                                                navigate('/attivita', { state: { filterByContact: record.id } });
                                               }}
                                               className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
                                             >
@@ -4279,18 +4274,6 @@ export default function ImportTemplates() {
         }}
       />
 
-      {/* Dialog per visualizzare attività esistenti del contatto */}
-      <AttivitaDialog
-        open={showActivitiesDialog}
-        onOpenChange={(open) => {
-          setShowActivitiesDialog(open);
-          if (!open) {
-            setViewActivitiesContactId(null);
-          }
-        }}
-        filterByContactId={viewActivitiesContactId}
-        showBackButton={false}
-      />
     </div>
   );
 }

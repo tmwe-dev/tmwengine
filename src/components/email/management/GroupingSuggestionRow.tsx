@@ -4,6 +4,7 @@
  */
 
 import { useState, useRef } from 'react';
+import funEmailMascot from '@/assets/funnemail-mascot.png';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -135,156 +136,166 @@ export const GroupingSuggestionRow = ({
   };
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg hover:border-primary/30 transition-all">
-      {/* Logo + Email + Badge */}
-      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-        <Avatar className="h-14 w-14 border border-border flex-shrink-0">
-          {logoData?.logo_url ? (
-            <AvatarImage src={logoData.logo_url} alt={suggestion.sender_email} />
-          ) : null}
-          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-            {initials}
+    <div className="flex items-start gap-4 p-4 bg-card border border-border rounded-lg hover:border-primary/30 transition-all">
+      {/* COLONNA SINISTRA: Logo + Info Visive */}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        {/* Logo più grande con mascotte fallback */}
+        <Avatar className="h-16 w-16 border-2 border-border flex-shrink-0">
+          <AvatarImage 
+            src={logoData?.logo_url || funEmailMascot} 
+            alt={suggestion.sender_email} 
+          />
+          <AvatarFallback className="bg-primary/10">
+            <img src={funEmailMascot} alt="FunnEmail" className="w-full h-full object-contain p-1" />
           </AvatarFallback>
         </Avatar>
         
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <h4 
-              className="font-medium text-sm flex items-center gap-1.5 truncate cursor-pointer hover:text-primary transition-colors"
-              onClick={() => setShowEmailsDialog(true)}
-              title="Clicca per vedere le email"
-            >
-              <Mail className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate">{suggestion.sender_email}</span>
-            </h4>
-            
-            {countryFlag && (
-              <span className="text-sm flex-shrink-0" title={countryCode || undefined}>
-                {countryFlag}
-              </span>
-            )}
-            
-            {/* Badge conteggio email */}
-            {emailCount !== undefined && emailCount > 0 && (
-              <Badge variant="secondary" className="text-xs bg-info/10 text-info h-5">
-                <Mail className="w-2.5 h-2.5 mr-0.5" />
-                {emailCount}
-              </Badge>
-            )}
+        {/* Bandiera GRANDE */}
+        {countryFlag && (
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-4xl" title={countryCode || undefined}>
+              {countryFlag}
+            </span>
           </div>
+        )}
+        
+        {/* Conteggio Email GRANDE */}
+        {emailCount !== undefined && emailCount > 0 && (
+          <div className="flex flex-col items-center gap-1 px-3 py-2 bg-info/10 rounded-lg border border-info/20">
+            <Mail className="w-5 h-5 text-info" />
+            <span className="text-lg font-bold text-info">{emailCount}</span>
+            <span className="text-[10px] text-info/70 uppercase tracking-wider">Email</span>
+          </div>
+        )}
+      </div>
+
+      {/* COLONNA CENTRALE: Informazioni su 2 righe */}
+      <div className="flex-1 min-w-0 space-y-3">
+        {/* RIGA 1: Email + Badge contestuali */}
+        <div>
+          <h4 
+            className="font-semibold text-base flex items-center gap-2 mb-1.5 cursor-pointer hover:text-primary transition-colors"
+            onClick={() => setShowEmailsDialog(true)}
+            title="Clicca per vedere le email"
+          >
+            <Mail className="w-4 h-4 flex-shrink-0" />
+            <span className="break-all">{suggestion.sender_email}</span>
+          </h4>
           
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {rubricaContact?.meta_client && (
-              <Badge variant="secondary" className="text-xs bg-success/10 text-success border-success/20 h-5">
-                <Building2 className="w-2.5 h-2.5 mr-0.5" />
+              <Badge variant="secondary" className="text-xs bg-success/10 text-success border-success/20">
+                <Building2 className="w-3 h-3 mr-1" />
                 Cliente
               </Badge>
             )}
             
             {rubricaContact && rubricaContact.origine && !rubricaContact.meta_client && (
-              <Badge variant="secondary" className="text-xs bg-info/10 text-info border-info/20 h-5">
-                <Users className="w-2.5 h-2.5 mr-0.5" />
+              <Badge variant="secondary" className="text-xs bg-info/10 text-info border-info/20">
+                <Users className="w-3 h-3 mr-1" />
                 {rubricaContact.origine}
               </Badge>
             )}
             
             {(rubricaContact?.meta_wca || isWCA) && (
-              <Badge variant="secondary" className="text-xs bg-warning/10 text-warning border-warning/20 h-5">
-                <Star className="w-2.5 h-2.5 mr-0.5" />
+              <Badge variant="secondary" className="text-xs bg-warning/10 text-warning border-warning/20">
+                <Star className="w-3 h-3 mr-1" />
                 WCA
               </Badge>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Suggerimento AI Primario */}
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="font-medium text-sm truncate">{primarySuggestion.group_name}</span>
-            {primarySuggestion.group_id === null && (
-              <Badge variant="outline" className="text-xs h-4 px-1">
-                Nuovo
-              </Badge>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">{primarySuggestion.reason}</p>
-        </div>
-        <Badge variant="secondary" className={cn('text-xs font-medium flex-shrink-0', confidenceColor)}>
-          <TrendingUp className="w-3 h-3 mr-0.5" />
-          {confidencePercent}%
-        </Badge>
-      </div>
-
-      {/* Azioni */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-            <Button
-              size="sm"
-              onClick={handleAccept}
-              disabled={disabled || isProcessing}
-              className="h-8 px-3"
-            >
-              {isProcessing ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              ) : (
-                <Check className="w-3.5 h-3.5 mr-1" />
+        {/* RIGA 2: Suggerimento AI + Descrizione completa */}
+        <div className="space-y-2 bg-gradient-to-r from-primary/5 to-transparent p-3 rounded-lg border border-primary/10">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-base">{primarySuggestion.group_name}</span>
+              {primarySuggestion.group_id === null && (
+                <Badge variant="outline" className="text-xs">
+                  Nuovo
+                </Badge>
               )}
-              Accetta
-            </Button>
+            </div>
+            <Badge variant="secondary" className={cn('text-sm font-semibold px-2.5 py-1', confidenceColor)}>
+              <TrendingUp className="w-4 h-4 mr-1.5" />
+              {confidencePercent}%
+            </Badge>
+          </div>
+          
+          {/* Descrizione AI COMPLETA (no truncate) */}
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {primarySuggestion.reason}
+          </p>
+        </div>
+      </div>
+
+      {/* COLONNA DESTRA: Azioni */}
+      <div className="flex flex-col gap-2 flex-shrink-0">
+        <Button
+          size="sm"
+          onClick={handleAccept}
+          disabled={disabled || isProcessing}
+          className="h-9 px-4 whitespace-nowrap"
+        >
+          {isProcessing ? (
+            <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+          ) : (
+            <Check className="w-4 h-4 mr-1.5" />
+          )}
+          Accetta
+        </Button>
 
         {/* Dropdown Gruppi Alternativi */}
-        <div className="flex items-center gap-1.5">
-          <Select value={selectedGroupId} onValueChange={setSelectedGroupId} disabled={disabled}>
-            <SelectTrigger className="h-8 w-[180px] text-xs">
-              <SelectValue placeholder="Oppure scegli..." />
-            </SelectTrigger>
-            <SelectContent>
-              {newGroups.length > 0 && (
-                <>
-                  {newGroups.map(group => (
-                    <SelectItem key={group.id} value={group.id} className="text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <span>{group.icon || '📧'}</span>
-                        <span>{group.nome_gruppo}</span>
-                        <Badge variant="outline" className="text-xs h-4 px-1 ml-1">
-                          Nuovo
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
-                  {existingGroups.length > 0 && (
-                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t">
-                      Gruppi Esistenti
+        <Select value={selectedGroupId} onValueChange={setSelectedGroupId} disabled={disabled}>
+          <SelectTrigger className="h-9 w-[200px] text-xs">
+            <SelectValue placeholder="Oppure scegli..." />
+          </SelectTrigger>
+          <SelectContent>
+            {newGroups.length > 0 && (
+              <>
+                {newGroups.map(group => (
+                  <SelectItem key={group.id} value={group.id} className="text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span>{group.icon || '📧'}</span>
+                      <span>{group.nome_gruppo}</span>
+                      <Badge variant="outline" className="text-xs h-4 px-1 ml-1">
+                        Nuovo
+                      </Badge>
                     </div>
-                  )}
-                </>
-              )}
-              
-              {existingGroups.map(group => (
-                <SelectItem key={group.id} value={group.id} className="text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span>{group.icon || '📧'}</span>
-                    <span>{group.nome_gruppo}</span>
+                  </SelectItem>
+                ))}
+                {existingGroups.length > 0 && (
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t">
+                    Gruppi Esistenti
                   </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                )}
+              </>
+            )}
+            
+            {existingGroups.map(group => (
+              <SelectItem key={group.id} value={group.id} className="text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span>{group.icon || '📧'}</span>
+                  <span>{group.nome_gruppo}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          <Button
-            size="sm"
-            onClick={handleManualAssign}
-            disabled={disabled || !selectedGroupId || isProcessing}
-            variant="secondary"
-            className="h-8 px-3"
-          >
-            {isProcessing ? (
-              <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-            ) : null}
-            Assegna
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          onClick={handleManualAssign}
+          disabled={disabled || !selectedGroupId || isProcessing}
+          variant="secondary"
+          className="h-9 px-4 whitespace-nowrap"
+        >
+          {isProcessing ? (
+            <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+          ) : null}
+          Assegna
+        </Button>
       </div>
       
       {/* Dialog visualizzazione email */}

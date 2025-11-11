@@ -206,6 +206,10 @@ export default function ImportTemplates() {
   const [selectedContactIdForActivities, setSelectedContactIdForActivities] = useState<string | null>(null);
   const [defaultActivityType, setDefaultActivityType] = useState<'chiamata' | 'email' | undefined>(undefined);
   const [selectedContactForActivity, setSelectedContactForActivity] = useState<any>(null);
+  
+  // Stati per visualizzare attività esistenti
+  const [showActivitiesDialog, setShowActivitiesDialog] = useState(false);
+  const [viewActivitiesContactId, setViewActivitiesContactId] = useState<string | null>(null);
 
   useEffect(() => {
     loadEmailTemplates();
@@ -3704,7 +3708,8 @@ export default function ImportTemplates() {
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  navigate('/attivita', { state: { filterByContact: record.id } });
+                                                  setViewActivitiesContactId(record.id);
+                                                  setShowActivitiesDialog(true);
                                                 }}
                                                 className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
                                               >
@@ -4271,6 +4276,19 @@ export default function ImportTemplates() {
           setAliasPreviewData([]);
           setGeneratingAliases(false);
         }}
+      />
+
+      {/* Dialog per visualizzare attività esistenti del contatto */}
+      <AttivitaDialog
+        open={showActivitiesDialog}
+        onOpenChange={(open) => {
+          setShowActivitiesDialog(open);
+          if (!open) {
+            setViewActivitiesContactId(null);
+          }
+        }}
+        filterByContactId={viewActivitiesContactId}
+        showBackButton={false}
       />
     </div>
   );

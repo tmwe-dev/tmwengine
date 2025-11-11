@@ -241,8 +241,27 @@ export const EmailCarousel3D = ({
     camera.position.set(0, 0.3, 13.5);
 
     // Animation loop
+    let frameCount = 0;
     const animate = () => {
       requestAnimationFrame(animate);
+      
+      // Debug: conta mesh visibili ogni 60 frame + dettagli opacity
+      if (frameCount % 60 === 0 && groupRef.current) {
+        groupRef.current.children.forEach((child, idx) => {
+          if (child instanceof THREE.Mesh) {
+            const mat = child.material as THREE.MeshBasicMaterial;
+            console.log(`🚨 Mesh ${idx}: opacity=${mat.opacity}, visible=${child.visible}, map=${!!mat.map}, transparent=${mat.transparent}`);
+          }
+        });
+        const visibleMeshes = groupRef.current.children.filter((child) => {
+          if (!(child instanceof THREE.Mesh)) return false;
+          const mat = child.material as THREE.MeshBasicMaterial;
+          return mat.opacity > 0 && mat.visible !== false;
+        });
+        console.log(`🎬 Frame ${frameCount}: ${visibleMeshes.length}/${groupRef.current.children.length} mesh visibili`);
+      }
+      frameCount++;
+      
       renderer.render(scene, camera);
     };
     animate();

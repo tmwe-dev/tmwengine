@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 interface ImportedContact {
@@ -133,18 +132,12 @@ export function CompactContactCard({
             </div>
           )}
           {(contact.phone || contact.cell) && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="p-1.5 rounded-full bg-green-600/10 transition-colors">
-                    <Phone className="h-4 w-4 text-green-600" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{contact.phone || contact.cell}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div 
+              className="p-1.5 rounded-full cursor-pointer bg-green-600/10 hover:bg-green-600/20 transition-colors"
+              onClick={() => onCreateActivity('chiamata')}
+            >
+              <Phone className="h-4 w-4 text-green-600" />
+            </div>
           )}
         </div>
       </CardContent>

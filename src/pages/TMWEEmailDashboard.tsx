@@ -99,6 +99,12 @@ const EmailDashboard = () => {
     if (isMobile) setShowEmailList(true);
   }, [selectedFolder, isMobile]);
 
+  // ✅ CACHE INVALIDATION: Force refetch when folder changes
+  useEffect(() => {
+    console.log('📂 [FOLDER CHANGE] Invalidating cache for folder:', selectedFolder);
+    queryClient.invalidateQueries({ queryKey: ['messages'] });
+  }, [selectedFolder, queryClient]);
+
   useEffect(() => {
     const intervalId = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: ['messages'] });
@@ -149,13 +155,9 @@ const EmailDashboard = () => {
           <EmailSidebar
             selectedFolder={selectedFolder}
             onFolderSelect={setSelectedFolder}
-            onComposeClick={() => setComposeOpen(true)}
-            onSyncClick={() => setSyncMonitorOpen(true)}
-            onSmartInboxClick={() => setSmartInboxOpen(true)}
-            totalEmailCount={totalEmailCount}
+            onCompose={() => setComposeOpen(true)}
+            onSync={() => setSyncMonitorOpen(true)}
             dbEmailCount={dbEmailCount}
-            missingEmailCount={missingEmailCount}
-            onAIChatClick={openAIChat}
           />
 
           <div className="flex-1 flex flex-col overflow-hidden">
@@ -236,22 +238,16 @@ const EmailDashboard = () => {
                     setSelectedFolder(folder);
                     setSidebarOpen(false);
                   }}
-                  onComposeClick={() => {
+                  onCompose={() => {
                     setComposeOpen(true);
                     setSidebarOpen(false);
                   }}
-                  onSyncClick={() => {
+                  onSync={() => {
                     setSyncMonitorOpen(true);
                     setSidebarOpen(false);
                   }}
-                  onSmartInboxClick={() => {
-                    setSmartInboxOpen(true);
-                    setSidebarOpen(false);
-                  }}
-                  totalEmailCount={totalEmailCount}
                   dbEmailCount={dbEmailCount}
-                  missingEmailCount={missingEmailCount}
-                  onAIChatClick={openAIChat}
+                  onClose={() => setSidebarOpen(false)}
                 />
               </SheetContent>
             </Sheet>
@@ -320,9 +316,13 @@ const EmailDashboard = () => {
       {/* Download Progress Overlay */}
       {isDownloading && (
         <EmailDownloadProgress 
-          folder={selectedFolder}
+          currentFolder={selectedFolder}
           downloadedCount={0}
-          totalCount={totalEmailCount}
+          totalEmails={totalEmailCount || 0}
+          onDownloadComplete={() => {}}
+          onStartDownload={async () => {}}
+          isDownloading={isDownloading}
+          downloadError={null}
         />
       )}
 

@@ -23,6 +23,14 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
   } = useInfiniteQuery({
     queryKey: ['messages', selectedFolder, searchQuery],
     queryFn: async ({ pageParam = 1 }) => {
+      // ✅ LOGGING: Verify folder parameter
+      console.log('🚀 [API CALL] Fetching emails:', {
+        folder: selectedFolder,
+        searchQuery,
+        page: pageParam,
+        timestamp: new Date().toISOString()
+      });
+      
       // ✅ PERFORMANCE BOOST: Use /email_search RPC (RabbitMQ + Elasticsearch)
       if (searchQuery) {
         // Full-text search with Elasticsearch
@@ -56,6 +64,9 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
       return currentPage < totalPages ? currentPage + 1 : undefined;
     },
     initialPageParam: 1,
+    refetchOnMount: 'always',
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
   });
 
   console.log('🔍 messagesData structure:', {

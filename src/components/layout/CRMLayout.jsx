@@ -14,6 +14,7 @@ import { ProfileDialog } from '@/components/tmwe/ProfileDialog';
 import { GlobalCountrySelector } from '@/components/GlobalCountrySelector';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { TokenKeyIndicator } from '@/components/ui/token-key-indicator';
+import { GlobalAIAgentSelector } from '@/components/ai/GlobalAIAgentSelector';
 import { useNavigationGroups } from '@/hooks/useNavigationGroups';
 import funEmailLogo from '@/assets/funnemail-logo.png';
 import funEmailMascot from '@/assets/funnemail-mascot.png';
@@ -394,6 +395,9 @@ const CRMLayout = ({ children }) => {
           
           {/* AI Prompts Inspector */}
           <AIPromptsInspector />
+          
+          {/* Global AI Agent Selector */}
+          {!isMobile && <GlobalAIAgentSelector />}
           
           {/* TMWE Profile Button - only show if user has profile */}
           {userProfile && (

@@ -41,9 +41,9 @@ serve(async (req) => {
       });
     }
 
-    const { operation, filters, context } = await req.json() as AnalysisRequest;
+    const { operation, filters, context, selected_agent = 'gemini' } = await req.json() as AnalysisRequest & { selected_agent?: string };
     
-    console.log(`[fun-email-ai-analysis] Operation: ${operation}`, { filters, context });
+    console.log(`[fun-email-ai-analysis] Operation: ${operation}, Agent: ${selected_agent}`, { filters, context });
 
     let result: any;
 

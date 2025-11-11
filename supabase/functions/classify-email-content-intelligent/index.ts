@@ -13,15 +13,16 @@ serve(async (req) => {
   }
 
   try {
-    // ✅ NUOVO: Accetta email_id (UUID) dal DB locale + additional_instructions
+    // ✅ NUOVO: Accetta email_id (UUID) dal DB locale + additional_instructions + selected_agent
     const { 
       email_id,
       user_email,
       force_category = null,
-      additional_instructions = null
+      additional_instructions = null,
+      selected_agent = 'gemini'  // 🆕 Default: gemini
     } = await req.json();
 
-    console.log('📧 Classificazione Intelligente Email:', { email_id, user_email, force_category });
+    console.log('📧 Classificazione Intelligente Email:', { email_id, user_email, force_category, selected_agent });
 
     if (!email_id || !user_email) {
       return new Response(
@@ -85,17 +86,43 @@ serve(async (req) => {
       }
     }
 
-    // Recupera configurazione AI attiva
-    const { data: aiConfig, error: configError } = await supabase
+    // 🆕 Mappa agent_id → provider
+    const agentToProviderMap: Record<string, string> = {
+      'gpt': 'openai',
+      'gemini': 'google',
+      'claude': 'anthropic'
+    };
+
+    const targetProvider = agentToProviderMap[selected_agent] || 'google';
+    console.log('🤖 Selected agent:', selected_agent, '→ Provider:', targetProvider);
+
+    // Recupera configurazione AI per il provider scelto
+    let aiConfig = null;
+    const { data: configData, error: configError } = await supabase
       .from('config_ai')
       .select('*')
       .eq('attivo', true)
-      .order('provider', { ascending: true })
-      .limit(1)
+      .eq('provider', targetProvider)
       .maybeSingle();
 
+    aiConfig = configData;
+
+    // Fallback a Gemini se provider non disponibile
     if (configError || !aiConfig) {
-      throw new Error('Nessuna configurazione AI attiva trovata');
+      console.warn(`⚠️ Config ${targetProvider} non disponibile, fallback a Gemini`);
+      
+      const { data: fallbackConfig } = await supabase
+        .from('config_ai')
+        .select('*')
+        .eq('attivo', true)
+        .eq('provider', 'google')
+        .maybeSingle();
+      
+      if (!fallbackConfig) {
+        throw new Error('Nessuna configurazione AI disponibile');
+      }
+      
+      aiConfig = fallbackConfig;
     }
 
     console.log('🤖 Using AI config:', { provider: aiConfig.provider, model: aiConfig.modello });

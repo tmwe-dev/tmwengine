@@ -15,6 +15,7 @@ import { BulkActionsBarVertical } from './BulkActionsBarVertical';
 import React from 'react';
 import { ClassifiedEmail, EmailMetadata } from '@/types/smart-inbox';
 import { useSmartClassificationIntelligent } from '@/hooks/useSmartClassificationIntelligent';
+import { useGlobalAIAgent } from '@/hooks/useGlobalAIAgent';
 import { useEmailAIAutomation } from '@/hooks/useEmailAIAutomation';
 import { useEmailAIProcessor } from '@/hooks/useEmailAIProcessor';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
@@ -47,7 +48,7 @@ export const SmartInboxTabIntelligent = ({
   const [selectedEmail, setSelectedEmail] = useState<ClassifiedEmail | null>(null);
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('split');
-  const [selectedAgent, setSelectedAgent] = useState<string>('gemini');
+  const { selectedAgent, setSelectedAgent } = useGlobalAIAgent();  // 🆕 Global AI Agent
   
   // Clean View Mode State
   const [cleanViewMode, setCleanViewMode] = useState(() => {
@@ -387,10 +388,12 @@ export const SmartInboxTabIntelligent = ({
       toast.success(`Trovate ${unclassifiedEmails.length} email da classificare`);
       console.log('🚀 [DEBUG] Avvio classificazione...');
 
-      // ✅ Classifica usando solo gli ID (UUID)
+      // ✅ Classifica usando solo gli ID (UUID) + selected_agent
       await classifyEmails(
         unclassifiedEmails.map(e => e.id),
-        userEmail
+        userEmail,
+        undefined,  // forceCategory
+        selectedAgent  // 🆕 Global AI Agent
       );
 
       // Ricarica lista dopo classificazione
@@ -444,7 +447,12 @@ export const SmartInboxTabIntelligent = ({
       return;
     }
 
-    await classifyEmails(emailIds, userEmail, category);
+    await classifyEmails(
+      emailIds, 
+      userEmail, 
+      category,
+      selectedAgent  // 🆕 Global AI Agent
+    );
     setSelectedEmails(new Set());
     refetch();
   };

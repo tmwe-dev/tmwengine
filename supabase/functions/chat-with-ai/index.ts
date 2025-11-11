@@ -283,8 +283,10 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, systemPrompt, conversationId, images, configId } = await req.json();
+    const { prompt, systemPrompt, conversationId, images, configId, selected_agent = 'gemini' } = await req.json();
     const startTime = Date.now();
+    
+    console.log(`[chat-with-ai] Request - Agent: ${selected_agent}, ConversationId: ${conversationId}`);
     
     // Check if client wants SSE streaming
     const acceptsSSE = req.headers.get('Accept')?.includes('text/event-stream');
@@ -312,7 +314,7 @@ serve(async (req) => {
       }
     }
 
-    // Get AI configuration - either specific config or active one
+    // Get AI configuration - either specific config or use selected agent
     let aiConfig;
     if (configId) {
       const { data, error } = await supabase
@@ -324,16 +326,42 @@ serve(async (req) => {
       if (error) throw new Error('Configurazione AI non trovata');
       aiConfig = data;
     } else {
+      // 🆕 Use selected_agent to determine provider
+      const agentToProviderMap: Record<string, string> = {
+        'gpt': 'openai',
+        'gemini': 'google',
+        'claude': 'anthropic'
+      };
+
+      const targetProvider = agentToProviderMap[selected_agent] || 'google';
+      console.log('🤖 Selected agent:', selected_agent, '→ Provider:', targetProvider);
+
       const { data, error } = await supabase
         .from('config_ai')
         .select('*')
         .eq('attivo', true)
+        .eq('provider', targetProvider)
         .maybeSingle();
       
-      if (error || !data) {
-        throw new Error('Nessuna configurazione AI attiva trovata. Vai su /impostazioni e attiva una configurazione AI.');
-      }
       aiConfig = data;
+
+      // Fallback a Gemini se provider non disponibile
+      if (error || !aiConfig) {
+        console.warn(`⚠️ Config ${targetProvider} non disponibile, fallback a Gemini`);
+        
+        const { data: fallbackConfig } = await supabase
+          .from('config_ai')
+          .select('*')
+          .eq('attivo', true)
+          .eq('provider', 'google')
+          .maybeSingle();
+        
+        if (!fallbackConfig) {
+          throw new Error('Nessuna configurazione AI attiva trovata. Vai su /impostazioni e attiva una configurazione AI.');
+        }
+        
+        aiConfig = fallbackConfig;
+      }
     }
 
     // ✅ Validazione configurazione AI

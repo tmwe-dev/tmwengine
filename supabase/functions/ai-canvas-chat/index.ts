@@ -20,7 +20,8 @@ serve(async (req) => {
       email_uid,
       email_subject,
       email_body,
-      conversation_history 
+      conversation_history,
+      selected_agent = 'gemini'  // 🆕 Default: gemini
     } = await req.json();
 
     if (!message) {
@@ -87,14 +88,40 @@ serve(async (req) => {
     }
 
     // ============================================
-    // STEP 2: Get AI Config
+    // STEP 2: Get AI Config based on selected agent
     // ============================================
-    const { data: aiConfig } = await supabase
+    const agentToProviderMap: Record<string, string> = {
+      'gpt': 'openai',
+      'gemini': 'google',
+      'claude': 'anthropic'
+    };
+
+    const targetProvider = agentToProviderMap[selected_agent] || 'google';
+    console.log('🤖 Selected agent:', selected_agent, '→ Provider:', targetProvider);
+
+    let aiConfig = null;
+    const { data: configData } = await supabase
       .from('config_ai')
       .select('*')
       .eq('attivo', true)
-      .limit(1)
-      .single();
+      .eq('provider', targetProvider)
+      .maybeSingle();
+
+    aiConfig = configData;
+
+    // Fallback to Gemini if provider not available
+    if (!aiConfig) {
+      console.warn(`⚠️ Provider ${targetProvider} non disponibile, fallback a Gemini`);
+      
+      const { data: fallbackConfig } = await supabase
+        .from('config_ai')
+        .select('*')
+        .eq('attivo', true)
+        .eq('provider', 'google')
+        .maybeSingle();
+      
+      aiConfig = fallbackConfig;
+    }
 
     if (!aiConfig) {
       return new Response(
@@ -102,6 +129,8 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('✅ Using AI:', { provider: aiConfig.provider, model: aiConfig.modello });
 
     // ============================================
     // STEP 3: Build System Prompt

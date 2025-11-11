@@ -10,6 +10,7 @@ import { GlobalCallHandler } from "@/components/GlobalCallHandler";
 import { GlobalVideoCallHandler } from "@/components/GlobalVideoCallHandler";
 import { GlobalAICanvasProvider } from "@/contexts/GlobalAICanvasContext";
 import { CRMLayoutProvider } from "@/contexts/CRMLayoutContext";
+import { AIAgentProvider } from "@/contexts/AIAgentContext";
 import '@/i18n/config';
 
 import Auth from "./pages/Auth";
@@ -152,8 +153,9 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TMWEAuthProvider>
         <GlobalAICanvasProvider>
-          <CRMLayoutProvider>
-            <TooltipProvider>
+          <AIAgentProvider>
+            <CRMLayoutProvider>
+              <TooltipProvider>
               <Toaster />
               <Sonner />
               <BrowserRouter>
@@ -440,11 +442,12 @@ const App = () => {
           </Routes>
             </GlobalCallHandler>
           </BrowserRouter>
-        </TooltipProvider>
-          </CRMLayoutProvider>
-      </GlobalAICanvasProvider>
-    </TMWEAuthProvider>
-  </QueryClientProvider>
+            </TooltipProvider>
+            </CRMLayoutProvider>
+          </AIAgentProvider>
+        </GlobalAICanvasProvider>
+      </TMWEAuthProvider>
+    </QueryClientProvider>
   );
 };
 

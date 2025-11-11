@@ -16,8 +16,13 @@ export const useSmartClassificationIntelligent = () => {
     currentEmail: ''
   });
 
-  // ✅ NUOVO: Accetta array di email_id (UUID) invece di EmailMetadata
-  const classifyEmails = async (emailIds: string[], userEmail: string, forceCategory?: string) => {
+  // ✅ NUOVO: Accetta array di email_id (UUID) invece di EmailMetadata + selectedAgent
+  const classifyEmails = async (
+    emailIds: string[], 
+    userEmail: string, 
+    forceCategory?: string,
+    selectedAgent?: string  // 🆕 AI agent ID (default: 'gemini' in edge function)
+  ) => {
     setIsClassifying(true);
     setProgress({ current: 0, total: emailIds.length, currentEmail: '' });
     
@@ -45,14 +50,15 @@ export const useSmartClassificationIntelligent = () => {
 
           console.log('🔵 Starting classification for email_id:', emailId);
 
-          // ✅ Passa solo email_id (UUID) dal DB locale
+          // ✅ Passa email_id (UUID) + selected_agent
           const { data: classifyData, error: classifyError } = await supabase.functions.invoke(
             'classify-email-content-intelligent',
             {
               body: {
-                email_id: emailId,       // ✅ Solo UUID dal DB
+                email_id: emailId,       // ✅ UUID dal DB
                 user_email: userEmail,
-                force_category: forceCategory || null
+                force_category: forceCategory || null,
+                selected_agent: selectedAgent || 'gemini'  // 🆕 AI agent
               }
             }
           );

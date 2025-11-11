@@ -583,29 +583,6 @@ const EmailDashboard = () => {
         onNextEmail={handleNextEmail}
         hasPrevious={hasPreviousEmail()}
         hasNext={hasNextEmail()}
-        onOpenSyncMonitor={() => {
-          console.log('🚀 Opening sync monitor!');
-          setSyncMonitorOpen(true);
-        }}
-        onOpenDirectDownload={() => {
-          toast.info('Usa la pagina Fun Email per scaricare email');
-        }}
-        onOpenSmartInbox={() => {
-          console.log('🧠 Opening Smart Inbox!');
-          setSmartInboxOpen(true);
-        }}
-        downloadProgressComponent={
-          <EmailDownloadProgress
-            totalEmails={globalEmailCount || 0}
-            currentFolder=""
-            totalToDownload={0}
-            onDownloadComplete={() => {}}
-            onStartDownload={handleSync}
-            isDownloading={isDownloading}
-            downloadedCount={downloadedCount}
-            downloadError={null}
-          />
-        }
       />
       
       {/* Email Sync Status Bar */}

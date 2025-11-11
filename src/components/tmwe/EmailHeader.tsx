@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Mail, Menu, Settings2, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight, Brain, Download, CheckCircle, Bug, MailOpen } from 'lucide-react';
+import { Search, Mail, Menu, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 interface EmailHeaderProps {
@@ -24,16 +22,12 @@ interface EmailHeaderProps {
   onNextEmail?: () => void;
   hasPrevious?: boolean;
   hasNext?: boolean;
-  onOpenSyncMonitor?: () => void;
-  onOpenDirectDownload?: () => void;
-  onOpenSmartInbox?: () => void;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext, onOpenSyncMonitor, onOpenDirectDownload, onOpenSmartInbox }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [emailCount, setEmailCount] = useState<number>(0);
   const [syncPopupOpen, setSyncPopupOpen] = useState(false);
-  const navigate = useNavigate();
 
   // Fetch initial count and subscribe to realtime updates
   useEffect(() => {
@@ -112,89 +106,6 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
                   <h1 className="text-sm sm:text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent whitespace-nowrap">
                     {isMobile ? 'Email' : 'TMWE Email'}
                   </h1>
-                </div>
-
-                {/* Sync buttons container */}
-                <div className="flex items-center gap-3">
-                  {/* Analizza button (EmailSyncMonitor) */}
-                  {onOpenSyncMonitor && (
-                    <Button 
-                      onClick={onOpenSyncMonitor}
-                      variant="outline"
-                      size="sm"
-                      title="Verifica stato sincronizzazione"
-                    >
-                      <Settings2 className="h-4 w-4 mr-1" />
-                      {!isMobile && 'Verifica Sync'}
-                    </Button>
-                  )}
-
-                  {/* Download button (Direct API) */}
-                  {onOpenDirectDownload && (
-                    <Button 
-                      onClick={() => {
-                        console.log('📥 Scarica button clicked!');
-                        onOpenDirectDownload();
-                      }}
-                      size="sm"
-                      title="Scarica email via API"
-                    >
-                      <Mail className="h-4 w-4 mr-1" />
-                      {!isMobile && 'Scarica Email'}
-                    </Button>
-                  )}
-
-                  {/* Smart Inbox AI button */}
-                  {onOpenSmartInbox && (
-                    <Button 
-                      onClick={() => {
-                        console.log('🧠 Smart Inbox AI button clicked!');
-                        onOpenSmartInbox();
-                      }}
-                      size="sm"
-                      variant="secondary"
-                      title="Apri Inbox Intelligente"
-                    >
-                      <Brain className="h-4 w-4 mr-1" />
-                      {!isMobile && 'Inbox AI'}
-                    </Button>
-                  )}
-
-                  {/* Tools Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Settings2 className="h-4 w-4 mr-1" />
-                        {!isMobile && 'Tools'}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-background border border-border z-[200] shadow-lg">
-                      {/* Force rebuild - 2025-11-05 07:53 */}
-                      <DropdownMenuItem onClick={() => navigate('/funnemail?view=quick-download')}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Quick Download
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate('/funnemail?view=integrity')}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Verifica Integrità
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate('/funnemail?view=debugger')}>
-                        <Bug className="h-4 w-4 mr-2" />
-                        Backend Debugger
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate('/single-mail')}>
-                        <MailOpen className="h-4 w-4 mr-2" />
-                        Single Mail
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  {/* Progress indicator */}
-                  {downloadProgressComponent && (
-                    <div>
-                      {downloadProgressComponent}
-                    </div>
-                  )}
                 </div>
               </div>
 

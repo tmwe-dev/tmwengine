@@ -26,7 +26,6 @@ import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tansta
 import { supabase } from '@/integrations/supabase/client';
 import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api-integrated';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api'; // ✅ Email Search RPC for ALL read operations
-import { EmailHeader } from '@/components/tmwe/EmailHeader';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
@@ -62,7 +61,6 @@ const EmailDashboard = () => {
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
-  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [syncMonitorOpen, setSyncMonitorOpen] = useState(false);
   const [smartInboxOpen, setSmartInboxOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -111,36 +109,6 @@ const EmailDashboard = () => {
     }
   };
 
-  // Handle back to list on mobile
-  const handleBackToList = () => {
-    setSelectedEmailId(null);
-    setShowEmailList(true);
-  };
-
-  // Navigation between emails
-  const handlePreviousEmail = () => {
-    const currentIndex = emails.findIndex(e => e.id === selectedEmailId);
-    if (currentIndex > 0) {
-      setSelectedEmailId(emails[currentIndex - 1].id);
-    }
-  };
-
-  const handleNextEmail = () => {
-    const currentIndex = emails.findIndex(e => e.id === selectedEmailId);
-    if (currentIndex >= 0 && currentIndex < emails.length - 1) {
-      setSelectedEmailId(emails[currentIndex + 1].id);
-    }
-  };
-
-  const hasPreviousEmail = () => {
-    const currentIndex = emails.findIndex(e => e.id === selectedEmailId);
-    return currentIndex > 0;
-  };
-
-  const hasNextEmail = () => {
-    const currentIndex = emails.findIndex(e => e.id === selectedEmailId);
-    return currentIndex >= 0 && currentIndex < emails.length - 1;
-  };
 
   // Mark email as read
   const handleMarkAsRead = async (emailId: string) => {
@@ -592,22 +560,6 @@ const EmailDashboard = () => {
 
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20">
-      <EmailHeader
-        onSearch={setSearchQuery} 
-        onSync={handleSync}
-        isSyncing={isDownloading}
-        onMenuClick={() => setSidebarOpen(true)}
-        isMobile={isMobile}
-        dbEmailCount={isMobile ? (apiEmailCount || 0) : undefined}
-        isHeaderCollapsed={isHeaderCollapsed}
-        onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-        onCloseEmail={handleBackToList}
-        onPreviousEmail={handlePreviousEmail}
-        onNextEmail={handleNextEmail}
-        hasPrevious={hasPreviousEmail()}
-        hasNext={hasNextEmail()}
-      />
-      
       <div className="flex flex-1 min-w-0 overflow-hidden">
         {/* Desktop Sidebar */}
         {!isMobile && (
@@ -717,15 +669,12 @@ const EmailDashboard = () => {
               onReply={handleReply}
               onReplyAll={handleReplyAll}
               onForward={handleForward}
-              onBack={handleBackToList}
+              onBack={() => {
+                setSelectedEmailId(null);
+                setShowEmailList(true);
+              }}
               isMobile={true}
-              onPrevious={handlePreviousEmail}
-              onNext={handleNextEmail}
-              hasPrevious={hasPreviousEmail()}
-              hasNext={hasNextEmail()}
               onMarkAsRead={handleMarkAsRead}
-              isHeaderCollapsed={isHeaderCollapsed}
-              onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
             />
           </div>
         )}
@@ -756,10 +705,6 @@ const EmailDashboard = () => {
                   onReplyAll={handleReplyAll}
                   onForward={handleForward}
                   onDelete={handleDelete}
-                  onPrevious={handlePreviousEmail}
-                  onNext={handleNextEmail}
-                  hasPrevious={hasPreviousEmail()}
-                  hasNext={hasNextEmail()}
                   onMarkAsRead={handleMarkAsRead}
                 />
               </div>

@@ -143,7 +143,11 @@ export const GroupingSuggestionRow = ({
         <div className="h-16 w-16 bg-white rounded-lg p-2 flex items-center justify-center flex-shrink-0 border border-border/50">
           <img 
             src={
-              (logoData?.source === 'clearbit' || logoData?.source === 'cache') 
+              logoData?.logo_url && 
+              logoData.source !== 'not_found' && 
+              logoData.source !== 'favicon' &&
+              !logoData.logo_url.includes('favicon') &&
+              !logoData.logo_url.includes('google.com')
                 ? logoData.logo_url 
                 : funEmailMascot
             } 

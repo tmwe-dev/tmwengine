@@ -5,7 +5,8 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Settings, Trash2, AlertCircle, ZoomIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
@@ -139,6 +140,51 @@ export function GroupDropZone({
     }
   };
 
+  const handleDeleteGroup = async () => {
+    try {
+      console.log(`🗑️ Eliminazione gruppo: ${group.nome_gruppo}`);
+      
+      // Prima elimina tutte le regole associate
+      const { error: rulesError } = await supabase
+        .from('email_sender_rules')
+        .delete()
+        .eq('group_id', group.id);
+      
+      if (rulesError) {
+        console.error('❌ Errore eliminazione regole:', rulesError);
+        throw rulesError;
+      }
+      
+      // Poi elimina il gruppo
+      const { error: groupError } = await supabase
+        .from('email_sender_groups')
+        .delete()
+        .eq('id', group.id);
+      
+      if (groupError) {
+        console.error('❌ Errore eliminazione gruppo:', groupError);
+        throw groupError;
+      }
+      
+      console.log('✅ Gruppo eliminato con successo');
+      
+      toast({
+        title: '✅ Gruppo eliminato',
+        description: `${group.nome_gruppo} è stato eliminato`,
+      });
+      
+      // Refresh della lista gruppi
+      onRefresh();
+    } catch (error: any) {
+      console.error('❌ Errore eliminazione gruppo:', error);
+      toast({
+        title: '❌ Errore',
+        description: error.message || 'Impossibile eliminare il gruppo',
+        variant: 'destructive',
+      });
+    }
+  };
+
   function funEmailExtractCompanyName(email: string): string {
     const match = email.match(/@([^.]+)\./);
     if (!match) return email;
@@ -238,6 +284,37 @@ export function GroupDropZone({
                   <Settings className="h-4 w-4" />
                 </Button>
               )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Eliminare gruppo?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Sei sicuro di voler eliminare il gruppo <strong>{group.nome_gruppo}</strong>?
+                      {rules.length > 0 && (
+                        <span className="block mt-2 text-destructive font-medium">
+                          Attenzione: verranno eliminate anche {rules.length} associazioni con mittenti.
+                        </span>
+                      )}
+                      Questa azione non può essere annullata.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annulla</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteGroup} className="bg-destructive hover:bg-destructive/90">
+                      Elimina
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </CardHeader>

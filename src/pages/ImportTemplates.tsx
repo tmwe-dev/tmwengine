@@ -3858,7 +3858,8 @@ export default function ImportTemplates() {
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                navigate('/attivita', { state: { filterByContact: record.id } });
+                                                setViewActivitiesContactId(record.id);
+                                                setShowActivitiesDialog(true);
                                               }}
                                               className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
                                             >

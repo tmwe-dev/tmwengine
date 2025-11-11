@@ -140,7 +140,7 @@ export const GroupingSuggestionRow = ({
       {/* COLONNA SINISTRA: Logo + Info Visive */}
       <div className="flex items-center gap-3 flex-shrink-0">
         {/* Logo con sfondo bianco */}
-        <div className="h-16 w-16 bg-white rounded-lg p-2 flex items-center justify-center flex-shrink-0">
+        <div className="h-16 w-16 bg-white rounded-lg p-2 flex items-center justify-center flex-shrink-0 border border-border/50">
           <img 
             src={logoData?.logo_url || funEmailMascot} 
             alt={suggestion.sender_email}

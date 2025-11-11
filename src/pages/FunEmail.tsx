@@ -334,7 +334,7 @@ const FunEmail = () => {
               </div>
             </div>
           ) : currentView === 'management' ? (
-            <GradientBackground variant="primary" intensity="medium" className="fixed inset-0 top-[8rem] bottom-0 left-0 right-0 overflow-hidden">
+            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
               <EmailManagementTab onOpenAISidebar={openAISidebarForSender} />
             </GradientBackground>
           ) : currentView === 'suggestions' ? (

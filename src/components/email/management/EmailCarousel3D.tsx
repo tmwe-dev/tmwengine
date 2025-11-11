@@ -360,58 +360,68 @@ export const EmailCarousel3D = ({
         return;
       }
 
-      console.log(`🎡 Creazione carosello con ${MAX_SLOTS} slot invisibili (geometria fissa)`);
+      console.log(`🎡 Creazione/Aggiornamento carosello con ${MAX_SLOTS} slot`);
+      
+      // ✅ SOLUZIONE: Reset cache quando assignedSenders cambia per permettere ri-rendering texture
+      if (hasInitializedSlotsRef.current) {
+        console.log('🔄 assignedSenders cambiato, reset cache per update texture');
+        renderedCategoriesRef.current.clear();
+      }
       
       const group = groupRef.current;
       const radius = 7.8;
       const angleStep = (Math.PI * 2) / MAX_SLOTS;
       
-      // Rimuovi vecchi slot se esistono
-      meshesRef.current.forEach((mesh) => {
-        if (mesh.material) {
-          const mat = mesh.material as THREE.MeshBasicMaterial;
-          if (mat.map) mat.map.dispose();
-          mat.dispose();
-        }
-        mesh.geometry.dispose();
-      });
-      meshesRef.current.clear();
-      group.children.length = 0;
-      
-      for (let i = 0; i < MAX_SLOTS; i++) {
-        const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
-        const geometry = new THREE.PlaneGeometry(4.83 * scaleFactor, 7.04 * scaleFactor);
-        const material = new THREE.MeshBasicMaterial({
-          side: THREE.DoubleSide, 
-          transparent: true,
-          opacity: 0
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-
-        const angle = -(i * angleStep) + Math.PI;
-      mesh.position.set(
-        Math.cos(angle) * radius, 
-        0.82,
-        Math.sin(angle) * radius
-      );
-        mesh.lookAt(new THREE.Vector3(0, 0, 0));
+      // Creazione slot solo se non inizializzati (geometria fissa)
+      if (!hasInitializedSlotsRef.current) {
+        console.log('🏗️ Prima inizializzazione: creazione geometrie slot...');
         
-        group.add(mesh);
-        meshesRef.current.set(`slot_${i}`, mesh);
-        console.log(`  📍 Slot ${i} creato a posizione:`, mesh.position.toArray());
-      }
-      
-      hasInitializedSlotsRef.current = true;
-      renderedCategoriesRef.current.clear();
-      console.log(`✅ Carosello creato, meshesRef.size: ${meshesRef.current.size}`);
-      console.log(`✅ groupRef.current.children.length: ${groupRef.current.children.length}`);
+        // Rimuovi vecchi slot se esistono
+        meshesRef.current.forEach((mesh) => {
+          if (mesh.material) {
+            const mat = mesh.material as THREE.MeshBasicMaterial;
+            if (mat.map) mat.map.dispose();
+            mat.dispose();
+          }
+          mesh.geometry.dispose();
+        });
+        meshesRef.current.clear();
+        group.children.length = 0;
+        
+        for (let i = 0; i < MAX_SLOTS; i++) {
+          const scaleFactor = Math.min(window.innerWidth / 1200, 2.0);
+          const geometry = new THREE.PlaneGeometry(4.83 * scaleFactor, 7.04 * scaleFactor);
+          const material = new THREE.MeshBasicMaterial({
+            side: THREE.DoubleSide, 
+            transparent: true,
+            opacity: 0
+          });
+          const mesh = new THREE.Mesh(geometry, material);
 
-      // 🔥 POPOLAZIONE IMMEDIATA (come RadioCarousel3D)
-      console.log(`📝 Tentativo di riempire ${categories.length} categorie, meshesRef.size: ${meshesRef.current.size}`);
+          const angle = -(i * angleStep) + Math.PI;
+        mesh.position.set(
+          Math.cos(angle) * radius, 
+          0.82,
+          Math.sin(angle) * radius
+        );
+          mesh.lookAt(new THREE.Vector3(0, 0, 0));
+          
+          group.add(mesh);
+          meshesRef.current.set(`slot_${i}`, mesh);
+          console.log(`  📍 Slot ${i} creato a posizione:`, mesh.position.toArray());
+        }
+        
+        hasInitializedSlotsRef.current = true;
+        console.log(`✅ Carosello creato, meshesRef.size: ${meshesRef.current.size}`);
+        console.log(`✅ groupRef.current.children.length: ${groupRef.current.children.length}`);
+      }
+
+      // 🔥 POPOLAZIONE/AGGIORNAMENTO TEXTURE (sempre eseguito quando assignedSenders cambia)
+      console.log(`📝 Aggiornamento texture per ${categories.length} categorie, meshesRef.size: ${meshesRef.current.size}`);
 
       categories.forEach((category, i) => {
         if (renderedCategoriesRef.current.has(category.id)) {
-          console.log(`  ⏭️ Categoria ${category.id} già renderizzata, skip`);
+          console.log(`  ⏭️ Categoria ${category.id} già renderizzata in questo ciclo, skip`);
           return;
         }
         

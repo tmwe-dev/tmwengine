@@ -1,0 +1,85 @@
+import { useEffect, useRef } from 'react';
+import * as THREE from 'three';
+import { gsap } from 'gsap';
+import type { EmailSenderGroup, SenderAnalysis } from '@/types/email-management';
+
+interface EmailCarousel3DProps {
+  categories: EmailSenderGroup[];
+  assignedSenders: Map<string, SenderAnalysis[]>;
+  activeCategoryId: string;
+  zoom?: number;
+  verticalOffset?: number;
+}
+
+// createTextTexture ora è definito DENTRO il componente come createTextTextureInternal per accedere ad assignedSenders via closure
+
+const createEmptyTexture = (): THREE.CanvasTexture => {
+  const canvas = document.createElement('canvas');
+  const DPR = window.devicePixelRatio || 2;
+  const W = 800;
+  const H = 1100;
+  
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  const ctx = canvas.getContext('2d')!;
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  
+  return texture;
+};
+
+export const EmailCarousel3D = ({
+  categories, 
+  assignedSenders,
+  activeCategoryId,
+  zoom = 1.0,
+  verticalOffset = 0
+}: EmailCarousel3DProps) => {
+  const MAX_SLOTS = 8; // Numero massimo di pagine nel carosello
+  
+  // createTextTexture deve stare DENTRO il componente per accedere ad assignedSenders via closure
+  const createTextTextureInternal = (category: EmailSenderGroup, renderer?: THREE.WebGLRenderer): THREE.CanvasTexture => {
+    // Recupera i senders dalla Map tramite closure
+    const senders = assignedSenders.get(category.id) || [];
+    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+
+    const DPR = window.devicePixelRatio || 2;
+
+    // Misure reali ad alta risoluzione (PIÙ PICCOLE = PIÙ NITIDE)
+    const W = 800;
+    const H = 1100;
+
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    ctx.scale(DPR, DPR); // Fondamentale per font nitidi
+
+    // ... resto del codice texture ...
+    
+    return texture;
+  };
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const groupRef = useRef<THREE.Group | null>(null);
+  const meshesRef = useRef<Map<string, THREE.Mesh>>(new Map());
+  const renderedCategoriesRef = useRef<Set<string>>(new Set());
+  const hasInitializedSlotsRef = useRef(false);
+
+  // ... resto del codice componente ...
+
+  return (
+    <div 
+      ref={containerRef} 
+      className="w-full h-full overflow-visible"
+      style={{ position: 'relative' }}
+    />
+  );
+};

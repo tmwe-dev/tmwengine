@@ -61,6 +61,7 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
           .select('*', { count: 'exact' })
           .eq('user_email', profile.tmwe_email)
           .eq('cartella', selectedFolder)
+          .eq('sync_status', 'fun_email_backup')
           .order('data_ricezione', { ascending: false })
           .range((pageParam - 1) * 30, pageParam * 30 - 1);
         

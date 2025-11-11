@@ -2639,7 +2639,7 @@ export default function ImportTemplates() {
           setHasNotesFilter(false);
         }
       }}>
-        <DialogContent className="w-full max-w-7xl h-[90vh] sm:h-[92vh] md:h-[95vh] flex flex-col p-4 sm:p-6">
+        <DialogContent className="w-full max-w-7xl h-[90vh] sm:h-[92vh] md:h-[95vh] flex flex-col overflow-hidden p-4 sm:p-6">
           <DialogHeader>
             {isMobile ? (
               /* Mobile Header - Compact */
@@ -3563,8 +3563,8 @@ export default function ImportTemplates() {
                   </div>
                 ) : (
                   /* Desktop View - Table with ScrollArea */
-            <ScrollArea className="flex-1 border rounded-md h-full">
-              <div className="min-w-max">
+                  <ScrollArea className="flex-1 border rounded-md">
+                    <div className="min-w-[1400px]">
                       <Table>
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                         <TableRow>

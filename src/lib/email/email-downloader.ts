@@ -76,8 +76,8 @@ export async function downloadSingleEmail(
   const uid_str = String(uid);
   
   try {
-    // 1. Verifica se già esiste
-    const exists = await checkEmailExists(message_id);
+    // 1. Verifica se già esiste per questo utente
+    const exists = await checkEmailExists(message_id, user_email);
     if (exists) {
       console.log(`[downloadSingleEmail] UID ${uid} already exists, skipping`);
       return false;

@@ -8,13 +8,17 @@ import { supabase } from '@/integrations/supabase/client';
 import type { NormalizedEmail } from './email-mapper';
 
 /**
- * Verifica se un'email esiste già nel database
+ * Verifica se un'email esiste già nel database per un utente specifico
  */
-export async function checkEmailExists(message_id: string): Promise<boolean> {
+export async function checkEmailExists(
+  message_id: string,
+  user_email: string
+): Promise<boolean> {
   const { data } = await supabase
     .from('email_messages')
     .select('id')
     .eq('message_id', message_id)
+    .eq('user_email', user_email)
     .maybeSingle();
   
   return Boolean(data);

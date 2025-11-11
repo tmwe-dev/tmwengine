@@ -28,8 +28,8 @@ export async function importEmailFromTempIndex(
 ): Promise<void> {
   const messageId = `${folder}/${uid}`;
   
-  // 1. Check duplicato (usa email-repository.ts)
-  const exists = await checkEmailExists(messageId);
+  // 1. Check duplicato per questo utente (usa email-repository.ts)
+  const exists = await checkEmailExists(messageId, userEmail);
   
   if (exists) {
     console.warn(`⚠️ Email ${uid} già presente, skip import`);

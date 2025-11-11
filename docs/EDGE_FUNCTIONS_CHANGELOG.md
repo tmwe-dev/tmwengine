@@ -9,6 +9,204 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-30] - Rendere AI Più Conservativo nella Creazione Gruppi
+
+### File Modificato
+- **Function:** `supabase/functions/suggest-sender-grouping/index.ts`
+- **Backup Creato:** `index-old3.ts`
+
+### Motivo Modifica
+
+**Problema:** L'AI creava troppi gruppi dettagliati e specifici invece di usare gruppi generici esistenti.
+
+**Esempi di errore:**
+- ❌ Creava "Logistica Partner", "Logistica Nuovi", "Logistica Cina", "Logistica Estera"
+- ❌ Creava "Spedizionieri Express", "Spedizionieri Internazionali"
+- ✅ **Dovrebbe usare:** Gruppo generico "LOGISTICA" esistente
+
+**Impatto:**
+- Database inquinato con decine di gruppi ridondanti
+- Difficoltà nell'organizzazione email
+- Utente costretto a gestire troppi gruppi simili
+- Knowledge Base frammentata
+
+### Modifiche Apportate
+
+#### 1. Prompt Più Aggressivo (Lines 155-182)
+
+**Aggiunte regole CRITICAL con esempi espliciti:**
+
+```typescript
+6. 🔢 SUGGERIMENTI (CRITICAL RULES):
+   - 🚨 PRIORITÀ ASSOLUTA: Usa SEMPRE gruppi esistenti generici
+   - ✅ ACCETTABILE: "Logistica Cina" → gruppo "LOGISTICA" (generico)
+   - ❌ VIETATO: Creare "Logistica Cina" se esiste già "LOGISTICA"
+   
+   📋 GERARCHIA DECISIONALE:
+   1️⃣ Trova gruppo generico esistente
+   2️⃣ Se confidence > 0.70, assegna a gruppo generico
+   3️⃣ Se confidence < 0.70, proponi gruppo generico come seconda scelta
+   4️⃣ Suggerisci nuovo gruppo SOLO se:
+      - Nessun gruppo esistente copre minimamente la categoria
+      - Confidence per nuovo gruppo > 0.80
+      - Esempi validi: primo "CLIENTE" mai visto
+   
+   💡 PRINCIPIO GUIDA: "Quando in dubbio, usa il gruppo più GENERICO esistente"
+```
+
+**Benefici:**
+- Regole esplicite con esempi di cosa NON fare
+- Gerarchia decisionale in 4 step
+- Threshold confidence alto (0.80) per nuovi gruppi
+
+#### 2. Post-Processing Filtraggio (Lines 395-443)
+
+**Aggiunto filtro automatico dopo risposta AI:**
+
+```typescript
+// 🛡️ POST-PROCESSING: Filtra suggerimenti troppo specifici
+suggestions = suggestions.filter(sugg => {
+  if (sugg.group_id === null) { // Nuovo gruppo proposto
+    const suggNameLower = sugg.group_name.toLowerCase();
+    const genericKeywords = ['logistica', 'cliente', 'fornitore', 'partner', 'operativo', 'commerciale', 'autorità'];
+    
+    // Blocca se esiste già gruppo generico con keyword
+    for (const keyword of genericKeywords) {
+      if (suggNameLower.includes(keyword)) {
+        const existingGeneric = body.existing_groups.find(g => 
+          g.nome_gruppo.toLowerCase().includes(keyword)
+        );
+        if (existingGeneric) {
+          console.log(`⚠️ BLOCKED: "${sugg.group_name}" → esiste già "${existingGeneric.nome_gruppo}"`);
+          return false;
+        }
+      }
+    }
+    
+    // Blocca se confidence < 0.80
+    if (sugg.confidence < 0.80) {
+      console.log(`⚠️ BLOCKED: confidence troppo bassa (${sugg.confidence})`);
+      return false;
+    }
+  }
+  return true;
+});
+
+// Se tutti i suggerimenti filtrati, ritorna errore
+if (suggestions.length === 0) {
+  return new Response(
+    JSON.stringify({ 
+      error: 'AI suggestions were too specific. Please create groups manually.',
+      hint: 'L\'AI ha proposto gruppi troppo dettagliati. Usa i gruppi esistenti.'
+    }),
+    { status: 400 }
+  );
+}
+```
+
+**Benefici:**
+- Blocco keyword-based: "Logistica X" bloccato se esiste "LOGISTICA"
+- Threshold confidence: < 0.80 → bloccato
+- Fallback sicuro: Se tutti bloccati → errore 400 con hint
+- Logging dettagliato per debugging
+
+### Comportamento Atteso
+
+**Prima del fix:**
+```
+Mittente: logistics@partner-cina.com
+  ↓
+AI crea: "Logistica Partner Cina" (nuovo gruppo)
+  ↓
+❌ Database: +1 gruppo ridondante
+```
+
+**Dopo il fix:**
+```
+Mittente: logistics@partner-cina.com
+  ↓
+AI propone: "Logistica Partner Cina" (confidence 0.75)
+  ↓
+POST-PROCESSING: ⚠️ BLOCKED (esiste già "LOGISTICA" generico)
+  ↓
+AI fallback: Assegna a gruppo esistente "LOGISTICA"
+  ↓
+✅ Database: Nessun nuovo gruppo, usa quello esistente
+```
+
+**Console logs attesi:**
+```
+🔍 Pre-filtering suggestions: 2
+⚠️ BLOCKED: "Logistica Partner Nuovo" → esiste già "LOGISTICA"
+✅ Post-filtering suggestions: 1
+✅ Suggestions saved: [{ group_id: "abc123", group_name: "LOGISTICA", confidence: 0.75 }]
+```
+
+### Vantaggi
+
+✅ **Meno gruppi ridondanti**: Riusa gruppi esistenti  
+✅ **Knowledge Base pulita**: Pattern concentrati in pochi gruppi generici  
+✅ **Doppia protezione**: Prompt + post-processing  
+✅ **Threshold alto**: Nuovi gruppi solo se confidence > 0.80  
+✅ **Logging dettagliato**: Visibilità su cosa viene bloccato  
+
+### Testing
+
+#### Test 1: Mittente Logistica Specifico
+```bash
+1. Mittente: logistics@partner-cina.com
+2. Gruppo esistente: "LOGISTICA"
+3. Eseguire suggest-sender-grouping
+4. Verificare:
+   ✅ AI propone gruppo "LOGISTICA" esistente
+   ✅ NON crea "Logistica Partner Cina"
+   ✅ Log: "⚠️ BLOCKED: ..." (se AI prova a creare)
+```
+
+#### Test 2: Categoria Completamente Nuova
+```bash
+1. Mittente: autorità@dogana.gov.it
+2. Nessun gruppo esistente per "Autorità"
+3. Eseguire suggest-sender-grouping
+4. Verificare:
+   ✅ AI crea nuovo gruppo "AUTORITÀ" generico
+   ✅ Confidence > 0.80
+   ✅ Log: "✅ Post-filtering suggestions: 1"
+```
+
+#### Test 3: Confidence Bassa
+```bash
+1. Mittente ambiguo: info@generic.com
+2. AI propone nuovo gruppo con confidence 0.65
+3. Verificare:
+   ✅ Suggerimento bloccato (confidence < 0.80)
+   ✅ Log: "⚠️ BLOCKED: confidence troppo bassa (0.65)"
+   ✅ AI fallback su gruppo esistente
+```
+
+### Rollback Plan
+
+```bash
+cp supabase/functions/suggest-sender-grouping/index-old2.ts \
+   supabase/functions/suggest-sender-grouping/index.ts
+```
+
+### Note Tecniche
+
+- ✅ Prompt modificato: Lines 155-182
+- ✅ Post-processing aggiunto: Lines 395-443
+- ✅ Compatibile con esistente: Nessun breaking change
+- ✅ Generic keywords: logistica, cliente, fornitore, partner, operativo, commerciale, autorità
+
+### Note di Sicurezza
+
+- ✅ Nessuna modifica RLS policies
+- ✅ Nessuna modifica DB schema
+- ✅ Solo logica AI più conservativa
+- ✅ Backward compatible
+
+---
+
 ## [2025-01-29] - Mapping Compatibilità folder → folder_name
 
 ### File Modificato

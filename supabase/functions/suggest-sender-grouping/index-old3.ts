@@ -152,32 +152,10 @@ REGOLE DI ANALISI:
    - 0.60-0.85: Indicatori parziali ma non definitivi
    - <0.60: Incerto, servono più dati
 
-6. 🔢 SUGGERIMENTI (CRITICAL RULES):
+6. 🔢 SUGGERIMENTI:
    - Proponi MASSIMO 3 suggerimenti, ordinati per rilevanza
-   - 🚨 PRIORITÀ ASSOLUTA: Usa SEMPRE gruppi esistenti generici
-   - ✅ ACCETTABILE: "Logistica Cina" → gruppo "LOGISTICA" (generico)
-   - ✅ ACCETTABILE: "Partner Nuovo" → gruppo "PARTNER" (generico)
-   - ❌ VIETATO: Creare "Logistica Cina" se esiste già "LOGISTICA"
-   - ❌ VIETATO: Creare "Partner Nuovo" se esiste già "PARTNER"
-   - ❌ VIETATO: Creare "Spedizionieri Esteri" se esiste già "FORNITORI" o "LOGISTICA"
-   
-   📋 GERARCHIA DECISIONALE:
-   1️⃣ Trova gruppo generico esistente che copre la categoria (es. LOGISTICA, CLIENTI, FORNITORI)
-   2️⃣ Se confidence > 0.70, assegna a quel gruppo generico
-   3️⃣ Se confidence < 0.70, proponi gruppo generico come seconda scelta
-   4️⃣ Suggerisci nuovo gruppo SOLO se:
-      - Nessun gruppo esistente copre minimamente la categoria
-      - Il mittente rappresenta una categoria completamente nuova
-      - Confidence per nuovo gruppo > 0.80
-      - Esempi validi: primo "CLIENTE" mai visto, primo "AUTORITÀ" mai vista
-   
-   ⚠️ ESEMPI DI ERRORI DA EVITARE:
-   - NON creare "Logistica Partner" se esiste "LOGISTICA" o "PARTNER"
-   - NON creare "Clienti Esteri" se esiste "CLIENTI"
-   - NON creare "Fornitori Cinesi" se esiste "FORNITORI" o "LOGISTICA"
-   - NON creare "Spedizionieri Express" se esiste "FORNITORI"
-   
-   💡 PRINCIPIO GUIDA: "Quando in dubbio, usa il gruppo più GENERICO esistente"
+   - Preferisci SEMPRE gruppi esistenti quando appropriati
+   - Suggerisci nuovo gruppo SOLO se NESSUNO dei ${body.existing_groups.length}+ esistenti calza
 
 7. 📋 FORMATO RISPOSTA:
    - group_id: ID del gruppo esistente (o null per nuovo gruppo)
@@ -391,56 +369,6 @@ Suggerisci i gruppi più appropriati basandoti sulla NATURA DEL MITTENTE (non su
     }
 
     console.log('✅ Extracted suggestions:', suggestions);
-
-    // 🛡️ POST-PROCESSING: Filtra suggerimenti troppo specifici
-    console.log('🔍 Pre-filtering suggestions:', suggestions.length);
-
-    suggestions = suggestions.filter(sugg => {
-      // Se suggerisce nuovo gruppo (group_id === null)
-      if (sugg.group_id === null) {
-        // Verifica se esiste già un gruppo "generico" che copre questa categoria
-        const suggNameLower = sugg.group_name.toLowerCase();
-        
-        // Lista gruppi generici da verificare
-        const genericKeywords = ['logistica', 'cliente', 'fornitore', 'partner', 'operativo', 'commerciale', 'autorità'];
-        
-        for (const keyword of genericKeywords) {
-          // Se il nuovo gruppo contiene una keyword generica
-          if (suggNameLower.includes(keyword)) {
-            // Cerca se esiste già un gruppo con quella keyword
-            const existingGeneric = body.existing_groups.find(g => 
-              g.nome_gruppo.toLowerCase().includes(keyword)
-            );
-            
-            if (existingGeneric) {
-              console.log(`⚠️ BLOCKED: "${sugg.group_name}" → esiste già "${existingGeneric.nome_gruppo}"`);
-              return false; // Blocca questo suggerimento
-            }
-          }
-        }
-        
-        // Se confidence per nuovo gruppo < 0.80, bloccalo
-        if (sugg.confidence < 0.80) {
-          console.log(`⚠️ BLOCKED: "${sugg.group_name}" → confidence troppo bassa (${sugg.confidence})`);
-          return false;
-        }
-      }
-      
-      return true; // Mantieni suggerimento
-    });
-
-    console.log('✅ Post-filtering suggestions:', suggestions.length);
-
-    if (suggestions.length === 0) {
-      console.error('❌ All suggestions filtered out as too specific');
-      return new Response(
-        JSON.stringify({ 
-          error: 'AI suggestions were too specific. Please create groups manually or use existing generic groups.',
-          hint: 'L\'AI ha proposto gruppi troppo dettagliati. Usa i gruppi esistenti.'
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // Check for existing suggestion (anti-duplicate)
     const { data: existing, error: checkError } = await supabase

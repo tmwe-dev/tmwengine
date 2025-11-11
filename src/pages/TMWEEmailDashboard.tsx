@@ -36,7 +36,7 @@ import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { EmailSyncMonitor } from '@/components/email/EmailSyncMonitor';
-import { EmailSyncStatus } from '@/components/tmwe/EmailSyncStatus';
+
 import { SmartInboxDialog } from '@/components/email/smart-inbox/SmartInboxDialog';
 import { useEmailSync } from '@/lib/email-sync';
 import { Button } from '@/components/ui/button';
@@ -584,15 +584,6 @@ const EmailDashboard = () => {
         hasPrevious={hasPreviousEmail()}
         hasNext={hasNextEmail()}
       />
-      
-      {/* Email Sync Status Bar */}
-      <div className="px-4 py-2 border-b bg-background/50">
-        <EmailSyncStatus 
-          selectedFolder={selectedFolder}
-          onStartSync={handleSync}
-          isDownloading={isDownloading}
-        />
-      </div>
       
       <div className="flex flex-1 min-w-0 overflow-hidden">
         {/* Desktop Sidebar */}

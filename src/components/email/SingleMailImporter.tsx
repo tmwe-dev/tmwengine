@@ -361,12 +361,13 @@ export function SingleMailImporter() {
     }
   };
 
-  // ✅ Funzione helper per verificare se email esiste già
-  const checkEmailExists = async (messageId: string): Promise<boolean> => {
+  // ✅ Funzione helper per verificare se email esiste già per questo utente
+  const checkEmailExists = async (messageId: string, userEmail: string): Promise<boolean> => {
     const { data, error } = await supabase
       .from('email_messages')
       .select('id')
       .eq('message_id', messageId)
+      .eq('user_email', userEmail)
       .maybeSingle();
     
     if (error) {
@@ -383,9 +384,9 @@ export function SingleMailImporter() {
     
     setImportingUid(uid);
     try {
-      // ✅ Controllo se email già esiste
+      // ✅ Controllo se email già esiste per questo utente
       const messageId = `${folder}/${uid}`;
-      const exists = await checkEmailExists(messageId);
+      const exists = await checkEmailExists(messageId, userEmail);
 
       if (exists) {
         log(`⚠️ Email ${uid} già presente nel database, skip import`);
@@ -457,9 +458,9 @@ export function SingleMailImporter() {
         
         const results = await Promise.allSettled(
           batch.map(async (uid) => {
-            // ✅ CONTROLLO DUPLICATO
+            // ✅ CONTROLLO DUPLICATO PER QUESTO UTENTE
             const messageId = `${selectedFolder}/${uid}`;
-            const exists = await checkEmailExists(messageId);
+            const exists = await checkEmailExists(messageId, userEmail);
             
             if (exists) {
               log(`⚠️ [SingleMailImporter] Email ${uid} già presente, skip`);

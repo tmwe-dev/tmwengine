@@ -126,13 +126,14 @@ export function EmailGroupingSuggestionsTab() {
       const { data: groupsData, error: groupsError } = await supabase
         .from('email_sender_groups')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
       if (groupsError) throw groupsError;
       setGroups(groupsData || []);
 
       // Analizza mittenti
-      const analysis = await analyzeSenders(profile.tmwe_email);
+      const analysis = await analyzeSenders(profile.tmwe_email, user.id);
       const unclassified = analysis.filter(s => !s.isClassified);
       setSenders(unclassified);
 

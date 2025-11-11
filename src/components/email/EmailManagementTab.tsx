@@ -195,7 +195,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
             .single();
           
           if (profile?.tmwe_email) {
-            const analysis = await analyzeSenders(profile.tmwe_email);
+            const analysis = await analyzeSenders(profile.tmwe_email, user.id);
             const sender = analysis.find(s => s.email === rule.sender_email);
             
             if (sender) {
@@ -244,6 +244,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       const { data: groupsData, error: groupsError } = await supabase
         .from('email_sender_groups')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
       if (groupsError) throw groupsError;
@@ -261,7 +262,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         setActiveCategoryId(groupsData[0].id);
       }
 
-      const analysis = await analyzeSenders(profile.tmwe_email);
+      const analysis = await analyzeSenders(profile.tmwe_email, user.id);
       
       console.log(`📊 Total senders analyzed: ${analysis.length}`);
       console.log(`✅ Classified senders: ${analysis.filter(s => s.isClassified).length}`);

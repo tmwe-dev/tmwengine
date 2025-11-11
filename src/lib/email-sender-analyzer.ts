@@ -42,7 +42,10 @@ export function extractDomain(email: string): string {
 /**
  * Analizza tutti i mittenti nel DB per l'utente
  */
-export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[]> {
+export async function analyzeSenders(
+  userEmail: string,
+  userId: string
+): Promise<SenderAnalysis[]> {
   console.log('🔍 Analisi mittenti per:', userEmail);
   
   try {
@@ -112,7 +115,8 @@ export async function analyzeSenders(userEmail: string): Promise<SenderAnalysis[
     
     const { data: rules, error: rulesError } = await supabase
       .from('email_sender_rules')
-      .select('sender_email, group_id, email_sender_groups(*)');
+      .select('sender_email, group_id, email_sender_groups(*)')
+      .eq('user_id', userId);
     
     if (rulesError) console.warn('Warn loading rules:', rulesError);
     

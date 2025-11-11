@@ -50,7 +50,7 @@ export const mapApiEmailToComponent = (msg: any) => {
     subject: msg.subject || '(No Subject)',
     from: fromAddress,
     preview: preview,
-    date: msg.date ? new Date(msg.date).toISOString() : new Date().toISOString(),
+    date: msg.data_ricezione || msg.date ? new Date(msg.data_ricezione || msg.date).toISOString() : new Date().toISOString(),
     read: msg.is_read === true || msg.seen === 1 || msg.read === true,
     starred: msg.is_flagged === true || msg.flagged === 1 || msg.starred === true,
     hasAttachments: !!(

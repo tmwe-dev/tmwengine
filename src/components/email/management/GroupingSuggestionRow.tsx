@@ -80,6 +80,13 @@ export const GroupingSuggestionRow = ({
       ? 'text-warning bg-warning/10'
       : 'text-muted-foreground bg-muted';
 
+  // Determina se stiamo mostrando la mascotte o un logo aziendale
+  const isMascot = !logoData?.logo_url || 
+                   logoData.source === 'not_found' || 
+                   logoData.source === 'favicon' ||
+                   logoData.logo_url.includes('favicon') ||
+                   logoData.logo_url.includes('google.com');
+
   // Separa nuovi gruppi da esistenti per dropdown
   const newGroups = availableGroups.filter(g => 
     suggestion.suggested_groups.some(sg => sg.group_id === g.id && sg.group_id !== null)
@@ -140,17 +147,14 @@ export const GroupingSuggestionRow = ({
       {/* COLONNA SINISTRA: Logo + Info Visive */}
       <div className="flex items-center gap-3 flex-shrink-0">
         {/* Logo con sfondo bianco */}
-        <div className="h-16 w-16 bg-white rounded-lg p-2 flex items-center justify-center flex-shrink-0 border border-border/50">
+        <div className={cn(
+          "flex items-center justify-center flex-shrink-0",
+          isMascot 
+            ? "h-20 w-20" // Mascotte più grande senza sfondo
+            : "h-16 w-16 bg-white rounded-lg p-2 border border-border/50" // Logo con sfondo
+        )}>
           <img 
-            src={
-              logoData?.logo_url && 
-              logoData.source !== 'not_found' && 
-              logoData.source !== 'favicon' &&
-              !logoData.logo_url.includes('favicon') &&
-              !logoData.logo_url.includes('google.com')
-                ? logoData.logo_url 
-                : funEmailMascot
-            } 
+            src={isMascot ? funEmailMascot : logoData.logo_url} 
             alt={suggestion.sender_email}
             className="w-full h-full object-contain"
             onError={(e) => {

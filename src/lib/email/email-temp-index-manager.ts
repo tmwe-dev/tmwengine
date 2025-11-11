@@ -144,14 +144,10 @@ async function fetchServerUIDs(
         batchUIDs.forEach(uid => uids.add(uid));
         console.log(`✅ Page ${currentPage}: ${batchUIDs.length} UIDs (total: ${uids.size})`);
         
-        if (batchUIDs.length < config.uid_batch_size) {
-          hasMore = false;
-          console.log(`✅ Last page reached (received ${batchUIDs.length} < ${config.uid_batch_size})`);
-        } else {
-          currentPage++;
-          console.log(`⏳ Waiting ${config.page_throttle_ms}ms before next page...`);
-          await new Promise(resolve => setTimeout(resolve, config.page_throttle_ms));
-        }
+        // ✅ Continua paginazione fino a ricevere 0 UIDs
+        currentPage++;
+        console.log(`⏳ Waiting ${config.page_throttle_ms}ms before next page...`);
+        await new Promise(resolve => setTimeout(resolve, config.page_throttle_ms));
       }
     } catch (error) {
       console.error(`❌ Error fetching page ${currentPage}:`, error);

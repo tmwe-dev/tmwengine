@@ -191,6 +191,7 @@ export function EmailSidebar({
           <div className="flex gap-2 items-center justify-between mb-2">
             {/* Dropdown categoria a sinistra */}
             <Select 
+              key={activeCategoryId}
               value={activeCategoryId || undefined} 
               onValueChange={onCategorySelect}
             >

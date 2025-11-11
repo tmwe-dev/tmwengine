@@ -571,7 +571,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           carouselZoom={carouselZoom}
           onCarouselZoomChange={handleZoomChange}
           onCreateCategory={() => setShowCreateDialog(true)}
-          groups={alphabeticGroups}
+          groups={naturalOrderGroups}
           activeCategoryId={activeCategoryId}
           onCategorySelect={setActiveCategoryId}
           sortOption={sortOption}

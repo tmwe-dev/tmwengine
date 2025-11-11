@@ -144,78 +144,79 @@ export const GroupingSuggestionRow = ({
 
   return (
     <div className="flex items-center gap-4 p-4 bg-card border border-border rounded-lg hover:border-primary/30 transition-all">
-      {/* COLONNA SINISTRA: Logo + Info Visive */}
-      <div className="flex items-center gap-3 flex-shrink-0">
-        {/* Logo con sfondo bianco */}
-        <div className={cn(
-          "flex items-center justify-center flex-shrink-0",
-          isMascot 
-            ? "h-20 w-20" // Mascotte più grande senza sfondo
-            : "h-16 w-16 bg-white rounded-lg p-2 border border-border/50" // Logo con sfondo
-        )}>
-          <img 
-            src={isMascot ? funEmailMascot : logoData.logo_url} 
-            alt={suggestion.sender_email}
-            className="w-full h-full object-contain"
-            onError={(e) => {
-              e.currentTarget.src = funEmailMascot;
-            }}
-          />
-        </div>
-        
-        {/* Conteggio Email - solo numero */}
-        {emailCount !== undefined && emailCount > 0 && (
-          <div className="flex items-center justify-center px-4 py-2 bg-info/10 rounded-lg border border-info/20">
-            <span className="text-2xl font-bold text-info">{emailCount}</span>
+      {/* COLONNA SINISTRA: Bandiera sopra + Logo e Numero sotto */}
+      <div className="flex flex-col items-center gap-2 flex-shrink-0">
+        {/* Bandiera centrata sopra */}
+        {countryFlag && (
+          <div className="flex justify-center">
+            <span className="text-4xl" title={countryCode || undefined}>
+              {countryFlag}
+            </span>
           </div>
         )}
+        
+        {/* Logo + Numero orizzontali sotto, centrati */}
+        <div className="flex items-center gap-3">
+          {/* Logo con sfondo bianco */}
+          <div className={cn(
+            "flex items-center justify-center flex-shrink-0",
+            isMascot 
+              ? "h-20 w-20" // Mascotte più grande senza sfondo
+              : "h-16 w-16 bg-white rounded-lg p-2 border border-border/50" // Logo con sfondo
+          )}>
+            <img 
+              src={isMascot ? funEmailMascot : logoData.logo_url} 
+              alt={suggestion.sender_email}
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                e.currentTarget.src = funEmailMascot;
+              }}
+            />
+          </div>
+          
+          {/* Conteggio Email - solo numero */}
+          {emailCount !== undefined && emailCount > 0 && (
+            <div className="flex items-center justify-center px-4 py-2 bg-info/10 rounded-lg border border-info/20">
+              <span className="text-2xl font-bold text-info">{emailCount}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* COLONNA CENTRALE: Informazioni su 2 righe */}
       <div className="flex-1 min-w-0 space-y-3">
         {/* RIGA 1: Email + Badge contestuali */}
         <div>
-          <div className="flex items-start gap-2">
-            {/* Bandiera GRANDE spostata qui */}
-            {countryFlag && (
-              <span className="text-4xl flex-shrink-0" title={countryCode || undefined}>
-                {countryFlag}
-              </span>
+          <h4 
+            className="font-semibold text-base flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+            onClick={() => setShowEmailsDialog(true)}
+            title="Clicca per vedere le email"
+          >
+            <Mail className="w-4 h-4 flex-shrink-0" />
+            <span className="break-all">{suggestion.sender_email}</span>
+          </h4>
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            {rubricaContact?.meta_client && (
+              <Badge variant="secondary" className="text-xs bg-success/10 text-success border-success/20">
+                <Building2 className="w-3 h-3 mr-1" />
+                Cliente
+              </Badge>
             )}
             
-            <div className="flex-1 min-w-0">
-              <h4 
-                className="font-semibold text-base flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
-                onClick={() => setShowEmailsDialog(true)}
-                title="Clicca per vedere le email"
-              >
-                <Mail className="w-4 h-4 flex-shrink-0" />
-                <span className="break-all">{suggestion.sender_email}</span>
-              </h4>
-              
-              <div className="flex items-center gap-2 flex-wrap">
-                {rubricaContact?.meta_client && (
-                  <Badge variant="secondary" className="text-xs bg-success/10 text-success border-success/20">
-                    <Building2 className="w-3 h-3 mr-1" />
-                    Cliente
-                  </Badge>
-                )}
-                
-                {rubricaContact && rubricaContact.origine && !rubricaContact.meta_client && (
-                  <Badge variant="secondary" className="text-xs bg-info/10 text-info border-info/20">
-                    <Users className="w-3 h-3 mr-1" />
-                    {rubricaContact.origine}
-                  </Badge>
-                )}
-                
-                {(rubricaContact?.meta_wca || isWCA) && (
-                  <Badge variant="secondary" className="text-xs bg-warning/10 text-warning border-warning/20">
-                    <Star className="w-3 h-3 mr-1" />
-                    WCA
-                  </Badge>
-                )}
-              </div>
-            </div>
+            {rubricaContact && rubricaContact.origine && !rubricaContact.meta_client && (
+              <Badge variant="secondary" className="text-xs bg-info/10 text-info border-info/20">
+                <Users className="w-3 h-3 mr-1" />
+                {rubricaContact.origine}
+              </Badge>
+            )}
+            
+            {(rubricaContact?.meta_wca || isWCA) && (
+              <Badge variant="secondary" className="text-xs bg-warning/10 text-warning border-warning/20">
+                <Star className="w-3 h-3 mr-1" />
+                WCA
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -262,7 +263,7 @@ export const GroupingSuggestionRow = ({
       </div>
 
       {/* COLONNA DESTRA: Selezione Alternativa */}
-      <div className="flex flex-col gap-2 flex-shrink-0">
+      <div className="flex flex-col gap-2 flex-shrink-0 self-center">
         <p className="text-xs text-muted-foreground font-medium">
           Oppure scegli un altro gruppo:
         </p>

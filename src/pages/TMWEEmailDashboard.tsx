@@ -26,6 +26,7 @@ import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tansta
 import { supabase } from '@/integrations/supabase/client';
 import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api-integrated';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api'; // ✅ Email Search RPC for ALL read operations
+import { EmailHeader } from '@/components/tmwe/EmailHeader';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
@@ -61,6 +62,7 @@ const EmailDashboard = () => {
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [syncMonitorOpen, setSyncMonitorOpen] = useState(false);
   const [smartInboxOpen, setSmartInboxOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -81,18 +83,6 @@ const EmailDashboard = () => {
     };
   }, []);
 
-  // Listen for search event from CRMLayout
-  useEffect(() => {
-    const handleSearchEvent = (e: CustomEvent) => {
-      setSearchQuery(e.detail.query);
-    };
-    
-    window.addEventListener('email-search', handleSearchEvent as EventListener);
-    return () => {
-      window.removeEventListener('email-search', handleSearchEvent as EventListener);
-    };
-  }, []);
-
   // Reset selected email when folder changes
   useEffect(() => {
     setSelectedEmailId(null);
@@ -107,6 +97,12 @@ const EmailDashboard = () => {
     if (isMobile) {
       setShowEmailList(false);
     }
+  };
+
+  // Handle back to list on mobile
+  const handleBackToList = () => {
+    setSelectedEmailId(null);
+    setShowEmailList(true);
   };
 
   // Navigation between emails
@@ -584,6 +580,22 @@ const EmailDashboard = () => {
 
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20">
+      <EmailHeader
+        onSearch={setSearchQuery} 
+        onSync={handleSync}
+        isSyncing={isDownloading}
+        onMenuClick={() => setSidebarOpen(true)}
+        isMobile={isMobile}
+        dbEmailCount={isMobile ? (apiEmailCount || 0) : undefined}
+        isHeaderCollapsed={isHeaderCollapsed}
+        onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+        onCloseEmail={handleBackToList}
+        onPreviousEmail={handlePreviousEmail}
+        onNextEmail={handleNextEmail}
+        hasPrevious={hasPreviousEmail()}
+        hasNext={hasNextEmail()}
+      />
+      
       <div className="flex flex-1 min-w-0 overflow-hidden">
         {/* Desktop Sidebar */}
         {!isMobile && (
@@ -693,13 +705,15 @@ const EmailDashboard = () => {
               onReply={handleReply}
               onReplyAll={handleReplyAll}
               onForward={handleForward}
-              onBack={() => setShowEmailList(true)}
+              onBack={handleBackToList}
               isMobile={true}
               onPrevious={handlePreviousEmail}
               onNext={handleNextEmail}
               hasPrevious={hasPreviousEmail()}
               hasNext={hasNextEmail()}
               onMarkAsRead={handleMarkAsRead}
+              isHeaderCollapsed={isHeaderCollapsed}
+              onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
             />
           </div>
         )}

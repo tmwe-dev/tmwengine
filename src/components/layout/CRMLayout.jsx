@@ -82,7 +82,6 @@ const CRMLayout = ({ children }) => {
   const { userEmail, logout, userProfile } = useTMWEAuth();
   const { theme, setTheme, themes } = useTheme();
   const [tmweToken, setTmweToken] = useState(null);
-  const [emailSearchQuery, setEmailSearchQuery] = useState('');
 
   // Carica il TMWE access token da localStorage
   useEffect(() => {
@@ -110,13 +109,6 @@ const CRMLayout = ({ children }) => {
     setGroupStates(prev => ({
       ...prev,
       [groupName]: !prev[groupName]
-    }));
-  };
-
-  const handleEmailSearch = (e) => {
-    e.preventDefault();
-    window.dispatchEvent(new CustomEvent('email-search', { 
-      detail: { query: emailSearchQuery } 
     }));
   };
 
@@ -191,9 +183,9 @@ const CRMLayout = ({ children }) => {
       {/* Header */}
       <header 
         className={cn(
-          "grid items-center relative",
+          "flex items-center relative",
           location.pathname !== '/attivita' && "border-b border-border",
-          isMobile ? "h-24 px-3 py-3 grid-cols-[auto_1fr]" : "h-28 px-4 lg:px-6 py-3 grid-cols-[auto_1fr_auto]"
+          isMobile ? "h-24 px-3 py-3" : "h-28 px-4 lg:px-6 py-3"
         )}
         >
         {/* Left side: Menu Button + Page Title */}
@@ -372,23 +364,8 @@ const CRMLayout = ({ children }) => {
           </div>
         </div>
 
-        {/* Center: Search Input (solo /email-manager, nascosto su mobile) */}
-        {!isMobile && location.pathname === '/email-manager' && (
-          <div className="flex justify-center px-4">
-            <form onSubmit={handleEmailSearch} className="w-full max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search emails..."
-                  className="pl-10 h-9"
-                  value={emailSearchQuery}
-                  onChange={(e) => setEmailSearchQuery(e.target.value)}
-                />
-              </div>
-            </form>
-          </div>
-        )}
+        {/* Center spacer */}
+        <div className="flex-1" />
 
         {/* Right side elements */}
         <div className="flex items-center gap-3">

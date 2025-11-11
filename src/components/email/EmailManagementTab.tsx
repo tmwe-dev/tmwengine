@@ -19,6 +19,7 @@ import { EmailGridContainer } from './management/EmailGridContainer';
 import { CreateCategoryDialog } from './management/CreateCategoryDialog';
 import { GlobalDragGhost } from './management/GlobalDragGhost';
 import { SortOption } from './management/SenderSortControls';
+import { FloatingZoomControl } from './management/FloatingZoomControl';
 
 interface EmailManagementTabProps {
   onOpenAISidebar?: (senderEmail: string) => void;
@@ -108,6 +109,10 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const handleZoomChange = (zoom: number) => {
     setCarouselZoom(zoom);
     localStorage.setItem('email-carousel-zoom', zoom.toString());
+  };
+
+  const handleVerticalOffsetChange = (offset: number) => {
+    setCarouselVerticalOffset(offset);
   };
 
   // 🆕 Registrazione callback per aggiornamento ottimistico gruppi
@@ -599,6 +604,17 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
             onPrevious={handlePrevCategory}
             onNext={handleNextCategory}
             hoveredGroupId={hoveredGroupId}
+          />
+        )}
+        
+        {/* 🎛️ Controlli Zoom e Vertical Offset - Solo in modalità Carousel */}
+        {viewMode === 'carousel' && (
+          <FloatingZoomControl
+            zoom={carouselZoom}
+            onZoomChange={handleZoomChange}
+            verticalOffset={carouselVerticalOffset}
+            onVerticalOffsetChange={handleVerticalOffsetChange}
+            position="right"
           />
         )}
       </div>

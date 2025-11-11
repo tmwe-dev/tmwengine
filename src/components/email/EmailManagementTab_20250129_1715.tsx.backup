@@ -39,8 +39,15 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [sortOption, setSortOption] = useState<SortOption>('count-desc');
   const [lastUpdatedGroupId, setLastUpdatedGroupId] = useState<string | null>(null);
   
-  // 🆕 State per drag tracking nativo (solo sender per collision detection)
-  const [activeDrag, setActiveDrag] = useState<SenderAnalysis | null>(null);
+  // 🆕 State per drag tracking nativo
+  const [activeDrag, setActiveDrag] = useState<{
+    sender: SenderAnalysis;
+    offsetX: number;
+    offsetY: number;
+    clientX: number;
+    clientY: number;
+    width: number;
+  } | null>(null);
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
   
   // 🆕 Map callbacks per aggiornamento ottimistico card gruppi
@@ -56,7 +63,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   
   const { toast } = useToast();
 
-  // 🆕 Listener globale per collision detection durante drag HTML5
+  // 🆕 Listener globale per aggiornare posizione ghost durante drag HTML5
   useEffect(() => {
     if (!activeDrag) return;
 
@@ -64,31 +71,14 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       // Ignora eventi fake (clientX/Y = 0 durante drag)
       if (e.clientX === 0 && e.clientY === 0) return;
       
-      // Collision detection in real-time
-      const dropZones = document.querySelectorAll('[data-drop-zone="true"]');
-      let foundHover = false;
-      
-      dropZones.forEach(zone => {
-        const rect = zone.getBoundingClientRect();
-        const isOver = (
-          e.clientX >= rect.left &&
-          e.clientX <= rect.right &&
-          e.clientY >= rect.top &&
-          e.clientY <= rect.bottom
-        );
-        
-        if (isOver) {
-          const groupId = zone.getAttribute('data-group-id');
-          if (groupId) {
-            setHoveredGroupId(groupId);
-            foundHover = true;
-          }
-        }
-      });
-      
-      if (!foundHover) {
-        setHoveredGroupId(null);
-      }
+      setActiveDrag(prev => prev ? {
+        ...prev,
+        clientX: e.clientX,
+        clientY: e.clientY,
+      } : null);
+
+      // Trigger collision detection
+      handleDragMove(activeDrag.sender, e.clientX, e.clientY);
     };
 
     document.addEventListener('drag', handleDrag);
@@ -417,15 +407,44 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   };
 
   // 🆕 NUOVO: Handler drag start (HTML5 native)
-  const handleDragStart = (sender: SenderAnalysis) => {
-    setActiveDrag(sender);
+  const handleDragStart = (sender: SenderAnalysis, offsetX: number, offsetY: number, cardWidth: number) => {
+    // Inizializza activeDrag con posizione iniziale (sarà aggiornato da drag listener)
+    setActiveDrag({ sender, offsetX, offsetY, clientX: 0, clientY: 0, width: cardWidth });
   };
 
+  // 🆕 NUOVO: Handler drag move con collision detection
+  const handleDragMove = (sender: SenderAnalysis, clientX: number, clientY: number) => {
+    // Aggiorna posizione mouse in activeDrag per GlobalDragGhost
+    setActiveDrag(prev => prev ? { ...prev, clientX, clientY } : null);
+    
+    const dropZones = document.querySelectorAll('[data-drop-zone="true"]');
+    let foundHover = false;
+    
+    dropZones.forEach(zone => {
+      const rect = zone.getBoundingClientRect();
+      const isOver = (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      );
+      
+      if (isOver) {
+        const groupId = zone.getAttribute('data-group-id');
+        if (groupId) {
+          setHoveredGroupId(groupId);
+          foundHover = true;
+        }
+      }
+    });
+    
+    if (!foundHover) {
+      setHoveredGroupId(null);
+    }
+  };
 
   // 🆕 NUOVO: Handler drag end con drop logic
-  const handleDragEnd = async (clientX: number, clientY: number) => {
-    if (!activeDrag) return;
-    
+  const handleDragEnd = async (sender: SenderAnalysis, clientX: number, clientY: number) => {
     const dropZones = document.querySelectorAll('[data-drop-zone="true"]');
     let targetGroupId: string | null = null;
     
@@ -444,7 +463,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
     });
     
     if (targetGroupId) {
-      await handleClassifySender(activeDrag, targetGroupId);
+      await handleClassifySender(sender, targetGroupId);
     } else {
       console.log('🚫 Drop annullato (fuori zona)');
     }
@@ -577,6 +596,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
           isLoading={isLoading}
           onSenderDoubleClick={handleDoubleClickSender}
           onDragStart={handleDragStart}
+          onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
         />
         
@@ -611,6 +631,17 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         existingNames={groups.map(g => g.nome_gruppo)}
       />
 
+      {/* Global Drag Ghost - portale fisso sopra tutto */}
+      {activeDrag && (
+        <GlobalDragGhost
+          sender={activeDrag.sender}
+          clientX={activeDrag.clientX}
+          clientY={activeDrag.clientY}
+          offsetX={activeDrag.offsetX}
+          offsetY={activeDrag.offsetY}
+          width={activeDrag.width}
+        />
+      )}
     </div>
   );
 }

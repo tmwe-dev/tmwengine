@@ -44,9 +44,8 @@ interface EmailSidebarProps {
   onSenderDoubleClick?: (sender: SenderAnalysis) => void;
   aiSuggestionsCount?: number;
   onOpenAISuggestions?: () => void;
-  onDragStart?: (sender: SenderAnalysis, offsetX: number, offsetY: number, cardWidth: number) => void;
-  onDragMove?: (sender: SenderAnalysis, clientX: number, clientY: number) => void;
-  onDragEnd?: (sender: SenderAnalysis, clientX: number, clientY: number) => void;
+  onDragStart?: (sender: SenderAnalysis) => void;
+  onDragEnd?: (clientX: number, clientY: number) => void;
 }
 
 export function EmailSidebar({
@@ -74,7 +73,6 @@ export function EmailSidebar({
   aiSuggestionsCount = 0,
   onOpenAISuggestions,
   onDragStart,
-  onDragMove,
   onDragEnd,
 }: EmailSidebarProps) {
   // 🆕 Filtro soglia email per visualizzazione
@@ -254,7 +252,6 @@ export function EmailSidebar({
                 sender={sender}
                 onDoubleClick={onSenderDoubleClick}
                 onDragStart={onDragStart}
-                onDragMove={onDragMove}
                 onDragEnd={onDragEnd}
               />
             ))

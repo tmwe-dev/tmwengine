@@ -10,14 +10,16 @@ import type { SenderAnalysis } from '@/types/email-management';
 
 interface SenderCardProps {
   sender: SenderAnalysis;
-  onDragStart?: (sender: SenderAnalysis) => void;
-  onDragEnd?: (clientX: number, clientY: number) => void;
+  onDragStart?: (sender: SenderAnalysis, offsetX: number, offsetY: number, cardWidth: number) => void;
+  onDragMove?: (sender: SenderAnalysis, clientX: number, clientY: number) => void;
+  onDragEnd?: (sender: SenderAnalysis, clientX: number, clientY: number) => void;
   onDoubleClick?: (sender: SenderAnalysis) => void;
 }
 
 export function SenderCard({ 
   sender, 
   onDragStart, 
+  onDragMove, 
   onDragEnd, 
   onDoubleClick 
 }: SenderCardProps) {
@@ -25,16 +27,27 @@ export function SenderCard({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    setIsDragging(true);
-    onDragStart?.(sender);
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return;
     
+    // 🎯 Calcolo offset preciso (mouse position - card position)
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+    const cardWidth = rect.width;
+    
+    setIsDragging(true);
+    
+    // Passa dati al parent per creare ghost
+    onDragStart?.(sender, offsetX, offsetY, cardWidth);
+    
+    // Imposta dati per dataTransfer
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', JSON.stringify(sender));
   };
 
   const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
     setIsDragging(false);
-    onDragEnd?.(e.clientX, e.clientY);
+    onDragEnd?.(sender, e.clientX, e.clientY);
   };
 
   return (

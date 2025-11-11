@@ -289,11 +289,17 @@ export const EmailList = ({
                           Apri
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onBulkArchive?.([email.id]);
+                        }}>
                           <Archive className="mr-2 h-4 w-4" />
                           Archivia
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onBulkDelete?.([email.id]);
+                        }}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Elimina
                         </DropdownMenuItem>
@@ -429,11 +435,17 @@ export const EmailList = ({
                           Apri
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onBulkArchive?.([email.id]);
+                        }}>
                           <Archive className="mr-2 h-4 w-4" />
                           Archivia
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onBulkDelete?.([email.id]);
+                        }}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Elimina
                         </DropdownMenuItem>

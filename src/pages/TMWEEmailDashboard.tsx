@@ -278,6 +278,8 @@ const EmailDashboard = () => {
       });
       
       console.log('✅ Email detail received from /email_search:', result);
+      console.log('📧 Raw API response structure:', JSON.stringify(result, null, 2));
+      console.log('📧 Available fields:', Object.keys(result || {}));
       
       // ✅ Mark as read will be handled automatically by EmailDetail component
       // via onMarkAsRead callback using fast RPC API
@@ -296,8 +298,11 @@ const EmailDashboard = () => {
       return null;
     }
 
-    // Try to get the message from response
-    const msg = emailDetailResponse.message || emailDetailResponse.data || emailDetailResponse;
+    // Try to get the message from response - try multiple paths
+    const msg = emailDetailResponse.message || 
+                emailDetailResponse.data || 
+                emailDetailResponse.email ||
+                emailDetailResponse;
     
     if (!msg || typeof msg !== 'object') {
       console.warn('⚠️ No valid message data in response:', emailDetailResponse);
@@ -305,6 +310,7 @@ const EmailDashboard = () => {
     }
 
     console.log('📧 Processing message:', msg);
+    console.log('📧 Message fields:', Object.keys(msg));
 
     // Access header data correctly from the TMWE API response structure
     const header = msg.header || msg;
@@ -328,15 +334,41 @@ const EmailDashboard = () => {
       return [];
     };
 
+    // ✅ ENHANCED: Try multiple field names for body
+    const bodyContent = msg.body_html || 
+                       msg.body_plain || 
+                       msg.body_text || 
+                       msg.body || 
+                       msg.html || 
+                       msg.text || 
+                       msg.content || 
+                       msg.body_content || 
+                       msg.message_body ||
+                       header.body_html ||
+                       header.body_plain ||
+                       '<p>No content available</p>';
+
+    // ✅ ENHANCED: Try multiple field names for subject
+    const subjectContent = header.subject || 
+                          msg.subject || 
+                          header.title || 
+                          msg.title || 
+                          header.subject_line || 
+                          msg.subject_line ||
+                          '(No Subject)';
+
+    console.log('📧 Extracted body length:', typeof bodyContent === 'string' ? bodyContent.length : 0);
+    console.log('📧 Extracted subject:', subjectContent);
+
     return {
       id: String(header.uid || msg.uid || msg.id || selectedEmailId),
-      subject: header.subject || '(No Subject)',
-      from: convertToString(header.from),
-      to: convertToArray(header.to),
-      cc: convertToArray(header.cc),
-      date: header.date || new Date().toISOString(),
-      body: msg.body_html || msg.body_plain || msg.body_text || msg.body || '<p>No content available</p>',
-      attachments: msg.attachments || [],
+      subject: subjectContent,
+      from: convertToString(header.from || msg.from),
+      to: convertToArray(header.to || msg.to),
+      cc: convertToArray(header.cc || msg.cc),
+      date: header.date || msg.date || new Date().toISOString(),
+      body: bodyContent,
+      attachments: msg.attachments || header.attachments || [],
     };
   })() : null;
 
@@ -472,9 +504,18 @@ const EmailDashboard = () => {
       .catch(() => toast.error('Failed to move emails to trash'));
   };
 
-  const handleBulkArchive = (emailIds: string[]) => {
-    toast.info('Archivio non ancora implementato');
-    console.log('Archive emails:', emailIds);
+  const handleBulkArchive = async (emailIds: string[]) => {
+    try {
+      // ✅ Move emails to Archive folder using fast RPC API
+      await Promise.all(
+        emailIds.map(id => emailSearchApi.moveEmail(parseInt(id), 'Archive'))
+      );
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      toast.success(`${emailIds.length} email archiviate`);
+    } catch (error) {
+      console.error('Archive error:', error);
+      toast.error('Errore durante l\'archiviazione');
+    }
   };
 
   const handleBulkForward = (emailIds: string[]) => {

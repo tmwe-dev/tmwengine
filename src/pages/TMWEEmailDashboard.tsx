@@ -83,6 +83,18 @@ const EmailDashboard = () => {
     };
   }, []);
 
+  // Listen for email search event from CRMLayout
+  useEffect(() => {
+    const handleSearchEvent = (e: CustomEvent) => {
+      setSearchQuery(e.detail.query);
+    };
+    
+    window.addEventListener('email-search', handleSearchEvent as EventListener);
+    return () => {
+      window.removeEventListener('email-search', handleSearchEvent as EventListener);
+    };
+  }, []);
+
   // Reset selected email when folder changes
   useEffect(() => {
     setSelectedEmailId(null);

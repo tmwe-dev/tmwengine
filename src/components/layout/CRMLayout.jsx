@@ -82,6 +82,7 @@ const CRMLayout = ({ children }) => {
   const { userEmail, logout, userProfile } = useTMWEAuth();
   const { theme, setTheme, themes } = useTheme();
   const [tmweToken, setTmweToken] = useState(null);
+  const [emailSearchQuery, setEmailSearchQuery] = useState('');
 
   // Carica il TMWE access token da localStorage
   useEffect(() => {
@@ -258,117 +259,139 @@ const CRMLayout = ({ children }) => {
                     </Button>
                   </div>
                 )}
-                
-                {/* TMWE Token Status + Debug Utilities */}
-                <div className="flex items-center gap-1 px-3">
-                  <TokenKeyIndicator 
-                    tokenCount={tmweToken ? 1 : 0}
-                    variant="total"
-                    showLabel={false}
-                    className=""
-                  />
-                  
-                  {/* Compose Email Button - Solo in /email-manager */}
-                  {location.pathname === '/email-manager' && (
-                    <Button
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent('open-email-compose'));
-                      }}
-                      size="icon"
-                      title="Compose new email"
-                      className="h-8 w-8"
-                    >
-                      <Mail
-                        className="h-4 w-4"
-                        style={{ 
-                          filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.4)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.3))',
-                          transform: 'perspective(100px) rotateX(15deg) rotateY(-10deg)'
-                        }} 
-                      />
-                    </Button>
-                  )}
-                  
-                  {/* Debug Monitor - Solo in RadioChat */}
-                  {import.meta.env.DEV && location.pathname === '/radio-chat' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent('toggle-debug-popup'));
-                      }}
-                      className="p-0.5 h-6 w-6"
-                      title="Debug Monitor"
-                    >
-                      <Bug className="w-4 h-4" />
-                    </Button>
-                  )}
-                  
-                  {/* Strumenti Email - Solo in FunEmail */}
-                  {location.pathname === '/funnemail' && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="p-0.5 h-6 w-6"
-                          title="Strumenti Email"
-                        >
-                          <Settings className="w-4 h-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent align="start" className="w-56 bg-popover">
-                        <div className="space-y-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start"
-                            onClick={() => navigate('/funnemail?tab=fun')}
-                          >
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            FUN
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start"
-                            onClick={() => navigate('/funnemail?view=quick-download')}
-                          >
-                            <Download className="mr-2 h-4 w-4" />
-                            Quick Download
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start"
-                            onClick={() => navigate('/funnemail?view=integrity')}
-                          >
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Verifica Integrità
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start"
-                            onClick={() => navigate('/funnemail?view=debugger')}
-                          >
-                            <Bug className="mr-2 h-4 w-4" />
-                            Backend Debugger
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                </div>
               </>
             )}
           </div>
         </div>
 
-        {/* Center spacer */}
-        <div className="flex-1" />
+        {/* Center: Search Input - Solo in /email-manager */}
+        <div className="flex-1 flex justify-center px-4">
+          {location.pathname === '/email-manager' && !isMobile && (
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Cerca email..."
+                value={emailSearchQuery}
+                onChange={(e) => setEmailSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('email-search', { 
+                      detail: { query: emailSearchQuery } 
+                    }));
+                  }
+                }}
+                className="pl-9 h-9 w-full"
+              />
+            </div>
+          )}
+        </div>
 
         {/* Right side elements */}
         <div className="flex items-center gap-3">
+          {/* Token + Compose + Debug - Spostati da LEFT a RIGHT */}
+          {!isMobile && (
+            <div className="flex items-center gap-1">
+              <TokenKeyIndicator 
+                tokenCount={tmweToken ? 1 : 0}
+                variant="total"
+                showLabel={false}
+              />
+              
+              {/* Compose Email - Solo /email-manager */}
+              {location.pathname === '/email-manager' && (
+                <Button
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('open-email-compose'));
+                  }}
+                  size="icon"
+                  title="Compose new email"
+                  className="h-8 w-8"
+                >
+                  <Mail
+                    className="h-4 w-4"
+                    style={{ 
+                      filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.4)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.3))',
+                      transform: 'perspective(100px) rotateX(15deg) rotateY(-10deg)'
+                    }} 
+                  />
+                </Button>
+              )}
+              
+              {/* Debug Monitor - Solo RadioChat in DEV */}
+              {import.meta.env.DEV && location.pathname === '/radio-chat' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('toggle-debug-popup'));
+                  }}
+                  className="p-0.5 h-6 w-6"
+                  title="Debug Monitor"
+                >
+                  <Bug className="w-4 h-4" />
+                </Button>
+              )}
+              
+              {/* Strumenti Email - Solo FunEmail */}
+              {location.pathname === '/funnemail' && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-0.5 h-6 w-6"
+                      title="Strumenti Email"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-56 bg-popover">
+                    <div className="space-y-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => navigate('/funnemail?tab=fun')}
+                      >
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        FUN
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => navigate('/funnemail?view=quick-download')}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Quick Download
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => navigate('/funnemail?view=integrity')}
+                      >
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Verifica Integrità
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => navigate('/funnemail?view=debugger')}
+                      >
+                        <Bug className="mr-2 h-4 w-4" />
+                        Backend Debugger
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+          )}
+          
           {/* AI Prompts Inspector */}
           <AIPromptsInspector />
           

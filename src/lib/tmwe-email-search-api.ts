@@ -116,7 +116,7 @@ export const emailSearchApi = {
   }),
 
   /**
-   * Complete email with body (Elasticsearch)
+   * Complete email with body (get single message)
    * Use for email detail view
    */
   getEmailDetail: (params: {
@@ -124,7 +124,7 @@ export const emailSearchApi = {
     folder: string;
     include_body?: boolean;
     timeout?: number;
-  }) => fetchApi('/email_search', {
+  }) => fetchApi('/email_message', {
     handler: 'get_message',
     uid: params.uid,
     folder: params.folder,

@@ -272,7 +272,8 @@ const EmailDashboard = () => {
       
       // ✅ LECTURA: Usar /email_search para obtener contenido (rápido vía Elasticsearch)
       const result = await emailSearchApi.getEmailDetail({ 
-        email_id: parseInt(selectedEmailId!, 10),
+        uid: parseInt(selectedEmailId!, 10),
+        folder: selectedFolder,
         include_body: true,
         timeout: 15
       });

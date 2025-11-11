@@ -120,12 +120,14 @@ export const emailSearchApi = {
    * Use for email detail view
    */
   getEmailDetail: (params: {
-    email_id: number;
+    uid: number;
+    folder: string;
     include_body?: boolean;
     timeout?: number;
   }) => fetchApi('/email_search', {
-    handler: 'get_email_detail',
-    email_id: params.email_id,
+    handler: 'get_message',
+    uid: params.uid,
+    folder: params.folder,
     include_body: params.include_body !== false,
     timeout: params.timeout || 10
   }),

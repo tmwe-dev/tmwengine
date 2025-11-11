@@ -348,17 +348,8 @@ export default function ImportTemplates() {
         };
       }).filter(Boolean); // Rimuovi eventuali null
       
-      // Filtra solo i contatti con flag attivo (meta_client = true)
-      const activeCompanies = selectedCompanies.filter(company => company.record.meta_client === true);
-      
-      if (activeCompanies.length === 0) {
-        toast.error('Nessun contatto selezionato ha il flag "attivo" abilitato');
-        return;
-      }
-      
-      if (activeCompanies.length < selectedCompanies.length) {
-        toast.info(`${selectedCompanies.length - activeCompanies.length} contatti ignorati (flag attivo non presente)`);
-      }
+      // ✅ Soluzione 1: Usa tutti i contatti selezionati (rimosso filtro meta_client)
+      console.log(`✅ Creazione attività per ${selectedCompanies.length} contatti`);
 
       // Mappa per tracciare gli ID di rubrica dopo il trasferimento
       let importedToRubricaMap = new Map<string, string>();
@@ -366,7 +357,7 @@ export default function ImportTemplates() {
       // Se l'utente ha scelto di salvare in rubrica, trasferisci prima i contatti
       if (activityData.salva_in_rubrica) {
         try {
-          const contactsToTransfer = activeCompanies.map(company => ({
+          const contactsToTransfer = selectedCompanies.map(company => ({
             nome: company.record.name || '',
             azienda: company.record.company_name || '',
             company_alias: company.record.company_alias || '',
@@ -394,14 +385,14 @@ export default function ImportTemplates() {
 
           // Crea mappa: imported_contact_id -> rubrica_id
           importedToRubricaMap = new Map<string, string>();
-          activeCompanies.forEach((company, index) => {
+          selectedCompanies.forEach((company, index) => {
             if (insertedContacts && insertedContacts[index]) {
               importedToRubricaMap.set(company.id, insertedContacts[index].id);
             }
           });
 
           // Aggiorna lo stato dei record come trasferiti
-          const recordIds = activeCompanies.map(c => c.id);
+          const recordIds = selectedCompanies.map(c => c.id);
           const { error: updateError } = await supabase
             .from('imported_contacts')
             .update({ is_imported_to_rubrica: true })
@@ -428,19 +419,19 @@ export default function ImportTemplates() {
       let currentEmailIndex = 0;
       let progressToastId: string | undefined;
       
-      console.log('🔍 DEBUG - activeCompanies:', activeCompanies);
+      console.log('🔍 DEBUG - selectedCompanies:', selectedCompanies);
       console.log('🔍 DEBUG - activityData:', activityData);
       
       // Se tipo è email e ci sono più di 1 contatti, usa il sistema di coda
-      if (activityData.tipo === 'email' && activeCompanies.length > 1) {
+      if (activityData.tipo === 'email' && selectedCompanies.length > 1) {
         // Genera nome campagna unico
         const campaignName = `${activityData.oggetto_email || 'Template'} - ${new Date().toLocaleDateString('it-IT')}`;
         
         // Ottieni user ID
         const { data: { user } } = await supabase.auth.getUser();
         
-        // Prepara le email per la coda (activeCompanies già filtrati per flag attivo)
-        const emailsToQueue = activeCompanies
+        // Prepara le email per la coda
+        const emailsToQueue = selectedCompanies
           .filter(company => company.record.email) // Solo quelli con email
           .map(company => ({
             destinatario_email: company.record.email,
@@ -472,8 +463,8 @@ export default function ImportTemplates() {
           return;
         }
 
-        // Crea attività per tracciamento (activeCompanies già filtrati per flag attivo)
-        for (const company of activeCompanies.filter(c => c.record.email)) {
+        // Crea attività per tracciamento
+        for (const company of selectedCompanies.filter(c => c.record.email)) {
           activities.push({
             rubrica_id: company.id,
             tipo: 'email',
@@ -506,8 +497,8 @@ export default function ImportTemplates() {
         return;
       }
 
-      // INVIO SINGOLO O CHIAMATA - logica esistente (activeCompanies già filtrati per flag attivo)
-      for (const company of activeCompanies) {
+      // INVIO SINGOLO O CHIAMATA - logica esistente
+      for (const company of selectedCompanies) {
         console.log('🔍 DEBUG - Processing company:', {
           id: company.id,
           name: company.name,

@@ -1,0 +1,4 @@
+// Backup created before implementing Solution 1: Remove meta_client filter
+// Date: 2025-01-11 15:45
+// Reason: Allow activity creation for all selected contacts regardless of meta_client flag
+// This is a full backup of src/pages/ImportTemplates.tsx before modifications

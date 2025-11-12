@@ -132,78 +132,22 @@ export function useSingleFastMax() {
       const user_email = await getUserEmail();
       addLog({ phase: 'init', message: `📧 User email: ${user_email}` });
 
-      // ✅ CHECK: l'indice ha già dati?
-      const existingFolders = await getSingleFastFoldersFromLocal(user_email);
-      const foldersWithData = existingFolders.filter(f => f.pending > 0 || f.folderName);
-
-      if (foldersWithData.length > 0) {
-        // ✅ INDICE GIÀ POPOLATO: skippo pre-popolazione
+      // ✅ NO PRE-POPOLAZIONE: ottieni cartelle da preferenze
+      const preferences = await getSyncPreferences(user_email);
+      
+      if (preferences.included_folders.length === 0) {
         addLog({ 
-          phase: 'preparing', 
-          message: `✅ Indice già popolato (${foldersWithData.length} cartelle). Skippo pre-popolazione.` 
+          phase: 'warning', 
+          message: '⚠️ Configura prima le cartelle in Impostazioni → Sincronizzazione Email' 
         });
-      } else {
-        // ⚠️ INDICE VUOTO: pre-popola con LIMITI
-        const preferences = await getSyncPreferences(user_email);
-        
-        if (preferences.included_folders.length === 0) {
-          addLog({ 
-            phase: 'warning', 
-            message: '⚠️ Configura prima le cartelle in Impostazioni → Sincronizzazione Email' 
-          });
-          return;
-        }
-
-        addLog({ 
-          phase: 'preparing', 
-          message: `⚠️ Indice vuoto. Pre-popolamento LIMITATO (max 2 pagine/cartella)...` 
-        });
-
-        // Popola temp index per ogni cartella selezionata
-        for (let i = 0; i < preferences.included_folders.length; i++) {
-          if (shouldStop.current) break;
-
-          const folder = preferences.included_folders[i];
-          addLog({ 
-            phase: 'preparing',
-            folder,
-            message: `📦 Pre-caricamento PARZIALE ${i + 1}/${preferences.included_folders.length}: ${folder}` 
-          });
-
-          try {
-            await populateTempIndexForFolder(folder, user_email, {
-              uid_batch_size: 50,
-              page_throttle_ms: 5000,
-              max_pages: 999, // ✅ Download completo folder (rimosso limite artificiale)
-            }, (progress) => {
-              addLog({
-                phase: 'preparing',
-                folder,
-                message: `   Batch ${progress.current}/${progress.total}: ${progress.from_email}`,
-                email_details: progress.subject || undefined,
-              });
-            });
-          } catch (error: any) {
-            console.error(`❌ Errore pre-caricamento ${folder}:`, error);
-            addLog({
-              phase: 'error',
-              folder: folder,
-              message: `⚠️ Pre-caricamento ${folder} fallito: ${error.message}`
-            });
-          }
-
-          // ✅ 10s throttle tra cartelle
-          if (i < preferences.included_folders.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 10000));
-          }
-        }
-
-        addLog({ phase: 'preparing', message: '✅ Pre-popolazione LIMITATA completata' });
+        return;
       }
 
-      // Ri-carica folders dopo controllo/popolamento
-      const folders = await getSingleFastFoldersFromLocal(user_email);
-      const folders_to_sync = folders.filter(f => f.included && f.pending > 0);
+      const folders_to_sync = preferences.included_folders.map(folderName => ({
+        folderName,
+        pending: 1, // Placeholder, processFolderWithDance gestisce tutto
+        included: true
+      }));
 
       // Controllo finale
       if (folders_to_sync.length === 0) {

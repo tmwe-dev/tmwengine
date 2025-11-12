@@ -22,6 +22,9 @@ interface UseEmailDownloadOptions {
   
   /** Delay minimo tra downloads (solo per parallel) */
   minDelay?: number;
+  
+  /** Cartelle custom da scaricare (opzionale) */
+  customFolders?: string[];
 }
 
 export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 'luca' }) {

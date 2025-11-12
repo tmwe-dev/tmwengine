@@ -14,7 +14,7 @@ export interface ApiConfig {
 const OAUTH_CLIENT_ID = '30eb3689ecfe890adfda0578d61ad858cf9f98999a919e0cd7bb798df17b006f';
 const OAUTH_CLIENT_SECRET = '04d26799b3ec0a82dec492c2cb4a17a9ff20cabcde13166bd330e7ccd369c873a95b6d88c19cf4a6c592327aa191ab36769dded7b77b0396b93529b8b12035bd';
 
-// Load credentials from Supabase database with in-memory cache
+// Load credentials from Supabase database
 export const getApiConfigFromDB = async (): Promise<ApiConfig | null> => {
   // Get authenticated user from session (fast, reads from localStorage)
   const { data: { session } } = await supabase.auth.getSession();
@@ -32,16 +32,6 @@ export const getApiConfigFromDB = async (): Promise<ApiConfig | null> => {
   
   const userEmail = profile.tmwe_email;
 
-  // ✅ CHECK CACHE FIRST (eliminates 2 DB queries per API call)
-  const { apiConfigCache } = await import('@/lib/email/config/ApiConfigCache');
-  const cached = apiConfigCache.get(userEmail);
-  if (cached) {
-    return cached;
-  }
-
-  // ❌ CACHE MISS: Fetch from database
-  console.log('🔄 [tmwe-api] Fetching fresh config from database for', userEmail);
-  
   const { data, error } = await supabase
     .from('user_tmwe_credentials')
     .select('*')
@@ -50,18 +40,13 @@ export const getApiConfigFromDB = async (): Promise<ApiConfig | null> => {
 
   if (error || !data) return null;
 
-  const config: ApiConfig = {
+  return {
     accessToken: data.access_token,
     refreshToken: data.refresh_token || undefined,
     expiresAt: data.expires_at || undefined,
     clientId: data.client_id,
     clientSecret: data.client_secret,
   };
-
-  // ✅ SAVE TO CACHE (next calls will be 100x faster)
-  apiConfigCache.set(userEmail, config);
-
-  return config;
 };
 
 // Save credentials to Supabase database
@@ -78,11 +63,6 @@ export const setApiConfigToDB = async (config: ApiConfig & { email: string }): P
     }]);
 
   if (error) throw error;
-
-  // ✅ INVALIDATE CACHE after update (next call will fetch fresh data)
-  const { apiConfigCache } = await import('@/lib/email/config/ApiConfigCache');
-  apiConfigCache.invalidate(config.email);
-  console.log('🧹 [tmwe-api] Cache invalidated after credentials update for', config.email);
 };
 
 // Clear credentials from database

@@ -190,7 +190,34 @@ export class EmailDownloadService {
           }
         } catch (error: any) {
           console.warn(`[SmartPrep] Error processing folder ${folderName}:`, error.message);
-          // Continua con altre cartelle
+          
+          // 🆕 FALLBACK: Usa solo DB locale se API fallisce
+          try {
+            const localMaxUID = await getMaxUID(folderName, this.userEmail);
+            
+            if (localMaxUID !== null) {
+              // Cartella esiste localmente → continua da MAX+1
+              foldersToSync.push({
+                folderName,
+                pending: 0, // Sconosciuto, LucaStrategy proverà
+                included: true,
+                startUID: localMaxUID + 1
+              });
+              console.log(`[SmartPrep] ✅ Fallback: ${folderName} will start from UID ${localMaxUID + 1}`);
+            } else {
+              // Cartella nuova → prova da UID 1
+              foldersToSync.push({
+                folderName,
+                pending: 0, // Sconosciuto
+                included: true,
+                startUID: 1
+              });
+              console.log(`[SmartPrep] ⚠️ Fallback: ${folderName} will start from UID 1 (new folder)`);
+            }
+          } catch (fallbackError: any) {
+            console.error(`[SmartPrep] ❌ Cannot process ${folderName} even with fallback:`, fallbackError.message);
+            // Questa cartella viene definitivamente saltata
+          }
         }
       }
     } catch (error: any) {

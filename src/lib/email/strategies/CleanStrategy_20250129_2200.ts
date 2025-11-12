@@ -16,9 +16,6 @@ import {
   findMissingUIDs 
 } from '../services/UIDRangeService';
 
-// ✅ Default folders fallback (hardcoded, no DB dependency)
-const DEFAULT_FOLDERS = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk', 'Archive'];
-
 export class CleanStrategy implements DownloadStrategy {
   name = 'Clean';
   description = 'Finds and fills gaps (missing UIDs) in the database';
@@ -33,36 +30,27 @@ export class CleanStrategy implements DownloadStrategy {
     shouldStop: () => boolean
   ): Promise<DownloadResult> {
     
-    // ✅ If no folders provided, use hardcoded list
-    const foldersToClean = folders.length > 0 
-      ? folders 
-      : DEFAULT_FOLDERS.map(name => ({ 
-          folderName: name, 
-          pending: 0, 
-          included: true 
-        }));
-    
     let totalDownloaded = 0;
     let totalErrors = 0;
     let foldersCompleted = 0;
 
     onLog({ 
       phase: 'preparing', 
-      message: `🧹 Clean strategy: filling gaps for ${foldersToClean.length} folders` 
+      message: `🧹 Clean strategy: filling gaps for ${folders.length} folders` 
     });
 
-    for (let i = 0; i < foldersToClean.length; i++) {
+    for (let i = 0; i < folders.length; i++) {
       if (shouldStop()) {
         onLog({ phase: 'error', message: '🛑 Clean stopped by user' });
         break;
       }
 
-      const folder = foldersToClean[i];
+      const folder = folders[i];
       
       onLog({
         phase: 'preparing',
         folder: folder.folderName,
-        message: `🔍 [${i + 1}/${foldersToClean.length}] Analyzing folder: ${folder.folderName}`
+        message: `🔍 [${i + 1}/${folders.length}] Analyzing folder: ${folder.folderName}`
       });
 
       try {

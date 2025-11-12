@@ -7,19 +7,15 @@
 import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { EmailDownloadService } from '@/lib/email/services/EmailDownloadService';
-import { SequentialStrategy } from '@/lib/email/strategies/SequentialStrategy';
-import { ParallelStrategy } from '@/lib/email/strategies/ParallelStrategy';
-import { DanceStrategy } from '@/lib/email/strategies/DanceStrategy';
-import { IncrementalStrategy } from '@/lib/email/strategies/IncrementalStrategy';
 import { CleanStrategy } from '@/lib/email/strategies/CleanStrategy';
 import { LucaStrategy } from '@/lib/email/strategies/LucaStrategy';
 import type { LogEntry, DownloadProgress } from '@/lib/email/strategies/DownloadStrategy';
 
-export type DownloadStrategyType = 'sequential' | 'parallel' | 'dance' | 'incremental' | 'clean' | 'luca';
+export type DownloadStrategyType = 'clean' | 'luca';
 
 interface UseEmailDownloadOptions {
-  /** Tipo strategia download */
-  strategy: DownloadStrategyType;
+  /** Tipo strategia download (default: 'luca') */
+  strategy?: DownloadStrategyType;
   
   /** Max concurrent downloads (solo per parallel) */
   maxConcurrent?: number;
@@ -28,7 +24,7 @@ interface UseEmailDownloadOptions {
   minDelay?: number;
 }
 
-export function useEmailDownload(options: UseEmailDownloadOptions) {
+export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 'luca' }) {
   const [isRunning, setIsRunning] = useState(false);
   const [logs, setLogs] = useState<Array<LogEntry>>([]);
   const [progress, setProgress] = useState<DownloadProgress>({
@@ -68,22 +64,9 @@ export function useEmailDownload(options: UseEmailDownloadOptions) {
    * Crea strategia download basata su opzioni
    */
   const createStrategy = () => {
-    switch (options.strategy) {
-      case 'sequential':
-        return new SequentialStrategy();
-      
-      case 'parallel':
-        return new ParallelStrategy(
-          options.maxConcurrent || 10,
-          options.minDelay || 50
-        );
-      
-      case 'dance':
-        return new DanceStrategy();
-      
-      case 'incremental':
-        return new IncrementalStrategy();
-      
+    const strategy = options.strategy || 'luca'; // Default = Luca
+    
+    switch (strategy) {
       case 'clean':
         return new CleanStrategy();
       
@@ -91,7 +74,7 @@ export function useEmailDownload(options: UseEmailDownloadOptions) {
         return new LucaStrategy();
       
       default:
-        throw new Error(`Unknown strategy: ${options.strategy}`);
+        throw new Error(`Unknown strategy: ${strategy}`);
     }
   };
 

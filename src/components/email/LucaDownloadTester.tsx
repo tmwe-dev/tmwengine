@@ -1,7 +1,7 @@
 /**
- * Incremental Download Tester
- * Test component per IncrementalStrategy (Metodo di Luca)
- * Scarica solo nuove email da MAX(uid) + 1
+ * Luca Download Tester
+ * Production download component using LucaStrategy
+ * Zero overhead, direct download from MAX(uid) + 1
  */
 
 import { useState } from 'react';
@@ -11,13 +11,13 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Rocket, StopCircle, RotateCcw, Zap, ArrowRight } from 'lucide-react';
-import { useEmailDownload, type DownloadStrategyType } from '@/hooks/useEmailDownload';
+import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { cn } from '@/lib/utils';
 
-export const IncrementalDownloadTester = () => {
+export const LucaDownloadTester = () => {
   const [testRunning, setTestRunning] = useState(false);
-  const [selectedStrategy, setSelectedStrategy] = useState<DownloadStrategyType>('incremental');
 
+  // ✅ Uses LucaStrategy as default
   const {
     isRunning,
     logs,
@@ -25,9 +25,7 @@ export const IncrementalDownloadTester = () => {
     start,
     stop,
     reset
-  } = useEmailDownload({
-    strategy: selectedStrategy
-  });
+  } = useEmailDownload(); // Default = 'luca'
 
   const handleStart = async () => {
     setTestRunning(true);
@@ -57,37 +55,17 @@ export const IncrementalDownloadTester = () => {
   const lastLog = logs[logs.length - 1];
 
   return (
-    <Card>
+    <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="space-y-3">
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-yellow-500" />
-              Download Test - Multiple Strategies
+        <div className="flex items-start justify-between">
+          <div className="space-y-1.5">
+            <CardTitle className="text-2xl flex items-center gap-2">
+              <Zap className="w-6 h-6 text-primary" />
+              Luca Method - Production Download
             </CardTitle>
             <CardDescription>
-              Test different download strategies and compare performance
+              Zero overhead, direct download from MAX(uid) + 1 - Production download strategy
             </CardDescription>
-            
-            {/* Strategy Selector */}
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setSelectedStrategy('incremental')}
-                variant={selectedStrategy === 'incremental' ? 'default' : 'outline'}
-                size="sm"
-                disabled={isRunning}
-              >
-                Incremental
-              </Button>
-              <Button
-                onClick={() => setSelectedStrategy('luca')}
-                variant={selectedStrategy === 'luca' ? 'default' : 'outline'}
-                size="sm"
-                disabled={isRunning}
-              >
-                Luca (Zero Liste)
-              </Button>
-            </div>
           </div>
           
           <div className="flex gap-2">
@@ -97,9 +75,10 @@ export const IncrementalDownloadTester = () => {
                   onClick={handleStart}
                   disabled={testRunning}
                   className="gap-2"
+                  size="lg"
                 >
                   <Rocket className="h-4 w-4" />
-                  Start Test
+                  Start Download
                 </Button>
                 {logs.length > 0 && (
                   <Button
@@ -116,6 +95,7 @@ export const IncrementalDownloadTester = () => {
                 onClick={handleStop}
                 variant="destructive"
                 className="gap-2"
+                size="lg"
               >
                 <StopCircle className="h-4 w-4" />
                 Stop
@@ -184,7 +164,7 @@ export const IncrementalDownloadTester = () => {
           <ScrollArea className="h-[300px] rounded-md border bg-muted/20 p-4">
             {logs.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
-                No logs yet. Start the test to see progress.
+                No logs yet. Start the download to see progress.
               </div>
             ) : (
               <div className="space-y-2">
@@ -212,32 +192,23 @@ export const IncrementalDownloadTester = () => {
           </ScrollArea>
         </div>
 
-        {/* Strategy Info */}
-        <div className="p-4 bg-muted/30 rounded-lg space-y-2 text-sm">
-          <h4 className="font-medium flex items-center gap-2">
-            <Zap className="h-4 w-4 text-yellow-500" />
-            {selectedStrategy === 'luca' ? 'How Luca Strategy Works' : 'How Incremental Strategy Works'}
-          </h4>
-          {selectedStrategy === 'luca' ? (
-            <ul className="space-y-1 text-muted-foreground list-disc list-inside">
-              <li><strong>Zero temp_index queries</strong> - hardcoded folder list</li>
-              <li>Queries MAX(uid) directly from email_messages (blazing fast)</li>
-              <li>Downloads from MAX(uid) + 1 in batches of 25</li>
-              <li>Stops after 3 consecutive empty batches</li>
-              <li>Starts in ~50ms vs 3-5s of other strategies</li>
-              <li>Perfect for automated daily incremental sync</li>
+        {/* Strategy Info Card */}
+        <Card className="bg-muted/30">
+          <CardHeader>
+            <CardTitle className="text-sm">📋 Luca Method - How It Works</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="text-xs text-muted-foreground space-y-1 ml-4">
+              <li>• <strong>Zero overhead:</strong> No preliminary queries on email_temp_index</li>
+              <li>• <strong>Hardcoded folders:</strong> ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk', 'Archive']</li>
+              <li>• <strong>Fast MAX query:</strong> Single query on email_messages (~50ms)</li>
+              <li>• <strong>Direct download:</strong> Starts from MAX(uid) + 1 in batches of 25</li>
+              <li>• <strong>Smart stop:</strong> Stops after 3 consecutive empty batches</li>
+              <li>• <strong>Performance:</strong> 10x faster preparation than index-based strategies</li>
+              <li>• <strong>Ideal for:</strong> Daily incremental sync, fast downloads, production use</li>
             </ul>
-          ) : (
-            <ul className="space-y-1 text-muted-foreground list-disc list-inside">
-              <li>Uses temp_index to find pending emails</li>
-              <li>Queries MAX(uid) from database for each folder</li>
-              <li>Downloads from MAX(uid) + 1 in batches of 25</li>
-              <li>Stops after 3 consecutive empty batches</li>
-              <li>Zero query overhead - starts immediately</li>
-              <li>Perfect for daily sync automation</li>
-            </ul>
-          )}
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Last Status */}
         {lastLog && !isRunning && (

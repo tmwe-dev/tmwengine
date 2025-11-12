@@ -38,19 +38,18 @@ export async function importEmailFromTempIndex(
   }
 
   // 2. Download email completa (usa email-downloader.ts)
-  const success = await downloadSingleEmail(
+  const result = await downloadSingleEmail(
     parseInt(uid, 10),
     folder,
     userEmail,
-    undefined, // config default
-    undefined  // onProgress callback
+    undefined // config default
   );
 
-  if (!success) {
+  if (result.status === 'failed') {
     throw new Error(`Failed to download email UID ${uid}`);
   }
 
-  console.log(`✅ Email UID ${uid} importata con successo`);
+  console.log(`✅ Email UID ${uid} importata con successo (status: ${result.status})`);
 }
 
 /**

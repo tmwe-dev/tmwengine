@@ -68,9 +68,8 @@ export async function downloadSingleEmail(
   uid: number,
   folder: string,
   user_email: string,
-  config: DownloadConfig = {},
-  onProgress?: (imported: number) => void
-): Promise<boolean> {
+  config: DownloadConfig = {}
+): Promise<{ status: 'imported' | 'skipped' | 'failed'; uid: number }> {
   const full_config = { ...DEFAULT_CONFIG, ...config };
   const message_id = `${folder}/${uid}`;
   const uid_str = String(uid);
@@ -81,7 +80,7 @@ export async function downloadSingleEmail(
     
     if (!api_email) {
       console.warn(`[downloadSingleEmail] No data for UID ${uid} after retries`);
-      return false;
+      return { status: 'failed', uid };
     }
     
     // 2. Normalizza email
@@ -90,7 +89,7 @@ export async function downloadSingleEmail(
     // 3. Valida dati minimi
     if (!validateNormalizedEmail(normalized)) {
       console.error(`[downloadSingleEmail] ⚠️ UID ${uid}: API returned incomplete data`);
-      return false;
+      return { status: 'failed', uid };
     }
     
     // 4. ✅ CHECK DOPO FETCH (quando hai già i dati)
@@ -98,10 +97,7 @@ export async function downloadSingleEmail(
     if (exists) {
       console.log(`[downloadSingleEmail] ✅ UID ${uid} already exists, skipping`);
       await updateTempIndexStatus(uid_str, folder, user_email, 'imported');
-      if (onProgress) {
-        onProgress(1);
-      }
-      return true;
+      return { status: 'skipped', uid };
     }
     
     console.log(`[downloadSingleEmail] ✅ UID ${uid}: subject="${normalized.subject.substring(0, 50)}...", from=${normalized.from_email}`);
@@ -116,22 +112,17 @@ export async function downloadSingleEmail(
     
     if (!success) {
       console.error(`[downloadSingleEmail] Insert error UID ${uid}:`, error);
-      return false;
+      return { status: 'failed', uid };
     }
     
     // 6. Aggiorna temp_index
     await updateTempIndexStatus(uid_str, folder, user_email, 'imported');
     
-    // 7. Notifica progresso
-    if (onProgress) {
-      onProgress(1);
-    }
-    
-    return true;
+    return { status: 'imported', uid };
     
   } catch (error: any) {
     console.error(`[downloadSingleEmail] Error UID ${uid}:`, error.message);
-    return false;
+    return { status: 'failed', uid };
   }
 }
 
@@ -147,28 +138,45 @@ export async function downloadEmailBatch(
 ): Promise<{ downloaded: number; errors: number }> {
   const full_config = { ...DEFAULT_CONFIG, ...config };
   let total_imported = 0;
+  let total_skipped = 0;
   let total_errors = 0;
   
-  // Download parallelo con controllo concorrenza
+  // ✅ Processa chunk sequenziali per controllo concorrenza
   for (let i = 0; i < uids.length; i += full_config.max_concurrent) {
     const chunk = uids.slice(i, i + full_config.max_concurrent);
     
-    const results = await Promise.all(
-      chunk.map(uid => 
-        downloadSingleEmail(uid, folder, user_email, config, (imported) => {
-          total_imported += imported;
-          if (onProgress) {
-            onProgress(folder, total_imported, uids.length);
-          }
-        })
-      )
+    // ✅ Promise.allSettled garantisce tutte le risposte
+    const results = await Promise.allSettled(
+      chunk.map(uid => downloadSingleEmail(uid, folder, user_email, config))
     );
     
-    total_errors += results.filter(r => !r).length;
+    // ✅ Post-processing DOPO tutte le promise (NO race condition)
+    results.forEach((result) => {
+      if (result.status === 'fulfilled') {
+        const { status } = result.value;
+        
+        if (status === 'imported') {
+          total_imported++;
+        } else if (status === 'skipped') {
+          total_skipped++;
+        } else {
+          total_errors++;
+        }
+      } else {
+        total_errors++;
+      }
+    });
+    
+    // ✅ Aggiorna progresso DOPO ogni chunk
+    if (onProgress) {
+      onProgress(folder, total_imported, uids.length);
+    }
   }
   
+  console.log(`[downloadEmailBatch] 📊 Riepilogo: ${total_imported} imported, ${total_skipped} skipped, ${total_errors} errors`);
+  
   return { 
-    downloaded: total_imported, 
+    downloaded: total_imported,  // ✅ Solo email realmente importate
     errors: total_errors 
   };
 }

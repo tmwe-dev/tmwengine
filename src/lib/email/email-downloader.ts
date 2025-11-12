@@ -76,14 +76,7 @@ export async function downloadSingleEmail(
   const uid_str = String(uid);
   
   try {
-    // 1. Verifica se già esiste per questo utente
-    const exists = await checkEmailExists(message_id, user_email);
-    if (exists) {
-      console.log(`[downloadSingleEmail] UID ${uid} already exists, skipping`);
-      return false;
-    }
-    
-    // 2. Scarica dalla API con retry
+    // 1. Scarica dalla API con retry
     const api_email = await fetchEmailWithRetry(uid_str, folder, full_config);
     
     if (!api_email) {
@@ -91,12 +84,20 @@ export async function downloadSingleEmail(
       return false;
     }
     
-    // 3. Normalizza email
+    // 2. Normalizza email
     const normalized = normalizeEmailMessage(api_email);
     
-    // 4. Valida dati minimi
+    // 3. Valida dati minimi
     if (!validateNormalizedEmail(normalized)) {
       console.error(`[downloadSingleEmail] ⚠️ UID ${uid}: API returned incomplete data`);
+      return false;
+    }
+    
+    // 4. ✅ CHECK DOPO FETCH (quando hai già i dati)
+    const exists = await checkEmailExists(message_id, user_email);
+    if (exists) {
+      console.log(`[downloadSingleEmail] ✅ UID ${uid} already exists, skipping`);
+      await updateTempIndexStatus(uid_str, folder, user_email, 'imported');
       return false;
     }
     

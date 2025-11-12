@@ -42,22 +42,11 @@ export class EmailDownloadService {
     });
 
     try {
-      // 1. Get folders da sincronizzare (custom, default o da temp index)
-      let folders: FolderToSync[];
-      
-      if (customFolders && customFolders.length > 0) {
-        // Cartelle custom passate esplicitamente (es. FunEmailDownloader, QuickEmailDownloader)
-        folders = customFolders.map(name => ({ folderName: name, pending: 0, included: true }));
-      } else if (this.strategy.name === 'Luca Method (Zero Lists)') {
-        // LucaStrategy usa DEFAULT_FOLDERS → passa array vuoto per attivare fallback interno
-        folders = [];
-      } else {
-        // Altre strategie (CleanStrategy, deprecate) → usa email_temp_index
-        folders = await this.getFoldersToSync();
-      }
+      // 1. Smart preparation: usa API esistenti per calcolare startUID corretto
+      const folders = await this.prepareSmartDownload(customFolders);
 
-      // Early exit solo se folders vuoti E non è LucaStrategy (che ha fallback interno)
-      if (folders.length === 0 && this.strategy.name !== 'Luca Method (Zero Lists)') {
+      // Early exit se nessuna cartella da sincronizzare
+      if (folders.length === 0) {
         onLog({ 
           phase: 'completed', 
           message: '✅ No emails to import' 
@@ -72,21 +61,18 @@ export class EmailDownloadService {
 
       const totalPending = folders.reduce((sum, f) => sum + f.pending, 0);
 
-      // Log plan solo se folders non vuoto (se vuoto, LucaStrategy userà DEFAULT_FOLDERS)
-      if (folders.length > 0) {
+      onLog({
+        phase: 'preparing',
+        message: `📋 Smart Plan: ${folders.length} folders, ${totalPending} total emails`
+      });
+
+      // Log folders to sync
+      folders.forEach((f, i) => {
         onLog({
           phase: 'preparing',
-          message: `📋 Plan: ${folders.length} folders, ${totalPending} total emails`
+          message: `  ${i + 1}. ${f.folderName} → ${f.pending} emails (start UID ${f.startUID || 1})`
         });
-
-        // Log folders to sync
-        folders.forEach((f, i) => {
-          onLog({
-            phase: 'preparing',
-            message: `  ${i + 1}. ${f.folderName} → ${f.pending} emails`
-          });
-        });
-      }
+      });
 
       onLog({ phase: 'preparing', message: '⏳ Starting in 2 seconds...' });
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -146,5 +132,81 @@ export class EmailDownloadService {
   private async getFoldersToSync() {
     const folders = await getSingleFastFoldersFromLocal(this.userEmail);
     return folders.filter(f => f.included && f.pending > 0);
+  }
+
+  /**
+   * Smart Preparation: usa API esistenti per calcolare startUID corretto
+   * @param customFolders - Cartelle custom da scaricare (opzionale)
+   */
+  private async prepareSmartDownload(customFolders?: string[]): Promise<FolderToSync[]> {
+    const { emailSearchApi } = await import('@/lib/tmwe-email-search-api');
+    const { getMaxUID } = await import('./UIDRangeService');
+    
+    const foldersToSync: FolderToSync[] = [];
+
+    try {
+      // 1. Recupera cartelle dal server (API esistente)
+      const serverFoldersResponse = await emailSearchApi.getFolders();
+      const serverFolders = serverFoldersResponse.folders || [];
+
+      // 2. Per ogni cartella, calcola startUID e pending
+      for (const folder of serverFolders) {
+        const folderName = folder.name || folder.folder_name;
+        
+        // Se custom folders specificato, filtra
+        if (customFolders && customFolders.length > 0 && !customFolders.includes(folderName)) {
+          continue;
+        }
+
+        try {
+          // A. Info server (API esistente)
+          const serverInfo = await emailSearchApi.getFolderInfo(folderName);
+          const serverMaxUID = serverInfo.folder?.max_uid || serverInfo.folder?.uidnext || 0;
+          
+          // B. Info DB locale (funzione esistente)
+          const localMaxUID = await getMaxUID(folderName, this.userEmail);
+          
+          // C. Calcola pending e startUID
+          let pending = 0;
+          let startUID = 1;
+          
+          if (localMaxUID === null) {
+            // Cartella nuova → scarica da UID 1
+            pending = serverMaxUID > 0 ? serverMaxUID : 0;
+            startUID = 1;
+          } else if (serverMaxUID > localMaxUID) {
+            // Cartella parziale → scarica nuove
+            pending = serverMaxUID - localMaxUID;
+            startUID = localMaxUID + 1;
+          }
+          
+          if (pending > 0) {
+            foldersToSync.push({
+              folderName,
+              pending,
+              included: true,
+              startUID
+            });
+          }
+        } catch (error: any) {
+          console.warn(`[SmartPrep] Error processing folder ${folderName}:`, error.message);
+          // Continua con altre cartelle
+        }
+      }
+    } catch (error: any) {
+      console.error('[SmartPrep] Error fetching server folders:', error.message);
+      
+      // Fallback: se custom folders fornito, usale con startUID = 1
+      if (customFolders && customFolders.length > 0) {
+        return customFolders.map(name => ({
+          folderName: name,
+          pending: 0, // Sconosciuto, LucaStrategy gestirà
+          included: true,
+          startUID: 1
+        }));
+      }
+    }
+
+    return foldersToSync;
   }
 }

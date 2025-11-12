@@ -16,6 +16,7 @@ export interface FolderToSync {
   folderName: string;
   pending: number;
   included: boolean;
+  startUID?: number; // Custom start UID for smart download
 }
 
 export interface LogEntry {

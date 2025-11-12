@@ -87,22 +87,36 @@ export class LucaStrategy implements DownloadStrategy {
       });
 
       try {
-        // ✅ Query velocissima: MAX(uid) da email_messages
-        const maxUID = await getMaxUID(folderName, userEmail);
-        const startUID = maxUID === null ? 1 : maxUID + 1;
+        // ✅ Smart startUID: usa custom se fornito, altrimenti calcola da MAX(uid)
+        const folderConfig = folders.find(f => f.folderName === folderName);
+        let startUID: number;
 
-        if (maxUID === null) {
+        if (folderConfig?.startUID !== undefined) {
+          // Usa startUID fornito da Smart Preparation
+          startUID = folderConfig.startUID;
           onLog({
             phase: 'preparing',
             folder: folderName,
-            message: `  ├─ Empty folder, starting from UID 1`
+            message: `  ├─ 🎯 Smart start from UID ${startUID} (${folderConfig.pending} pending)`
           });
         } else {
-          onLog({
-            phase: 'preparing',
-            folder: folderName,
-            message: `  ├─ MAX(uid) = ${maxUID}, starting from UID ${startUID}`
-          });
+          // Fallback: logica originale
+          const maxUID = await getMaxUID(folderName, userEmail);
+          startUID = maxUID === null ? 1 : maxUID + 1;
+
+          if (maxUID === null) {
+            onLog({
+              phase: 'preparing',
+              folder: folderName,
+              message: `  ├─ Empty folder, starting from UID 1`
+            });
+          } else {
+            onLog({
+              phase: 'preparing',
+              folder: folderName,
+              message: `  ├─ MAX(uid) = ${maxUID}, starting from UID ${startUID}`
+            });
+          }
         }
 
         // ✅ Loop batch incrementale

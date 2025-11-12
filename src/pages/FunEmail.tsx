@@ -27,6 +27,7 @@ import { AIAutomationDashboard } from '@/components/email/automation/AIAutomatio
 import { EmailCountDiagnostics } from '@/components/email/EmailCountDiagnostics';
 import { SingleMailImporter } from '@/components/email/SingleMailImporter';
 import { VerifyFolderNames } from '@/components/email/debug/VerifyFolderNames';
+import { IncrementalDownloadTester } from '@/components/email/IncrementalDownloadTester';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();
@@ -383,6 +384,7 @@ const FunEmail = () => {
             </div>
           ) : currentView === 'single-mail' ? (
             <div className="p-6 space-y-4">
+              <IncrementalDownloadTester />
               <VerifyFolderNames />
               {/* Force rebuild - SingleMailImporter - 2025-11-05 07:55 */}
               <SingleMailImporter />

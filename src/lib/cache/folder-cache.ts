@@ -48,13 +48,19 @@ class FolderCache {
    * Salva folder in cache
    */
   set(data: any, config: { include_counts: boolean; include_hierarchy: boolean }): void {
+    // ✅ VALIDAZIONE: Non salvare dati vuoti/invalidi
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      console.warn(`⚠️ [FolderCache] SKIP caching empty data for ${this.getCacheKey(config)}`);
+      return;
+    }
+    
     const key = this.getCacheKey(config);
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
       config
     });
-    console.log(`💾 Folder Cache SET (${key})`);
+    console.log(`💾 [FolderCache] SET ${key}: ${Array.isArray(data) ? data.length : 'N/A'} folders`);
   }
 
   /**

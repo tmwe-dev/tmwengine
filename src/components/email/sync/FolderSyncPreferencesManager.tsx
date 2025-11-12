@@ -40,16 +40,30 @@ export function FolderSyncPreferencesManager({
   const { data: foldersData, isLoading: isLoadingFolders } = useQuery({
     queryKey: ['email-folders', userEmail],
     queryFn: async () => {
+      console.log('🔄 [FolderPrefs] Fetching folders (FORCE REFRESH)');
+      
+      // ✅ BYPASSA CACHE VUOTA
       const response = await emailFolderApi.getFolders({ 
         include_counts: false,
-        skipCache: false
+        skipCache: true  // ✅ Forza chiamata API reale
       });
+      
       const foldersList = Array.isArray(response) 
         ? response 
         : (response?.folders || response?.data || []);
+      
+      console.log(`📁 [FolderPrefs] API returned ${foldersList.length} folders`);
+      
+      // ✅ FALLBACK se API restituisce ancora 0
+      if (foldersList.length === 0) {
+        console.warn('⚠️ [FolderPrefs] API returned 0 folders - using FALLBACK');
+        return ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk', 'Spam'];
+      }
+      
       return foldersList.map((f: any) => f.name || f);
     },
     enabled: !!userEmail,
+    staleTime: 0,  // ✅ Non cachare in React Query
   });
 
   const availableFolders = foldersData || [];

@@ -101,7 +101,7 @@ export default function SingleFast() {
           <DownloadButtonWithLabel
             label={isRunning ? 'In corso...' : '🚀 Avvia Download'}
             icon={Rocket}
-            strategy="luca"
+            strategy="sequential"
             config={{
               batchSize: 25,
               maxConcurrent: 1

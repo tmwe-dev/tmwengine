@@ -246,8 +246,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
                 icon={Download}
                 strategy="sequential"
                 config={{
-                  batchSize: 25,
-                  folders: selectedFolders
+                  batchSize: 25
                 }}
                 edgeFunction="tmwe-api-proxy"
                 internalFunction="LucaStrategy.execute()"

@@ -263,7 +263,7 @@ export const QuickEmailDownloader = forwardRef<
 
   return (
     <>
-      <RealtimeEmailInsertionMonitor isActive={isRunning} />
+      <RealtimeEmailInsertionMonitor isActive={isRunning} userEmail={userEmail} />
       
       <Card className="bg-gradient-to-br from-blue-500/5 to-purple-500/5">
         <CardHeader>

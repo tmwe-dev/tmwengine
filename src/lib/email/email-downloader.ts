@@ -37,8 +37,8 @@ async function fetchEmailWithRetry(
   
   while (retries <= config.max_retries) {
     try {
-      // ✅ Scarica email COMPLETA con body (include_body: true)
-      const email = await emailMessageApi.getMessage(uid, folder, false, true);
+      // ✅ Scarica email dalla API
+      const email = await emailMessageApi.getMessage(uid, folder, false);
       return email;
     } catch (error: any) {
       last_error = error;
@@ -83,8 +83,15 @@ export async function downloadSingleEmail(
       return { status: 'failed', uid };
     }
     
-    // 2. Normalizza email
-    const normalized = normalizeEmailMessage(api_email);
+    // ✅ Check success PRIMA di normalizzare (come nel backup)
+    if (api_email.success === false) {
+      const errorMsg = api_email.errors?.[0] || api_email.error || 'API error';
+      console.warn(`[downloadSingleEmail] ❌ API failed for UID ${uid}: ${errorMsg}`);
+      return { status: 'failed', uid };
+    }
+    
+    // 2. Normalizza email (passa uid, folder per message_id generation)
+    const normalized = normalizeEmailMessage(api_email, uid_str, folder);
     
     // 3. Valida dati minimi
     if (!validateNormalizedEmail(normalized)) {

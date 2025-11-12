@@ -4,7 +4,7 @@
  * Gestisce orchestrazione download con strategy pattern
  */
 
-import type { DownloadStrategy, LogEntry, DownloadProgress } from '../strategies/DownloadStrategy';
+import type { DownloadStrategy, LogEntry, DownloadProgress, FolderToSync } from '../strategies/DownloadStrategy';
 import { getSingleFastFoldersFromLocal } from '@/lib/single-fast-core';
 
 export interface EmailDownloadServiceResult {
@@ -42,12 +42,22 @@ export class EmailDownloadService {
     });
 
     try {
-      // 1. Get folders da sincronizzare (custom o da temp index)
-      const folders = customFolders && customFolders.length > 0
-        ? customFolders.map(name => ({ folderName: name, pending: 0, included: true }))
-        : await this.getFoldersToSync();
+      // 1. Get folders da sincronizzare (custom, default o da temp index)
+      let folders: FolderToSync[];
+      
+      if (customFolders && customFolders.length > 0) {
+        // Cartelle custom passate esplicitamente (es. FunEmailDownloader, QuickEmailDownloader)
+        folders = customFolders.map(name => ({ folderName: name, pending: 0, included: true }));
+      } else if (this.strategy.name === 'Luca Method (Zero Lists)') {
+        // LucaStrategy usa DEFAULT_FOLDERS → passa array vuoto per attivare fallback interno
+        folders = [];
+      } else {
+        // Altre strategie (CleanStrategy, deprecate) → usa email_temp_index
+        folders = await this.getFoldersToSync();
+      }
 
-      if (folders.length === 0) {
+      // Early exit solo se folders vuoti E non è LucaStrategy (che ha fallback interno)
+      if (folders.length === 0 && this.strategy.name !== 'Luca Method (Zero Lists)') {
         onLog({ 
           phase: 'completed', 
           message: '✅ No emails to import' 
@@ -62,18 +72,21 @@ export class EmailDownloadService {
 
       const totalPending = folders.reduce((sum, f) => sum + f.pending, 0);
 
-      onLog({
-        phase: 'preparing',
-        message: `📋 Plan: ${folders.length} folders, ${totalPending} total emails`
-      });
-
-      // Log folders to sync
-      folders.forEach((f, i) => {
+      // Log plan solo se folders non vuoto (se vuoto, LucaStrategy userà DEFAULT_FOLDERS)
+      if (folders.length > 0) {
         onLog({
           phase: 'preparing',
-          message: `  ${i + 1}. ${f.folderName} → ${f.pending} emails`
+          message: `📋 Plan: ${folders.length} folders, ${totalPending} total emails`
         });
-      });
+
+        // Log folders to sync
+        folders.forEach((f, i) => {
+          onLog({
+            phase: 'preparing',
+            message: `  ${i + 1}. ${f.folderName} → ${f.pending} emails`
+          });
+        });
+      }
 
       onLog({ phase: 'preparing', message: '⏳ Starting in 2 seconds...' });
       await new Promise(resolve => setTimeout(resolve, 2000));

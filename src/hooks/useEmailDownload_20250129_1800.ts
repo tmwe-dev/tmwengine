@@ -10,11 +10,9 @@ import { EmailDownloadService } from '@/lib/email/services/EmailDownloadService'
 import { SequentialStrategy } from '@/lib/email/strategies/SequentialStrategy';
 import { ParallelStrategy } from '@/lib/email/strategies/ParallelStrategy';
 import { DanceStrategy } from '@/lib/email/strategies/DanceStrategy';
-import { IncrementalStrategy } from '@/lib/email/strategies/IncrementalStrategy';
-import { CleanStrategy } from '@/lib/email/strategies/CleanStrategy';
 import type { LogEntry, DownloadProgress } from '@/lib/email/strategies/DownloadStrategy';
 
-export type DownloadStrategyType = 'sequential' | 'parallel' | 'dance' | 'incremental' | 'clean';
+export type DownloadStrategyType = 'sequential' | 'parallel' | 'dance';
 
 interface UseEmailDownloadOptions {
   /** Tipo strategia download */
@@ -79,12 +77,6 @@ export function useEmailDownload(options: UseEmailDownloadOptions) {
       
       case 'dance':
         return new DanceStrategy();
-      
-      case 'incremental':
-        return new IncrementalStrategy();
-      
-      case 'clean':
-        return new CleanStrategy();
       
       default:
         throw new Error(`Unknown strategy: ${options.strategy}`);

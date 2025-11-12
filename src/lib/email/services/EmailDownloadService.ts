@@ -24,10 +24,14 @@ export class EmailDownloadService {
 
   /**
    * Avvia processo di download
+   * @param onProgress - Callback per updates progresso
+   * @param onLog - Callback per logs
+   * @param customFolders - Cartelle custom da scaricare (opzionale)
    */
   async start(
     onProgress: (progress: DownloadProgress) => void,
-    onLog: (log: Omit<LogEntry, 'timestamp'>) => void
+    onLog: (log: Omit<LogEntry, 'timestamp'>) => void,
+    customFolders?: string[]
   ): Promise<EmailDownloadServiceResult> {
     
     this.shouldStopFlag = false;
@@ -38,8 +42,10 @@ export class EmailDownloadService {
     });
 
     try {
-      // 1. Get folders da sincronizzare (da local temp index)
-      const folders = await this.getFoldersToSync();
+      // 1. Get folders da sincronizzare (custom o da temp index)
+      const folders = customFolders && customFolders.length > 0
+        ? customFolders.map(name => ({ folderName: name, pending: 0, included: true }))
+        : await this.getFoldersToSync();
 
       if (folders.length === 0) {
         onLog({ 

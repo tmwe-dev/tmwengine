@@ -4,7 +4,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { LogEntry } from '@/hooks/useSingleFast';
+import type { LogEntry } from '@/lib/email/strategies/DownloadStrategy';
 import { Loader2, CheckCircle, XCircle, Download, AlertTriangle } from 'lucide-react';
 
 interface SingleFastLogViewerProps {
@@ -23,6 +23,7 @@ export function SingleFastLogViewer({ logs }: SingleFastLogViewerProps) {
       case 'error':
         return <XCircle className="h-4 w-4 text-red-500" />;
       case 'skip':
+      case 'warning':
         return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
     }
   };
@@ -38,6 +39,7 @@ export function SingleFastLogViewer({ logs }: SingleFastLogViewerProps) {
       case 'error':
         return 'text-red-500';
       case 'skip':
+      case 'warning':
         return 'text-yellow-500';
     }
   };
@@ -77,13 +79,9 @@ export function SingleFastLogViewer({ logs }: SingleFastLogViewerProps) {
                   )}
                 </div>
                 
-                {log.emailDetails && (
-                  <div className="text-gray-400 text-xs mt-1 space-y-0.5">
-                    <div>📧 {log.emailDetails.from_email}</div>
-                    {log.emailDetails.subject && (
-                      <div className="truncate">📄 {log.emailDetails.subject}</div>
-                    )}
-                    <div>🕒 {log.emailDetails.date}</div>
+                {log.email && (
+                  <div className="text-gray-400 text-xs mt-1">
+                    📧 {log.email}
                   </div>
                 )}
               </div>

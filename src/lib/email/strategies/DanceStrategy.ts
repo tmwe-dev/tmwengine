@@ -62,7 +62,7 @@ export class DanceStrategy implements DownloadStrategy {
           userEmail,
           folder.folderName,
           { batch_size: this.BATCH_SIZE },
-          // onProgress callback
+          2,
           (folderName, downloaded, total) => {
             folderSuccessCount = downloaded;
 

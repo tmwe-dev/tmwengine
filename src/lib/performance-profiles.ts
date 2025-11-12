@@ -89,7 +89,8 @@ export async function saveTestResultAsProfile(
  * Carica profilo attivo corrente
  */
 export async function getActiveProfile(): Promise<PerformanceProfile | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   if (!user) return null;
   
   const { data, error } = await supabase

@@ -132,6 +132,31 @@ export function useSingleFastMax() {
       const user_email = await getUserEmail();
       addLog({ phase: 'init', message: `📧 User email: ${user_email}` });
 
+      // ✅ CARICA PROFILO UNA VOLTA (NON per ogni folder)
+      let profileMaxConcurrent = 2; // Default conservativo
+      try {
+        const { getActiveProfile } = await import('@/lib/performance-profiles');
+        const activeProfile = await getActiveProfile();
+        profileMaxConcurrent = (activeProfile?.optimization_flags as any)?.batchChunkSize || 2;
+        
+        if (activeProfile) {
+          addLog({ 
+            phase: 'init', 
+            message: `⚙️ Profilo attivo: "${activeProfile.profile_name}" - max_concurrent: ${profileMaxConcurrent}` 
+          });
+        } else {
+          addLog({ 
+            phase: 'init', 
+            message: `⚙️ Nessun profilo attivo, uso default: max_concurrent=${profileMaxConcurrent}` 
+          });
+        }
+      } catch (error) {
+        addLog({ 
+          phase: 'warning', 
+          message: `⚠️ Errore caricamento profilo, uso default: max_concurrent=${profileMaxConcurrent}` 
+        });
+      }
+
       // ✅ NO PRE-POPOLAZIONE: ottieni cartelle da preferenze
       const preferences = await getSyncPreferences(user_email);
       
@@ -201,7 +226,8 @@ export function useSingleFastMax() {
         const result = await processFolderWithDance(
           user_email,
           folder.folderName,
-          {}, // Usa configurazione di default
+          {},
+          profileMaxConcurrent,
           (folder_name: string, imported: number, total: number) => {
             setProgress(prev => ({
               ...prev,

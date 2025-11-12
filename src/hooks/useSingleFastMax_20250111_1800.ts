@@ -200,7 +200,8 @@ export function useSingleFastMax() {
         const result = await processFolderWithDance(
           user_email,
           folder.folderName,
-          {}, // Usa configurazione di default
+          {},
+          2,
           (folder_name: string, imported: number, total: number) => {
             setProgress(prev => ({
               ...prev,

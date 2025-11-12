@@ -7,7 +7,7 @@
 import { fetchUIDsFromTempIndex } from '@/lib/single-fast-core';
 import { downloadEmailBatch } from '@/lib/email/email-downloader';
 import type { DownloadConfig } from '@/lib/email/email-downloader';
-import { getActiveProfile } from '@/lib/performance-profiles';
+
 
 // Re-export types e funzioni repository per backward compatibility
 export { getFoldersProgress } from '@/lib/email/email-repository';
@@ -55,24 +55,10 @@ export async function processFolderWithDance(
   user_email: string,
   folder: string,
   config: ProcessConfig = {},
+  profileMaxConcurrent: number = 2,
   onProgress?: (folder: string, imported: number, total: number) => void
 ): Promise<{ total_downloaded: number; errors: number }> {
-  
-  // ✅ STEP 1: Carica Performance Profile (pattern sicuro da QuickEmailDownloader)
-  let profileMaxConcurrent = 2; // Default conservativo
-  
-  try {
-    const activeProfile = await getActiveProfile();
-    profileMaxConcurrent = (activeProfile?.optimization_flags as any)?.batchChunkSize || 2;
-    
-    if (activeProfile) {
-      console.log(`⚙️ [processFolderWithDance] Profilo attivo: "${activeProfile.profile_name}" - max_concurrent: ${profileMaxConcurrent}`);
-    }
-  } catch (error) {
-    console.warn(`⚠️ [processFolderWithDance] Profilo non disponibile, uso default: ${profileMaxConcurrent}`);
-  }
-  
-  // ✅ STEP 2: Adaptive config per folder problematiche
+  // ✅ Adaptive config per folder problematiche
   const isProblematicFolder = ['Trash', 'Spam', 'Junk', 'Deleted Items'].includes(folder);
   
   const full_config = { 

@@ -406,8 +406,8 @@ const OPTIMAL_CONFIG = {
   batchChunkSize: 10,
 };
 
-// API request wrapper BASE - USA EDGE FUNCTION COME PROXY CORS con TIMEOUT 60s
-const fetchApiBase = async (endpoint: string, data: any) => {
+// API request wrapper - USA EDGE FUNCTION COME PROXY CORS
+const fetchApi = async (endpoint: string, data: any) => {
   let token: string | null;
   
   try {
@@ -425,27 +425,17 @@ const fetchApiBase = async (endpoint: string, data: any) => {
     throw new Error('TMWE_SESSION_EXPIRED');
   }
 
-  // ✅ Helper per Edge Function con timeout 60s
-  const invokeWithTimeout = async (timeoutMs: number = 60000) => {
-    return Promise.race([
-      supabase.functions.invoke('tmwe-api-proxy', {
-        body: { 
-          endpoint, 
-          data: {
-            ...data,
-            bearerToken: token
-          },
-          optimizationFlags: OPTIMAL_CONFIG
-        },
-      }),
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error(`⏱️ Edge function timeout after ${timeoutMs}ms`)), timeoutMs)
-      )
-    ]);
-  };
-
   try {
-    const { data: responseData, error } = await invokeWithTimeout();
+    const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      body: { 
+        endpoint, 
+        data: {
+          ...data,
+          bearerToken: token
+        },
+        optimizationFlags: OPTIMAL_CONFIG
+      },
+    });
 
     console.log('═══════════════════════════════════════════════════════');
     console.log('📥 RISPOSTA EDGE FUNCTION');
@@ -477,29 +467,6 @@ const fetchApiBase = async (endpoint: string, data: any) => {
     console.log('═══════════════════════════════════════════════════════');
     throw error;
   }
-};
-
-// ✅ API Wrapper con RETRY + EXPONENTIAL BACKOFF (usato da tutte le API)
-const fetchApi = async (endpoint: string, data: any, maxRetries = 3): Promise<any> => {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`🔄 Attempt ${attempt}/${maxRetries} for ${endpoint}:${data.handler}`);
-      return await fetchApiBase(endpoint, data);
-    } catch (error: any) {
-      console.error(`❌ Attempt ${attempt} failed:`, error.message);
-      
-      if (attempt === maxRetries) {
-        console.error(`🔥 Max retries (${maxRetries}) reached for ${endpoint}:${data.handler}`);
-        throw error;
-      }
-      
-      // Exponential backoff: 1s, 2s, 4s, max 10s
-      const backoffMs = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-      console.warn(`⏳ Retrying in ${backoffMs}ms...`);
-      await new Promise(resolve => setTimeout(resolve, backoffMs));
-    }
-  }
-  throw new Error('Unexpected: retry loop ended without result');
 };
 
 // Email Account APIs

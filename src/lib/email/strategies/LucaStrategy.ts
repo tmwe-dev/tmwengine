@@ -146,7 +146,7 @@ export class LucaStrategy implements DownloadStrategy {
                 current_batch: batchNumber,
                 imported: totalDownloaded + imported,
                 total: totalDownloaded + total,
-                errors: totalErrors + errors
+                errors: totalErrors + folderErrors
               });
             }
           );

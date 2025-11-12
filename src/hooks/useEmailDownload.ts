@@ -112,10 +112,11 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
       // 3. Create service
       serviceRef.current = new EmailDownloadService(strategy, userEmail);
 
-      // 4. Start download
+      // 4. Start download (passa cartelle custom se presenti)
       await serviceRef.current.start(
         (prog) => setProgress(prog),
-        (log) => addLog(log)
+        (log) => addLog(log),
+        options.customFolders
       );
 
     } catch (error: any) {

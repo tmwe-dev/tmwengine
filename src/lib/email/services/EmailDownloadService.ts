@@ -4,7 +4,7 @@
  * Gestisce orchestrazione download con strategy pattern
  */
 
-import type { DownloadStrategy, LogEntry, DownloadProgress } from '../strategies/DownloadStrategy';
+import type { DownloadStrategy, LogEntry, DownloadProgress, FolderToSync } from '../strategies/DownloadStrategy';
 import { getSingleFastFoldersFromLocal } from '@/lib/single-fast-core';
 
 export interface EmailDownloadServiceResult {

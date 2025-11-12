@@ -174,7 +174,7 @@ export function useSingleFastMax() {
             await populateTempIndexForFolder(folder, user_email, {
               uid_batch_size: 50,
               page_throttle_ms: 5000,
-              max_pages: 2, // Limite effettivo a 2 pagine (100 UID)
+              max_pages: 999, // ✅ Download completo folder (rimosso limite artificiale)
             }, (progress) => {
               addLog({
                 phase: 'preparing',

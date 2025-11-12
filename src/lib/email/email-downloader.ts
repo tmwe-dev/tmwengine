@@ -98,7 +98,10 @@ export async function downloadSingleEmail(
     if (exists) {
       console.log(`[downloadSingleEmail] ✅ UID ${uid} already exists, skipping`);
       await updateTempIndexStatus(uid_str, folder, user_email, 'imported');
-      return false;
+      if (onProgress) {
+        onProgress(1);
+      }
+      return true;
     }
     
     console.log(`[downloadSingleEmail] ✅ UID ${uid}: subject="${normalized.subject.substring(0, 50)}...", from=${normalized.from_email}`);

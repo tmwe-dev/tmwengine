@@ -83,8 +83,9 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
 
   /**
    * Avvia download
+   * @param customFolders - Cartelle custom da scaricare (override di options.customFolders)
    */
-  const start = async () => {
+  const start = async (customFolders?: string[]) => {
     setIsRunning(true);
     setLogs([]);
     setProgress({
@@ -112,11 +113,11 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
       // 3. Create service
       serviceRef.current = new EmailDownloadService(strategy, userEmail);
 
-      // 4. Start download (passa cartelle custom se presenti)
+      // 4. Start download (usa parametro se fornito, altrimenti options.customFolders)
       await serviceRef.current.start(
         (prog) => setProgress(prog),
         (log) => addLog(log),
-        options.customFolders
+        customFolders || options.customFolders
       );
 
     } catch (error: any) {

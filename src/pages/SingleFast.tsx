@@ -108,7 +108,7 @@ export default function SingleFast() {
             }}
             edgeFunction="tmwe-api-proxy"
             internalFunction="LucaStrategy.execute()"
-            onClick={start}
+            onClick={() => start()}
             disabled={isRunning}
             size="lg"
             className="min-w-[200px]"

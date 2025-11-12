@@ -235,7 +235,7 @@ export const QuickEmailDownloader = forwardRef<
     }
 
     setStartTime(Date.now());
-    await start();
+    await start(selectedFolders);
 
     // Stats finali
     const duration = Math.floor((Date.now() - startTime) / 1000);

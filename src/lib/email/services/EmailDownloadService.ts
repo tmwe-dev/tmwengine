@@ -42,10 +42,19 @@ export class EmailDownloadService {
     });
 
     try {
-      // 1. Get folders da sincronizzare (custom o da temp index)
-      const folders = customFolders && customFolders.length > 0
-        ? customFolders.map(name => ({ folderName: name, pending: 0, included: true }))
-        : await this.getFoldersToSync();
+      // 1. Get folders da sincronizzare (custom, default o da temp index)
+      let folders: FolderToSync[];
+      
+      if (customFolders && customFolders.length > 0) {
+        // Cartelle custom passate esplicitamente (es. FunEmailDownloader, QuickEmailDownloader)
+        folders = customFolders.map(name => ({ folderName: name, pending: 0, included: true }));
+      } else if (this.strategy.name === 'Luca Method (Zero Lists)') {
+        // LucaStrategy usa DEFAULT_FOLDERS → passa array vuoto per attivare fallback interno
+        folders = [];
+      } else {
+        // Altre strategie (CleanStrategy, deprecate) → usa email_temp_index
+        folders = await this.getFoldersToSync();
+      }
 
       if (folders.length === 0) {
         onLog({ 

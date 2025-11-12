@@ -56,7 +56,8 @@ export class EmailDownloadService {
         folders = await this.getFoldersToSync();
       }
 
-      if (folders.length === 0) {
+      // Early exit solo se folders vuoti E non è LucaStrategy (che ha fallback interno)
+      if (folders.length === 0 && this.strategy.name !== 'Luca Method (Zero Lists)') {
         onLog({ 
           phase: 'completed', 
           message: '✅ No emails to import' 

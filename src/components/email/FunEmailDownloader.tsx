@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { Download, Folder, CheckSquare, Square, Pause, Play } from 'lucide-react';
+import { DownloadButtonWithLabel } from '@/components/design-system/buttons/DownloadButtonWithLabel';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { EmailFolderComparisonDialog } from './EmailFolderComparisonDialog';
@@ -557,15 +558,21 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
 
         {!isDownloading ? (
           <div className="flex gap-2">
-            <Button
+            <DownloadButtonWithLabel
+              label={`Prepara Email (${selectedFolders.length})`}
+              icon={Download}
+              strategy="sequential"
+              config={{
+                batchSize: 1,
+                maxConcurrent: 1
+              }}
+              edgeFunction="tmwe-api-proxy"
+              internalFunction="FunEmailDownloader.startDownload()"
               onClick={startDownload}
               disabled={selectedFolders.length === 0}
-              className="flex-1"
               size="lg"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Prepara Email ({selectedFolders.length})
-            </Button>
+              className="flex-1"
+            />
             <Button
               variant="outline"
               onClick={() => setComparisonDialogOpen(true)}

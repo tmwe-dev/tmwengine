@@ -17,6 +17,7 @@ import { useSingleFastPerformance } from '@/hooks/useSingleFastPerformance';
 import { useSingleFastMax } from '@/hooks/useSingleFastMax';
 import { EmailErrorBin } from '@/components/email/EmailErrorBin';
 import { Rocket, Settings, CheckCircle, XCircle, Pause, Play, Square, Loader2, Sliders, Zap } from 'lucide-react';
+import { DownloadButtonWithLabel } from '@/components/design-system/buttons/DownloadButtonWithLabel';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 
@@ -44,6 +45,12 @@ export default function SingleFast() {
     logs, 
     stopProcess
   } = activeHook;
+  
+  // Accesso a activeProfile per modalità Performance/MAX
+  const activeProfile = 'activeProfile' in activeHook ? (activeHook as any).activeProfile : null;
+  const profileMaxConcurrent = useMaxMode && activeProfile 
+    ? ((activeProfile.optimization_flags as any)?.batchChunkSize || 2)
+    : 2;
   
   // Proprietà specifiche per Normal e Performance mode
   const tempResults = 'tempResults' in activeHook ? (activeHook as any).tempResults : [];
@@ -210,26 +217,62 @@ export default function SingleFast() {
             </Badge>
           )}
           
-          <Button
-            size="lg"
-            onClick={startFunction}
-            disabled={isRunning}
-            className={useMaxMode ? "min-w-[200px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" : "min-w-[200px]"}
-          >
-            {isRunning ? (
-              <>
-                <span className="animate-spin">⏳</span>
-                <span className="ml-2">In corso...</span>
-              </>
-            ) : (
-              <>
-                {useMaxMode ? '💎' : (usePerformanceMode ? <Zap className="h-5 w-5" /> : <Rocket className="h-5 w-5" />)}
-                <span className="ml-2">
-                  {useMaxMode ? '💎 Avvia MAX' : (usePerformanceMode ? '⚡ Avvia Performance' : '🚀 Avvia Normale')}
-                </span>
-              </>
-            )}
-          </Button>
+          {/* Bottone Download con etichetta tecnica */}
+          {!usePerformanceMode && !useMaxMode && (
+            <DownloadButtonWithLabel
+              label={isRunning ? 'In corso...' : '🚀 Avvia Normale'}
+              icon={Rocket}
+              strategy="sequential"
+              config={{
+                batchSize: 50,
+                maxConcurrent: 1
+              }}
+              edgeFunction="tmwe-api-proxy"
+              internalFunction="useSingleFast.startSingleFast()"
+              onClick={startFunction}
+              disabled={isRunning}
+              size="lg"
+              className="min-w-[200px]"
+            />
+          )}
+          
+          {usePerformanceMode && !useMaxMode && (
+            <DownloadButtonWithLabel
+              label={isRunning ? 'In corso...' : '⚡ Avvia Performance'}
+              icon={Zap}
+              strategy="parallel"
+              config={{
+                batchSize: 50,
+                maxConcurrent: (activeProfile?.optimization_flags as any)?.batchChunkSize || 2,
+                profileName: activeProfile?.profile_name || 'Default'
+              }}
+              edgeFunction="tmwe-api-proxy"
+              internalFunction="useSingleFastPerformance.startSingleFastPerformance()"
+              onClick={startFunction}
+              disabled={isRunning}
+              size="lg"
+              className="min-w-[200px]"
+            />
+          )}
+          
+          {useMaxMode && (
+            <DownloadButtonWithLabel
+              label={isRunning ? 'In corso...' : '💎 Avvia MAX'}
+              emoji="💎"
+              strategy="dance"
+              config={{
+                batchSize: 50,
+                maxConcurrent: profileMaxConcurrent,
+                profileName: activeProfile?.profile_name || 'Default'
+              }}
+              edgeFunction="tmwe-api-proxy"
+              internalFunction="processFolderWithDance() [single-fast-max-core.ts]"
+              onClick={startFunction}
+              disabled={isRunning}
+              size="lg"
+              className="min-w-[200px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            />
+          )}
           
           {isRunning && (
             <>

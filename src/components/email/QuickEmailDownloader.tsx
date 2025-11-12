@@ -25,6 +25,7 @@ import {
   Play,
   Square
 } from 'lucide-react';
+import { DownloadButtonWithLabel } from '@/components/design-system/buttons/DownloadButtonWithLabel';
 import emailFolderGif from '@/assets/email-folder-unscreen.gif';
 import { emailFolderApi, emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
@@ -988,24 +989,21 @@ export const QuickEmailDownloader = forwardRef<{ startDownload: (folders?: strin
 
       {/* Start Button */}
       {!isDownloading && (
-        <Button
-          className="w-full"
-          size="lg"
+        <DownloadButtonWithLabel
+          label={isQuickLoading ? 'Caricamento cartelle...' : 'Avvia Quick Download'}
+          icon={Download}
+          strategy="profile-based"
+          config={{
+            batchSize: (activeProfile?.optimization_flags as any)?.batchChunkSize || 2,
+            maxConcurrent: (activeProfile?.optimization_flags as any)?.batchChunkSize || 2,
+            profileName: activeProfile?.profile_name || 'Default (2x)'
+          }}
+          edgeFunction="tmwe-api-proxy"
+          internalFunction="QuickEmailDownloader.startDownload()"
           onClick={() => startDownload()}
           disabled={isQuickLoading || isDownloading || quickFolders.filter(f => f.selected).length === 0}
-        >
-          {isQuickLoading ? (
-            <>
-              <Download className="h-5 w-5 mr-2 animate-spin" />
-              Caricamento cartelle...
-            </>
-          ) : (
-            <>
-              <Download className="h-5 w-5 mr-2" />
-              Avvia Quick Download
-            </>
-          )}
-        </Button>
+          size="lg"
+        />
       )}
     </div>
   );

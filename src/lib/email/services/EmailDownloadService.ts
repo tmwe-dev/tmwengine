@@ -72,18 +72,21 @@ export class EmailDownloadService {
 
       const totalPending = folders.reduce((sum, f) => sum + f.pending, 0);
 
-      onLog({
-        phase: 'preparing',
-        message: `📋 Plan: ${folders.length} folders, ${totalPending} total emails`
-      });
-
-      // Log folders to sync
-      folders.forEach((f, i) => {
+      // Log plan solo se folders non vuoto (se vuoto, LucaStrategy userà DEFAULT_FOLDERS)
+      if (folders.length > 0) {
         onLog({
           phase: 'preparing',
-          message: `  ${i + 1}. ${f.folderName} → ${f.pending} emails`
+          message: `📋 Plan: ${folders.length} folders, ${totalPending} total emails`
         });
-      });
+
+        // Log folders to sync
+        folders.forEach((f, i) => {
+          onLog({
+            phase: 'preparing',
+            message: `  ${i + 1}. ${f.folderName} → ${f.pending} emails`
+          });
+        });
+      }
 
       onLog({ phase: 'preparing', message: '⏳ Starting in 2 seconds...' });
       await new Promise(resolve => setTimeout(resolve, 2000));

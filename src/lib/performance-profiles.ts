@@ -95,6 +95,7 @@ export async function getActiveProfile(): Promise<PerformanceProfile | null> {
   const { data, error } = await supabase
     .from('performance_profiles')
     .select('*')
+    .eq('user_id', user.id)
     .eq('is_active', true)
     .maybeSingle();
     

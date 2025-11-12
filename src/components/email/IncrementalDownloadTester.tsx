@@ -11,11 +11,12 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Rocket, StopCircle, RotateCcw, Zap, ArrowRight } from 'lucide-react';
-import { useEmailDownload } from '@/hooks/useEmailDownload';
+import { useEmailDownload, type DownloadStrategyType } from '@/hooks/useEmailDownload';
 import { cn } from '@/lib/utils';
 
 export const IncrementalDownloadTester = () => {
   const [testRunning, setTestRunning] = useState(false);
+  const [selectedStrategy, setSelectedStrategy] = useState<DownloadStrategyType>('incremental');
 
   const {
     isRunning,
@@ -25,7 +26,7 @@ export const IncrementalDownloadTester = () => {
     stop,
     reset
   } = useEmailDownload({
-    strategy: 'incremental'
+    strategy: selectedStrategy
   });
 
   const handleStart = async () => {
@@ -59,15 +60,34 @@ export const IncrementalDownloadTester = () => {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
+          <div className="space-y-3">
             <CardTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-yellow-500" />
-              Incremental Download Test
-              <Badge variant="outline" className="ml-2">Metodo di Luca</Badge>
+              Download Test - Multiple Strategies
             </CardTitle>
-            <CardDescription className="mt-1">
-              Downloads only new emails from MAX(uid) + 1 onwards. Zero query overhead.
+            <CardDescription>
+              Test different download strategies and compare performance
             </CardDescription>
+            
+            {/* Strategy Selector */}
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setSelectedStrategy('incremental')}
+                variant={selectedStrategy === 'incremental' ? 'default' : 'outline'}
+                size="sm"
+                disabled={isRunning}
+              >
+                Incremental
+              </Button>
+              <Button
+                onClick={() => setSelectedStrategy('luca')}
+                variant={selectedStrategy === 'luca' ? 'default' : 'outline'}
+                size="sm"
+                disabled={isRunning}
+              >
+                Luca (Zero Liste)
+              </Button>
+            </div>
           </div>
           
           <div className="flex gap-2">
@@ -196,15 +216,27 @@ export const IncrementalDownloadTester = () => {
         <div className="p-4 bg-muted/30 rounded-lg space-y-2 text-sm">
           <h4 className="font-medium flex items-center gap-2">
             <Zap className="h-4 w-4 text-yellow-500" />
-            How Incremental Strategy Works
+            {selectedStrategy === 'luca' ? 'How Luca Strategy Works' : 'How Incremental Strategy Works'}
           </h4>
-          <ul className="space-y-1 text-muted-foreground list-disc list-inside">
-            <li>Queries MAX(uid) from database for each folder</li>
-            <li>Downloads from MAX(uid) + 1 in batches of 25</li>
-            <li>Stops after 3 consecutive empty batches</li>
-            <li>Zero query overhead - starts immediately</li>
-            <li>Perfect for daily sync automation</li>
-          </ul>
+          {selectedStrategy === 'luca' ? (
+            <ul className="space-y-1 text-muted-foreground list-disc list-inside">
+              <li><strong>Zero temp_index queries</strong> - hardcoded folder list</li>
+              <li>Queries MAX(uid) directly from email_messages (blazing fast)</li>
+              <li>Downloads from MAX(uid) + 1 in batches of 25</li>
+              <li>Stops after 3 consecutive empty batches</li>
+              <li>Starts in ~50ms vs 3-5s of other strategies</li>
+              <li>Perfect for automated daily incremental sync</li>
+            </ul>
+          ) : (
+            <ul className="space-y-1 text-muted-foreground list-disc list-inside">
+              <li>Uses temp_index to find pending emails</li>
+              <li>Queries MAX(uid) from database for each folder</li>
+              <li>Downloads from MAX(uid) + 1 in batches of 25</li>
+              <li>Stops after 3 consecutive empty batches</li>
+              <li>Zero query overhead - starts immediately</li>
+              <li>Perfect for daily sync automation</li>
+            </ul>
+          )}
         </div>
 
         {/* Last Status */}

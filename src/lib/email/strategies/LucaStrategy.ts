@@ -45,7 +45,7 @@ export class LucaStrategy implements DownloadStrategy {
    * Esegue download incrementale SENZA liste preparate
    */
   async execute(
-    _folders: FolderToSync[], // ✅ Ignorato, usiamo lista hardcoded
+    folders: FolderToSync[], // ✅ Accetta lista cartelle custom
     userEmail: string,
     onProgress: (progress: DownloadProgress) => void,
     onLog: (log: Omit<LogEntry, 'timestamp'>) => void,
@@ -56,6 +56,11 @@ export class LucaStrategy implements DownloadStrategy {
     let totalErrors = 0;
     let foldersCompleted = 0;
 
+    // ✅ Usa cartelle custom se fornite, altrimenti hardcoded
+    const foldersToProcess = folders.length > 0 
+      ? folders.map(f => f.folderName)
+      : DEFAULT_FOLDERS;
+
     onLog({ 
       phase: 'preparing', 
       message: `🚀 Luca Method: Zero lists, direct download from MAX(uid)+1` 
@@ -63,11 +68,11 @@ export class LucaStrategy implements DownloadStrategy {
 
     onLog({
       phase: 'preparing',
-      message: `📂 Folders to process: ${DEFAULT_FOLDERS.join(', ')}`
+      message: `📂 Folders to process: ${foldersToProcess.join(', ')}`
     });
 
-    // ✅ Loop su folder hardcoded (NO QUERY PREVENTIVA)
-    for (const folderName of DEFAULT_FOLDERS) {
+    // ✅ Loop su folder (custom o hardcoded)
+    for (const folderName of foldersToProcess) {
       
       // Check stop flag
       if (shouldStop()) {

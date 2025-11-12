@@ -139,15 +139,17 @@ export class EmailDownloadService {
    * @param customFolders - Cartelle custom da scaricare (opzionale)
    */
   private async prepareSmartDownload(customFolders?: string[]): Promise<FolderToSync[]> {
-    const { emailSearchApi } = await import('@/lib/tmwe-email-search-api');
+    const { emailFolderApi } = await import('@/lib/tmwe-api-integrated');
     const { getMaxUID } = await import('./UIDRangeService');
     
     const foldersToSync: FolderToSync[] = [];
 
     try {
       // 1. Recupera cartelle dal server (API esistente)
-      const serverFoldersResponse = await emailSearchApi.getFolders();
-      const serverFolders = serverFoldersResponse.folders || [];
+      const serverFolders = await emailFolderApi.getFolders({ 
+        include_counts: true,
+        skipCache: true
+      });
 
       // 2. Per ogni cartella, calcola startUID e pending
       for (const folder of serverFolders) {
@@ -160,8 +162,8 @@ export class EmailDownloadService {
 
         try {
           // A. Info server (API esistente)
-          const serverInfo = await emailSearchApi.getFolderInfo(folderName);
-          const serverMaxUID = serverInfo.folder?.max_uid || serverInfo.folder?.uidnext || 0;
+          const serverInfo = await emailFolderApi.getFolderInfo(folderName);
+          const serverMaxUID = serverInfo.folder?.uidnext || serverInfo.folder?.max_uid || 0;
           
           // B. Info DB locale (funzione esistente)
           const localMaxUID = await getMaxUID(folderName, this.userEmail);

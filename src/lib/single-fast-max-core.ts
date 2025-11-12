@@ -7,6 +7,7 @@
 import { fetchUIDsFromTempIndex } from '@/lib/single-fast-core';
 import { downloadEmailBatch } from '@/lib/email/email-downloader';
 import type { DownloadConfig } from '@/lib/email/email-downloader';
+import { getActiveProfile } from '@/lib/performance-profiles';
 
 // Re-export types e funzioni repository per backward compatibility
 export { getFoldersProgress } from '@/lib/email/email-repository';
@@ -57,16 +58,43 @@ export async function processFolderWithDance(
   onProgress?: (folder: string, imported: number, total: number) => void
 ): Promise<{ total_downloaded: number; errors: number }> {
   
+  // ✅ STEP 1: Carica Performance Profile attivo dal database
+  let profileMaxConcurrent = 3; // default fallback
+  
+  try {
+    const activeProfile = await getActiveProfile();
+    if (activeProfile?.optimization_flags) {
+      const flags = activeProfile.optimization_flags as any;
+      profileMaxConcurrent = flags.batchChunkSize || 3;
+      console.log(`[processFolderWithDance] ⚙️ Performance Profile: "${activeProfile.profile_name}" - batchChunkSize: ${profileMaxConcurrent}`);
+    } else {
+      console.log(`[processFolderWithDance] ⚙️ No active profile, using default: ${profileMaxConcurrent}`);
+    }
+  } catch (error) {
+    console.warn(`[processFolderWithDance] ⚠️ Error loading profile, using default:`, error);
+  }
+  
+  // ✅ STEP 2: Adaptive config per folder problematiche
+  const isProblematicFolder = ['Trash', 'Spam', 'Junk', 'Deleted Items'].includes(folder);
+  
   const full_config = { 
     ...DEFAULT_PROCESS_CONFIG, 
-    batch_size: 50,        // ✅ Fetch 50 UIDs per volta
-    max_concurrent: 2,     // ✅ Download max 2 paralleli
-    batch_delay_ms: 2000,  // ✅ 2s tra batch
+    batch_size: isProblematicFolder ? 10 : 25,                    // ✅ Fetch UIDs ottimizzato
+    max_concurrent: isProblematicFolder ? 
+                    Math.max(2, Math.floor(profileMaxConcurrent / 2)) :  // ✅ Dimezza per problematiche
+                    profileMaxConcurrent,                                 // ✅ Usa valore da profilo
+    batch_delay_ms: isProblematicFolder ? 1000 : 500,             // ✅ Più cauto se problematica
     ...config 
   };
   
   console.log(`[processFolderWithDance] 🎯 START DANZA PROGRESSIVA: ${folder}`);
-  console.log(`[processFolderWithDance] Config:`, full_config);
+  console.log(`[processFolderWithDance] ⚙️ Config:`, {
+    batch_size: full_config.batch_size,
+    max_concurrent: full_config.max_concurrent,
+    batch_delay_ms: full_config.batch_delay_ms,
+    is_problematic: isProblematicFolder,
+    source: 'performance_profile'
+  });
 
   let total_downloaded = 0;
   let total_errors = 0;

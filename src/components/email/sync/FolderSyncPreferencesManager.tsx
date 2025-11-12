@@ -55,29 +55,42 @@ export function FolderSyncPreferencesManager({
   const availableFolders = foldersData || [];
 
   useEffect(() => {
-    if (userEmail && availableFolders.length > 0) {
+    if (userEmail) {
       loadCurrentPreferences();
     }
-  }, [userEmail, availableFolders.length]);
+  }, [userEmail]);
 
   const loadCurrentPreferences = async () => {
     try {
+      console.log('🔍 [FolderPrefs] Loading preferences for:', userEmail);
+      console.log('📁 [FolderPrefs] Available folders:', availableFolders);
+      
       const prefs = await getSyncPreferences(userEmail);
+      
+      console.log('💾 [FolderPrefs] Saved preferences from DB:', {
+        included_folders: prefs.included_folders,
+        excluded_folders: prefs.excluded_folders
+      });
       
       if (prefs.included_folders.length > 0) {
         // Utente ha già salvato preferenze
+        console.log('✅ [FolderPrefs] Using saved preferences:', prefs.included_folders);
         setIncludedFolders(prefs.included_folders);
       } else {
         // Prima volta: pre-seleziona tutte tranne Trash/Junk/Drafts
         const recommended = availableFolders.filter(
           name => !['Trash', 'Junk', 'Drafts'].includes(name)
         );
+        console.log('🆕 [FolderPrefs] First time - using recommended:', recommended);
         setIncludedFolders(recommended);
       }
 
-      console.log('📥 [FolderPrefs] Loaded preferences:', {
+      console.log('📥 [FolderPrefs] Final state set:', {
         included: prefs.included_folders,
-        availableFolders: availableFolders.length
+        availableFolders: availableFolders.length,
+        willSetTo: prefs.included_folders.length > 0 ? prefs.included_folders : availableFolders.filter(
+          name => !['Trash', 'Junk', 'Drafts'].includes(name)
+        )
       });
 
     } catch (error) {

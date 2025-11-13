@@ -134,8 +134,7 @@ export async function downloadSingleEmail(
 }
 
 /**
- * Scarica un batch di email usando API batch (una chiamata per multiple email)
- * ✅ Fix timeout: usa getMessagesBatch invece di N chiamate singole
+ * Scarica un batch di email in parallelo
  */
 export async function downloadEmailBatch(
   uids: number[],
@@ -153,101 +152,38 @@ export async function downloadEmailBatch(
   for (let i = 0; i < uids.length; i += full_config.max_concurrent) {
     const chunk = uids.slice(i, i + full_config.max_concurrent);
     
-    try {
-      console.log(`[downloadEmailBatch] 📦 Downloading batch of ${chunk.length} emails from ${folder}...`);
-      
-      // ✅ UNA chiamata API per tutto il chunk (fix timeout)
-      const batchResponse = await emailMessageApi.getMessagesBatch(
-        chunk,
-        folder,
-        false // mark_as_read
-      );
-      
-      // ✅ Normalizza risposta (potrebbe essere array diretto o oggetto con .data)
-      const emails = Array.isArray(batchResponse) 
-        ? batchResponse 
-        : (batchResponse?.data || batchResponse?.emails || []);
-      
-      console.log(`[downloadEmailBatch] ✅ Received ${emails.length} emails from API`);
-      
-      // ✅ Processa ogni email del batch
-      for (const emailData of emails) {
-        const uid = emailData.uid || emailData.message?.uid;
-        if (!uid) {
-          console.warn(`[downloadEmailBatch] ⚠️ Email without UID, skipping`);
-          total_errors++;
-          continue;
-        }
+    // ✅ Promise.allSettled garantisce tutte le risposte
+    const results = await Promise.allSettled(
+      chunk.map(uid => downloadSingleEmail(uid, folder, user_email, config))
+    );
+    
+    // ✅ Post-processing DOPO tutte le promise (NO race condition)
+    results.forEach((result) => {
+      if (result.status === 'fulfilled') {
+        const { status } = result.value;
         
-        const message_id = `${folder}/${uid}`;
-        
-        try {
-          // Check success flag come in downloadSingleEmail
-          if (emailData.success === false) {
-            const errorMsg = emailData.errors?.[0] || emailData.error || 'API error';
-            console.warn(`[downloadEmailBatch] ❌ API failed for UID ${uid}: ${errorMsg}`);
-            total_errors++;
-            continue;
-          }
-          
-          // Normalizza email
-          const normalized = normalizeEmailMessage(emailData, String(uid), folder);
-          
-          // Valida dati minimi
-          if (!validateNormalizedEmail(normalized)) {
-            console.warn(`[downloadEmailBatch] ⚠️ UID ${uid}: incomplete data`);
-            total_errors++;
-            continue;
-          }
-          
-          // Check se esiste già
-          const exists = await checkEmailExists(message_id, user_email);
-          if (exists) {
-            console.log(`[downloadEmailBatch] ⏭️ UID ${uid} already exists, skipping`);
-            await updateTempIndexStatus(String(uid), folder, user_email, 'imported');
-            total_skipped++;
-            continue;
-          }
-          
-          // Salva in database
-          const { success, error } = await saveEmailToDatabase(
-            normalized,
-            message_id,
-            user_email,
-            folder
-          );
-          
-          if (success) {
-            console.log(`[downloadEmailBatch] ✅ UID ${uid} imported: "${normalized.subject.substring(0, 50)}..."`);
-            await updateTempIndexStatus(String(uid), folder, user_email, 'imported');
-            total_imported++;
-          } else {
-            console.error(`[downloadEmailBatch] ❌ Insert error UID ${uid}:`, error);
-            total_errors++;
-          }
-          
-        } catch (error: any) {
-          console.error(`[downloadEmailBatch] ❌ Error processing UID ${uid}:`, error.message);
+        if (status === 'imported') {
+          total_imported++;
+        } else if (status === 'skipped') {
+          total_skipped++;
+        } else {
           total_errors++;
         }
+      } else {
+        total_errors++;
       }
-      
-      // ✅ Aggiorna progresso DOPO ogni chunk
-      if (onProgress) {
-        onProgress(folder, total_imported, uids.length);
-      }
-      
-    } catch (error: any) {
-      console.error(`[downloadEmailBatch] ❌ Batch API error for chunk:`, error.message);
-      // Tutto il chunk fallito
-      total_errors += chunk.length;
+    });
+    
+    // ✅ Aggiorna progresso DOPO ogni chunk
+    if (onProgress) {
+      onProgress(folder, total_imported, uids.length);
     }
   }
   
   console.log(`[downloadEmailBatch] 📊 Riepilogo: ${total_imported} imported, ${total_skipped} skipped, ${total_errors} errors`);
   
   return { 
-    downloaded: total_imported,
+    downloaded: total_imported,  // ✅ Solo email realmente importate
     errors: total_errors 
   };
 }

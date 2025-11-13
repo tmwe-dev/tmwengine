@@ -143,9 +143,9 @@ export default function SingleFast() {
                       Performance
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
+                  <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Performance Profile</DialogTitle>
+                      <DialogTitle>🎯 Performance Profile Configurator</DialogTitle>
                     </DialogHeader>
                     <PerformanceProfileConfigurator />
                   </DialogContent>

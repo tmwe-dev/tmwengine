@@ -27,7 +27,7 @@ export default function SingleFast() {
     stop, 
     reset 
   } = useEmailDownload({
-    sequenceStrategies: ['luca', 'clean']
+    strategy: 'master' // Default: Master Strategy
   });
 
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function SingleFast() {
   return (
     <PageLayout 
       title="📧 Email Sync Center" 
-      description="Download automatico Luca→Clean"
+      description="🚀 Master Strategy: Ultimate Reliability"
     >
       <SplitLayout
         ratio="1/3"
@@ -101,7 +101,7 @@ export default function SingleFast() {
                 ) : (
                   <>
                     <Rocket className="h-3 w-3 mr-2" />
-                    Avvia Sequenza
+                    🚀 Master Download
                   </>
                 )}
               </Button>

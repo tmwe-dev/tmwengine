@@ -9,9 +9,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { EmailDownloadService } from '@/lib/email/services/EmailDownloadService';
 import { CleanStrategy } from '@/lib/email/strategies/CleanStrategy';
 import { LucaStrategy } from '@/lib/email/strategies/LucaStrategy';
+import { MasterStrategy } from '@/lib/email/strategies/MasterStrategy';
 import type { LogEntry, DownloadProgress, StrategyConfig } from '@/lib/email/strategies/DownloadStrategy';
 
-export type DownloadStrategyType = 'clean' | 'luca';
+export type DownloadStrategyType = 'clean' | 'luca' | 'master';
 
 interface UseEmailDownloadOptions {
   /** Tipo strategia download (default: 'luca') */
@@ -132,6 +133,9 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
       
       case 'luca':
         return new LucaStrategy(performanceConfig);
+      
+      case 'master':
+        return new MasterStrategy(performanceConfig);
       
       default:
         throw new Error(`Unknown strategy: ${strategyType}`);

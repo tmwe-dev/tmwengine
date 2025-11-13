@@ -22,11 +22,45 @@ import { Badge } from '@/components/ui/badge';
 export default function SingleFast() {
   const [showPreferences, setShowPreferences] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
+  const [isSequenceRunning, setIsSequenceRunning] = useState(false);
   
-  // ✅ UNICO HOOK: useEmailDownload con LucaStrategy
-  const { isRunning, logs, progress, start, stop, reset } = useEmailDownload({
-    strategy: 'luca'
-  });
+  // ✅ Due hook separati: Luca + Clean
+  const lucaHook = useEmailDownload({ strategy: 'luca' });
+  const cleanHook = useEmailDownload({ strategy: 'clean' });
+  
+  // Stato unificato per visualizzazione
+  const isRunning = isSequenceRunning || lucaHook.isRunning || cleanHook.isRunning;
+  const logs = [...lucaHook.logs, ...cleanHook.logs];
+  const progress = lucaHook.isRunning ? lucaHook.progress : cleanHook.progress;
+
+  // ✅ Sequenza automatica: prima Luca, poi Clean
+  const startSequence = async () => {
+    setIsSequenceRunning(true);
+    
+    try {
+      // FASE 1: Luca Strategy (nuove email)
+      await lucaHook.start();
+      
+      // FASE 2: Clean Strategy (riempi buchi)
+      await cleanHook.start();
+      
+    } catch (error) {
+      console.error('Sequence error:', error);
+    } finally {
+      setIsSequenceRunning(false);
+    }
+  };
+  
+  const stopSequence = () => {
+    lucaHook.stop();
+    cleanHook.stop();
+    setIsSequenceRunning(false);
+  };
+  
+  const resetAll = () => {
+    lucaHook.reset();
+    cleanHook.reset();
+  };
 
   // Carica email utente
   useState(() => {
@@ -66,10 +100,11 @@ export default function SingleFast() {
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
-                  <div className="flex-1">
+                   <div className="flex-1">
                     <h3 className="font-bold text-xl mb-1">📁 {progress.current_folder}</h3>
                     <p className="text-sm text-muted-foreground">
-                      🚀 Luca Method - Download incrementale
+                      {lucaHook.isRunning && '🚀 FASE 1: Luca Method (nuove email)'}
+                      {cleanHook.isRunning && '🧹 FASE 2: Clean Method (riempi buchi)'}
                     </p>
                   </div>
                 </div>
@@ -99,7 +134,7 @@ export default function SingleFast() {
         {/* Bottoni Azioni */}
         <div className="flex gap-4 items-center flex-wrap">
           <DownloadButtonWithLabel
-            label={isRunning ? 'In corso...' : '🚀 Avvia Download'}
+            label={isRunning ? 'Sequenza in corso...' : '🚀 Avvia Sequenza (Luca→Clean)'}
             icon={Rocket}
             strategy="sequential"
             config={{
@@ -107,8 +142,8 @@ export default function SingleFast() {
               maxConcurrent: 1
             }}
             edgeFunction="tmwe-api-proxy"
-            internalFunction="LucaStrategy.execute()"
-            onClick={() => start()}
+            internalFunction="LucaStrategy → CleanStrategy"
+            onClick={startSequence}
             disabled={isRunning}
             size="lg"
             className="min-w-[200px]"
@@ -117,18 +152,18 @@ export default function SingleFast() {
           {isRunning && (
             <Button
               size="lg"
-              onClick={stop}
+              onClick={stopSequence}
               variant="destructive"
             >
               <Square className="mr-2 h-4 w-4" />
-              Stop
+              Stop Sequenza
             </Button>
           )}
           
           {!isRunning && logs.length > 0 && (
             <Button
               size="lg"
-              onClick={reset}
+              onClick={resetAll}
               variant="outline"
             >
               🔄 Reset

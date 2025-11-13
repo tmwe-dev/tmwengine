@@ -18,24 +18,31 @@ export async function getMaxUID(
   folder: string,
   user_email: string
 ): Promise<number | null> {
+  // ✅ Load all message_id and parse numerically
   const { data, error } = await supabase
     .from('email_messages')
     .select('message_id')
     .eq('cartella', folder)
-    .eq('user_email', user_email)
-    .order('message_id', { ascending: false })
-    .limit(1)
-    .single();
+    .eq('user_email', user_email);
 
-  if (error || !data) {
+  if (error || !data || data.length === 0) {
     return null;
   }
 
-  // Extract UID from message_id format "FOLDER/UID"
-  const parts = data.message_id.split('/');
-  const uid = parseInt(parts[1], 10);
-  
-  return isNaN(uid) ? null : uid;
+  // Extract all UIDs and parse numerically
+  const uids = data
+    .map((row: any) => {
+      const parts = row.message_id.split('/');
+      return parseInt(parts[1], 10);
+    })
+    .filter(uid => !isNaN(uid));
+
+  if (uids.length === 0) {
+    return null;
+  }
+
+  // ✅ MAX numeric (not string!)
+  return Math.max(...uids);
 }
 
 /**

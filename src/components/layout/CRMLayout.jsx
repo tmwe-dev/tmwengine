@@ -71,6 +71,7 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from '@/components/ui/collapsible';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCRMLayout } from '@/contexts/CRMLayoutContext';
 
 const CRMLayout = ({ children }) => {
@@ -477,10 +478,11 @@ const CRMLayout = ({ children }) => {
         <aside className={cn(
           "fixed left-0 top-28 h-[calc(100vh-7rem)] w-64 z-50",
           "bg-card-transparent border-r border-border",
-          "transition-transform duration-300 overflow-hidden",
+          "transition-transform duration-300",
           menuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 lg:w-16"
         )}>
-          <nav className="p-4 space-y-2">
+          <ScrollArea className="h-full">
+            <nav className="p-4 space-y-2">
             {/* Gruppi collassabili */}
             {navigationGroups.map((group) => {
               const isCollapsed = !menuOpen && !isMobile;
@@ -561,7 +563,6 @@ const CRMLayout = ({ children }) => {
                         {t('settings.regionalization')}
                       </p>
                       <div className="space-y-2">
-                        <LanguageSelector variant="sidebar" />
                         <GlobalCountrySelector variant="sidebar" />
                       </div>
                     </div>
@@ -569,7 +570,8 @@ const CRMLayout = ({ children }) => {
                 </div>
               )}
             </div>
-          </nav>
+            </nav>
+          </ScrollArea>
         </aside>
 
         {/* Main Content */}

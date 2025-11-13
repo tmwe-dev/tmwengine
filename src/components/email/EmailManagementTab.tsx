@@ -20,6 +20,8 @@ import { CreateCategoryDialog } from './management/CreateCategoryDialog';
 import { GlobalDragGhost } from './management/GlobalDragGhost';
 import { SortOption } from './management/SenderSortControls';
 import { FloatingZoomControl } from './management/FloatingZoomControl';
+import { useGlobalAIAgent } from '@/hooks/useGlobalAIAgent';
+import { GlobalAIAgentSelector } from '@/components/ai/GlobalAIAgentSelector';
 
 interface EmailManagementTabProps {
   onOpenAISidebar?: (senderEmail: string) => void;
@@ -56,6 +58,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [carouselVerticalOffset, setCarouselVerticalOffset] = useState(0);
   
   const { toast } = useToast();
+  const { getAIPayload } = useGlobalAIAgent();
 
   // 🆕 Listener globale per collision detection durante drag HTML5
   useEffect(() => {
@@ -583,8 +586,17 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
 
   return (
     <div className="flex flex-col h-full w-full gap-4">
+      {/* AI Agent Selector Header */}
+      <div className="flex items-center justify-between px-4 pt-3">
+        <div>
+          <h2 className="text-xl font-semibold">Email Management</h2>
+          <p className="text-xs text-muted-foreground">Gestione mittenti e categorie</p>
+        </div>
+        <GlobalAIAgentSelector />
+      </div>
+      
       {/* Main Content Area */}
-      <div className="flex flex-1 h-full w-full gap-4 min-h-0 mt-3">
+      <div className="flex flex-1 h-full w-full gap-4 min-h-0">
         {/* Sidebar */}
         <EmailSidebar
           senders={senders}

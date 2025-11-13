@@ -21,8 +21,11 @@ import { CompanyProfileSettings } from '../intranet/CompanyProfileSettings';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { detectCountryFromEmail } from '@/lib/email-utils';
+import { useGlobalAIAgent } from '@/hooks/useGlobalAIAgent';
+import { GlobalAIAgentSelector } from '@/components/ai/GlobalAIAgentSelector';
 
 export function EmailGroupingSuggestionsTab() {
+  const { getAIPayload } = useGlobalAIAgent();
   // 🆕 State per dati locali (self-contained)
   const [groups, setGroups] = useState<EmailSenderGroup[]>([]);
   const [senders, setSenders] = useState<SenderAnalysis[]>([]);
@@ -300,7 +303,8 @@ export function EmailGroupingSuggestionsTab() {
           const { data, error } = await supabase.functions.invoke('generate-group-context', {
             body: {
               group_id: group.id,
-              user_email: profile.tmwe_email
+              user_email: profile.tmwe_email,
+              ...getAIPayload()
             }
           });
 
@@ -556,7 +560,8 @@ export function EmailGroupingSuggestionsTab() {
                 icon: g.icon,
                 descrizione: g.descrizione
               })),
-              user_email: profile.tmwe_email
+              user_email: profile.tmwe_email,
+              ...getAIPayload()
             }
           });
 
@@ -983,7 +988,8 @@ export function EmailGroupingSuggestionsTab() {
             Sistema intelligente per organizzare mittenti in gruppi
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <GlobalAIAgentSelector />
           <Button
             onClick={loadData}
             variant="outline"

@@ -15,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Download, Folder, CheckSquare, Square, Pause, Play } from 'lucide-react';
 import { DownloadButtonWithLabel } from '@/components/design-system/buttons/DownloadButtonWithLabel';
 import emailFolderGif from '@/assets/email-folder-unscreen.gif';
-import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { EmailFolderComparisonDialog } from './EmailFolderComparisonDialog';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 
@@ -88,8 +88,10 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     const loadData = async () => {
       setLoadingFolders(true);
       try {
-        const response = await emailSearchApi.getFolders();
-        const folders = response.folders || [];
+        const folders = await emailFolderApi.getFolders({ 
+          include_counts: true,
+          skipCache: true
+        });
         setAvailableFolders(folders);
         await loadAndUpdateStats();
       } catch (error) {
@@ -136,7 +138,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     }
 
     // Avvia download passando cartelle custom
-    await start();
+    await start(selectedFolders);
 
     // Dopo download, aggiorna stats
     await loadAndUpdateStats();

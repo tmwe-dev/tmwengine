@@ -151,6 +151,39 @@ export class EmailDownloadService {
         skipCache: true
       });
 
+      console.log('[SmartPrep] ✅ Server folders loaded:', {
+        count: serverFolders?.length || 0,
+        folders: serverFolders?.map(f => f.name || f.folder_name)
+      });
+
+      // 🆕 FALLBACK: Se nessuna cartella dal server, usa default
+      if (!serverFolders || serverFolders.length === 0) {
+        console.warn('[SmartPrep] ⚠️ No folders from server, using defaults');
+        const DEFAULT_FOLDERS = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk', 'Archive'];
+        
+        for (const folderName of DEFAULT_FOLDERS) {
+          // Se custom folders specificato, filtra
+          if (customFolders && customFolders.length > 0 && !customFolders.includes(folderName)) {
+            continue;
+          }
+
+          try {
+            const localMaxUID = await getMaxUID(folderName, this.userEmail);
+            foldersToSync.push({
+              folderName,
+              pending: 0,
+              included: true,
+              startUID: localMaxUID !== null ? localMaxUID + 1 : 1
+            });
+            console.log(`[SmartPrep] ✅ Fallback: ${folderName} added (startUID: ${localMaxUID !== null ? localMaxUID + 1 : 1})`);
+          } catch (error: any) {
+            console.warn(`[SmartPrep] ⚠️ Skip ${folderName}:`, error.message);
+          }
+        }
+        
+        return foldersToSync;
+      }
+
       // 2. Per ogni cartella, calcola startUID e pending
       for (const folder of serverFolders) {
         const folderName = folder.name || folder.folder_name;

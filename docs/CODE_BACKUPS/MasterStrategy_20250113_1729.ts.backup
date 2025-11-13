@@ -16,7 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { TripleStorage } from '../core/TripleStorage';
 import { CircuitBreaker } from '../core/CircuitBreaker';
 import { DownloadLock } from '../core/DownloadLock';
-import { downloadEmailBatch, downloadSingleEmail } from '../email-downloader';
+import { downloadSingleEmail } from '../email-downloader';
 import type {
   DownloadStrategy,
   StrategyConfig,
@@ -296,47 +296,52 @@ export class MasterStrategy implements DownloadStrategy {
     onProgress: (progress: DownloadProgress) => void,
     onLog: (log: Omit<LogEntry, 'timestamp'>) => void
   ): Promise<{ downloaded: number; errors: number }> {
+    let downloaded = 0;
+    let errors = 0;
     const queueKey = `master_queue_${userEmail}`;
 
-    try {
-      // ✅ Usa downloadEmailBatch (ora batch-aware, una chiamata per chunk)
-      const result = await this.breaker.execute(async () => {
-        return await downloadEmailBatch(
-          uids,
-          folder,
-          userEmail,
-          {
-            max_retries: 2,
-            retry_delay_ms: 1000,
-            max_concurrent: this.config.max_concurrent || 10
-          },
-          (f, imported, total) => {
-            onProgress({
-              current_folder: f,
-              imported,
-              total,
-              errors: 0
-            });
-          }
-        );
-      });
+    for (const uid of uids) {
+      if (this.isAborting) break;
 
-      return result;
-      
-    } catch (error: any) {
-      // Circuit breaker OPEN? Log and pause
-      if (this.breaker.getState() === 'OPEN') {
-        onLog({
-          phase: 'error',
-          folder,
-          message: `⚠️ Circuit breaker OPEN (${this.breaker.getFailureCount()} failures). Pausing 60s...`
+      try {
+        // A. Download con CircuitBreaker + Timeout
+        const result = await this.breaker.execute(async () => {
+          return await this.downloadSingleEmailWithTimeout(
+            uid,
+            folder,
+            userEmail,
+            30000 // 30s timeout
+          );
         });
-        await new Promise(r => setTimeout(r, 60000));
-      }
 
-      // Add batch to recovery queue
-      if (error.message?.includes('timeout') || error.message?.includes('network')) {
-        uids.forEach(uid => {
+        if (result.status === 'imported') {
+          downloaded++;
+          onProgress({
+            current_folder: folder,
+            imported: downloaded,
+            total: uids.length,
+            errors,
+            current_email: `UID ${uid}`
+          });
+        } else if (result.status === 'failed') {
+          errors++;
+        }
+
+      } catch (error: any) {
+        errors++;
+
+        // B. Circuit breaker OPEN? Log and pause
+        if (this.breaker.getState() === 'OPEN') {
+          onLog({
+            phase: 'error',
+            folder,
+            message: `⚠️ Circuit breaker OPEN (${this.breaker.getFailureCount()} failures). Pausing 60s...`
+          });
+          await new Promise(r => setTimeout(r, 60000)); // Wait 1 minute
+        }
+
+        // C. Add to persistent queue (crash recovery)
+        if (error.message?.includes('timeout') || error.message?.includes('network')) {
           this.addToQueue(queueKey, {
             uid,
             folder,
@@ -344,16 +349,16 @@ export class MasterStrategy implements DownloadStrategy {
             timestamp: Date.now(),
             attempts: 0
           });
-        });
-        onLog({
-          phase: 'warning',
-          folder,
-          message: `💾 Batch of ${uids.length} UIDs added to recovery queue`
-        });
+          onLog({
+            phase: 'warning',
+            folder,
+            message: `💾 UID ${uid} added to recovery queue (${error.message})`
+          });
+        }
       }
-
-      return { downloaded: 0, errors: uids.length };
     }
+
+    return { downloaded, errors };
   }
 
   // ============================================

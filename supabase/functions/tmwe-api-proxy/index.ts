@@ -535,7 +535,7 @@ serve(async (req) => {
       delete data.folder; // Rimuovi il parametro originale per evitare confusione
     }
     
-    const tmweUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
+    const tmweUrl = `https://tmwe.it/api${endpoint}`;
     
     if (enableLogging) {
       console.log('📤 Chiamata a TMWE API:', tmweUrl);

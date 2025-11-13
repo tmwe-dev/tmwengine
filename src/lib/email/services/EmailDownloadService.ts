@@ -167,10 +167,15 @@ export class EmailDownloadService {
 
     try {
       // 1. Recupera cartelle dal server (API esistente)
-      const serverFolders = await emailFolderApi.getFolders({ 
+      const response = await emailFolderApi.getFolders({ 
         include_counts: true,
         skipCache: true
       });
+
+      // Normalizza risposta: può essere array diretto o { data: [], folders: [] }
+      const serverFolders = Array.isArray(response)
+        ? response
+        : (response?.data || response?.folders || []);
 
       console.log('[SmartPrep] ✅ Server folders loaded:', {
         count: serverFolders?.length || 0,

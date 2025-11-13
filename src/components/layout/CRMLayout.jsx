@@ -268,7 +268,7 @@ const CRMLayout = ({ children }) => {
         </div>
 
         {/* Center: Search Input - Solo in /email-manager */}
-        <div className="flex-1 flex justify-center px-4">
+        <div className="flex-1 flex justify-center items-center px-4 gap-4">
           {location.pathname === '/email-manager' && !isMobile && (
             <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -289,6 +289,9 @@ const CRMLayout = ({ children }) => {
               />
             </div>
           )}
+          
+          {/* Global AI Agent Selector - sempre visibile al centro */}
+          {!isMobile && <GlobalAIAgentSelector />}
         </div>
 
         {/* Right side elements */}
@@ -370,9 +373,6 @@ const CRMLayout = ({ children }) => {
           
           {/* AI Prompts Inspector */}
           <AIPromptsInspector />
-          
-          {/* Global AI Agent Selector */}
-          {!isMobile && <GlobalAIAgentSelector />}
           
           {/* TMWE Profile Button - only show if user has profile */}
           {userProfile && (

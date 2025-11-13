@@ -312,7 +312,7 @@ export default function SingleFast() {
           <DialogHeader>
             <DialogTitle>Configurazione Cartelle Email</DialogTitle>
           </DialogHeader>
-          <div className="overflow-y-auto px-1">
+          <div className="flex-1 overflow-hidden">
             {userEmail && (
               <FolderSyncPreferencesManager
                 userEmail={userEmail}

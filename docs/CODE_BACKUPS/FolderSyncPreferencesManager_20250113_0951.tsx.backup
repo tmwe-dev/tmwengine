@@ -173,7 +173,7 @@ export function FolderSyncPreferencesManager({
   }
 
   return (
-    <div className="space-y-4 pb-2">
+    <div className="space-y-6">
       {/* Header */}
       <div className="space-y-2">
         <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -194,7 +194,7 @@ export function FolderSyncPreferencesManager({
           </Badge>
         </div>
 
-        <ScrollArea className="h-[300px] max-h-[35vh] border rounded-md p-4">
+        <ScrollArea className="h-[400px] max-h-[45vh] border rounded-md p-4">
           <div className="space-y-2">
             {availableFolders.map(folder => {
               const isSelected = includedFolders.includes(folder);

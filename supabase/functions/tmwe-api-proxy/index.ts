@@ -97,8 +97,9 @@ serve(async (req) => {
         case 'get_message': return 90000; // ✅ 90s per download singola email (email pesanti con allegati)
         case 'get_messages': return 90000; // 90s per operazioni lente
         case 'get_folders': return 60000; // 60s per cartelle
+        case 'get_folder_info': return 90000; // 90s per info cartella (può essere lento)
         case 'full_sync': return 120000; // 2 min per sync completo
-        default: return 45000; // ✅ 45s default (aumentato da 30s)
+        default: return 60000; // ✅ 60s default (aumentato da 45s)
       }
     };
     

@@ -21,6 +21,7 @@ interface PageLayoutProps {
   title?: React.ReactNode;
   description?: string;
   actions?: React.ReactNode;
+  backButton?: React.ReactNode;
   headerUtilities?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
@@ -34,6 +35,7 @@ export function PageLayout({
   title,
   description,
   actions,
+  backButton,
   headerUtilities,
   children,
   className,
@@ -44,9 +46,14 @@ export function PageLayout({
 }: PageLayoutProps) {
   const content = (
     <div className={cn('min-h-screen w-full', className)}>
-      {(title || description || actions || headerUtilities) && (
+      {(title || description || actions || backButton || headerUtilities) && (
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
+            {backButton && (
+              <div className="flex items-center">
+                {backButton}
+              </div>
+            )}
             <div className="space-y-1">
               {title && (
                 typeof title === 'string' ? (

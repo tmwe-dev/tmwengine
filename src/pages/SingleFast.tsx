@@ -125,7 +125,7 @@ export default function SingleFast() {
     <PageLayout 
       title="📧 Email Sync Center" 
       description="🚀 Master Strategy: Ultimate Reliability"
-      actions={
+      backButton={
         <Button
           variant="ghost"
           size="icon"

@@ -167,20 +167,15 @@ export class EmailDownloadService {
 
     try {
       // 1. Recupera cartelle dal server (API esistente)
-      const response = await emailFolderApi.getFolders({ 
+      // ✅ getFolders() ora ritorna sempre un array normalizzato
+      const serverFolders = await emailFolderApi.getFolders({ 
         include_counts: true,
         skipCache: true
       });
 
-      // 🆕 Normalizza risposta (array diretto o oggetto con .data)
-      const serverFolders = Array.isArray(response) 
-        ? response 
-        : (response?.data || response?.folders || []);
-
       console.log('[SmartPrep] ✅ Server folders loaded:', {
-        count: serverFolders?.length || 0,
-        folders: serverFolders?.map(f => f.name || f.folder_name),
-        raw_response_type: Array.isArray(response) ? 'array' : 'object'
+        count: serverFolders.length,
+        folders: serverFolders.map(f => f.name || f.folder_name)
       });
 
       // 🆕 FALLBACK: Se nessuna cartella dal server, usa default

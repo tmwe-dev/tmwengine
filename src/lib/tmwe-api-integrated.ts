@@ -859,18 +859,23 @@ export const emailFolderApi = {
       ...config
     });
     
+    // 🆕 Normalizza risposta PRIMA di salvare in cache
+    const folders = Array.isArray(result) 
+      ? result 
+      : (result?.data || result?.folders || []);
+    
     console.log('📥 [emailFolderApi] TMWE API returned:', {
       hasResult: !!result,
       isArray: Array.isArray(result),
-      length: result?.length || 0,
+      normalizedLength: folders.length,
       type: typeof result,
       keys: result ? Object.keys(result) : []
     });
     
-    // ✅ Salva in cache
-    folderCache.set(result, config);
+    // ✅ Salva array normalizzato in cache
+    folderCache.set(folders, config);
     
-    return result;
+    return folders;
   },
   
   getFolderInfo: (folderName: string) => 

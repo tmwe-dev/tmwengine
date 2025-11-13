@@ -13,7 +13,7 @@ import { SplitLayout } from '@/components/design-system/layouts/SplitLayout';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
 import { PerformanceProfileConfigurator } from '@/components/testing/PerformanceProfileConfigurator';
 import { EmailErrorBin } from '@/components/email/EmailErrorBin';
-import { LiveEmailCarousel } from '@/components/email/LiveEmailCarousel';
+import { LiveEmailViewer } from '@/components/email/LiveEmailViewer';
 import { DownloadLock } from '@/lib/email/core/DownloadLock';
 import { TripleStorage } from '@/lib/email/core/TripleStorage';
 import { useToast } from '@/hooks/use-toast';
@@ -310,7 +310,7 @@ export default function SingleFast() {
           </div>
         }
         right={
-          <LiveEmailCarousel
+          <LiveEmailViewer
             userEmail={userEmail}
             isRunning={isRunning}
             importedCount={progress.imported}

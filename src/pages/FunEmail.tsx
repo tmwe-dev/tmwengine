@@ -390,7 +390,7 @@ const FunEmail = () => {
               <SingleMailImporter />
             </div>
           ) : currentView === 'inbox' ? (
-            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
+            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4 ml-5">
               <SmartInboxTabIntelligent 
                 onOpenAISidebar={openAISidebarForSender}
                 categoriesOpen={categoriesOpen}

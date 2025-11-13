@@ -10,9 +10,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Props {
   userEmail: string;
+  compact?: boolean;
 }
 
-export const EmailErrorBin = ({ userEmail }: Props) => {
+export const EmailErrorBin = ({ userEmail, compact = false }: Props) => {
   const [errors, setErrors] = useState<ErrorEntry[]>([]);
   const [errorCount, setErrorCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -73,10 +74,14 @@ export const EmailErrorBin = ({ userEmail }: Props) => {
   return (
     <Dialog open={isOpen} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="relative">
-          <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
-          Errori Import
-          <Badge variant="destructive" className="ml-2">
+        <Button 
+          variant="ghost" 
+          size={compact ? "sm" : "default"}
+          className={compact ? "w-full justify-start h-7 text-xs" : "relative"}
+        >
+          <AlertCircle className={`${compact ? 'h-3 w-3' : 'h-4 w-4'} ${compact ? 'mr-2' : 'mr-2'} text-red-500`} />
+          {compact ? 'Errori' : 'Errori Import'}
+          <Badge variant="destructive" className={compact ? "ml-auto text-[10px] px-1 py-0" : "ml-2"}>
             {errorCount}
           </Badge>
         </Button>

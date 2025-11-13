@@ -66,14 +66,6 @@ export class MasterStrategy implements DownloadStrategy {
     onLog: (log: Omit<LogEntry, 'timestamp'>) => void,
     shouldStop: () => boolean
   ): Promise<DownloadResult> {
-    // 🆕 STEP 0: CLEAR PREVIOUS STATE (prevent corrupted cache)
-    onLog({
-      phase: 'preparing',
-      message: '🧹 Clearing previous session state...'
-    });
-    this.clearState();
-    this.storage.remove(`master_queue_${userEmail}`);
-
     // 1. ACQUIRE LOCK
     if (!this.lock.acquire(userEmail)) {
       onLog({
@@ -111,22 +103,12 @@ export class MasterStrategy implements DownloadStrategy {
 
         // A. Get MAX UID from DB (smart download)
         const maxUID = await this.getMaxUID(folder.folderName, userEmail);
-        let startUID = folder.startUID || maxUID + 1;
-
-        // 🆕 SANITY CHECK: Validate startUID
-        if (folder.startUID && folder.startUID > maxUID + 10000) {
-          onLog({
-            phase: 'warning',
-            folder: folder.folderName,
-            message: `⚠️ Cached startUID (${folder.startUID}) seems wrong. Local DB max UID: ${maxUID}. Resetting to ${maxUID + 1}`
-          });
-          startUID = maxUID + 1;
-        }
+        const startUID = folder.startUID || maxUID + 1;
 
         onLog({
           phase: 'preparing',
           folder: folder.folderName,
-          message: `📊 Local DB: ${maxUID} emails (max UID). Will download from UID ${startUID}`
+          message: `📦 Starting from UID ${startUID} (DB has ${maxUID})`
         });
 
         // B. Download in batches
@@ -150,7 +132,7 @@ export class MasterStrategy implements DownloadStrategy {
           onLog({
             phase: 'importing',
             folder: folder.folderName,
-            message: `🔄 Batch UIDs: ${batch[0]} to ${batch[batch.length - 1]} (size: ${batch.length})`
+            message: `⬇️ Downloading batch: UIDs ${batch[0]}-${batch[batch.length - 1]}`
           });
 
           // C. Download batch con CircuitBreaker

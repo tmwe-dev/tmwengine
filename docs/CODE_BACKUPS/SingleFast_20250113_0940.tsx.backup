@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Rocket, Square, Settings, Sliders, Unlock, Database } from 'lucide-react';
+import { Loader2, Rocket, Square, Settings, Sliders } from 'lucide-react';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { PageLayout } from '@/components/design-system/layouts/PageLayout';
 import { SplitLayout } from '@/components/design-system/layouts/SplitLayout';
@@ -13,17 +13,11 @@ import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSync
 import { PerformanceProfileConfigurator } from '@/components/testing/PerformanceProfileConfigurator';
 import { EmailErrorBin } from '@/components/email/EmailErrorBin';
 import { LiveEmailViewer } from '@/components/email/LiveEmailViewer';
-import { DownloadLock } from '@/lib/email/core/DownloadLock';
-import { TripleStorage } from '@/lib/email/core/TripleStorage';
-import { useToast } from '@/hooks/use-toast';
 
 export default function SingleFast() {
   const [showPreferences, setShowPreferences] = useState(false);
   const [showPerformance, setShowPerformance] = useState(false);
   const [userEmail, setUserEmail] = useState('');
-  const [dbStats, setDbStats] = useState<{folder: string; count: number; max_uid: number}[]>([]);
-  const [lockStatus, setLockStatus] = useState<'locked' | 'free'>('free');
-  const { toast } = useToast();
   
   const { 
     isRunning, 
@@ -53,64 +47,6 @@ export default function SingleFast() {
     };
     getUserEmail();
   }, []);
-
-  // 🆕 Load DB stats and lock status
-  useEffect(() => {
-    if (!userEmail) return;
-
-    const loadStats = async () => {
-      // Get lock status
-      const storage = new TripleStorage();
-      const lock = new DownloadLock(storage);
-      setLockStatus(lock.isLocked() ? 'locked' : 'free');
-
-      // Get DB stats for main folders
-      const folders = ['INBOX', 'Sent', 'Drafts'];
-      const stats = [];
-
-      for (const folder of folders) {
-        const { count } = await supabase
-          .from('email_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_email', userEmail)
-          .eq('cartella', folder);
-
-        const { data: maxData } = await supabase
-          .from('email_messages')
-          .select('message_id')
-          .eq('user_email', userEmail)
-          .eq('cartella', folder)
-          .order('message_id', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        let max_uid = 0;
-        if (maxData?.message_id) {
-          const parts = maxData.message_id.split('/');
-          max_uid = parseInt(parts[parts.length - 1], 10) || 0;
-        }
-
-        stats.push({ folder, count: count || 0, max_uid });
-      }
-
-      setDbStats(stats);
-    };
-
-    loadStats();
-    const interval = setInterval(loadStats, 5000); // Refresh every 5s
-    return () => clearInterval(interval);
-  }, [userEmail]);
-
-  const handleForceReleaseLock = () => {
-    const storage = new TripleStorage();
-    const lock = new DownloadLock(storage);
-    lock.forceRelease();
-    setLockStatus('free');
-    toast({
-      title: '🔓 Lock Released',
-      description: 'Download lock has been force released. You can now start a new download.',
-    });
-  };
 
   const relevantLogs = logs.filter(log => 
     log.phase === 'completed' ||
@@ -149,49 +85,8 @@ export default function SingleFast() {
               </Card>
             )}
 
-            {/* 🆕 System Status Panel */}
-            <Card className="border-muted">
-              <CardHeader className="py-2 px-3">
-                <CardTitle className="text-xs font-medium flex items-center gap-2">
-                  <Database className="h-3 w-3" />
-                  System Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-2 px-3 space-y-2">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-muted-foreground">Lock:</span>
-                  <span className={lockStatus === 'locked' ? 'text-destructive font-medium' : 'text-primary'}>
-                    {lockStatus === 'locked' ? '🔒 Locked' : '🔓 Free'}
-                  </span>
-                </div>
-                {dbStats.length > 0 && (
-                  <div className="space-y-1">
-                    {dbStats.map(stat => (
-                      <div key={stat.folder} className="flex items-center justify-between text-[10px]">
-                        <span className="text-muted-foreground">{stat.folder}:</span>
-                        <span className="font-mono">{stat.count} emails (max UID: {stat.max_uid})</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
             {/* Bottoni Compatti */}
             <div className="flex flex-col gap-2">
-              {/* 🆕 Force Release Lock Button */}
-              {lockStatus === 'locked' && !isRunning && (
-                <Button
-                  size="sm"
-                  onClick={handleForceReleaseLock}
-                  variant="outline"
-                  className="w-full justify-start h-8 text-xs border-destructive text-destructive hover:bg-destructive/10"
-                >
-                  <Unlock className="h-3 w-3 mr-2" />
-                  🔓 Force Release Lock
-                </Button>
-              )}
-
               <Button
                 size="sm"
                 onClick={() => start()}

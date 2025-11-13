@@ -238,8 +238,9 @@ const CRMLayout = ({ children }) => {
                       variant={searchParams.get('tab') === 'management' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => navigate('/funnemail?tab=management')}
+                      className="px-2.5"
                     >
-                      Management
+                      <FileCheck className="h-4 w-4" />
                     </Button>
                     <Button
                       variant={searchParams.get('tab') === 'suggestions' ? 'default' : 'outline'}

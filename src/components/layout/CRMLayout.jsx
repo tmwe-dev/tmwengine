@@ -546,18 +546,10 @@ const CRMLayout = ({ children }) => {
                 );
               })}
               
-              {/* Theme Switcher e Regionalizzazione */}
+              {/* Regionalizzazione */}
               {menuOpen && (
                 <div className="space-y-2">
                   <div className="pt-4 mt-2">
-                    <ThemeSwitcher />
-                  </div>
-                  
-                  {/* Separatore */}
-                  <div className="border-t border-border pt-2 mt-2" />
-                  
-                  {/* Language & Country Selectors */}
-                  <div className="space-y-2">
                     <div className="px-2">
                       <p className="text-xs font-medium text-muted-foreground mb-2">
                         {t('settings.regionalization')}

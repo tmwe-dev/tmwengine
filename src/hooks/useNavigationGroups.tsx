@@ -81,7 +81,6 @@ export const useNavigationGroups = () => {
       icon: Settings,
       items: [
         { name: 'Main', href: '/settings', icon: Settings },
-        { name: 'DB', href: '/database-settings', icon: Database },
       ]
     }
   ], [t, isAdmin]);

@@ -584,7 +584,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   return (
     <div className="flex flex-col h-full w-full gap-4">
       {/* Main Content Area */}
-      <div className="flex flex-1 h-full w-full gap-4 min-h-0">
+      <div className="flex flex-1 h-full w-full gap-4 min-h-0 mt-3">
         {/* Sidebar */}
         <EmailSidebar
           senders={senders}

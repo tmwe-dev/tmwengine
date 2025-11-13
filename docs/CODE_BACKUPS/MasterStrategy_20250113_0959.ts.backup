@@ -261,7 +261,7 @@ export class MasterStrategy implements DownloadStrategy {
           {
             max_retries: 1,
             retry_delay_ms: 500,
-            max_concurrent: this.config.max_concurrent || 1
+            max_concurrent: 1
           }
         );
 
@@ -378,7 +378,7 @@ export class MasterStrategy implements DownloadStrategy {
       downloadSingleEmail(uid, folder, userEmail, {
         max_retries: 2,
         retry_delay_ms: 1000,
-        max_concurrent: this.config.max_concurrent || 1
+        max_concurrent: 1
       })
         .then(result => {
           clearTimeout(timeoutId);

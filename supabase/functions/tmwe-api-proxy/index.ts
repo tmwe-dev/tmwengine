@@ -2,6 +2,9 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
+// ✅ FIX 2: URL base unificato per tutte le chiamate TMWE API
+const BASE_URL = 'https://tmwe.it/api';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -96,7 +99,7 @@ serve(async (req) => {
       switch (handler) {
         case 'get_message': return 90000; // ✅ 90s per download singola email (email pesanti con allegati)
         case 'get_messages': return 90000; // 90s per operazioni lente
-        case 'get_folders': return 60000; // 60s per cartelle
+        case 'get_folders': return 15000; // ✅ FIX 3: 15s per cartelle (ridotto per test rapidi)
         case 'full_sync': return 120000; // 2 min per sync completo
         default: return 45000; // ✅ 45s default (aumentato da 30s)
       }
@@ -105,7 +108,8 @@ serve(async (req) => {
     const timeout = requestTimeout || getTimeoutForHandler(data?.handler) || 30000;
     
     // 🚀 CONFIGURAZIONE OTTIMALE DI PRODUZIONE (basata su benchmark)
-    const enableLogging = optimizationFlags?.enableLogging ?? false;
+    // ✅ FIX 1: Logging forzatamente abilitato per debug
+    const enableLogging = true;
     const useDoubleSerializat = optimizationFlags?.useDoubleSerializat ?? false;
     const useTextResponse = optimizationFlags?.useTextResponse ?? false;
     const useSequentialExecution = optimizationFlags?.useSequentialExecution ?? false;
@@ -191,7 +195,10 @@ serve(async (req) => {
     // Get TMWE access token from request body or database
     let tmweAccessToken = data.bearerToken;
     
+    // ✅ FIX 4: Logging dettagliato per token retrieval
     if (!tmweAccessToken) {
+      console.log('🔍 Token non presente nel body, recupero dal database per:', userEmail);
+      
       // Try to get from database as fallback
       const { data: configData, error: configError } = await supabaseClient
         .from('user_tmwe_credentials')
@@ -200,11 +207,52 @@ serve(async (req) => {
         .single();
 
       if (configError || !configData?.access_token) {
-        console.error('❌ No TMWE access token found for user');
-        throw new Error('TMWE access token not found. Please login to TMWE first.');
+        console.error('❌ Token non trovato per email:', userEmail);
+        console.log('🔄 FIX 5: Tentativo fallback con user_profiles.tmwe_email');
+        
+        // ✅ FIX 5: Fallback con user_profiles.tmwe_email
+        const { data: { user } } = await supabaseClient.auth.getUser(token);
+        
+        if (user) {
+          const { data: profile, error: profileError } = await supabaseClient
+            .from('user_profiles')
+            .select('tmwe_email')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (profile?.tmwe_email && !profileError) {
+            console.log('🔍 Trovato tmwe_email in user_profiles:', profile.tmwe_email);
+            
+            // Riprova con tmwe_email
+            const { data: configData2, error: configError2 } = await supabaseClient
+              .from('user_tmwe_credentials')
+              .select('access_token')
+              .eq('email', profile.tmwe_email)
+              .single();
+            
+            if (configData2?.access_token && !configError2) {
+              console.log('✅ Token recuperato con successo tramite fallback');
+              tmweAccessToken = configData2.access_token;
+            }
+          }
+        }
+        
+        // Se ancora non abbiamo il token, fallisci
+        if (!tmweAccessToken) {
+          console.error('❌ TMWE token non trovato neanche con fallback');
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'TMWE token not found. Please re-authenticate.',
+              details: `Tried userEmail: ${userEmail} and user_profiles.tmwe_email`
+            }),
+            { headers: corsHeaders, status: 401 }
+          );
+        }
+      } else {
+        console.log('✅ Token recuperato dal database con successo');
+        tmweAccessToken = configData.access_token;
       }
-
-      tmweAccessToken = configData.access_token;
     }
     
     if (enableLogging) {
@@ -418,7 +466,7 @@ serve(async (req) => {
         }
       } else {
         const promises = messageIds.map(msgId => 
-          fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+          fetch(`${BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -466,7 +514,7 @@ serve(async (req) => {
       
       const chunkPromises = chunks.map(chunk => 
         Promise.all(chunk.map(uid => 
-          fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+          fetch(`${BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -535,7 +583,7 @@ serve(async (req) => {
       delete data.folder; // Rimuovi il parametro originale per evitare confusione
     }
     
-    const tmweUrl = `https://tmwe.it/api${endpoint}`;
+    const tmweUrl = `${BASE_URL}${endpoint}`;
     
     if (enableLogging) {
       console.log('📤 Chiamata a TMWE API:', tmweUrl);

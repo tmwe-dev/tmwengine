@@ -22,45 +22,11 @@ import { Badge } from '@/components/ui/badge';
 export default function SingleFast() {
   const [showPreferences, setShowPreferences] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
-  const [isSequenceRunning, setIsSequenceRunning] = useState(false);
   
-  // ✅ Due hook separati: Luca + Clean
-  const lucaHook = useEmailDownload({ strategy: 'luca' });
-  const cleanHook = useEmailDownload({ strategy: 'clean' });
-  
-  // Stato unificato per visualizzazione
-  const isRunning = isSequenceRunning || lucaHook.isRunning || cleanHook.isRunning;
-  const logs = [...lucaHook.logs, ...cleanHook.logs];
-  const progress = lucaHook.isRunning ? lucaHook.progress : cleanHook.progress;
-
-  // ✅ Sequenza automatica: prima Luca, poi Clean
-  const startSequence = async () => {
-    setIsSequenceRunning(true);
-    
-    try {
-      // FASE 1: Luca Strategy (nuove email)
-      await lucaHook.start();
-      
-      // FASE 2: Clean Strategy (riempi buchi)
-      await cleanHook.start();
-      
-    } catch (error) {
-      console.error('Sequence error:', error);
-    } finally {
-      setIsSequenceRunning(false);
-    }
-  };
-  
-  const stopSequence = () => {
-    lucaHook.stop();
-    cleanHook.stop();
-    setIsSequenceRunning(false);
-  };
-  
-  const resetAll = () => {
-    lucaHook.reset();
-    cleanHook.reset();
-  };
+  // ✅ Hook unificato con sequenza automatica Luca→Clean
+  const { isRunning, logs, progress, start, stop, reset } = useEmailDownload({
+    sequenceStrategies: ['luca', 'clean']
+  });
 
   // Carica email utente
   useState(() => {
@@ -103,8 +69,7 @@ export default function SingleFast() {
                    <div className="flex-1">
                     <h3 className="font-bold text-xl mb-1">📁 {progress.current_folder}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {lucaHook.isRunning && '🚀 FASE 1: Luca Method (nuove email)'}
-                      {cleanHook.isRunning && '🧹 FASE 2: Clean Method (riempi buchi)'}
+                      🔄 Sequenza automatica in corso...
                     </p>
                   </div>
                 </div>
@@ -143,7 +108,7 @@ export default function SingleFast() {
             }}
             edgeFunction="tmwe-api-proxy"
             internalFunction="LucaStrategy → CleanStrategy"
-            onClick={startSequence}
+            onClick={() => start()}
             disabled={isRunning}
             size="lg"
             className="min-w-[200px]"
@@ -152,7 +117,7 @@ export default function SingleFast() {
           {isRunning && (
             <Button
               size="lg"
-              onClick={stopSequence}
+              onClick={stop}
               variant="destructive"
             >
               <Square className="mr-2 h-4 w-4" />
@@ -163,7 +128,7 @@ export default function SingleFast() {
           {!isRunning && logs.length > 0 && (
             <Button
               size="lg"
-              onClick={resetAll}
+              onClick={reset}
               variant="outline"
             >
               🔄 Reset

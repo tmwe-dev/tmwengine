@@ -17,6 +17,9 @@ interface UseEmailDownloadOptions {
   /** Tipo strategia download (default: 'luca') */
   strategy?: DownloadStrategyType;
   
+  /** Sequenza automatica di strategie (es: ['luca', 'clean']) */
+  sequenceStrategies?: DownloadStrategyType[];
+  
   /** Max concurrent downloads (solo per parallel) */
   maxConcurrent?: number;
   
@@ -116,16 +119,14 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
   };
 
   /**
-   * Crea strategia download basata su opzioni e performance config
+   * Crea strategia download basata su tipo
    */
-  const createStrategy = () => {
+  const createStrategyByType = (strategyType: DownloadStrategyType) => {
     if (!performanceConfig) {
       throw new Error('Performance config not loaded yet');
     }
 
-    const strategy = options.strategy || 'luca'; // Default = Luca
-    
-    switch (strategy) {
+    switch (strategyType) {
       case 'clean':
         return new CleanStrategy(performanceConfig);
       
@@ -133,8 +134,16 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
         return new LucaStrategy(performanceConfig);
       
       default:
-        throw new Error(`Unknown strategy: ${strategy}`);
+        throw new Error(`Unknown strategy: ${strategyType}`);
     }
+  };
+
+  /**
+   * Crea strategia download basata su opzioni e performance config
+   */
+  const createStrategy = () => {
+    const strategy = options.strategy || 'luca'; // Default = Luca
+    return createStrategyByType(strategy);
   };
 
   /**
@@ -160,29 +169,75 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
       // 1. Get user email
       const userEmail = await getUserEmail();
 
-      // 2. Create strategy (con performance config)
-      const strategy = createStrategy();
-      addLog({ 
-        phase: 'preparing', 
-        message: `📦 Strategy: ${strategy.name}` 
-      });
-      addLog({
-        phase: 'preparing',
-        message: `📝 ${strategy.description}`
-      });
+      // 2. Check if sequence mode
+      if (options.sequenceStrategies && options.sequenceStrategies.length > 0) {
+        // SEQUENZA AUTOMATICA - Esegui strategie in ordine
+        addLog({ 
+          phase: 'preparing', 
+          message: `🔄 Sequenza: ${options.sequenceStrategies.map(s => s.toUpperCase()).join(' → ')}` 
+        });
 
-      // 3. Create service (passa customFolders al constructor)
-      serviceRef.current = new EmailDownloadService(
-        strategy, 
-        userEmail, 
-        customFolders || options.customFolders
-      );
+        for (const strategyType of options.sequenceStrategies) {
+          const strategy = createStrategyByType(strategyType);
+          
+          addLog({ 
+            phase: 'preparing', 
+            message: `\n🚀 FASE: ${strategy.name}` 
+          });
+          addLog({
+            phase: 'preparing',
+            message: `📝 ${strategy.description}`
+          });
 
-      // 4. Start download (service carica preferenze se customFolders non fornito)
-      await serviceRef.current.start(
-        (prog) => setProgress(prog),
-        (log) => addLog(log)
-      );
+          // Create service
+          serviceRef.current = new EmailDownloadService(
+            strategy, 
+            userEmail, 
+            customFolders || options.customFolders
+          );
+
+          // Execute strategy
+          await serviceRef.current.start(
+            (prog) => setProgress(prog),
+            (log) => addLog(log)
+          );
+
+          addLog({ 
+            phase: 'completed', 
+            message: `✅ Fase ${strategy.name} completata` 
+          });
+        }
+
+        addLog({ 
+          phase: 'completed', 
+          message: `\n🎉 Sequenza completata!` 
+        });
+
+      } else {
+        // STRATEGIA SINGOLA - Logica esistente
+        const strategy = createStrategy();
+        addLog({ 
+          phase: 'preparing', 
+          message: `📦 Strategy: ${strategy.name}` 
+        });
+        addLog({
+          phase: 'preparing',
+          message: `📝 ${strategy.description}`
+        });
+
+        // 3. Create service (passa customFolders al constructor)
+        serviceRef.current = new EmailDownloadService(
+          strategy, 
+          userEmail, 
+          customFolders || options.customFolders
+        );
+
+        // 4. Start download (service carica preferenze se customFolders non fornito)
+        await serviceRef.current.start(
+          (prog) => setProgress(prog),
+          (log) => addLog(log)
+        );
+      }
 
     } catch (error: any) {
       addLog({ 

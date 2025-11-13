@@ -451,11 +451,7 @@ const fetchApiBase = async (endpoint: string, data: any) => {
       supabase.functions.invoke('tmwe-api-proxy', {
         body: { 
           endpoint, 
-          data: {
-            ...data,
-            bearerToken: token
-          },
-          optimizationFlags: OPTIMAL_CONFIG
+          data
         },
       }),
       new Promise<never>((_, reject) => 

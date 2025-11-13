@@ -215,13 +215,19 @@ export class EmailDownloadService {
             startUID = localMaxUID + 1;
           }
           
+          // ✅ SEMPRE aggiunge cartella (LucaStrategy gestisce empty batches)
+          foldersToSync.push({
+            folderName,
+            pending,  // può essere 0, è normale per cartelle già sync
+            included: true,
+            startUID
+          });
+
+          // Log differenziato
           if (pending > 0) {
-            foldersToSync.push({
-              folderName,
-              pending,
-              included: true,
-              startUID
-            });
+            console.log(`[SmartPrep] 🎯 ${folderName}: ${pending} pending, start from UID ${startUID}`);
+          } else {
+            console.log(`[SmartPrep] ✅ ${folderName}: up-to-date (will check for new emails)`);
           }
         } catch (error: any) {
           console.warn(`[SmartPrep] Error processing folder ${folderName}:`, error.message);

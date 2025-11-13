@@ -16,6 +16,7 @@
 
 import type { 
   DownloadStrategy, 
+  StrategyConfig,
   FolderToSync, 
   DownloadProgress, 
   LogEntry, 
@@ -38,8 +39,11 @@ export class LucaStrategy implements DownloadStrategy {
   name = 'Luca Method (Zero Lists)';
   description = 'Downloads from MAX(uid)+1 with zero temp_index queries. Hardcoded folders, batch download, auto-stop after 3 empty batches.';
 
-  private readonly BATCH_SIZE = 25;
-  private readonly MAX_EMPTY_BATCHES = 3;
+  private readonly config: StrategyConfig;
+
+  constructor(config: StrategyConfig) {
+    this.config = config;
+  }
 
   /**
    * Esegue download incrementale SENZA liste preparate
@@ -126,7 +130,7 @@ export class LucaStrategy implements DownloadStrategy {
         let folderErrors = 0;
         let batchNumber = 0;
 
-        while (emptyBatchesCount < this.MAX_EMPTY_BATCHES) {
+        while (emptyBatchesCount < (this.config.max_empty_batches || 3)) {
           
           // Check stop flag
           if (shouldStop()) {
@@ -138,7 +142,7 @@ export class LucaStrategy implements DownloadStrategy {
 
           // ✅ Genera batch UIDs (NO QUERY, solo aritmetica)
           const batchUIDs: number[] = [];
-          for (let i = 0; i < this.BATCH_SIZE; i++) {
+          for (let i = 0; i < this.config.batch_size; i++) {
             batchUIDs.push(currentUID + i);
           }
 
@@ -176,7 +180,7 @@ export class LucaStrategy implements DownloadStrategy {
             onLog({
               phase: 'skip',
               folder: folderName,
-              message: `  ├─ Batch ${batchNumber} empty (${emptyBatchesCount}/${this.MAX_EMPTY_BATCHES})`
+              message: `  ├─ Batch ${batchNumber} empty (${emptyBatchesCount}/${this.config.max_empty_batches || 3})`
             });
           } else {
             // Reset counter se troviamo email
@@ -198,10 +202,10 @@ export class LucaStrategy implements DownloadStrategy {
           });
 
           // Move to next batch
-          currentUID += this.BATCH_SIZE;
+          currentUID += this.config.batch_size;
 
           // Small delay to avoid hammering the API
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, this.config.min_delay_ms || 100));
         }
 
         // ✅ Folder completato
@@ -217,7 +221,7 @@ export class LucaStrategy implements DownloadStrategy {
           onLog({
             phase: 'skip',
             folder: folderName,
-            message: `  └─ ⏭️  No new emails found (stopped after ${this.MAX_EMPTY_BATCHES} empty batches)`
+            message: `  └─ ⏭️  No new emails found (stopped after ${this.config.max_empty_batches || 3} empty batches)`
           });
         }
 

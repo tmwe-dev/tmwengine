@@ -5,7 +5,8 @@
  */
 
 import type { 
-  DownloadStrategy, 
+  DownloadStrategy,
+  StrategyConfig,
   FolderToSync, 
   DownloadProgress, 
   DownloadResult 
@@ -23,7 +24,11 @@ export class CleanStrategy implements DownloadStrategy {
   name = 'Clean';
   description = 'Finds and fills gaps (missing UIDs) in the database';
   
-  private readonly BATCH_SIZE = 20;
+  private readonly config: StrategyConfig;
+
+  constructor(config: StrategyConfig) {
+    this.config = config;
+  }
 
   async execute(
     folders: FolderToSync[],
@@ -117,25 +122,29 @@ export class CleanStrategy implements DownloadStrategy {
         let folderDownloaded = 0;
         let folderErrors = 0;
 
-        for (let j = 0; j < missingUIDs.length; j += this.BATCH_SIZE) {
+        for (let j = 0; j < missingUIDs.length; j += this.config.batch_size) {
           if (shouldStop()) {
             onLog({ phase: 'error', message: '🛑 Download interrupted' });
             break;
           }
 
-          const batchUIDs = missingUIDs.slice(j, j + this.BATCH_SIZE);
+          const batchUIDs = missingUIDs.slice(j, j + this.config.batch_size);
 
           onLog({
             phase: 'importing',
             folder: folder.folderName,
-            message: `📦 Filling gaps: batch ${Math.floor(j / this.BATCH_SIZE) + 1}/${Math.ceil(missingUIDs.length / this.BATCH_SIZE)}`
+            message: `📦 Filling gaps: batch ${Math.floor(j / this.config.batch_size) + 1}/${Math.ceil(missingUIDs.length / this.config.batch_size)}`
           });
 
           const { downloaded, errors } = await downloadEmailBatch(
             batchUIDs,
             folder.folderName,
             userEmail,
-            { max_concurrent: 8, max_retries: 2, retry_delay_ms: 300 },
+            { 
+              max_concurrent: this.config.max_concurrent || 8, 
+              max_retries: 2, 
+              retry_delay_ms: this.config.min_delay_ms || 300 
+            },
             (folder, imported, total) => {
               onProgress({
                 current_folder: folder,
@@ -157,7 +166,7 @@ export class CleanStrategy implements DownloadStrategy {
           });
 
           // Small delay between batches
-          await new Promise(resolve => setTimeout(resolve, 150));
+          await new Promise(resolve => setTimeout(resolve, this.config.min_delay_ms || 150));
         }
 
         totalDownloaded += folderDownloaded;

@@ -19,19 +19,18 @@ export class EmailDownloadService {
 
   constructor(
     private strategy: DownloadStrategy,
-    private userEmail: string
+    private userEmail: string,
+    private customFolders?: string[]
   ) {}
 
   /**
    * Avvia processo di download
    * @param onProgress - Callback per updates progresso
    * @param onLog - Callback per logs
-   * @param customFolders - Cartelle custom da scaricare (opzionale)
    */
   async start(
     onProgress: (progress: DownloadProgress) => void,
-    onLog: (log: Omit<LogEntry, 'timestamp'>) => void,
-    customFolders?: string[]
+    onLog: (log: Omit<LogEntry, 'timestamp'>) => void
   ): Promise<EmailDownloadServiceResult> {
     
     this.shouldStopFlag = false;
@@ -42,8 +41,30 @@ export class EmailDownloadService {
     });
 
     try {
-      // 1. Smart preparation: usa API esistenti per calcolare startUID corretto
-      const folders = await this.prepareSmartDownload(customFolders);
+      // 1. Se customFolders NON fornito, carica da preferenze DB
+      let foldersToUse = this.customFolders;
+      
+      if (!foldersToUse || foldersToUse.length === 0) {
+        const { getSyncPreferences } = await import('@/lib/email-sync-preferences');
+        const prefs = await getSyncPreferences(this.userEmail);
+        
+        if (prefs.included_folders.length > 0) {
+          foldersToUse = prefs.included_folders;
+          onLog({
+            phase: 'preparing',
+            message: `📂 Loaded ${foldersToUse.length} folders from preferences: ${foldersToUse.join(', ')}`
+          });
+        } else {
+          foldersToUse = ['INBOX'];
+          onLog({
+            phase: 'preparing',
+            message: `📂 No preferences found, using default: INBOX`
+          });
+        }
+      }
+
+      // 2. Smart preparation: usa API esistenti per calcolare startUID corretto
+      const folders = await this.prepareSmartDownload(foldersToUse);
 
       // Early exit se nessuna cartella da sincronizzare
       if (folders.length === 0) {

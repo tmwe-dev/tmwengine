@@ -3,6 +3,13 @@
  * Interface base per implementazioni diverse (Sequential, Parallel, Dance)
  */
 
+export interface StrategyConfig {
+  batch_size: number;
+  max_concurrent?: number;
+  max_empty_batches?: number;
+  min_delay_ms?: number;
+}
+
 export interface DownloadProgress {
   current_folder: string;
   current_batch?: number;

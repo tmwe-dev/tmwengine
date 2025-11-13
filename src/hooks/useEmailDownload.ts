@@ -4,12 +4,12 @@
  * Usa Strategy Pattern + Download Service per massima flessibilità
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { EmailDownloadService } from '@/lib/email/services/EmailDownloadService';
 import { CleanStrategy } from '@/lib/email/strategies/CleanStrategy';
 import { LucaStrategy } from '@/lib/email/strategies/LucaStrategy';
-import type { LogEntry, DownloadProgress } from '@/lib/email/strategies/DownloadStrategy';
+import type { LogEntry, DownloadProgress, StrategyConfig } from '@/lib/email/strategies/DownloadStrategy';
 
 export type DownloadStrategyType = 'clean' | 'luca';
 
@@ -36,8 +36,60 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
     total: 0,
     errors: 0
   });
+  const [performanceConfig, setPerformanceConfig] = useState<StrategyConfig | null>(null);
   
   const serviceRef = useRef<EmailDownloadService | null>(null);
+
+  /**
+   * Carica configurazione performance all'avvio
+   */
+  useEffect(() => {
+    const loadPerformanceConfig = async () => {
+      try {
+        const { getActiveProfile } = await import('@/lib/performance-profiles');
+        const profile = await getActiveProfile();
+        
+        if (profile?.optimization_flags) {
+          const config: StrategyConfig = {
+            batch_size: profile.optimization_flags.batchChunkSize || 25,
+            max_concurrent: profile.optimization_flags.useSequentialExecution ? 1 : 5,
+            max_empty_batches: 3,
+            min_delay_ms: 100
+          };
+          setPerformanceConfig(config);
+          addLog({
+            phase: 'preparing',
+            message: `⚙️ Performance profile loaded: ${profile.profile_name} (batch: ${config.batch_size})`
+          });
+        } else {
+          // Default config se nessun profilo attivo
+          const defaultConfig: StrategyConfig = {
+            batch_size: 25,
+            max_concurrent: 1,
+            max_empty_batches: 3,
+            min_delay_ms: 100
+          };
+          setPerformanceConfig(defaultConfig);
+          addLog({
+            phase: 'preparing',
+            message: `⚙️ Using default performance config (batch: ${defaultConfig.batch_size})`
+          });
+        }
+      } catch (error: any) {
+        console.error('Error loading performance config:', error);
+        // Fallback a default config
+        const defaultConfig: StrategyConfig = {
+          batch_size: 25,
+          max_concurrent: 1,
+          max_empty_batches: 3,
+          min_delay_ms: 100
+        };
+        setPerformanceConfig(defaultConfig);
+      }
+    };
+    
+    loadPerformanceConfig();
+  }, []);
 
   /**
    * Aggiunge log entry con timestamp
@@ -64,17 +116,21 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
   };
 
   /**
-   * Crea strategia download basata su opzioni
+   * Crea strategia download basata su opzioni e performance config
    */
   const createStrategy = () => {
+    if (!performanceConfig) {
+      throw new Error('Performance config not loaded yet');
+    }
+
     const strategy = options.strategy || 'luca'; // Default = Luca
     
     switch (strategy) {
       case 'clean':
-        return new CleanStrategy();
+        return new CleanStrategy(performanceConfig);
       
       case 'luca':
-        return new LucaStrategy();
+        return new LucaStrategy(performanceConfig);
       
       default:
         throw new Error(`Unknown strategy: ${strategy}`);
@@ -83,9 +139,14 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
 
   /**
    * Avvia download
-   * @param customFolders - Cartelle custom da scaricare (override di options.customFolders)
+   * @param customFolders - Cartelle custom da scaricare (override automatico da DB)
    */
   const start = async (customFolders?: string[]) => {
+    if (!performanceConfig) {
+      addLog({ phase: 'error', message: '⚠️ Waiting for performance config...' });
+      return;
+    }
+
     setIsRunning(true);
     setLogs([]);
     setProgress({
@@ -99,25 +160,28 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
       // 1. Get user email
       const userEmail = await getUserEmail();
 
-      // 2. Create strategy
+      // 2. Create strategy (con performance config)
       const strategy = createStrategy();
       addLog({ 
         phase: 'preparing', 
-        message: `📦 Strategy selected: ${strategy.name}` 
+        message: `📦 Strategy: ${strategy.name}` 
       });
       addLog({
         phase: 'preparing',
         message: `📝 ${strategy.description}`
       });
 
-      // 3. Create service
-      serviceRef.current = new EmailDownloadService(strategy, userEmail);
+      // 3. Create service (passa customFolders al constructor)
+      serviceRef.current = new EmailDownloadService(
+        strategy, 
+        userEmail, 
+        customFolders || options.customFolders
+      );
 
-      // 4. Start download (usa parametro se fornito, altrimenti options.customFolders)
+      // 4. Start download (service carica preferenze se customFolders non fornito)
       await serviceRef.current.start(
         (prog) => setProgress(prog),
-        (log) => addLog(log),
-        customFolders || options.customFolders
+        (log) => addLog(log)
       );
 
     } catch (error: any) {

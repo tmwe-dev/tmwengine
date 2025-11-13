@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Rocket, Square, Settings, Sliders, Unlock, Database } from 'lucide-react';
+import { Loader2, Rocket, Square, Settings, Sliders, Unlock, Database, ArrowLeft } from 'lucide-react';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { PageLayout } from '@/components/design-system/layouts/PageLayout';
 import { SplitLayout } from '@/components/design-system/layouts/SplitLayout';
@@ -18,6 +19,7 @@ import { TripleStorage } from '@/lib/email/core/TripleStorage';
 import { useToast } from '@/hooks/use-toast';
 
 export default function SingleFast() {
+  const navigate = useNavigate();
   const [showPreferences, setShowPreferences] = useState(false);
   const [showPerformance, setShowPerformance] = useState(false);
   const [userEmail, setUserEmail] = useState('');
@@ -123,6 +125,16 @@ export default function SingleFast() {
     <PageLayout 
       title="📧 Email Sync Center" 
       description="🚀 Master Strategy: Ultimate Reliability"
+      actions={
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/funnemail?tab=management')}
+          title="Torna a FUN Email"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+      }
     >
       <SplitLayout
         ratio="1/3"

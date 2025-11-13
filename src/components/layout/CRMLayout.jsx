@@ -355,51 +355,6 @@ const CRMLayout = ({ children }) => {
                         variant="ghost"
                         size="sm"
                         className="w-full justify-start"
-                        onClick={() => navigate('/funnemail?tab=fun')}
-                      >
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        FUN
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start"
-                        onClick={() => navigate('/funnemail?view=quick-download')}
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Quick Download
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start"
-                        onClick={() => navigate('/funnemail?view=integrity')}
-                      >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Verifica Integrità
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start"
-                        onClick={() => navigate('/funnemail?view=debugger')}
-                      >
-                        <Bug className="mr-2 h-4 w-4" />
-                        Backend Debugger
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start"
-                        onClick={() => navigate('/funnemail?view=single-mail')}
-                      >
-                        <Mail className="mr-2 h-4 w-4" />
-                        Single Mail
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start"
                         onClick={() => navigate('/single-fast')}
                       >
                         <Zap className="mr-2 h-4 w-4" />

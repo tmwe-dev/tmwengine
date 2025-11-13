@@ -285,14 +285,25 @@ export class EmailDownloadService {
     } catch (error: any) {
       console.error('[SmartPrep] Error fetching server folders:', error.message);
       
-      // Fallback: se custom folders fornito, usale con startUID = 1
-      if (customFolders && customFolders.length > 0) {
-        return customFolders.map(name => ({
-          folderName: name,
-          pending: 0, // Sconosciuto, LucaStrategy gestirà
-          included: true,
-          startUID: 1
-        }));
+      // 🆕 FALLBACK UNIVERSALE: usa cartelle di default o custom
+      const DEFAULT_FOLDERS = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk', 'Archive'];
+      const fallbackFolders = (customFolders && customFolders.length > 0) ? customFolders : DEFAULT_FOLDERS;
+      
+      console.warn('[SmartPrep] ⚠️ Using fallback folders:', fallbackFolders);
+      
+      for (const folderName of fallbackFolders) {
+        try {
+          const localMaxUID = await getMaxUID(folderName, this.userEmail);
+          foldersToSync.push({
+            folderName,
+            pending: 0, // Sconosciuto, strategy gestirà
+            included: true,
+            startUID: localMaxUID !== null ? localMaxUID + 1 : 1
+          });
+          console.log(`[SmartPrep] ✅ Fallback: ${folderName} added (startUID: ${localMaxUID !== null ? localMaxUID + 1 : 1})`);
+        } catch (error: any) {
+          console.warn(`[SmartPrep] ⚠️ Skip ${folderName}:`, error.message);
+        }
       }
     }
 

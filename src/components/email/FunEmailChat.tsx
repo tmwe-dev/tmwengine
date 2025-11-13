@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
-import { useGlobalAIAgent } from '@/hooks/useGlobalAIAgent';
-import { GlobalAIAgentSelector } from '@/components/ai/GlobalAIAgentSelector';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -20,7 +18,6 @@ export const FunEmailChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { getAIPayload } = useGlobalAIAgent();
 
   const { data: systemPrompt } = useQuery({
     queryKey: ['page-system-prompt', '/funnemail'],
@@ -69,7 +66,6 @@ export const FunEmailChat = () => {
             keywords: operation === 'search' ? keywords.slice(0, 3) : undefined,
           },
           context: content,
-          ...getAIPayload()
         },
       });
 
@@ -152,17 +148,14 @@ export const FunEmailChat = () => {
             Analizza le email scaricate nel backup locale
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <GlobalAIAgentSelector />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearChat}
-            disabled={messages.length === 0}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={clearChat}
+          disabled={messages.length === 0}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Messages */}

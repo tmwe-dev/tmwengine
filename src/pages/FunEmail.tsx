@@ -283,12 +283,11 @@ const FunEmail = () => {
             <button
               onClick={handleToggleCategories}
               className={cn(
-                "fixed !left-0 bottom-[13rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
+                "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
                 "flex items-center justify-center transition-all duration-300 hover:bg-white/10",
                 categoriesOpen && "translate-x-[280px]",
                 !shouldShowLeftIcons && !categoriesOpen && "hidden"
               )}
-              style={{ left: 0 }}
             >
               <span className="text-2xl">📬</span>
             </button>
@@ -297,12 +296,11 @@ const FunEmail = () => {
             <button
               onClick={handleToggleAI}
               className={cn(
-                "fixed !left-0 bottom-[7.5rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
+                "fixed left-0 bottom-[7.5rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
                 "flex items-center justify-center transition-all duration-300 hover:bg-white/10",
                 aiSidebarOpen && "translate-x-[500px]",
                 !shouldShowLeftIcons && !aiSidebarOpen && "hidden"
               )}
-              style={{ left: 0 }}
             >
               <Sparkles className="w-6 h-6 text-primary" strokeWidth={1} />
             </button>
@@ -392,7 +390,7 @@ const FunEmail = () => {
               <SingleMailImporter />
             </div>
           ) : currentView === 'inbox' ? (
-            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4 ml-5">
+            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
               <SmartInboxTabIntelligent 
                 onOpenAISidebar={openAISidebarForSender}
                 categoriesOpen={categoriesOpen}

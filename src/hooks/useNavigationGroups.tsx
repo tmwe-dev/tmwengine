@@ -60,6 +60,19 @@ export const useNavigationGroups = () => {
       ]
     },
     {
+      name: 'Chat & AI',
+      icon: MessageSquare,
+      items: [
+        { name: t('nav.chat'), href: '/chat', icon: MessageSquare },
+        { name: 'Claude System Analyst', href: '/chat?page=/system-analyst', icon: Bot },
+        { name: t('nav.laboratory'), href: '/chat-laboratory', icon: Sparkles },
+        { name: 'Design Lab', href: '/design-lab', icon: Palette },
+        { name: 'Radio Chat', href: '/radio-chat', icon: Radio },
+        { name: 'Intranet', href: '/intranet', icon: MessageSquare },
+        ...(isAdmin ? [{ name: 'Admin Intranet', href: '/intranet-admin', icon: Shield }] : [])
+      ]
+    },
+    {
       name: t('nav.import'),
       icon: Upload,
       items: [
@@ -71,6 +84,7 @@ export const useNavigationGroups = () => {
       name: 'Email',
       icon: Mail,
       items: [
+        { name: 'Email Dashboard', href: '/email-manager', icon: Mail },
         { name: 'FunnEmail', href: '/funnemail', icon: Sparkles },
         { name: t('nav.emailCampaigns'), href: '/email-campagne', icon: Mail },
       ]
@@ -80,6 +94,7 @@ export const useNavigationGroups = () => {
       icon: Settings,
       items: [
         { name: 'Main', href: '/settings', icon: Settings },
+        { name: 'DB', href: '/database-settings', icon: Database },
       ]
     }
   ], [t, isAdmin]);

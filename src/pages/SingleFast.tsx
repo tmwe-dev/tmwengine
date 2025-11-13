@@ -13,7 +13,7 @@ import { SplitLayout } from '@/components/design-system/layouts/SplitLayout';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
 import { PerformanceProfileConfigurator } from '@/components/testing/PerformanceProfileConfigurator';
 import { EmailErrorBin } from '@/components/email/EmailErrorBin';
-// import { LiveEmailViewer } from '@/components/email/LiveEmailViewer'; // 🔇 DEPRECATED temporaneamente (2025-01-13)
+import { LiveEmailViewer } from '@/components/email/LiveEmailViewer';
 import { DownloadLock } from '@/lib/email/core/DownloadLock';
 import { TripleStorage } from '@/lib/email/core/TripleStorage';
 import { useToast } from '@/hooks/use-toast';
@@ -310,31 +310,11 @@ export default function SingleFast() {
           </div>
         }
         right={
-          // 🔇 DEPRECATED TEMPORANEAMENTE (2025-01-13)
-          // Causa reload pagina durante download - da riattivare dopo refactoring
-          /*
           <LiveEmailViewer
             userEmail={userEmail}
             isRunning={isRunning}
             importedCount={progress.imported}
           />
-          */
-          
-          <Card className="bg-card/80 backdrop-blur border-primary/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-muted-foreground" />
-                <span className="text-muted-foreground">Visualizzazione Email</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="text-sm">🔇 Visualizzazione in pausa</p>
-                <p className="text-xs mt-2">Funzionalità temporaneamente disabilitata</p>
-                <p className="text-xs mt-1">per ottimizzazione performance</p>
-              </div>
-            </CardContent>
-          </Card>
         }
       />
 

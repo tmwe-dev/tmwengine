@@ -71,7 +71,6 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from '@/components/ui/collapsible';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCRMLayout } from '@/contexts/CRMLayoutContext';
 
 const CRMLayout = ({ children }) => {
@@ -239,9 +238,8 @@ const CRMLayout = ({ children }) => {
                       variant={searchParams.get('tab') === 'management' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => navigate('/funnemail?tab=management')}
-                      className="px-2.5"
                     >
-                      <FileCheck className="h-4 w-4" />
+                      Management
                     </Button>
                     <Button
                       variant={searchParams.get('tab') === 'suggestions' ? 'default' : 'outline'}
@@ -269,7 +267,7 @@ const CRMLayout = ({ children }) => {
         </div>
 
         {/* Center: Search Input - Solo in /email-manager */}
-        <div className="flex-1 flex justify-center items-center px-4 gap-4">
+        <div className="flex-1 flex justify-center px-4">
           {location.pathname === '/email-manager' && !isMobile && (
             <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -290,9 +288,6 @@ const CRMLayout = ({ children }) => {
               />
             </div>
           )}
-          
-          {/* Global AI Agent Selector - sempre visibile al centro */}
-          {!isMobile && <GlobalAIAgentSelector />}
         </div>
 
         {/* Right side elements */}
@@ -374,6 +369,9 @@ const CRMLayout = ({ children }) => {
           
           {/* AI Prompts Inspector */}
           <AIPromptsInspector />
+          
+          {/* Global AI Agent Selector */}
+          {!isMobile && <GlobalAIAgentSelector />}
           
           {/* TMWE Profile Button - only show if user has profile */}
           {userProfile && (
@@ -478,11 +476,10 @@ const CRMLayout = ({ children }) => {
         <aside className={cn(
           "fixed left-0 top-28 h-[calc(100vh-7rem)] w-64 z-50",
           "bg-card-transparent border-r border-border",
-          "transition-transform duration-300",
+          "transition-transform duration-300 overflow-hidden",
           menuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 lg:w-16"
         )}>
-          <ScrollArea className="h-full">
-            <nav className="p-4 space-y-2">
+          <nav className="p-4 space-y-2">
             {/* Gruppi collassabili */}
             {navigationGroups.map((group) => {
               const isCollapsed = !menuOpen && !isMobile;
@@ -546,15 +543,24 @@ const CRMLayout = ({ children }) => {
                 );
               })}
               
-              {/* Regionalizzazione */}
+              {/* Theme Switcher e Regionalizzazione */}
               {menuOpen && (
                 <div className="space-y-2">
                   <div className="pt-4 mt-2">
+                    <ThemeSwitcher />
+                  </div>
+                  
+                  {/* Separatore */}
+                  <div className="border-t border-border pt-2 mt-2" />
+                  
+                  {/* Language & Country Selectors */}
+                  <div className="space-y-2">
                     <div className="px-2">
                       <p className="text-xs font-medium text-muted-foreground mb-2">
                         {t('settings.regionalization')}
                       </p>
                       <div className="space-y-2">
+                        <LanguageSelector variant="sidebar" />
                         <GlobalCountrySelector variant="sidebar" />
                       </div>
                     </div>
@@ -562,8 +568,7 @@ const CRMLayout = ({ children }) => {
                 </div>
               )}
             </div>
-            </nav>
-          </ScrollArea>
+          </nav>
         </aside>
 
         {/* Main Content */}

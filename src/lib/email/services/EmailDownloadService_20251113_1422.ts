@@ -66,7 +66,20 @@ export class EmailDownloadService {
       // 2. Smart preparation: usa API esistenti per calcolare startUID corretto
       const folders = await this.prepareSmartDownload(foldersToUse);
 
-      // ✅ OPZIONE 2: Rimosso early exit - lascia gestire alla strategy
+      // Early exit se nessuna cartella da sincronizzare
+      if (folders.length === 0) {
+        onLog({ 
+          phase: 'completed', 
+          message: '✅ No emails to import' 
+        });
+        return {
+          success: true,
+          total_downloaded: 0,
+          total_errors: 0,
+          folders_completed: 0
+        };
+      }
+
       const totalPending = folders.reduce((sum, f) => sum + f.pending, 0);
 
       onLog({

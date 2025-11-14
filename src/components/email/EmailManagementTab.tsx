@@ -587,6 +587,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
       <div className="flex flex-1 h-full w-full gap-4 min-h-0">
         {/* Sidebar */}
         <EmailSidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
           senders={senders}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}

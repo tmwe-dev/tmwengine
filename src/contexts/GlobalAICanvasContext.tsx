@@ -35,6 +35,8 @@ interface GlobalAICanvasContextType {
   sendMessage: (message: string) => Promise<void>;
   clearMessages: () => void;
   setProposal: (proposal: AIActionProposal | null) => void;
+  setConversationId: (id: string | null) => void; // ✅ NUOVO
+  updateSystemPrompt: (prompt: string) => void; // ✅ NUOVO
 }
 
 const GlobalAICanvasContext = createContext<GlobalAICanvasContextType | undefined>(undefined);
@@ -180,6 +182,14 @@ export const GlobalAICanvasProvider: React.FC<{ children: ReactNode }> = ({ chil
     }));
   }, []);
 
+  const setConversationId = useCallback((id: string | null) => {
+    setState(prev => ({ ...prev, conversationId: id }));
+  }, []);
+
+  const updateSystemPrompt = useCallback((prompt: string) => {
+    console.log('💾 System prompt updated');
+  }, []);
+
   return (
     <GlobalAICanvasContext.Provider
       value={{
@@ -189,6 +199,8 @@ export const GlobalAICanvasProvider: React.FC<{ children: ReactNode }> = ({ chil
         sendMessage,
         clearMessages,
         setProposal,
+        setConversationId,
+        updateSystemPrompt,
       }}
     >
       {children}

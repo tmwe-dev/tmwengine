@@ -68,6 +68,7 @@ import { SingleMailImporter } from "./components/email/SingleMailImporter";
 import SingleFast from "./pages/SingleFast";
 import DualDownload from "./pages/DualDownload";
 import EmailDebugTester from "./pages/EmailDebugTester";
+import AICommunicationHub from "./pages/AICommunicationHub";
 
 const queryClient = new QueryClient();
 
@@ -221,6 +222,11 @@ const App = () => {
             <Route path="/chat-laboratory/calibration" element={
               <ProtectedRoute>
                 <ChatLaboratoryCalibration />
+              </ProtectedRoute>
+            } />
+            <Route path="/ai-communication-hub" element={
+              <ProtectedRoute>
+                <CRMLayout><AICommunicationHub /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/admin/prompts" element={

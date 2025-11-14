@@ -947,6 +947,7 @@ const ChatLaboratory = () => {
         />
         <div className="fixed left-4 top-4 bottom-4 w-80 z-50 bg-card/95 backdrop-blur border border-border/40 rounded-lg shadow-lg">
           <ConversationsSidebar
+            isOpen={sidebarOpen}
             conversations={conversations}
             currentConversationId={currentConversationId}
             onSelectConversation={handleSelectConversation}

@@ -35,7 +35,7 @@ export default function SingleFast() {
     stop, 
     reset 
   } = useEmailDownload({
-    strategy: 'master' // Default: Master Strategy
+    sequenceStrategies: ['luca', 'clean'] // Rollback: Luca Strategy + Clean Strategy
   });
 
   useEffect(() => {

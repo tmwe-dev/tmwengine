@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 
 interface EmailSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
   senders: SenderAnalysis[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -49,6 +51,8 @@ interface EmailSidebarProps {
 }
 
 export function EmailSidebar({
+  isOpen,
+  onClose,
   senders,
   searchQuery,
   setSearchQuery,
@@ -85,180 +89,195 @@ export function EmailSidebar({
   );
   
   return (
-    <div className="flex-shrink-0 w-[416px] z-20">
-      <div className="h-full flex flex-col">
-        {/* Header semplificato */}
-        <div className="px-4 pb-2 flex-shrink-0">
-          <h3 className="font-semibold mb-1 flex items-center justify-between">
-            <span>📮 Da Classificare ({displayedSenders.length})</span>
-            {senders.length !== displayedSenders.length && (
-              <span className="text-xs text-muted-foreground">
-                {senders.length} totali
-              </span>
-            )}
-          </h3>
-          
-          
-          <div className="relative mb-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Cerca mittente..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          
-          {/* 🆕 Filtro soglia email minime per visualizzazione */}
-          <div className="mb-2">
-            <Select 
-              value={minEmailsFilter.toString()} 
-              onValueChange={(val) => setMinEmailsFilter(parseInt(val))}
+    <>
+      {/* Backdrop - UNIFORMATO */}
+      {isOpen && (
+        <div 
+          className="fixed left-0 right-0 bottom-0 top-14 bg-transparent z-40 animate-in fade-in"
+          onClick={onClose}
+        />
+      )}
+      
+      {/* Sidebar - UNIFORMATO */}
+      <div className={cn(
+        "fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-80 bg-background border-r z-50",
+        "transition-transform duration-300",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="h-full flex flex-col">
+          {/* Header uniforme */}
+          <div className="px-4 py-3 border-b flex items-center justify-between bg-background">
+            <h3 className="font-semibold flex items-center gap-2">
+              <span>📮 Da Classificare ({displayedSenders.length})</span>
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
             >
-              <SelectTrigger className="w-full h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Tutti i mittenti</SelectItem>
-                <SelectItem value="2">≥2 email</SelectItem>
-                <SelectItem value="3">≥3 email</SelectItem>
-                <SelectItem value="5">≥5 email</SelectItem>
-                <SelectItem value="10">≥10 email</SelectItem>
-              </SelectContent>
-            </Select>
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          
-          {/* Riga: Ordina + 4 IconButton toolbar */}
-          <div className="flex gap-2 items-center justify-between mb-2">
-            {onSortChange && (
-              <SenderSortControls 
-                currentSort={sortOption}
-                onSortChange={onSortChange}
-              />
-            )}
-            
-            <div className="flex gap-1 items-center">
-              <IconButton
-                icon={LayoutGrid}
-                tooltip="Vista Griglia"
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-              />
-              <IconButton
-                icon={Box}
-                tooltip="Carousel 3D"
-                variant={viewMode === 'carousel' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('carousel')}
-              />
-              <IconButton
-                icon={RefreshCw}
-                tooltip={isSyncing ? 'Sincronizzazione...' : 'Sincronizza Email'}
-                variant="default"
-                size="sm"
-                onClick={onSync}
-                disabled={isSyncing || isLoading}
-                className={cn(isSyncing && "animate-spin")}
-              />
-              <IconButton
-                icon={RefreshCw}
-                tooltip="Aggiorna"
-                variant="ghost"
-                size="sm"
-                onClick={onRefresh}
-                disabled={isLoading || isSyncing}
-                className={cn(isLoading && "animate-spin")}
-              />
-              {onOpenAISuggestions && aiSuggestionsCount > 0 && (
-                <div className="relative">
-                  <IconButton
-                    icon={Lightbulb}
-                    tooltip={`${aiSuggestionsCount} Suggerimenti AI`}
-                    variant="ghost"
-                    size="sm"
-                    onClick={onOpenAISuggestions}
-                  />
-                  <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center pointer-events-none">
-                    {aiSuggestionsCount}
-                  </span>
+
+          <Tabs defaultValue="senders" className="flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-2 mx-4 mt-4 mb-2">
+              <TabsTrigger value="senders">Mittenti</TabsTrigger>
+              <TabsTrigger value="filters">Filtri</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="senders" className="flex-1 flex flex-col mt-0 px-4">
+              <div className="relative mb-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Cerca mittente..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                {displayedSenders.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p className="text-sm">
+                      {senders.length === 0 
+                        ? '🎉 Tutti i mittenti classificati!'
+                        : '🔍 Nessun mittente trovato'
+                      }
+                    </p>
+                  </div>
+                ) : (
+                  displayedSenders.map(sender => (
+                    <SenderCard 
+                      key={sender.email} 
+                      sender={sender}
+                      onDoubleClick={onSenderDoubleClick}
+                      onDragStart={onDragStart}
+                      onDragEnd={onDragEnd}
+                    />
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="filters" className="flex-1 overflow-y-auto mt-0 px-4 space-y-3 pb-4">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Soglia minima email</label>
+                <Select 
+                  value={minEmailsFilter.toString()} 
+                  onValueChange={(val) => setMinEmailsFilter(parseInt(val))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Min 1 email</SelectItem>
+                    <SelectItem value="3">Min 3 email</SelectItem>
+                    <SelectItem value="5">Min 5 email</SelectItem>
+                    <SelectItem value="10">Min 10 email</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {onSortChange && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Ordinamento</label>
+                  <SenderSortControls currentSort={sortOption} onSortChange={onSortChange} />
                 </div>
               )}
-            </div>
-          </div>
-          
-          {/* Riga compatta: Dropdown + Pulsanti azioni */}
-          <div className="flex gap-2 items-center justify-between mb-2">
-            {/* Dropdown categoria a sinistra */}
-            <Select 
-              key={activeCategoryId}
-              value={activeCategoryId || undefined} 
-              onValueChange={onCategorySelect}
-            >
-              <SelectTrigger className="h-9 flex-1">
-                <SelectValue placeholder="📂 Categoria" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50">
-                {groups.map(group => (
-                  <SelectItem key={group.id} value={group.id}>
-                    <span className="flex items-center gap-2">
-                      <span>{group.icon}</span>
-                      <span>{group.nome_gruppo}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {/* Pulsanti a destra */}
-            <div className="flex gap-2 flex-shrink-0">
+
+              <div>
+                <label className="text-xs text-muted-foreground mb-2 block">Vista</label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    className="flex-1"
+                  >
+                    <LayoutGrid className="h-4 w-4 mr-1" />
+                    Grid
+                  </Button>
+                  <Button
+                    variant={viewMode === 'carousel' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('carousel')}
+                    className="flex-1"
+                  >
+                    <Box className="h-4 w-4 mr-1" />
+                    Carousel
+                  </Button>
+                </div>
+              </div>
+
+              {viewMode === 'carousel' && onCarouselZoomChange && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-2 block">
+                    Zoom: {carouselZoom.toFixed(1)}x
+                  </label>
+                  <Slider
+                    value={[carouselZoom]}
+                    onValueChange={([val]) => onCarouselZoomChange(val)}
+                    min={0.5}
+                    max={2.0}
+                    step={0.1}
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={onSync} disabled={isSyncing} className="flex-1">
+                  <RefreshCw className={cn("h-4 w-4 mr-1", isSyncing && "animate-spin")} />
+                  Sync
+                </Button>
+                <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="flex-1">
+                  <RefreshCw className={cn("h-4 w-4 mr-1", isLoading && "animate-spin")} />
+                  Refresh
+                </Button>
+              </div>
+
+              {onOpenAISuggestions && aiSuggestionsCount > 0 && (
+                <Button variant="outline" size="sm" onClick={onOpenAISuggestions} className="w-full">
+                  <Lightbulb className="h-4 w-4 mr-2" />
+                  AI Suggestions ({aiSuggestionsCount})
+                </Button>
+              )}
+
               <Button
-                variant="outline"
+                variant={filterByAttachments ? 'default' : 'outline'}
                 size="sm"
-                className="h-9 w-9 p-0"
-                onClick={onCreateCategory}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-              
-              <Button
-                variant={filterByAttachments ? "default" : "outline"}
-                size="sm"
-                className="h-9 w-9 p-0"
                 onClick={() => setFilterByAttachments(!filterByAttachments)}
+                className="w-full"
               >
-                <Filter className="h-4 w-4" />
+                <Filter className="h-4 w-4 mr-2" />
+                {filterByAttachments ? 'Solo con allegati' : 'Tutti'}
               </Button>
-            </div>
-          </div>
-        </div>
-        
-        {/* Lista indirizzi */}
-        <div id="email-sidebar-scroll-container" className="flex-1 overflow-y-auto px-4 space-y-4">
-          {displayedSenders.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <p className="text-sm">
-                {senders.length === 0 
-                  ? '🎉 Tutti i mittenti sono stati classificati!'
-                  : minEmailsFilter > 1
-                  ? `🔍 Nessun mittente con ≥${minEmailsFilter} email`
-                  : '🔍 Nessun mittente trovato con questi filtri'
-                }
-              </p>
-            </div>
-          ) : (
-            displayedSenders.map(sender => (
-              <SenderCard 
-                key={sender.email} 
-                sender={sender}
-                onDoubleClick={onSenderDoubleClick}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-              />
-            ))
-          )}
+
+              <div>
+                <label className="text-xs text-muted-foreground mb-2 block">Categoria</label>
+                <Select value={activeCategoryId || 'all'} onValueChange={onCategorySelect}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutte</SelectItem>
+                    {groups.map((group) => (
+                      <SelectItem key={group.id} value={group.id}>
+                        {group.category_name} ({group.sender_count || 0})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {onCreateCategory && (
+                  <Button variant="outline" size="sm" onClick={onCreateCategory} className="w-full mt-2">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nuova Categoria
+                  </Button>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
-    </div>
+    </>
   );
 }

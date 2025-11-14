@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { CategoryStats } from '@/types/smart-inbox';
 import { CategoriesVerticalSidebar } from './CategoriesVerticalSidebar';
-import { AIAgentSelector } from './AIAgentSelector';
+import { GlobalAIAgentSelector } from '@/components/ai/GlobalAIAgentSelector';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -162,7 +162,7 @@ export function CollapsibleCategorySidebar({
 
           {/* AI Agent Selector */}
           <div className="p-4 border-b">
-            <AIAgentSelector selectedAgent={selectedAgent} onAgentChange={onAgentChange} />
+            <GlobalAIAgentSelector />
           </div>
 
           {/* Filtri e Azioni su una riga */}

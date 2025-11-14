@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { AIProviderSelector } from '@/components/chat-laboratory/AIProviderSelector';
+import { GlobalAIAgentSelector } from '@/components/ai/GlobalAIAgentSelector';
 import { Loader2 } from 'lucide-react';
 
 interface AIPromptDialogProps {
@@ -20,7 +20,6 @@ interface AIPromptDialogProps {
 
 export const AIPromptDialog = ({ open, onOpenChange, senderEmail, onPromptCreated }: AIPromptDialogProps) => {
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     prompt_name: '',
     prompt_description: '',
@@ -61,11 +60,6 @@ export const AIPromptDialog = ({ open, onOpenChange, senderEmail, onPromptCreate
       return;
     }
 
-    if (!selectedConfigId) {
-      toast.error('Seleziona un provider AI');
-      return;
-    }
-
     setIsSaving(true);
 
     try {
@@ -80,7 +74,6 @@ export const AIPromptDialog = ({ open, onOpenChange, senderEmail, onPromptCreate
         .insert({
           sender_email: senderEmail,
           user_id: user.id,
-          ai_config_id: selectedConfigId,
           ...formData,
         });
 
@@ -109,15 +102,12 @@ export const AIPromptDialog = ({ open, onOpenChange, senderEmail, onPromptCreate
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Selezione AI Provider */}
+          {/* Selezione AI Agent Globale */}
           <div className="space-y-2">
-            <Label>Provider AI da utilizzare *</Label>
-            <AIProviderSelector
-              selectedConfigId={selectedConfigId}
-              onConfigChange={setSelectedConfigId}
-            />
+            <Label>AI Agent da utilizzare *</Label>
+            <GlobalAIAgentSelector />
             <p className="text-xs text-muted-foreground">
-              Scegli quale modello AI utilizzare per processare le email da questo mittente
+              L'AI agent selezionato verrà utilizzato per processare le email da questo mittente
             </p>
           </div>
 

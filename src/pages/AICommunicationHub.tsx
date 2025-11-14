@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, MessageSquare, Mic, Volume2 } from 'lucide-react';
@@ -6,9 +6,19 @@ import { AIAgentsPromptsTab } from '@/components/ai-communication-hub/AIAgentsPr
 import { VoiceAgentsTab } from '@/components/ai-communication-hub/VoiceAgentsTab';
 import { TTSVoicesTab } from '@/components/ai-communication-hub/TTSVoicesTab';
 import { AudioInputTab } from '@/components/ai-communication-hub/AudioInputTab';
+import { useSearchParams } from 'react-router-dom';
 
 const AICommunicationHub = () => {
+  const [searchParams] = useSearchParams();
+  const pageParam = searchParams.get('page');
   const [activeTab, setActiveTab] = useState('ai-prompts');
+
+  useEffect(() => {
+    // Se c'è un parametro ?page=, apri tab AI & Prompts
+    if (pageParam) {
+      setActiveTab('ai-prompts');
+    }
+  }, [pageParam]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -45,7 +55,7 @@ const AICommunicationHub = () => {
 
           <div className="p-6">
             <TabsContent value="ai-prompts" className="mt-0">
-              <AIAgentsPromptsTab />
+              <AIAgentsPromptsTab initialPageFilter={pageParam || undefined} />
             </TabsContent>
 
             <TabsContent value="voice-agents" className="mt-0">

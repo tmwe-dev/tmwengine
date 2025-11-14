@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles, Cpu, FileText, ArrowLeft, Copy, Check } from 'lucide-react';
-import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
@@ -611,7 +611,7 @@ const Chat = () => {
                 </Select>
               )}
               <AIGuideDialog />
-              <PagePromptManager pageRoute="/chat" />
+              <UnifiedAICommunicationBadge pageRoute="/chat" />
               <Button
                 variant="ghost"
                 size="icon"

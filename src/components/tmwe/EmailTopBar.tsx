@@ -4,7 +4,7 @@
  */
 import { Input } from '@/components/ui/input';
 import { EmailSenderFilter } from './EmailSenderFilter';
-import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { Search } from 'lucide-react';
 
 interface EmailTopBarProps {
@@ -62,7 +62,7 @@ export const EmailTopBar = ({
             setAiChatOpen(true);
           }}
         />
-        <PagePromptManager 
+        <UnifiedAICommunicationBadge 
           pageRoute="/email-manager"
         />
       </div>

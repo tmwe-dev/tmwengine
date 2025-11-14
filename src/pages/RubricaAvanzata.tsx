@@ -21,7 +21,7 @@ import { ContactMobileCard } from '@/components/rubrica/ContactMobileCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { cn } from '@/lib/utils';
-import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { EmailQueueBadge } from '@/components/email-campagne/EmailQueueBadge';
 
 // Utility function to format empty values
@@ -636,7 +636,7 @@ export default function RubricaAvanzata() {
             >
               <Brain className="h-5 w-5" />
             </Button>
-            <PagePromptManager pageRoute="/rubrica-avanzata" />
+            <UnifiedAICommunicationBadge pageRoute="/rubrica-avanzata" />
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input

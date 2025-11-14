@@ -25,7 +25,7 @@ import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { useUserActivities } from '@/hooks/useUserActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { AliasPreviewDialog } from '@/components/import/AliasPreviewDialog';
 import { useImportFilters } from '@/hooks/useImportFilters';
 import { useImportSelection } from '@/hooks/useImportSelection';
@@ -3600,7 +3600,7 @@ export default function ImportTemplates() {
               Personalizza le regole che l'AI usa per generare alias naturali dai nomi formali
             </DialogDescription>
           </DialogHeader>
-          <PagePromptManager pageRoute="/template-alias" />
+          <UnifiedAICommunicationBadge pageRoute="/template-alias" />
         </DialogContent>
       </Dialog>
 

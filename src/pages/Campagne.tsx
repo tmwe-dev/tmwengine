@@ -11,7 +11,7 @@ import { CampaignFilters } from '@/components/campagne/CampaignFilters';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { useNavigate } from 'react-router-dom';
 import { Brain } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -393,7 +393,7 @@ export default function Campagne() {
             </div>
             
             <div className="flex items-center gap-1">
-              <PagePromptManager pageRoute="/campagne" />
+              <UnifiedAICommunicationBadge pageRoute="/campagne" />
               <Button 
                 variant="ghost" 
                 size="icon"

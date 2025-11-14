@@ -85,7 +85,7 @@ export function AISidebarSlider({
       <div className={cn(
         "fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-80 bg-background border-r z-50",
         "transition-transform duration-300 ease-in-out flex flex-col",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        isOpen ? "translate-x-0" : "-translate-x-full hidden"
       )}>
         {/* Header con linguette Audio/Text */}
         <div className="p-4 border-b flex items-center justify-between shrink-0 bg-background">

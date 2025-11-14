@@ -126,7 +126,7 @@ export function CollapsibleCategorySidebar({
       <aside className={cn(
         "fixed left-0 top-14 bottom-0 w-80 bg-background border-r z-50",
         "transition-transform duration-300",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        isOpen ? "translate-x-0" : "-translate-x-full hidden"
       )}>
         <div className="flex flex-col h-full">
           {/* Header uniforme */}

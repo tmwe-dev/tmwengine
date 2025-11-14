@@ -7,8 +7,6 @@ interface GlobalAICanvasState {
   isProcessing: boolean;
   messages: AICanvasMessage[];
   currentProposal: AIActionProposal | null;
-  audioMode?: 'text' | 'audio';
-  conversationId?: string | null;
 }
 
 interface EmailAICanvasContext {
@@ -46,8 +44,6 @@ export const GlobalAICanvasProvider: React.FC<{ children: ReactNode }> = ({ chil
     isProcessing: false,
     messages: [],
     currentProposal: null,
-    audioMode: 'text',
-    conversationId: null,
   });
 
   const openCanvas = useCallback((context: EmailAICanvasContext) => {

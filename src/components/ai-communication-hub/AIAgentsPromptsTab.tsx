@@ -11,6 +11,7 @@ import { GlobalAIAgentSelector } from '@/components/ai/GlobalAIAgentSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Sparkles, FileText, Filter, Plus, Trash2, Edit2, Save } from 'lucide-react';
+import { PromptComposer } from '@/components/chat-laboratory/prompt-composer/PromptComposer';
 
 interface ComposedPrompt {
   id: string;
@@ -184,8 +185,9 @@ export const AIAgentsPromptsTab = ({ initialPageFilter }: AIAgentsPromptsTabProp
       </div>
 
       <Tabs defaultValue="simple" className="w-full">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="simple">📝 Prompt Semplici</TabsTrigger>
+          <TabsTrigger value="composed">🎨 Drag & Drop</TabsTrigger>
           <TabsTrigger value="list">📚 Elenco Prompt ({filteredPromptCount})</TabsTrigger>
         </TabsList>
 
@@ -261,6 +263,21 @@ export const AIAgentsPromptsTab = ({ initialPageFilter }: AIAgentsPromptsTabProp
                 <Plus className="h-4 w-4 mr-2" />
                 Crea Prompt Semplice
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="composed" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Prompt Composer - Drag & Drop</CardTitle>
+              <CardDescription>
+                Crea prompt composti trascinando sezioni dalla libreria. 
+                I prompt salvati verranno associati alla pagina selezionata.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PromptComposer initialPageRoute={initialPageFilter || undefined} />
             </CardContent>
           </Card>
         </TabsContent>

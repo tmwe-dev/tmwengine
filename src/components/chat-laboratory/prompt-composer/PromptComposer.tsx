@@ -10,7 +10,11 @@ import { PromptCard } from './PromptCard';
 import { PromptSection, ComposedPromptBlock, SectionGroup } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
-export function PromptComposer() {
+interface PromptComposerProps {
+  initialPageRoute?: string;
+}
+
+export function PromptComposer({ initialPageRoute }: PromptComposerProps) {
   const [selectedGroup, setSelectedGroup] = useState<SectionGroup | null>(null);
   const [allSections, setAllSections] = useState<PromptSection[]>([]);
   const [filteredSections, setFilteredSections] = useState<PromptSection[]>([]);
@@ -190,13 +194,15 @@ export function PromptComposer() {
 
       const sectionIds = composedBlocks.map(b => b.section_id);
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('chat_laboratory_composed_prompts')
         .insert({
           name,
           content: finalContent,
           target_agent: targetAgent,
           section_ids: sectionIds,
+          page_route: initialPageRoute || null,
+          category: 'composed',
         });
 
       if (error) throw error;

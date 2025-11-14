@@ -35,10 +35,14 @@ const PAGE_ROUTES = [
   { value: '/campagne', label: '🎯 Campagne' },
 ];
 
-export const AIAgentsPromptsTab = () => {
+interface AIAgentsPromptsTabProps {
+  initialPageFilter?: string;
+}
+
+export const AIAgentsPromptsTab = ({ initialPageFilter }: AIAgentsPromptsTabProps) => {
   const [prompts, setPrompts] = useState<ComposedPrompt[]>([]);
   const [loading, setLoading] = useState(false);
-  const [pageFilter, setPageFilter] = useState<string>('all');
+  const [pageFilter, setPageFilter] = useState<string>(initialPageFilter || 'all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   
   // Simple prompt creation

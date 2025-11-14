@@ -26,7 +26,7 @@ import {
   Sparkles,
   Trash2
 } from 'lucide-react';
-import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -814,7 +814,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
             Torna a Import
           </Button>
           
-          <PagePromptManager pageRoute="/import-errors-monitor" />
+          <UnifiedAICommunicationBadge pageRoute="/import-errors-monitor" />
         </div>
 
         {/* Free Prompt Configuration */}

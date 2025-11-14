@@ -13,7 +13,7 @@ import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
 import { FunEmailChat } from '@/components/email/FunEmailChat';
 import { FunEmailGlobalStats } from '@/components/email/FunEmailGlobalStats';
-import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { EmailManagementTab } from '@/components/email/EmailManagementTab';
 import { EmailGroupingSuggestionsTab } from '@/components/email/EmailGroupingSuggestionsTab';
 import { QuickEmailDownloader } from '@/components/email/QuickEmailDownloader';
@@ -326,7 +326,7 @@ const FunEmail = () => {
                 <Card className="h-[calc(100vh-12rem)]">
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>AI Email Assistant</CardTitle>
-                    <PagePromptManager pageRoute="/funnemail" />
+                    <UnifiedAICommunicationBadge pageRoute="/funnemail" />
                   </CardHeader>
                   <CardContent className="h-[calc(100%-5rem)] overflow-hidden">
                     <FunEmailChat />

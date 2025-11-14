@@ -24,7 +24,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { Brain } from 'lucide-react';
 import { EmailQueueBadge } from '@/components/email-campagne/EmailQueueBadge';
 
@@ -1063,7 +1063,7 @@ export default function Attivita() {
             <div className="flex items-center gap-1">
               {/* Right-aligned AI/Settings icons */}
               <EmailQueueBadge />
-              <PagePromptManager pageRoute="/attivita" />
+              <UnifiedAICommunicationBadge pageRoute="/attivita" />
               <Button 
                 variant="ghost" 
                 size="icon"

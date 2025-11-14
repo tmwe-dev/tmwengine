@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
-import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 
 interface SenderStats {
   sender: string;
@@ -514,7 +514,7 @@ export default function EmailSenders() {
               
               <div className="flex items-center gap-1">
                 {/* Right-aligned AI/Settings icons */}
-                <PagePromptManager pageRoute="/email-senders" />
+                <UnifiedAICommunicationBadge pageRoute="/email-senders" />
                 <Brain 
                   className="h-5 w-5 text-primary cursor-pointer hover:scale-110 transition-transform" 
                   onClick={() => navigate('/chat?page=/email-senders')}

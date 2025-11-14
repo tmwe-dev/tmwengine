@@ -16,7 +16,7 @@ import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { useUserActivities } from '@/hooks/useUserActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { Brain } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { EmailQueueBadge } from '@/components/email-campagne/EmailQueueBadge';
@@ -388,7 +388,7 @@ export default function Rubrica() {
               </div>
               
               <div className="flex items-center gap-1">
-                <PagePromptManager pageRoute="/rubrica" />
+                <UnifiedAICommunicationBadge pageRoute="/rubrica" />
                 <Button 
                   variant="ghost" 
                   size="icon"

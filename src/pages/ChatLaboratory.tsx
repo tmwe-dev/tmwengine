@@ -1311,29 +1311,20 @@ const ChatLaboratory = () => {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20 p-0 m-0">
-    {/* Sidebar Conversazioni - Card Style Overlay */}
-    {!isFullScreenMode && sidebarOpen && (
-      <>
-        <div 
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-        <div className="fixed left-4 top-4 bottom-4 w-80 z-50 bg-card/95 backdrop-blur border border-border/40 rounded-lg shadow-lg">
-          <ConversationsSidebar
-            conversations={conversations}
-            currentConversationId={currentConversationId}
-            onSelectConversation={handleSelectConversation}
-            onNewConversation={handleNewConversation}
-            onDeleteConversation={handleDeleteConversation}
-            onUpdateTitle={handleUpdateTitle}
-            onGenerateSummary={handleGenerateSummary}
-            onGenerateFullReport={handleGenerateFullReport}
-            onCloseSidebar={() => setSidebarOpen(false)}
-            onFocusTextarea={() => textareaRef.current?.focus()}
-          />
-        </div>
-      </>
-    )}
+    {/* Sidebar Conversazioni - UNIFORMATO */}
+    <ConversationsSidebar
+      isOpen={sidebarOpen && !isFullScreenMode}
+      conversations={conversations}
+      currentConversationId={currentConversationId}
+      onSelectConversation={handleSelectConversation}
+      onNewConversation={handleNewConversation}
+      onDeleteConversation={handleDeleteConversation}
+      onUpdateTitle={handleUpdateTitle}
+      onGenerateSummary={handleGenerateSummary}
+      onGenerateFullReport={handleGenerateFullReport}
+      onCloseSidebar={() => setSidebarOpen(false)}
+      onFocusTextarea={() => textareaRef.current?.focus()}
+    />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-full pt-0 mt-0">

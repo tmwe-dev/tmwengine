@@ -39,6 +39,7 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('count-desc');
   const [lastUpdatedGroupId, setLastUpdatedGroupId] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   // 🆕 State per drag tracking nativo (solo sender per collision detection)
   const [activeDrag, setActiveDrag] = useState<SenderAnalysis | null>(null);

@@ -4,13 +4,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { GlobalAICanvasProvider } from "@/contexts/GlobalAICanvasContext";
+import { AIAgentProvider } from "@/contexts/AIAgentContext";
+import { AISidebarSliderUnified } from "@/components/ai/AISidebarSliderUnified";
+import { AISidebarTrigger } from "@/components/ai/AISidebarTrigger";
+import { useGlobalAICanvas } from "@/hooks/useGlobalAICanvas";
 import { TMWEAuthProvider } from "@/hooks/useTMWEAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { GlobalCallHandler } from "@/components/GlobalCallHandler";
 import { GlobalVideoCallHandler } from "@/components/GlobalVideoCallHandler";
-import { GlobalAICanvasProvider } from "@/contexts/GlobalAICanvasContext";
 import { CRMLayoutProvider } from "@/contexts/CRMLayoutContext";
-import { AIAgentProvider } from "@/contexts/AIAgentContext";
 import '@/i18n/config';
 
 import Auth from "./pages/Auth";

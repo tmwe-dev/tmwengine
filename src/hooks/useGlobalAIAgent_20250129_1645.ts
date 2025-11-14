@@ -2,18 +2,17 @@ import { useAIAgent } from '@/contexts/AIAgentContext';
 
 /**
  * Hook globale per gestire la selezione dell'AI Agent
- * Ora legge da database (config_ai + ai_communication_preferences)
  * 
  * Usage:
  * ```tsx
  * const { selectedAgent, setSelectedAgent, getAIPayload } = useGlobalAIAgent();
  * 
  * // Passare ai chiamanti Edge Function:
- * const payload = await getAIPayload('/chat'); // con page route
+ * const payload = getAIPayload();
  * await supabase.functions.invoke('my-function', {
  *   body: {
  *     ...otherData,
- *     ...payload // includes selected_agent, ai_model, config, composed_prompts
+ *     ...payload // includes selected_agent + ai_model
  *   }
  * });
  * ```
@@ -25,6 +24,5 @@ export const useGlobalAIAgent = () => {
     selectedAgent: context.selectedAgent,
     setSelectedAgent: context.setSelectedAgent,
     getAIPayload: context.getAIPayload,
-    loading: context.loading,
   };
 };

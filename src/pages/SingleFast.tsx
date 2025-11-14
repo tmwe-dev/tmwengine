@@ -25,6 +25,7 @@ export default function SingleFast() {
   const [userEmail, setUserEmail] = useState('');
   const [dbStats, setDbStats] = useState<{folder: string; count: number; max_uid: number}[]>([]);
   const [lockStatus, setLockStatus] = useState<'locked' | 'free'>('free');
+  const [tokenStatus, setTokenStatus] = useState<'checking' | 'valid' | 'expired'>('checking');
   const { toast } = useToast();
   
   const { 
@@ -100,6 +101,41 @@ export default function SingleFast() {
 
     loadStats();
     const interval = setInterval(loadStats, 5000); // Refresh every 5s
+    return () => clearInterval(interval);
+  }, [userEmail]);
+
+  // ✅ Check TMWE token validity
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const checkToken = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setTokenStatus('expired');
+          return;
+        }
+        
+        const { data: creds } = await supabase
+          .from('user_tmwe_credentials')
+          .select('expires_at')
+          .eq('email', userEmail)
+          .single();
+        
+        if (!creds || !creds.expires_at) {
+          setTokenStatus('expired');
+        } else {
+          const expiresAt = new Date(creds.expires_at);
+          setTokenStatus(expiresAt > new Date() ? 'valid' : 'expired');
+        }
+      } catch (error) {
+        console.error('Token check error:', error);
+        setTokenStatus('expired');
+      }
+    };
+    
+    checkToken();
+    const interval = setInterval(checkToken, 30000); // Check every 30s
     return () => clearInterval(interval);
   }, [userEmail]);
 
@@ -189,6 +225,32 @@ export default function SingleFast() {
               </CardContent>
             </Card>
 
+            {/* 🆕 Token Expiry Warning */}
+            {tokenStatus === 'expired' && (
+              <Card className="border-destructive bg-destructive/10">
+                <CardContent className="py-3 px-3">
+                  <div className="flex items-start gap-2">
+                    <Unlock className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-destructive">
+                        Token TMWE scaduto
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Devi ri-autenticarti per scaricare email
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={() => window.location.href = '/tmwe/callback'}
+                        className="mt-2 h-6 text-xs"
+                      >
+                        🔐 Ri-autentica
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Bottoni Compatti */}
             <div className="flex flex-col gap-2">
               {/* 🆕 Force Release Lock Button */}
@@ -207,7 +269,7 @@ export default function SingleFast() {
               <Button
                 size="sm"
                 onClick={() => start()}
-                disabled={isRunning}
+                disabled={isRunning || tokenStatus === 'expired'}
                 className="w-full justify-start h-8 text-xs"
               >
                 {isRunning ? (

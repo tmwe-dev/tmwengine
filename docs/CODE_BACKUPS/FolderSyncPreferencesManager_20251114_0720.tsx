@@ -37,7 +37,7 @@ export function FolderSyncPreferencesManager({
   const { toast } = useToast();
 
   // ✅ Carica cartelle autonomamente
-  const { data: foldersData, isLoading: isLoadingFolders, error, isError } = useQuery({
+  const { data: foldersData, isLoading: isLoadingFolders } = useQuery({
     queryKey: ['email-folders', userEmail],
     queryFn: async () => {
       console.log('🔄 [FolderPrefs] Fetching folders (FORCE REFRESH)');
@@ -64,8 +64,6 @@ export function FolderSyncPreferencesManager({
     },
     enabled: !!userEmail,
     staleTime: 0,  // ✅ Non cachare in React Query
-    retry: false, // ✅ NO retry su errori auth
-    refetchOnWindowFocus: false,
   });
 
   const availableFolders = foldersData || [];
@@ -113,37 +111,42 @@ export function FolderSyncPreferencesManager({
       console.error('❌ [FolderPrefs] Load error:', error);
       toast({
         title: '❌ Errore',
-        description: 'Impossibile caricare le preferenze',
-        variant: 'destructive'
+        description: 'Impossibile caricare preferenze cartelle',
+        variant: 'destructive',
       });
     }
   };
 
   const handleSavePreferences = async () => {
     setIsSaving(true);
+    
     try {
-      await saveSyncPreferences(userEmail, {
-        excluded_folders: [],
-        included_folders: includedFolders
+      console.log('💾 [FolderPrefs] Saving preferences:', {
+        userEmail,
+        includedFolders,
+        excluded: availableFolders.filter(f => !includedFolders.includes(f))
       });
 
-      console.log('💾 [FolderPrefs] Saved preferences:', {
-        included: includedFolders
-      });
-
+      await saveSyncPreferences(userEmail, includedFolders);
+      
       toast({
-        title: '✅ Preferenze salvate',
-        description: `${includedFolders.length} cartelle selezionate per la sincronizzazione`
+        title: '✅ Salvato',
+        description: `Configurate ${includedFolders.length}/${availableFolders.length} cartelle`,
       });
 
-      onPreferencesChanged?.();
-
+      console.log('✅ [FolderPrefs] Preferences saved successfully');
+      
+      if (onPreferencesChanged) {
+        console.log('🔄 [FolderPrefs] Calling onPreferencesChanged callback');
+        onPreferencesChanged();
+      }
+      
     } catch (error) {
       console.error('❌ [FolderPrefs] Save error:', error);
       toast({
         title: '❌ Errore',
-        description: 'Impossibile salvare le preferenze',
-        variant: 'destructive'
+        description: 'Impossibile salvare preferenze',
+        variant: 'destructive',
       });
     } finally {
       setIsSaving(false);
@@ -158,42 +161,6 @@ export function FolderSyncPreferencesManager({
     );
   };
 
-  // ✅ Gestione errori TMWE token scaduto
-  if (isError) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    
-    if (errorMsg.includes('TMWE_SESSION_EXPIRED') || errorMsg.includes('TMWE_AUTH_REQUIRED') || errorMsg.includes('timeout')) {
-      return (
-        <div className="py-8 text-center space-y-4">
-          <div className="text-destructive font-medium">🔒 Token TMWE scaduto</div>
-          <p className="text-sm text-muted-foreground">
-            La tua sessione TMWE è scaduta. Devi ri-autenticarti per accedere alle cartelle email.
-          </p>
-          <Button 
-            onClick={() => window.location.href = '/tmwe/callback'} 
-            className="mt-4"
-          >
-            🔐 Ri-autentica TMWE
-          </Button>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="py-8 text-center space-y-3">
-        <p className="text-destructive font-medium">❌ Errore caricamento cartelle</p>
-        <p className="text-xs text-muted-foreground font-mono">{errorMsg}</p>
-        <Button 
-          onClick={() => window.location.reload()} 
-          variant="outline" 
-          size="sm"
-        >
-          Riprova
-        </Button>
-      </div>
-    );
-  }
-
   if (isLoadingFolders) {
     return (
       <div className="py-8 text-center text-muted-foreground">
@@ -202,7 +169,7 @@ export function FolderSyncPreferencesManager({
     );
   }
 
-  if (availableFolders.length === 0) {
+  if (!availableFolders || availableFolders.length === 0) {
     return (
       <div className="py-8 text-center text-muted-foreground">
         Nessuna cartella disponibile
@@ -211,79 +178,63 @@ export function FolderSyncPreferencesManager({
   }
 
   return (
-    <div className="space-y-4 pb-2">
-      {/* Header */}
+    <div className="space-y-4">
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Folder className="h-5 w-5" />
-          Seleziona Cartelle da Sincronizzare
+        <h3 className="text-sm font-medium">
+          📁 Seleziona cartelle da sincronizzare
         </h3>
-        <p className="text-sm text-muted-foreground">
-          Spunta le cartelle che vuoi sincronizzare. Le cartelle non selezionate verranno ignorate.
+        <p className="text-xs text-muted-foreground">
+          Scegli quali cartelle email verranno scaricate automaticamente
         </p>
       </div>
 
-      {/* Lista Cartelle */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">Cartelle Disponibili</Label>
-          <Badge variant="secondary">
-            {includedFolders.length} / {availableFolders.length} selezionate
-          </Badge>
-        </div>
-
-        <ScrollArea className="h-[300px] max-h-[35vh] border rounded-md p-4">
-          <div className="space-y-2">
-            {availableFolders.map(folder => {
-              const isSelected = includedFolders.includes(folder);
-              
-              return (
-                <div 
-                  key={folder} 
-                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-2 flex-1">
-                    <Folder className="h-4 w-4 text-muted-foreground" />
-                    <Label 
-                      htmlFor={`folder-${folder}`}
-                      className="cursor-pointer flex-1 font-normal"
-                    >
-                      {folder}
-                    </Label>
-                    {isSelected && (
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    )}
-                  </div>
-                  
-                  <Switch
-                    id={`folder-${folder}`}
-                    checked={isSelected}
-                    onCheckedChange={() => toggleFolder(folder)}
-                  />
+      <ScrollArea className="h-[300px] rounded-md border p-4">
+        <div className="space-y-3">
+          {availableFolders.map((folderName) => {
+            const isIncluded = includedFolders.includes(folderName);
+            
+            return (
+              <div 
+                key={folderName} 
+                className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-accent/50 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Folder className="h-4 w-4 text-muted-foreground" />
+                  <Label 
+                    htmlFor={`folder-${folderName}`}
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    {folderName}
+                  </Label>
+                  {isIncluded && (
+                    <CheckCircle2 className="h-3 w-3 text-primary" />
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        </ScrollArea>
-
-        <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-md">
-          <div className="flex items-start gap-2">
-            <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
-            <span>
-              ✓ {includedFolders.length} cartelle selezionate per la sincronizzazione
-            </span>
-          </div>
+                
+                <Switch
+                  id={`folder-${folderName}`}
+                  checked={isIncluded}
+                  onCheckedChange={() => toggleFolder(folderName)}
+                />
+              </div>
+            );
+          })}
         </div>
-      </div>
+      </ScrollArea>
 
-      {/* Save Button */}
-      <Button 
-        className="w-full" 
-        onClick={handleSavePreferences}
-        disabled={isSaving}
-      >
-        {isSaving ? 'Salvataggio...' : 'Salva Preferenze'}
-      </Button>
+      <div className="flex items-center justify-between pt-2">
+        <Badge variant="outline" className="text-xs">
+          {includedFolders.length} / {availableFolders.length} cartelle selezionate
+        </Badge>
+
+        <Button 
+          onClick={handleSavePreferences}
+          disabled={isSaving}
+          size="sm"
+        >
+          {isSaving ? 'Salvataggio...' : 'Salva Preferenze'}
+        </Button>
+      </div>
     </div>
   );
 }

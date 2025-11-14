@@ -62,22 +62,22 @@ export function AISidebarSlider({
 
   return (
     <>
-      {/* Backdrop con trasparenza 35% */}
+      {/* Backdrop - UNIFORMATO */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-background/35 backdrop-blur-sm z-[60] transition-opacity duration-300"
+          className="fixed inset-0 bg-transparent backdrop-blur-sm z-[60] transition-opacity duration-300"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar scorrevole */}
+      {/* Sidebar scorrevole - UNIFORMATO */}
       <div className={cn(
-        "fixed left-0 top-0 h-screen w-[500px] bg-background/90 backdrop-blur-md border-r shadow-2xl z-[61]",
+        "fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-80 bg-background border-r shadow-2xl z-[61]",
         "transition-transform duration-300 ease-in-out flex flex-col",
-        isOpen ? "translate-x-0" : "-translate-x-full opacity-0 pointer-events-none"
+        isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        {/* Header */}
-        <div className="p-4 border-b flex items-center justify-between shrink-0">
+        {/* Header uniforme */}
+        <div className="p-4 border-b flex items-center justify-between shrink-0 bg-background">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             <h2 className="font-semibold text-lg">AI Assistant</h2>
@@ -195,17 +195,17 @@ export function AISidebarSlider({
         )}
       </div>
 
-      {/* Linguetta trigger (condizionata da hideButton) */}
+      {/* Linguetta trigger - UNIFORMATO */}
       {!hideButton && (
         <button
           onClick={onToggle}
           className={cn(
             "fixed left-0 top-1/2 -translate-y-1/2 z-[62]",
-            "w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+            "w-12 h-20 bg-transparent rounded-r-lg border border-border/20",
             "flex items-center justify-center",
             "transition-all duration-300",
-            "hover:bg-white/5",
-            isOpen && "translate-x-[500px]"
+            "hover:bg-muted/50",
+            isOpen && "translate-x-80"
           )}
           aria-label="Toggle AI Assistant"
         >

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Lock, Unlock, Folder, Sparkles, FileText, Eye, EyeOff } from 'lucide-react';
+import { Lock, Unlock, Folder, Sparkles, FileText, Eye, EyeOff, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -114,37 +114,59 @@ export function CollapsibleCategorySidebar({
 
   return (
     <>
-      {/* Sidebar scorrevole */}
-      <aside
-        className={cn(
-          "fixed left-0 top-0 h-full w-[280px] z-40 bg-background/95 backdrop-blur-sm transition-transform duration-300 ease-out",
-          isOpen ? "translate-x-0 border-r border-white/10" : "-translate-x-full"
-        )}
-      >
-        {/* Header con AI Agent Selector centrato */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <div className="flex-1 flex justify-center">
-            <AIAgentSelector 
-              selectedAgent={selectedAgent}
-              onAgentChange={onAgentChange}
-            />
-          </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => setIsLocked(!isLocked)}
-            className="h-8 w-8"
-          >
-            {isLocked ? (
-              <Lock className="h-4 w-4 text-primary" />
-            ) : (
-              <Unlock className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
+      {/* Backdrop - UNIFORMATO */}
+      {isOpen && !isLocked && (
+        <div 
+          className="fixed left-0 right-0 bottom-0 top-14 bg-transparent z-40 animate-in fade-in"
+          onClick={() => onOpenChange(false)}
+        />
+      )}
 
-        {/* Filtri e Azioni su una riga */}
-        <div className="p-4 border-b border-white/10 space-y-3">
+      {/* Sidebar - UNIFORMATO */}
+      <aside className={cn(
+        "fixed left-0 top-14 bottom-0 w-80 bg-background border-r z-50",
+        "transition-transform duration-300",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="flex flex-col h-full">
+          {/* Header uniforme */}
+          <div className="flex items-center justify-between p-4 border-b bg-background">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold">Smart Inbox</h2>
+              <Badge 
+                variant="outline" 
+                className="text-xs"
+                style={{ borderColor: selectedInfo.color }}
+              >
+                {selectedInfo.icon} {selectedInfo.count}
+              </Badge>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsLocked(!isLocked)}
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                title={isLocked ? "Sblocca sidebar" : "Blocca sidebar aperta"}
+              >
+                {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+              </button>
+              {!isLocked && (
+                <button
+                  onClick={() => onOpenChange(false)}
+                  className="p-2 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* AI Agent Selector */}
+          <div className="p-4 border-b">
+            <AIAgentSelector selectedAgent={selectedAgent} onAgentChange={onAgentChange} />
+          </div>
+
+          {/* Filtri e Azioni su una riga */}
+          <div className="p-4 border-b space-y-3">
           {/* Folder Selector */}
           <Select value={selectedFolder} onValueChange={onFolderChange}>
             <SelectTrigger className="w-full h-9 bg-white/5 border-white/20">
@@ -242,6 +264,7 @@ export function CollapsibleCategorySidebar({
             onCategoryChange={onCategoryChange}
             unverifiedCount={unverifiedCount}
           />
+          </div>
         </div>
       </aside>
 

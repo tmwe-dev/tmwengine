@@ -6,12 +6,13 @@ import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Search, Filter, Plus, LayoutGrid, Box, RefreshCw, Lightbulb } from 'lucide-react';
+import { Search, Filter, Plus, LayoutGrid, Box, RefreshCw, Lightbulb, X } from 'lucide-react';
 import { SenderCard } from './SenderCard';
 import type { SenderAnalysis, EmailSenderGroup } from '@/types/email-management';
 import { SenderSortControls, SortOption } from './SenderSortControls';
 import { cn } from '@/lib/utils';
 import { IconButton } from '@/components/design-system/buttons/IconButton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -262,7 +263,7 @@ export function EmailSidebar({
                     <SelectItem value="all">Tutte</SelectItem>
                     {groups.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
-                        {group.category_name} ({group.sender_count || 0})
+                        {group.nome_gruppo} ({groups.filter(g => g.id === group.id).length || 0})
                       </SelectItem>
                     ))}
                   </SelectContent>

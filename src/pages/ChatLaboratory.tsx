@@ -46,6 +46,10 @@ import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
 import { AudioModeSelector } from '@/components/chat-laboratory/AudioModeSelector';
 import { CompactControlBar } from '@/components/chat-laboratory/CompactControlBar';
 import { WordLimitSliderCompact } from '@/components/chat-laboratory/WordLimitSliderCompact';
+import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
+import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
+import { useGlobalAICanvas } from '@/hooks/useGlobalAICanvas';
+import { cn } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -108,6 +112,8 @@ const ChatLaboratory = () => {
   // Sidebar States
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
+  const { state: aiCanvasState } = useGlobalAICanvas();
   
   // Bar Mode States
   const [isBarMode, setIsBarMode] = useState(false);
@@ -1326,6 +1332,35 @@ const ChatLaboratory = () => {
       onFocusTextarea={() => textareaRef.current?.focus()}
     />
 
+      {/* AI Assistant Trigger */}
+      <AISidebarTrigger
+        isOpen={aiSidebarOpen}
+        onToggle={() => {
+          const newState = !aiSidebarOpen;
+          setAiSidebarOpen(newState);
+          if (newState) setSidebarOpen(false);
+        }}
+        hasActiveConversation={aiCanvasState.messages.length > 0}
+        className={cn(
+          "fixed left-0 bottom-[12rem] z-40 transition-all duration-300",
+          (sidebarOpen || aiSidebarOpen) && "translate-x-[320px]"
+        )}
+      />
+
+      {/* AI Assistant Sidebar */}
+      <AISidebarSlider
+        isOpen={aiSidebarOpen}
+        onClose={() => setAiSidebarOpen(false)}
+        onToggle={() => {
+          const newState = !aiSidebarOpen;
+          setAiSidebarOpen(newState);
+          if (newState) setSidebarOpen(false);
+        }}
+        enableAudio={true}
+        conversationId={currentConversationId || 'chat-laboratory-general'}
+        hideButton={true}
+      />
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-full pt-0 mt-0">
         {/* Header */}
@@ -1343,7 +1378,11 @@ const ChatLaboratory = () => {
               {/* Left side - Navigation button and Export */}
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  onClick={() => {
+                    const newState = !sidebarOpen;
+                    setSidebarOpen(newState);
+                    if (newState) setAiSidebarOpen(false);
+                  }}
                   variant="ghost"
                   size="icon"
                   className="shrink-0 h-8 w-8"

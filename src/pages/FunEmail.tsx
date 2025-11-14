@@ -23,6 +23,7 @@ import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartIn
 import { GradientBackground } from '@/components/design-system';
 import { cn } from '@/lib/utils';
 import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
+import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
 import { AIAutomationDashboard } from '@/components/email/automation/AIAutomationDashboard';
 import { EmailCountDiagnostics } from '@/components/email/EmailCountDiagnostics';
 import { SingleMailImporter } from '@/components/email/SingleMailImporter';
@@ -293,17 +294,16 @@ const FunEmail = () => {
             </button>
 
             {/* AI Icon - Bottom (20px gap) */}
-            <button
-              onClick={handleToggleAI}
+            <AISidebarTrigger
+              isOpen={aiSidebarOpen}
+              onToggle={handleToggleAI}
+              hasActiveConversation={selectedSenderForAI !== null}
               className={cn(
-                "fixed left-0 bottom-[7.5rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
-                "flex items-center justify-center transition-all duration-300 hover:bg-white/10",
-                aiSidebarOpen && "translate-x-[500px]",
+                "fixed left-0 bottom-[7.5rem] z-40 transition-all duration-300",
+                aiSidebarOpen && "translate-x-[320px]",
                 !shouldShowLeftIcons && !aiSidebarOpen && "hidden"
               )}
-            >
-              <Sparkles className="w-6 h-6 text-primary" strokeWidth={1} />
-            </button>
+            />
           </>
         )}
 
@@ -452,7 +452,9 @@ const FunEmail = () => {
           onToggle={handleToggleAI}
           senderEmail={selectedSenderForAI}
           onPromptCreated={handlePromptCreatedGlobal}
-          hideButton={currentView === 'inbox'}
+          hideButton={true}
+          enableAudio={true}
+          conversationId={`funnemail-${selectedSenderForAI || 'general'}`}
         />
       )}
 

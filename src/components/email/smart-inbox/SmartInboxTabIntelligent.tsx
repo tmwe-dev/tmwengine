@@ -7,7 +7,6 @@ import { EmptyDetailPanel } from './EmptyDetailPanel';
 import { CollapsibleCategorySidebar } from './CollapsibleCategorySidebar';
 import { AIActionsSidebar } from './AIActionsSidebar';
 import { AIPromptDialog } from './AIPromptDialog';
-import { AIManualCanvas } from './AIManualCanvas';
 import { AIActionConfirmation } from './AIActionConfirmation';
 import { EmailClassifierPromptEditor } from './EmailClassifierPromptEditor';
 import { ViewModeSelector, ViewMode } from './ViewModeSelector';
@@ -59,7 +58,6 @@ export const SmartInboxTabIntelligent = ({
   // AI Automation State
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
-  const [aiCanvasOpen, setAiCanvasOpen] = useState(false);
   const [promptViewerOpen, setPromptViewerOpen] = useState(false);
   
   // Auto-switch to split if detail mode but no email selected
@@ -627,13 +625,6 @@ export const SmartInboxTabIntelligent = ({
           )}
         </div>
       </div>
-
-      {/* AI Manual Canvas Dialog */}
-      <Dialog open={aiCanvasOpen} onOpenChange={setAiCanvasOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <AIManualCanvas />
-        </DialogContent>
-      </Dialog>
 
       {/* AI Action Confirmation */}
       {currentProposal && (

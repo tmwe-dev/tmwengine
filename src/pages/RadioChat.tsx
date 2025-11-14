@@ -12,6 +12,9 @@ import { RadioCarousel3D } from '@/components/radio-chat/RadioCarousel3D';
 import { RadioParticipantSelector } from '@/components/radio-chat/RadioParticipantSelector';
 import { RadioSidebarTrigger } from '@/components/radio-chat/RadioSidebarTrigger';
 import { RadioParticipantIcon } from '@/components/radio-chat/RadioParticipantIcon';
+import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
+import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
+import { useGlobalAICanvas } from '@/hooks/useGlobalAICanvas';
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
 import { RadioCarouselAudioPlayerWrapper } from '@/components/radio-chat/RadioCarouselAudioPlayerWrapper';
 import { RadioAudioControls } from '@/components/radio-chat/RadioAudioControls';
@@ -52,6 +55,7 @@ const RadioChat = () => {
 
 const RadioChatContent = () => {
   const { menuOpen: crmMenuOpen, setMenuOpen: setCrmMenuOpen } = useCRMLayout();
+  const { state: aiCanvasState } = useGlobalAICanvas();
   const [sidebarOpen, setSidebarOpen] = useState(true); // ✅ Open by default to show chat selector
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -109,6 +113,7 @@ const RadioChatContent = () => {
   const [debugPopupOpen, setDebugPopupOpen] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<'conversations' | 'settings'>('settings'); // ✅ Tab selector - opens on Settings by default
   const [showAudioControls, setShowAudioControls] = useState(false); // 🎤 Audio controls popup
+  const [aiSidebarOpen, setAiSidebarOpen] = useState(false); // 🤖 AI Assistant sidebar
   
   const { toast } = useToast();
   
@@ -1193,6 +1198,19 @@ const RadioChatContent = () => {
             />
           )}
         </div>
+      {/* AI Assistant Trigger - Fifth Tab (sopra RadioSidebarTrigger) */}
+      <AISidebarTrigger
+        className={cn(
+          "fixed left-0 bottom-[24rem] z-40 transition-all duration-300",
+          sidebarOpen && "translate-x-[320px]",
+          !shouldShowLeftIcons && !aiSidebarOpen && "opacity-0 pointer-events-none",
+          (shouldShowLeftIcons || aiSidebarOpen) && "opacity-100"
+        )}
+        isOpen={aiSidebarOpen}
+        onToggle={() => setAiSidebarOpen(!aiSidebarOpen)}
+        hasActiveConversation={aiCanvasState.messages.length > 0}
+      />
+
       {/* Hamburger Sidebar - Bottom Left */}
       <RadioSidebarTrigger
         className={cn(
@@ -1502,6 +1520,16 @@ const RadioChatContent = () => {
           />
         )}
       </div>
+
+      {/* AI Assistant Sidebar */}
+      <AISidebarSlider
+        isOpen={aiSidebarOpen}
+        onClose={() => setAiSidebarOpen(false)}
+        onToggle={() => setAiSidebarOpen(!aiSidebarOpen)}
+        enableAudio={true}
+        conversationId={currentConversationId}
+        hideButton={true}
+      />
     </div>
   );
 };

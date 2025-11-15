@@ -618,11 +618,12 @@ export const emailMessageApi = {
       return parsed;
     });
     
+    // ✅ FIX: Usa handler corretto "get_messages_by_uids" che esiste nell'edge function
     return fetchApi('/email_message', {
-      handler: 'get_messages_batch',  // Nuovo handler batch
+      handler: 'get_messages_by_uids',  // ✅ Handler batch esistente nell'edge function
       uids: uidInts,
       folder,
-      mark_as_read: markAsRead
+      include_attachments: true  // Include body email
     });
   },
   

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Rocket, Square, Settings, Sliders, Unlock, Database, ArrowLeft } from 'lucide-react';
+import { Download, Settings, FolderSync, StopCircle, RotateCcw, TestTube2, Rocket } from "lucide-react";
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { PageLayout } from '@/components/design-system/layouts/PageLayout';
 import { SplitLayout } from '@/components/design-system/layouts/SplitLayout';
@@ -39,10 +39,18 @@ export default function SingleFast() {
     sequenceStrategies: ['luca', 'clean'] // Rollback: Luca Strategy + Clean Strategy
   });
 
-  // 🆕 Simple Downloader hook (separado)
   const simpleDownload = useEmailDownload({
-    strategy: 'simple'
+    strategy: 'simple',
+    customFolders: ['INBOX', 'Sent']
   });
+
+  const masterDownload = useEmailDownload({
+    strategy: 'master',
+    customFolders: ['INBOX', 'Sent']
+  });
+
+  const activeDownload = isRunning ? { isRunning, logs, progress } : (simpleDownload.isRunning ? simpleDownload : masterDownload);
+  const anyDownloadRunning = isRunning || simpleDownload.isRunning || masterDownload.isRunning;
 
   useEffect(() => {
     const getUserEmail = async () => {

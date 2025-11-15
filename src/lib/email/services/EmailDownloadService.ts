@@ -217,8 +217,8 @@ export class EmailDownloadService {
         try {
           // A. Info server usando emailSearchApi
           const folderInfoResponse = await emailSearchApi.getFolderInfo(folderName);
-          const serverInfo = folderInfoResponse?.folder_info || folderInfoResponse;
-          const serverMaxUID = serverInfo.uidnext || serverInfo.max_uid || 0;
+          const serverInfo = folderInfoResponse?.folder || folderInfoResponse?.folder_info || folderInfoResponse;
+          const serverMaxUID = serverInfo.uidnext || serverInfo.max_uid || serverInfo.total_messages || 0;
           
           // B. Info DB locale (funzione esistente)
           const localMaxUID = await getMaxUID(folderName, this.userEmail);

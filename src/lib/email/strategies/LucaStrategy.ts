@@ -101,6 +101,18 @@ export class LucaStrategy implements DownloadStrategy {
         if (folderConfig?.startUID !== undefined) {
           // Usa startUID fornito da Smart Preparation
           startUID = folderConfig.startUID;
+          
+          // ✅ Check se cartella già completamente sincronizzata
+          if (folderConfig.pending === 0) {
+            onLog({
+              phase: 'skip',
+              folder: folderName,
+              message: `  └─ ⏭️  Folder already synced (${folderConfig.pending} pending)`
+            });
+            foldersCompleted++;
+            continue;
+          }
+          
           onLog({
             phase: 'preparing',
             folder: folderName,

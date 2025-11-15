@@ -228,9 +228,20 @@ export class EmailDownloadService {
           let startUID = 1;
           
           if (localMaxUID === null) {
-            // Cartella nuova → scarica da UID 1
-            pending = serverMaxUID > 0 ? serverMaxUID : 0;
-            startUID = 1;
+            // Cartella nuova → scarica solo ultimi 5000 per evitare UIDs inesistenti
+            if (serverMaxUID > 5000) {
+              pending = 5000;
+              startUID = serverMaxUID - 5000 + 1;
+              console.log(`[SmartPrep] 🆕 ${folderName}: New folder with ${serverMaxUID} emails, downloading last 5000 (${startUID}→${serverMaxUID})`);
+            } else if (serverMaxUID > 0) {
+              pending = serverMaxUID;
+              startUID = 1;
+              console.log(`[SmartPrep] 🆕 ${folderName}: New folder with ${serverMaxUID} emails, downloading all (1→${serverMaxUID})`);
+            } else {
+              pending = 0;
+              startUID = 1;
+              console.log(`[SmartPrep] 📭 ${folderName}: Empty folder on server`);
+            }
           } else if (serverMaxUID > localMaxUID) {
             // Cartella parziale → scarica nuove
             pending = serverMaxUID - localMaxUID;

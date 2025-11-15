@@ -15,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Download, Folder, CheckSquare, Square, Pause, Play } from 'lucide-react';
 import { DownloadButtonWithLabel } from '@/components/design-system/buttons/DownloadButtonWithLabel';
 import emailFolderGif from '@/assets/email-folder-unscreen.gif';
-import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { EmailFolderComparisonDialog } from './EmailFolderComparisonDialog';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 
@@ -88,28 +88,19 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
     const loadData = async () => {
       setLoadingFolders(true);
       try {
-        console.log('📂 [FunEmailDownloader] Loading folders from API Search...');
-        const response = await emailSearchApi.getFolders();
-        
-        const folders = Array.isArray(response) ? response : (response?.data || []);
-        
-        console.log(`✅ [FunEmailDownloader] Loaded ${folders.length} folders`);
+        const folders = await emailFolderApi.getFolders({ 
+          include_counts: true,
+          skipCache: true
+        });
         setAvailableFolders(folders);
         await loadAndUpdateStats();
-      } catch (error: any) {
-        console.error('❌ [FunEmailDownloader] Errore caricamento cartelle:', error);
+      } catch (error) {
+        console.error('Errore caricamento cartelle:', error);
         toast({
           title: '⚠️ Impossibile caricare cartelle',
-          description: error.message || 'Verifica la connessione API',
-          variant: 'destructive',
+          description: 'Verrà usata solo INBOX',
+          variant: 'default',
         });
-        
-        console.log('🔄 [FunEmailDownloader] Using default folders as fallback');
-        setAvailableFolders([
-          { name: 'INBOX', display_name: 'Inbox' },
-          { name: 'Sent', display_name: 'Sent' },
-          { name: 'Drafts', display_name: 'Drafts' }
-        ]);
       } finally {
         setLoadingFolders(false);
       }

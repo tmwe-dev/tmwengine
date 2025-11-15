@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Download, Zap, FolderOpen, Settings, Sliders } from 'lucide-react';
 import { DownloadButtonWithLabel } from '@/components/design-system/buttons/DownloadButtonWithLabel';
 import emailFolderGif from '@/assets/email-folder-unscreen.gif';
-import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { FolderSyncPreferencesManager } from '@/components/email/sync/FolderSyncPreferencesManager';
 import { PerformanceProfileConfigurator } from '@/components/testing/PerformanceProfileConfigurator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -126,14 +126,14 @@ export const QuickEmailDownloader = forwardRef<
   const loadQuickFolders = async () => {
     setIsQuickLoading(true);
     try {
-      console.log('📂 [QuickDownloader] Loading folders from API Search...');
-      const quickResponse = await emailSearchApi.getFolders();
+      const quickResponse = await emailFolderApi.getFolders({ 
+        include_counts: false,
+        skipCache: true
+      });
 
       const quickFoldersList = Array.isArray(quickResponse) 
         ? quickResponse 
-        : (quickResponse?.data || []);
-      
-      console.log(`✅ [QuickDownloader] Loaded ${quickFoldersList.length} folders`);
+        : (quickResponse?.data || quickResponse?.folders || []);
       
       let userPreferences = null;
       if (userEmail) {
@@ -167,19 +167,12 @@ export const QuickEmailDownloader = forwardRef<
       setQuickFolders(quickMapped);
       await loadQuickStats();
     } catch (error: any) {
-      console.error('❌ [QuickDownloader] Quick folders error:', error);
+      console.error('❌ Quick folders error:', error);
       toast({
         title: '❌ Errore',
-        description: error.message || 'Impossibile caricare le cartelle',
+        description: 'Impossibile caricare le cartelle',
         variant: 'destructive',
       });
-      
-      console.log('🔄 [QuickDownloader] Using default folders as fallback');
-      setQuickFolders([
-        { name: 'INBOX', display: 'Inbox', selected: true },
-        { name: 'Sent', display: 'Sent', selected: false },
-        { name: 'Drafts', display: 'Drafts', selected: false }
-      ]);
     } finally {
       setIsQuickLoading(false);
     }

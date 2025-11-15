@@ -77,6 +77,9 @@ export class LucaStrategy implements DownloadStrategy {
 
     // ✅ Loop su folder (custom o hardcoded)
     for (const folderName of foldersToProcess) {
+      // Track per-folder statistics
+      let folderDownloaded = 0;
+      let folderErrors = 0;
       
       // Check stop flag
       if (shouldStop()) {
@@ -174,8 +177,10 @@ export class LucaStrategy implements DownloadStrategy {
               }
             );
 
-            totalDownloaded += result.downloaded;
-            totalErrors += result.errors;
+        totalDownloaded += result.downloaded;
+        totalErrors += result.errors;
+        folderDownloaded += result.downloaded;
+        folderErrors += result.errors;
 
             // ✅ LOGICA MIGLIORATA: batch vuoto solo se 0 downloaded E 0 errors
             // (UIDs inesistenti ora sono gestiti come skip, non error)

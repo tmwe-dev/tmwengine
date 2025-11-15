@@ -1,5 +1,5 @@
 /**
- * Luca Strategy - Zero Liste
+ * Luca Strategy - Zero Liste - BACKUP 2025-01-15 20:00
  * Strategia download email SENZA dipendenza da email_temp_index
  * 
  * PRINCIPIO:
@@ -124,21 +124,12 @@ export class LucaStrategy implements DownloadStrategy {
         }
 
         // ✅ Loop batch incrementale
-        // ✅ Loop batch incrementale (OTTIMIZZATO)
         let currentUID = startUID;
         let emptyBatchesCount = 0;
-        const MAX_EMPTY_BATCHES = this.config.max_empty_batches || 5; // Aumentato da 3 a 5
+        const MAX_EMPTY_BATCHES = this.config.max_empty_batches || 3;
         let batchNumber = 0;
-        let consecutiveErrors = 0;
-        const MAX_CONSECUTIVE_ERRORS = 3;
 
-        onLog({
-          phase: 'importing',
-          folder: folderName,
-          message: `  ├─ Starting from UID ${currentUID} with batch size ${this.config.batch_size}`
-        });
-
-        while (emptyBatchesCount < MAX_EMPTY_BATCHES && consecutiveErrors < MAX_CONSECUTIVE_ERRORS && !shouldStop()) {
+        while (emptyBatchesCount < MAX_EMPTY_BATCHES && !shouldStop()) {
           batchNumber++;
           
           // ✅ Genera array UIDs incrementali: [100, 101, 102, ...]
@@ -150,7 +141,7 @@ export class LucaStrategy implements DownloadStrategy {
           onLog({
             phase: 'importing',
             folder: folderName,
-            message: `  ├─ 📥 Batch #${batchNumber}: UIDs ${batchUIDs[0]}-${batchUIDs[batchUIDs.length - 1]}`
+            message: `  ├─ Batch #${batchNumber}: UIDs ${batchUIDs[0]}-${batchUIDs[batchUIDs.length - 1]}`
           });
 
           try {
@@ -161,7 +152,7 @@ export class LucaStrategy implements DownloadStrategy {
               userEmail,
               {
                 max_retries: 1,
-                max_concurrent: 3, // Fisso a 3 per stabilità
+                max_concurrent: this.config.max_concurrent || 3,
               },
               (folder, imported, _total) => {
                 onProgress({
@@ -177,35 +168,17 @@ export class LucaStrategy implements DownloadStrategy {
             totalDownloaded += result.downloaded;
             totalErrors += result.errors;
 
-            // ✅ LOGICA MIGLIORATA: batch vuoto solo se 0 downloaded E 0 errors
-            // (UIDs inesistenti ora sono gestiti come skip, non error)
-            const totalProcessed = result.downloaded + result.errors;
-            
-            if (totalProcessed === 0) {
-              // Batch completamente vuoto (tutti skip)
+            // ✅ Se batch completamente vuoto (0 downloaded), incrementa contatore
+            if (result.downloaded === 0) {
               emptyBatchesCount++;
-              consecutiveErrors = 0; // Reset errori
-              
-              onLog({
-                phase: 'skip',
-                folder: folderName,
-                message: `  ├─ ⏭️ Batch #${batchNumber} empty (${emptyBatchesCount}/${MAX_EMPTY_BATCHES})`
-              });
-            } else if (result.downloaded === 0 && result.errors > 0) {
-              // Batch con solo errori (problematico)
-              consecutiveErrors++;
-              emptyBatchesCount = 0;
-              
               onLog({
                 phase: 'warning',
                 folder: folderName,
-                message: `  ├─ ⚠️ Batch #${batchNumber}: 0 imported, ${result.errors} errors (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS})`
+                message: `  ├─ ⚠️ Empty batch #${batchNumber} (${emptyBatchesCount}/${MAX_EMPTY_BATCHES})`
               });
             } else {
-              // Batch con successi
+              // Reset contatore se troviamo email
               emptyBatchesCount = 0;
-              consecutiveErrors = 0;
-              
               onLog({
                 phase: 'importing',
                 folder: folderName,
@@ -216,59 +189,62 @@ export class LucaStrategy implements DownloadStrategy {
             // ✅ Incrementa currentUID per batch successivo
             currentUID += this.config.batch_size;
 
-            // ✅ Delay tra batch (500ms per sicurezza)
-            await new Promise(r => setTimeout(r, this.config.min_delay_ms || 500));
+            // ✅ Delay tra batch (se configurato)
+            if (this.config.min_delay_ms && this.config.min_delay_ms > 0) {
+              await new Promise(r => setTimeout(r, this.config.min_delay_ms));
+            }
 
           } catch (error: any) {
             console.error(`[LucaStrategy] Batch error for ${folderName}:`, error);
             
-            consecutiveErrors++;
-            
             onLog({
               phase: 'error',
               folder: folderName,
-              message: `  ├─ ❌ Batch #${batchNumber} exception: ${error.message} (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS})`
+              message: `  ├─ ❌ Batch #${batchNumber} failed: ${error.message}`
             });
 
-            // Continua con batch successivo
-            currentUID += this.config.batch_size;
-            
-            // Delay maggiore dopo errore
-            await new Promise(r => setTimeout(r, 2000));
+            emptyBatchesCount++;
+            currentUID += this.config.batch_size; // Skip to next batch
           }
         }
 
-        // ✅ Folder completato
+        // ✅ Folder completata
         foldersCompleted++;
         
-        if (folderDownloaded > 0) {
-          onLog({
-            phase: 'completed',
-            folder: folderName,
-            message: `  └─ ✅ Completed: ${folderDownloaded} emails downloaded${folderErrors > 0 ? ` (${folderErrors} errors)` : ''}`
-          });
-        } else {
-          onLog({
-            phase: 'skip',
-            folder: folderName,
-            message: `  └─ ⏭️  No new emails found (stopped after ${this.config.max_empty_batches || 3} empty batches)`
-          });
-        }
+        const stopReason = shouldStop() 
+          ? 'user stop' 
+          : emptyBatchesCount >= MAX_EMPTY_BATCHES 
+            ? `${MAX_EMPTY_BATCHES} empty batches` 
+            : 'completed';
+
+        onLog({
+          phase: 'completed',
+          folder: folderName,
+          message: `  └─ 🏁 Folder completed (${stopReason})`
+        });
 
       } catch (error: any) {
+        console.error(`[LucaStrategy] Folder error for ${folderName}:`, error);
+        
         onLog({
           phase: 'error',
           folder: folderName,
-          message: `  └─ ❌ Error processing folder: ${error.message}`
+          message: `  └─ ❌ Folder failed: ${error.message}`
         });
+        
         totalErrors++;
       }
     }
 
+    onLog({
+      phase: 'completed',
+      message: `✅ Luca Method completed: ${totalDownloaded} downloaded, ${totalErrors} errors, ${foldersCompleted} folders`
+    });
+
     return {
       total_downloaded: totalDownloaded,
       total_errors: totalErrors,
-      folders_completed: foldersCompleted
+      folders_completed: foldersCompleted,
     };
   }
 }

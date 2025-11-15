@@ -131,7 +131,7 @@ export const QuickEmailDownloader = forwardRef<
 
       const quickFoldersList = Array.isArray(quickResponse) 
         ? quickResponse 
-        : (quickResponse?.data || []);
+        : (quickResponse?.folders || []);
       
       console.log(`✅ [QuickDownloader] Loaded ${quickFoldersList.length} folders`);
       

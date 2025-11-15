@@ -16,7 +16,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { TripleStorage } from '../core/TripleStorage';
 import { CircuitBreaker } from '../core/CircuitBreaker';
 import { DownloadLock } from '../core/DownloadLock';
-import { downloadEmailBatch, downloadSingleEmail } from '../email-downloader';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+import { normalizeEmailMessage } from '@/lib/email/email-mapper';
+import { saveEmailToDatabase, checkEmailExists } from '@/lib/email/email-repository';
 import type {
   DownloadStrategy,
   StrategyConfig,
@@ -254,19 +256,30 @@ export class MasterStrategy implements DownloadStrategy {
       }
 
       try {
-        const result = await downloadSingleEmail(
-          item.uid,
-          item.folder,
-          item.user_email,
-          {
-            max_retries: 1,
-            retry_delay_ms: 500,
-            max_concurrent: this.config.max_concurrent || 1
-          }
-        );
-
-        if (result.status === 'imported') {
+        const message_id = `${item.folder}/${item.uid}`;
+        
+        // Check if already exists
+        const exists = await checkEmailExists(message_id, item.user_email);
+        if (exists) {
           recovered++;
+          continue;
+        }
+
+        // Download using emailSearchApi
+        const fullEmail = await emailSearchApi.getEmailDetail({
+          uid: item.uid,
+          folder: item.folder,
+          include_body: true,
+          timeout: 30
+        });
+
+        if (fullEmail && fullEmail.email) {
+          const normalized = normalizeEmailMessage(fullEmail.email, String(item.uid), item.folder);
+          const result = await saveEmailToDatabase(normalized, message_id, item.user_email, item.folder);
+
+          if (result.success) {
+            recovered++;
+          }
         }
       } catch (error) {
         console.error('[MasterStrategy] Recovery failed for UID', item.uid);
@@ -286,105 +299,8 @@ export class MasterStrategy implements DownloadStrategy {
     return recovered;
   }
 
-  // ============================================
-  // PROTECTED BATCH DOWNLOAD
-  // ============================================
-  private async downloadBatchWithProtection(
-    uids: number[],
-    folder: string,
-    userEmail: string,
-    onProgress: (progress: DownloadProgress) => void,
-    onLog: (log: Omit<LogEntry, 'timestamp'>) => void
-  ): Promise<{ downloaded: number; errors: number }> {
-    const queueKey = `master_queue_${userEmail}`;
-
-    try {
-      // ✅ Usa downloadEmailBatch (ora batch-aware, una chiamata per chunk)
-      const result = await this.breaker.execute(async () => {
-        return await downloadEmailBatch(
-          uids,
-          folder,
-          userEmail,
-          {
-            max_retries: 2,
-            retry_delay_ms: 1000,
-            max_concurrent: this.config.max_concurrent || 10
-          },
-          (f, imported, total) => {
-            onProgress({
-              current_folder: f,
-              imported,
-              total,
-              errors: 0
-            });
-          }
-        );
-      });
-
-      return result;
-      
-    } catch (error: any) {
-      // Circuit breaker OPEN? Log and pause
-      if (this.breaker.getState() === 'OPEN') {
-        onLog({
-          phase: 'error',
-          folder,
-          message: `⚠️ Circuit breaker OPEN (${this.breaker.getFailureCount()} failures). Pausing 60s...`
-        });
-        await new Promise(r => setTimeout(r, 60000));
-      }
-
-      // Add batch to recovery queue
-      if (error.message?.includes('timeout') || error.message?.includes('network')) {
-        uids.forEach(uid => {
-          this.addToQueue(queueKey, {
-            uid,
-            folder,
-            user_email: userEmail,
-            timestamp: Date.now(),
-            attempts: 0
-          });
-        });
-        onLog({
-          phase: 'warning',
-          folder,
-          message: `💾 Batch of ${uids.length} UIDs added to recovery queue`
-        });
-      }
-
-      return { downloaded: 0, errors: uids.length };
-    }
-  }
-
-  // ============================================
-  // ENHANCED DOWNLOAD con Timeout
-  // ============================================
-  private async downloadSingleEmailWithTimeout(
-    uid: number,
-    folder: string,
-    userEmail: string,
-    timeoutMs: number
-  ): Promise<{ status: 'imported' | 'skipped' | 'failed'; uid: number }> {
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error(`Timeout after ${timeoutMs}ms for UID ${uid}`));
-      }, timeoutMs);
-
-      downloadSingleEmail(uid, folder, userEmail, {
-        max_retries: 2,
-        retry_delay_ms: 1000,
-        max_concurrent: this.config.max_concurrent || 1
-      })
-        .then(result => {
-          clearTimeout(timeoutId);
-          resolve(result);
-        })
-        .catch(error => {
-          clearTimeout(timeoutId);
-          reject(error);
-        });
-    });
-  }
+  // Note: downloadBatchWithProtection and downloadSingleEmailWithTimeout 
+  // methods removed - no longer needed with emailSearchApi integration
 
   // ============================================
   // HEALTH CHECK

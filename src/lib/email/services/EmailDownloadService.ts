@@ -168,11 +168,13 @@ export class EmailDownloadService {
     try {
       // 1. Recupera cartelle dal server usando emailSearchApi (RabbitMQ + Elasticsearch)
       console.log('[SmartPrep] 🔍 Fetching folders from emailSearchApi...');
-      const serverFolders = await emailSearchApi.getFolders();
+      const response = await emailSearchApi.getFolders();
+      const serverFolders = response?.folders || [];
 
       console.log('[SmartPrep] ✅ Server folders loaded:', {
         count: serverFolders.length,
-        folders: serverFolders.map(f => f.name || f.folder_name)
+        folders: serverFolders.map((f: any) => f.name || f.folder_name),
+        rawResponse: response
       });
 
       // 🆕 FALLBACK: Se nessuna cartella dal server, usa default
@@ -214,7 +216,8 @@ export class EmailDownloadService {
 
         try {
           // A. Info server usando emailSearchApi
-          const serverInfo = await emailSearchApi.getFolderInfo(folderName);
+          const folderInfoResponse = await emailSearchApi.getFolderInfo(folderName);
+          const serverInfo = folderInfoResponse?.folder_info || folderInfoResponse;
           const serverMaxUID = serverInfo.uidnext || serverInfo.max_uid || 0;
           
           // B. Info DB locale (funzione esistente)

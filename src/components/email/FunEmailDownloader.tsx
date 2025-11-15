@@ -91,7 +91,7 @@ export const FunEmailDownloader = ({ onDownloadComplete, onStatsUpdate }: FunEma
         console.log('📂 [FunEmailDownloader] Loading folders from API Search...');
         const response = await emailSearchApi.getFolders();
         
-        const folders = Array.isArray(response) ? response : (response?.data || []);
+        const folders = Array.isArray(response) ? response : (response?.folders || []);
         
         console.log(`✅ [FunEmailDownloader] Loaded ${folders.length} folders`);
         setAvailableFolders(folders);

@@ -223,5 +223,66 @@ export const emailSearchApi = {
       uids: email_ids,
       action: 'read',
       timeout 
-    })
+    }),
+
+  /**
+   * Get statistics for folder or account (ultra-fast)
+   * Returns: { total, unread, flagged, with_attachments, size_bytes }
+   */
+  getStatistics: (params?: {
+    folder?: string;
+    timeout?: number;
+  }) => fetchApi('/email_search', {
+    handler: 'get_statistics',
+    ...(params?.folder && { folder: params.folder }),
+    timeout: params?.timeout || 10
+  }),
+
+  /**
+   * Get unread count for all folders (ultra-fast for badges)
+   * Returns: { INBOX: 23, Sent: 0, ... }
+   */
+  getUnreadCount: (params?: {
+    folders?: string[];
+    timeout?: number;
+  }) => fetchApi('/email_search', {
+    handler: 'get_unread_count',
+    ...(params?.folders && { folders: params.folders }),
+    timeout: params?.timeout || 5
+  }),
+
+  /**
+   * Get conversation threads
+   * Returns grouped messages by thread
+   */
+  getThreads: (params: {
+    folder?: string;
+    message_id?: string;
+    limit?: number;
+    timeout?: number;
+  }) => fetchApi('/email_search', {
+    handler: 'get_threads',
+    ...(params.folder && { folder: params.folder }),
+    ...(params.message_id && { message_id: params.message_id }),
+    limit: params.limit || 20,
+    timeout: params.timeout || 10
+  }),
+
+  /**
+   * Search by sender (faster than fulltext)
+   */
+  searchBySender: (params: {
+    sender: string;
+    folder?: string;
+    page?: number;
+    limit?: number;
+    timeout?: number;
+  }) => fetchApi('/email_search', {
+    handler: 'search_by_sender',
+    sender: params.sender,
+    folder: params.folder || 'INBOX',
+    page: params.page || 1,
+    limit: params.limit || 50,
+    timeout: params.timeout || 10
+  })
 };

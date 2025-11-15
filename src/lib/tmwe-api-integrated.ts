@@ -820,6 +820,16 @@ export const emailMessageApi = {
     });
   },
 
+  // ✅ NEW: Delete single email permanently (according to email-api-3.yaml)
+  deleteEmail: (uid: string) => {
+    const uidInt = parseInt(uid, 10);
+    if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
+    return fetchApi('/email_message', { 
+      handler: 'delete_email', 
+      uid: uidInt 
+    });
+  },
+
   // ✅ OTTIMIZZATO: Edge function gestisce automaticamente chunking e parallelization
   deleteMessages: (uids: string[]) => {
     const uidInts = uids.map(uid => {

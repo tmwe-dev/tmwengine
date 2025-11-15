@@ -39,6 +39,11 @@ export default function SingleFast() {
     sequenceStrategies: ['luca', 'clean'] // Rollback: Luca Strategy + Clean Strategy
   });
 
+  // 🆕 Simple Downloader hook (separado)
+  const simpleDownload = useEmailDownload({
+    strategy: 'simple'
+  });
+
   useEffect(() => {
     const getUserEmail = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -150,7 +155,7 @@ export default function SingleFast() {
     });
   };
 
-  const relevantLogs = logs.filter(log => 
+  const relevantLogs = (isRunning ? logs : simpleDownload.logs).filter(log => 
     log.phase === 'completed' ||
     log.phase === 'importing' ||
     log.phase === 'error' ||
@@ -178,17 +183,17 @@ export default function SingleFast() {
         left={
           <div className="space-y-3">
             {/* Progress Card Minimale */}
-            {isRunning && progress.current_folder && (
+            {(isRunning || simpleDownload.isRunning) && (progress.current_folder || simpleDownload.progress.current_folder) && (
               <Card className="border-primary bg-primary/5">
                 <CardContent className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-primary flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">
-                        📁 {progress.current_folder}
+                        📁 {(isRunning ? progress.current_folder : simpleDownload.progress.current_folder)}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        {progress.imported} email • {progress.errors} errori
+                        {isRunning ? progress.imported : simpleDownload.progress.imported} email • {isRunning ? progress.errors : simpleDownload.progress.errors} errori
                       </p>
                     </div>
                   </div>
@@ -269,7 +274,7 @@ export default function SingleFast() {
               <Button
                 size="sm"
                 onClick={() => start()}
-                disabled={isRunning || tokenStatus === 'expired'}
+                disabled={isRunning || simpleDownload.isRunning || tokenStatus === 'expired'}
                 className="w-full justify-start h-8 text-xs"
               >
                 {isRunning ? (
@@ -284,11 +289,35 @@ export default function SingleFast() {
                   </>
                 )}
               </Button>
+
+              {/* 🆕 Simple Downloader Test Button */}
+              <Button
+                size="sm"
+                onClick={() => simpleDownload.start()}
+                disabled={isRunning || simpleDownload.isRunning || tokenStatus === 'expired'}
+                variant="outline"
+                className="w-full justify-start h-8 text-xs border-primary text-primary hover:bg-primary/10"
+              >
+                {simpleDownload.isRunning ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                    Testing...
+                  </>
+                ) : (
+                  <>
+                    <Database className="h-3 w-3 mr-2" />
+                    🧪 Simple Downloader Test
+                  </>
+                )}
+              </Button>
               
-              {isRunning && (
+              {(isRunning || simpleDownload.isRunning) && (
                 <Button
                   size="sm"
-                  onClick={stop}
+                  onClick={() => {
+                    if (isRunning) stop();
+                    if (simpleDownload.isRunning) simpleDownload.stop();
+                  }}
                   variant="destructive"
                   className="w-full h-8 text-xs"
                 >
@@ -297,10 +326,13 @@ export default function SingleFast() {
                 </Button>
               )}
               
-              {!isRunning && logs.length > 0 && (
+              {(!isRunning && !simpleDownload.isRunning && (logs.length > 0 || simpleDownload.logs.length > 0)) && (
                 <Button
                   size="sm"
-                  onClick={reset}
+                  onClick={() => {
+                    reset();
+                    simpleDownload.reset();
+                  }}
                   variant="outline"
                   className="w-full h-8 text-xs"
                 >
@@ -312,11 +344,11 @@ export default function SingleFast() {
               <div className="pt-2 border-t space-y-2">
                 <Dialog open={showPerformance} onOpenChange={setShowPerformance}>
                   <DialogTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={isRunning}
-                      className="w-full justify-start h-7 text-xs"
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={isRunning || simpleDownload.isRunning}
+                  className="w-full justify-start h-7 text-xs"
                     >
                       <Sliders className="h-3 w-3 mr-2" />
                       Performance
@@ -334,7 +366,7 @@ export default function SingleFast() {
                   size="sm"
                   variant="ghost"
                   onClick={() => setShowPreferences(true)}
-                  disabled={isRunning}
+                  disabled={isRunning || simpleDownload.isRunning}
                   className="w-full justify-start h-7 text-xs"
                 >
                   <Settings className="h-3 w-3 mr-2" />
@@ -374,8 +406,8 @@ export default function SingleFast() {
         right={
           <LiveEmailViewer
             userEmail={userEmail}
-            isRunning={isRunning}
-            importedCount={progress.imported}
+            isRunning={isRunning || simpleDownload.isRunning}
+            importedCount={isRunning ? progress.imported : simpleDownload.progress.imported}
           />
         }
       />

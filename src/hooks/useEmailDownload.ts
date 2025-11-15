@@ -12,7 +12,7 @@ import { LucaStrategy } from '@/lib/email/strategies/LucaStrategy';
 import { MasterStrategy } from '@/lib/email/strategies/MasterStrategy';
 import type { LogEntry, DownloadProgress, StrategyConfig } from '@/lib/email/strategies/DownloadStrategy';
 
-export type DownloadStrategyType = 'clean' | 'luca' | 'master';
+export type DownloadStrategyType = 'clean' | 'luca' | 'master' | 'simple';
 
 interface UseEmailDownloadOptions {
   /** Tipo strategia download (default: 'luca') */
@@ -172,6 +172,72 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
     try {
       // 1. Get user email
       const userEmail = await getUserEmail();
+
+      // 🆕 SIMPLE STRATEGY - Usa simple-downloader.ts direttamente
+      if (options.strategy === 'simple') {
+        addLog({ 
+          phase: 'preparing', 
+          message: `📦 Strategy: Simple Downloader` 
+        });
+        addLog({
+          phase: 'preparing',
+          message: `📝 Lista metadata + download body (no temp_index, no SmartPrep)`
+        });
+
+        const { simpleDownloadMultipleFolders } = await import('@/lib/email/simple-downloader');
+        
+        const folders = customFolders || options.customFolders || ['INBOX', 'Sent'];
+        
+        addLog({ 
+          phase: 'preparing', 
+          message: `📁 Folders: ${folders.join(', ')}` 
+        });
+
+        let totalDownloaded = 0;
+        let totalSkipped = 0;
+        let totalErrors = 0;
+
+        for (const folder of folders) {
+          setProgress(prev => ({ ...prev, current_folder: folder }));
+
+          const result = await simpleDownloadMultipleFolders(
+            [folder],
+            userEmail,
+            {
+              limit: 100,
+              onProgress: (current, total) => {
+                setProgress(prev => ({
+                  ...prev,
+                  imported: totalDownloaded + current,
+                  total: totalDownloaded + total
+                }));
+              },
+              onLog: (message) => {
+                addLog({ phase: 'importing', folder, message });
+              }
+            }
+          );
+
+          totalDownloaded += result.downloaded;
+          totalSkipped += result.skipped;
+          totalErrors += result.errors;
+
+          addLog({ 
+            phase: 'completed', 
+            folder,
+            message: `✅ ${folder}: ${result.downloaded} downloaded, ${result.skipped} skipped, ${result.errors} errors`,
+            count: { current: result.downloaded, total: result.total_checked }
+          });
+        }
+
+        addLog({ 
+          phase: 'completed', 
+          message: `🎉 Simple Download completed! Total: ${totalDownloaded} downloaded, ${totalSkipped} skipped, ${totalErrors} errors` 
+        });
+
+        setIsRunning(false);
+        return;
+      }
 
       // 2. Check if sequence mode
       if (options.sequenceStrategies && options.sequenceStrategies.length > 0) {

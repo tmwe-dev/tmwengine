@@ -160,15 +160,18 @@ export class EmailDownloadService {
    * @param customFolders - Cartelle custom da scaricare (opzionale)
    */
   private async prepareSmartDownload(customFolders?: string[]): Promise<FolderToSync[]> {
-    const { emailSearchApi } = await import('@/lib/tmwe-email-search-api');
+    const { emailFolderApi } = await import('@/lib/tmwe-api-integrated');
     const { getMaxUID } = await import('./UIDRangeService');
     
     const foldersToSync: FolderToSync[] = [];
 
     try {
-      // 1. Recupera cartelle dal server usando emailSearchApi (RabbitMQ + Elasticsearch)
-      console.log('[SmartPrep] 🔍 Fetching folders from emailSearchApi...');
-      const serverFolders = await emailSearchApi.getFolders();
+      // 1. Recupera cartelle dal server (API esistente)
+      // ✅ getFolders() ora ritorna sempre un array normalizzato
+      const serverFolders = await emailFolderApi.getFolders({ 
+        include_counts: true,
+        skipCache: true
+      });
 
       console.log('[SmartPrep] ✅ Server folders loaded:', {
         count: serverFolders.length,
@@ -213,9 +216,9 @@ export class EmailDownloadService {
         }
 
         try {
-          // A. Info server usando emailSearchApi
-          const serverInfo = await emailSearchApi.getFolderInfo(folderName);
-          const serverMaxUID = serverInfo.uidnext || serverInfo.max_uid || 0;
+          // A. Info server (API esistente)
+          const serverInfo = await emailFolderApi.getFolderInfo(folderName);
+          const serverMaxUID = serverInfo.folder?.uidnext || serverInfo.folder?.max_uid || 0;
           
           // B. Info DB locale (funzione esistente)
           const localMaxUID = await getMaxUID(folderName, this.userEmail);
@@ -281,13 +284,13 @@ export class EmailDownloadService {
         }
       }
     } catch (error: any) {
-      console.error('[SmartPrep] ❌ emailSearchApi failed:', error.message);
+      console.error('[SmartPrep] Error fetching server folders:', error.message);
       
       // 🆕 FALLBACK UNIVERSALE: usa cartelle di default o custom
       const DEFAULT_FOLDERS = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk', 'Archive'];
       const fallbackFolders = (customFolders && customFolders.length > 0) ? customFolders : DEFAULT_FOLDERS;
       
-      console.warn('[SmartPrep] 🔄 Using fallback folders:', fallbackFolders);
+      console.warn('[SmartPrep] ⚠️ Using fallback folders:', fallbackFolders);
       
       for (const folderName of fallbackFolders) {
         try {

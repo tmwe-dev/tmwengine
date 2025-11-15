@@ -111,91 +111,254 @@ export class MasterStrategy implements DownloadStrategy {
           message: `📂 Processing folder: ${folder.folderName}`
         });
 
-        // A. Get MAX UID from DB (smart download)
-        const maxUID = await this.getMaxUID(folder.folderName, userEmail);
-        let startUID = folder.startUID || maxUID + 1;
+        // A. Get folder statistics from server
+        onLog({
+          phase: 'preparing',
+          folder: folder.folderName,
+          message: `📊 Fetching server statistics...`
+        });
 
-        // 🆕 SANITY CHECK: Validate startUID
-        if (folder.startUID && folder.startUID > maxUID + 10000) {
+        let folderStats;
+        try {
+          folderStats = await emailSearchApi.getStatistics({ folder: folder.folderName });
           onLog({
-            phase: 'warning',
+            phase: 'preparing',
             folder: folder.folderName,
-            message: `⚠️ Cached startUID (${folder.startUID}) seems wrong. Local DB max UID: ${maxUID}. Resetting to ${maxUID + 1}`
+            message: `📈 Server has ${folderStats.total || 0} emails (${folderStats.unread || 0} unread)`
           });
-          startUID = maxUID + 1;
+        } catch (error: any) {
+          onLog({
+            phase: 'error',
+            folder: folder.folderName,
+            message: `❌ Failed to get folder stats: ${error.message}`
+          });
+          continue;
+        }
+
+        // B. Get MAX UID from local DB
+        const maxUID = await this.getMaxUID(folder.folderName, userEmail);
+        
+        onLog({
+          phase: 'preparing',
+          folder: folder.folderName,
+          message: `💾 Local DB max UID: ${maxUID}`
+        });
+
+        // C. PHASE 1: Discover server UIDs (paginated fetch)
+        onLog({
+          phase: 'preparing',
+          folder: folder.folderName,
+          message: `🔍 Phase 1: Discovering server UIDs...`
+        });
+
+        let allServerEmails: any[] = [];
+        let page = 1;
+        const pageLimit = 100;
+        let hasMore = true;
+
+        while (hasMore && !shouldStop() && !this.isAborting) {
+          try {
+            const response = await emailSearchApi.getEmailsMetadata({
+              folder: folder.folderName,
+              page,
+              limit: pageLimit
+            });
+
+            const emails = response?.emails || [];
+            
+            if (emails.length === 0) {
+              hasMore = false;
+              break;
+            }
+
+            allServerEmails.push(...emails);
+            
+            onLog({
+              phase: 'preparing',
+              folder: folder.folderName,
+              message: `  ├─ Page ${page}: Found ${emails.length} emails (total: ${allServerEmails.length})`
+            });
+
+            if (emails.length < pageLimit) {
+              hasMore = false;
+            }
+
+            page++;
+            await this.delay(500); // Small delay between pages
+          } catch (error: any) {
+            onLog({
+              phase: 'error',
+              folder: folder.folderName,
+              message: `❌ Error fetching page ${page}: ${error.message}`
+            });
+            hasMore = false;
+          }
         }
 
         onLog({
           phase: 'preparing',
           folder: folder.folderName,
-          message: `📊 Local DB: ${maxUID} emails (max UID). Will download from UID ${startUID}`
+          message: `📋 Phase 1 Complete: ${allServerEmails.length} emails on server`
         });
 
-        // B. Download in batches
-        let currentUID = startUID;
-        let emptyBatches = 0;
-        const MAX_EMPTY = this.config.max_empty_batches || 3;
+        // D. PHASE 2: Identify missing UIDs
+        onLog({
+          phase: 'preparing',
+          folder: folder.folderName,
+          message: `🔎 Phase 2: Comparing with local DB (maxUID: ${maxUID})...`
+        });
 
-        while (emptyBatches < MAX_EMPTY) {
-          if (shouldStop() || this.isAborting) break;
+        const missingUIDs = allServerEmails
+          .filter(email => email.uid > maxUID)
+          .map(email => email.uid)
+          .sort((a, b) => a - b); // Sort ascending for sequential download
+
+        onLog({
+          phase: 'preparing',
+          folder: folder.folderName,
+          message: `🎯 Phase 2 Complete: ${missingUIDs.length} new emails to download`
+        });
+
+        if (missingUIDs.length === 0) {
+          onLog({
+            phase: 'completed',
+            folder: folder.folderName,
+            message: `✅ No new emails to download`
+          });
+          foldersCompleted++;
+          continue;
+        }
+
+        // E. PHASE 3: Download missing emails
+        onLog({
+          phase: 'importing',
+          folder: folder.folderName,
+          message: `📥 Phase 3: Downloading ${missingUIDs.length} new emails...`
+        });
+
+        let folderDownloaded = 0;
+        let folderErrors = 0;
+
+        for (let i = 0; i < missingUIDs.length; i++) {
+          if (shouldStop() || this.isAborting) {
+            onLog({
+              phase: 'warning',
+              folder: folder.folderName,
+              message: `⏸️ Download stopped at ${i}/${missingUIDs.length}`
+            });
+            break;
+          }
+
+          const uid = missingUIDs[i];
+          const message_id = `${folder.folderName}/${uid}`;
 
           // Save state for crash recovery
           this.saveState({
             current_folder: folder.folderName,
-            current_uid: currentUID,
+            current_uid: uid,
             lastActivity: Date.now(),
             user_email: userEmail
           });
 
-          const batch = this.generateBatch(currentUID, this.config.batch_size);
-
-          onLog({
-            phase: 'importing',
-            folder: folder.folderName,
-            message: `🔄 Batch UIDs: ${batch[0]} to ${batch[batch.length - 1]} (size: ${batch.length})`
+          // Update progress
+          onProgress({
+            current_folder: folder.folderName,
+            imported: totalDownloaded + folderDownloaded,
+            total: totalDownloaded + missingUIDs.length,
+            errors: totalErrors + folderErrors,
+            current_email: `${folder.folderName}/UID:${uid}`
           });
 
-          // C. Download batch con CircuitBreaker
-          const result = await this.downloadBatchWithProtection(
-            batch,
-            folder.folderName,
-            userEmail,
-            onProgress,
-            onLog
-          );
+          try {
+            // Check if already exists
+            const exists = await checkEmailExists(message_id, userEmail);
+            if (exists) {
+              onLog({
+                phase: 'skip',
+                folder: folder.folderName,
+                message: `  ├─ ⏭️ UID ${uid}: Already exists (${i + 1}/${missingUIDs.length})`
+              });
+              continue;
+            }
 
-          if (result.downloaded === 0) {
-            emptyBatches++;
+            // Download with circuit breaker
+            if (this.breaker.getState() === 'OPEN') {
+              onLog({
+                phase: 'warning',
+                folder: folder.folderName,
+                message: `🔴 Circuit breaker OPEN - queueing UID ${uid}`
+              });
+              this.queueEmail({ uid, folder: folder.folderName, user_email: userEmail, timestamp: Date.now(), attempts: 0 });
+              folderErrors++;
+              continue;
+            }
+
+            const fullEmail = await this.breaker.execute(
+              () => emailSearchApi.getEmailDetail({
+                uid,
+                folder: folder.folderName,
+                include_body: true,
+                timeout: 30
+              })
+            );
+
+            if (!fullEmail || !fullEmail.email) {
+              folderErrors++;
+              onLog({
+                phase: 'error',
+                folder: folder.folderName,
+                message: `  ├─ ❌ UID ${uid}: Empty response (${i + 1}/${missingUIDs.length})`
+              });
+              this.queueEmail({ uid, folder: folder.folderName, user_email: userEmail, timestamp: Date.now(), attempts: 0 });
+              continue;
+            }
+
+            // Normalize and save
+            const normalized = normalizeEmailMessage(fullEmail.email, String(uid), folder.folderName);
+            const result = await saveEmailToDatabase(normalized, message_id, userEmail, folder.folderName);
+
+            if (result.success) {
+              folderDownloaded++;
+              if ((i + 1) % 10 === 0 || i === missingUIDs.length - 1) {
+                onLog({
+                  phase: 'importing',
+                  folder: folder.folderName,
+                  message: `  ├─ ✅ Progress: ${i + 1}/${missingUIDs.length} (${folderDownloaded} saved, ${folderErrors} errors)`
+                });
+              }
+            } else {
+              folderErrors++;
+              onLog({
+                phase: 'error',
+                folder: folder.folderName,
+                message: `  ├─ ❌ UID ${uid}: Save failed - ${result.error}`
+              });
+            }
+
+          } catch (error: any) {
+            folderErrors++;
             onLog({
-              phase: 'skip',
+              phase: 'error',
               folder: folder.folderName,
-              message: `⚠️ Empty batch ${emptyBatches}/${MAX_EMPTY}`
+              message: `  ├─ ❌ UID ${uid}: ${error.message}`
             });
-          } else {
-            emptyBatches = 0;
-            totalDownloaded += result.downloaded;
-            onLog({
-              phase: 'importing',
-              folder: folder.folderName,
-              message: `✅ Downloaded ${result.downloaded} emails`,
-              count: { current: totalDownloaded, total: totalDownloaded + result.errors }
-            });
+            this.queueEmail({ uid, folder: folder.folderName, user_email: userEmail, timestamp: Date.now(), attempts: 0 });
           }
 
-          totalErrors += result.errors;
-          currentUID += this.config.batch_size;
-
-          // D. Delay between batches (with jitter)
-          if (emptyBatches < MAX_EMPTY) {
-            await this.delayWithJitter(this.config.min_delay_ms || 500);
-          }
+          // Exponential backoff + jitter
+          const baseDelay = this.config.min_delay_ms || 1000;
+          const jitter = Math.random() * 500;
+          await this.delay(baseDelay + jitter);
         }
 
+        totalDownloaded += folderDownloaded;
+        totalErrors += folderErrors;
         foldersCompleted++;
+
         onLog({
           phase: 'completed',
           folder: folder.folderName,
-          message: `✅ Folder completed: ${totalDownloaded} total downloads`
+          message: `✅ Folder completed: ${folderDownloaded} downloaded, ${folderErrors} errors`
         });
       }
 
@@ -377,9 +540,30 @@ export class MasterStrategy implements DownloadStrategy {
     return Array.from({ length: size }, (_, i) => startUID + i);
   }
 
+  private async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   private async delayWithJitter(baseMs: number): Promise<void> {
     const jitter = Math.random() * 500;
     await new Promise(r => setTimeout(r, baseMs + jitter));
+  }
+
+  private queueEmail(email: QueuedEmail): void {
+    const queue = this.getQueue(email.user_email);
+    queue.push(email);
+    this.storage.set(`master_queue_${email.user_email}`, JSON.stringify(queue));
+  }
+
+  private getQueue(userEmail: string): QueuedEmail[] {
+    const stored = this.storage.get<QueuedEmail[]>(`master_queue_${userEmail}`);
+    return stored || [];
+  }
+
+  private removeFromQueue(userEmail: string, uid: number, folder: string): void {
+    let queue = this.getQueue(userEmail);
+    queue = queue.filter(item => !(item.uid === uid && item.folder === folder));
+    this.storage.set(`master_queue_${userEmail}`, JSON.stringify(queue));
   }
 
   private addToQueue(queueKey: string, item: QueuedEmail): void {
@@ -403,7 +587,7 @@ export class MasterStrategy implements DownloadStrategy {
     }
   }
 
-  stop(): void {
+  abort(): void {
     this.isAborting = true;
   }
 }

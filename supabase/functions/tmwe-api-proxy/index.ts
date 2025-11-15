@@ -110,7 +110,7 @@ serve(async (req) => {
     const useTextResponse = optimizationFlags?.useTextResponse ?? false;
     const useSequentialExecution = optimizationFlags?.useSequentialExecution ?? false;
     const useBatchParallelization = optimizationFlags?.useBatchParallelization ?? true;
-    const batchChunkSize = optimizationFlags?.batchChunkSize ?? 10;
+    const batchChunkSize = optimizationFlags?.batchChunkSize ?? 5; // ✅ Ridotto da 10 a 5 per evitare timeout
     
     if (enableLogging) {
       console.log('═══════════════════════════════════════════════════════');
@@ -454,53 +454,70 @@ serve(async (req) => {
     if (data.handler === 'get_messages_by_uids' && Array.isArray(data.uids)) {
       const { folder, uids, include_attachments = true } = data;
       
-      if (enableLogging) {
-        console.log(`📥 Batch Get Messages: ${uids.length} UIDs from ${folder}`);
-      }
+      console.log(`📥 Batch Get Messages: ${uids.length} UIDs from ${folder}`);
       
       const batchStartTime = Date.now();
+      const CONCURRENT_LIMIT = 5; // ✅ Max 5 chiamate parallele per chunk
       
-      // Usa chunked parallel per evitare timeout
-      const chunks = chunkArray(uids, batchChunkSize); // 10 per chunk
-      if (enableLogging) console.log(`🧩 Chunking: ${chunks.length} chunks di ${batchChunkSize} UIDs`);
+      // Usa chunked parallel per evitare timeout (chunk size 5)
+      const chunks = chunkArray(uids, CONCURRENT_LIMIT);
+      console.log(`🧩 Processing ${chunks.length} chunks di ${CONCURRENT_LIMIT} UIDs max`);
       
-      const chunkPromises = chunks.map(chunk => 
-        Promise.all(chunk.map(uid => 
-          fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${tmweAccessToken}`,
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({ 
-              handler: 'get_message', 
-              uid: uid,
-              folder: folder,
-              include_body: include_attachments
-            }),
-          }).then(r => r.json()).catch(err => {
-            console.error(`❌ Failed to get UID ${uid}:`, err);
-            return { success: false, uid: uid, error: err.message };
-          })
-        ))
-      );
+      const messages: any[] = [];
+      const errors: any[] = [];
       
-      const chunkResults = await Promise.all(chunkPromises);
-      const messages = chunkResults.flat();
-      
-      const batchEndTime = Date.now();
-      const successfulMessages = messages.filter((m: any) => m.success || m.uid || m.message_id);
-      
-      if (enableLogging) {
-        console.log(`✅ Batch Get Messages completato in ${batchEndTime - batchStartTime}ms - ${successfulMessages.length}/${uids.length} successful`);
+      // Process chunks sequentially to avoid overload
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        console.log(`📦 Processing chunk ${i + 1}/${chunks.length} (${chunk.length} UIDs)`);
+        
+        const chunkResults = await Promise.allSettled(
+          chunk.map(uid => 
+            fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${tmweAccessToken}`,
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify({ 
+                handler: 'get_message', 
+                uid: uid,
+                folder: folder,
+                include_body: include_attachments
+              }),
+            }).then(async r => {
+              if (!r.ok) throw new Error(`HTTP ${r.status}`);
+              const data = await r.json();
+              if (!data || !data.uid) throw new Error('Empty or invalid response');
+              return data;
+            })
+          )
+        );
+        
+        // Separate successful messages from errors
+        chunkResults.forEach((result, idx) => {
+          if (result.status === 'fulfilled' && result.value) {
+            messages.push(result.value);
+          } else {
+            const uid = chunk[idx];
+            console.warn(`⚠️ UID ${uid} skipped: ${result.status === 'rejected' ? result.reason : 'invalid'}`);
+            errors.push({ uid, error: result.status === 'rejected' ? result.reason?.message : 'invalid response' });
+          }
+        });
       }
       
-      return new Response(JSON.stringify({ 
+      const batchEndTime = Date.now();
+      
+      console.log(`✅ Batch completed in ${batchEndTime - batchStartTime}ms: ${messages.length}/${uids.length} downloaded, ${errors.length} skipped`);
+      
+      return new Response(JSON.stringify({
         success: true, 
-        messages: successfulMessages,
-        total: uids.length,
-        successful: successfulMessages.length,
+        messages: messages,
+        errors: errors,
+        total_requested: uids.length,
+        total_retrieved: messages.length,
+        total_errors: errors.length,
         duration: batchEndTime - batchStartTime
       }), {
         status: 200,

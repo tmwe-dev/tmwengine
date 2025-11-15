@@ -163,12 +163,18 @@ export async function downloadEmailBatch(
         false // mark_as_read
       );
       
-      // ✅ Normalizza risposta (potrebbe essere array diretto o oggetto con .data)
+      // ✅ Normalizza risposta (gestisce diversi formati dalla API)
       const emails = Array.isArray(batchResponse) 
         ? batchResponse 
-        : (batchResponse?.data || batchResponse?.emails || []);
+        : (batchResponse?.messages || batchResponse?.data || batchResponse?.emails || []);
       
-      console.log(`[downloadEmailBatch] ✅ Received ${emails.length} emails from API`);
+      console.log(`[downloadEmailBatch] ✅ Received ${emails.length}/${chunk.length} emails from API (${chunk.length - emails.length} skipped/errors)`);
+      
+      // ✅ Se tutti skipped, conta come empty batch ma non errore
+      if (emails.length === 0) {
+        console.log(`[downloadEmailBatch] ⏭️ All ${chunk.length} UIDs skipped (non-existent or errors)`);
+        continue;
+      }
       
       // ✅ Processa ogni email del batch
       for (const emailData of emails) {

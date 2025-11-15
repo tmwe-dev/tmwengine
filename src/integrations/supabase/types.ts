@@ -196,6 +196,56 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_communication_preferences: {
+        Row: {
+          ai_model: string | null
+          audio_quality_settings: Json | null
+          created_at: string
+          default_mic_recorder: string | null
+          default_tts_voice_id: string | null
+          id: string
+          page_route: string | null
+          selected_ai_agent: string | null
+          updated_at: string
+          user_id: string
+          voice_agent_id: string | null
+        }
+        Insert: {
+          ai_model?: string | null
+          audio_quality_settings?: Json | null
+          created_at?: string
+          default_mic_recorder?: string | null
+          default_tts_voice_id?: string | null
+          id?: string
+          page_route?: string | null
+          selected_ai_agent?: string | null
+          updated_at?: string
+          user_id: string
+          voice_agent_id?: string | null
+        }
+        Update: {
+          ai_model?: string | null
+          audio_quality_settings?: Json | null
+          created_at?: string
+          default_mic_recorder?: string | null
+          default_tts_voice_id?: string | null
+          id?: string
+          page_route?: string | null
+          selected_ai_agent?: string | null
+          updated_at?: string
+          user_id?: string
+          voice_agent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_communication_preferences_voice_agent_id_fkey"
+            columns: ["voice_agent_id"]
+            isOneToOne: false
+            referencedRelation: "elevenlabs_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_cost_tracking: {
         Row: {
           batch_id: string | null
@@ -1087,28 +1137,34 @@ export type Database = {
       }
       chat_laboratory_composed_prompts: {
         Row: {
+          category: string | null
           content: string
           created_at: string | null
           id: string
           name: string
+          page_route: string | null
           section_ids: Json
           target_agent: string
           updated_at: string | null
         }
         Insert: {
+          category?: string | null
           content: string
           created_at?: string | null
           id?: string
           name: string
+          page_route?: string | null
           section_ids?: Json
           target_agent: string
           updated_at?: string | null
         }
         Update: {
+          category?: string | null
           content?: string
           created_at?: string | null
           id?: string
           name?: string
+          page_route?: string | null
           section_ids?: Json
           target_agent?: string
           updated_at?: string | null

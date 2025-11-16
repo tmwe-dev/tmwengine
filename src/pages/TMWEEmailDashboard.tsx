@@ -100,7 +100,8 @@ const EmailDashboard = () => {
 
   // ✅ CACHE INVALIDATION: Force refetch when folder changes
   useEffect(() => {
-    console.log('📂 [FOLDER CHANGE] Invalidating cache for folder:', selectedFolder);
+    console.log('📂 [FOLDER CHANGE] selectedFolder changed to:', selectedFolder);
+    console.log('📂 [CACHE INVALIDATION] Invalidating queries for folder:', selectedFolder);
     queryClient.invalidateQueries({ queryKey: ['messages'] });
   }, [selectedFolder, queryClient]);
 

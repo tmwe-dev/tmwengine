@@ -542,17 +542,22 @@ serve(async (req) => {
       );
     }
     
-    // 🔄 MAPPING COMPATIBILITÀ: folder → folder_name
-    // Il frontend invia "folder" ma il backend TMWE si aspetta "folder_name"
-    if (data && data.folder && !data.folder_name) {
-      if (enableLogging) {
-        console.log(`🔄 Mapping folder="${data.folder}" → folder_name="${data.folder}"`);
-      }
-      data.folder_name = data.folder;
-      delete data.folder; // Rimuovi il parametro originale per evitare confusione
-    }
+    // ✅ NO MAPPING: Mantener el parámetro "folder" tal cual viene del frontend
+    // El backend TMWE espera "folder", NO "folder_name"
     
     const tmweUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
+    
+    // 🔍 LOGGING: Verificar parámetros antes de enviar al backend
+    if (enableLogging && data.handler === 'get_emails_metadata') {
+      console.log('📂 [GET_EMAILS_METADATA] Final params before sending:', {
+        folder: data.folder,
+        folder_name: data.folder_name,
+        handler: data.handler,
+        page: data.page,
+        limit: data.limit,
+        allParams: Object.keys(data)
+      });
+    }
     
     if (enableLogging) {
       console.log('📤 Chiamata a TMWE API:', tmweUrl);
@@ -643,6 +648,18 @@ serve(async (req) => {
           // Prova a parsare come JSON
           try {
             responseData = JSON.parse(responseText);
+            
+            // 🔍 LOGGING: Analizar respuesta para get_emails_metadata
+            if (enableLogging && data.handler === 'get_emails_metadata') {
+              console.log('📂 [GET_EMAILS_METADATA] Response analysis:', {
+                requestedFolder: data.folder || data.folder_name,
+                responseSuccess: responseData?.success,
+                emailsCount: responseData?.emails?.length,
+                firstEmailFolder: responseData?.emails?.[0]?.folder,
+                uniqueFolders: [...new Set(responseData?.emails?.map((e: any) => e.folder))],
+                hasEmails: !!responseData?.emails
+              });
+            }
           } catch (parseError) {
             if (enableLogging) {
               console.error('⚠️ Risposta non è JSON valido, uso testo raw');

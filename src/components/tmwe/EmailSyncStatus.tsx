@@ -1,98 +1,56 @@
+/**
+ * ✅ REFACTORED: Shows email statistics from API only
+ * No sync comparison needed - API is always the source of truth
+ */
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { CloudDownload, CheckCircle2, RefreshCw } from 'lucide-react';
+import { RefreshCw, Mail } from 'lucide-react';
 
 interface EmailSyncStatusProps {
   selectedFolder: string;
-  onStartSync: () => void;
-  isDownloading: boolean;
+  onStartSync?: () => void; // Deprecated, kept for compatibility
+  isDownloading?: boolean; // Deprecated, kept for compatibility
 }
 
-export const EmailSyncStatus = ({ 
-  selectedFolder, 
-  onStartSync, 
-  isDownloading 
-}: EmailSyncStatusProps) => {
-  
-  const { data: syncComparison, isLoading } = useQuery({
-    queryKey: ['folder-sync-comparison', selectedFolder],
+export const EmailSyncStatus = ({ selectedFolder }: EmailSyncStatusProps) => {
+  const { data: folderStats, isLoading } = useQuery({
+    queryKey: ['folder-stats', selectedFolder],
     queryFn: async () => {
-      // 1. Ottieni info cartella dal server API
       const folders = await emailSearchApi.getFolders();
       const folderData = folders?.data?.find((f: any) => f.name === selectedFolder);
-      const serverTotal = folderData?.messages || 0;
-
-      // 2. Conta email nel DB locale
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { serverTotal: 0, dbTotal: 0, missing: 0, percentage: 0 };
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.tmwe_email) {
-        return { serverTotal, dbTotal: 0, missing: serverTotal, percentage: 0 };
-      }
-
-      const { count } = await supabase
-        .from('email_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('cartella', selectedFolder)
-        .eq('user_email', profile.tmwe_email);
-
-      const dbTotal = count || 0;
-      const missing = Math.max(0, serverTotal - dbTotal);
-      const percentage = serverTotal > 0 ? Math.round((dbTotal / serverTotal) * 100) : 100;
-
-      return { serverTotal, dbTotal, missing, percentage };
+      
+      return {
+        total: folderData?.messages || 0,
+        unread: folderData?.unseen || 0,
+      };
     },
-    refetchInterval: isDownloading ? 2000 : 30000, // Ogni 2s se downloading, altrimenti 30s
+    refetchInterval: 30000, // Refresh every 30s
     enabled: !!selectedFolder,
   });
 
-  if (isLoading || !syncComparison) {
+  if (isLoading || !folderStats) {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <RefreshCw className="h-3 w-3 animate-spin" />
-        Verifica sincronizzazione...
+        Caricamento statistiche...
       </div>
     );
   }
 
-  const { serverTotal, dbTotal, missing, percentage } = syncComparison;
-  const isSynced = missing === 0 && serverTotal > 0;
+  const { total, unread } = folderStats;
 
   return (
     <div className="flex items-center gap-3 text-xs">
-      <span className="text-muted-foreground">
-        Server: <strong className="text-foreground">{serverTotal}</strong> • 
-        DB: <strong className="text-foreground">{dbTotal}</strong>
+      <span className="text-muted-foreground flex items-center gap-1.5">
+        <Mail className="h-3 w-3" />
+        <strong className="text-foreground">{total}</strong> email
       </span>
       
-      {isSynced ? (
-        <Badge variant="outline" className="gap-1">
-          <CheckCircle2 className="h-3 w-3 text-green-500" />
-          Sincronizzato
+      {unread > 0 && (
+        <Badge variant="secondary" className="gap-1">
+          {unread} non lette
         </Badge>
-      ) : (
-        <>
-          <Badge variant="secondary">{percentage}% sync</Badge>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onStartSync}
-            disabled={isDownloading}
-            className="h-6 px-2 gap-1 text-xs"
-          >
-            <CloudDownload className="h-3 w-3" />
-            Scarica {missing}
-          </Button>
-        </>
       )}
     </div>
   );

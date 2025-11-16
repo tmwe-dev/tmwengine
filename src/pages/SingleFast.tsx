@@ -211,10 +211,38 @@ export default function SingleFast() {
   };
 
   const handleEdgeSyncClick = async () => {
-    console.log('🚀 Edge Sync v2: Starting automatic folder sync...');
+    console.log('🔍 [DIAGNOSTIC] ===== EDGE SYNC V2 CLICK HANDLER START =====');
+    console.log('🔍 [DIAGNOSTIC] Button state check:', {
+      anyDownloadRunning,
+      tokenStatus,
+      edgeSyncIsRunning: edgeSyncDownload.isRunning,
+      buttonShouldBeDisabled: anyDownloadRunning || tokenStatus === 'expired'
+    });
+    
+    if (anyDownloadRunning) {
+      console.warn('⚠️ [DIAGNOSTIC] Button should be disabled - anyDownloadRunning =', anyDownloadRunning);
+      toast({
+        title: '⚠️ Download in corso',
+        description: 'Attendere il completamento del download in corso',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (tokenStatus === 'expired') {
+      console.warn('⚠️ [DIAGNOSTIC] Button should be disabled - tokenStatus = expired');
+      toast({
+        title: '⚠️ Token scaduto',
+        description: 'Il token TMWE è scaduto. Effettuare nuovamente il login.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    console.log('🚀 [DIAGNOSTIC] Edge Sync v2: Starting automatic folder sync...');
     
     if (!userEmail) {
-      console.error('❌ No user email found');
+      console.error('❌ [DIAGNOSTIC] No user email found');
       toast({
         title: '❌ Error',
         description: 'User email not found. Please log in again.',
@@ -223,37 +251,36 @@ export default function SingleFast() {
       return;
     }
 
-    console.log('✅ User email:', userEmail);
+    console.log('✅ [DIAGNOSTIC] User email:', userEmail);
 
     try {
-      // Step 1: Get folders directly from email_search API (not from local DB)
+      console.log('📡 [DIAGNOSTIC] Step 1: Fetching folders from emailSearchApi...');
+      
       toast({
         title: '🔍 Analyzing folders',
         description: 'Loading folders from email account...',
       });
 
-      console.log('📡 Calling emailSearchApi.getFolders()...');
-      
       const foldersResponse = await emailSearchApi.getFolders({
         include_counts: true,
         hierarchy: true
       });
 
-      console.log('📊 Full API Response:', JSON.stringify(foldersResponse, null, 2));
+      console.log('📊 [DIAGNOSTIC] Step 1 Complete - Full API Response:', JSON.stringify(foldersResponse, null, 2));
 
       if (!foldersResponse.success) {
         const errorMsg = `API returned success=false: ${JSON.stringify(foldersResponse)}`;
-        console.error('❌', errorMsg);
+        console.error('❌ [DIAGNOSTIC] Step 1 Failed:', errorMsg);
         throw new Error(errorMsg);
       }
 
       if (!foldersResponse.folders || !Array.isArray(foldersResponse.folders)) {
         const errorMsg = `Invalid folders response: ${JSON.stringify(foldersResponse)}`;
-        console.error('❌', errorMsg);
+        console.error('❌ [DIAGNOSTIC] Step 1 Failed - Invalid format:', errorMsg);
         throw new Error('Invalid response format from email API');
       }
 
-      console.log(`✅ Received ${foldersResponse.folders.length} folders from API`);
+      console.log(`✅ [DIAGNOSTIC] Step 1 Success - Received ${foldersResponse.folders.length} folders from API`);
 
       // Filter folders with total_messages > 0
       const foldersToSync = foldersResponse.folders
@@ -264,9 +291,10 @@ export default function SingleFast() {
           unreadMessages: f.unread_messages || 0
         }));
 
-      console.log(`✅ Filtered to ${foldersToSync.length} folders with messages:`, foldersToSync);
+      console.log(`✅ [DIAGNOSTIC] Filtered to ${foldersToSync.length} folders with messages:`, foldersToSync);
 
       if (foldersToSync.length === 0) {
+        console.log('ℹ️ [DIAGNOSTIC] No folders to sync - exiting');
         toast({
           title: '✅ No emails found',
           description: 'Your email account has no messages to sync.',
@@ -275,20 +303,25 @@ export default function SingleFast() {
       }
 
       const totalEmails = foldersToSync.reduce((sum, f) => sum + f.totalMessages, 0);
-      console.log(`📊 Total emails to sync: ${totalEmails}`);
+      console.log(`📊 [DIAGNOSTIC] Total emails to sync: ${totalEmails}`);
       
       toast({
         title: '🚀 Starting Edge Sync v2',
         description: `Syncing ${foldersToSync.length} folders with ${totalEmails} total emails`,
       });
 
-      // Step 2: Start sync with custom folders (pass folder names directly as parameter)
+      // Step 2: Start sync with custom folders
       const folderNames = foldersToSync.map(f => f.folderName);
-      console.log('📂 Starting sync with folders:', folderNames);
+      console.log('📂 [DIAGNOSTIC] Step 2: Calling edgeSyncDownload.start() with folders:', folderNames);
+      console.log('🔍 [DIAGNOSTIC] edgeSyncDownload object:', {
+        isRunning: edgeSyncDownload.isRunning,
+        hasStartFunction: typeof edgeSyncDownload.start === 'function',
+        logsCount: edgeSyncDownload.logs?.length || 0
+      });
       
       await edgeSyncDownload.start(folderNames);
       
-      console.log('✅ Sync started successfully');
+      console.log('✅ [DIAGNOSTIC] Step 2 Complete - edgeSyncDownload.start() returned successfully');
 
     } catch (error) {
       console.error('❌ Edge Sync Error - Full details:', error);

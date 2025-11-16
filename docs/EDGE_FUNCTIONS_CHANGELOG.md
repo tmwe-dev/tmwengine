@@ -9,6 +9,91 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-11-16] - Fase 1: Pulizia Edge Functions Non Usate
+
+### Operazione
+- **Tipo:** Eliminazione massiva di 21 Edge Functions
+- **Motivo:** Raggiunto limite deployment Supabase (75/100 funzioni)
+- **Impatto:** Liberato spazio per deploy di `email-sync-v2`
+
+### Funzioni Eliminate
+
+**Testing/Debug obsoleti:**
+1. `test-elevenlabs-agent` - Testing vocale non più necessario
+2. `brain-code-scanner` - Tool di analisi codice deprecato
+
+**Email non usate:**
+3. `ai-email-actions` - Sostituito da sistema più recente
+4. `email-ai-manual-assistant` - Non referenziato nel codice
+5. `ai-send-templated-email` - Template system non utilizzato
+
+**Chat obsoleti:**
+6. `bar-chat-dynamic-orchestrator` - Versione old di orchestratore
+7. `intranet-ai-chat-assistant-old` - Versione legacy intranet
+8. `intranet-ai-processor-old` - Versione legacy processor
+
+**Utilities non usate:**
+9. `code-assistant-tools` - Tool debug code non referenziato
+10. `extract-knowledge-graph` - Feature knowledge graph disabilitata
+11. `crm-tools` - CRM tools non referenziati
+12. `compact-conversation-summary` - Compattazione non usata
+13. `elevenlabs-get-voices` - API vocale deprecata
+14. `elevenlabs-signed-url` - Sistema signed URL non usato
+15. `fetch-company-logo` - Logo fetching non referenziato
+
+**Processing non usate:**
+16. `process-document-rag` - RAG documents non implementato
+17. `process-import-file` - Versione senza AI (esiste -ai)
+18. `process-saved-file` - Versione senza AI (esiste -ai)
+
+**Generation non usate:**
+19. `generate-deliverable` - Deliverable generation non usato
+20. `preview-agent-response` - Agent preview non referenziato
+21. `generate-message-summaries` - Message summaries deprecato
+
+### Modifiche `supabase/config.toml`
+
+Rimosse entry di configurazione per:
+- `[functions.brain-code-scanner]`
+- `[functions.email-ai-manual-assistant]`
+- `[functions.code-assistant-tools]`
+- `[functions.elevenlabs-get-voices]`
+- `[functions.fetch-company-logo]`
+- `[functions.generate-message-summaries]`
+
+### Risultato
+
+✅ **Funzioni totali:** 75 → 54 (-21 funzioni)
+✅ **Spazio disponibile:** ~46 slot per nuove funzioni
+✅ **Deploy `email-sync-v2`:** Ora possibile
+
+### Rollback Plan
+
+```bash
+# Backup disponibile prima dell'operazione
+# Le funzioni eliminate erano:
+# - Non referenziate nel codice frontend
+# - Senza dipendenze critiche
+# - Sostituibili da versioni più recenti
+
+# Rollback non necessario - funzioni non in uso
+```
+
+### Prossimi Step
+
+1. ✅ Deploy automatico removerà funzioni
+2. ⏳ Deploy `email-sync-v2` ora disponibile
+3. ⏳ Test funzionalità Edge Sync v2 in `/funnemail`
+
+### Log Sicurezza
+
+- ✅ Nessuna funzione in produzione attiva eliminata
+- ✅ Verificata assenza referenze codice frontend
+- ✅ Config.toml aggiornato correttamente
+- ✅ Documentazione aggiornata
+
+---
+
 ## [2025-01-30] - Rendere AI Più Conservativo nella Creazione Gruppi
 
 ### File Modificato

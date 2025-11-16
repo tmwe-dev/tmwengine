@@ -438,9 +438,11 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
   };
 
   /**
-   * Reset stato
+   * Reset stato - Force stop and clear all state
    */
   const reset = () => {
+    console.log('🔄 [RESET] Forcing isRunning to false and clearing state');
+    setIsRunning(false);
     setLogs([]);
     setProgress({
       current_folder: '',
@@ -448,6 +450,9 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
       total: 0,
       errors: 0
     });
+    if (serviceRef.current) {
+      serviceRef.current.stop();
+    }
   };
 
   return {

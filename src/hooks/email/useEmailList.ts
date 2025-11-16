@@ -32,7 +32,7 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
       
       try {
         let result;
-        // ✅ ALWAYS use email_search API (MySQL + Elasticsearch)
+        // ✅ Use searchEmails for search queries, getEmailsMetadata for listing
         if (searchQuery) {
           // Full-text search with Elasticsearch
           result = await emailSearchApi.searchEmails({ 
@@ -42,11 +42,9 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
             limit: 30
           });
         } else {
-          // ✅ CORRECCIÓN: Use searchEmails with wildcard for listing all emails
-          // El endpoint /email_search no tiene handler "get_messages", solo "search_emails"
-          result = await emailSearchApi.searchEmails({
-            query: '*',  // Wildcard para obtener todos los emails
-            search_folder: selectedFolder,
+          // ✅ List emails from MySQL (faster and always up-to-date)
+          result = await emailSearchApi.getEmailsMetadata({
+            folder: selectedFolder,
             page: pageParam,
             limit: 30
           });
@@ -101,13 +99,15 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
     console.log('📦 API Response Structure:', {
       pageKeys: page ? Object.keys(page) : 'null',
       hasResults: !!page?.results,
+      hasMessages: !!page?.messages,
       resultsLength: page?.results?.length,
+      messagesLength: page?.messages?.length,
       total: page?.total,
       fullStructure: JSON.stringify(page).substring(0, 300)
     });
     
-    // ✅ CORRECCIÓN FINAL: search_emails devuelve response.results[]
-    const messages = page?.results || [];
+    // ✅ Handle both search results and metadata listing
+    const messages = page?.results || page?.messages || [];
     
     if (!Array.isArray(messages)) {
       console.warn('⚠️ Messages is not an array:', messages);

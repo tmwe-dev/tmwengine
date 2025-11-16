@@ -25,14 +25,33 @@ export class EdgeFunctionSyncService {
     onLog: (log: Omit<LogEntry, 'timestamp'>) => void,
     shouldStop: () => boolean
   ): Promise<EdgeSyncResult> {
+    console.log('🔍 [SERVICE DIAGNOSTIC] ===== EDGE FUNCTION SYNC SERVICE START =====');
+    console.log('🔍 [SERVICE DIAGNOSTIC] Input params:', {
+      foldersCount: folders.length,
+      folders,
+      userEmail,
+      hasProgressCallback: typeof onProgress === 'function',
+      hasLogCallback: typeof onLog === 'function',
+      hasShouldStopCallback: typeof shouldStop === 'function'
+    });
+
     this.abortController = new AbortController();
+    console.log('✅ [SERVICE DIAGNOSTIC] AbortController created');
 
     try {
-      // Get current session
+      console.log('🔐 [SERVICE DIAGNOSTIC] Getting Supabase session...');
       const { data: { session } } = await supabase.auth.getSession();
+      
       if (!session) {
+        console.error('❌ [SERVICE DIAGNOSTIC] No active session found');
         throw new Error('No active session');
       }
+
+      console.log('✅ [SERVICE DIAGNOSTIC] Session retrieved:', {
+        hasAccessToken: !!session.access_token,
+        tokenLength: session.access_token?.length,
+        expiresAt: session.expires_at
+      });
 
       onLog({
         phase: 'preparing',
@@ -43,34 +62,60 @@ export class EdgeFunctionSyncService {
       const supabaseUrl = 'https://dlldkrzoxvjxpgkkttxu.supabase.co';
       const url = `${supabaseUrl}/functions/v1/email-sync-v2`;
       
-      console.log('📡 Calling Edge Function:', url);
-      console.log('📂 Folders to sync:', folders);
-      console.log('👤 User email:', userEmail);
+      console.log('📡 [SERVICE DIAGNOSTIC] Preparing Edge Function call...');
+      console.log('🔗 [SERVICE DIAGNOSTIC] URL:', url);
+      console.log('📂 [SERVICE DIAGNOSTIC] Folders to sync:', folders);
+      console.log('👤 [SERVICE DIAGNOSTIC] User email:', userEmail);
 
+      const requestBody = {
+        folders,
+        user_email: userEmail,
+      };
+
+      console.log('📦 [SERVICE DIAGNOSTIC] Request body:', JSON.stringify(requestBody, null, 2));
+
+      const requestHeaders = {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      };
+
+      console.log('📋 [SERVICE DIAGNOSTIC] Request headers:', {
+        ...requestHeaders,
+        Authorization: `Bearer ${session.access_token.substring(0, 20)}...` // Truncate for security
+      });
+
+      console.log('🚀 [SERVICE DIAGNOSTIC] Executing fetch()...');
+      
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          folders,
-          user_email: userEmail,
-        }),
+        headers: requestHeaders,
+        body: JSON.stringify(requestBody),
         signal: this.abortController.signal,
       });
 
-      console.log('📊 Edge Function response status:', response.status, response.statusText);
+      console.log('📊 [SERVICE DIAGNOSTIC] Fetch completed - Response received');
+      console.log('📊 [SERVICE DIAGNOSTIC] Response status:', response.status, response.statusText);
+      console.log('📊 [SERVICE DIAGNOSTIC] Response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('📊 [SERVICE DIAGNOSTIC] Response ok:', response.ok);
+      console.log('📊 [SERVICE DIAGNOSTIC] Response type:', response.type);
 
       if (!response.ok) {
+        console.error('❌ [SERVICE DIAGNOSTIC] Response not OK - Reading error text...');
         const errorText = await response.text();
-        console.error('❌ Edge Function error response:', errorText);
-        throw new Error(`Edge Function error (${response.status}): ${response.statusText}\n${errorText}`);
+        console.error('❌ [SERVICE DIAGNOSTIC] Error response body:', errorText);
+        
+        const errorMessage = `Edge Function error (${response.status}): ${response.statusText}\n${errorText}`;
+        console.error('❌ [SERVICE DIAGNOSTIC] Throwing error:', errorMessage);
+        
+        throw new Error(errorMessage);
       }
 
       if (!response.body) {
+        console.error('❌ [SERVICE DIAGNOSTIC] No response body from Edge Function');
         throw new Error('No response body from Edge Function');
       }
+
+      console.log('✅ [SERVICE DIAGNOSTIC] Response body exists - Starting streaming read...');
 
       // Process streaming response
       const reader = response.body.getReader();

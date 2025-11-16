@@ -179,6 +179,13 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
 
       // 🆕 EDGE-SYNC STRATEGY - Use EdgeFunctionSyncService directly
       if (options.strategy === 'edge-sync') {
+        console.log('🔍 [HOOK DIAGNOSTIC] ===== EDGE SYNC STRATEGY BLOCK ENTERED =====');
+        console.log('🔍 [HOOK DIAGNOSTIC] Strategy:', options.strategy);
+        console.log('🔍 [HOOK DIAGNOSTIC] Custom folders received:', customFolders);
+        console.log('🔍 [HOOK DIAGNOSTIC] Options custom folders:', options.customFolders);
+        console.log('🔍 [HOOK DIAGNOSTIC] User email:', userEmail);
+        console.log('🔍 [HOOK DIAGNOSTIC] isRunning state:', isRunning);
+
         addLog({ 
           phase: 'preparing', 
           message: `📦 Strategy: Edge Sync v2 (Secure Proxy)` 
@@ -188,24 +195,49 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
           message: `📝 Sync via Edge Function with real-time progress streaming`
         });
 
+        console.log('📦 [HOOK DIAGNOSTIC] Importing EdgeFunctionSyncService...');
         const { EdgeFunctionSyncService } = await import('@/lib/email/services/EdgeFunctionSyncService');
+        console.log('✅ [HOOK DIAGNOSTIC] EdgeFunctionSyncService imported successfully');
+        
+        console.log('🏗️ [HOOK DIAGNOSTIC] Creating EdgeFunctionSyncService instance...');
         const service = new EdgeFunctionSyncService();
+        console.log('✅ [HOOK DIAGNOSTIC] Service instance created:', service);
         
         const folders = customFolders || options.customFolders || ['INBOX', 'Sent'];
         
+        console.log('📁 [HOOK DIAGNOSTIC] Folders prepared for sync:', folders);
+
         addLog({ 
           phase: 'preparing', 
           message: `📁 Folders to sync: ${folders.join(', ')}` 
         });
 
         try {
+          console.log('🚀 [HOOK DIAGNOSTIC] Calling service.sync()...');
+          console.log('🔍 [HOOK DIAGNOSTIC] Sync params:', {
+            foldersCount: folders.length,
+            folders,
+            userEmail,
+            hasProgressCallback: typeof setProgress === 'function',
+            hasLogCallback: typeof addLog === 'function',
+            hasStopCallback: true
+          });
+
           const result = await service.sync(
             folders,
             userEmail,
-            (progress) => setProgress(progress),
-            (log) => addLog(log),
+            (progress) => {
+              console.log('📊 [HOOK DIAGNOSTIC] Progress update received:', progress);
+              setProgress(progress);
+            },
+            (log) => {
+              console.log('📝 [HOOK DIAGNOSTIC] Log received:', log);
+              addLog(log);
+            },
             () => !isRunning // shouldStop callback
           );
+
+          console.log('✅ [HOOK DIAGNOSTIC] service.sync() completed successfully:', result);
 
           addLog({ 
             phase: 'completed', 
@@ -213,14 +245,25 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
           });
 
         } catch (error: any) {
+          console.error('❌ [HOOK DIAGNOSTIC] service.sync() threw error:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            fullError: error
+          });
+
           addLog({ 
             phase: 'error', 
             message: `❌ Edge Sync failed: ${error.message}` 
           });
+          
           throw error;
         } finally {
+          console.log('🏁 [HOOK DIAGNOSTIC] Finally block - setting isRunning to false');
           setIsRunning(false);
         }
+        
+        console.log('🔍 [HOOK DIAGNOSTIC] ===== EDGE SYNC STRATEGY BLOCK COMPLETED =====');
         return;
       }
 

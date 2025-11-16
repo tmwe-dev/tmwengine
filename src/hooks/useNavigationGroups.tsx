@@ -15,7 +15,8 @@ import {
   Radio,
   Bot,
   Palette,
-  Brain
+  Brain,
+  Map
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -97,6 +98,7 @@ export const useNavigationGroups = () => {
       items: [
         { name: 'Main', href: '/settings', icon: Settings },
         { name: 'DB', href: '/database-settings', icon: Database },
+        { name: 'Mappa del Sitio', href: '/site-map', icon: Map },
       ]
     }
   ], [t, isAdmin]);

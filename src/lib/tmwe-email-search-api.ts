@@ -4,10 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Reuse fetchApi from tmwe-api-integrated
 const fetchApi = async (endpoint: string, data: any) => {
-  console.log('🚀 Email Search API Request:', { 
-    endpoint, 
+  console.log('📤 Email Search API Request:', {
+    endpoint,
     handler: data.handler,
-    params: Object.keys(data).filter(k => k !== 'handler')
+    folder: data.folder,
+    page: data.page,
+    limit: data.limit,
+    params: Object.keys(data).filter(k => k !== 'handler'),
+    timestamp: new Date().toISOString()
   });
   
   const startTime = performance.now();
@@ -39,14 +43,16 @@ const fetchApi = async (endpoint: string, data: any) => {
       throw error;
     }
 
-    console.log('✅ Email Search API Response:', { 
+    console.log('✅ Email Search API Response:', {
       handler: data.handler,
+      requestedFolder: data.folder,
       success: responseData?.success,
       hasEmails: !!responseData?.emails,
       hasMessages: !!responseData?.messages,
       hasData: !!responseData?.data,
-      emailsCount: responseData?.emails?.length || 0,
-      allKeys: responseData ? Object.keys(responseData) : 'no response',
+      emailsCount: responseData?.emails?.length,
+      firstEmailFolder: responseData?.emails?.[0]?.folder,
+      allKeys: responseData ? Object.keys(responseData) : [],
       duration: `${duration.toFixed(2)}ms`
     });
     

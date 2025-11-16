@@ -98,19 +98,8 @@ const EmailDashboard = () => {
     if (isMobile) setShowEmailList(true);
   }, [selectedFolder, isMobile]);
 
-  // ✅ CACHE INVALIDATION: Force refetch when folder changes
-  useEffect(() => {
-    console.log('📂 [FOLDER CHANGE] selectedFolder changed to:', selectedFolder);
-    console.log('📂 [CACHE INVALIDATION] Invalidating queries for folder:', selectedFolder);
-    queryClient.invalidateQueries({ queryKey: ['messages'] });
-  }, [selectedFolder, queryClient]);
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
-    }, 30000);
-    return () => clearInterval(intervalId);
-  }, [queryClient]);
+  // ✅ React Query automatically refetches when queryKey changes
+  // No manual invalidation needed here - it causes race conditions
 
   // ✅ Custom hooks for data fetching
   const { emails, emailsFromPages, loading: messagesLoading, error: messagesError, fetchNextPage, hasNextPage, isFetchingNextPage } = 
@@ -154,7 +143,12 @@ const EmailDashboard = () => {
         <div className="flex-1 flex overflow-hidden">
           <EmailSidebar
             selectedFolder={selectedFolder}
-            onFolderSelect={setSelectedFolder}
+            onFolderSelect={(folderPath) => {
+              console.log('📂 [FOLDER SELECT] Received folderPath:', folderPath);
+              console.log('📂 [FOLDER SELECT] Previous selectedFolder:', selectedFolder);
+              setSelectedFolder(folderPath);
+              console.log('📂 [FOLDER SELECT] New selectedFolder set to:', folderPath);
+            }}
             onCompose={() => setComposeOpen(true)}
             onSync={() => setSyncMonitorOpen(true)}
             totalEmails={folderStats?.total}

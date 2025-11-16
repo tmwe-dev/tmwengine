@@ -41,24 +41,31 @@ export class EdgeFunctionSyncService {
 
       // Call Edge Function with streaming response
       const supabaseUrl = 'https://dlldkrzoxvjxpgkkttxu.supabase.co';
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/email-sync-v2`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            folders,
-            user_email: userEmail,
-          }),
-          signal: this.abortController.signal,
-        }
-      );
+      const url = `${supabaseUrl}/functions/v1/email-sync-v2`;
+      
+      console.log('📡 Calling Edge Function:', url);
+      console.log('📂 Folders to sync:', folders);
+      console.log('👤 User email:', userEmail);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          folders,
+          user_email: userEmail,
+        }),
+        signal: this.abortController.signal,
+      });
+
+      console.log('📊 Edge Function response status:', response.status, response.statusText);
 
       if (!response.ok) {
-        throw new Error(`Edge Function error: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('❌ Edge Function error response:', errorText);
+        throw new Error(`Edge Function error (${response.status}): ${response.statusText}\n${errorText}`);
       }
 
       if (!response.body) {

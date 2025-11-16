@@ -177,6 +177,53 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
       // 1. Get user email
       const userEmail = await getUserEmail();
 
+      // 🆕 EDGE-SYNC STRATEGY - Use EdgeFunctionSyncService directly
+      if (options.strategy === 'edge-sync') {
+        addLog({ 
+          phase: 'preparing', 
+          message: `📦 Strategy: Edge Sync v2 (Secure Proxy)` 
+        });
+        addLog({
+          phase: 'preparing',
+          message: `📝 Sync via Edge Function with real-time progress streaming`
+        });
+
+        const { EdgeFunctionSyncService } = await import('@/lib/email/services/EdgeFunctionSyncService');
+        const service = new EdgeFunctionSyncService();
+        
+        const folders = customFolders || options.customFolders || ['INBOX', 'Sent'];
+        
+        addLog({ 
+          phase: 'preparing', 
+          message: `📁 Folders to sync: ${folders.join(', ')}` 
+        });
+
+        try {
+          const result = await service.sync(
+            folders,
+            userEmail,
+            (progress) => setProgress(progress),
+            (log) => addLog(log),
+            () => !isRunning // shouldStop callback
+          );
+
+          addLog({ 
+            phase: 'completed', 
+            message: `🎉 Edge Sync completed! Downloaded: ${result.total_downloaded}, Errors: ${result.total_errors}, Folders: ${result.folders_completed}` 
+          });
+
+        } catch (error: any) {
+          addLog({ 
+            phase: 'error', 
+            message: `❌ Edge Sync failed: ${error.message}` 
+          });
+          throw error;
+        } finally {
+          setIsRunning(false);
+        }
+        return;
+      }
+
       // 🆕 SIMPLE STRATEGY - Usa simple-downloader.ts direttamente
       if (options.strategy === 'simple') {
         addLog({ 

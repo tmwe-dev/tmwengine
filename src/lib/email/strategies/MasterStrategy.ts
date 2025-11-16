@@ -121,10 +121,11 @@ export class MasterStrategy implements DownloadStrategy {
         let folderStats;
         try {
           folderStats = await emailSearchApi.getStatistics({ folder: folder.folderName });
+          const statsData = folderStats?.data || folderStats;
           onLog({
             phase: 'preparing',
             folder: folder.folderName,
-            message: `📈 Server has ${folderStats.total || 0} emails (${folderStats.unread || 0} unread)`
+            message: `📈 Server has ${statsData.total || 0} emails (${statsData.unread || 0} unread)`
           });
         } catch (error: any) {
           onLog({

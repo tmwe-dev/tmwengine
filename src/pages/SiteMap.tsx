@@ -16,12 +16,12 @@ export default function SiteMap() {
               <Map className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
-                Mapa del Sitio
-              </h1>
-              <p className="text-sm sm:text-base text-muted-foreground mt-1">
-                Explorador completo de todas las páginas y funcionalidades del sistema
-              </p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
+              Mappa del Sito
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+              Esploratore completo di tutte le pagine e funzionalità del sistema
+            </p>
             </div>
           </div>
         </div>
@@ -42,7 +42,7 @@ export default function SiteMap() {
         {/* Footer Info */}
         <div className="mt-8 p-4 bg-muted/30 rounded-lg border">
           <p className="text-sm text-muted-foreground text-center">
-            💡 <strong>Tip:</strong> Utiliza el buscador para encontrar rápidamente cualquier página del sistema
+            💡 <strong>Suggerimento:</strong> Utilizza il motore di ricerca per trovare rapidamente qualsiasi pagina del sistema
           </p>
         </div>
       </div>

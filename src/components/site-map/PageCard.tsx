@@ -43,7 +43,7 @@ export function PageCard({ page }: PageCardProps) {
           variant="outline"
           size="sm"
         >
-          Acceder
+          Accedi
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardContent>

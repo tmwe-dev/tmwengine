@@ -13,6 +13,13 @@ interface UseEmailListParams {
 }
 
 export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: UseEmailListParams) => {
+  console.log('🔄 [useEmailList] Hook called with:', {
+    selectedFolder,
+    searchQuery,
+    selectedSender,
+    timestamp: new Date().toISOString()
+  });
+  
   const { 
     data: messagesData,
     isLoading: messagesLoading,

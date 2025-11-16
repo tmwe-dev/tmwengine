@@ -328,7 +328,15 @@ export const EmailSidebar = ({
               !hasChildren && 'ml-6'
             )}
             style={{ paddingLeft: `${12 + node.level * 16}px` }}
-            onClick={() => folder && onFolderSelect(node.fullPath)}
+            onClick={() => {
+              console.log('📁 Folder clicked:', {
+                fullPath: node.fullPath,
+                hasFolder: !!folder,
+                folderData: folder,
+                timestamp: new Date().toISOString()
+              });
+              onFolderSelect(node.fullPath);
+            }}
           >
             <div className="flex items-center min-w-0">
               <Icon className={cn(

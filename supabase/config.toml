@@ -240,9 +240,6 @@ verify_jwt = false
 [functions.bar-chat-orchestrator]
 verify_jwt = true
 
-[functions.elevenlabs-get-voices]
-verify_jwt = true
-
 [functions.generate-conversation-summary]
 verify_jwt = true
 
@@ -264,12 +261,6 @@ verify_jwt = true
 [functions.sync-ai-pricing]
 verify_jwt = true
 
-[functions.generate-message-summaries]
-verify_jwt = true
-
-[functions.code-assistant-tools]
-verify_jwt = true
-
 [functions.index-codebase]
 verify_jwt = true
 
@@ -289,12 +280,6 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.classify-email-content-intelligent]
-verify_jwt = true
-
-[functions.fetch-company-logo]
-verify_jwt = true
-
-[functions.email-ai-manual-assistant]
 verify_jwt = true
 
 [functions.email-ai-automation-processor]
@@ -319,7 +304,4 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.optimize-company-profile]
-verify_jwt = true
-
-[functions.brain-code-scanner]
 verify_jwt = true

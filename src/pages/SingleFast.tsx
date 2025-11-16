@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Download, Settings, FolderSync, StopCircle, RotateCcw, TestTube2, Rocket, ArrowLeft, Loader2, Database, Unlock, Square, Sliders } from "lucide-react";
+import { Download, Settings, FolderSync, StopCircle, RotateCcw, TestTube2, Rocket, ArrowLeft, Loader2, Database, Unlock, Square, Sliders, FolderTree } from "lucide-react";
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { PageLayout } from '@/components/design-system/layouts/PageLayout';
 import { SplitLayout } from '@/components/design-system/layouts/SplitLayout';
@@ -163,6 +164,46 @@ export default function SingleFast() {
     });
   };
 
+  const handleTestFolderTree = async () => {
+    console.log('🔍 Testing Folder Tree APIs...');
+    toast({
+      title: 'Testing Folder APIs',
+      description: 'Check browser console for detailed results',
+    });
+
+    try {
+      // Test 1: getFolders with hierarchy and counts
+      console.log('📁 Test 1: getFolders({ include_counts: true, hierarchy: true })');
+      const folders = await emailSearchApi.getFolders({
+        include_counts: true,
+        hierarchy: true
+      });
+      console.log('✅ Folders with counts:', folders);
+
+      // Test 2: getFolderTree
+      console.log('🌳 Test 2: getFolderTree()');
+      const tree = await emailSearchApi.getFolderTree();
+      console.log('✅ Folder Tree:', tree);
+
+      // Test 3: getFolderInfo for INBOX
+      console.log('📮 Test 3: getFolderInfo("INBOX")');
+      const inboxInfo = await emailSearchApi.getFolderInfo('INBOX');
+      console.log('✅ INBOX Info:', inboxInfo);
+
+      toast({
+        title: '✅ Tests Completed',
+        description: 'All folder tree tests completed successfully. Check console for details.',
+      });
+    } catch (error: any) {
+      console.error('❌ Folder tree test error:', error);
+      toast({
+        title: 'Test Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const relevantLogs = (isRunning ? logs : simpleDownload.logs).filter(log => 
     log.phase === 'completed' ||
     log.phase === 'importing' ||
@@ -317,6 +358,18 @@ export default function SingleFast() {
                     🧪 Simple Downloader Test
                   </>
                 )}
+              </Button>
+
+              {/* 🆕 Folder Tree Test Button */}
+              <Button
+                size="sm"
+                onClick={handleTestFolderTree}
+                disabled={anyDownloadRunning || tokenStatus === 'expired'}
+                variant="outline"
+                className="w-full justify-start h-8 text-xs border-muted-foreground/30 hover:bg-muted/50"
+              >
+                <FolderTree className="h-3 w-3 mr-2" />
+                🗂️ Test Folder Tree
               </Button>
               
               {(isRunning || simpleDownload.isRunning) && (

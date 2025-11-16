@@ -100,18 +100,14 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
   const emailsFromPages = (messagesData?.pages || []).flatMap(page => {
     console.log('📦 API Response Structure:', {
       pageKeys: page ? Object.keys(page) : 'null',
-      hasEmails: !!page?.emails,
-      hasMessages: !!page?.messages,
-      hasData: !!page?.data,
-      dataMessages: !!page?.data?.messages,
-      emailsLength: page?.emails?.length,
-      messagesLength: page?.messages?.length,
-      dataMessagesLength: page?.data?.messages?.length,
+      hasResults: !!page?.results,
+      resultsLength: page?.results?.length,
+      total: page?.total,
       fullStructure: JSON.stringify(page).substring(0, 300)
     });
     
-    // ✅ CORRECCIÓN: API devuelve response.data.messages o response.messages
-    const messages = page?.data?.messages || page?.messages || page?.data || [];
+    // ✅ CORRECCIÓN FINAL: search_emails devuelve response.results[]
+    const messages = page?.results || [];
     
     if (!Array.isArray(messages)) {
       console.warn('⚠️ Messages is not an array:', messages);

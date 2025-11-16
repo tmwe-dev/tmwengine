@@ -323,6 +323,12 @@ export default function SingleFast() {
       
       console.log('✅ [DIAGNOSTIC] Step 2 Complete - edgeSyncDownload.start() returned successfully');
 
+      // Force reset state to ensure button is not stuck disabled
+      setTimeout(() => {
+        console.log('🔄 [DIAGNOSTIC] Forcing state reset after incremental sync');
+        edgeSyncDownload.reset && edgeSyncDownload.reset();
+      }, 1000);
+
       // ✅ Show success toast after sync completes
       const completedLog = edgeSyncDownload.logs.find(l => l.phase === 'completed');
       if (completedLog) {
@@ -465,6 +471,12 @@ export default function SingleFast() {
       await edgeSyncDownload.start(folderNames, 'full');
       
       console.log('✅ [DIAGNOSTIC] Step 2 Complete - edgeSyncDownload.start() returned successfully');
+
+      // Force reset state to ensure button is not stuck disabled
+      setTimeout(() => {
+        console.log('🔄 [DIAGNOSTIC] Forcing state reset after full sync');
+        edgeSyncDownload.reset && edgeSyncDownload.reset();
+      }, 1000);
 
       // ✅ Show success toast after sync completes
       const completedLog = edgeSyncDownload.logs.find(l => l.phase === 'completed');
@@ -683,7 +695,15 @@ export default function SingleFast() {
               {/* 🆕 Edge Sync v2 - Full Download */}
               <Button
                 size="sm"
-                onClick={handleFullSyncClick}
+                onClick={() => {
+                  console.log('🔍 [BUTTON CLICK] Full Download button clicked!');
+                  console.log('🔍 [BUTTON STATE]', {
+                    anyDownloadRunning,
+                    edgeSyncIsRunning: edgeSyncDownload.isRunning,
+                    disabled: anyDownloadRunning || tokenStatus === 'expired'
+                  });
+                  handleFullSyncClick();
+                }}
                 disabled={anyDownloadRunning || tokenStatus === 'expired'}
                 variant="outline"
                 className="w-full justify-start h-8 text-xs border-blue-500/50 hover:bg-blue-500/10"
@@ -694,6 +714,27 @@ export default function SingleFast() {
                   <Cloud className="h-3 w-3 mr-2 text-blue-500" />
                 )}
                 🔄 Edge Sync v2 - Full Download
+              </Button>
+
+              {/* 🆕 Emergency Reset Button */}
+              <Button
+                size="sm"
+                onClick={() => {
+                  console.log('🔄 [EMERGENCY RESET] Forcing all downloads to stop');
+                  edgeSyncDownload.reset && edgeSyncDownload.reset();
+                  simpleDownload.reset && simpleDownload.reset();
+                  masterDownload.reset && masterDownload.reset();
+                  reset();
+                  toast({
+                    title: '🔄 Estado Reseteado',
+                    description: 'Todos los downloads han sido forzados a detenerse',
+                  });
+                }}
+                variant="outline"
+                className="w-full justify-start h-8 text-xs border-orange-500/50 hover:bg-orange-500/10"
+              >
+                <RotateCcw className="h-3 w-3 mr-2 text-orange-500" />
+                🔄 Emergency Reset
               </Button>
               
               {(isRunning || simpleDownload.isRunning) && (

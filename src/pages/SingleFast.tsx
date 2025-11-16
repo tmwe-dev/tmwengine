@@ -306,7 +306,7 @@ export default function SingleFast() {
       console.log(`📊 [DIAGNOSTIC] Total emails to sync: ${totalEmails}`);
       
       toast({
-        title: '🚀 Starting Edge Sync v2',
+        title: '🚀 Starting Incremental Sync',
         description: `Syncing ${foldersToSync.length} folders with ${totalEmails} total emails`,
       });
 
@@ -347,6 +347,149 @@ export default function SingleFast() {
       
       toast({
         title: '❌ Sync Failed',
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleFullSyncClick = async () => {
+    console.log('🔍 [DIAGNOSTIC] ===== FULL SYNC CLICK HANDLER START =====');
+    console.log('🔍 [DIAGNOSTIC] Button state check:', {
+      anyDownloadRunning,
+      tokenStatus,
+      edgeSyncIsRunning: edgeSyncDownload.isRunning,
+      buttonShouldBeDisabled: anyDownloadRunning || tokenStatus === 'expired'
+    });
+    
+    if (anyDownloadRunning) {
+      console.warn('⚠️ [DIAGNOSTIC] Button should be disabled - anyDownloadRunning =', anyDownloadRunning);
+      toast({
+        title: '⚠️ Download in corso',
+        description: 'Attendere il completamento del download in corso',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (tokenStatus === 'expired') {
+      console.warn('⚠️ [DIAGNOSTIC] Button should be disabled - tokenStatus = expired');
+      toast({
+        title: '⚠️ Token scaduto',
+        description: 'Il token TMWE è scaduto. Effettuare nuovamente il login.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    console.log('🚀 [DIAGNOSTIC] Full Sync: Starting complete folder sync...');
+    
+    if (!userEmail) {
+      console.error('❌ [DIAGNOSTIC] No user email found');
+      toast({
+        title: '❌ Error',
+        description: 'User email not found. Please log in again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    console.log('✅ [DIAGNOSTIC] User email:', userEmail);
+
+    try {
+      console.log('📡 [DIAGNOSTIC] Step 1: Fetching folders from emailSearchApi...');
+      
+      toast({
+        title: '🔍 Analyzing folders',
+        description: 'Loading folders from email account...',
+      });
+
+      const foldersResponse = await emailSearchApi.getFolders({
+        include_counts: true,
+        hierarchy: true
+      });
+
+      console.log('📊 [DIAGNOSTIC] Step 1 Complete - Full API Response:', JSON.stringify(foldersResponse, null, 2));
+
+      if (!foldersResponse.success) {
+        const errorMsg = `API returned success=false: ${JSON.stringify(foldersResponse)}`;
+        console.error('❌ [DIAGNOSTIC] Step 1 Failed:', errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      if (!foldersResponse.folders || !Array.isArray(foldersResponse.folders)) {
+        const errorMsg = `Invalid folders response: ${JSON.stringify(foldersResponse)}`;
+        console.error('❌ [DIAGNOSTIC] Step 1 Failed - Invalid format:', errorMsg);
+        throw new Error('Invalid response format from email API');
+      }
+
+      console.log(`✅ [DIAGNOSTIC] Step 1 Success - Received ${foldersResponse.folders.length} folders from API`);
+
+      // Filter folders with total_messages > 0
+      const foldersToSync = foldersResponse.folders
+        .filter(f => f.total_messages && f.total_messages > 0)
+        .map(f => ({
+          folderName: f.folder_name,
+          totalMessages: f.total_messages,
+          unreadMessages: f.unread_messages || 0
+        }));
+
+      console.log(`✅ [DIAGNOSTIC] Filtered to ${foldersToSync.length} folders with messages:`, foldersToSync);
+
+      if (foldersToSync.length === 0) {
+        console.log('ℹ️ [DIAGNOSTIC] No folders to sync - exiting');
+        toast({
+          title: '✅ No emails found',
+          description: 'Your email account has no messages to sync.',
+        });
+        return;
+      }
+
+      const totalEmails = foldersToSync.reduce((sum, f) => sum + f.totalMessages, 0);
+      console.log(`📊 [DIAGNOSTIC] Total emails to sync: ${totalEmails}`);
+      
+      toast({
+        title: '🚀 Starting Full Sync',
+        description: `Downloading all emails from ${foldersToSync.length} folders (max 500 per folder)`,
+      });
+
+      // Step 2: Start sync with custom folders in FULL mode
+      const folderNames = foldersToSync.map(f => f.folderName);
+      console.log('📂 [DIAGNOSTIC] Step 2: Calling edgeSyncDownload.start() with FULL mode and folders:', folderNames);
+      console.log('🔍 [DIAGNOSTIC] edgeSyncDownload object:', {
+        isRunning: edgeSyncDownload.isRunning,
+        hasStartFunction: typeof edgeSyncDownload.start === 'function',
+        logsCount: edgeSyncDownload.logs?.length || 0
+      });
+      
+      await edgeSyncDownload.start(folderNames, 'full');
+      
+      console.log('✅ [DIAGNOSTIC] Step 2 Complete - edgeSyncDownload.start() returned successfully');
+
+      // ✅ Show success toast after sync completes
+      const completedLog = edgeSyncDownload.logs.find(l => l.phase === 'completed');
+      if (completedLog) {
+        toast({
+          title: '✅ Sincronización Completa',
+          description: completedLog.message,
+          duration: 5000,
+        });
+      } else {
+        toast({
+          title: '✅ Descarga Completa Finalizada',
+          description: `${foldersToSync.length} carpetas procesadas exitosamente`,
+          duration: 5000,
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Full Sync Error - Full details:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
+      toast({
+        title: '❌ Full Sync Failed',
         description: error instanceof Error ? error.message : 'Unknown error occurred',
         variant: 'destructive',
       });
@@ -521,7 +664,7 @@ export default function SingleFast() {
                 🗂️ Test Folder Tree
               </Button>
 
-              {/* 🆕 Edge Sync v2 Test Button */}
+              {/* 🆕 Edge Sync v2 - Incremental */}
               <Button
                 size="sm"
                 onClick={handleEdgeSyncClick}
@@ -534,7 +677,23 @@ export default function SingleFast() {
                 ) : (
                   <Shield className="h-3 w-3 mr-2 text-emerald-500" />
                 )}
-                🚀 Edge Sync v2 (Secure)
+                🚀 Edge Sync v2 - Incremental
+              </Button>
+
+              {/* 🆕 Edge Sync v2 - Full Download */}
+              <Button
+                size="sm"
+                onClick={handleFullSyncClick}
+                disabled={anyDownloadRunning || tokenStatus === 'expired'}
+                variant="outline"
+                className="w-full justify-start h-8 text-xs border-blue-500/50 hover:bg-blue-500/10"
+              >
+                {edgeSyncDownload.isRunning ? (
+                  <Loader2 className="h-3 w-3 mr-2 text-blue-500 animate-spin" />
+                ) : (
+                  <Cloud className="h-3 w-3 mr-2 text-blue-500" />
+                )}
+                🔄 Edge Sync v2 - Full Download
               </Button>
               
               {(isRunning || simpleDownload.isRunning) && (

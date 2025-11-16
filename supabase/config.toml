@@ -188,6 +188,9 @@ verify_jwt = true
 [functions.tmwe-email-sync-master]
 verify_jwt = true
 
+[functions.email-sync-v2]
+verify_jwt = true
+
 [functions.process-ai-import]
 verify_jwt = true
 

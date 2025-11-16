@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Download, Settings, FolderSync, StopCircle, RotateCcw, TestTube2, Rocket, ArrowLeft, Loader2, Database, Unlock, Square, Sliders, FolderTree } from "lucide-react";
+import { Download, Settings, FolderSync, StopCircle, RotateCcw, TestTube2, Rocket, ArrowLeft, Loader2, Database, Unlock, Square, Sliders, FolderTree, Shield } from "lucide-react";
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { PageLayout } from '@/components/design-system/layouts/PageLayout';
@@ -50,8 +50,13 @@ export default function SingleFast() {
     customFolders: ['INBOX', 'Sent']
   });
 
-  const activeDownload = isRunning ? { isRunning, logs, progress } : (simpleDownload.isRunning ? simpleDownload : masterDownload);
-  const anyDownloadRunning = isRunning || simpleDownload.isRunning || masterDownload.isRunning;
+  const edgeSyncDownload = useEmailDownload({
+    strategy: 'edge-sync',
+    customFolders: ['INBOX', 'Sent']
+  });
+
+  const activeDownload = isRunning ? { isRunning, logs, progress } : (simpleDownload.isRunning ? simpleDownload : (masterDownload.isRunning ? masterDownload : edgeSyncDownload));
+  const anyDownloadRunning = isRunning || simpleDownload.isRunning || masterDownload.isRunning || edgeSyncDownload.isRunning;
 
   useEffect(() => {
     const getUserEmail = async () => {
@@ -370,6 +375,18 @@ export default function SingleFast() {
               >
                 <FolderTree className="h-3 w-3 mr-2" />
                 🗂️ Test Folder Tree
+              </Button>
+
+              {/* 🆕 Edge Sync v2 Test Button */}
+              <Button
+                size="sm"
+                onClick={() => edgeSyncDownload.start()}
+                disabled={anyDownloadRunning || tokenStatus === 'expired'}
+                variant="outline"
+                className="w-full justify-start h-8 text-xs border-emerald-500/50 hover:bg-emerald-500/10"
+              >
+                <Shield className="h-3 w-3 mr-2 text-emerald-500" />
+                🚀 Edge Sync v2 (Secure)
               </Button>
               
               {(isRunning || simpleDownload.isRunning) && (

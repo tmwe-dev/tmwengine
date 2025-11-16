@@ -30,22 +30,42 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
         timestamp: new Date().toISOString()
       });
       
-      // ✅ ALWAYS use email_search API (MySQL + Elasticsearch)
-      if (searchQuery) {
-        // Full-text search with Elasticsearch
-        return emailSearchApi.searchEmails({ 
-          query: searchQuery, 
-          search_folder: selectedFolder,
-          page: pageParam,
-          limit: 30
+      try {
+        let result;
+        // ✅ ALWAYS use email_search API (MySQL + Elasticsearch)
+        if (searchQuery) {
+          // Full-text search with Elasticsearch
+          result = await emailSearchApi.searchEmails({ 
+            query: searchQuery, 
+            search_folder: selectedFolder,
+            page: pageParam,
+            limit: 30
+          });
+        } else {
+          // Get emails metadata (fast, cached, always up-to-date)
+          result = await emailSearchApi.getEmailsMetadata({
+            folder: selectedFolder,
+            page: pageParam,
+            limit: 30
+          });
+        }
+        
+        console.log('✅ [API RESPONSE] email_search returned:', {
+          hasResult: !!result,
+          resultKeys: result ? Object.keys(result) : 'null',
+          success: result?.success,
+          dataType: result?.data ? typeof result.data : 'no data',
+          dataIsArray: Array.isArray(result?.data),
+          dataLength: Array.isArray(result?.data) ? result.data.length : 'not array',
+          messagesLength: result?.messages?.length,
+          emailsLength: result?.emails?.length,
+          rawResult: JSON.stringify(result).substring(0, 500)
         });
-      } else {
-        // Get emails metadata (fast, cached, always up-to-date)
-        return emailSearchApi.getEmailsMetadata({
-          folder: selectedFolder,
-          page: pageParam,
-          limit: 30
-        });
+        
+        return result;
+      } catch (error) {
+        console.error('❌ [API ERROR] email_search failed:', error);
+        throw error;
       }
     },
     getNextPageParam: (lastPage, allPages) => {

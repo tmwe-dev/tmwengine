@@ -64,9 +64,9 @@ const fetchApi = async (endpoint: string, data: any) => {
 
 export const emailSearchApi = {
   /**
-   * Fast metadata-only query (uses get_messages handler)
-   * Returns email list with metadata
-   * Ideal for email lists
+   * Fast metadata-only query (uses email_search RPC API)
+   * Returns email list with metadata from Elasticsearch
+   * Ideal for email lists - NO IMAP connection needed
    */
   getEmailsMetadata: (params: {
     folder?: string;
@@ -78,11 +78,12 @@ export const emailSearchApi = {
     date_from?: string;
     date_to?: string;
     timeout?: number;
-  }) => fetchApi('/email_message', {
+  }) => fetchApi('/email_search', {
     handler: 'get_messages',
-    folder: params.folder || 'INBOX',
+    folder_name: params.folder || 'INBOX',
     limit: params.limit || 50,
-    offset: ((params.page || 1) - 1) * (params.limit || 50),
+    page: params.page || 1,
+    timeout: params.timeout || 10,
     ...(params.is_seen !== undefined && { is_seen: params.is_seen }),
     ...(params.is_flagged !== undefined && { is_flagged: params.is_flagged }),
     ...(params.has_attachments !== undefined && { has_attachments: params.has_attachments }),

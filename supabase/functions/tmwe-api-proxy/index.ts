@@ -545,17 +545,42 @@ serve(async (req) => {
     // ✅ CRITICAL FIX: NO transformar "folder" a "folder_name"
     // El backend TMWE espera el parámetro "folder" exactamente como viene del frontend
     
+    // 🔧 VALIDATION v2.0: Asegurar que folder existe y folder_name NO existe
+    if (data.handler === 'get_emails_metadata') {
+      if (!data.folder && data.folder_name) {
+        // Si recibimos folder_name (legacy), moverlo a folder
+        console.warn('⚠️ [LEGACY COMPAT] Recibido folder_name, convirtiendo a folder');
+        data.folder = data.folder_name;
+        delete data.folder_name;
+      }
+      
+      if (!data.folder) {
+        data.folder = 'INBOX'; // Default fallback
+      }
+      
+      if (enableLogging) {
+        console.log('🔍 [FOLDER VALIDATION v2.0]:', {
+          has_folder: !!data.folder,
+          has_folder_name: !!data.folder_name,
+          final_folder: data.folder,
+          timestamp: Date.now()
+        });
+      }
+    }
+    
     const tmweUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
     
-    // 🔍 LOGGING: Verificar parámetros antes de enviar al backend
+    // 🔍 LOGGING v2.0: Verificar parámetros antes de enviar al backend
     if (enableLogging && data.handler === 'get_emails_metadata') {
-      console.log('📂 [GET_EMAILS_METADATA] Final params before sending:', {
+      const timestamp = Date.now();
+      console.log(`📂 [GET_EMAILS_METADATA v2.0-${timestamp}] Final params before sending:`, {
         folder: data.folder,
         folder_name: data.folder_name,
         handler: data.handler,
         page: data.page,
         limit: data.limit,
-        allParams: Object.keys(data)
+        allParams: Object.keys(data),
+        deployTimestamp: timestamp
       });
     }
     
@@ -734,7 +759,12 @@ serve(async (req) => {
       ...responseData
     }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'X-Proxy-Version': '2.0-folder-fix',
+        'X-Deploy-Time': new Date().toISOString()
+      },
     });
 
   } catch (error: any) {

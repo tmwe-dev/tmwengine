@@ -18,6 +18,8 @@ import { LiveEmailViewer } from '@/components/email/LiveEmailViewer';
 import { DownloadLock } from '@/lib/email/core/DownloadLock';
 import { TripleStorage } from '@/lib/email/core/TripleStorage';
 import { useToast } from '@/hooks/use-toast';
+import { getFoldersProgress } from '@/lib/email/email-repository';
+import { EmailSyncLogs } from '@/components/email/EmailSyncLogs';
 
 export default function SingleFast() {
   const navigate = useNavigate();
@@ -209,7 +211,67 @@ export default function SingleFast() {
     }
   };
 
-  const relevantLogs = (isRunning ? logs : simpleDownload.logs).filter(log => 
+  const handleEdgeSyncClick = async () => {
+    console.log('🚀 Edge Sync v2: Starting automatic folder sync...');
+    
+    if (!userEmail) {
+      toast({
+        title: '❌ Error',
+        description: 'User email not found. Please log in again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Step 1: Get folders with pending emails
+      toast({
+        title: '🔍 Analyzing folders',
+        description: 'Loading folders with pending emails...',
+      });
+
+      const foldersProgress = await getFoldersProgress(userEmail);
+      console.log('📊 Folders progress:', foldersProgress);
+
+      // Filter folders with pending > 0
+      const foldersToSync = foldersProgress
+        .filter(f => f.pending > 0)
+        .map(f => ({
+          folderName: f.folder,
+          pending: f.pending,
+          included: true
+        }));
+
+      if (foldersToSync.length === 0) {
+        toast({
+          title: '✅ No sync needed',
+          description: 'All folders are already up to date!',
+        });
+        return;
+      }
+
+      console.log(`✅ Found ${foldersToSync.length} folders to sync:`, foldersToSync);
+      
+      toast({
+        title: '🚀 Starting Edge Sync v2',
+        description: `Syncing ${foldersToSync.length} folders with ${foldersToSync.reduce((sum, f) => sum + f.pending, 0)} pending emails`,
+      });
+
+      // Step 2: Start sync with custom folders (pass folder names directly as parameter)
+      const folderNames = foldersToSync.map(f => f.folderName);
+      await edgeSyncDownload.start(folderNames);
+
+    } catch (error) {
+      console.error('❌ Edge Sync Error:', error);
+      toast({
+        title: '❌ Sync Failed',
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const relevantLogs = (isRunning ? logs : simpleDownload.logs).filter(log =>
     log.phase === 'completed' ||
     log.phase === 'importing' ||
     log.phase === 'error' ||
@@ -380,12 +442,16 @@ export default function SingleFast() {
               {/* 🆕 Edge Sync v2 Test Button */}
               <Button
                 size="sm"
-                onClick={() => edgeSyncDownload.start()}
+                onClick={handleEdgeSyncClick}
                 disabled={anyDownloadRunning || tokenStatus === 'expired'}
                 variant="outline"
                 className="w-full justify-start h-8 text-xs border-emerald-500/50 hover:bg-emerald-500/10"
               >
-                <Shield className="h-3 w-3 mr-2 text-emerald-500" />
+                {edgeSyncDownload.isRunning ? (
+                  <Loader2 className="h-3 w-3 mr-2 text-emerald-500 animate-spin" />
+                ) : (
+                  <Shield className="h-3 w-3 mr-2 text-emerald-500" />
+                )}
                 🚀 Edge Sync v2 (Secure)
               </Button>
               
@@ -455,28 +521,13 @@ export default function SingleFast() {
               </div>
             </div>
 
-            {/* Log Compatti */}
+            {/* Enhanced Logs Component */}
             <Card>
-              <CardHeader className="py-2 px-3">
-                <CardTitle className="text-xs font-medium">📋 Logs</CardTitle>
-              </CardHeader>
-              <CardContent className="py-2 px-3">
-                <ScrollArea className="h-[200px]">
-                  <div className="space-y-1">
-                    {relevantLogs.slice(-10).reverse().map((log, i) => (
-                      <div
-                        key={i}
-                        className={`p-2 rounded text-[10px] font-mono ${
-                          log.phase === 'error' ? 'bg-destructive/10' :
-                          log.phase === 'completed' ? 'bg-primary/10' :
-                          'bg-muted/50'
-                        }`}
-                      >
-                        {log.message}
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
+              <CardContent className="py-4 px-3">
+                <EmailSyncLogs 
+                  logs={activeDownload.logs} 
+                  isRunning={anyDownloadRunning}
+                />
               </CardContent>
             </Card>
           </div>

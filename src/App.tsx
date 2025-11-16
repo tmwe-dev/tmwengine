@@ -64,6 +64,7 @@ import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import DesignLab from "./pages/DesignLab";
 import DesignLabDashboard from "./pages/DesignLabDashboard";
 import DesignLabScanner from "./pages/DesignLabScanner";
+import SiteMap from "./pages/SiteMap";
 import PromptSystemManager from "./pages/PromptSystemManager";
 import FunEmail from "./pages/FunEmail";
 import ApiFunctionsReference from "./pages/ApiFunctionsReference";
@@ -443,6 +444,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <EmailDebugTester />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/site-map" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <SiteMap />
                 </CRMLayout>
               </ProtectedRoute>
             } />

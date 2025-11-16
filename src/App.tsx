@@ -67,6 +67,7 @@ import DesignLabScanner from "./pages/DesignLabScanner";
 import SiteMap from "./pages/SiteMap";
 import PromptSystemManager from "./pages/PromptSystemManager";
 import FunEmail from "./pages/FunEmail";
+import EmailHub from "./pages/EmailHub";
 import ApiFunctionsReference from "./pages/ApiFunctionsReference";
 import { SingleMailImporter } from "./components/email/SingleMailImporter";
 import SingleFast from "./pages/SingleFast";
@@ -307,6 +308,13 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <FunEmail />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/emailhub" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <EmailHub />
                 </CRMLayout>
               </ProtectedRoute>
             } />

@@ -133,10 +133,18 @@ export const emailSearchApi = {
   }),
 
   /**
-   * Get folders (fast RPC)
+   * Get folders with optional hierarchy and counts (fast RPC)
    */
-  getFolders: (timeout = 10) => 
-    fetchApi('/email_search', { handler: 'get_folders', timeout }),
+  getFolders: (params?: {
+    include_counts?: boolean;
+    hierarchy?: boolean;
+    timeout?: number;
+  }) => fetchApi('/email_search', { 
+    handler: 'get_folders',
+    include_counts: params?.include_counts !== false,  // Default true
+    hierarchy: params?.hierarchy !== false,            // Default true
+    timeout: params?.timeout || 10
+  }),
 
   /**
    * Get folder information

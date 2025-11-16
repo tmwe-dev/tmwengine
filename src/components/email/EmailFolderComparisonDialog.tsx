@@ -67,7 +67,7 @@ export function EmailFolderComparisonDialog({
 
       // B. Recupero cartelle server
       setProgress('Recupero cartelle dal server...');
-      const foldersResponse = await emailSearchApi.getFolders(15000);
+      const foldersResponse = await emailSearchApi.getFolders({ timeout: 15000 });
       const serverFolders = foldersResponse.folders || [];
 
       // C. Per ogni cartella server, ottieni info dettagliate

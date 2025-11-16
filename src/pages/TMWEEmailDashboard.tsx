@@ -38,7 +38,6 @@ import { useEmailActions } from '@/hooks/email/useEmailActions';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
-import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
 import { EmailDialogsManager } from '@/components/tmwe/EmailDialogsManager';
 import { EmailMobileView } from '@/components/tmwe/EmailMobileView';
 import { EmailTopBar } from '@/components/tmwe/EmailTopBar';
@@ -120,8 +119,8 @@ const EmailDashboard = () => {
     useEmailDetail({ selectedEmailId, selectedFolder });
 
   const isDownloading = false;
-  const { apiEmailCount, folderInfo, globalEmailCount, syncStatus, totalEmailCount, dbEmailCount, missingEmailCount } = 
-    useEmailFolderInfo({ selectedFolder, isDownloading });
+  const { folderStats, globalEmailCount, isLoading: statsLoading } = 
+    useEmailFolderInfo({ selectedFolder });
 
   const { handleSync, handleDelete, handleBulkDelete, handleBulkArchive, handleBulkForward, 
           handleBulkMarkAsRead, handleBulkMoveToFolder, handleReply, handleReplyAll, 
@@ -157,7 +156,7 @@ const EmailDashboard = () => {
             onFolderSelect={setSelectedFolder}
             onCompose={() => setComposeOpen(true)}
             onSync={() => setSyncMonitorOpen(true)}
-            dbEmailCount={dbEmailCount}
+            totalEmails={folderStats?.total}
           />
 
           <div className="flex-1 flex flex-col overflow-hidden">
@@ -246,7 +245,7 @@ const EmailDashboard = () => {
                     setSyncMonitorOpen(true);
                     setSidebarOpen(false);
                   }}
-                  dbEmailCount={dbEmailCount}
+                  totalEmails={folderStats?.total}
                   onClose={() => setSidebarOpen(false)}
                 />
               </SheetContent>
@@ -311,19 +310,6 @@ const EmailDashboard = () => {
             }}
           />
         </div>
-      )}
-
-      {/* Download Progress Overlay */}
-      {isDownloading && (
-        <EmailDownloadProgress 
-          currentFolder={selectedFolder}
-          downloadedCount={0}
-          totalEmails={totalEmailCount || 0}
-          onDownloadComplete={() => {}}
-          onStartDownload={async () => {}}
-          isDownloading={isDownloading}
-          downloadError={null}
-        />
       )}
 
       {/* All Dialogs */}

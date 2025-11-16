@@ -48,7 +48,7 @@ interface EmailSidebarProps {
   onFolderSelect: (folder: string) => void;
   onCompose: () => void;
   onSync: () => void;
-  dbEmailCount?: number;
+  totalEmails?: number;
   onClose?: () => void;
 }
 
@@ -90,7 +90,7 @@ export const EmailSidebar = ({
   onFolderSelect, 
   onCompose,
   onSync,
-  dbEmailCount = 0,
+  totalEmails = 0,
   onClose
 }: EmailSidebarProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -428,7 +428,7 @@ export const EmailSidebar = ({
 
       <div className="p-2 space-y-2">
         <div className="px-3 py-2 text-xs text-muted-foreground flex items-center justify-start">
-          <span>Email nel DB: {dbEmailCount}</span>
+          <span>Email totali: {totalEmails}</span>
         </div>
         <Button 
           variant="ghost" 

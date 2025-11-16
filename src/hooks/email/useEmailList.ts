@@ -70,15 +70,18 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
     },
     getNextPageParam: (lastPage, allPages) => {
       const pagination = lastPage?.pagination;
+      
       if (!pagination) {
-        // Fallback to old behavior
-        const messages = lastPage?.messages || [];
-        if (messages.length === 0 || messages.length < 30) return undefined;
-        return allPages.length + 1;
+        console.warn('⚠️ No pagination info in response');
+        return undefined;
       }
       
       const currentPage = pagination.page || allPages.length;
-      const totalPages = pagination.pages || Math.ceil((pagination.total || 0) / (pagination.limit || 30));
+      const totalPages = pagination.total_pages || Math.ceil(
+        (pagination.total || 0) / (pagination.limit || 30)
+      );
+      
+      console.log('🔢 Pagination:', { currentPage, totalPages, hasMore: currentPage < totalPages });
       
       return currentPage < totalPages ? currentPage + 1 : undefined;
     },
@@ -99,15 +102,16 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
     console.log('📦 API Response Structure:', {
       pageKeys: page ? Object.keys(page) : 'null',
       hasResults: !!page?.results,
-      hasMessages: !!page?.messages,
+      hasEmails: !!page?.emails,
       resultsLength: page?.results?.length,
-      messagesLength: page?.messages?.length,
-      total: page?.total,
+      emailsLength: page?.emails?.length,
+      total: page?.pagination?.total,
       fullStructure: JSON.stringify(page).substring(0, 300)
     });
     
     // ✅ Handle both search results and metadata listing
-    const messages = page?.results || page?.messages || [];
+    // searchEmails returns 'results', getEmailsMetadata returns 'emails'
+    const messages = page?.results || page?.emails || [];
     
     if (!Array.isArray(messages)) {
       console.warn('⚠️ Messages is not an array:', messages);

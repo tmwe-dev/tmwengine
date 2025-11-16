@@ -42,9 +42,11 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
             limit: 30
           });
         } else {
-          // Get emails metadata (fast, cached, always up-to-date)
-          result = await emailSearchApi.getEmailsMetadata({
-            folder: selectedFolder,
+          // ✅ CORRECCIÓN: Use searchEmails with wildcard for listing all emails
+          // El endpoint /email_search no tiene handler "get_messages", solo "search_emails"
+          result = await emailSearchApi.searchEmails({
+            query: '*',  // Wildcard para obtener todos los emails
+            search_folder: selectedFolder,
             page: pageParam,
             limit: 30
           });
@@ -101,13 +103,15 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
       hasEmails: !!page?.emails,
       hasMessages: !!page?.messages,
       hasData: !!page?.data,
+      dataMessages: !!page?.data?.messages,
       emailsLength: page?.emails?.length,
       messagesLength: page?.messages?.length,
-      dataLength: page?.data?.length
+      dataMessagesLength: page?.data?.messages?.length,
+      fullStructure: JSON.stringify(page).substring(0, 300)
     });
     
-    // ✅ CORRECCIÓN: Priorizar page.emails (estructura correcta del API)
-    const messages = page?.emails || page?.messages || page?.data || [];
+    // ✅ CORRECCIÓN: API devuelve response.data.messages o response.messages
+    const messages = page?.data?.messages || page?.messages || page?.data || [];
     
     if (!Array.isArray(messages)) {
       console.warn('⚠️ Messages is not an array:', messages);

@@ -49,14 +49,14 @@ export const useAIConfig = () => {
 
       const { data, error } = await (supabase as any)
         .from('ai_communication_preferences')
-        .select('preferred_ai_agent')
+        .select('selected_ai_agent')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (error) throw error;
 
-      if (data?.preferred_ai_agent) {
-        setSelectedAgentState(data.preferred_ai_agent as AIAgentId);
+      if (data?.selected_ai_agent) {
+        setSelectedAgentState(data.selected_ai_agent as AIAgentId);
       } else {
         // Fallback to localStorage
         const saved = localStorage.getItem('global_ai_agent');
@@ -105,7 +105,7 @@ export const useAIConfig = () => {
         .from('ai_communication_preferences')
         .upsert({
           user_id: user.id,
-          preferred_ai_agent: agentId,
+          selected_ai_agent: agentId,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id'

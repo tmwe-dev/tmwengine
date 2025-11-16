@@ -214,6 +214,7 @@ export default function SingleFast() {
     console.log('🚀 Edge Sync v2: Starting automatic folder sync...');
     
     if (!userEmail) {
+      console.error('❌ No user email found');
       toast({
         title: '❌ Error',
         description: 'User email not found. Please log in again.',
@@ -221,6 +222,8 @@ export default function SingleFast() {
       });
       return;
     }
+
+    console.log('✅ User email:', userEmail);
 
     try {
       // Step 1: Get folders directly from email_search API (not from local DB)
@@ -230,16 +233,27 @@ export default function SingleFast() {
       });
 
       console.log('📡 Calling emailSearchApi.getFolders()...');
+      
       const foldersResponse = await emailSearchApi.getFolders({
         include_counts: true,
         hierarchy: true
       });
 
-      console.log('📊 API Response:', foldersResponse);
+      console.log('📊 Full API Response:', JSON.stringify(foldersResponse, null, 2));
 
-      if (!foldersResponse.success || !foldersResponse.folders) {
-        throw new Error('Failed to retrieve folders from email account');
+      if (!foldersResponse.success) {
+        const errorMsg = `API returned success=false: ${JSON.stringify(foldersResponse)}`;
+        console.error('❌', errorMsg);
+        throw new Error(errorMsg);
       }
+
+      if (!foldersResponse.folders || !Array.isArray(foldersResponse.folders)) {
+        const errorMsg = `Invalid folders response: ${JSON.stringify(foldersResponse)}`;
+        console.error('❌', errorMsg);
+        throw new Error('Invalid response format from email API');
+      }
+
+      console.log(`✅ Received ${foldersResponse.folders.length} folders from API`);
 
       // Filter folders with total_messages > 0
       const foldersToSync = foldersResponse.folders
@@ -250,6 +264,8 @@ export default function SingleFast() {
           unreadMessages: f.unread_messages || 0
         }));
 
+      console.log(`✅ Filtered to ${foldersToSync.length} folders with messages:`, foldersToSync);
+
       if (foldersToSync.length === 0) {
         toast({
           title: '✅ No emails found',
@@ -258,9 +274,8 @@ export default function SingleFast() {
         return;
       }
 
-      console.log(`✅ Found ${foldersToSync.length} folders to sync:`, foldersToSync);
-      
       const totalEmails = foldersToSync.reduce((sum, f) => sum + f.totalMessages, 0);
+      console.log(`📊 Total emails to sync: ${totalEmails}`);
       
       toast({
         title: '🚀 Starting Edge Sync v2',
@@ -269,10 +284,18 @@ export default function SingleFast() {
 
       // Step 2: Start sync with custom folders (pass folder names directly as parameter)
       const folderNames = foldersToSync.map(f => f.folderName);
+      console.log('📂 Starting sync with folders:', folderNames);
+      
       await edgeSyncDownload.start(folderNames);
+      
+      console.log('✅ Sync started successfully');
 
     } catch (error) {
-      console.error('❌ Edge Sync Error:', error);
+      console.error('❌ Edge Sync Error - Full details:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
       toast({
         title: '❌ Sync Failed',
         description: error instanceof Error ? error.message : 'Unknown error occurred',

@@ -542,8 +542,8 @@ serve(async (req) => {
       );
     }
     
-    // ✅ NO MAPPING: Mantener el parámetro "folder" tal cual viene del frontend
-    // El backend TMWE espera "folder", NO "folder_name"
+    // ✅ CRITICAL FIX: NO transformar "folder" a "folder_name"
+    // El backend TMWE espera el parámetro "folder" exactamente como viene del frontend
     
     const tmweUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
     

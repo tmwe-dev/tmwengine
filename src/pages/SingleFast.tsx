@@ -18,7 +18,6 @@ import { LiveEmailViewer } from '@/components/email/LiveEmailViewer';
 import { DownloadLock } from '@/lib/email/core/DownloadLock';
 import { TripleStorage } from '@/lib/email/core/TripleStorage';
 import { useToast } from '@/hooks/use-toast';
-import { getFoldersProgress } from '@/lib/email/email-repository';
 import { EmailSyncLogs } from '@/components/email/EmailSyncLogs';
 
 export default function SingleFast() {
@@ -224,37 +223,48 @@ export default function SingleFast() {
     }
 
     try {
-      // Step 1: Get folders with pending emails
+      // Step 1: Get folders directly from email_search API (not from local DB)
       toast({
         title: '🔍 Analyzing folders',
-        description: 'Loading folders with pending emails...',
+        description: 'Loading folders from email account...',
       });
 
-      const foldersProgress = await getFoldersProgress(userEmail);
-      console.log('📊 Folders progress:', foldersProgress);
+      console.log('📡 Calling emailSearchApi.getFolders()...');
+      const foldersResponse = await emailSearchApi.getFolders({
+        include_counts: true,
+        hierarchy: true
+      });
 
-      // Filter folders with pending > 0
-      const foldersToSync = foldersProgress
-        .filter(f => f.pending > 0)
+      console.log('📊 API Response:', foldersResponse);
+
+      if (!foldersResponse.success || !foldersResponse.folders) {
+        throw new Error('Failed to retrieve folders from email account');
+      }
+
+      // Filter folders with total_messages > 0
+      const foldersToSync = foldersResponse.folders
+        .filter(f => f.total_messages && f.total_messages > 0)
         .map(f => ({
-          folderName: f.folder,
-          pending: f.pending,
-          included: true
+          folderName: f.folder_name,
+          totalMessages: f.total_messages,
+          unreadMessages: f.unread_messages || 0
         }));
 
       if (foldersToSync.length === 0) {
         toast({
-          title: '✅ No sync needed',
-          description: 'All folders are already up to date!',
+          title: '✅ No emails found',
+          description: 'Your email account has no messages to sync.',
         });
         return;
       }
 
       console.log(`✅ Found ${foldersToSync.length} folders to sync:`, foldersToSync);
       
+      const totalEmails = foldersToSync.reduce((sum, f) => sum + f.totalMessages, 0);
+      
       toast({
         title: '🚀 Starting Edge Sync v2',
-        description: `Syncing ${foldersToSync.length} folders with ${foldersToSync.reduce((sum, f) => sum + f.pending, 0)} pending emails`,
+        description: `Syncing ${foldersToSync.length} folders with ${totalEmails} total emails`,
       });
 
       // Step 2: Start sync with custom folders (pass folder names directly as parameter)

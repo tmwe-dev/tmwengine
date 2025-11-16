@@ -1,7 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// TMWE API PROXY v3.0 - FORCED REDEPLOY 2025-11-16 23:57 UTC
-// CRITICAL FIX: Direct parameter forwarding without transformation
-// ═══════════════════════════════════════════════════════════════════════════
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -546,38 +542,46 @@ serve(async (req) => {
       );
     }
     
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 🚨 v3.0 CRITICAL: NO PARAMETER TRANSFORMATION - FORWARD AS-IS
-    // ═══════════════════════════════════════════════════════════════════════════
-    // El backend TMWE espera "folder" (NOT "folder_name")
-    // El frontend envía "folder" correctamente
-    // Este proxy debe SOLO REENVIAR sin transformar
+    // ✅ CRITICAL FIX: NO transformar "folder" a "folder_name"
+    // El backend TMWE espera el parámetro "folder" exactamente como viene del frontend
     
-    // 🔍 v3.0 DIAGNOSTIC: Log parámetros EXACTOS recibidos del frontend
-    if (enableLogging) {
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('📥 [v3.0 DIAGNOSTIC] Parameters received from frontend:');
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('Handler:', data.handler);
-      console.log('All keys:', Object.keys(data));
-      console.log('folder:', data.folder);
-      console.log('folder_name:', data.folder_name);
-      console.log('Full data object:', JSON.stringify(data, null, 2));
-      console.log('═══════════════════════════════════════════════════════');
+    // 🔧 VALIDATION v2.0: Asegurar que folder existe y folder_name NO existe
+    if (data.handler === 'get_emails_metadata') {
+      if (!data.folder && data.folder_name) {
+        // Si recibimos folder_name (legacy), moverlo a folder
+        console.warn('⚠️ [LEGACY COMPAT] Recibido folder_name, convirtiendo a folder');
+        data.folder = data.folder_name;
+        delete data.folder_name;
+      }
+      
+      if (!data.folder) {
+        data.folder = 'INBOX'; // Default fallback
+      }
+      
+      if (enableLogging) {
+        console.log('🔍 [FOLDER VALIDATION v2.0]:', {
+          has_folder: !!data.folder,
+          has_folder_name: !!data.folder_name,
+          final_folder: data.folder,
+          timestamp: Date.now()
+        });
+      }
     }
     
     const tmweUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
     
-    // 🔍 v3.0 LOGGING: Parámetros que se enviarán al backend TMWE (sin transformación)
-    if (enableLogging) {
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('📤 [v3.0] Sending to TMWE API:');
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('URL:', tmweUrl);
-      console.log('Handler:', data.handler);
-      console.log('Parameters being sent:', JSON.stringify(data, null, 2));
-      console.log('Timestamp:', new Date().toISOString());
-      console.log('═══════════════════════════════════════════════════════');
+    // 🔍 LOGGING v2.0: Verificar parámetros antes de enviar al backend
+    if (enableLogging && data.handler === 'get_emails_metadata') {
+      const timestamp = Date.now();
+      console.log(`📂 [GET_EMAILS_METADATA v2.0-${timestamp}] Final params before sending:`, {
+        folder: data.folder,
+        folder_name: data.folder_name,
+        handler: data.handler,
+        page: data.page,
+        limit: data.limit,
+        allParams: Object.keys(data),
+        deployTimestamp: timestamp
+      });
     }
     
     if (enableLogging) {
@@ -758,9 +762,8 @@ serve(async (req) => {
       headers: { 
         ...corsHeaders, 
         'Content-Type': 'application/json',
-        'X-Proxy-Version': '3.0-no-transform',
-        'X-Deploy-Time': new Date().toISOString(),
-        'X-Redeploy-Forced': 'true'
+        'X-Proxy-Version': '2.0-folder-fix',
+        'X-Deploy-Time': new Date().toISOString()
       },
     });
 

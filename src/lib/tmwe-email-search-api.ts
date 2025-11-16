@@ -79,8 +79,8 @@ export const emailSearchApi = {
     date_to?: string;
     timeout?: number;
   }) => fetchApi('/email_search', {
-    handler: 'get_messages',
-    folder_name: params.folder || 'INBOX',
+    handler: 'get_emails_metadata',
+    folder: params.folder || 'INBOX',
     limit: params.limit || 50,
     page: params.page || 1,
     timeout: params.timeout || 10,

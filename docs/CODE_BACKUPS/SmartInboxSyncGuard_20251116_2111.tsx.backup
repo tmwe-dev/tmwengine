@@ -1,0 +1,173 @@
+/**
+ * BACKUP AUTOMÁTICO - Sprint 1: Email Search API Migration
+ * Fecha: 2025-11-16 21:11
+ * Archivo Original: src/components/email/smart-inbox/SmartInboxSyncGuard.tsx
+ * Motivo: Componente deprecado - Ya no necesitamos guard de sincronización
+ */
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { AlertTriangle, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { syncEmailsToDatabase } from '@/lib/email-sync';
+import { toast } from 'sonner';
+
+interface SmartInboxSyncGuardProps {
+  userEmail: string;
+  selectedFolder: string;
+  unreadOnly: boolean;
+  children: React.ReactNode;
+}
+
+export const SmartInboxSyncGuard = ({ userEmail, selectedFolder, unreadOnly, children }: SmartInboxSyncGuardProps) => {
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
+
+  const { data: syncStatus, isLoading, refetch } = useQuery({
+    queryKey: ['smart-inbox-sync-status', userEmail, selectedFolder, unreadOnly],
+    queryFn: async () => {
+      // Conta email nel DB locale
+      let query = supabase
+        .from('email_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_email', userEmail)
+        .eq('cartella', selectedFolder);
+
+      if (unreadOnly) {
+        query = query.eq('stato', 'nuovo');
+      }
+
+      const { count: dbCount, error: dbError } = await query;
+
+      if (dbError) {
+        console.error('Error counting local emails:', dbError);
+        return { dbCount: 0, serverCount: 0, isSynced: false, missing: 0 };
+      }
+
+      // Stima email sul server (potremmo fare una chiamata API qui se necessario)
+      // Per ora assumiamo che se dbCount > 0, procediamo
+      const estimatedServerCount = dbCount || 0;
+
+      return {
+        dbCount: dbCount || 0,
+        serverCount: estimatedServerCount,
+        isSynced: dbCount && dbCount > 0, // Se abbiamo email locali, consideriamo sincronizzato
+        missing: 0
+      };
+    },
+    enabled: !!userEmail,
+    refetchInterval: false
+  });
+
+  const handleStartSync = async () => {
+    setIsSyncing(true);
+    setSyncProgress(0);
+
+    try {
+      const progressInterval = setInterval(() => {
+        setSyncProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
+
+      await syncEmailsToDatabase(selectedFolder, 'auto', undefined, unreadOnly);
+
+      clearInterval(progressInterval);
+      setSyncProgress(100);
+
+      toast.success('Sincronizzazione completata!');
+      
+      setTimeout(() => {
+        refetch();
+        setIsSyncing(false);
+        setSyncProgress(0);
+      }, 1000);
+
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      toast.error(`Errore sincronizzazione: ${error.message}`);
+      setIsSyncing(false);
+      setSyncProgress(0);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <RefreshCw className="h-6 w-6 animate-spin text-white/60" />
+        <span className="ml-2 text-white/60">Verifica sincronizzazione...</span>
+      </div>
+    );
+  }
+
+  if (!syncStatus?.isSynced && !isSyncing) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 space-y-6">
+        <Alert className="border-yellow-500/50 bg-yellow-500/10">
+          <AlertTriangle className="h-5 w-5 text-yellow-500" />
+          <AlertDescription className="text-yellow-200">
+            <div className="space-y-3">
+              <p className="font-semibold">Sincronizzazione Richiesta</p>
+              <p className="text-sm text-yellow-200/80">
+                Per utilizzare l'Inbox Intelligente, è necessario prima sincronizzare le email dal server
+                al database locale. Questo garantisce performance ottimali e coerenza dei dati.
+              </p>
+              {syncStatus && (
+                <div className="text-sm space-y-1">
+                  <p>📊 Email in DB locale: <span className="font-mono">{syncStatus.dbCount}</span></p>
+                  <p>🌐 Email sul server: <span className="font-mono">{syncStatus.serverCount}</span></p>
+                  {syncStatus.missing > 0 && (
+                    <p className="text-yellow-300 font-semibold">
+                      ⚠️ Email mancanti: <span className="font-mono">{syncStatus.missing}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+
+        <Button
+          onClick={handleStartSync}
+          size="lg"
+          className="gap-2"
+        >
+          <RefreshCw className="h-5 w-5" />
+          Avvia Sincronizzazione
+        </Button>
+
+        <p className="text-xs text-white/40 text-center max-w-md">
+          La sincronizzazione potrebbe richiedere alcuni minuti a seconda del numero di email.
+          Puoi monitorare il progresso durante il processo.
+        </p>
+      </div>
+    );
+  }
+
+  if (isSyncing) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 space-y-6">
+        <div className="w-full max-w-md space-y-4">
+          <div className="flex items-center justify-center">
+            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-white/80">Sincronizzazione in corso...</span>
+              <span className="text-white/60">{syncProgress}%</span>
+            </div>
+            <Progress value={syncProgress} className="h-2" />
+          </div>
+
+          <p className="text-xs text-center text-white/40">
+            Download e classificazione delle email in corso. Attendere...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se sincronizzato, mostra i children
+  return <>{children}</>;
+};

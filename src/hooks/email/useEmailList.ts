@@ -1,11 +1,10 @@
 /**
  * Hook for fetching and managing email list with pagination
- * Uses TMWE Email Search RPC API for ~10x performance improvement
+ * ✅ REFACTORED: Uses ONLY email_search API (no Supabase sync required)
  */
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { mapApiEmailToComponent } from '@/lib/email/email-transformers';
-import { supabase } from '@/integrations/supabase/client';
 
 interface UseEmailListParams {
   selectedFolder: string;
@@ -24,15 +23,14 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
   } = useInfiniteQuery({
     queryKey: ['messages', selectedFolder, searchQuery],
     queryFn: async ({ pageParam = 1 }) => {
-      // ✅ LOGGING: Verify folder parameter
-      console.log('🚀 [API CALL] Fetching emails:', {
+      console.log('🚀 [API CALL] Fetching emails from email_search API:', {
         folder: selectedFolder,
         searchQuery,
         page: pageParam,
         timestamp: new Date().toISOString()
       });
       
-      // ✅ PERFORMANCE BOOST: Use /email_search RPC (RabbitMQ + Elasticsearch)
+      // ✅ ALWAYS use email_search API (MySQL + Elasticsearch)
       if (searchQuery) {
         // Full-text search with Elasticsearch
         return emailSearchApi.searchEmails({ 
@@ -42,47 +40,12 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
           limit: 30
         });
       } else {
-        // ✅ READ FROM LOCAL DB: Same method as FunEmail.tsx (PROVEN & WORKING)
-        console.log('📂 Reading from local DB:', { cartella: selectedFolder, page: pageParam });
-        
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Non autenticato');
-        
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('tmwe_email')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
-        
-        const { data, error, count } = await supabase
-          .from('email_messages')
-          .select('*', { count: 'exact' })
-          .eq('user_email', profile.tmwe_email)
-          .eq('cartella', selectedFolder)
-          .eq('sync_status', 'fun_email_backup')
-          .order('data_ricezione', { ascending: false })
-          .range((pageParam - 1) * 30, pageParam * 30 - 1);
-        
-        if (error) throw error;
-        
-        console.log('📧 Loaded from DB:', { 
-          cartella: selectedFolder, 
-          count: data?.length, 
-          total: count,
-          page: pageParam 
+        // Get emails metadata (fast, cached, always up-to-date)
+        return emailSearchApi.getEmailsMetadata({
+          folder: selectedFolder,
+          page: pageParam,
+          limit: 30
         });
-        
-        return {
-          emails: data?.map(mapApiEmailToComponent) || [],
-          pagination: { 
-            page: pageParam, 
-            pages: Math.ceil((count || 0) / 30), 
-            total: count || 0,
-            limit: 30 
-          }
-        };
       }
     },
     getNextPageParam: (lastPage, allPages) => {

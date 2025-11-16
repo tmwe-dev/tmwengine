@@ -212,6 +212,16 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
           message: `📁 Folders to sync: ${folders.join(', ')}` 
         });
 
+        // 🔧 FIX: Use local variable for shouldStop to avoid React state timing issues
+        let stopRequested = false;
+        serviceRef.current = {
+          stop: () => {
+            console.log('🛑 [HOOK DIAGNOSTIC] Stop requested by user');
+            stopRequested = true;
+            service.stop();
+          }
+        } as any;
+
         try {
           console.log('🚀 [HOOK DIAGNOSTIC] Calling service.sync()...');
           console.log('🔍 [HOOK DIAGNOSTIC] Sync params:', {
@@ -220,7 +230,8 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
             userEmail,
             hasProgressCallback: typeof setProgress === 'function',
             hasLogCallback: typeof addLog === 'function',
-            hasStopCallback: true
+            hasStopCallback: true,
+            stopRequestedInitial: stopRequested
           });
 
           const result = await service.sync(
@@ -234,7 +245,10 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
               console.log('📝 [HOOK DIAGNOSTIC] Log received:', log);
               addLog(log);
             },
-            () => !isRunning // shouldStop callback
+            () => {
+              console.log('🔍 [HOOK DIAGNOSTIC] shouldStop() called, stopRequested:', stopRequested);
+              return stopRequested;
+            }
           );
 
           console.log('✅ [HOOK DIAGNOSTIC] service.sync() completed successfully:', result);

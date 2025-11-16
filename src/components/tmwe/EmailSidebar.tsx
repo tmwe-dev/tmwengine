@@ -236,9 +236,19 @@ export const EmailSidebar = ({
     const tree: FolderNode[] = [];
     const map = new Map<string, FolderNode>();
 
-    folders.forEach((folder: any) => {
-      const fullPath = folder.name || folder.folder_name || folder.path;
-      const parts = fullPath.split('/');
+  folders.forEach((folder: any) => {
+    // 🔍 LOGGING: Verificar fullPath computation
+    console.log('📁 [FOLDER TREE] Processing folder:', {
+      name: folder.name,
+      folder_name: folder.folder_name,
+      path: folder.path,
+      folder_path: folder.folder_path
+    });
+    
+    const fullPath = folder.name || folder.folder_name || folder.path;
+    console.log('📁 [FOLDER TREE] Computed fullPath:', fullPath);
+    
+    const parts = fullPath.split('/');
       
       parts.forEach((part, index) => {
         const currentPath = parts.slice(0, index + 1).join('/');

@@ -35,12 +35,11 @@ export const EmailStatsWidget: React.FC<EmailStatsWidgetProps> = ({
     );
   }
 
-  const statsData = stats?.data || stats || {};
-  const total = statsData.total || 0;
-  const unread = statsData.unread || 0;
-  const flagged = statsData.flagged || 0;
-  const withAttachments = statsData.with_attachments || 0;
-  const sizeBytes = statsData.size_bytes || 0;
+  const total = stats?.data?.total || 0;
+  const unread = stats?.data?.unread || 0;
+  const flagged = stats?.data?.flagged || 0;
+  const withAttachments = stats?.data?.with_attachments || 0;
+  const sizeBytes = 0; // API doesn't provide size_bytes yet
 
   // Format size
   const formatSize = (bytes: number) => {

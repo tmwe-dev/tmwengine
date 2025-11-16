@@ -158,7 +158,7 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
    * Avvia download
    * @param customFolders - Cartelle custom da scaricare (override automatico da DB)
    */
-  const start = async (customFolders?: string[]) => {
+  const start = async (customFolders?: string[], mode: 'incremental' | 'full' = 'incremental') => {
     if (!performanceConfig) {
       addLog({ phase: 'error', message: '⚠️ Waiting for performance config...' });
       return;
@@ -181,6 +181,7 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
       if (options.strategy === 'edge-sync') {
         console.log('🔍 [HOOK DIAGNOSTIC] ===== EDGE SYNC STRATEGY BLOCK ENTERED =====');
         console.log('🔍 [HOOK DIAGNOSTIC] Strategy:', options.strategy);
+        console.log('🔍 [HOOK DIAGNOSTIC] Mode:', mode);
         console.log('🔍 [HOOK DIAGNOSTIC] Custom folders received:', customFolders);
         console.log('🔍 [HOOK DIAGNOSTIC] Options custom folders:', options.customFolders);
         console.log('🔍 [HOOK DIAGNOSTIC] User email:', userEmail);
@@ -248,7 +249,8 @@ export function useEmailDownload(options: UseEmailDownloadOptions = { strategy: 
             () => {
               console.log('🔍 [HOOK DIAGNOSTIC] shouldStop() called, stopRequested:', stopRequested);
               return stopRequested;
-            }
+            },
+            mode
           );
 
           console.log('✅ [HOOK DIAGNOSTIC] service.sync() completed successfully:', result);

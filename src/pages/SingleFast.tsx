@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Download, Settings, FolderSync, StopCircle, RotateCcw, TestTube2, Rocket, ArrowLeft, Loader2, Database, Unlock, Square, Sliders, FolderTree, Shield } from "lucide-react";
+import { Download, Settings, FolderSync, StopCircle, RotateCcw, TestTube2, Rocket, ArrowLeft, Loader2, Database, Unlock, Square, Sliders, FolderTree, Shield, Cloud } from "lucide-react";
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { PageLayout } from '@/components/design-system/layouts/PageLayout';
@@ -319,7 +319,7 @@ export default function SingleFast() {
         logsCount: edgeSyncDownload.logs?.length || 0
       });
       
-      await edgeSyncDownload.start(folderNames);
+      await edgeSyncDownload.start(folderNames, 'incremental');
       
       console.log('✅ [DIAGNOSTIC] Step 2 Complete - edgeSyncDownload.start() returned successfully');
 

@@ -27,10 +27,12 @@ export class EdgeFunctionSyncService {
     userEmail: string,
     onProgress: (progress: DownloadProgress) => void,
     onLog: (log: Omit<LogEntry, 'timestamp'>) => void,
-    shouldStop: () => boolean
+    shouldStop: () => boolean,
+    mode: 'incremental' | 'full' = 'incremental'
   ): Promise<EdgeSyncResult> {
     console.log('🔍 [SERVICE DIAGNOSTIC] ===== EDGE FUNCTION SYNC SERVICE START =====');
     console.log('🔍 [SERVICE DIAGNOSTIC] Using tmwe-email-sync-master (multi-folder adapter)');
+    console.log('🔍 [SERVICE DIAGNOSTIC] Mode:', mode);
     console.log('🔍 [SERVICE DIAGNOSTIC] Folders to sync:', folders);
     console.log('🔍 [SERVICE DIAGNOSTIC] User email:', userEmail);
 
@@ -49,7 +51,7 @@ export class EdgeFunctionSyncService {
 
       onLog({
         phase: 'preparing',
-        message: '🚀 Starting sync via tmwe-email-sync-master (secure proxy)...'
+        message: `🚀 Starting ${mode} sync via tmwe-email-sync-master...`
       });
 
       const supabaseUrl = 'https://dlldkrzoxvjxpgkkttxu.supabase.co';
@@ -88,7 +90,7 @@ export class EdgeFunctionSyncService {
 
         try {
           const requestBody = {
-            mode: 'incremental' as const,
+            mode: mode,
             folder_name: folderName,
             max_emails: 500 // Limit per folder
           };

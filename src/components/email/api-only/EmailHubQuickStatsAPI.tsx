@@ -46,10 +46,10 @@ export const EmailHubQuickStatsAPI = ({ folder }: EmailHubQuickStatsAPIProps) =>
     );
   }
 
-  const totalEmails = stats.total || 0;
-  const unreadEmails = stats.unread || 0;
-  const flaggedEmails = stats.flagged || 0;
-  const withAttachments = stats.with_attachments || 0;
+  const totalEmails = stats?.data?.total || 0;
+  const unreadEmails = stats?.data?.unread || 0;
+  const flaggedEmails = stats?.data?.flagged || 0;
+  const withAttachments = stats?.data?.with_attachments || 0;
 
   // Calcular tendencias (placeholder - en Sprint 2 se implementará histórico)
   const readPercentage = totalEmails > 0 

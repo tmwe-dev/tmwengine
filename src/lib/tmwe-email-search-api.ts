@@ -235,16 +235,33 @@ export const emailSearchApi = {
 
   /**
    * Get statistics for folder or account (ultra-fast)
-   * Returns: { total, unread, flagged, with_attachments, size_bytes }
+   * Uses getFolderInfo to get folder statistics
+   * Returns: { data: { total, unread, flagged, with_attachments } }
    */
-  getStatistics: (params?: {
+  getStatistics: async (params?: {
     folder?: string;
     timeout?: number;
-  }) => fetchApi('/email_search', {
-    handler: 'get_statistics',
-    ...(params?.folder && { folder: params.folder }),
-    timeout: params?.timeout || 10
-  }),
+  }) => {
+    const folderName = params?.folder || 'INBOX';
+    const response = await fetchApi('/email_search', { 
+      handler: 'get_folder_info', 
+      folder_name: folderName, 
+      timeout: params?.timeout || 10 
+    });
+    
+    // Transform folder_info response to stats format
+    const folderInfo = response?.folder || response?.folder_info || response;
+    return {
+      success: true,
+      data: {
+        folder: folderName,
+        total: folderInfo?.total_messages || folderInfo?.messages || 0,
+        unread: folderInfo?.unseen || folderInfo?.unread_count || 0,
+        flagged: folderInfo?.flagged || 0,
+        with_attachments: folderInfo?.with_attachments || 0
+      }
+    };
+  },
 
   /**
    * Get unread count for all folders (ultra-fast for badges)

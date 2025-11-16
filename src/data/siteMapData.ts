@@ -30,36 +30,36 @@ export interface PageGroup {
 export const siteMapGroups: PageGroup[] = [
   {
     id: 'commercial',
-    name: 'Commercial & CRM',
-    description: 'Gestión de contactos, actividades y campañas comerciales',
+    name: 'Commerciale & CRM',
+    description: 'Gestione di contatti, attività e campagne commerciali',
     icon: BarChart3,
     color: 'blue',
     pages: [
       {
-        title: 'Libreta de Direcciones',
+        title: 'Rubrica',
         path: '/rubrica',
-        description: 'Gestión completa de contactos y clientes del sistema',
+        description: 'Gestione completa di contatti e clienti del sistema',
         icon: BookOpen,
         requiresAuth: true
       },
       {
-        title: 'Libreta Avanzada',
+        title: 'Rubrica Avanzata',
         path: '/rubrica-avanzata',
-        description: 'Gestión avanzada con filtros, segmentación y análisis',
+        description: 'Gestione avanzata con filtri, segmentazione e analisi',
         icon: Users,
         requiresAuth: true
       },
       {
-        title: 'Actividades',
+        title: 'Attività',
         path: '/attivita',
-        description: 'Registro y seguimiento de actividades comerciales',
+        description: 'Registrazione e monitoraggio delle attività commerciali',
         icon: Calendar,
         requiresAuth: true
       },
       {
-        title: 'Campañas',
+        title: 'Campagne',
         path: '/campagne',
-        description: 'Gestión de campañas de marketing y ventas',
+        description: 'Gestione di campagne di marketing e vendite',
         icon: Megaphone,
         requiresAuth: true
       }
@@ -68,63 +68,63 @@ export const siteMapGroups: PageGroup[] = [
   {
     id: 'chat-ai',
     name: 'Chat & AI',
-    description: 'Herramientas de comunicación y asistentes de inteligencia artificial',
+    description: 'Strumenti di comunicazione e assistenti di intelligenza artificiale',
     icon: MessageSquare,
     color: 'purple',
     pages: [
       {
-        title: 'Chat General',
+        title: 'Chat Generale',
         path: '/chat',
-        description: 'Chat general con asistente IA para múltiples propósitos',
+        description: 'Chat generale con assistente IA per molteplici scopi',
         icon: MessageSquare,
         requiresAuth: true
       },
       {
         title: 'Chat Laboratory',
         path: '/chat-laboratory',
-        description: 'Laboratorio experimental para probar diferentes modelos de IA',
+        description: 'Laboratorio sperimentale per testare diversi modelli di IA',
         icon: Sparkles,
         requiresAuth: true
       },
       {
         title: 'Radio Chat',
         path: '/radio-chat',
-        description: 'Chat con comunicación por voz y audio en tiempo real',
+        description: 'Chat con comunicazione vocale e audio in tempo reale',
         icon: Radio,
         requiresAuth: true
       },
       {
         title: 'Chat Intranet',
         path: '/chat-intranet',
-        description: 'Sistema de mensajería interna para equipos',
+        description: 'Sistema di messaggistica interna per team',
         icon: Users,
         requiresAuth: true
       },
       {
         title: 'Brain AI',
         path: '/brain-ai',
-        description: 'Sistema de análisis inteligente con múltiples agentes',
+        description: 'Sistema di analisi intelligente con agenti multipli',
         icon: Brain,
         requiresAuth: true
       },
       {
         title: 'Agent Composer',
         path: '/agent-composer',
-        description: 'Composición y configuración de agentes IA personalizados',
+        description: 'Composizione e configurazione di agenti IA personalizzati',
         icon: Bot,
         requiresAuth: true
       },
       {
         title: 'Prompt Library',
         path: '/prompt-library',
-        description: 'Biblioteca de prompts reutilizables para IA',
+        description: 'Libreria di prompt riutilizzabili per IA',
         icon: FileText,
         requiresAuth: true
       },
       {
         title: 'Knowledge Base',
         path: '/knowledge-base',
-        description: 'Base de conocimientos para entrenamiento de IA',
+        description: 'Base di conoscenza per addestramento IA',
         icon: Database,
         requiresAuth: true
       }
@@ -132,71 +132,71 @@ export const siteMapGroups: PageGroup[] = [
   },
   {
     id: 'email',
-    name: 'Email Management',
-    description: 'Sistema completo de gestión y análisis de correos electrónicos',
+    name: 'Gestione Email',
+    description: 'Sistema completo di gestione e analisi delle email',
     icon: Mail,
     color: 'green',
     pages: [
       {
-        title: 'Email Dashboard',
+        title: 'Dashboard Email',
         path: '/',
-        description: 'Panel principal de gestión de emails con estadísticas',
+        description: 'Pannello principale di gestione email con statistiche',
         icon: LayoutDashboard,
         requiresAuth: true
       },
       {
         title: 'FunnEmail',
         path: '/funnemail',
-        description: 'Análisis avanzado de emails con categorización inteligente',
+        description: 'Analisi avanzata di email con categorizzazione intelligente',
         icon: Mail,
         requiresAuth: true
       },
       {
-        title: 'Email Sync Test',
+        title: 'Test Sincronizzazione Email',
         path: '/email-sync-test',
-        description: 'Pruebas de sincronización de correos electrónicos',
+        description: 'Test di sincronizzazione delle email',
         icon: TestTube,
         requiresAuth: true
       },
       {
-        title: 'Email Folders',
+        title: 'Cartelle Email',
         path: '/email-folders',
-        description: 'Organización y gestión de carpetas de email',
+        description: 'Organizzazione e gestione delle cartelle email',
         icon: FolderOpen,
         requiresAuth: true
       },
       {
-        title: 'Email Sender Groups',
+        title: 'Gruppi Mittenti',
         path: '/email-sender-groups',
-        description: 'Agrupación y categorización de remitentes',
+        description: 'Raggruppamento e categorizzazione dei mittenti',
         icon: Tag,
         requiresAuth: true
       },
       {
-        title: 'Email Classifier',
+        title: 'Classificatore Email',
         path: '/email-classifier',
-        description: 'Clasificación automática de emails con IA',
+        description: 'Classificazione automatica delle email con IA',
         icon: Filter,
         requiresAuth: true
       },
       {
-        title: 'Email Templates',
+        title: 'Template Email',
         path: '/email-templates',
-        description: 'Plantillas reutilizables para respuestas rápidas',
+        description: 'Template riutilizzabili per risposte rapide',
         icon: FileText,
         requiresAuth: true
       },
       {
-        title: 'Email Analytics',
+        title: 'Analisi Email',
         path: '/email-analytics',
-        description: 'Análisis y métricas de actividad de email',
+        description: 'Analisi e metriche di attività email',
         icon: BarChart3,
         requiresAuth: true
       },
       {
-        title: 'Inbox Management',
+        title: 'Gestione Posta in Arrivo',
         path: '/inbox-management',
-        description: 'Gestión avanzada de bandeja de entrada',
+        description: 'Gestione avanzata della casella di posta',
         icon: Inbox,
         requiresAuth: true
       }
@@ -205,42 +205,42 @@ export const siteMapGroups: PageGroup[] = [
   {
     id: 'import-export',
     name: 'Import & Export',
-    description: 'Herramientas para importar y exportar datos del sistema',
+    description: 'Strumenti per importare ed esportare dati del sistema',
     icon: Upload,
     color: 'orange',
     pages: [
       {
-        title: 'Import Contacts',
+        title: 'Importa Contatti',
         path: '/import-contacts',
-        description: 'Importación masiva de contactos desde archivos',
+        description: 'Importazione massiva di contatti da file',
         icon: Upload,
         requiresAuth: true
       },
       {
-        title: 'Export Data',
+        title: 'Esporta Dati',
         path: '/export-data',
-        description: 'Exportación de datos en múltiples formatos',
+        description: 'Esportazione di dati in formati multipli',
         icon: Database,
         requiresAuth: true
       },
       {
-        title: 'CSV Import',
+        title: 'Importa CSV',
         path: '/csv-import',
-        description: 'Importación especializada de archivos CSV',
+        description: 'Importazione specializzata di file CSV',
         icon: FileText,
         requiresAuth: true
       },
       {
-        title: 'Data Mapping',
+        title: 'Mappatura Dati',
         path: '/data-mapping',
-        description: 'Mapeo de campos para importación personalizada',
+        description: 'Mappatura campi per importazione personalizzata',
         icon: Layers,
         requiresAuth: true
       },
       {
-        title: 'Import History',
+        title: 'Storico Import',
         path: '/import-history',
-        description: 'Historial de importaciones realizadas',
+        description: 'Cronologia delle importazioni effettuate',
         icon: Activity,
         requiresAuth: true
       }
@@ -248,43 +248,43 @@ export const siteMapGroups: PageGroup[] = [
   },
   {
     id: 'settings',
-    name: 'Configuration & Settings',
-    description: 'Configuración general del sistema y preferencias',
+    name: 'Configurazione & Impostazioni',
+    description: 'Configurazione generale del sistema e preferenze',
     icon: Settings,
     color: 'gray',
     pages: [
       {
-        title: 'General Settings',
+        title: 'Impostazioni Generali',
         path: '/settings',
-        description: 'Configuración general del sistema',
+        description: 'Configurazione generale del sistema',
         icon: Settings,
         requiresAuth: true
       },
       {
-        title: 'AI Configuration',
+        title: 'Configurazione AI',
         path: '/config-ai',
-        description: 'Configuración de modelos y APIs de inteligencia artificial',
+        description: 'Configurazione di modelli e API di intelligenza artificiale',
         icon: Bot,
         requiresAuth: true
       },
       {
-        title: 'User Profile',
+        title: 'Profilo Utente',
         path: '/profile',
-        description: 'Configuración de perfil de usuario',
+        description: 'Configurazione profilo utente',
         icon: Users,
         requiresAuth: true
       },
       {
-        title: 'Notifications',
+        title: 'Notifiche',
         path: '/notifications',
-        description: 'Gestión de notificaciones y alertas',
+        description: 'Gestione notifiche e alert',
         icon: Bell,
         requiresAuth: true
       },
       {
-        title: 'Language Manager',
+        title: 'Gestione Lingue',
         path: '/language-manager',
-        description: 'Gestión de idiomas y traducciones del sistema',
+        description: 'Gestione lingue e traduzioni del sistema',
         icon: Languages,
         requiresAuth: true
       }
@@ -292,61 +292,61 @@ export const siteMapGroups: PageGroup[] = [
   },
   {
     id: 'dev-tools',
-    name: 'Development & Admin Tools',
-    description: 'Herramientas de desarrollo, testing y administración',
+    name: 'Strumenti Sviluppo & Admin',
+    description: 'Strumenti di sviluppo, testing e amministrazione',
     icon: Code,
     color: 'red',
     pages: [
       {
         title: 'Design Lab',
         path: '/design-lab',
-        description: 'Laboratorio de diseño para prototipos y componentes',
+        description: 'Laboratorio di design per prototipi e componenti',
         icon: Palette,
         requiresAuth: true
       },
       {
-        title: 'API Comparison',
+        title: 'Confronto API',
         path: '/api-comparison',
-        description: 'Comparación de diferentes APIs y modelos de IA',
+        description: 'Confronto tra diverse API e modelli di IA',
         icon: GitCompare,
         requiresAuth: true
       },
       {
-        title: 'Database Inspector',
+        title: 'Ispettore Database',
         path: '/database-inspector',
-        description: 'Inspección y análisis de base de datos',
+        description: 'Ispezione e analisi del database',
         icon: Database,
         requiresAuth: true,
         requiresAdmin: true
       },
       {
-        title: 'API Logs',
+        title: 'Log API',
         path: '/api-logs',
-        description: 'Visualización de logs de API y errores',
+        description: 'Visualizzazione log API ed errori',
         icon: FileText,
         requiresAuth: true,
         requiresAdmin: true
       },
       {
-        title: 'System Monitor',
+        title: 'Monitor Sistema',
         path: '/system-monitor',
-        description: 'Monitoreo de rendimiento y recursos del sistema',
+        description: 'Monitoraggio prestazioni e risorse del sistema',
         icon: Activity,
         requiresAuth: true,
         requiresAdmin: true
       },
       {
-        title: 'Testing Playground',
+        title: 'Playground Test',
         path: '/testing-playground',
-        description: 'Entorno de pruebas para nuevas funcionalidades',
+        description: 'Ambiente di test per nuove funzionalità',
         icon: FlaskConical,
         requiresAuth: true,
         requiresAdmin: true
       },
       {
-        title: 'Debug Console',
+        title: 'Console Debug',
         path: '/debug-console',
-        description: 'Consola de depuración en tiempo real',
+        description: 'Console di debug in tempo reale',
         icon: Code,
         requiresAuth: true,
         requiresAdmin: true
@@ -354,31 +354,31 @@ export const siteMapGroups: PageGroup[] = [
       {
         title: 'Admin Intranet',
         path: '/intranet-admin',
-        description: 'Panel de administración de intranet',
+        description: 'Pannello di amministrazione intranet',
         icon: Shield,
         requiresAuth: true,
         requiresAdmin: true
       },
       {
-        title: 'User Management',
+        title: 'Gestione Utenti',
         path: '/user-management',
-        description: 'Gestión de usuarios y permisos',
+        description: 'Gestione utenti e permessi',
         icon: Users,
         requiresAuth: true,
         requiresAdmin: true
       },
       {
-        title: 'Workflow Designer',
+        title: 'Designer Workflow',
         path: '/workflow-designer',
-        description: 'Diseñador visual de flujos de trabajo automatizados',
+        description: 'Designer visuale di flussi di lavoro automatizzati',
         icon: Workflow,
         requiresAuth: true,
         requiresAdmin: true
       },
       {
-        title: 'Edge Functions Monitor',
+        title: 'Monitor Edge Functions',
         path: '/edge-functions-monitor',
-        description: 'Monitoreo de funciones serverless',
+        description: 'Monitoraggio funzioni serverless',
         icon: Server,
         requiresAuth: true,
         requiresAdmin: true
@@ -387,22 +387,22 @@ export const siteMapGroups: PageGroup[] = [
   },
   {
     id: 'communications',
-    name: 'Communications & Calls',
-    description: 'Sistema de llamadas y comunicaciones en tiempo real',
+    name: 'Comunicazioni & Chiamate',
+    description: 'Sistema di chiamate e comunicazioni in tempo reale',
     icon: Phone,
     color: 'cyan',
     pages: [
       {
         title: 'Call Center',
         path: '/call-center',
-        description: 'Centro de llamadas con WebRTC',
+        description: 'Centro chiamate con WebRTC',
         icon: Phone,
         requiresAuth: true
       },
       {
-        title: 'Call History',
+        title: 'Cronologia Chiamate',
         path: '/call-history',
-        description: 'Historial y grabaciones de llamadas',
+        description: 'Cronologia e registrazioni delle chiamate',
         icon: Activity,
         requiresAuth: true
       }
@@ -410,22 +410,22 @@ export const siteMapGroups: PageGroup[] = [
   },
   {
     id: 'utilities',
-    name: 'Utilities & Documentation',
-    description: 'Utilidades generales y documentación del sistema',
+    name: 'Utilità & Documentazione',
+    description: 'Utilità generali e documentazione del sistema',
     icon: Wrench,
     color: 'yellow',
     pages: [
       {
-        title: 'User Guide',
+        title: 'Guida Utente',
         path: '/user-guide',
-        description: 'Guía completa de usuario del sistema',
+        description: 'Guida completa utente del sistema',
         icon: BookOpen,
         requiresAuth: true
       },
       {
-        title: 'API Documentation',
+        title: 'Documentazione API',
         path: '/api-docs',
-        description: 'Documentación técnica de APIs disponibles',
+        description: 'Documentazione tecnica delle API disponibili',
         icon: Code,
         requiresAuth: true
       }

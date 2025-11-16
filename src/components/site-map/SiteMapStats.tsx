@@ -15,7 +15,7 @@ export function SiteMapStats() {
           </div>
           <div>
             <p className="text-2xl font-bold text-foreground">{totalPages}</p>
-            <p className="text-xs text-muted-foreground">Total de Páginas</p>
+            <p className="text-xs text-muted-foreground">Totale Pagine</p>
           </div>
         </CardContent>
       </Card>
@@ -27,7 +27,7 @@ export function SiteMapStats() {
           </div>
           <div>
             <p className="text-2xl font-bold text-foreground">{totalGroups}</p>
-            <p className="text-xs text-muted-foreground">Categorías</p>
+            <p className="text-xs text-muted-foreground">Categorie</p>
           </div>
         </CardContent>
       </Card>
@@ -39,7 +39,7 @@ export function SiteMapStats() {
           </div>
           <div>
             <p className="text-2xl font-bold text-foreground">100%</p>
-            <p className="text-xs text-muted-foreground">Protegidas</p>
+            <p className="text-xs text-muted-foreground">Protette</p>
           </div>
         </CardContent>
       </Card>

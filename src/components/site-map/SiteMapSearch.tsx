@@ -33,7 +33,7 @@ export function SiteMapSearch({ onSearchChange }: SiteMapSearchProps) {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Buscar páginas por nombre, descripción o ruta..."
+          placeholder="Cerca pagine per nome, descrizione o percorso..."
           value={query}
           onChange={(e) => handleQueryChange(e.target.value)}
           className="pl-10 pr-10"
@@ -55,7 +55,7 @@ export function SiteMapSearch({ onSearchChange }: SiteMapSearchProps) {
           {results.length > 0 ? (
             <>
               <p className="text-sm text-muted-foreground mb-3">
-                {results.length} {results.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}
+                {results.length} {results.length === 1 ? 'risultato trovato' : 'risultati trovati'}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {results.map((page) => (
@@ -65,7 +65,7 @@ export function SiteMapSearch({ onSearchChange }: SiteMapSearchProps) {
             </>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No se encontraron resultados para "{query}"
+              Nessun risultato trovato per "{query}"
             </p>
           )}
         </div>

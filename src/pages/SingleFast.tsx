@@ -323,6 +323,22 @@ export default function SingleFast() {
       
       console.log('✅ [DIAGNOSTIC] Step 2 Complete - edgeSyncDownload.start() returned successfully');
 
+      // ✅ Show success toast after sync completes
+      const completedLog = edgeSyncDownload.logs.find(l => l.phase === 'completed');
+      if (completedLog) {
+        toast({
+          title: '✅ Sincronización Completada',
+          description: completedLog.message,
+          duration: 5000,
+        });
+      } else {
+        toast({
+          title: '✅ Sincronización Finalizada',
+          description: `${foldersToSync.length} carpetas procesadas exitosamente`,
+          duration: 5000,
+        });
+      }
+
     } catch (error) {
       console.error('❌ Edge Sync Error - Full details:', error);
       console.error('Error name:', error.name);

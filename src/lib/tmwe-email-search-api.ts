@@ -164,7 +164,7 @@ export const emailSearchApi = {
     folder: string;
     include_body?: boolean;
     timeout?: number;
-  }) => fetchEmailMessageApi({
+  }) => fetchEmailSearchApi({
     handler: 'get_message',
     uid: params.uid,
     folder: params.folder,

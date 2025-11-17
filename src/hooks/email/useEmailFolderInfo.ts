@@ -10,29 +10,6 @@ interface UseEmailFolderInfoParams {
 }
 
 export const useEmailFolderInfo = ({ selectedFolder }: UseEmailFolderInfoParams) => {
-  // === FOLDER STATISTICS FROM get_emails_metadata (REUSING SAME CALL) ===
-  const { data: folderStats, isLoading: isLoadingStats, error: statsError } = useQuery({
-    queryKey: ['emails-metadata', selectedFolder, 1, 50],
-    queryFn: async () => {
-      const result = await emailSearchApi.getEmailsMetadata({
-        folder: selectedFolder,
-        page: 1,
-        limit: 50
-      });
-      
-      // Extract folder stats from metadata response
-      return {
-        total: result?.metadata?.total_messages || 0,
-        unread: result?.metadata?.unseen_count || 0,
-        flagged: result?.metadata?.flagged_count || 0,
-        size_bytes: result?.metadata?.size_bytes || 0,
-        folder_name: result?.metadata?.folder_name || selectedFolder,
-      };
-    },
-    staleTime: 2 * 60 * 1000,
-    enabled: !!selectedFolder,
-  });
-
   // === GLOBAL EMAIL COUNT (FROM SERVER API) ===
   const { data: globalEmailCount, isLoading: isLoadingGlobal } = useQuery({
     queryKey: ['global-folders-count'],
@@ -45,9 +22,7 @@ export const useEmailFolderInfo = ({ selectedFolder }: UseEmailFolderInfoParams)
   });
 
   return {
-    folderStats,
     globalEmailCount,
-    isLoading: isLoadingStats || isLoadingGlobal,
-    error: statsError,
+    isLoading: isLoadingGlobal,
   };
 };

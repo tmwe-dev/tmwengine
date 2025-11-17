@@ -156,6 +156,15 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
     hasData: !!messagesData
   });
 
+  // ✅ Extract folder stats from first page metadata (avoid duplicate API calls)
+  const folderStats = messagesData?.pages?.[0]?.metadata ? {
+    total: messagesData.pages[0].metadata.total_messages || 0,
+    unread: messagesData.pages[0].metadata.unseen_count || 0,
+    flagged: messagesData.pages[0].metadata.flagged_count || 0,
+    size_bytes: messagesData.pages[0].metadata.size_bytes || 0,
+    folder_name: messagesData.pages[0].metadata.folder_name || selectedFolder,
+  } : null;
+
   return {
     emails,
     emailsFromPages,
@@ -164,5 +173,6 @@ export const useEmailList = ({ selectedFolder, searchQuery, selectedSender }: Us
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    folderStats, // ✅ Return folder stats to avoid duplicate calls
   };
 };

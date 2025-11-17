@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getTMWEOAuthToken, getUserEmailFromRequest } from "../_shared/oauth-manager.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,16 +42,73 @@ serve(async (req) => {
     console.log('🆔 Request ID:', crypto.randomUUID());
     console.log('⏰ Timestamp:', new Date().toISOString());
 
-    // Get user email and OAuth token using shared module
-    const userEmail = await getUserEmailFromRequest(req, supabase);
-    console.log('👤 Utente autenticato:', userEmail);
+    // Variabile per salvare l'email utente (fuori dallo scope del blocco if)
+    let userEmail: string | undefined;
+
+    // Recupera token OAuth da environment o user_tmwe_credentials
+    console.log('🔍 Cerco token TMWE_OAUTH_TOKEN in environment...');
+    let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
     
-    // Get OAuth token with automatic refresh
-    const oauthToken = await getTMWEOAuthToken(userEmail, {
-      autoRefresh: true,
-      supabaseClient: supabase
-    });
+    if (!oauthToken) {
+      console.log('❌ Token non in environment, cerco in user_tmwe_credentials...');
+      
+      // Estrai l'utente autenticato dalla richiesta
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        throw new Error('❌ Authorization header mancante - utente non autenticato');
+      }
+      
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user?.email) {
+        console.error('❌ Errore autenticazione:', authError);
+        throw new Error('❌ Utente non autenticato o email mancante');
+      }
+      
+      console.log('👤 Utente autenticato:', user.email);
+      
+      // Salva l'email utente per usarla dopo
+      userEmail = user.email;
+      
+      // Cerca il token OAuth in user_tmwe_credentials
+      const { data: credentials, error: credErr } = await supabase
+        .from('user_tmwe_credentials')
+        .select('access_token, expires_at, token_type')
+        .eq('email', user.email)
+        .eq('token_type', 'oauth')
+        .maybeSingle();
+      
+      console.log('📊 Credenziali trovate:', credentials ? 'SÌ' : 'NO');
+      if (credErr) {
+        console.log('📊 Errore query:', credErr);
+      }
+      
+      if (!credentials?.access_token) {
+        throw new Error(`❌ Token OAuth non trovato per ${user.email}. Fai login TMWE prima di sincronizzare.`);
+      }
+      
+      // Verifica scadenza token
+      if (credentials.expires_at) {
+        const expiresAt = new Date(credentials.expires_at);
+        const now = new Date();
+        
+        if (expiresAt < now) {
+          throw new Error('❌ Token OAuth scaduto. Rifai login TMWE.');
+        }
+        
+        console.log('✅ Token valido fino a:', expiresAt.toISOString());
+      }
+      
+      oauthToken = credentials.access_token;
+      console.log('✅ Token OAuth estratto da user_tmwe_credentials');
+    }
     
+    if (!oauthToken) {
+      console.error('❌ NESSUN TOKEN TROVATO!');
+      throw new Error('TMWE OAuth token non configurato');
+    }
+
     console.log('✅ Token trovato, lunghezza:', oauthToken.length);
 
     // Get provider ID

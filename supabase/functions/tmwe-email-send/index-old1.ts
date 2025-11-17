@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
-import { getTMWEOAuthToken, getUserEmailFromRequest } from "../_shared/oauth-manager.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,77 +24,33 @@ serve(async (req) => {
     const emailData = await req.json();
     if (DEBUG_MODE) console.log('Request data:', { to: emailData.to, subject: emailData.subject });
 
-    // Get authenticated user email
-    const authHeader = req.headers.get('Authorization');
-    let oauthToken: string;
+    // Recuperar configuración TMWE
+    const { data: provider, error: providerError } = await supabase
+      .from('email_provider')
+      .select('email_provider_credenziali(*)')
+      .eq('provider', 'TMWE')
+      .eq('attivo', true)
+      .maybeSingle();
+
+    if (providerError) {
+      throw new Error(`Database error: ${providerError.message}`);
+    }
+
+    if (!provider) {
+      throw new Error('Provider TMWE no encontrado o inactivo');
+    }
+
+    // email_provider_credenziali è un oggetto singolo (relazione 1:1), NON un array
+    const creds = provider.email_provider_credenziali;
     
-    if (authHeader) {
-      // Try using shared OAuth manager with auto-refresh
-      try {
-        const userEmail = await getUserEmailFromRequest(req, supabase);
-        oauthToken = await getTMWEOAuthToken(userEmail, {
-          autoRefresh: true,
-          supabaseClient: supabase
-        });
-        if (DEBUG_MODE) console.log('✅ Token obtained via shared OAuth manager');
-      } catch (sharedError) {
-        // Fallback to email_provider table (legacy compatibility)
-        if (DEBUG_MODE) console.log('⚠️ Fallback to email_provider table');
-        const { data: provider, error: providerError } = await supabase
-          .from('email_provider')
-          .select('email_provider_credenziali(*)')
-          .eq('provider', 'TMWE')
-          .eq('attivo', true)
-          .maybeSingle();
+    if (!creds || (!creds.oauth_token?.trim() && !creds.api_key?.trim())) {
+      throw new Error('Credenciales TMWE no configuradas o vacías');
+    }
 
-        if (providerError) {
-          throw new Error(`Database error: ${providerError.message}`);
-        }
-
-        if (!provider) {
-          throw new Error('Provider TMWE no encontrado o inactivo');
-        }
-
-        const creds = provider.email_provider_credenziali;
-        
-        if (!creds || (!creds.oauth_token?.trim() && !creds.api_key?.trim())) {
-          throw new Error('Credenciales TMWE no configuradas o vacías');
-        }
-
-        oauthToken = creds.oauth_token || creds.api_key;
-        
-        if (!oauthToken || oauthToken.trim() === '') {
-          throw new Error('OAuth Token TMWE no configurado');
-        }
-      }
-    } else {
-      // No auth header - use email_provider (legacy path)
-      const { data: provider, error: providerError } = await supabase
-        .from('email_provider')
-        .select('email_provider_credenziali(*)')
-        .eq('provider', 'TMWE')
-        .eq('attivo', true)
-        .maybeSingle();
-
-      if (providerError) {
-        throw new Error(`Database error: ${providerError.message}`);
-      }
-
-      if (!provider) {
-        throw new Error('Provider TMWE no encontrado o inactivo');
-      }
-
-      const creds = provider.email_provider_credenziali;
-      
-      if (!creds || (!creds.oauth_token?.trim() && !creds.api_key?.trim())) {
-        throw new Error('Credenciales TMWE no configuradas o vacías');
-      }
-
-      oauthToken = creds.oauth_token || creds.api_key;
-      
-      if (!oauthToken || oauthToken.trim() === '') {
-        throw new Error('OAuth Token TMWE no configurado');
-      }
+    const oauthToken = creds.oauth_token || creds.api_key;
+    
+    if (!oauthToken || oauthToken.trim() === '') {
+      throw new Error('OAuth Token TMWE no configurado');
     }
 
     if (DEBUG_MODE) console.log('Configuration loaded, OAuth token available');

@@ -9,6 +9,59 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-17] - Pulizia Edge Functions Email Obsolete
+
+### Operazione
+- **Tipo:** Eliminazione definitiva di 2 Edge Functions
+- **Motivo:** Funzioni non referenziate nel codice, uso consolidato di `tmwe-api-proxy`
+- **Impatto:** Riduzione complessità, nessun breaking change
+
+### Funzioni Eliminate
+
+**1. tmwe-email-search-proxy**
+- **Motivo eliminazione:** Revertito a `tmwe-api-proxy` (più stabile, già deployato)
+- **Ultimo uso:** Sostituito in `src/lib/tmwe-email-search-api.ts` il 2025-01-17
+- **Stato codice:** Nessun riferimento residuo nel codebase
+
+**2. tmwe-email-messages**
+- **Motivo eliminazione:** Mai referenziato nel codice corrente
+- **Stato codice:** Zero riferimenti trovati tramite code search
+
+### Modifiche `supabase/config.toml`
+
+Rimosse configurazioni:
+```toml
+[functions.tmwe-email-messages]
+verify_jwt = true
+
+[functions.tmwe-email-search-proxy]
+verify_jwt = true
+```
+
+### Sistema Email Attuale (Conservato)
+
+Funzioni email in uso:
+- ✅ `tmwe-api-proxy` - Proxy generale per tutte le operazioni TMWE
+- ✅ `tmwe-email-send` - Invio email
+- ✅ `tmwe-email-sync-master` - Sincronizzazione incrementale
+
+### Rollback Plan
+
+Se necessario ripristinare:
+```bash
+# Le cartelle sono eliminate, ma il codice è nel Git history
+git log --all --full-history -- "supabase/functions/tmwe-email-search-proxy/*"
+git log --all --full-history -- "supabase/functions/tmwe-email-messages/*"
+```
+
+### Risultato
+
+✅ **Edge Functions totali:** 54 → 52 (-2 funzioni)
+✅ **Breaking changes:** Nessuno (funzioni non in uso)
+✅ **Deployment:** Automatico nel prossimo build
+
+---
+
 ## [2025-11-16] - Fase 1: Pulizia Edge Functions Non Usate
 
 ### Operazione

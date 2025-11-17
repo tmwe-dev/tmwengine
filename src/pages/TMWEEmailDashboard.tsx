@@ -102,14 +102,14 @@ const EmailDashboard = () => {
   // No manual invalidation needed here - it causes race conditions
 
   // ✅ Custom hooks for data fetching
-  const { emails, emailsFromPages, loading: messagesLoading, error: messagesError, fetchNextPage, hasNextPage, isFetchingNextPage } = 
+  const { emails, emailsFromPages, loading: messagesLoading, error: messagesError, fetchNextPage, hasNextPage, isFetchingNextPage, folderStats } = 
     useEmailList({ selectedFolder, searchQuery, selectedSender });
 
   const { email: selectedEmail, loading: isLoadingDetail, error: detailError } = 
     useEmailDetail({ selectedEmailId, selectedFolder });
 
   const isDownloading = false;
-  const { folderStats, globalEmailCount, isLoading: statsLoading } = 
+  const { globalEmailCount, isLoading: statsLoading } = 
     useEmailFolderInfo({ selectedFolder });
 
   const { handleSync, handleDelete, handleBulkDelete, handleBulkArchive, handleBulkForward, 

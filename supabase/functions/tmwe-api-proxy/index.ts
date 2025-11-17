@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// TMWE API PROXY v4.0-FINAL - FORCED REDEPLOY ${Date.now()}
+// TMWE API PROXY v4.0-FINAL - FORCED REDEPLOY
 // CRITICAL FIX: EXPLICIT FOLDER PARAMETER VALIDATION & ENFORCEMENT
 // ═══════════════════════════════════════════════════════════════════════════
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
@@ -7,7 +7,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 // 🔥 v4.0 FORCE REDEPLOY CONSTANT - DO NOT REMOVE
-const V4_REDEPLOY_TIMESTAMP = ${Date.now()};
+const V4_REDEPLOY_TIMESTAMP = Date.now();
 const V4_VERSION = 'v4.0-FINAL-EXPLICIT-FOLDER-ENFORCEMENT';
 
 const corsHeaders = {

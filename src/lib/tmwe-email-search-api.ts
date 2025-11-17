@@ -19,8 +19,11 @@ const fetchEmailSearchApi = async (data: any) => {
   const startTime = performance.now();
   
   try {
-    const { data: responseData, error } = await supabase.functions.invoke('tmwe-email-search-proxy', {
-      body: data,
+    const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      body: {
+        endpoint: '/email_search',
+        data: data
+      }
     });
 
     const duration = performance.now() - startTime;

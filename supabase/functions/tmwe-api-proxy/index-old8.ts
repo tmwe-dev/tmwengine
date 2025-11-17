@@ -5,7 +5,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { getTMWEOAuthToken } from "../_shared/oauth-manager.ts";
 
 // 🔥 v4.0 FORCE REDEPLOY CONSTANT - DO NOT REMOVE
 const V4_REDEPLOY_TIMESTAMP = Date.now();
@@ -197,15 +196,23 @@ serve(async (req) => {
       }
     }
 
-    // Get TMWE access token using shared OAuth manager with auto-refresh
+    // Get TMWE access token from request body or database
     let tmweAccessToken = data.bearerToken;
     
     if (!tmweAccessToken) {
-      // Use shared OAuth manager with automatic token refresh
-      tmweAccessToken = await getTMWEOAuthToken(userEmail, {
-        autoRefresh: true,
-        supabaseClient: supabaseClient
-      });
+      // Try to get from database as fallback
+      const { data: configData, error: configError } = await supabaseClient
+        .from('user_tmwe_credentials')
+        .select('access_token')
+        .eq('email', userEmail)
+        .single();
+
+      if (configError || !configData?.access_token) {
+        console.error('❌ No TMWE access token found for user');
+        throw new Error('TMWE access token not found. Please login to TMWE first.');
+      }
+
+      tmweAccessToken = configData.access_token;
     }
     
     if (enableLogging) {

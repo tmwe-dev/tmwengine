@@ -14,11 +14,11 @@ const fetchEmailSearchApi = async (data: any) => {
   };
   
   // Generate curl command for debugging
-  const curlCommand = `curl -X POST 'https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/tmwe-api-proxy' \\
+  const curlCommand = `curl -X POST 'https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/tmwe-email-search-proxy' \\
   -H 'Content-Type: application/json' \\
   -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsbGRrcnpveHZqeHBna2t0dHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA1ODQsImV4cCI6MjA3NDI5NjU4NH0.PrHXldlTqbNm63S90_Wo4bFcFeSBMVeSxjJpUxoKf5A' \\
   -H 'authorization: Bearer YOUR_TOKEN_HERE' \\
-  -d '${JSON.stringify(requestBody)}'`;
+  -d '${JSON.stringify(data)}'`;
   
   console.log('📤 [EMAIL SEARCH] API Request:', {
     handler: data.handler,
@@ -32,8 +32,12 @@ const fetchEmailSearchApi = async (data: any) => {
   const startTime = performance.now();
   
   try {
-    const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
-      body: requestBody
+    // ✅ Use dedicated email_search proxy instead of general tmwe-api-proxy
+    const { data: responseData, error } = await supabase.functions.invoke('tmwe-email-search-proxy', {
+      body: {
+        handler: data.handler,
+        ...data
+      }
     });
 
     const duration = performance.now() - startTime;

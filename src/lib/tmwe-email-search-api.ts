@@ -8,6 +8,18 @@ import { supabase } from "@/integrations/supabase/client";
 
 // 🔍 READ OPERATIONS: Fast metadata queries via RabbitMQ + Elasticsearch
 const fetchEmailSearchApi = async (data: any) => {
+  const requestBody = {
+    endpoint: '/email_search',
+    data: data
+  };
+  
+  // Generate curl command for debugging
+  const curlCommand = `curl -X POST 'https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/tmwe-api-proxy' \\
+  -H 'Content-Type: application/json' \\
+  -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsbGRrcnpveHZqeHBna2t0dHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA1ODQsImV4cCI6MjA3NDI5NjU4NH0.PrHXldlTqbNm63S90_Wo4bFcFeSBMVeSxjJpUxoKf5A' \\
+  -H 'authorization: Bearer YOUR_TOKEN_HERE' \\
+  -d '${JSON.stringify(requestBody)}'`;
+  
   console.log('📤 [EMAIL SEARCH] API Request:', {
     handler: data.handler,
     folder: data.folder,
@@ -15,15 +27,13 @@ const fetchEmailSearchApi = async (data: any) => {
     limit: data.limit,
     timestamp: new Date().toISOString()
   });
+  console.log('🔧 [CURL] Comando equivalente:\n', curlCommand);
   
   const startTime = performance.now();
   
   try {
     const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
-      body: {
-        endpoint: '/email_search',
-        data: data
-      }
+      body: requestBody
     });
 
     const duration = performance.now() - startTime;

@@ -2,10 +2,9 @@
 // Uses RabbitMQ + Elasticsearch for ~10x faster email operations
 import { supabase } from "@/integrations/supabase/client";
 
-// Reuse fetchApi from tmwe-api-integrated
+// Dedicated fetchApi for email_search endpoint
 const fetchApi = async (endpoint: string, data: any) => {
   console.log('📤 Email Search API Request:', {
-    endpoint,
     handler: data.handler,
     folder: data.folder,
     page: data.page,
@@ -17,19 +16,8 @@ const fetchApi = async (endpoint: string, data: any) => {
   const startTime = performance.now();
   
   try {
-    const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
-      body: { 
-        endpoint, 
-        data,
-        optimizationFlags: {
-          enableLogging: true,  // ✅ Activar logging en edge function
-          useDoubleSerializat: false,
-          useSequentialExecution: false,
-          useTextResponse: false,
-          useBatchParallelization: true,
-          batchChunkSize: 10,
-        }
-      },
+    const { data: responseData, error } = await supabase.functions.invoke('tmwe-email-search-proxy', {
+      body: data,
     });
 
     const duration = performance.now() - startTime;

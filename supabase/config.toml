@@ -203,6 +203,9 @@ verify_jwt = true
 [functions.tmwe-api-proxy]
 verify_jwt = true
 
+[functions.tmwe-email-search-proxy]
+verify_jwt = true
+
 [functions.chat-with-ai]
 verify_jwt = true
 

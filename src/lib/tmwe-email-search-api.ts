@@ -2,14 +2,17 @@
 // Uses RabbitMQ + Elasticsearch for ~10x faster email operations
 import { supabase } from "@/integrations/supabase/client";
 
-// Dedicated fetchApi for email_search endpoint
-const fetchApi = async (endpoint: string, data: any) => {
-  console.log('📤 Email Search API Request:', {
+// ============================================================================
+// HYBRID ARCHITECTURE: Two separate fetch functions for different operations
+// ============================================================================
+
+// 🔍 READ OPERATIONS: Fast metadata queries via RabbitMQ + Elasticsearch
+const fetchEmailSearchApi = async (data: any) => {
+  console.log('📤 [EMAIL SEARCH] API Request:', {
     handler: data.handler,
     folder: data.folder,
     page: data.page,
     limit: data.limit,
-    params: Object.keys(data).filter(k => k !== 'handler'),
     timestamp: new Date().toISOString()
   });
   
@@ -23,7 +26,7 @@ const fetchApi = async (endpoint: string, data: any) => {
     const duration = performance.now() - startTime;
 
     if (error) {
-      console.error('❌ Email Search API Error:', { 
+      console.error('❌ [EMAIL SEARCH] Error:', { 
         handler: data.handler,
         error,
         duration: `${duration.toFixed(2)}ms`
@@ -31,23 +34,65 @@ const fetchApi = async (endpoint: string, data: any) => {
       throw error;
     }
 
-    console.log('✅ Email Search API Response:', {
+    console.log('✅ [EMAIL SEARCH] Response:', {
       handler: data.handler,
-      requestedFolder: data.folder,
       success: responseData?.success,
-      hasEmails: !!responseData?.emails,
-      hasMessages: !!responseData?.messages,
-      hasData: !!responseData?.data,
       emailsCount: responseData?.emails?.length,
-      firstEmailFolder: responseData?.emails?.[0]?.folder,
-      allKeys: responseData ? Object.keys(responseData) : [],
       duration: `${duration.toFixed(2)}ms`
     });
     
     return responseData;
   } catch (error: any) {
     const duration = performance.now() - startTime;
-    console.error('🔥 Email Search API Communication Error:', { 
+    console.error('🔥 [EMAIL SEARCH] Communication Error:', { 
+      handler: data.handler,
+      error: error.message,
+      duration: `${duration.toFixed(2)}ms`
+    });
+    throw error;
+  }
+};
+
+// ✍️ WRITE OPERATIONS + EMAIL DETAIL: Direct IMAP via legacy proxy
+const fetchEmailMessageApi = async (data: any) => {
+  console.log('📤 [EMAIL MESSAGE] API Request:', {
+    handler: data.handler,
+    folder: data.folder,
+    uid: data.uid,
+    timestamp: new Date().toISOString()
+  });
+  
+  const startTime = performance.now();
+  
+  try {
+    const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      body: {
+        endpoint: '/email_message',
+        data: data
+      }
+    });
+
+    const duration = performance.now() - startTime;
+
+    if (error) {
+      console.error('❌ [EMAIL MESSAGE] Error:', { 
+        handler: data.handler,
+        error,
+        duration: `${duration.toFixed(2)}ms`
+      });
+      throw error;
+    }
+
+    console.log('✅ [EMAIL MESSAGE] Response:', {
+      handler: data.handler,
+      success: responseData?.success,
+      duration: `${duration.toFixed(2)}ms`
+    });
+    
+    return responseData;
+  } catch (error: any) {
+    const duration = performance.now() - startTime;
+    console.error('🔥 [EMAIL MESSAGE] Communication Error:', { 
       handler: data.handler,
       error: error.message,
       duration: `${duration.toFixed(2)}ms`
@@ -72,7 +117,7 @@ export const emailSearchApi = {
     date_from?: string;
     date_to?: string;
     timeout?: number;
-  }) => fetchApi('/email_search', {
+  }) => fetchEmailSearchApi({
     handler: 'get_emails_metadata',
     folder: params.folder || 'INBOX',
     limit: params.limit || 50,
@@ -98,7 +143,7 @@ export const emailSearchApi = {
     search_folder?: string;
     has_attachments?: boolean;
     timeout?: number;
-  }) => fetchApi('/email_search', {
+  }) => fetchEmailSearchApi({
     handler: 'search_emails',
     query: params.query,
     page: params.page || 1,
@@ -119,7 +164,7 @@ export const emailSearchApi = {
     folder: string;
     include_body?: boolean;
     timeout?: number;
-  }) => fetchApi('/email_message', {
+  }) => fetchEmailMessageApi({
     handler: 'get_message',
     uid: params.uid,
     folder: params.folder,
@@ -134,10 +179,10 @@ export const emailSearchApi = {
     include_counts?: boolean;
     hierarchy?: boolean;
     timeout?: number;
-  }) => fetchApi('/email_search', { 
+  }) => fetchEmailSearchApi({ 
     handler: 'get_folders',
-    include_counts: params?.include_counts !== false,  // Default true
-    hierarchy: params?.hierarchy !== false,            // Default true
+    include_counts: params?.include_counts !== false,
+    hierarchy: params?.hierarchy !== false,
     timeout: params?.timeout || 10
   }),
 
@@ -145,19 +190,19 @@ export const emailSearchApi = {
    * Get folder information
    */
   getFolderInfo: (folder_name: string, timeout = 10) =>
-    fetchApi('/email_search', { handler: 'get_folder_info', folder_name, timeout }),
+    fetchEmailSearchApi({ handler: 'get_folder_info', folder_name, timeout }),
 
   /**
    * Get folder tree structure
    */
   getFolderTree: (timeout = 10) =>
-    fetchApi('/email_search', { handler: 'get_folder_tree', timeout }),
+    fetchEmailSearchApi({ handler: 'get_folder_tree', timeout }),
 
   /**
    * Mark email as read (write operation via RPC)
    */
   markAsRead: (email_id: number, timeout = 10) =>
-    fetchApi('/email_message', { 
+    fetchEmailMessageApi({ 
       handler: 'mark_messages', 
       uids: [email_id.toString()],
       action: 'read',
@@ -168,7 +213,7 @@ export const emailSearchApi = {
    * Mark email as unread (write operation via RPC)
    */
   markAsUnread: (email_id: number, timeout = 10) =>
-    fetchApi('/email_message', { 
+    fetchEmailMessageApi({ 
       handler: 'mark_messages', 
       uids: [email_id.toString()],
       action: 'unread',
@@ -179,7 +224,7 @@ export const emailSearchApi = {
    * Star/flag email (write operation via RPC)
    */
   starEmail: (email_id: number, timeout = 10) =>
-    fetchApi('/email_message', { 
+    fetchEmailMessageApi({ 
       handler: 'mark_messages', 
       uids: [email_id.toString()],
       action: 'flagged',
@@ -190,7 +235,7 @@ export const emailSearchApi = {
    * Delete email (move to trash via RPC)
    */
   deleteEmail: (email_id: number, timeout = 10) =>
-    fetchApi('/email_message', { 
+    fetchEmailMessageApi({ 
       handler: 'move_to_trash', 
       uids: [email_id.toString()],
       timeout 
@@ -200,7 +245,7 @@ export const emailSearchApi = {
    * Move email to folder (write operation via RPC)
    */
   moveEmail: (email_id: number, target_folder: string, timeout = 10) =>
-    fetchApi('/email_message', { 
+    fetchEmailMessageApi({ 
       handler: 'move_messages', 
       uids: [email_id.toString()],
       target_folder,
@@ -211,7 +256,7 @@ export const emailSearchApi = {
    * Bulk delete emails (move to trash via RPC)
    */
   deleteEmailsBulk: (email_ids: string[], timeout = 10) =>
-    fetchApi('/email_message', { 
+    fetchEmailMessageApi({ 
       handler: 'move_to_trash', 
       uids: email_ids,
       timeout 
@@ -221,7 +266,7 @@ export const emailSearchApi = {
    * Bulk mark emails as read (write operation via RPC)
    */
   markAsReadBulk: (email_ids: string[], timeout = 10) =>
-    fetchApi('/email_message', { 
+    fetchEmailMessageApi({ 
       handler: 'mark_messages', 
       uids: email_ids,
       action: 'read',
@@ -238,7 +283,7 @@ export const emailSearchApi = {
     timeout?: number;
   }) => {
     const folderName = params?.folder || 'INBOX';
-    const response = await fetchApi('/email_search', { 
+    const response = await fetchEmailSearchApi({ 
       handler: 'get_folder_info', 
       folder_name: folderName, 
       timeout: params?.timeout || 10 
@@ -265,7 +310,7 @@ export const emailSearchApi = {
   getUnreadCount: (params?: {
     folders?: string[];
     timeout?: number;
-  }) => fetchApi('/email_search', {
+  }) => fetchEmailSearchApi({
     handler: 'get_unread_count',
     ...(params?.folders && { folders: params.folders }),
     timeout: params?.timeout || 5
@@ -280,7 +325,7 @@ export const emailSearchApi = {
     message_id?: string;
     limit?: number;
     timeout?: number;
-  }) => fetchApi('/email_search', {
+  }) => fetchEmailSearchApi({
     handler: 'get_threads',
     ...(params.folder && { folder: params.folder }),
     ...(params.message_id && { message_id: params.message_id }),
@@ -297,7 +342,7 @@ export const emailSearchApi = {
     page?: number;
     limit?: number;
     timeout?: number;
-  }) => fetchApi('/email_search', {
+  }) => fetchEmailSearchApi({
     handler: 'search_by_sender',
     sender: params.sender,
     folder: params.folder || 'INBOX',

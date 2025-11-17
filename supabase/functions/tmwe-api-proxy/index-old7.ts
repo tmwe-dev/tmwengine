@@ -1,14 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// TMWE API PROXY v4.0-FINAL - FORCED REDEPLOY ${Date.now()}
-// CRITICAL FIX: EXPLICIT FOLDER PARAMETER VALIDATION & ENFORCEMENT
+// TMWE API PROXY v3.0 - FORCED REDEPLOY 2025-11-16 23:57 UTC
+// CRITICAL FIX: Direct parameter forwarding without transformation
 // ═══════════════════════════════════════════════════════════════════════════
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-
-// 🔥 v4.0 FORCE REDEPLOY CONSTANT - DO NOT REMOVE
-const V4_REDEPLOY_TIMESTAMP = ${Date.now()};
-const V4_VERSION = 'v4.0-FINAL-EXPLICIT-FOLDER-ENFORCEMENT';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -551,65 +547,38 @@ serve(async (req) => {
     }
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // 🔥 v4.0 CRITICAL: EXPLICIT FOLDER PARAMETER VALIDATION & ENFORCEMENT
+    // 🚨 v3.0 CRITICAL: NO PARAMETER TRANSFORMATION - FORWARD AS-IS
     // ═══════════════════════════════════════════════════════════════════════════
-    // PROBLEMA IDENTIFICADO: El parámetro "folder" se estaba transformando a "folder_name"
-    // SOLUCIÓN v4.0: Validación EXPLÍCITA que FUERZA "folder" y ELIMINA "folder_name"
-    // ═══════════════════════════════════════════════════════════════════════════
+    // El backend TMWE espera "folder" (NOT "folder_name")
+    // El frontend envía "folder" correctamente
+    // Este proxy debe SOLO REENVIAR sin transformar
     
-    // 🔍 v4.0-FINAL: Log parámetros ANTES de validación
-    console.log('═══════════════════════════════════════════════════════');
-    console.log(`📥 [${V4_VERSION}] BEFORE VALIDATION - Timestamp: ${Date.now()}`);
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🔹 Handler:', data.handler);
-    console.log('🔹 All keys BEFORE:', Object.keys(data));
-    console.log('🔹 data.folder BEFORE:', data.folder);
-    console.log('🔹 data.folder_name BEFORE:', data.folder_name);
-    console.log('═══════════════════════════════════════════════════════');
-    
-    // ⚡ v4.0 EXPLICIT VALIDATION: Forzar "folder" y eliminar "folder_name"
-    if (data.handler === 'get_emails_metadata' || data.handler === 'get_message' || data.handler === 'search_emails') {
-      // Si existe folder_name pero NO existe folder, usar folder_name como folder
-      if (data.folder_name && !data.folder) {
-        console.log('⚠️ [v4.0] CORRIGIENDO: folder_name existe pero folder no → Copiando folder_name a folder');
-        data.folder = data.folder_name;
-      }
-      
-      // Si NO existe folder en absoluto, usar INBOX por defecto
-      if (!data.folder) {
-        console.log('⚠️ [v4.0] CORRIGIENDO: folder missing → Default to INBOX');
-        data.folder = 'INBOX';
-      }
-      
-      // ELIMINAR folder_name si existe para evitar confusión
-      if (data.folder_name) {
-        console.log('🗑️ [v4.0] ELIMINANDO: folder_name para evitar confusión en backend');
-        delete data.folder_name;
-      }
-      
-      // Log después de validación
+    // 🔍 v3.0 DIAGNOSTIC: Log parámetros EXACTOS recibidos del frontend
+    if (enableLogging) {
       console.log('═══════════════════════════════════════════════════════');
-      console.log(`✅ [${V4_VERSION}] AFTER VALIDATION`);
+      console.log('📥 [v3.0 DIAGNOSTIC] Parameters received from frontend:');
       console.log('═══════════════════════════════════════════════════════');
-      console.log('🔹 All keys AFTER:', Object.keys(data));
-      console.log('🔹 data.folder AFTER:', data.folder);
-      console.log('🔹 data.folder_name AFTER:', data.folder_name);
-      console.log('🔹 Final params:', JSON.stringify(data, null, 2));
+      console.log('Handler:', data.handler);
+      console.log('All keys:', Object.keys(data));
+      console.log('folder:', data.folder);
+      console.log('folder_name:', data.folder_name);
+      console.log('Full data object:', JSON.stringify(data, null, 2));
       console.log('═══════════════════════════════════════════════════════');
     }
     
     const tmweUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
     
-    // 🔍 v4.0-FINAL LOGGING: Parámetros VALIDADOS enviados al backend TMWE
-    console.log('═══════════════════════════════════════════════════════');
-    console.log(`📤 [${V4_VERSION}] Sending VALIDATED params to TMWE API`);
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🌐 URL:', tmweUrl);
-    console.log('🎯 Handler:', data.handler);
-    console.log('📦 Parameters being sent:', JSON.stringify(data, null, 2));
-    console.log('⏰ Timestamp:', new Date().toISOString());
-    console.log(`🔢 Redeploy Constant: ${V4_REDEPLOY_TIMESTAMP}`);
-    console.log('═══════════════════════════════════════════════════════');
+    // 🔍 v3.0 LOGGING: Parámetros que se enviarán al backend TMWE (sin transformación)
+    if (enableLogging) {
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('📤 [v3.0] Sending to TMWE API:');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('URL:', tmweUrl);
+      console.log('Handler:', data.handler);
+      console.log('Parameters being sent:', JSON.stringify(data, null, 2));
+      console.log('Timestamp:', new Date().toISOString());
+      console.log('═══════════════════════════════════════════════════════');
+    }
     
     if (enableLogging) {
       console.log('📤 Chiamata a TMWE API:', tmweUrl);
@@ -789,10 +758,9 @@ serve(async (req) => {
       headers: { 
         ...corsHeaders, 
         'Content-Type': 'application/json',
-        'X-Proxy-Version': V4_VERSION,
+        'X-Proxy-Version': '3.0-no-transform',
         'X-Deploy-Time': new Date().toISOString(),
-        'X-Redeploy-Timestamp': V4_REDEPLOY_TIMESTAMP.toString(),
-        'X-Folder-Validation': 'explicit-enforcement-active'
+        'X-Redeploy-Forced': 'true'
       },
     });
 

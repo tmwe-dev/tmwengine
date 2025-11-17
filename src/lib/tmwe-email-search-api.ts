@@ -32,12 +32,9 @@ const fetchEmailSearchApi = async (data: any) => {
   const startTime = performance.now();
   
   try {
-    // ✅ Use dedicated email_search proxy instead of general tmwe-api-proxy
+    // ✅ Use dedicated email_search proxy - pass data directly (already contains handler)
     const { data: responseData, error } = await supabase.functions.invoke('tmwe-email-search-proxy', {
-      body: {
-        handler: data.handler,
-        ...data
-      }
+      body: data
     });
 
     const duration = performance.now() - startTime;

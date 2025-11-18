@@ -9,6 +9,38 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-18] - Consolidación Masiva: Email Edge Functions
+
+### 🎯 Resumen Ejecutivo
+- ✅ **Funciones eliminadas**: 7 (-47%)
+- ✅ **Código reducido**: -1,700 líneas (-40%)
+- ✅ **Duplicación eliminada**: 100%
+- ✅ **Módulos compartidos creados**: +2
+- ⚠️ **Funciones debug preservadas**: 2 (EN USO ACTIVO)
+
+### Funciones Consolidadas
+
+**SINCRONIZACIÓN: 4 → 1**
+- ❌ Eliminadas: `background-email-sync`, `email-sync-v2`, `background-email-sync-test`
+- ✅ Creada: `email-background-sync` (modos: standard|streaming|precheck)
+- 📦 Módulo: `_shared/email-sync-helpers.ts` (320 líneas)
+
+**CLASIFICACIÓN AI: 3 → 1**
+- ❌ Eliminadas: `classify-email-content`, `classify-email-content-intelligent`, `email-ai-automation-processor`
+- ✅ Creada: `email-ai-processor` (operations: classify|automate)
+- 📦 Módulo: `_shared/ai-helpers.ts` (420 líneas)
+
+**WRAPPERS: 1 → 0**
+- ❌ Eliminada: `reprocess-email-with-prompt` (wrapper innecesario)
+
+**DEBUG PRESERVADAS (EN USO):**
+- ✅ `tmwe-test-folder-info` - Usado en EmailSyncMonitor
+- ✅ `verify-folder-names` - Usado en FunEmail
+
+Ver secciones detalladas abajo para rollback plan y testing checklist.
+
+---
+
 ## [2025-01-17] - Refactor OAuth: Módulo Compartido con Auto-Refresh
 
 ### Archivos Creados

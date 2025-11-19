@@ -3544,6 +3544,7 @@ export type Database = {
           icon: string | null
           id: string
           nome_gruppo: string
+          prompt_library_id: string | null
           updated_at: string
           user_id: string
         }
@@ -3554,6 +3555,7 @@ export type Database = {
           icon?: string | null
           id?: string
           nome_gruppo: string
+          prompt_library_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -3564,10 +3566,19 @@ export type Database = {
           icon?: string | null
           id?: string
           nome_gruppo?: string
+          prompt_library_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_sender_groups_prompt_library_id_fkey"
+            columns: ["prompt_library_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_library"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_sender_groups_context: {
         Row: {

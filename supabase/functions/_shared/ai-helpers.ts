@@ -546,7 +546,123 @@ export async function updateConversationHistory(
 }
 
 // ============================================
-// DECIDE ACTION (PROMPT 6)
+// GET TOOLS CONTEXT (INCREMENTO 7)
+// ============================================
+
+export async function getToolsContext(params: {
+  supabaseClient: SupabaseClient;
+  userId: string;
+}): Promise<string> {
+  const { supabaseClient, userId } = params;
+
+  try {
+    const { data: tools, error: toolsError } = await supabaseClient
+      .from('email_tools_config')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_enabled', true);
+
+    if (toolsError || !tools || tools.length === 0) {
+      return '';
+    }
+
+    let context = 'STRUMENTI DISPONIBILI:\n';
+
+    for (const tool of tools) {
+      if (tool.tool_name === 'calendar') {
+        context += `- Calendario: Eventi prossimi 7 giorni disponibili\n`;
+      } else if (tool.tool_name === 'crm') {
+        const { data: contacts } = await supabaseClient
+          .from('rubrica')
+          .select('nome, cognome, email, azienda')
+          .limit(10);
+        context += `- CRM: ${contacts?.length || 0} contatti principali disponibili\n`;
+      } else if (tool.tool_name === 'tasks') {
+        const { data: tasks } = await supabaseClient
+          .from('attivita')
+          .select('descrizione, stato, priorita')
+          .eq('stato', 'aperta')
+          .limit(5);
+        context += `- Tasks: ${tasks?.length || 0} attività aperte\n`;
+      }
+    }
+
+    return context;
+  } catch (error) {
+    console.error('Error in getToolsContext:', error);
+    return '';
+  }
+}
+
+// ============================================
+// GENERATE AI REPLY (INCREMENTO 8)
+// ============================================
+
+export async function generateAIReply(params: {
+  supabaseClient: SupabaseClient;
+  userId: string;
+  senderEmail: string;
+  emailSubject: string;
+  emailBody: string;
+  conversationHistory: any;
+  extractedEntities: any;
+  aiConfig: AIConfig;
+}): Promise<string> {
+  const {
+    senderEmail,
+    emailSubject,
+    emailBody,
+    conversationHistory,
+    extractedEntities,
+    aiConfig,
+  } = params;
+
+  const systemPrompt = `Sei un assistente professionale che scrive email di risposta.
+
+OBIETTIVO: Genera una bozza di risposta professionale, chiara e concisa.
+
+CRONOLOGIA CONVERSAZIONE:
+${JSON.stringify(conversationHistory, null, 2)}
+
+ENTITÀ ESTRATTE:
+${JSON.stringify(extractedEntities, null, 2)}
+
+LINEE GUIDA:
+- Tono professionale ma cordiale
+- Rispondere a tutti i punti dell'email
+- Includere tracking numbers, date, importi se presenti
+- Firma con "Cordiali saluti"
+- Lunghezza: 3-5 paragrafi`;
+
+  const userPrompt = `EMAIL RICEVUTA:
+From: ${senderEmail}
+Subject: ${emailSubject}
+Body: ${emailBody}
+
+Genera la bozza di risposta:`;
+
+  try {
+    const response = await callAIProvider(aiConfig, systemPrompt, userPrompt);
+    const parsed = await parseAIResponse(response, aiConfig.provider, 'classify');
+    
+    // Extract text from response
+    if (aiConfig.provider === 'openai') {
+      return response.choices?.[0]?.message?.content || 'Impossibile generare risposta.';
+    } else if (aiConfig.provider === 'google') {
+      return response.candidates?.[0]?.content?.parts?.[0]?.text || 'Impossibile generare risposta.';
+    } else if (aiConfig.provider === 'anthropic') {
+      return response.content?.[0]?.text || 'Impossibile generare risposta.';
+    }
+    
+    return 'Impossibile generare risposta.';
+  } catch (error) {
+    console.error('Error in generateAIReply:', error);
+    return 'Errore durante generazione risposta AI.';
+  }
+}
+
+// ============================================
+// DECIDE ACTION (PROMPT 6) - MODIFIED FOR INCREMENTO 7
 // ============================================
 
 export interface AIActionDecision {
@@ -562,7 +678,8 @@ export async function decideAction(
   email: EmailData,
   classification: AIClassificationResult,
   conversationHistory: any[],
-  aiConfig: AIConfig
+  aiConfig: AIConfig,
+  toolsContext?: string
 ): Promise<AIActionDecision> {
   console.log('[decideAction] 🎯 Deciding action for email');
 
@@ -576,12 +693,15 @@ Azioni disponibili:
 5. create_task - Creare attività
 6. nothing - Nessuna azione necessaria
 
+${toolsContext || ''}
+
 REGOLE:
 - Se l'email richiede una risposta urgente → reply
 - Se è una notifica già gestita → archive
 - Se è spam evidente → delete
 - Se richiede follow-up → create_task
-- Spiega SEMPRE il tuo ragionamento`;
+- Spiega SEMPRE il tuo ragionamento
+${toolsContext ? '- Usa i dati degli strumenti disponibili per prendere decisioni più informate' : ''}`;
 
   const userPrompt = `Email da analizzare:
 

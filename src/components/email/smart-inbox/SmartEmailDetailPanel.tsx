@@ -2,6 +2,7 @@ import { SmartEmailDetailIntelligent } from './SmartEmailDetailIntelligent';
 import { SmartEmailDetailClean } from './SmartEmailDetailClean';
 import { ClassifiedEmail } from '@/types/smart-inbox';
 import { ViewMode } from './ViewModeSelector';
+import { EntitiesPanel } from './EntitiesPanel';
 
 interface SmartEmailDetailPanelProps {
   classifiedEmail: ClassifiedEmail;
@@ -33,10 +34,15 @@ export const SmartEmailDetailPanel = ({
   }
 
   return (
-    <SmartEmailDetailIntelligent
-      classifiedEmail={classifiedEmail}
-      onClose={onClose}
-      onToggleCleanView={onToggleCleanView}
-    />
+    <div className="space-y-4">
+      {classifiedEmail.email.email_id && (
+        <EntitiesPanel emailId={classifiedEmail.email.email_id} />
+      )}
+      <SmartEmailDetailIntelligent
+        classifiedEmail={classifiedEmail}
+        onClose={onClose}
+        onToggleCleanView={onToggleCleanView}
+      />
+    </div>
   );
 };

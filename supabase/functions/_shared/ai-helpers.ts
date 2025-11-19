@@ -359,3 +359,270 @@ export async function updateEmailClassification(
 
   console.log('[updateEmailClassification] ✅ Classification updated');
 }
+
+// ============================================
+// EXTRACT ENTITIES (PROMPT 3)
+// ============================================
+
+export interface ExtractedEntity {
+  type: 'tracking' | 'invoice' | 'order' | 'date' | 'amount' | 'person' | 'company';
+  value: string;
+  confidence: number;
+  context?: string;
+}
+
+export async function extractEntities(
+  supabase: SupabaseClient,
+  email: EmailData,
+  aiConfig: AIConfig
+): Promise<ExtractedEntity[]> {
+  console.log('[extractEntities] 🔍 Extracting entities from email');
+
+  const systemPrompt = `Sei un esperto nell'estrazione di entità da email.
+Analizza il contenuto ed estrai:
+- Tracking numbers (AWB, Order #, Invoice #, Shipment #)
+- Date (scadenze, delivery, meeting)
+- Importi (€, $, USD, EUR)
+- Nomi di persone e aziende
+
+Rispondi SOLO con JSON valido.`;
+
+  const userPrompt = `Email da analizzare:
+
+From: ${email.from_email}
+Subject: ${email.subject}
+Body: ${email.body_text}
+
+Estrai tutte le entità rilevanti con confidence > 0.7`;
+
+  const tools = [{
+    type: "function",
+    function: {
+      name: "extract_entities",
+      description: "Extract entities from email content",
+      parameters: {
+        type: "object",
+        properties: {
+          entities: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                type: {
+                  type: "string",
+                  enum: ["tracking", "invoice", "order", "date", "amount", "person", "company"]
+                },
+                value: { type: "string" },
+                confidence: { type: "number", minimum: 0, maximum: 1 },
+                context: { type: "string" }
+              },
+              required: ["type", "value", "confidence"]
+            }
+          }
+        },
+        required: ["entities"]
+      }
+    }
+  }];
+
+  const response = await callAIProvider(aiConfig, systemPrompt, userPrompt, tools);
+  const parsed = await parseAIResponse(response, aiConfig.provider, 'classify');
+  
+  return (parsed as any).entities || [];
+}
+
+// ============================================
+// CREATE OR UPDATE TOPIC
+// ============================================
+
+export async function createOrUpdateTopic(
+  supabase: SupabaseClient,
+  entity: ExtractedEntity,
+  userId: string,
+  emailId: string
+): Promise<void> {
+  console.log('[createOrUpdateTopic] 📌 Creating/updating topic:', entity.value);
+
+  // Check if topic exists
+  const { data: existing } = await supabase
+    .from('email_topics')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('reference_number', entity.value)
+    .maybeSingle();
+
+  if (existing) {
+    // Update existing topic
+    await supabase
+      .from('email_topics')
+      .update({
+        last_mentioned_at: new Date().toISOString(),
+        email_count: existing.email_count + 1
+      })
+      .eq('id', existing.id);
+
+    // Link email to topic
+    await supabase
+      .from('email_messages_topics')
+      .insert({
+        email_id: emailId,
+        topic_id: existing.id
+      })
+      .onConflict('email_id,topic_id')
+      .merge();
+  } else {
+    // Create new topic
+    const { data: newTopic } = await supabase
+      .from('email_topics')
+      .insert({
+        user_id: userId,
+        topic_name: entity.value,
+        topic_type: entity.type === 'tracking' || entity.type === 'invoice' || entity.type === 'order' ? entity.type : 'generic',
+        reference_number: entity.value,
+        metadata: { context: entity.context, confidence: entity.confidence }
+      })
+      .select()
+      .single();
+
+    if (newTopic) {
+      // Link email to new topic
+      await supabase
+        .from('email_messages_topics')
+        .insert({
+          email_id: emailId,
+          topic_id: newTopic.id
+        });
+    }
+  }
+
+  console.log('[createOrUpdateTopic] ✅ Topic updated');
+}
+
+// ============================================
+// UPDATE CONVERSATION HISTORY
+// ============================================
+
+export async function updateConversationHistory(
+  supabase: SupabaseClient,
+  data: {
+    user_id: string;
+    sender_email: string;
+    email_subject: string;
+    email_summary: string;
+    email_date: string;
+  }
+): Promise<void> {
+  console.log('[updateConversationHistory] 💬 Updating conversation history for:', data.sender_email);
+
+  const { data: existing } = await supabase
+    .from('conversation_history')
+    .select('*')
+    .eq('user_id', data.user_id)
+    .eq('sender_email', data.sender_email)
+    .maybeSingle();
+
+  const newExchange = {
+    date: data.email_date,
+    subject: data.email_subject,
+    summary: data.email_summary
+  };
+
+  const last5 = existing
+    ? [...(existing.last_5_exchanges || []), newExchange].slice(-5)
+    : [newExchange];
+
+  await supabase
+    .from('conversation_history')
+    .upsert({
+      user_id: data.user_id,
+      sender_email: data.sender_email,
+      last_5_exchanges: last5,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id,sender_email'
+    });
+
+  console.log('[updateConversationHistory] ✅ Conversation history updated');
+}
+
+// ============================================
+// DECIDE ACTION (PROMPT 6)
+// ============================================
+
+export interface AIActionDecision {
+  action: 'reply' | 'forward' | 'archive' | 'delete' | 'create_task' | 'nothing';
+  reasoning: string;
+  confidence: number;
+  payload: any;
+  suggested_response?: string;
+}
+
+export async function decideAction(
+  supabase: SupabaseClient,
+  email: EmailData,
+  classification: AIClassificationResult,
+  conversationHistory: any[],
+  aiConfig: AIConfig
+): Promise<AIActionDecision> {
+  console.log('[decideAction] 🎯 Deciding action for email');
+
+  const systemPrompt = `Sei un assistente email intelligente. Analizza l'email e decidi l'azione migliore.
+
+Azioni disponibili:
+1. reply - Rispondere all'email
+2. forward - Inoltrare a collega
+3. archive - Archiviare (già gestita)
+4. delete - Eliminare (spam/irrilevante)
+5. create_task - Creare attività
+6. nothing - Nessuna azione necessaria
+
+REGOLE:
+- Se l'email richiede una risposta urgente → reply
+- Se è una notifica già gestita → archive
+- Se è spam evidente → delete
+- Se richiede follow-up → create_task
+- Spiega SEMPRE il tuo ragionamento`;
+
+  const userPrompt = `Email da analizzare:
+
+From: ${email.from_email}
+Subject: ${email.subject}
+Body: ${email.body_text}
+
+CONTEXT:
+- Categoria: ${classification.category}
+- Priority: ${classification.priority}
+- Summary: ${classification.summary}
+- Conversazioni precedenti: ${conversationHistory.length > 0 ? JSON.stringify(conversationHistory) : 'Nessuna'}
+
+Decidi l'azione migliore con reasoning dettagliato.`;
+
+  const tools = [{
+    type: "function",
+    function: {
+      name: "decide_action",
+      description: "Decide the best action for this email",
+      parameters: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            enum: ["reply", "forward", "archive", "delete", "create_task", "nothing"]
+          },
+          reasoning: { type: "string" },
+          confidence: { type: "number", minimum: 0, maximum: 1 },
+          payload: { type: "object" },
+          suggested_response: { type: "string" }
+        },
+        required: ["action", "reasoning", "confidence", "payload"]
+      }
+    }
+  }];
+
+  const response = await callAIProvider(aiConfig, systemPrompt, userPrompt, tools);
+  const parsed = await parseAIResponse(response, aiConfig.provider, 'automate');
+  
+  console.log('[decideAction] ✅ Action decided:', (parsed as any).action);
+  
+  return parsed as AIActionDecision;
+}

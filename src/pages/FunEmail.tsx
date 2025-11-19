@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
 import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
 import { AIAutomationDashboard } from '@/components/email/automation/AIAutomationDashboard';
+import { PendingActionsPanel } from '@/components/email/automation/PendingActionsPanel';
 import { EmailCountDiagnostics } from '@/components/email/EmailCountDiagnostics';
 import { SingleMailImporter } from '@/components/email/SingleMailImporter';
 import { VerifyFolderNames } from '@/components/email/debug/VerifyFolderNames';
@@ -36,7 +37,7 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail'>('management');
+  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions'>('management');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
@@ -405,6 +406,10 @@ const FunEmail = () => {
             <GradientBackground variant="primary" intensity="medium" className="min-h-screen">
               <AIAutomationDashboard />
             </GradientBackground>
+          ) : currentView === 'pending-actions' ? (
+            <div className="p-6">
+              <PendingActionsPanel />
+            </div>
           ) : null}
         </div>
 

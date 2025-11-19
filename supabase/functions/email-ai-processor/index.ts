@@ -12,8 +12,14 @@ import {
   callAIProvider,
   parseAIResponse,
   updateEmailClassification,
+  extractEntities,
+  createOrUpdateTopic,
+  updateConversationHistory,
+  decideAction,
   type EmailData,
-  type AIClassificationResult
+  type AIClassificationResult,
+  type ExtractedEntity,
+  type AIActionDecision
 } from '../_shared/ai-helpers.ts';
 
 const corsHeaders = {
@@ -217,11 +223,103 @@ serve(async (req) => {
     }
 
     // ============================================
-    // STEP 7: EXECUTE AUTOMATION (if automate)
+    // STEP 7: EXTRACT ENTITIES (PROMPT 3)
+    // ============================================
+
+    console.log('[AI Processor] 🔍 Extracting entities...');
+    
+    const { data: { user: authUser } } = await supabase.auth.admin.getUserById(
+      (await supabase.from('email_messages').select('user_email').eq('id', email_id).single()).data?.user_email || ''
+    );
+    
+    const userId = authUser?.id || '';
+    
+    if (userId) {
+      const entities = await extractEntities(supabase, emailData, aiConfig);
+      console.log('[AI Processor] ✅ Entities extracted:', entities.length);
+
+      // Create/update topics for tracking numbers, invoices, orders
+      for (const entity of entities) {
+        if (['tracking', 'invoice', 'order'].includes(entity.type) && entity.confidence > 0.7) {
+          await createOrUpdateTopic(supabase, entity, userId, email_id);
+        }
+      }
+    }
+
+    // ============================================
+    // STEP 8: UPDATE CONVERSATION HISTORY
+    // ============================================
+
+    if (userId) {
+      console.log('[AI Processor] 💬 Updating conversation history...');
+      
+      await updateConversationHistory(supabase, {
+        user_id: userId,
+        sender_email: email.from_email,
+        email_subject: email.subject,
+        email_summary: classification.summary || '',
+        email_date: email.received_at
+      });
+      
+      console.log('[AI Processor] ✅ Conversation history updated');
+    }
+
+    // ============================================
+    // STEP 9: DECIDE ACTION (PROMPT 6) - if automate
+    // ============================================
+
+    if (operation === 'automate' && userId) {
+      console.log('[AI Processor] 🎯 Deciding action...');
+
+      // Load conversation history
+      const { data: convHistory } = await supabase
+        .from('conversation_history')
+        .select('last_5_exchanges')
+        .eq('user_id', userId)
+        .eq('sender_email', email.from_email)
+        .maybeSingle();
+
+      const decision = await decideAction(
+        supabase,
+        emailData,
+        classification,
+        convHistory?.last_5_exchanges || [],
+        aiConfig
+      );
+
+      console.log('[AI Processor] ✅ Action decided:', decision.action);
+
+      // ============================================
+      // STEP 10: CREATE PENDING ACTION
+      // ============================================
+
+      if (decision.action !== 'nothing') {
+        console.log('[AI Processor] 📝 Creating pending action...');
+
+        await supabase
+          .from('email_pending_actions')
+          .insert({
+            user_id: userId,
+            email_id,
+            sender_email: email.from_email,
+            action_type: decision.action,
+            action_payload: decision.payload,
+            suggested_response: decision.suggested_response,
+            reasoning: decision.reasoning,
+            confidence: decision.confidence,
+            status: 'pending'
+          });
+
+        console.log('[AI Processor] ✅ Pending action created');
+      }
+    }
+
+    // ============================================
+    // STEP 11: EXECUTE AUTOMATION (legacy - deprecated)
     // ============================================
 
     if (operation === 'automate') {
-      console.log('[AI Processor] 🤖 Executing automation...');
+      console.log('[AI Processor] 🤖 Executing legacy automation...');
       
       // Get prompt config for automation actions
       const { data: promptConfig } = await supabase
@@ -235,7 +333,7 @@ serve(async (req) => {
 
       if (promptConfig) {
         const actions = promptConfig.automatic_actions || promptConfig.prompt_library?.default_actions;
-        console.log('[AI Processor] 🎯 Automation actions:', actions);
+        console.log('[AI Processor] 🎯 Legacy automation actions:', actions);
         
         // Execute actions (log execution)
         await supabase
@@ -249,7 +347,7 @@ serve(async (req) => {
           });
       }
       
-      console.log('[AI Processor] ✅ Automation executed');
+      console.log('[AI Processor] ✅ Legacy automation executed');
     }
 
     // ============================================

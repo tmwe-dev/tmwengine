@@ -1890,6 +1890,36 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_history: {
+        Row: {
+          conversation_summary: string | null
+          created_at: string | null
+          id: string
+          last_5_exchanges: Json | null
+          sender_email: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_summary?: string | null
+          created_at?: string | null
+          id?: string
+          last_5_exchanges?: Json | null
+          sender_email: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_summary?: string | null
+          created_at?: string | null
+          id?: string
+          last_5_exchanges?: Json | null
+          sender_email?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       debugging: {
         Row: {
           active_functions: number | null
@@ -3231,6 +3261,101 @@ export type Database = {
           },
         ]
       }
+      email_messages_topics: {
+        Row: {
+          created_at: string | null
+          email_id: string
+          topic_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_id: string
+          topic_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_id?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_messages_topics_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_messages_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "email_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_pending_actions: {
+        Row: {
+          action_payload: Json
+          action_type: string
+          confidence: number | null
+          created_at: string | null
+          email_id: string
+          executed_at: string | null
+          id: string
+          reasoning: string
+          rejection_reason: string | null
+          sender_email: string
+          status: string | null
+          suggested_response: string | null
+          updated_at: string | null
+          user_id: string
+          user_modifications: Json | null
+        }
+        Insert: {
+          action_payload?: Json
+          action_type: string
+          confidence?: number | null
+          created_at?: string | null
+          email_id: string
+          executed_at?: string | null
+          id?: string
+          reasoning: string
+          rejection_reason?: string | null
+          sender_email: string
+          status?: string | null
+          suggested_response?: string | null
+          updated_at?: string | null
+          user_id: string
+          user_modifications?: Json | null
+        }
+        Update: {
+          action_payload?: Json
+          action_type?: string
+          confidence?: number | null
+          created_at?: string | null
+          email_id?: string
+          executed_at?: string | null
+          id?: string
+          reasoning?: string
+          rejection_reason?: string | null
+          sender_email?: string
+          status?: string | null
+          suggested_response?: string | null
+          updated_at?: string | null
+          user_id?: string
+          user_modifications?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_pending_actions_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_provider: {
         Row: {
           attivo: boolean
@@ -3960,6 +4085,48 @@ export type Database = {
           oggetto?: string
           placeholder_disponibili?: Json | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      email_topics: {
+        Row: {
+          created_at: string | null
+          email_count: number | null
+          first_mentioned_at: string
+          id: string
+          last_mentioned_at: string
+          metadata: Json | null
+          reference_number: string | null
+          topic_name: string
+          topic_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_count?: number | null
+          first_mentioned_at?: string
+          id?: string
+          last_mentioned_at?: string
+          metadata?: Json | null
+          reference_number?: string | null
+          topic_name: string
+          topic_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_count?: number | null
+          first_mentioned_at?: string
+          id?: string
+          last_mentioned_at?: string
+          metadata?: Json | null
+          reference_number?: string | null
+          topic_name?: string
+          topic_type?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

@@ -2964,6 +2964,98 @@ export type Database = {
           },
         ]
       }
+      email_ai_learning_feedback: {
+        Row: {
+          action_type: string
+          ai_suggestion: string
+          confidence_score: number | null
+          created_at: string | null
+          email_category: string | null
+          email_id: string | null
+          feedback_notes: string | null
+          id: string
+          sender_email: string | null
+          user_correction: string | null
+          user_feedback: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          ai_suggestion: string
+          confidence_score?: number | null
+          created_at?: string | null
+          email_category?: string | null
+          email_id?: string | null
+          feedback_notes?: string | null
+          id?: string
+          sender_email?: string | null
+          user_correction?: string | null
+          user_feedback: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          ai_suggestion?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          email_category?: string | null
+          email_id?: string | null
+          feedback_notes?: string | null
+          id?: string
+          sender_email?: string | null
+          user_correction?: string | null
+          user_feedback?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_ai_learning_feedback_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_ai_performance_metrics: {
+        Row: {
+          accuracy_rate: number | null
+          approved_actions: number | null
+          avg_confidence: number | null
+          context_key: string | null
+          id: string
+          last_updated: string | null
+          metric_type: string
+          rejected_actions: number | null
+          total_actions: number | null
+          user_id: string
+        }
+        Insert: {
+          accuracy_rate?: number | null
+          approved_actions?: number | null
+          avg_confidence?: number | null
+          context_key?: string | null
+          id?: string
+          last_updated?: string | null
+          metric_type: string
+          rejected_actions?: number | null
+          total_actions?: number | null
+          user_id: string
+        }
+        Update: {
+          accuracy_rate?: number | null
+          approved_actions?: number | null
+          avg_confidence?: number | null
+          context_key?: string | null
+          id?: string
+          last_updated?: string | null
+          metric_type?: string
+          rejected_actions?: number | null
+          total_actions?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_attachments: {
         Row: {
           created_at: string

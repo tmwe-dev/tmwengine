@@ -11,6 +11,7 @@ import { useEmailThread } from '@/hooks/useEmailThread';
 import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
 import { EmailThreadTabs } from './EmailThreadTabs';
 import { SingleEmailCard } from './SingleEmailCard';
+import { AIActionFeedback } from '../automation/AIActionFeedback';
 
 interface SmartEmailDetailIntelligentProps {
   classifiedEmail: ClassifiedEmail | null;
@@ -252,12 +253,28 @@ export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggle
                   <TabsContent key={email.id} value={email.id} className="mt-0">
                     {/* Riassunto AI (solo per email originale corrente) */}
                     {isCurrentOriginal && classification.ai_summary && (
-                      <div className="border-l-4 border-purple-500 bg-purple-500/10 backdrop-blur-sm rounded-lg pl-4 py-3 mb-4">
-                        <h4 className="text-xs font-semibold text-purple-300 mb-2">✨ Riassunto AI</h4>
-                        <p className="text-sm text-white/90">
-                          {classification.ai_summary}
-                        </p>
-                      </div>
+                      <>
+                        <div className="border-l-4 border-purple-500 bg-purple-500/10 backdrop-blur-sm rounded-lg pl-4 py-3 mb-4">
+                          <h4 className="text-xs font-semibold text-purple-300 mb-2">✨ Riassunto AI</h4>
+                          <p className="text-sm text-white/90">
+                            {classification.ai_summary}
+                          </p>
+                        </div>
+                        
+                        {/* INCREMENTO 10: AI Feedback UI */}
+                        {classifiedEmail.email.email_id && (
+                          <div className="mb-4 pl-4">
+                            <AIActionFeedback
+                              emailId={classifiedEmail.email.email_id}
+                              aiSuggestion={classification.category}
+                              actionType="classification"
+                              confidenceScore={classification.confidence / 100}
+                              senderEmail={classification.sender_email}
+                              emailCategory={classification.category}
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
                     
                     {/* Single Email Card */}

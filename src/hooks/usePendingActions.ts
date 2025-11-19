@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useGlobalAIAgent } from './useGlobalAIAgent';
 
 export interface PendingAction {
   id: string;
@@ -20,6 +21,7 @@ export interface PendingAction {
 
 export const usePendingActions = () => {
   const queryClient = useQueryClient();
+  const { getAIPayload } = useGlobalAIAgent();
 
   // Fetch pending actions
   const { data: pendingActions, isLoading } = useQuery({
@@ -42,6 +44,8 @@ export const usePendingActions = () => {
   // Approve action
   const approveMutation = useMutation({
     mutationFn: async (actionId: string) => {
+      const action = pendingActions?.find(a => a.id === actionId);
+      
       const { error } = await supabase
         .from('email_pending_actions')
         .update({ 
@@ -51,6 +55,22 @@ export const usePendingActions = () => {
         .eq('id', actionId);
 
       if (error) throw error;
+
+      // **INCREMENTO 10**: Record feedback for learning
+      if (action) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('email_ai_learning_feedback').insert({
+            user_id: user.id,
+            email_id: action.email_id,
+            action_type: 'action_decision',
+            ai_suggestion: action.action_type,
+            user_feedback: 'approved',
+            confidence_score: action.confidence,
+            sender_email: action.sender_email,
+          });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-actions'] });
@@ -64,6 +84,8 @@ export const usePendingActions = () => {
   // Reject action
   const rejectMutation = useMutation({
     mutationFn: async ({ actionId, reason }: { actionId: string; reason?: string }) => {
+      const action = pendingActions?.find(a => a.id === actionId);
+      
       const { error } = await supabase
         .from('email_pending_actions')
         .update({ 
@@ -74,6 +96,23 @@ export const usePendingActions = () => {
         .eq('id', actionId);
 
       if (error) throw error;
+
+      // **INCREMENTO 10**: Record feedback for learning
+      if (action) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('email_ai_learning_feedback').insert({
+            user_id: user.id,
+            email_id: action.email_id,
+            action_type: 'action_decision',
+            ai_suggestion: action.action_type,
+            user_feedback: 'rejected',
+            confidence_score: action.confidence,
+            sender_email: action.sender_email,
+            feedback_notes: reason,
+          });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-actions'] });

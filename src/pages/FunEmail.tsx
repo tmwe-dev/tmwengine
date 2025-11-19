@@ -7,7 +7,7 @@ import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { X, Menu, Brain, ArrowLeft, Bug, Sparkles } from 'lucide-react';
+import { X, Menu, Brain, ArrowLeft, Bug, Sparkles, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
@@ -27,6 +27,7 @@ import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
 import { AIAutomationDashboard } from '@/components/email/automation/AIAutomationDashboard';
 import { PendingActionsPanel } from '@/components/email/automation/PendingActionsPanel';
 import { AutoExecuteConfigDialog } from '@/components/email/automation/AutoExecuteConfigDialog';
+import { LearningDashboard } from '@/components/email/automation/LearningDashboard';
 import { EmailCountDiagnostics } from '@/components/email/EmailCountDiagnostics';
 import { SingleMailImporter } from '@/components/email/SingleMailImporter';
 import { VerifyFolderNames } from '@/components/email/debug/VerifyFolderNames';
@@ -38,7 +39,8 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions'>('management');
+  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions' | 'learning'>('management');
+  const [automationsSubView, setAutomationsSubView] = useState<'dashboard' | 'pending' | 'learning'>('dashboard');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [isAutoConfigOpen, setIsAutoConfigOpen] = useState(false);
   const [globalStats, setGlobalStats] = useState({
@@ -406,7 +408,47 @@ const FunEmail = () => {
             </GradientBackground>
           ) : currentView === 'automations' ? (
             <GradientBackground variant="primary" intensity="medium" className="min-h-screen">
-              <AIAutomationDashboard />
+              <div className="p-6 space-y-4">
+                {/* Sub-navigation for automations */}
+                <div className="flex items-center gap-2 mb-4">
+                  <Button
+                    variant={automationsSubView === 'dashboard' ? 'default' : 'outline'}
+                    onClick={() => setAutomationsSubView('dashboard')}
+                    size="sm"
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </Button>
+                  <Button
+                    variant={automationsSubView === 'pending' ? 'default' : 'outline'}
+                    onClick={() => setAutomationsSubView('pending')}
+                    size="sm"
+                  >
+                    Clock Pending Actions
+                  </Button>
+                  <Button
+                    variant={automationsSubView === 'learning' ? 'default' : 'outline'}
+                    onClick={() => setAutomationsSubView('learning')}
+                    size="sm"
+                  >
+                    📊 Learning Insights
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsAutoConfigOpen(true)}
+                    size="sm"
+                    className="ml-auto"
+                  >
+                    <Brain className="mr-2 h-4 w-4" />
+                    Auto-Execute Settings
+                  </Button>
+                </div>
+
+                {/* Conditional rendering based on sub-view */}
+                {automationsSubView === 'dashboard' && <AIAutomationDashboard />}
+                {automationsSubView === 'pending' && <PendingActionsPanel />}
+                {automationsSubView === 'learning' && <LearningDashboard />}
+              </div>
             </GradientBackground>
           ) : currentView === 'pending-actions' ? (
             <div className="p-6">

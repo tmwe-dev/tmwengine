@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePendingActions } from '@/hooks/usePendingActions';
+import { AIActionFeedback } from './AIActionFeedback';
 import { Clock, CheckCircle, XCircle, Mail, ArrowRight, Archive, Trash, ListTodo } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -214,6 +215,17 @@ export const PendingActionsPanel = () => {
                       <XCircle className="mr-2 h-4 w-4" />
                       Rifiuta
                     </Button>
+                  </div>
+
+                  {/* INCREMENTO 10: AI Feedback UI */}
+                  <div className="pt-3 border-t">
+                    <AIActionFeedback
+                      emailId={action.email_id}
+                      aiSuggestion={`${actionLabels[action.action_type]}: ${action.reasoning}`}
+                      actionType="action_decision"
+                      confidenceScore={action.confidence}
+                      senderEmail={action.sender_email}
+                    />
                   </div>
 
                   {/* Timestamp */}

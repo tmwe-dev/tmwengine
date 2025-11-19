@@ -288,6 +288,16 @@ serve(async (req) => {
         userId: userId,
       });
 
+      // 📊 INCREMENTO 10: Get adaptive confidence threshold
+      const { getAdaptiveConfidence } = await import('../_shared/learning-helpers.ts');
+      const adaptiveThreshold = await getAdaptiveConfidence(
+        supabase,
+        userId,
+        email.from_email,
+        classification.category
+      );
+      console.log(`📊 Adaptive confidence threshold: ${adaptiveThreshold}`);
+
       const decision = await decideAction(
         supabase,
         emailData,
@@ -327,9 +337,15 @@ serve(async (req) => {
         .eq('user_id', userId)
         .maybeSingle();
 
+      // 📊 INCREMENTO 10: Use adaptive threshold
+      const effectiveThreshold = Math.max(
+        autoConfig?.confidence_threshold || 0.90,
+        adaptiveThreshold
+      );
+
       const shouldAutoExecute =
         autoConfig?.auto_execute_enabled &&
-        decision.confidence >= (autoConfig.confidence_threshold || 0.90) &&
+        decision.confidence >= effectiveThreshold &&
         autoConfig.allowed_auto_actions?.includes(decision.action);
 
       if (shouldAutoExecute) {

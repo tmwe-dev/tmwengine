@@ -397,6 +397,49 @@ export const SmartInboxTabIntelligent = ({
       // Ricarica lista dopo classificazione
       refetch();
       console.log('✅ [DEBUG] Classificazione completata');
+
+      // 🤖 FASE 3: Auto-trigger AI Automation Processor per ogni email classificata
+      console.log('🤖 [DEBUG] Avvio AI Automation Processor per email classificate...');
+      
+      const processedCount = { success: 0, failed: 0 };
+      
+      for (const email of unclassifiedEmails) {
+        try {
+          // Fetch email completa per processamento
+          const { data: fullEmail, error: emailError } = await supabase
+            .from('email_messages')
+            .select('id, subject, from_email, body_text, body_html')
+            .eq('id', email.id)
+            .single();
+
+          if (emailError || !fullEmail) {
+            console.error(`❌ Email ${email.id} non trovata per processamento AI`);
+            processedCount.failed++;
+            continue;
+          }
+
+          // Chiamata a email-ai-processor
+          await processEmailWithAI(
+            fullEmail.id, // Usa email_id come UID
+            fullEmail.from_email,
+            fullEmail.subject || 'No subject',
+            fullEmail.body_text || fullEmail.body_html || ''
+          );
+          
+          processedCount.success++;
+          console.log(`✅ AI Processor completato per email ${email.id}`);
+          
+        } catch (error) {
+          console.error(`❌ AI Processor fallito per email ${email.id}:`, error);
+          processedCount.failed++;
+        }
+      }
+      
+      console.log(`🎯 [DEBUG] AI Automation: ${processedCount.success} successi, ${processedCount.failed} fallimenti`);
+      
+      if (processedCount.success > 0) {
+        toast.success(`🤖 ${processedCount.success} email analizzate per azioni automatiche`);
+      }
       
     } catch (error: any) {
       console.error('❌ [DEBUG] Error in handleClassifyNew:', error);

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { useTheme } from '@/hooks/useTheme';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
 import { AnimatedGroupButton } from '@/components/ui/animated-group-button';
@@ -47,6 +48,8 @@ import {
   Brain,
   Zap
  } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { 
   DropdownMenu,
@@ -85,6 +88,24 @@ const CRMLayout = ({ children }) => {
   const { theme, setTheme, themes } = useTheme();
   const [tmweToken, setTmweToken] = useState(null);
   const [emailSearchQuery, setEmailSearchQuery] = useState('');
+
+  // 🆕 Query per contare pending actions
+  const { data: pendingActionsCount } = useQuery({
+    queryKey: ['pending-actions-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('email_pending_actions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
+      if (error) {
+        console.error('Error fetching pending actions count:', error);
+        return 0;
+      }
+      return count || 0;
+    },
+    refetchInterval: 10000, // Refresh ogni 10 secondi
+  });
 
   // Carica il TMWE access token da localStorage
   useEffect(() => {
@@ -258,6 +279,23 @@ const CRMLayout = ({ children }) => {
                     >
                       <Brain className="h-4 w-4" />
                       Inbox AI
+                    </Button>
+                    <Button
+                      variant={searchParams.get('tab') === 'automations' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => navigate('/funnemail?tab=automations')}
+                      className="gap-1 relative"
+                    >
+                      <Zap className="h-4 w-4" />
+                      AI Automations
+                      {pendingActionsCount > 0 && (
+                        <Badge 
+                          variant="destructive" 
+                          className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-xs"
+                        >
+                          {pendingActionsCount}
+                        </Badge>
+                      )}
                     </Button>
                   </div>
                 )}

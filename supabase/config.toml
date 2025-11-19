@@ -302,3 +302,6 @@ verify_jwt = true
 
 [functions.optimize-company-profile]
 verify_jwt = true
+
+[functions.email-ai-learning]
+verify_jwt = true

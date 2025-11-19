@@ -2997,6 +2997,78 @@ export type Database = {
         }
         Relationships: []
       }
+      email_auto_execution_log: {
+        Row: {
+          action_type: string
+          confidence: number
+          email_uid: string
+          error_message: string | null
+          executed_at: string | null
+          id: string
+          metadata: Json | null
+          success: boolean | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          confidence: number
+          email_uid: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          metadata?: Json | null
+          success?: boolean | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          confidence?: number
+          email_uid?: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          metadata?: Json | null
+          success?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      email_automation_config: {
+        Row: {
+          allowed_auto_actions: string[] | null
+          auto_execute_enabled: boolean | null
+          confidence_threshold: number | null
+          created_at: string | null
+          id: string
+          max_auto_actions_per_day: number | null
+          require_confirmation_actions: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          allowed_auto_actions?: string[] | null
+          auto_execute_enabled?: boolean | null
+          confidence_threshold?: number | null
+          created_at?: string | null
+          id?: string
+          max_auto_actions_per_day?: number | null
+          require_confirmation_actions?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          allowed_auto_actions?: string[] | null
+          auto_execute_enabled?: boolean | null
+          confidence_threshold?: number | null
+          created_at?: string | null
+          id?: string
+          max_auto_actions_per_day?: number | null
+          require_confirmation_actions?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_campagne_queue: {
         Row: {
           campagna_nome: string
@@ -4085,6 +4157,39 @@ export type Database = {
           oggetto?: string
           placeholder_disponibili?: Json | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      email_tools_config: {
+        Row: {
+          config_data: Json | null
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          tool_name: string
+          tool_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          config_data?: Json | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          tool_name: string
+          tool_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          config_data?: Json | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          tool_name?: string
+          tool_type?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

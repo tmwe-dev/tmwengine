@@ -16,6 +16,8 @@ import {
   createOrUpdateTopic,
   updateConversationHistory,
   decideAction,
+  getToolsContext,
+  generateAIReply,
   type EmailData,
   type AIClassificationResult,
   type ExtractedEntity,
@@ -265,7 +267,7 @@ serve(async (req) => {
     }
 
     // ============================================
-    // STEP 9: DECIDE ACTION (PROMPT 6) - if automate
+    // STEP 9: DECIDE ACTION (PROMPT 6) - if automate + INCREMENTI 7-9
     // ============================================
 
     if (operation === 'automate' && userId) {
@@ -279,18 +281,119 @@ serve(async (req) => {
         .eq('sender_email', email.from_email)
         .maybeSingle();
 
+      // 🔧 INCREMENTO 7: Get tools context
+      console.log('[AI Processor] 🔧 Fetching tools context...');
+      const toolsContext = await getToolsContext({
+        supabaseClient: supabase,
+        userId: userId,
+      });
+
       const decision = await decideAction(
         supabase,
         emailData,
         classification,
         convHistory?.last_5_exchanges || [],
-        aiConfig
+        aiConfig,
+        toolsContext
       );
 
       console.log('[AI Processor] ✅ Action decided:', decision.action);
 
+      // 🤖 INCREMENTO 8: Generate AI reply if action is 'reply'
+      let generatedReply = decision.suggested_response;
+      if (decision.action === 'reply') {
+        console.log('[AI Processor] 🤖 Generating AI reply...');
+        generatedReply = await generateAIReply({
+          supabaseClient: supabase,
+          userId: userId,
+          senderEmail: email.from_email,
+          emailSubject: email.subject,
+          emailBody: email.body_text,
+          conversationHistory: convHistory?.last_5_exchanges || [],
+          extractedEntities: {}, // TODO: pass actual entities
+          aiConfig,
+        });
+        console.log('[AI Processor] ✅ AI reply generated');
+      }
+
       // ============================================
-      // STEP 10: CREATE PENDING ACTION
+      // 🚀 INCREMENTO 9: AUTO-EXECUTE OR CREATE PENDING ACTION
+      // ============================================
+
+      // Load auto-execute config
+      const { data: autoConfig } = await supabase
+        .from('email_automation_config')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const shouldAutoExecute =
+        autoConfig?.auto_execute_enabled &&
+        decision.confidence >= (autoConfig.confidence_threshold || 0.90) &&
+        autoConfig.allowed_auto_actions?.includes(decision.action);
+
+      if (shouldAutoExecute) {
+        console.log(`[AI Processor] ⚡ Auto-executing action: ${decision.action} (confidence: ${decision.confidence})`);
+
+        let success = false;
+        let errorMessage = null;
+
+        try {
+          if (decision.action === 'archive') {
+            const { error: archiveError } = await supabase
+              .from('email_messages')
+              .update({ folder_name: 'Archive' })
+              .eq('id', email_id);
+            success = !archiveError;
+            if (archiveError) errorMessage = archiveError.message;
+          } else if (decision.action === 'delete') {
+            const { error: deleteError } = await supabase
+              .from('email_messages')
+              .update({ folder_name: 'eliminato' })
+              .eq('id', email_id);
+            success = !deleteError;
+            if (deleteError) errorMessage = deleteError.message;
+          } else {
+            // Other actions require manual confirmation
+            success = false;
+            errorMessage = 'Action requires manual confirmation';
+          }
+
+          console.log(`[AI Processor] ${success ? '✅' : '❌'} Auto-execute ${success ? 'succeeded' : 'failed'}`);
+        } catch (err: any) {
+          errorMessage = err.message;
+          success = false;
+        }
+
+        // Log auto-execution
+        await supabase
+          .from('email_auto_execution_log')
+          .insert({
+            user_id: userId,
+            email_uid: email.uid || '',
+            action_type: decision.action,
+            confidence: decision.confidence,
+            success,
+            error_message: errorMessage,
+            metadata: { reasoning: decision.reasoning },
+          });
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            classification,
+            decision,
+            auto_executed: true,
+            message: `Azione "${decision.action}" eseguita automaticamente (confidence: ${decision.confidence.toFixed(2)})`,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      // ============================================
+      // STEP 10: CREATE PENDING ACTION (if not auto-executed)
       // ============================================
 
       if (decision.action !== 'nothing') {
@@ -300,11 +403,12 @@ serve(async (req) => {
           .from('email_pending_actions')
           .insert({
             user_id: userId,
+            email_uid: email.uid || '',
             email_id,
             sender_email: email.from_email,
             action_type: decision.action,
             action_payload: decision.payload,
-            suggested_response: decision.suggested_response,
+            suggested_response: generatedReply,
             reasoning: decision.reasoning,
             confidence: decision.confidence,
             status: 'pending'

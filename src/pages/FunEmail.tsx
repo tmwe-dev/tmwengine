@@ -26,6 +26,7 @@ import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
 import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
 import { AIAutomationDashboard } from '@/components/email/automation/AIAutomationDashboard';
 import { PendingActionsPanel } from '@/components/email/automation/PendingActionsPanel';
+import { AutoExecuteConfigDialog } from '@/components/email/automation/AutoExecuteConfigDialog';
 import { EmailCountDiagnostics } from '@/components/email/EmailCountDiagnostics';
 import { SingleMailImporter } from '@/components/email/SingleMailImporter';
 import { VerifyFolderNames } from '@/components/email/debug/VerifyFolderNames';
@@ -39,6 +40,7 @@ const FunEmail = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions'>('management');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
+  const [isAutoConfigOpen, setIsAutoConfigOpen] = useState(false);
   const [globalStats, setGlobalStats] = useState({
     totalDB: 0,
     folders: [] as { name: string; count: number }[],
@@ -463,8 +465,15 @@ const FunEmail = () => {
         />
       )}
 
+      {/* Auto-Execute Config Dialog */}
+      <AutoExecuteConfigDialog
+        open={isAutoConfigOpen}
+        onOpenChange={setIsAutoConfigOpen}
+      />
+
     </PageLayout>
   );
 };
+
 
 export default FunEmail;

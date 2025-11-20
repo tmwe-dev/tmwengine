@@ -15,7 +15,8 @@ const corsHeaders = {
 interface CRMActionRequest {
   action: 'create_task' | 'create_meeting' | 'create_call' | 'update_contact' | 'add_tag' | 'link_to_campaign';
   params: any;
-  contact_email: string;
+  sender_email: string; // Primary input: sender email
+  contact_email?: string; // Legacy: optional for backward compatibility
   user_id: string;
   ai_confidence?: number;
   ai_reasoning?: string;
@@ -37,41 +38,31 @@ serve(async (req) => {
       }
     );
 
-    const { action, params, contact_email, user_id, ai_confidence, ai_reasoning }: CRMActionRequest = await req.json();
+    const { action, params, sender_email, contact_email, user_id, ai_confidence, ai_reasoning }: CRMActionRequest = await req.json();
 
-    console.log(`[CRM Action] Executing action: ${action} for ${contact_email}`);
+    // Use sender_email as primary, fall back to contact_email for legacy
+    const emailAddress = sender_email || contact_email;
+    
+    if (!emailAddress) {
+      throw new Error('sender_email or contact_email is required');
+    }
 
-    // Step 1: Get or create contact in rubrica
+    console.log(`[CRM Action] Executing action: ${action} for ${emailAddress}`);
+
+    // Step 1: OPTIONAL - Try to link to rubrica contact if exists
     let rubrica_id: string | null = null;
 
     const { data: existingContact } = await supabaseClient
       .from('rubrica')
       .select('id')
-      .eq('email', contact_email)
+      .eq('email', emailAddress)
       .maybeSingle();
 
     if (existingContact) {
       rubrica_id = existingContact.id;
-      console.log(`[CRM Action] Found existing contact: ${rubrica_id}`);
+      console.log(`[CRM Action] ✅ Linked to existing rubrica contact: ${rubrica_id}`);
     } else {
-      // Create new contact
-      const { data: newContact, error: createError } = await supabaseClient
-        .from('rubrica')
-        .insert({
-          email: contact_email,
-          nome: params.contact_name || '',
-          azienda: params.company_name || '',
-          stato: 'A',
-        })
-        .select('id')
-        .single();
-
-      if (createError) {
-        throw new Error(`Failed to create contact: ${createError.message}`);
-      }
-
-      rubrica_id = newContact.id;
-      console.log(`[CRM Action] Created new contact: ${rubrica_id}`);
+      console.log(`[CRM Action] ⚠️ No rubrica contact found - creating activity without rubrica link`);
     }
 
     // Step 2: Execute specific action
@@ -85,6 +76,7 @@ serve(async (req) => {
             .from('attivita')
             .insert({
               rubrica_id,
+              sender_email: emailAddress,
               tipo: 'task',
               descrizione: params.description || 'Task creato dall\'AI',
               stato: 'aperta',
@@ -109,6 +101,7 @@ serve(async (req) => {
             .from('attivita')
             .insert({
               rubrica_id,
+              sender_email: emailAddress,
               tipo: 'meeting',
               descrizione: params.description || 'Meeting creato dall\'AI',
               stato: 'aperta',
@@ -134,6 +127,7 @@ serve(async (req) => {
             .from('attivita')
             .insert({
               rubrica_id,
+              sender_email: emailAddress,
               tipo: 'chiamata',
               descrizione: params.reason || 'Chiamata programmata dall\'AI',
               stato: 'aperta',
@@ -154,6 +148,13 @@ serve(async (req) => {
         }
 
         case 'update_contact': {
+          // Only allow update if rubrica contact exists
+          if (!rubrica_id) {
+            console.log('[CRM Action] ⚠️ Skipping update_contact - no rubrica contact found');
+            result = { skipped: true, reason: 'No rubrica contact to update' };
+            break;
+          }
+
           // Get existing notes
           const { data: contact } = await supabaseClient
             .from('rubrica')
@@ -181,6 +182,13 @@ serve(async (req) => {
         }
 
         case 'add_tag': {
+          // Only allow tag if rubrica contact exists
+          if (!rubrica_id) {
+            console.log('[CRM Action] ⚠️ Skipping add_tag - no rubrica contact found');
+            result = { skipped: true, reason: 'No rubrica contact to tag' };
+            break;
+          }
+
           // Get existing tags
           const { data: contact } = await supabaseClient
             .from('rubrica')
@@ -212,11 +220,19 @@ serve(async (req) => {
         }
 
         case 'link_to_campaign': {
+          // Only allow campaign link if rubrica contact exists
+          if (!rubrica_id) {
+            console.log('[CRM Action] ⚠️ Skipping link_to_campaign - no rubrica contact found');
+            result = { skipped: true, reason: 'No rubrica contact to link' };
+            break;
+          }
+
           // Create activity linked to campaign
           const { data: activity, error: activityError } = await supabaseClient
             .from('attivita')
             .insert({
               rubrica_id,
+              sender_email: emailAddress,
               tipo: 'email',
               descrizione: params.campaign_note || 'Collegato a campagna',
               stato: 'aperta',
@@ -248,7 +264,7 @@ serve(async (req) => {
           tables_modified: ['attivita', 'rubrica'],
           metadata: {
             action,
-            contact_email,
+            sender_email: emailAddress,
             ai_confidence,
             success: true,
           },

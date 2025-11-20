@@ -209,20 +209,15 @@ interface AIProcessRequest {
         userId: userId,
       });
 
-      // 🏢 SPRINT 1: Load CRM context
-      console.log('[AI Processor] 🏢 Loading CRM context...');
-      const { loadContactContext, loadContactActivities, loadRelatedCampaigns, formatCRMContextForAI } = await import('../_shared/crm-context-loader.ts');
+      // 🏢 SPRINT 1 CORRECTED: Load Email Sender context
+      console.log('[AI Processor] 🏢 Loading Email Sender context...');
+      const { loadSenderContext, loadSenderActionHistory, formatSenderContextForAI } = await import('../_shared/email-sender-context-loader.ts');
       
-      const contactContext = await loadContactContext(supabase, email.from_email);
-      const contactActivities = contactContext.rubrica_id 
-        ? await loadContactActivities(supabase, contactContext.rubrica_id)
-        : [];
-      const relatedCampaigns = contactContext.rubrica_id
-        ? await loadRelatedCampaigns(supabase, contactContext.rubrica_id)
-        : [];
+      const senderContext = await loadSenderContext(supabase, email.from_email);
+      const senderActionHistory = await loadSenderActionHistory(supabase, email.from_email);
       
-      const crmContextText = formatCRMContextForAI(contactContext, contactActivities, relatedCampaigns);
-      console.log('[AI Processor] ✅ CRM context loaded');
+      const senderContextText = formatSenderContextForAI(senderContext, senderActionHistory);
+      console.log('[AI Processor] ✅ Email Sender context loaded');
 
       // 📊 INCREMENTO 10: Get adaptive confidence threshold
       const { getAdaptiveConfidence } = await import('../_shared/learning-helpers.ts');
@@ -314,7 +309,7 @@ interface AIProcessRequest {
                 body: {
                   action: decision.action,
                   params: decision.payload || {},
-                  contact_email: email.from_email,
+                  sender_email: email.from_email,
                   user_id: userId,
                   ai_confidence: decision.confidence,
                   ai_reasoning: decision.reasoning,

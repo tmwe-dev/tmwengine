@@ -3233,6 +3233,81 @@ export type Database = {
         }
         Relationships: []
       }
+      email_contextual_searches: {
+        Row: {
+          created_at: string | null
+          email_id: string
+          execution_time_ms: number | null
+          id: string
+          search_query: string
+          search_result: Json | null
+          search_type: string
+          user_id: string
+          was_successful: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_id: string
+          execution_time_ms?: number | null
+          id?: string
+          search_query: string
+          search_result?: Json | null
+          search_type: string
+          user_id: string
+          was_successful?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          email_id?: string
+          execution_time_ms?: number | null
+          id?: string
+          search_query?: string
+          search_result?: Json | null
+          search_type?: string
+          user_id?: string
+          was_successful?: boolean | null
+        }
+        Relationships: []
+      }
+      email_conversation_history: {
+        Row: {
+          conversation_summary: string | null
+          created_at: string | null
+          id: string
+          last_email_at: string | null
+          last_emails: Json | null
+          relationship_status: string | null
+          sender_email: string
+          total_exchanges: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_summary?: string | null
+          created_at?: string | null
+          id?: string
+          last_email_at?: string | null
+          last_emails?: Json | null
+          relationship_status?: string | null
+          sender_email: string
+          total_exchanges?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_summary?: string | null
+          created_at?: string | null
+          id?: string
+          last_email_at?: string | null
+          last_emails?: Json | null
+          relationship_status?: string | null
+          sender_email?: string
+          total_exchanges?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_folder_locks: {
         Row: {
           created_at: string | null
@@ -3447,13 +3522,6 @@ export type Database = {
             columns: ["email_id"]
             isOneToOne: false
             referencedRelation: "email_messages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "email_messages_topics_topic_id_fkey"
-            columns: ["topic_id"]
-            isOneToOne: false
-            referencedRelation: "email_topics"
             referencedColumns: ["id"]
           },
         ]
@@ -4287,41 +4355,47 @@ export type Database = {
       }
       email_topics: {
         Row: {
+          context_summary: string | null
           created_at: string | null
-          email_count: number | null
-          first_mentioned_at: string
+          first_mention_at: string | null
           id: string
-          last_mentioned_at: string
+          last_mention_at: string | null
+          mention_count: number | null
           metadata: Json | null
-          reference_number: string | null
-          topic_name: string
+          related_emails: string[] | null
+          topic_key: string
           topic_type: string
+          topic_value: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          context_summary?: string | null
           created_at?: string | null
-          email_count?: number | null
-          first_mentioned_at?: string
+          first_mention_at?: string | null
           id?: string
-          last_mentioned_at?: string
+          last_mention_at?: string | null
+          mention_count?: number | null
           metadata?: Json | null
-          reference_number?: string | null
-          topic_name: string
+          related_emails?: string[] | null
+          topic_key: string
           topic_type: string
+          topic_value: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          context_summary?: string | null
           created_at?: string | null
-          email_count?: number | null
-          first_mentioned_at?: string
+          first_mention_at?: string | null
           id?: string
-          last_mentioned_at?: string
+          last_mention_at?: string | null
+          mention_count?: number | null
           metadata?: Json | null
-          reference_number?: string | null
-          topic_name?: string
+          related_emails?: string[] | null
+          topic_key?: string
           topic_type?: string
+          topic_value?: string
           updated_at?: string | null
           user_id?: string
         }
@@ -6410,6 +6484,57 @@ export type Database = {
           push_notifications_enabled?: boolean
           push_token?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_personality_profile: {
+        Row: {
+          common_phrases: string[] | null
+          created_at: string | null
+          decision_patterns: Json | null
+          formality_level: number | null
+          id: string
+          language_preferences: Json | null
+          last_learning_at: string | null
+          learned_behaviors: Json | null
+          priority_keywords: string[] | null
+          response_style: string | null
+          signature_template: string | null
+          tone_preference: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          common_phrases?: string[] | null
+          created_at?: string | null
+          decision_patterns?: Json | null
+          formality_level?: number | null
+          id?: string
+          language_preferences?: Json | null
+          last_learning_at?: string | null
+          learned_behaviors?: Json | null
+          priority_keywords?: string[] | null
+          response_style?: string | null
+          signature_template?: string | null
+          tone_preference?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          common_phrases?: string[] | null
+          created_at?: string | null
+          decision_patterns?: Json | null
+          formality_level?: number | null
+          id?: string
+          language_preferences?: Json | null
+          last_learning_at?: string | null
+          learned_behaviors?: Json | null
+          priority_keywords?: string[] | null
+          response_style?: string | null
+          signature_template?: string | null
+          tone_preference?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []

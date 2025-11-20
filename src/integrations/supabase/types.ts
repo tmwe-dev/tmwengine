@@ -436,6 +436,7 @@ export type Database = {
           rubrica_id: string | null
           scadenza: string | null
           selezionata: boolean | null
+          sender_email: string | null
           stato: string
           tipo: string
           updated_at: string
@@ -459,6 +460,7 @@ export type Database = {
           rubrica_id?: string | null
           scadenza?: string | null
           selezionata?: boolean | null
+          sender_email?: string | null
           stato?: string
           tipo: string
           updated_at?: string
@@ -482,6 +484,7 @@ export type Database = {
           rubrica_id?: string | null
           scadenza?: string | null
           selezionata?: boolean | null
+          sender_email?: string | null
           stato?: string
           tipo?: string
           updated_at?: string

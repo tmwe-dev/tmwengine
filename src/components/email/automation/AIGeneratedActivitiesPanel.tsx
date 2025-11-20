@@ -19,6 +19,7 @@ interface AIActivity {
   ai_confidence: number;
   ai_reasoning: string | null;
   rubrica_id: string | null;
+  sender_email: string | null;
 }
 
 const ActivityIcon = ({ tipo }: { tipo: string }) => {
@@ -52,13 +53,13 @@ export function AIGeneratedActivitiesPanel() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedDescription, setEditedDescription] = useState('');
 
-  // Fetch AI-generated activities
+  // Fetch AI-generated activities (including those without rubrica_id)
   const { data: activities, isLoading } = useQuery({
     queryKey: ['ai-generated-activities'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('attivita')
-        .select('id, tipo, descrizione, stato, scadenza, priorita, created_at, ai_confidence, ai_reasoning, rubrica_id')
+        .select('id, tipo, descrizione, stato, scadenza, priorita, created_at, ai_confidence, ai_reasoning, rubrica_id, sender_email')
         .eq('created_by_ai', true)
         .eq('stato', 'aperta')
         .order('created_at', { ascending: false })

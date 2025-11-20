@@ -418,9 +418,12 @@ export type Database = {
       }
       attivita: {
         Row: {
+          ai_confidence: number | null
+          ai_reasoning: string | null
           assegnato_a: string | null
           campagna_id: string | null
           created_at: string
+          created_by_ai: boolean | null
           creato_da: string | null
           data_creazione: string
           data_ultima_modifica: string | null
@@ -438,9 +441,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_confidence?: number | null
+          ai_reasoning?: string | null
           assegnato_a?: string | null
           campagna_id?: string | null
           created_at?: string
+          created_by_ai?: boolean | null
           creato_da?: string | null
           data_creazione?: string
           data_ultima_modifica?: string | null
@@ -458,9 +464,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_confidence?: number | null
+          ai_reasoning?: string | null
           assegnato_a?: string | null
           campagna_id?: string | null
           created_at?: string
+          created_by_ai?: boolean | null
           creato_da?: string | null
           data_creazione?: string
           data_ultima_modifica?: string | null

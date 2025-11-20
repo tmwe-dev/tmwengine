@@ -209,21 +209,6 @@ interface AIProcessRequest {
         userId: userId,
       });
 
-      // 🏢 SPRINT 1: Load CRM context
-      console.log('[AI Processor] 🏢 Loading CRM context...');
-      const { loadContactContext, loadContactActivities, loadRelatedCampaigns, formatCRMContextForAI } = await import('../_shared/crm-context-loader.ts');
-      
-      const contactContext = await loadContactContext(supabase, email.from_email);
-      const contactActivities = contactContext.rubrica_id 
-        ? await loadContactActivities(supabase, contactContext.rubrica_id)
-        : [];
-      const relatedCampaigns = contactContext.rubrica_id
-        ? await loadRelatedCampaigns(supabase, contactContext.rubrica_id)
-        : [];
-      
-      const crmContextText = formatCRMContextForAI(contactContext, contactActivities, relatedCampaigns);
-      console.log('[AI Processor] ✅ CRM context loaded');
-
       // 📊 INCREMENTO 10: Get adaptive confidence threshold
       const { getAdaptiveConfidence } = await import('../_shared/learning-helpers.ts');
       const adaptiveThreshold = await getAdaptiveConfidence(
@@ -305,35 +290,6 @@ interface AIProcessRequest {
               .eq('id', email_id);
             success = !deleteError;
             if (deleteError) errorMessage = deleteError.message;
-          } else if (['create_task', 'create_meeting', 'create_call', 'update_contact', 'add_tag', 'link_to_campaign'].includes(decision.action)) {
-            // 🚀 SPRINT 2: Execute CRM actions via edge function
-            console.log(`[AI Processor] 🏢 Executing CRM action: ${decision.action}`);
-            
-            try {
-              const { data: crmResult, error: crmError } = await supabase.functions.invoke('execute-crm-action', {
-                body: {
-                  action: decision.action,
-                  params: decision.payload || {},
-                  contact_email: email.from_email,
-                  user_id: userId,
-                  ai_confidence: decision.confidence,
-                  ai_reasoning: decision.reasoning,
-                },
-              });
-
-              if (crmError) throw crmError;
-              
-              success = crmResult?.success || false;
-              if (!success) {
-                errorMessage = crmResult?.error || 'CRM action failed';
-              } else {
-                console.log(`[AI Processor] ✅ CRM action executed: ${crmResult?.message}`);
-              }
-            } catch (err: any) {
-              errorMessage = err.message;
-              success = false;
-              console.error(`[AI Processor] ❌ CRM action error:`, err);
-            }
           } else {
             // Other actions require manual confirmation
             success = false;

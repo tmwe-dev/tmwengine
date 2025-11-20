@@ -26,6 +26,7 @@ import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
 import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
 import { AIAutomationDashboard } from '@/components/email/automation/AIAutomationDashboard';
 import { PendingActionsPanel } from '@/components/email/automation/PendingActionsPanel';
+import { AIGeneratedActivitiesPanel } from '@/components/email/automation/AIGeneratedActivitiesPanel';
 import { AutoExecuteConfigDialog } from '@/components/email/automation/AutoExecuteConfigDialog';
 import { LearningDashboard } from '@/components/email/automation/LearningDashboard';
 import { EmailCountDiagnostics } from '@/components/email/EmailCountDiagnostics';
@@ -39,8 +40,8 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions' | 'learning'>('management');
-  const [automationsSubView, setAutomationsSubView] = useState<'dashboard' | 'pending' | 'learning'>('dashboard');
+  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions' | 'learning' | 'ai-activities'>('management');
+  const [automationsSubView, setAutomationsSubView] = useState<'dashboard' | 'pending' | 'learning' | 'ai-activities'>('dashboard');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [isAutoConfigOpen, setIsAutoConfigOpen] = useState(false);
   const [globalStats, setGlobalStats] = useState({
@@ -434,6 +435,14 @@ const FunEmail = () => {
                     📊 Learning Insights
                   </Button>
                   <Button
+                    variant={automationsSubView === 'ai-activities' ? 'default' : 'outline'}
+                    onClick={() => setAutomationsSubView('ai-activities')}
+                    size="sm"
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    AI Activities
+                  </Button>
+                  <Button
                     variant="outline"
                     onClick={() => setIsAutoConfigOpen(true)}
                     size="sm"
@@ -448,6 +457,7 @@ const FunEmail = () => {
                 {automationsSubView === 'dashboard' && <AIAutomationDashboard />}
                 {automationsSubView === 'pending' && <PendingActionsPanel />}
                 {automationsSubView === 'learning' && <LearningDashboard />}
+                {automationsSubView === 'ai-activities' && <AIGeneratedActivitiesPanel />}
               </div>
             </GradientBackground>
           ) : currentView === 'pending-actions' ? (

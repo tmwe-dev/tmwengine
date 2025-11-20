@@ -1,28 +1,11 @@
 // ============================================
-// EMAIL AI PROCESSOR - Consolidado
-// Función única que reemplaza: classify-email-content, classify-email-content-intelligent, email-ai-automation-processor
+// EMAIL AI PROCESSOR v2.0 - Progressive Exclusion + Contextual Memory
+// Implementa: Analisi Gerarchica | Memoria Multilivello | Ricerca Attiva
 // ============================================
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import {
-  getAIConfig,
-  buildPrompt,
-  callAIProvider,
-  parseAIResponse,
-  updateEmailClassification,
-  extractEntities,
-  createOrUpdateTopic,
-  updateConversationHistory,
-  decideAction,
-  getToolsContext,
-  generateAIReply,
-  type EmailData,
-  type AIClassificationResult,
-  type ExtractedEntity,
-  type AIActionDecision
-} from '../_shared/ai-helpers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,70 +17,8 @@ interface AIProcessRequest {
   user_email: string;
   operation?: 'classify' | 'automate';
   selected_agent?: 'gemini' | 'gpt' | 'claude';
-  additional_instructions?: string;
   force_category?: string;
 }
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { 
-      email_id,
-      user_email,
-      operation = 'classify',
-      selected_agent = 'gemini',
-      additional_instructions,
-      force_category
-    }: AIProcessRequest = await req.json();
-
-    console.log('🤖 Email AI Processor started');
-    console.log('📧 Email ID:', email_id);
-    console.log('🎯 Operation:', operation);
-    console.log('🤖 Agent:', selected_agent);
-
-    if (!email_id || !user_email) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: email_id, user_email' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // ============================================
-    // STEP 1: FETCH EMAIL FROM DB
-    // ============================================
-
-    console.log('[AI Processor] 📥 Fetching email from database...');
-    
-    const { data: email, error: emailError } = await supabase
-      .from('email_messages')
-      .select('*')
-      .eq('id', email_id)
-      .eq('user_email', user_email)
-      .single();
-
-    if (emailError || !email) {
-      console.error('[AI Processor] ❌ Email not found:', emailError);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Email not found in local database. Please sync emails first.' 
-        }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('[AI Processor] ✅ Email fetched:', {
-      id: email.id,
-      subject: email.subject?.substring(0, 50),
-      from: email.from_email
-    });
 
     // ============================================
     // STEP 2: GET AI CONFIG

@@ -4,6 +4,7 @@ import { Paperclip, Image, Smile, Mic, Send, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { AISuggestions } from './AISuggestions';
 import { AutoSpeakerToggle } from './AutoSpeakerToggle';
 import { VideoCallButton } from './VideoCallButton';
@@ -11,6 +12,7 @@ import { AIChatInvoker } from './AIChatInvoker';
 import { TtsControls } from './TtsControls';
 import { useAutoSpeaker } from '@/hooks/useAutoSpeaker';
 import { UserLanguageSettings } from './UserLanguageSettings';
+import { IntranetVoiceToText } from './IntranetVoiceToText';
 
 interface FileAttachment {
   file: File;
@@ -240,6 +242,10 @@ export const MessageInputWithAttachments = ({
     setMessage(text);
   };
 
+  const handleTranscription = (text: string) => {
+    setMessage(prev => prev + text);
+  };
+
   return (
     <>
       <div className="border-t-2 border-border bg-transparent p-2">
@@ -294,91 +300,117 @@ export const MessageInputWithAttachments = ({
         )}
 
         <div className="flex flex-col gap-2">
-          {/* Icone */}
-          <div className="flex gap-1">
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={handleFileSelect}
-              multiple
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => fileInputRef.current?.click()}
-              title="Allega file"
-              disabled={isSending}
-            >
-              <Paperclip className="h-4 w-4" />
-            </Button>
+          {/* Icone - barra scorrevole orizzontalmente */}
+          <ScrollArea className="w-full">
+            <div className="flex gap-1 pb-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileSelect}
+                multiple
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => fileInputRef.current?.click()}
+                title="Allega file"
+                disabled={isSending}
+                className="flex-shrink-0"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
 
-            <input
-              type="file"
-              ref={imageInputRef}
-              className="hidden"
-              accept="image/*"
-              onChange={handleImageSelect}
-              multiple
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => imageInputRef.current?.click()}
-              title="Allega immagine"
-              disabled={isSending}
-            >
-              <Image className="h-4 w-4" />
-            </Button>
+              <input
+                type="file"
+                ref={imageInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageSelect}
+                multiple
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => imageInputRef.current?.click()}
+                title="Allega immagine"
+                disabled={isSending}
+                className="flex-shrink-0"
+              >
+                <Image className="h-4 w-4" />
+              </Button>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  title="Emoticon"
-                  disabled={isSending}
-                >
-                  <Smile className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64">
-                <div className="grid grid-cols-5 gap-2">
-                  {EMOTICONS.map((emoticon, index) => (
-                    <Button
-                      key={index}
-                      variant="ghost"
-                      className="text-2xl hover:scale-125 transition-transform"
-                      onClick={() => insertEmoticon(emoticon)}
-                    >
-                      {emoticon}
-                    </Button>
-                  ))}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    title="Emoticon"
+                    disabled={isSending}
+                    className="flex-shrink-0"
+                  >
+                    <Smile className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64">
+                  <div className="grid grid-cols-5 gap-2">
+                    {EMOTICONS.map((emoticon, index) => (
+                      <Button
+                        key={index}
+                        variant="ghost"
+                        className="text-2xl hover:scale-125 transition-transform"
+                        onClick={() => insertEmoticon(emoticon)}
+                      >
+                        {emoticon}
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Invoker AI Albert */}
+              <div className="flex-shrink-0">
+                <AIChatInvoker roomId={roomId} />
+              </div>
+
+              {/* Voice to Text - NUOVO */}
+              <div className="flex-shrink-0">
+                <IntranetVoiceToText
+                  onTranscriptionComplete={handleTranscription}
+                  isDisabled={isSending}
+                  vadTimeout={2000}
+                />
+              </div>
+
+              {/* Voice Message - ESISTENTE */}
+              <Button
+                size="icon"
+                variant={isRecording ? "destructive" : "ghost"}
+                onClick={isRecording ? stopRecording : startRecording}
+                title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
+                disabled={isSending}
+                className="flex-shrink-0"
+              >
+                <Mic className="h-4 w-4" />
+              </Button>
+
+              <div className="flex-shrink-0">
+                <AutoSpeakerToggle isSpeaking={isSpeaking} />
+              </div>
+              
+              {/* Settings button */}
+              {settingsButton && (
+                <div className="flex-shrink-0">
+                  {settingsButton}
                 </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Invoker AI Albert */}
-            <AIChatInvoker roomId={roomId} />
-
-            <Button
-              size="icon"
-              variant={isRecording ? "destructive" : "ghost"}
-              onClick={isRecording ? stopRecording : startRecording}
-              title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
-              disabled={isSending}
-            >
-              <Mic className="h-4 w-4" />
-            </Button>
-
-            <AutoSpeakerToggle isSpeaking={isSpeaking} />
-            
-            {/* Settings button */}
-            {settingsButton}
-            
-            {/* Language Settings button */}
-            <UserLanguageSettings />
-          </div>
+              )}
+              
+              {/* Language Settings button */}
+              <div className="flex-shrink-0">
+                <UserLanguageSettings />
+              </div>
+            </div>
+          </ScrollArea>
 
           {/* Input testo con VideoCall a sinistra e pulsante invio a destra */}
           <div className="flex items-center gap-2">

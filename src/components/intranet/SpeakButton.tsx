@@ -14,6 +14,7 @@ const getLanguageLocale = (lang: string): string => {
     'es': 'es-ES',
     'fr': 'fr-FR',
     'de': 'de-DE',
+    'th': 'th-TH',
   };
   return localeMap[lang] || lang.includes('-') ? lang : 'it-IT';
 };

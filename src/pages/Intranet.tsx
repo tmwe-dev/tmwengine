@@ -370,7 +370,7 @@ const Intranet = () => {
 
                 {/* Messaggi - Area scrollabile indipendente con flex-1 */}
                 <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
-                  <CardContent className={shouldHideHeader ? 'flex-1 min-h-0 overflow-y-auto px-3 py-3' : 'space-y-3 px-2 sm:px-6 max-h-[600px] overflow-y-auto'}>
+                  <CardContent className={shouldHideHeader ? 'flex-1 min-h-0 overflow-y-auto px-3 py-3' : 'space-y-3 px-2 sm:px-6 flex-1 overflow-y-auto'}>
                      <ChatMessages 
                       roomId={selectedRoomId!} 
                       isLayoutInverted={isLayoutInverted} 

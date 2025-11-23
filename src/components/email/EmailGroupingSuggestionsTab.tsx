@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Brain, RefreshCw, LayoutGrid, List, Mail, FolderKanban, X } from 'lucide-react';
+import { Sparkles, Loader2, Brain, RefreshCw, LayoutGrid, List, Mail, FolderKanban, X, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { analyzeSenders } from '@/lib/email-sender-analyzer';
@@ -21,6 +21,13 @@ import { CompanyProfileSettings } from '../intranet/CompanyProfileSettings';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { detectCountryFromEmail } from '@/lib/email-utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 export function EmailGroupingSuggestionsTab() {
   // 🆕 State per dati locali (self-contained)
@@ -1228,24 +1235,43 @@ export function EmailGroupingSuggestionsTab() {
                 </ToggleGroup>
               </div>
 
-              {/* 🆕 BARRA FILTRI GRUPPO */}
+              {/* 🆕 DROPDOWN FILTRO GRUPPO */}
               {availableGroupFilters.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">
                     Filtra per gruppo:
                   </span>
                   
-                  {/* Badge Gruppi Cliccabili */}
-                  {availableGroupFilters.map(groupName => (
-                    <Badge
-                      key={groupName}
-                      variant={selectedGroupFilter === groupName ? "default" : "outline"}
-                      className="cursor-pointer hover:bg-primary/20 transition-colors text-xs"
-                      onClick={() => setSelectedGroupFilter(groupName)}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="h-8 px-3 text-xs gap-2"
+                      >
+                        {selectedGroupFilter || "Seleziona gruppo"}
+                        <ChevronDown className="w-3 h-3 opacity-50" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent 
+                      align="start" 
+                      className="max-h-[300px] overflow-y-auto bg-background z-50"
                     >
-                      {groupName}
-                    </Badge>
-                  ))}
+                      {availableGroupFilters.map(groupName => (
+                        <DropdownMenuItem
+                          key={groupName}
+                          onClick={() => setSelectedGroupFilter(groupName)}
+                          className={cn(
+                            "cursor-pointer text-sm",
+                            selectedGroupFilter === groupName && "bg-primary/10 font-medium"
+                          )}
+                        >
+                          {selectedGroupFilter === groupName && "✓ "}
+                          {groupName}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   
                   {/* Pulsante Rimuovi Filtro (solo se filtro attivo) */}
                   {selectedGroupFilter && (
@@ -1253,7 +1279,7 @@ export function EmailGroupingSuggestionsTab() {
                       size="sm"
                       variant="ghost"
                       onClick={() => setSelectedGroupFilter(null)}
-                      className="h-6 px-2 text-xs hover:text-destructive"
+                      className="h-8 px-2 text-xs hover:text-destructive"
                     >
                       <X className="w-3 h-3 mr-1" />
                       Rimuovi filtro

@@ -25,6 +25,7 @@ interface GroupingSuggestionCardProps {
   onDismiss: (suggestionId: string) => void;
   disabled?: boolean;
   emailCount?: number;
+  onGroupClick?: (groupName: string) => void;
 }
 
 export const GroupingSuggestionCard = ({
@@ -33,6 +34,7 @@ export const GroupingSuggestionCard = ({
   onDismiss,
   disabled = false,
   emailCount,
+  onGroupClick,
 }: GroupingSuggestionCardProps) => {
   // State per processing, debouncing e dialog email
   const [isProcessing, setIsProcessing] = useState(false);
@@ -199,7 +201,13 @@ export const GroupingSuggestionCard = ({
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm truncate">{group.group_name}</span>
+                    <span 
+                      className="font-medium text-sm truncate cursor-pointer hover:text-primary transition-colors hover:underline"
+                      onClick={() => onGroupClick?.(group.group_name)}
+                      title="Clicca per filtrare per questo gruppo"
+                    >
+                      {group.group_name}
+                    </span>
                     {group.group_id === null && (
                       <Badge variant="outline" className="text-xs">
                         Nuovo

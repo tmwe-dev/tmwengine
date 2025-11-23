@@ -27,6 +27,7 @@ interface GroupingSuggestionRowProps {
   onSelectGroup: (suggestionId: string, groupId: string) => void;
   disabled?: boolean;
   emailCount?: number;
+  onGroupClick?: (groupName: string) => void;
 }
 
 export const GroupingSuggestionRow = ({
@@ -36,6 +37,7 @@ export const GroupingSuggestionRow = ({
   onSelectGroup,
   disabled = false,
   emailCount,
+  onGroupClick,
 }: GroupingSuggestionRowProps) => {
   // State per dropdown, processing, debouncing e dialog email
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
@@ -224,7 +226,13 @@ export const GroupingSuggestionRow = ({
         <div className="space-y-2 bg-gradient-to-r from-primary/5 to-transparent p-3 rounded-lg border border-primary/10">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-base">{primarySuggestion.group_name}</span>
+              <span 
+                className="font-semibold text-base cursor-pointer hover:text-primary transition-colors hover:underline"
+                onClick={() => onGroupClick?.(primarySuggestion.group_name)}
+                title="Clicca per filtrare per questo gruppo"
+              >
+                {primarySuggestion.group_name}
+              </span>
               {primarySuggestion.group_id === null && (
                 <Badge variant="outline" className="text-xs">
                   Nuovo

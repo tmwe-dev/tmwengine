@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Brain, RefreshCw, LayoutGrid, List, Mail, FolderKanban } from 'lucide-react';
+import { Sparkles, Loader2, Brain, RefreshCw, LayoutGrid, List, Mail, FolderKanban, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { analyzeSenders } from '@/lib/email-sender-analyzer';
@@ -37,44 +37,66 @@ export function EmailGroupingSuggestionsTab() {
   // 📧 Conteggi email per mittente (caricati in bulk)
   const [emailCounts, setEmailCounts] = useState<Map<string, number>>(new Map());
   
-  // 🔄 Suggerimenti ordinati in base a sortBy
+  // 🔍 Filtro per gruppo suggerito
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string | null>(null);
+  
+  // 🔄 Suggerimenti ordinati in base a sortBy E filtro gruppo
   const sortedSuggestions = useMemo(() => {
     if (!groupingSuggestions || groupingSuggestions.length === 0) return [];
     
-    const sorted = [...groupingSuggestions];
+    let filtered = [...groupingSuggestions];
     
+    // 🔍 APPLICA FILTRO GRUPPO se selezionato
+    if (selectedGroupFilter) {
+      filtered = filtered.filter(suggestion =>
+        suggestion.suggested_groups.some(g => g.group_name === selectedGroupFilter)
+      );
+    }
+    
+    // Applica ordinamento esistente
     if (sortBy === 'domain') {
       // Ordina per dominio email (parte dopo @)
-      sorted.sort((a, b) => {
+      filtered.sort((a, b) => {
         const domainA = a.sender_email.split('@')[1] || '';
         const domainB = b.sender_email.split('@')[1] || '';
         return domainA.localeCompare(domainB);
       });
     } else if (sortBy === 'group') {
       // Ordina per nome gruppo primario (suggerimento con confidence più alta)
-      sorted.sort((a, b) => {
+      filtered.sort((a, b) => {
         const groupA = a.suggested_groups[0]?.group_name || '';
         const groupB = b.suggested_groups[0]?.group_name || '';
         return groupA.localeCompare(groupB);
       });
     } else if (sortBy === 'country') {
       // Ordina per paese (bandiera)
-      sorted.sort((a, b) => {
+      filtered.sort((a, b) => {
         const countryA = detectCountryFromEmail(a.sender_email) || 'ZZ';
         const countryB = detectCountryFromEmail(b.sender_email) || 'ZZ';
         return countryA.localeCompare(countryB);
       });
     } else if (sortBy === 'email_count') {
       // Ordina per numero email (decrescente)
-      sorted.sort((a, b) => {
+      filtered.sort((a, b) => {
         const countA = emailCounts.get(a.sender_email) || 0;
         const countB = emailCounts.get(b.sender_email) || 0;
         return countB - countA; // Decrescente
       });
     }
     
-    return sorted;
-  }, [groupingSuggestions, sortBy, emailCounts]);
+    return filtered;
+  }, [groupingSuggestions, sortBy, emailCounts, selectedGroupFilter]);
+  
+  // 📦 Estrai tutti i gruppi unici dai suggerimenti per creare i filtri
+  const availableGroupFilters = useMemo(() => {
+    const groupSet = new Set<string>();
+    groupingSuggestions.forEach(suggestion => {
+      suggestion.suggested_groups.forEach(group => {
+        groupSet.add(group.group_name);
+      });
+    });
+    return Array.from(groupSet).sort((a, b) => a.localeCompare(b, 'it'));
+  }, [groupingSuggestions]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
   const [aiConfigError, setAiConfigError] = useState<string | null>(null);
@@ -1206,9 +1228,45 @@ export function EmailGroupingSuggestionsTab() {
                 </ToggleGroup>
               </div>
 
+              {/* 🆕 BARRA FILTRI GRUPPO */}
+              {availableGroupFilters.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">
+                    Filtra per gruppo:
+                  </span>
+                  
+                  {/* Badge Gruppi Cliccabili */}
+                  {availableGroupFilters.map(groupName => (
+                    <Badge
+                      key={groupName}
+                      variant={selectedGroupFilter === groupName ? "default" : "outline"}
+                      className="cursor-pointer hover:bg-primary/20 transition-colors text-xs"
+                      onClick={() => setSelectedGroupFilter(groupName)}
+                    >
+                      {groupName}
+                    </Badge>
+                  ))}
+                  
+                  {/* Pulsante Rimuovi Filtro (solo se filtro attivo) */}
+                  {selectedGroupFilter && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSelectedGroupFilter(null)}
+                      className="h-6 px-2 text-xs hover:text-destructive"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Rimuovi filtro
+                    </Button>
+                  )}
+                </div>
+              )}
+
               {/* Badge contatore suggerimenti */}
               <Badge variant="secondary" className="text-sm">
-                {sortedSuggestions.length} suggerimenti
+                {sortedSuggestions.length}
+                {selectedGroupFilter ? ` di ${groupingSuggestions.length}` : ''} 
+                suggerimenti
               </Badge>
             </div>
           )}
@@ -1226,6 +1284,7 @@ export function EmailGroupingSuggestionsTab() {
                     onSelectGroup={handleManualGroupSelection}
                     disabled={isGeneratingSuggestions}
                     emailCount={emailCounts.get(suggestion.sender_email)}
+                    onGroupClick={setSelectedGroupFilter}
                   />
                 ))}
               </div>
@@ -1239,6 +1298,7 @@ export function EmailGroupingSuggestionsTab() {
                     onDismiss={handleRejectSuggestion}
                     disabled={isGeneratingSuggestions}
                     emailCount={emailCounts.get(suggestion.sender_email)}
+                    onGroupClick={setSelectedGroupFilter}
                   />
                 ))}
               </div>

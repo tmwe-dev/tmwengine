@@ -201,6 +201,9 @@ const EmailDashboard = () => {
                       onForward={handleForward}
                       onDelete={handleDelete}
                       onMarkAsRead={handleMarkAsRead}
+                      emailIds={emails.map(e => e.id)}
+                      currentEmailIndex={emails.findIndex(e => e.id === selectedEmailId)}
+                      currentFolder={selectedFolder}
                     />
                   </div>
                 ) : (
@@ -303,6 +306,9 @@ const EmailDashboard = () => {
               setSelectedEmailId(null);
               setShowEmailList(true);
             }}
+            emailIds={emails.map(e => e.id)}
+            currentEmailIndex={emails.findIndex(e => e.id === selectedEmailId)}
+            currentFolder={selectedFolder}
           />
         </div>
       )}

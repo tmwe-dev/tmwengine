@@ -15,6 +15,9 @@ interface EmailMobileViewProps {
   onForward: () => void;
   onMarkAsRead: (emailId: string) => void;
   onBack: () => void;
+  emailIds?: string[];
+  currentEmailIndex?: number;
+  currentFolder?: string;
 }
 
 export const EmailMobileView = ({
@@ -26,6 +29,9 @@ export const EmailMobileView = ({
   onForward,
   onMarkAsRead,
   onBack,
+  emailIds = [],
+  currentEmailIndex = 0,
+  currentFolder = 'INBOX'
 }: EmailMobileViewProps) => {
   if (!isMobile || showEmailList || !selectedEmail) {
     return null;
@@ -50,6 +56,9 @@ export const EmailMobileView = ({
           onReplyAll={onReplyAll}
           onForward={onForward}
           onMarkAsRead={onMarkAsRead}
+          emailIds={emailIds}
+          currentEmailIndex={currentEmailIndex}
+          currentFolder={currentFolder}
         />
       </div>
     </div>

@@ -86,6 +86,41 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.removeItem('tmwe_access_token');
         sessionStorage.removeItem('tmwe_user_profile');
         sessionStorage.removeItem('tmwe_supabase_user_id');
+      } else if (event === 'TOKEN_REFRESHED') {
+        // 🔥 TTL SYNC: Verify TMWE token is still valid when Supabase refreshes
+        console.log('🔄 Supabase token refreshed, verifying TMWE token validity...');
+        
+        setTimeout(async () => {
+          const email = session?.user?.email;
+          if (!email) return;
+          
+          try {
+            const { data } = await supabase
+              .from('user_tmwe_credentials')
+              .select('expires_at')
+              .eq('email', email)
+              .maybeSingle();
+            
+            if (data && data.expires_at) {
+              const expiresAt = new Date(data.expires_at);
+              const now = new Date();
+              
+              if (expiresAt < now) {
+                console.error('❌ TMWE token expired detected during Supabase refresh');
+                console.error('   This should not happen with TTL sync enabled');
+                // Force re-authentication
+                await supabase.auth.signOut();
+                sessionStorage.clear();
+                window.location.href = '/auth';
+              } else {
+                const hoursLeft = (expiresAt.getTime() - now.getTime()) / 3600000;
+                console.log('✅ TMWE token still valid:', Math.round(hoursLeft * 10) / 10, 'hours remaining');
+              }
+            }
+          } catch (err) {
+            console.error('❌ Error checking TMWE token during refresh:', err);
+          }
+        }, 0);
       }
     });
 

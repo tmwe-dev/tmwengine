@@ -74,6 +74,13 @@ export const useEmailDetail = ({ selectedEmailId, selectedFolder }: UseEmailDeta
     console.log('📧 Extracted body length:', typeof bodyContent === 'string' ? bodyContent.length : 0);
     console.log('📧 Extracted subject:', subjectContent);
 
+    // Advanced debugging for empty body
+    if (!bodyContent || bodyContent === '<p>No content available</p>') {
+      console.warn('⚠️ BODY VACÍO - Estructura msg completa:', JSON.stringify(msg, null, 2));
+      console.warn('⚠️ BODY VACÍO - Campos disponibles:', Object.keys(msg));
+      console.warn('⚠️ BODY VACÍO - Header completo:', header);
+    }
+
     return {
       id: String(header.uid || msg.uid || msg.id || selectedEmailId),
       subject: subjectContent,

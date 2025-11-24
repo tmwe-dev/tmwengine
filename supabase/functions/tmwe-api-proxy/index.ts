@@ -1,14 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// TMWE API PROXY v5.1 - FORCE TOKEN VALIDATION FIX
-// CRITICAL FIX: bearerToken bypass prevented auto-refresh - Now ALWAYS validates
+// TMWE API PROXY v5.2 - FORCED REDEPLOY + AUTO-REFRESH
+// Deploy timestamp: 2025-11-24T11:20:00Z
+// Fix: Token OAuth auto-refresh inline + validación forzada
 // ═══════════════════════════════════════════════════════════════════════════
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
-// 🔥 v5.1 FORCE TOKEN VALIDATION - DO NOT REMOVE
-const V5_REDEPLOY_TIMESTAMP = Date.now();
-const V5_VERSION = 'v5.1-FORCE-TOKEN-VALIDATION-FIX';
+// 🔥 v5.2 FORCED REDEPLOY - CONFIRM DEPLOYMENT
+const V5_DEPLOY_TIMESTAMP = '2025-11-24T11:20:00Z';
+const V5_VERSION = 'v5.2-FORCED-REDEPLOY-AUTO-REFRESH';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,6 +65,13 @@ function recordSuccess(handler: string) {
 }
 
 serve(async (req) => {
+  // 🚨 IMMEDIATE LOG - Confirm v5.2 deployment
+  console.log('╔═══════════════════════════════════════════════════════════════╗');
+  console.log('║  🚀 TMWE API PROXY v5.2 - ACTIVE                             ║');
+  console.log('║  📅 Deploy:', V5_DEPLOY_TIMESTAMP, '                         ║');
+  console.log('║  🔄 Auto-refresh: ENABLED                                    ║');
+  console.log('╚═══════════════════════════════════════════════════════════════╝');
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -196,17 +204,14 @@ serve(async (req) => {
       }
     }
 
-    // 🔑 INLINE OAUTH TOKEN MANAGEMENT (v5.1 - ALWAYS VALIDATE TOKEN)
+    // 🔑 INLINE OAUTH TOKEN MANAGEMENT (v5.2 - ALWAYS VALIDATE & AUTO-REFRESH)
     let tmweAccessToken: string | null = null;
     
-    // 🚨 DEBUG: Force log to confirm code execution
     console.log('═══════════════════════════════════════════════════════');
-    console.log('[OAuth-v5.1] 🟢 ENTERED OAuth validation block');
-    console.log('[OAuth-v5.1] 👤 User:', userEmail);
-    console.log('[OAuth-v5.1] 📅 Timestamp:', new Date().toISOString());
+    console.log('[OAuth-v5.2] 🔐 Starting OAuth token validation');
+    console.log('[OAuth-v5.2] 👤 User:', userEmail);
+    console.log('[OAuth-v5.2] 📅 Current time:', new Date().toISOString());
     console.log('═══════════════════════════════════════════════════════');
-    
-    console.log(`[OAuth] 🔍 Fetching and validating token for: ${userEmail}`);
     
     // 1. Check environment variable first (highest priority)
     const envToken = Deno.env.get('TMWE_OAUTH_TOKEN');

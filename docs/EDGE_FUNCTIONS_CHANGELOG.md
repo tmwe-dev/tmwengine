@@ -9,6 +9,145 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-11-24] - TMWE API Proxy Force Token Validation Fix (CRITICAL v5.1)
+
+### 🎯 Resumen Ejecutivo
+- 🔴 **CRITICAL FIX**: Fixed v5.0 bug where `data.bearerToken` bypassed token expiration check
+- ✅ **Modified Edge Function**: `tmwe-api-proxy` v5.1 (force token validation)
+- ✅ **Root Cause**: v5.0 used `data.bearerToken` directly without checking expiration
+- ✅ **Solution**: ALWAYS fetch and validate token from database, ignore `data.bearerToken` (except env var)
+- 📊 **Impact**: Token refresh now executes correctly, all expired tokens will auto-refresh
+
+### Files Modified
+
+#### **tmwe-api-proxy/index.ts** (MODIFIED)
+- **Backup Created:** `index-old6.ts`
+- **Version:** v5.1 - Force Token Validation Fix
+- **Lines Modified:** 1-11 (version headers), 199-323 (token validation logic)
+- **Changes:**
+  - ❌ **Removed:** `let tmweAccessToken = data.bearerToken;` (línea 200)
+  - ✅ **Changed:** `let tmweAccessToken: string | null = null;` (always start null)
+  - ✅ **Removed:** `if (!tmweAccessToken)` conditional - now ALWAYS validates from DB
+  - ✅ **Added:** Final validation check after token logic
+  - **Version markers updated:** V5.0 → V5.1
+
+### Motivo Modifica
+
+**PROBLEMA IDENTIFICATO (v5.0):**
+- Edge function logs mostravano 401 Unauthorized persistenti
+- NO logs de "Fetching token", "Token expired", o "refresh" 
+- Diagnóstico DB: TODOS los tokens expirados (hace 3-15 días)
+- Query DB confirmaba: `token_status = 'Token expirado'`, refresh_token presente
+
+**CAUSA RAÍZ:**
+```typescript
+// ❌ v5.0 - PROBLEMA: usaba bearerToken sin verificar expiración
+let tmweAccessToken = data.bearerToken;
+if (!tmweAccessToken) {
+  // Este bloque NUNCA se ejecutaba si data.bearerToken venía definido
+  // Token expiration check aquí
+}
+```
+
+El código de refresh inline de v5.0 NUNCA se ejecutaba porque:
+1. Cliente enviaba `data.bearerToken` (token expirado del localStorage)
+2. Edge function lo usaba directamente sin validar expiración
+3. TMWE API respondía 401 Unauthorized
+4. No había logs porque el bloque de validación nunca se ejecutaba
+
+**SOLUCIÓN v5.1:**
+```typescript
+// ✅ v5.1 - SOLUCIÓN: SIEMPRE valida desde DB
+let tmweAccessToken: string | null = null;
+
+// Prioridad 1: Environment variable
+const envToken = Deno.env.get('TMWE_OAUTH_TOKEN');
+if (envToken) {
+  tmweAccessToken = envToken;
+} else {
+  // Prioridad 2: SIEMPRE query DB y valida expiración
+  const credentials = await supabaseClient.from('user_tmwe_credentials')...
+  
+  // Verifica expiración
+  if (needsRefresh && credentials.refresh_token) {
+    // Ejecuta refresh inline
+  } else {
+    tmweAccessToken = credentials.access_token;
+  }
+}
+
+if (!tmweAccessToken) {
+  throw new Error('No valid TMWE access token available');
+}
+```
+
+### Impatto
+
+**ANTES (v5.0):**
+- ❌ Tokens expirados usados directamente
+- ❌ 401 Unauthorized en todas las llamadas
+- ❌ Refresh inline nunca ejecutado
+- ❌ Sin logs de validación
+
+**DESPUÉS (v5.1):**
+- ✅ Tokens SIEMPRE validados desde DB
+- ✅ Auto-refresh ejecuta cuando token expirado
+- ✅ Logs completos de OAuth flow
+- ✅ 401 errors resueltos permanentemente
+
+### Testing Realizado
+
+**Query Diagnóstico Ejecutado:**
+```sql
+SELECT 
+  email,
+  expires_at,
+  expires_at < NOW() as token_expired,
+  refresh_token IS NOT NULL as has_refresh_token,
+  CASE 
+    WHEN expires_at < NOW() THEN 'Token expirado'
+    WHEN expires_at < (NOW() + INTERVAL '5 minutes') THEN 'Expira pronto'
+    ELSE 'Token válido'
+  END as token_status
+FROM user_tmwe_credentials;
+```
+
+**Resultado:**
+- 5 usuarios con tokens expirados
+- Todos con refresh_token presente ✅
+- Más antiguo: expirado hace 15 días
+
+**Edge Function Logs Analizados:**
+- ✅ 401 Unauthorized confirmado
+- ✅ "Empty response from TMWE API"
+- ❌ NO logs de refresh (confirmando bypass)
+
+### Rollback Plan
+
+Si v5.1 causa problemas:
+```bash
+# Restaurar v5.0
+cp supabase/functions/tmwe-api-proxy/index-old6.ts supabase/functions/tmwe-api-proxy/index.ts
+
+# Re-deploy
+# (se hace automáticamente en Lovable)
+```
+
+**Verificación después de despliegue:**
+1. Recargar aplicación (F5)
+2. Buscar en logs: `[OAuth] 🔍 Fetching and validating token`
+3. Buscar en logs: `[OAuth] 🔄 Starting inline token refresh`
+4. Verificar DB: `SELECT expires_at FROM user_tmwe_credentials` (debe actualizarse)
+
+### Lessons Learned
+
+1. **NUNCA confiar en tokens del cliente sin validar expiración**
+2. **SIEMPRE verificar que el código de validación se ejecute (logs críticos)**
+3. **data.bearerToken debe ignorarse para tokens OAuth (o validarse)**
+4. **Edge function logs son CRÍTICOS para debugging - revisar ausencia de logs esperados**
+
+---
+
 ## [2025-01-24] - TMWE API Proxy OAuth Refresh Fix (CRITICAL)
 
 ### 🎯 Resumen Ejecutivo

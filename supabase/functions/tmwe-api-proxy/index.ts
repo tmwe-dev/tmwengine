@@ -1,14 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// TMWE API PROXY v5.0 - INLINE OAUTH REFRESH FIX
-// CRITICAL FIX: 401 Errors due to expired tokens - Auto-refresh now inline
+// TMWE API PROXY v5.1 - FORCE TOKEN VALIDATION FIX
+// CRITICAL FIX: bearerToken bypass prevented auto-refresh - Now ALWAYS validates
 // ═══════════════════════════════════════════════════════════════════════════
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
-// 🔥 v5.0 INLINE OAUTH REFRESH - DO NOT REMOVE
+// 🔥 v5.1 FORCE TOKEN VALIDATION - DO NOT REMOVE
 const V5_REDEPLOY_TIMESTAMP = Date.now();
-const V5_VERSION = 'v5.0-INLINE-OAUTH-REFRESH-FIX';
+const V5_VERSION = 'v5.1-FORCE-TOKEN-VALIDATION-FIX';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -196,128 +196,130 @@ serve(async (req) => {
       }
     }
 
-    // 🔑 INLINE OAUTH TOKEN MANAGEMENT (v5.0 - Fixed 401 errors)
-    let tmweAccessToken = data.bearerToken;
+    // 🔑 INLINE OAUTH TOKEN MANAGEMENT (v5.1 - ALWAYS VALIDATE TOKEN)
+    let tmweAccessToken: string | null = null;
     
-    if (!tmweAccessToken) {
-      console.log(`[OAuth] 🔍 Fetching token for: ${userEmail}`);
+    console.log(`[OAuth] 🔍 Fetching and validating token for: ${userEmail}`);
+    
+    // 1. Check environment variable first (highest priority)
+    const envToken = Deno.env.get('TMWE_OAUTH_TOKEN');
+    if (envToken && envToken.trim() !== '') {
+      console.log('[OAuth] ✅ Using token from environment variable');
+      tmweAccessToken = envToken;
+    } else {
+      // 2. Query database for user credentials (ALWAYS, even if bearerToken provided)
+      const { data: credentials, error: credErr } = await supabaseClient
+        .from('user_tmwe_credentials')
+        .select('access_token, refresh_token, expires_at, token_type')
+        .eq('email', userEmail)
+        .eq('token_type', 'oauth')
+        .maybeSingle();
       
-      // 1. Check environment variable first
-      const envToken = Deno.env.get('TMWE_OAUTH_TOKEN');
-      if (envToken && envToken.trim() !== '') {
-        console.log('[OAuth] ✅ Token from environment variable');
-        tmweAccessToken = envToken;
-      } else {
-        // 2. Query database for user credentials
-        const { data: credentials, error: credErr } = await supabaseClient
-          .from('user_tmwe_credentials')
-          .select('access_token, refresh_token, expires_at, token_type')
-          .eq('email', userEmail)
-          .eq('token_type', 'oauth')
-          .maybeSingle();
+      if (credErr) {
+        console.error('[OAuth] ❌ Error querying database:', credErr);
+        throw new Error(`Error fetching OAuth credentials: ${credErr.message}`);
+      }
+      
+      if (!credentials || !credentials.access_token) {
+        console.error('[OAuth] ❌ OAuth token not found in DB');
+        throw new Error(`OAuth token not found for ${userEmail}. Please login to TMWE first.`);
+      }
+      
+      // 3. Check if token is expired or will expire soon
+      let needsRefresh = false;
+      if (credentials.expires_at) {
+        const expiresAt = new Date(credentials.expires_at);
+        const now = new Date();
+        const bufferMinutes = 5; // Refresh 5 minutes before expiration
+        const bufferMs = bufferMinutes * 60 * 1000;
+        const willExpireSoon = expiresAt.getTime() - now.getTime() < bufferMs;
         
-        if (credErr) {
-          console.error('[OAuth] ❌ Error querying database:', credErr);
-          throw new Error(`Error fetching OAuth credentials: ${credErr.message}`);
-        }
+        console.log(`[OAuth] 📅 Token expires: ${expiresAt.toISOString()}`);
         
-        if (!credentials || !credentials.access_token) {
-          console.error('[OAuth] ❌ OAuth token not found in DB');
-          throw new Error(`OAuth token not found for ${userEmail}. Please login to TMWE first.`);
-        }
-        
-        // 3. Check if token is expired or will expire soon
-        let needsRefresh = false;
-        if (credentials.expires_at) {
-          const expiresAt = new Date(credentials.expires_at);
-          const now = new Date();
-          const bufferMinutes = 5; // Refresh 5 minutes before expiration
-          const bufferMs = bufferMinutes * 60 * 1000;
-          const willExpireSoon = expiresAt.getTime() - now.getTime() < bufferMs;
-          
-          console.log(`[OAuth] 📅 Token expires: ${expiresAt.toISOString()}`);
-          
-          if (expiresAt < now || willExpireSoon) {
-            console.log(`[OAuth] ⚠️ Token ${expiresAt < now ? 'expired' : 'will expire soon'}`);
-            needsRefresh = true;
-          } else {
-            console.log(`[OAuth] ✅ Token valid until: ${expiresAt.toISOString()}`);
-          }
-        }
-        
-        // 4. INLINE REFRESH if needed
-        if (needsRefresh && credentials.refresh_token) {
-          console.log('[OAuth] 🔄 Starting inline token refresh...');
-          
-          try {
-            const tokenEndpoint = 'https://findair.it/erp/tmwe_json/token';
-            const formData = new URLSearchParams({
-              grant_type: 'refresh_token',
-              refresh_token: credentials.refresh_token,
-            });
-            
-            console.log('[OAuth] 🌐 Calling TMWE token endpoint...');
-            const tokenResponse = await fetch(tokenEndpoint, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: formData.toString(),
-            });
-            
-            console.log('[OAuth] 📥 Response status:', tokenResponse.status);
-            
-            if (!tokenResponse.ok) {
-              const errorData = await tokenResponse.json().catch(() => ({}));
-              console.error('[OAuth] ❌ Refresh failed:', errorData);
-              throw new Error(`OAuth refresh failed: ${errorData.error?.message || 'Unknown error'}`);
-            }
-            
-            const tokenData = await tokenResponse.json();
-            const { access_token, expires_in } = tokenData;
-            
-            if (!access_token) {
-              throw new Error('Invalid OAuth token response');
-            }
-            
-            console.log('[OAuth] ✅ New token obtained, expires_in:', expires_in);
-            
-            // Update database with new token
-            const expiresAt = expires_in ? new Date(Date.now() + (expires_in * 1000)).toISOString() : null;
-            const updateData: any = {
-              access_token: access_token,
-              expires_at: expiresAt,
-            };
-            
-            if (tokenData.refresh_token) {
-              updateData.refresh_token = tokenData.refresh_token;
-            }
-            
-            const { error: updateError } = await supabaseClient
-              .from('user_tmwe_credentials')
-              .update(updateData)
-              .eq('email', userEmail)
-              .eq('token_type', 'oauth');
-            
-            if (updateError) {
-              console.error('[OAuth] ❌ Error updating credentials:', updateError);
-              throw updateError;
-            }
-            
-            console.log('[OAuth] ✅ Token refreshed and saved successfully');
-            tmweAccessToken = access_token;
-            
-          } catch (refreshError: any) {
-            console.error('[OAuth] ❌ Critical error during refresh:', refreshError);
-            throw new Error(
-              `Token expired and refresh failed: ${refreshError.message}. Please login to TMWE again.`
-            );
-          }
+        if (expiresAt < now || willExpireSoon) {
+          console.log(`[OAuth] ⚠️ Token ${expiresAt < now ? 'expired' : 'will expire soon'}`);
+          needsRefresh = true;
         } else {
-          // Token is valid, use it
-          tmweAccessToken = credentials.access_token;
+          console.log(`[OAuth] ✅ Token valid until: ${expiresAt.toISOString()}`);
         }
       }
+      
+      // 4. INLINE REFRESH if needed
+      if (needsRefresh && credentials.refresh_token) {
+        console.log('[OAuth] 🔄 Starting inline token refresh...');
+        
+        try {
+          const tokenEndpoint = 'https://findair.it/erp/tmwe_json/token';
+          const formData = new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: credentials.refresh_token,
+          });
+          
+          console.log('[OAuth] 🌐 Calling TMWE token endpoint...');
+          const tokenResponse = await fetch(tokenEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData.toString(),
+          });
+          
+          console.log('[OAuth] 📥 Response status:', tokenResponse.status);
+          
+          if (!tokenResponse.ok) {
+            const errorData = await tokenResponse.json().catch(() => ({}));
+            console.error('[OAuth] ❌ Refresh failed:', errorData);
+            throw new Error(`OAuth refresh failed: ${errorData.error?.message || 'Unknown error'}`);
+          }
+          
+          const tokenData = await tokenResponse.json();
+          const { access_token, expires_in } = tokenData;
+          
+          if (!access_token) {
+            throw new Error('Invalid OAuth token response');
+          }
+          
+          console.log('[OAuth] ✅ New token obtained, expires_in:', expires_in);
+          
+          // Update database with new token
+          const expiresAt = expires_in ? new Date(Date.now() + (expires_in * 1000)).toISOString() : null;
+          const updateData: any = {
+            access_token: access_token,
+            expires_at: expiresAt,
+          };
+          
+          if (tokenData.refresh_token) {
+            updateData.refresh_token = tokenData.refresh_token;
+          }
+          
+          const { error: updateError } = await supabaseClient
+            .from('user_tmwe_credentials')
+            .update(updateData)
+            .eq('email', userEmail)
+            .eq('token_type', 'oauth');
+          
+          if (updateError) {
+            console.error('[OAuth] ❌ Error updating credentials:', updateError);
+            throw updateError;
+          }
+          
+          console.log('[OAuth] ✅ Token refreshed and saved successfully');
+          tmweAccessToken = access_token;
+          
+        } catch (refreshError: any) {
+          console.error('[OAuth] ❌ Critical error during refresh:', refreshError);
+          throw new Error(
+            `Token expired and refresh failed: ${refreshError.message}. Please login to TMWE again.`
+          );
+        }
+      } else {
+        // Token is valid, use it
+        tmweAccessToken = credentials.access_token;
+      }
+    }
+    
+    if (!tmweAccessToken) {
+      throw new Error('No valid TMWE access token available');
     }
     
     if (enableLogging) {

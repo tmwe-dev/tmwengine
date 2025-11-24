@@ -22,11 +22,12 @@
  * REFACTORING: Extracted hooks and components for better maintainability
  * Original file: 794 lines → Refactored: ~220 lines (-72%)
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
+import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
 
 // ✅ EXTRACTED HOOKS
 import { useEmailList } from '@/hooks/email/useEmailList';
@@ -76,6 +77,9 @@ const EmailDashboard = () => {
   const [syncMonitorOpen, setSyncMonitorOpen] = useState(false);
   const [smartInboxOpen, setSmartInboxOpen] = useState(false);
 
+  // ✅ Performance monitoring
+  usePerformanceMonitor('TMWEEmailDashboard');
+
   const openAIChat = () => {
     navigate('/chat?page=/email-manager');
   };
@@ -116,6 +120,13 @@ const EmailDashboard = () => {
           handleBulkMarkAsRead, handleBulkMoveToFolder, handleReply, handleReplyAll, 
           handleForward, handleMarkAsRead } = 
     useEmailActions({ selectedEmailId, selectedEmail, selectedFolder, setComposeOpen, setReplyTo, setSelectedEmailId });
+
+  // ✅ Memoize emailIds to prevent useEffect loops in child components
+  const emailIds = useMemo(() => emails.map(e => e.id), [emails]);
+  const currentEmailIndex = useMemo(() => 
+    emails.findIndex(e => e.id === selectedEmailId), 
+    [emails, selectedEmailId]
+  );
 
   // ✅ Error handling
   useEffect(() => {
@@ -201,8 +212,8 @@ const EmailDashboard = () => {
                       onForward={handleForward}
                       onDelete={handleDelete}
                       onMarkAsRead={handleMarkAsRead}
-                      emailIds={emails.map(e => e.id)}
-                      currentEmailIndex={emails.findIndex(e => e.id === selectedEmailId)}
+                      emailIds={emailIds}
+                      currentEmailIndex={currentEmailIndex}
                       currentFolder={selectedFolder}
                     />
                   </div>
@@ -306,8 +317,8 @@ const EmailDashboard = () => {
               setSelectedEmailId(null);
               setShowEmailList(true);
             }}
-            emailIds={emails.map(e => e.id)}
-            currentEmailIndex={emails.findIndex(e => e.id === selectedEmailId)}
+            emailIds={emailIds}
+            currentEmailIndex={currentEmailIndex}
             currentFolder={selectedFolder}
           />
         </div>

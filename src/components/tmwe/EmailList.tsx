@@ -138,7 +138,8 @@ export const EmailList = ({
     setBulkAction('');
   };
 
-  // Reset selection when multi-select mode is disabled
+  const loadMoreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (!multiSelectMode) {
       setSelectedEmailIds(new Set());
@@ -149,7 +150,12 @@ export const EmailList = ({
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
     const [target] = entries;
     if (target.isIntersecting && hasMore && !isLoadingMore && onLoadMore) {
-      onLoadMore();
+      if (loadMoreTimeoutRef.current) {
+        clearTimeout(loadMoreTimeoutRef.current);
+      }
+      loadMoreTimeoutRef.current = setTimeout(() => {
+        onLoadMore();
+      }, 300);
     }
   }, [hasMore, isLoadingMore, onLoadMore]);
 

@@ -29,7 +29,10 @@ export const useEmailActions = ({
   const handleMarkAsRead = async (emailId: string) => {
     try {
       await emailSearchApi.markAsRead(parseInt(emailId));
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['messages', selectedFolder],
+        exact: false
+      });
     } catch (error) {
       console.error('Error marking email as read:', error);
     }
@@ -40,7 +43,10 @@ export const useEmailActions = ({
     onSuccess: () => {
       toast.success('Email deleted');
       setSelectedEmailId(null);
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['messages', selectedFolder],
+        exact: false
+      });
     },
     onError: () => {
       toast.error('Failed to delete email');
@@ -56,7 +62,10 @@ export const useEmailActions = ({
     try {
       await emailMessageApi.deleteMessages(emailIds);
       toast.success(`Deleted ${emailIds.length} emails`);
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['messages', selectedFolder],
+        exact: false
+      });
     } catch (error) {
       console.error('Error deleting emails:', error);
       toast.error('Failed to delete emails');
@@ -67,7 +76,10 @@ export const useEmailActions = ({
     try {
       await emailMessageApi.moveMessages(emailIds, 'Archives');
       toast.success(`Archived ${emailIds.length} emails`);
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['messages', selectedFolder],
+        exact: false
+      });
     } catch (error) {
       console.error('Error archiving emails:', error);
       toast.error('Failed to archive emails');
@@ -82,7 +94,10 @@ export const useEmailActions = ({
     try {
       await emailMessageApi.markMessages(emailIds, 'read');
       toast.success(`Marked ${emailIds.length} emails as read`);
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['messages', selectedFolder],
+        exact: false
+      });
     } catch (error) {
       console.error('Error marking emails as read:', error);
       toast.error('Failed to mark emails as read');
@@ -93,7 +108,10 @@ export const useEmailActions = ({
     try {
       await emailMessageApi.moveMessages(emailIds, destinationFolder);
       toast.success(`Moved ${emailIds.length} emails to ${destinationFolder}`);
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['messages', selectedFolder],
+        exact: false
+      });
     } catch (error) {
       console.error('Error moving emails:', error);
       toast.error('Failed to move emails');

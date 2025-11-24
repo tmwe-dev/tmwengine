@@ -16,22 +16,12 @@ export const useEmailDetail = ({ selectedEmailId, selectedFolder }: UseEmailDeta
   const { data: emailDetailResponse, isLoading: isLoadingDetail, error: detailError } = useQuery({
     queryKey: ['message', selectedEmailId, selectedFolder],
     queryFn: async () => {
-      console.log('🔍 Fetching email detail with UID:', selectedEmailId);
-      
-      // ✅ LECTURA: Usar /email_search para obtener contenido (rápido vía Elasticsearch)
       const result = await emailSearchApi.getEmailDetail({ 
         uid: parseInt(selectedEmailId!, 10),
         folder: selectedFolder,
         include_body: true,
         timeout: 15
       });
-      
-      console.log('✅ Email detail received from /email_search:', result);
-      console.log('📧 Raw API response structure:', JSON.stringify(result, null, 2));
-      console.log('📧 Available fields:', Object.keys(result || {}));
-      
-      // ✅ Mark as read will be handled automatically by EmailDetail component
-      // via onMarkAsRead callback using fast RPC API
       
       return result;
     },
@@ -67,19 +57,8 @@ export const useEmailDetail = ({ selectedEmailId, selectedFolder }: UseEmailDeta
     // Access header data correctly from the TMWE API response structure
     const header = msg.header || msg;
 
-    // Extract body and subject using utility functions
     const bodyContent = extractEmailBody(msg, header);
     const subjectContent = extractEmailSubject(msg, header);
-
-    console.log('📧 Extracted body length:', typeof bodyContent === 'string' ? bodyContent.length : 0);
-    console.log('📧 Extracted subject:', subjectContent);
-
-    // Advanced debugging for empty body
-    if (!bodyContent || bodyContent === '<p>No content available</p>') {
-      console.warn('⚠️ BODY VACÍO - Estructura msg completa:', JSON.stringify(msg, null, 2));
-      console.warn('⚠️ BODY VACÍO - Campos disponibles:', Object.keys(msg));
-      console.warn('⚠️ BODY VACÍO - Header completo:', header);
-    }
 
     return {
       id: String(header.uid || msg.uid || msg.id || selectedEmailId),

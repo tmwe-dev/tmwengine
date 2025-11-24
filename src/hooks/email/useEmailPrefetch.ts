@@ -20,12 +20,9 @@ export const useEmailPrefetch = ({
   const queryClient = useQueryClient();
   
   useEffect(() => {
-    // Prefetch del siguiente email
     const nextEmailId = emailIds[currentIndex + 1];
     
     if (nextEmailId) {
-      console.log('🔮 Prefetching next email:', nextEmailId, '→ Query Key:', ['message', nextEmailId, folder]);
-      
       queryClient.prefetchQuery({
         queryKey: ['message', nextEmailId, folder],
         queryFn: () => emailSearchApi.getEmailDetail({
@@ -38,12 +35,9 @@ export const useEmailPrefetch = ({
       });
     }
     
-    // También prefetch del anterior si existe
     const prevEmailId = emailIds[currentIndex - 1];
     
     if (prevEmailId) {
-      console.log('🔮 Prefetching previous email:', prevEmailId, '→ Query Key:', ['message', prevEmailId, folder]);
-      
       queryClient.prefetchQuery({
         queryKey: ['message', prevEmailId, folder],
         queryFn: () => emailSearchApi.getEmailDetail({

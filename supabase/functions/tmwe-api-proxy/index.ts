@@ -1,15 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// TMWE API PROXY v4.0-FINAL - FORCED REDEPLOY
-// CRITICAL FIX: EXPLICIT FOLDER PARAMETER VALIDATION & ENFORCEMENT
+// TMWE API PROXY v5.0 - INLINE OAUTH REFRESH FIX
+// CRITICAL FIX: 401 Errors due to expired tokens - Auto-refresh now inline
 // ═══════════════════════════════════════════════════════════════════════════
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { getTMWEOAuthToken } from "../_shared/oauth-manager.ts";
 
-// 🔥 v4.0 FORCE REDEPLOY CONSTANT - DO NOT REMOVE
-const V4_REDEPLOY_TIMESTAMP = Date.now();
-const V4_VERSION = 'v4.0-FINAL-EXPLICIT-FOLDER-ENFORCEMENT';
+// 🔥 v5.0 INLINE OAUTH REFRESH - DO NOT REMOVE
+const V5_REDEPLOY_TIMESTAMP = Date.now();
+const V5_VERSION = 'v5.0-INLINE-OAUTH-REFRESH-FIX';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -197,19 +196,132 @@ serve(async (req) => {
       }
     }
 
-    // Get TMWE access token using shared OAuth manager with auto-refresh
+    // 🔑 INLINE OAUTH TOKEN MANAGEMENT (v5.0 - Fixed 401 errors)
     let tmweAccessToken = data.bearerToken;
     
     if (!tmweAccessToken) {
-      // Use shared OAuth manager with automatic token refresh
-      tmweAccessToken = await getTMWEOAuthToken(userEmail, {
-        autoRefresh: true,
-        supabaseClient: supabaseClient
-      });
+      console.log(`[OAuth] 🔍 Fetching token for: ${userEmail}`);
+      
+      // 1. Check environment variable first
+      const envToken = Deno.env.get('TMWE_OAUTH_TOKEN');
+      if (envToken && envToken.trim() !== '') {
+        console.log('[OAuth] ✅ Token from environment variable');
+        tmweAccessToken = envToken;
+      } else {
+        // 2. Query database for user credentials
+        const { data: credentials, error: credErr } = await supabaseClient
+          .from('user_tmwe_credentials')
+          .select('access_token, refresh_token, expires_at, token_type')
+          .eq('email', userEmail)
+          .eq('token_type', 'oauth')
+          .maybeSingle();
+        
+        if (credErr) {
+          console.error('[OAuth] ❌ Error querying database:', credErr);
+          throw new Error(`Error fetching OAuth credentials: ${credErr.message}`);
+        }
+        
+        if (!credentials || !credentials.access_token) {
+          console.error('[OAuth] ❌ OAuth token not found in DB');
+          throw new Error(`OAuth token not found for ${userEmail}. Please login to TMWE first.`);
+        }
+        
+        // 3. Check if token is expired or will expire soon
+        let needsRefresh = false;
+        if (credentials.expires_at) {
+          const expiresAt = new Date(credentials.expires_at);
+          const now = new Date();
+          const bufferMinutes = 5; // Refresh 5 minutes before expiration
+          const bufferMs = bufferMinutes * 60 * 1000;
+          const willExpireSoon = expiresAt.getTime() - now.getTime() < bufferMs;
+          
+          console.log(`[OAuth] 📅 Token expires: ${expiresAt.toISOString()}`);
+          
+          if (expiresAt < now || willExpireSoon) {
+            console.log(`[OAuth] ⚠️ Token ${expiresAt < now ? 'expired' : 'will expire soon'}`);
+            needsRefresh = true;
+          } else {
+            console.log(`[OAuth] ✅ Token valid until: ${expiresAt.toISOString()}`);
+          }
+        }
+        
+        // 4. INLINE REFRESH if needed
+        if (needsRefresh && credentials.refresh_token) {
+          console.log('[OAuth] 🔄 Starting inline token refresh...');
+          
+          try {
+            const tokenEndpoint = 'https://findair.it/erp/tmwe_json/token';
+            const formData = new URLSearchParams({
+              grant_type: 'refresh_token',
+              refresh_token: credentials.refresh_token,
+            });
+            
+            console.log('[OAuth] 🌐 Calling TMWE token endpoint...');
+            const tokenResponse = await fetch(tokenEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: formData.toString(),
+            });
+            
+            console.log('[OAuth] 📥 Response status:', tokenResponse.status);
+            
+            if (!tokenResponse.ok) {
+              const errorData = await tokenResponse.json().catch(() => ({}));
+              console.error('[OAuth] ❌ Refresh failed:', errorData);
+              throw new Error(`OAuth refresh failed: ${errorData.error?.message || 'Unknown error'}`);
+            }
+            
+            const tokenData = await tokenResponse.json();
+            const { access_token, expires_in } = tokenData;
+            
+            if (!access_token) {
+              throw new Error('Invalid OAuth token response');
+            }
+            
+            console.log('[OAuth] ✅ New token obtained, expires_in:', expires_in);
+            
+            // Update database with new token
+            const expiresAt = expires_in ? new Date(Date.now() + (expires_in * 1000)).toISOString() : null;
+            const updateData: any = {
+              access_token: access_token,
+              expires_at: expiresAt,
+            };
+            
+            if (tokenData.refresh_token) {
+              updateData.refresh_token = tokenData.refresh_token;
+            }
+            
+            const { error: updateError } = await supabaseClient
+              .from('user_tmwe_credentials')
+              .update(updateData)
+              .eq('email', userEmail)
+              .eq('token_type', 'oauth');
+            
+            if (updateError) {
+              console.error('[OAuth] ❌ Error updating credentials:', updateError);
+              throw updateError;
+            }
+            
+            console.log('[OAuth] ✅ Token refreshed and saved successfully');
+            tmweAccessToken = access_token;
+            
+          } catch (refreshError: any) {
+            console.error('[OAuth] ❌ Critical error during refresh:', refreshError);
+            throw new Error(
+              `Token expired and refresh failed: ${refreshError.message}. Please login to TMWE again.`
+            );
+          }
+        } else {
+          // Token is valid, use it
+          tmweAccessToken = credentials.access_token;
+        }
+      }
     }
     
     if (enableLogging) {
-      console.log('🔑 TMWE Token retrieved (primi 20 chars):', tmweAccessToken.substring(0, 20) + '...');
+      console.log('🔑 TMWE Token ready (first 20 chars):', tmweAccessToken.substring(0, 20) + '...');
     }
 
     // 🚀 GESTIONE BATCH OPERATIONS (Mark as Read con array di message_ids)
@@ -550,9 +662,9 @@ serve(async (req) => {
     // SOLUCIÓN v4.0: Validación EXPLÍCITA que FUERZA "folder" y ELIMINA "folder_name"
     // ═══════════════════════════════════════════════════════════════════════════
     
-    // 🔍 v4.0-FINAL: Log parámetros ANTES de validación
+    // 🔍 v5.0 LOG: Request parameters BEFORE validation
     console.log('═══════════════════════════════════════════════════════');
-    console.log(`📥 [${V4_VERSION}] BEFORE VALIDATION - Timestamp: ${Date.now()}`);
+    console.log(`📥 [${V5_VERSION}] BEFORE VALIDATION - Timestamp: ${Date.now()}`);
     console.log('═══════════════════════════════════════════════════════');
     console.log('🔹 Handler:', data.handler);
     console.log('🔹 All keys BEFORE:', Object.keys(data));
@@ -560,7 +672,7 @@ serve(async (req) => {
     console.log('🔹 data.folder_name BEFORE:', data.folder_name);
     console.log('═══════════════════════════════════════════════════════');
     
-    // ⚡ v4.0 EXPLICIT VALIDATION: Forzar "folder" y eliminar "folder_name"
+    // ⚡ v5.0 EXPLICIT VALIDATION: Force "folder" and remove "folder_name"
     if (data.handler === 'get_emails_metadata' || data.handler === 'get_message' || data.handler === 'search_emails') {
       // Si existe folder_name pero NO existe folder, usar folder_name como folder
       if (data.folder_name && !data.folder) {
@@ -580,9 +692,9 @@ serve(async (req) => {
         delete data.folder_name;
       }
       
-      // Log después de validación
+      // Log after validation
       console.log('═══════════════════════════════════════════════════════');
-      console.log(`✅ [${V4_VERSION}] AFTER VALIDATION`);
+      console.log(`✅ [${V5_VERSION}] AFTER VALIDATION`);
       console.log('═══════════════════════════════════════════════════════');
       console.log('🔹 All keys AFTER:', Object.keys(data));
       console.log('🔹 data.folder AFTER:', data.folder);
@@ -593,15 +705,15 @@ serve(async (req) => {
     
     const tmweUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
     
-    // 🔍 v4.0-FINAL LOGGING: Parámetros VALIDADOS enviados al backend TMWE
+    // 🔍 v5.0 LOGGING: VALIDATED parameters sent to TMWE backend
     console.log('═══════════════════════════════════════════════════════');
-    console.log(`📤 [${V4_VERSION}] Sending VALIDATED params to TMWE API`);
+    console.log(`📤 [${V5_VERSION}] Sending VALIDATED params to TMWE API`);
     console.log('═══════════════════════════════════════════════════════');
     console.log('🌐 URL:', tmweUrl);
     console.log('🎯 Handler:', data.handler);
     console.log('📦 Parameters being sent:', JSON.stringify(data, null, 2));
     console.log('⏰ Timestamp:', new Date().toISOString());
-    console.log(`🔢 Redeploy Constant: ${V4_REDEPLOY_TIMESTAMP}`);
+    console.log(`🔢 Redeploy Constant: ${V5_REDEPLOY_TIMESTAMP}`);
     console.log('═══════════════════════════════════════════════════════');
     
     if (enableLogging) {
@@ -782,10 +894,10 @@ serve(async (req) => {
       headers: { 
         ...corsHeaders, 
         'Content-Type': 'application/json',
-        'X-Proxy-Version': V4_VERSION,
+        'X-Proxy-Version': V5_VERSION,
         'X-Deploy-Time': new Date().toISOString(),
-        'X-Redeploy-Timestamp': V4_REDEPLOY_TIMESTAMP.toString(),
-        'X-Folder-Validation': 'explicit-enforcement-active'
+        'X-Redeploy-Timestamp': V5_REDEPLOY_TIMESTAMP.toString(),
+        'X-OAuth-Inline': 'auto-refresh-enabled'
       },
     });
 

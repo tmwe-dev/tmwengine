@@ -199,6 +199,13 @@ serve(async (req) => {
     // 🔑 INLINE OAUTH TOKEN MANAGEMENT (v5.1 - ALWAYS VALIDATE TOKEN)
     let tmweAccessToken: string | null = null;
     
+    // 🚨 DEBUG: Force log to confirm code execution
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[OAuth-v5.1] 🟢 ENTERED OAuth validation block');
+    console.log('[OAuth-v5.1] 👤 User:', userEmail);
+    console.log('[OAuth-v5.1] 📅 Timestamp:', new Date().toISOString());
+    console.log('═══════════════════════════════════════════════════════');
+    
     console.log(`[OAuth] 🔍 Fetching and validating token for: ${userEmail}`);
     
     // 1. Check environment variable first (highest priority)

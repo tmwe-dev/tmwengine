@@ -199,13 +199,14 @@ export const emailSearchApi = {
   /**
    * Complete email with body (get single message)
    * Use for email detail view
+   * Uses /email_message endpoint (direct IMAP) for full email content
    */
   getEmailDetail: (params: {
     uid: number;
     folder: string;
     include_body?: boolean;
     timeout?: number;
-  }) => fetchEmailSearchApi({
+  }) => fetchEmailMessageApi({
     handler: 'get_message',
     uid: params.uid,
     folder: params.folder,

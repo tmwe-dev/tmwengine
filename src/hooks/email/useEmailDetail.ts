@@ -14,7 +14,7 @@ interface UseEmailDetailParams {
 
 export const useEmailDetail = ({ selectedEmailId, selectedFolder }: UseEmailDetailParams) => {
   const { data: emailDetailResponse, isLoading: isLoadingDetail, error: detailError } = useQuery({
-    queryKey: ['message', selectedEmailId],
+    queryKey: ['message', selectedEmailId, selectedFolder],
     queryFn: async () => {
       console.log('🔍 Fetching email detail with UID:', selectedEmailId);
       
@@ -37,6 +37,9 @@ export const useEmailDetail = ({ selectedEmailId, selectedFolder }: UseEmailDeta
     },
     enabled: !!selectedEmailId,
     retry: 1,
+    staleTime: 5 * 60 * 1000, // ✅ Cache por 5 minutos
+    gcTime: 10 * 60 * 1000, // ✅ Mantener en memoria 10 min (antes cacheTime)
+    refetchOnWindowFocus: false, // ✅ No refetch al cambiar tab
   });
 
   // Map API response to component format - handle both possible response structures

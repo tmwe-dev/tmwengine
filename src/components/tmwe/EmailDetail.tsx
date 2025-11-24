@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { useMemo, useState, useEffect, useRef } from 'react';
+import { useEmailPrefetch } from '@/hooks/email/useEmailPrefetch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -64,6 +65,10 @@ interface EmailDetailProps {
   onMarkAsRead?: (emailId: string) => void;
   isHeaderCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  // ✅ Props opcionales para prefetch
+  emailIds?: string[];
+  currentEmailIndex?: number;
+  currentFolder?: string;
 }
 
 export const EmailDetail = ({ 
@@ -80,8 +85,17 @@ export const EmailDetail = ({
   hasNext = false,
   onMarkAsRead,
   isHeaderCollapsed: externalIsHeaderCollapsed,
-  onToggleCollapse: externalOnToggleCollapse
+  onToggleCollapse: externalOnToggleCollapse,
+  emailIds = [],
+  currentEmailIndex = 0,
+  currentFolder = 'INBOX'
 }: EmailDetailProps) => {
+  // ✅ Prefetch siguiente y anterior email para navegación instantánea
+  useEmailPrefetch({
+    emailIds,
+    currentIndex: currentEmailIndex,
+    folder: currentFolder
+  });
   const [senderGroups, setSenderGroups] = useState<any[]>([]);
   const [newGroupName, setNewGroupName] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);

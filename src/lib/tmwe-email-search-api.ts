@@ -7,7 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 // ============================================================================
 
 // 🔍 READ OPERATIONS: Fast metadata queries via RabbitMQ + Elasticsearch
-const fetchEmailSearchApi = async (data: any) => {
+// ✅ ENHANCED: Exponential backoff retry for transient failures
+const fetchEmailSearchApi = async (data: any, retryCount = 0): Promise<any> => {
+  const MAX_RETRIES = 3;
+  const BACKOFF_BASE = 1000; // 1 segundo base
+  
   const requestBody = {
     endpoint: '/email_search',
     data: data
@@ -25,9 +29,13 @@ const fetchEmailSearchApi = async (data: any) => {
     folder: data.folder,
     page: data.page,
     limit: data.limit,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    attempt: retryCount + 1
   });
-  console.log('🔧 [CURL] Comando equivalente:\n', curlCommand);
+  
+  if (retryCount === 0) {
+    console.log('🔧 [CURL] Comando equivalente:\n', curlCommand);
+  }
   
   const startTime = performance.now();
   
@@ -43,7 +51,8 @@ const fetchEmailSearchApi = async (data: any) => {
       console.error('❌ [EMAIL SEARCH] Error:', { 
         handler: data.handler,
         error,
-        duration: `${duration.toFixed(2)}ms`
+        duration: `${duration.toFixed(2)}ms`,
+        attempt: retryCount + 1
       });
       throw error;
     }
@@ -52,16 +61,34 @@ const fetchEmailSearchApi = async (data: any) => {
       handler: data.handler,
       success: responseData?.success,
       emailsCount: responseData?.emails?.length,
-      duration: `${duration.toFixed(2)}ms`
+      duration: `${duration.toFixed(2)}ms`,
+      attempt: retryCount + 1
     });
     
     return responseData;
   } catch (error: any) {
     const duration = performance.now() - startTime;
-    console.error('🔥 [EMAIL SEARCH] Communication Error:', { 
+    
+    // ✅ Retry logic with exponential backoff
+    const isRetryableError = error.status !== 404 && error.status !== 401 && error.status !== 403;
+    
+    if (retryCount < MAX_RETRIES && isRetryableError) {
+      const delay = BACKOFF_BASE * Math.pow(2, retryCount);
+      console.warn(`⚠️ [EMAIL SEARCH] Retry ${retryCount + 1}/${MAX_RETRIES} after ${delay}ms...`, {
+        handler: data.handler,
+        error: error.message,
+        duration: `${duration.toFixed(2)}ms`
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchEmailSearchApi(data, retryCount + 1);
+    }
+    
+    console.error('🔥 [EMAIL SEARCH] Max retries reached or non-retryable error:', { 
       handler: data.handler,
       error: error.message,
-      duration: `${duration.toFixed(2)}ms`
+      duration: `${duration.toFixed(2)}ms`,
+      attempts: retryCount + 1
     });
     throw error;
   }

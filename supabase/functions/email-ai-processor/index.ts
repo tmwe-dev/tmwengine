@@ -20,6 +20,51 @@ interface AIProcessRequest {
   force_category?: string;
 }
 
+serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // ============================================
+    // STEP 1: PARSE REQUEST & VALIDATE
+    // ============================================
+
+    const { 
+      email_id, 
+      user_email, 
+      operation = 'classify', 
+      selected_agent = 'gemini',
+      additional_instructions,
+      force_category 
+    } = await req.json();
+
+    console.log('[AI Processor] 📧 Processing request:', {
+      email_id,
+      user_email,
+      operation,
+      selected_agent
+    });
+
+    // Get Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get email
+    const { data: email, error: emailError } = await supabase
+      .from('email_messages')
+      .select('*')
+      .eq('id', email_id)
+      .single();
+
+    if (emailError || !email) {
+      throw new Error(`Email not found: ${email_id}`);
+    }
+
+    console.log('[AI Processor] ✅ Email loaded:', email.subject);
+
     // ============================================
     // STEP 2: GET AI CONFIG
     // ============================================

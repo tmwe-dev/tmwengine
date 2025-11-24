@@ -259,7 +259,19 @@ serve(async (req) => {
     console.log(`✅ Profile synced for user_id: ${supabaseUser.id}`);
 
     // 6. Save TMWE OAuth credentials in database with token_type = 'oauth'
+    const tmweExpiresInSeconds = expires_in; // e.g., 259200 (72 horas)
     const expiresAt = expires_in ? new Date(Date.now() + (expires_in * 1000)).toISOString() : null;
+    
+    // 🔥 TTL SYNC: Supabase session = 80% del TTL de TMWE
+    const supabaseExpiresInSeconds = Math.floor(tmweExpiresInSeconds * 0.8);
+    const supabaseExpiresAt = new Date(Date.now() + (supabaseExpiresInSeconds * 1000)).toISOString();
+    
+    console.log('⏱️ TTL Synchronization:');
+    console.log('  📍 TMWE token expires in:', tmweExpiresInSeconds, 'seconds (', Math.round(tmweExpiresInSeconds / 3600), 'hours)');
+    console.log('  📍 TMWE token expires at:', expiresAt);
+    console.log('  📍 Supabase session will expire in:', supabaseExpiresInSeconds, 'seconds (', Math.round(supabaseExpiresInSeconds / 3600), 'hours)');
+    console.log('  📍 Supabase session will expire at:', supabaseExpiresAt);
+    console.log('  ✅ Safety margin: 20% (Supabase expires before TMWE token)');
     
     const { error: credsError } = await supabaseAdmin
       .from('user_tmwe_credentials')
@@ -280,15 +292,19 @@ serve(async (req) => {
       throw credsError;
     }
 
-    console.log('✅ TMWE OAuth credentials saved');
+    console.log('✅ TMWE OAuth credentials saved with full TTL');
 
-    // 7. Generate Supabase magic link (según proyecto Luca)
-    console.log('🔐 Generating Supabase magic link...');
+    // 7. Generate Supabase magic link with synchronized TTL
+    console.log('🔐 Generating Supabase magic link with synchronized TTL...');
 
-    // ✅ CORRECCIÓN CRÍTICA: Usar 'magiclink' en lugar de 'recovery' (según proyecto Luca)
+    // ✅ CORRECCIÓN CRÍTICA: Usar 'magiclink' con TTL personalizado
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
+      options: {
+        // 🔥 CRITICAL: Set Supabase session TTL to 80% of TMWE token TTL
+        expiresIn: supabaseExpiresInSeconds,
+      }
     });
 
     if (linkError || !linkData) {

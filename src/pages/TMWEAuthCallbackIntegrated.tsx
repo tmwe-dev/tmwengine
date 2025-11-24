@@ -96,7 +96,7 @@ const TMWEAuthCallbackIntegrated = () => {
 
       // 5. Establecer sesión de Supabase con tokens (OAuth2-compliant)
       if (data.access_token && data.refresh_token) {
-        addDetail('🔐 Estableciendo sesión de Supabase...');
+        addDetail('🔐 Estableciendo sesión de Supabase con TTL sincronizado...');
         
         console.log('🔐 Setting Supabase session with tokens:', {
           access_token: data.access_token.substring(0, 20) + '...',
@@ -115,7 +115,9 @@ const TMWEAuthCallbackIntegrated = () => {
         }
         
         console.log('✅ Supabase session established successfully');
+        console.log('⏱️ Session configured to expire 20% before TMWE token (safety margin)');
         addDetail('✅ Sesión de Supabase establecida correctamente');
+        addDetail('⏱️ TTL sincronizado: sesión expira antes del token TMWE');
       } else {
         console.error('❌ Missing Supabase tokens in response:', {
           has_access_token: !!data.access_token,

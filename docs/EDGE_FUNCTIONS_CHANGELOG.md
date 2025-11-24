@@ -9,6 +9,70 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-24] - TMWE API Proxy OAuth Refresh Fix (CRITICAL)
+
+### 🎯 Resumen Ejecutivo
+- ✅ **CRITICAL FIX**: Fixed 401 Unauthorized errors due to expired OAuth tokens
+- ✅ **Modified Edge Function**: `tmwe-api-proxy` v5.0 (inline OAuth refresh)
+- ✅ **Root Cause**: Auto-refresh via `oauth-manager.ts` was failing silently (edge-to-edge function call limitation)
+- ✅ **Solution**: Implemented inline OAuth token refresh directly in `tmwe-api-proxy`
+- 📊 **Impact**: Resolves all 401 errors, tokens now automatically refresh 5 minutes before expiration
+
+### Files Modified
+
+#### **tmwe-api-proxy/index.ts** (MODIFIED)
+- **Backup Created:** `index-old5.ts`
+- **Version:** v5.0 - Inline OAuth Refresh Fix
+- **Lines Modified:** 5-8 (removed oauth-manager import), 200-335 (inline OAuth logic)
+- **Changes:**
+  - ❌ **Removed:** `getTMWEOAuthToken()` call from `_shared/oauth-manager.ts`
+  - ✅ **Added:** Inline OAuth token management with auto-refresh
+    - Check environment variable `TMWE_OAUTH_TOKEN` first
+    - Query `user_tmwe_credentials` table for OAuth tokens
+    - Validate token expiration (5-minute buffer)
+    - **NEW**: Direct inline refresh if expired:
+      - Calls `https://findair.it/erp/tmwe_json/token` with `grant_type=refresh_token`
+      - Updates `user_tmwe_credentials` table with new access token and expiration
+      - Comprehensive error logging for debugging
+  - **Version markers updated:** V4 → V5, timestamp refreshed
+  - **Response headers updated:** Added `X-OAuth-Inline: auto-refresh-enabled`
+
+### Motivo Modifica
+**PROBLEMA IDENTIFICATO:**
+- Tutti i token OAuth erano scaduti (ultimo refresh: 2025-11-20, 4 giorni fa)
+- Errori 401 Unauthorized su tutte le chiamate TMWE API
+- No logs da `tmwe-oauth-refresh`, indicando fallimento silenzioso
+- Query database confermava: tutti i token `token_status = 'EXPIRADO'`
+
+**CAUSA RAÍZ:**
+- `oauth-manager.ts` tentava di chiamare `supabaseClient.functions.invoke('tmwe-oauth-refresh')`
+- Le edge functions hanno limitazioni nelle invocazioni inter-function nello stesso progetto
+- Il refresh falliva silenziosamente senza logging
+
+**SOLUZIONE v5.0:**
+- Implementazione diretta del refresh OAuth dentro `tmwe-api-proxy`
+- Elimina la dipendenza da chiamate edge-to-edge
+- Logging completo per debugging
+- Auto-refresh automatico 5 minuti prima della scadenza
+
+### Rollback Plan
+```bash
+# Se necessario ripristinare la versione precedente:
+cp supabase/functions/tmwe-api-proxy/index-old5.ts supabase/functions/tmwe-api-proxy/index.ts
+
+# Nota: Questo ripristina la versione con oauth-manager (che ha il bug 401)
+# Non raccomandato a meno che non ci sia un fix alternativo per oauth-manager
+```
+
+### Testing Verificato
+- ✅ Token expirado detectado correctamente
+- ✅ Refresh ejecutado inline sin errores
+- ✅ Nuevo token guardado en base de datos
+- ✅ Llamadas subsecuentes usan el token refrescado
+- ✅ Logging completo en cada paso
+
+---
+
 ## [2025-01-29] - AI CRM Automation System (SPRINT 1+2+3)
 
 ### 🎯 Resumen Ejecutivo

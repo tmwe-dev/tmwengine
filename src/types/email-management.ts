@@ -85,6 +85,11 @@ export interface GroupingSuggestion {
     group_name: string;
     confidence: number;
     reason: string;
+    // 🆕 METADATI CONTESTUALI
+    transport_type?: 'air' | 'sea' | 'express' | 'road' | 'rail' | null;
+    content_type?: 'quotation' | 'rate' | 'shipment' | 'documentation' | 'invoice' | 'tracking' | null;
+    country_code?: string | null;
+    country_confidence?: number;
   }>;
   analyzed_at: string;
   status: 'pending' | 'accepted' | 'dismissed';

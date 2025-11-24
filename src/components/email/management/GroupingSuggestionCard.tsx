@@ -13,8 +13,9 @@ import type { GroupingSuggestion } from '@/types/email-management';
 import { cn } from '@/lib/utils';
 import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
 import { extractInitials } from '@/lib/smart-inbox-utils';
-import { detectCountryFromEmail, getCountryFlag } from '@/lib/email-utils';
+import { detectCountryFromEmail, getCountryFlag, getCountryName } from '@/lib/email-utils';
 import { isWCAPartner } from '@/data/wca-partners';
+import { getTransportConfig, getContentConfig } from '@/lib/email-transport-utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SenderEmailsDialog } from './SenderEmailsDialog';
@@ -165,6 +166,38 @@ export const GroupingSuggestionCard = ({
               <Badge variant="secondary" className="text-xs bg-warning/10 text-warning border-warning/20">
                 <Star className="w-3 h-3 mr-1" />
                 WCA Partner
+              </Badge>
+            )}
+            
+            {/* 🆕 BADGE TRASPORTO */}
+            {suggestion.suggested_groups[0]?.transport_type && (() => {
+              const config = getTransportConfig(suggestion.suggested_groups[0].transport_type);
+              if (!config) return null;
+              return (
+                <Badge variant="secondary" className={cn('text-xs font-medium', config.color)}>
+                  {config.emoji} {config.label}
+                </Badge>
+              );
+            })()}
+
+            {/* 🆕 BADGE CONTENUTO */}
+            {suggestion.suggested_groups[0]?.content_type && (() => {
+              const config = getContentConfig(suggestion.suggested_groups[0].content_type);
+              if (!config) return null;
+              return (
+                <Badge variant="secondary" className={cn('text-xs font-medium', config.color)}>
+                  {config.emoji} {config.label}
+                </Badge>
+              );
+            })()}
+
+            {/* 🆕 BADGE PAESE AI (se confidence > 0.7 e diverso da TLD) */}
+            {suggestion.suggested_groups[0]?.country_code && 
+             suggestion.suggested_groups[0]?.country_confidence && 
+             suggestion.suggested_groups[0].country_confidence > 0.7 && 
+             suggestion.suggested_groups[0].country_code !== countryCode && (
+              <Badge variant="secondary" className="text-xs bg-violet-500/10 text-violet-700 border-violet-500/20">
+                {getCountryFlag(suggestion.suggested_groups[0].country_code)} {getCountryName(suggestion.suggested_groups[0].country_code)}
               </Badge>
             )}
           </div>

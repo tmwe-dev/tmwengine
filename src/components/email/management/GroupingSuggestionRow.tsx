@@ -14,8 +14,9 @@ import type { GroupingSuggestion, EmailSenderGroup } from '@/types/email-managem
 import { cn } from '@/lib/utils';
 import { useCompanyLogo } from '@/hooks/email/useCompanyLogo';
 import { extractInitials } from '@/lib/smart-inbox-utils';
-import { detectCountryFromEmail, getCountryFlag } from '@/lib/email-utils';
+import { detectCountryFromEmail, getCountryFlag, getCountryName } from '@/lib/email-utils';
 import { isWCAPartner } from '@/data/wca-partners';
+import { getTransportConfig, getContentConfig } from '@/lib/email-transport-utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SenderEmailsDialog } from './SenderEmailsDialog';
@@ -217,6 +218,38 @@ export const GroupingSuggestionRow = ({
               <Badge variant="secondary" className="text-xs bg-warning/10 text-warning border-warning/20">
                 <Star className="w-3 h-3 mr-1" />
                 WCA
+              </Badge>
+            )}
+            
+            {/* 🆕 BADGE TRASPORTO */}
+            {primarySuggestion?.transport_type && (() => {
+              const config = getTransportConfig(primarySuggestion.transport_type);
+              if (!config) return null;
+              return (
+                <Badge variant="secondary" className={cn('text-xs font-medium', config.color)}>
+                  {config.emoji} {config.label}
+                </Badge>
+              );
+            })()}
+
+            {/* 🆕 BADGE CONTENUTO */}
+            {primarySuggestion?.content_type && (() => {
+              const config = getContentConfig(primarySuggestion.content_type);
+              if (!config) return null;
+              return (
+                <Badge variant="secondary" className={cn('text-xs font-medium', config.color)}>
+                  {config.emoji} {config.label}
+                </Badge>
+              );
+            })()}
+
+            {/* 🆕 BADGE PAESE AI (se confidence > 0.7 e diverso da TLD) */}
+            {primarySuggestion?.country_code && 
+             primarySuggestion?.country_confidence && 
+             primarySuggestion.country_confidence > 0.7 && 
+             primarySuggestion.country_code !== countryCode && (
+              <Badge variant="secondary" className="text-xs bg-violet-500/10 text-violet-700 border-violet-500/20">
+                {getCountryFlag(primarySuggestion.country_code)} {getCountryName(primarySuggestion.country_code)}
               </Badge>
             )}
           </div>

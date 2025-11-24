@@ -27,6 +27,11 @@ interface GroupingSuggestion {
   group_name: string;
   confidence: number;
   reason: string;
+  // 🆕 METADATI CONTESTUALI SPEDIZIONIERI
+  transport_type?: 'air' | 'sea' | 'express' | 'road' | 'rail' | null;
+  content_type?: 'quotation' | 'rate' | 'shipment' | 'documentation' | 'invoice' | 'tracking' | null;
+  country_code?: string | null; // ISO 2-letter (IT, CN, US, etc.)
+  country_confidence?: number; // 0-1
 }
 
 interface RequestBody {
@@ -112,6 +117,61 @@ ${companyContext}
 IMPORTANTE: Utilizza questo contesto per comprendere meglio il tipo di mittenti e classificarli secondo le categorie aziendali specifiche definite dall'utente. Le tue classificazioni devono essere coerenti con questo profilo aziendale.
 ` : ''}
 Il tuo compito è analizzare CHI È IL MITTENTE e suggerire 1-3 gruppi dove classificarlo.
+
+🌍 **ANALISI CONTESTUALE SPECIFICA PER SPEDIZIONIERI**
+
+Dato che l'utente opera nel settore trasporti/spedizioni, per OGNI mittente devi anche rilevare:
+
+1. 🚢 **TIPO TRASPORTO** (transport_type):
+   - "air": Trasporto aereo, air freight, cargo aereo, AWB
+   - "sea": Trasporto marittimo, ocean freight, FCL, LCL, container, Bill of Lading
+   - "express": Corriere espresso, DHL, FedEx, UPS, TNT, courier
+   - "road": Trasporto su strada, camion, TIR, autotrasporto
+   - "rail": Trasporto ferroviario, intermodale
+   - null: Non determinabile o irrilevante
+
+2. 📋 **TIPO CONTENUTO** (content_type):
+   - "quotation": Richieste preventivo, quotazioni, offerte commerciali
+   - "rate": Tariffe di spedizione, listini prezzi, rate sheets
+   - "shipment": Documenti spedizione, tracking, conferme ritiro/consegna
+   - "documentation": Documenti doganali, certificati origine, CMR, packing list
+   - "invoice": Fatture, note di credito, pagamenti
+   - "tracking": Aggiornamenti tracking, notifiche stato spedizione
+   - null: Non determinabile o mix
+
+3. 🌍 **PAESE DI ORIGINE** (country_code + country_confidence):
+   - Analizza TLD email (es. .cn = Cina, .de = Germania)
+   - Analizza display name (es. "Shanghai Logistics" = CN)
+   - Analizza pattern spedizioni (es. sempre spedizioni da/per Brasile)
+   - Analizza oggetti email (es. "FCL Shanghai-Hamburg" = CN→DE)
+   - Fornisci ISO code a 2 lettere (IT, CN, US, DE, BR, etc.)
+   - Fornisci confidence 0-1 (1.0 = certezza, 0.5 = indizio debole)
+
+🎯 **ESEMPI PRATICI**:
+
+📧 logistics@china-shipping.com + oggetti "FCL Shanghai-Rotterdam" + frequenza alta
+→ transport_type: "sea"
+→ content_type: "shipment"
+→ country_code: "CN"
+→ country_confidence: 0.95
+
+📧 quotes@dhl.com + oggetti "Rate Request Air Freight" + dominio .com
+→ transport_type: "air"
+→ content_type: "quotation"
+→ country_code: null (DHL è globale)
+→ country_confidence: 0.0
+
+📧 noreply@poste.it + oggetti "Tracking pacchi" + pattern automatico
+→ transport_type: "express"
+→ content_type: "tracking"
+→ country_code: "IT"
+→ country_confidence: 1.0
+
+⚠️ **REGOLE IMPORTANTI**:
+- Se mittente manda sia rate aeree che marittime → transport_type: null
+- Se mittente manda quotazioni + spedizioni → content_type: "quotation" (priorità commerciale)
+- Se TLD generico (.com, .net) ma azienda chiaramente locale → usa nome azienda per paese
+- Se nessun indizio geografico → country_code: null, confidence: 0.0
 
 🎯 FOCUS: Analizza la NATURA DEL MITTENTE, non il contenuto delle email.
 
@@ -252,9 +312,29 @@ Suggerisci i gruppi più appropriati basandoti sulla NATURA DEL MITTENTE (non su
                         type: 'string',
                         description: 'Spiegazione breve (max 50 caratteri)',
                         maxLength: 50
+                      },
+                      transport_type: {
+                        type: ['string', 'null'],
+                        enum: ['air', 'sea', 'express', 'road', 'rail', null],
+                        description: 'Tipo trasporto rilevato (air/sea/express/road/rail/null)'
+                      },
+                      content_type: {
+                        type: ['string', 'null'],
+                        enum: ['quotation', 'rate', 'shipment', 'documentation', 'invoice', 'tracking', null],
+                        description: 'Tipo contenuto prevalente nelle email'
+                      },
+                      country_code: {
+                        type: ['string', 'null'],
+                        description: 'Codice ISO 2-letter paese origine (IT, CN, US, etc.)'
+                      },
+                      country_confidence: {
+                        type: 'number',
+                        description: 'Confidence rilevamento paese (0-1)',
+                        minimum: 0,
+                        maximum: 1
                       }
                     },
-                    required: ['group_id', 'group_name', 'confidence', 'reason'],
+                    required: ['group_id', 'group_name', 'confidence', 'reason', 'transport_type', 'content_type', 'country_code', 'country_confidence'],
                     additionalProperties: false
                   }
                 }
@@ -401,8 +481,12 @@ Suggerisci i gruppi più appropriati basandoti sulla NATURA DEL MITTENTE (non su
         // Verifica se esiste già un gruppo "generico" che copre questa categoria
         const suggNameLower = sugg.group_name.toLowerCase();
         
-        // Lista gruppi generici da verificare
-        const genericKeywords = ['logistica', 'cliente', 'fornitore', 'partner', 'operativo', 'commerciale', 'autorità'];
+        // Lista gruppi generici da verificare (🆕 ESPANSA)
+        const genericKeywords = [
+          'logistica', 'cliente', 'fornitore', 'partner', 'operativo', 'commerciale', 'autorità',
+          'spedizioniere', 'corriere', 'trasporti', 'freight', 'cargo', 'shipping',
+          'recruiting', 'supporto', 'amministrativo', 'team', 'interno', 'esterno', 'servizi'
+        ];
         
         for (const keyword of genericKeywords) {
           // Se il nuovo gruppo contiene una keyword generica
@@ -419,8 +503,8 @@ Suggerisci i gruppi più appropriati basandoti sulla NATURA DEL MITTENTE (non su
           }
         }
         
-        // Se confidence per nuovo gruppo < 0.80, bloccalo
-        if (sugg.confidence < 0.80) {
+        // Se confidence per nuovo gruppo < 0.85, bloccalo (🆕 AUMENTATO)
+        if (sugg.confidence < 0.85) {
           console.log(`⚠️ BLOCKED: "${sugg.group_name}" → confidence troppo bassa (${sugg.confidence})`);
           return false;
         }

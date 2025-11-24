@@ -104,6 +104,7 @@ export const EmailDetail = ({
     console.log('✅ Using lilla:', saved);
     return saved;
   });
+  const [iframeHeight, setIframeHeight] = useState('600px');
   
   // Use external state if provided, otherwise use internal state
   const [internalIsHeaderCollapsed, setInternalIsHeaderCollapsed] = useState(false);
@@ -121,6 +122,26 @@ export const EmailDetail = ({
       onMarkAsRead(email.id);
     }
   }, [email.id, onMarkAsRead]);
+
+  // Adjust iframe height dynamically based on content
+  useEffect(() => {
+    const adjustIframeHeight = () => {
+      if (iframeRef.current?.contentWindow) {
+        try {
+          const contentHeight = iframeRef.current.contentWindow.document.body.scrollHeight;
+          const calculatedHeight = Math.max(contentHeight + 40, 400);
+          setIframeHeight(`${calculatedHeight}px`);
+          console.log('📐 Iframe height adjusted to:', calculatedHeight);
+        } catch (e) {
+          console.log('⚠️ Cannot access iframe content for height adjustment');
+          setIframeHeight('600px');
+        }
+      }
+    };
+    
+    const timer = setTimeout(adjustIframeHeight, 100);
+    return () => clearTimeout(timer);
+  }, [email.body]);
 
 
   // Load sender groups
@@ -548,13 +569,17 @@ export const EmailDetail = ({
                     </style>
                   </head>
                   <body>
-                    ${email.body || '<p>No content available</p>'}
+                    ${email.body && email.body.trim() !== '' && email.body !== '<p>No content available</p>' 
+                      ? email.body 
+                      : '<div style="padding: 40px; text-align: center;"><p style="font-size: 18px; color: #888;">📭 Este email no tiene contenido visible</p><p style="font-size: 14px; color: #666;">El servidor no devolvió el cuerpo del mensaje</p></div>'}
                   </body>
                 </html>
               `}
               sandbox="allow-same-origin"
-              className="w-full border-0"
+              className="w-full border border-border rounded-md"
               style={{ 
+                height: iframeHeight,
+                minHeight: '400px',
                 overflow: 'auto'
               }}
             />

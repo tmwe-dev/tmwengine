@@ -727,7 +727,7 @@ serve(async (req) => {
     console.log('🎯 Handler:', data.handler);
     console.log('📦 Parameters being sent:', JSON.stringify(data, null, 2));
     console.log('⏰ Timestamp:', new Date().toISOString());
-    console.log(`🔢 Redeploy Constant: ${V5_REDEPLOY_TIMESTAMP}`);
+    console.log(`🔢 Deploy Timestamp: ${V5_DEPLOY_TIMESTAMP}`);
     console.log('═══════════════════════════════════════════════════════');
     
     if (enableLogging) {

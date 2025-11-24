@@ -910,7 +910,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'X-Proxy-Version': V5_VERSION,
         'X-Deploy-Time': new Date().toISOString(),
-        'X-Redeploy-Timestamp': V5_REDEPLOY_TIMESTAMP.toString(),
+        'X-Deploy-Timestamp': V5_DEPLOY_TIMESTAMP,
         'X-OAuth-Inline': 'auto-refresh-enabled'
       },
     });

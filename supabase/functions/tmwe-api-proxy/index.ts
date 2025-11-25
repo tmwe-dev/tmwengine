@@ -341,25 +341,43 @@ serve(async (req) => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   try {
-    // Parse request body con gestione errori robusta
+    // ✅ FIX: Use already-parsed body from internal handlers check (body can only be consumed once)
     let requestBody;
-    try {
-      const bodyText = await req.text();
-      if (!bodyText || bodyText.trim().length === 0) {
-        throw new Error('Empty request body');
+    if (parsedBody && bodyText) {
+      // Body was already parsed for internal handlers check
+      requestBody = parsedBody;
+    } else if (bodyText && bodyText.trim().length > 0) {
+      // Body was read but not parsed (parse error occurred)
+      try {
+        requestBody = JSON.parse(bodyText);
+      } catch (parseError: any) {
+        console.error('═══════════════════════════════════════════════════════');
+        console.error('🔥 ERRORE nel parsing del body della richiesta');
+        console.error('═══════════════════════════════════════════════════════');
+        console.error('⚠️ Error:', parseError.message);
+        console.error('═══════════════════════════════════════════════════════');
+        
+        return new Response(
+          JSON.stringify({ 
+            error: 'Invalid request body',
+            details: parseError.message,
+            hint: 'Request body must be valid JSON with endpoint and data fields'
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
-      requestBody = JSON.parse(bodyText);
-    } catch (parseError) {
+    } else {
+      // Empty body
       console.error('═══════════════════════════════════════════════════════');
-      console.error('🔥 ERRORE nel parsing del body della richiesta');
-      console.error('═══════════════════════════════════════════════════════');
-      console.error('⚠️ Error:', parseError.message);
+      console.error('🔥 ERRORE: Empty request body');
       console.error('═══════════════════════════════════════════════════════');
       
       return new Response(
         JSON.stringify({ 
-          error: 'Invalid request body',
-          details: parseError.message,
+          error: 'Empty request body',
           hint: 'Request body must be valid JSON with endpoint and data fields'
         }),
         { 

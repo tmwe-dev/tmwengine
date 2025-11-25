@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { QuickActionsCard } from '../QuickActionsCard';
 
 interface EmailSidebarProps {
   senders: SenderAnalysis[];
@@ -256,6 +257,11 @@ export function EmailSidebar({
               />
             </div>
           )}
+          
+          {/* Quick Actions Card */}
+          <div className="mb-2">
+            <QuickActionsCard />
+          </div>
         </div>
         
         {/* Lista scrollabile mittenti */}

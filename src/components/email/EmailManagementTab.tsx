@@ -20,6 +20,7 @@ import { CreateCategoryDialog } from './management/CreateCategoryDialog';
 import { GlobalDragGhost } from './management/GlobalDragGhost';
 import { SortOption } from './management/SenderSortControls';
 import { FloatingZoomControl } from './management/FloatingZoomControl';
+import { QuickActionsCard } from './QuickActionsCard';
 
 interface EmailManagementTabProps {
   onOpenAISidebar?: (senderEmail: string) => void;

@@ -33,6 +33,7 @@ import { EmailCountDiagnostics } from '@/components/email/EmailCountDiagnostics'
 import { SingleMailImporter } from '@/components/email/SingleMailImporter';
 import { VerifyFolderNames } from '@/components/email/debug/VerifyFolderNames';
 import { LucaDownloadTester } from '@/components/email/LucaDownloadTester';
+import { ToolsDropdownMenu } from '@/components/email/ToolsDropdownMenu';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();
@@ -280,7 +281,11 @@ const FunEmail = () => {
           </Button>
         ) : null
       }
-      actions={null}
+      actions={
+        !['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail'].includes(currentView) ? (
+          <ToolsDropdownMenu />
+        ) : null
+      }
     >
       <div className="relative w-full min-h-screen">
         {/* 2 Icone Verticali - solo in view inbox */}

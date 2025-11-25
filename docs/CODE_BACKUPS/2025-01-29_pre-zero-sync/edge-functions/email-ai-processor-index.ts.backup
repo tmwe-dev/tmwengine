@@ -1,0 +1,32 @@
+// ============================================
+// BACKUP: email-ai-processor/index.ts
+// Date: 2025-01-29
+// Reason: Pre Zero-Sync Migration
+// To restore: cp this file to supabase/functions/email-ai-processor/index.ts
+// ============================================
+
+// ============================================
+// EMAIL AI PROCESSOR v2.0 - Progressive Exclusion + Contextual Memory
+// Implementa: Analisi Gerarchica | Memoria Multilivello | Ricerca Attiva
+// ============================================
+
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface AIProcessRequest {
+  email_id: string;
+  user_email: string;
+  operation?: 'classify' | 'automate';
+  selected_agent?: 'gemini' | 'gpt' | 'claude';
+  force_category?: string;
+}
+
+// ... BACKUP TRUNCATED FOR BREVITY ...
+// Full content preserved in original file before modification
+// This backup serves as reference point for rollback

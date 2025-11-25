@@ -295,7 +295,7 @@ export class MasterStrategy implements DownloadStrategy {
             }
 
             const fullEmail = await this.breaker.execute(
-              () => emailSearchApi.getEmailDetail({
+              () => emailSearchApi.getEmailDetailByUid({  // ✅ Use legacy method for bulk download
                 uid,
                 folder: folder.folderName,
                 include_body: true,
@@ -429,8 +429,8 @@ export class MasterStrategy implements DownloadStrategy {
           continue;
         }
 
-        // Download using emailSearchApi
-        const fullEmail = await emailSearchApi.getEmailDetail({
+        // Download using emailSearchApi (legacy method for bulk operations)
+        const fullEmail = await emailSearchApi.getEmailDetailByUid({  // ✅ Use legacy method
           uid: item.uid,
           folder: item.folder,
           include_body: true,

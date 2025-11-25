@@ -197,11 +197,37 @@ export const emailSearchApi = {
   }),
 
   /**
-   * Complete email with body (get single message)
+   * Complete email with body (get single message by email_id)
    * Use for email detail view
-   * Uses /email_message endpoint (direct IMAP) for full email content
+   * Uses /email_search endpoint (RPC via RabbitMQ + Elasticsearch)
+   * Source: Elasticsearch (10-50x faster than IMAP)
    */
   getEmailDetail: (params: {
+    email_id: number;        // ✅ ID from Elasticsearch/MySQL DB
+    include_body?: boolean;  // ✅ Default: true
+    timeout?: number;        // ✅ Default: 10 seconds
+  }) => {
+    console.log('📧 [API] getEmailDetail called with:', {
+      email_id: params.email_id,
+      email_id_type: typeof params.email_id,
+      include_body: params.include_body,
+      timeout: params.timeout
+    });
+    
+    return fetchEmailSearchApi({  // ✅ Changed from fetchEmailMessageApi
+      handler: 'get_email_detail',  // ✅ Changed from 'get_message'
+      email_id: params.email_id,    // ✅ Changed from uid + folder
+      include_body: params.include_body !== false,
+      timeout: params.timeout || 10
+    });
+  },
+
+  /**
+   * Legacy: Get email by UID + folder (IMAP direct)
+   * Use only for bulk download operations where email_id is not available yet
+   * Slower than getEmailDetail - prefer getEmailDetail when possible
+   */
+  getEmailDetailByUid: (params: {
     uid: number;
     folder: string;
     include_body?: boolean;

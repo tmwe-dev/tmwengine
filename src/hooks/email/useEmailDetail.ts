@@ -14,11 +14,25 @@ interface UseEmailDetailParams {
 
 export const useEmailDetail = ({ selectedEmailId, selectedFolder }: UseEmailDetailParams) => {
   const { data: emailDetailResponse, isLoading: isLoadingDetail, error: detailError } = useQuery({
-    queryKey: ['message', selectedEmailId, selectedFolder],
+    queryKey: ['message', selectedEmailId],  // ✅ Simplified (no folder needed)
     queryFn: async () => {
+      // ✅ Parse selectedEmailId (string) to integer for API
+      const emailIdNum = parseInt(selectedEmailId!, 10);
+      
+      console.log('🔍 [useEmailDetail] Fetching detail:', {
+        selectedEmailId_original: selectedEmailId,
+        selectedEmailId_type: typeof selectedEmailId,
+        emailIdNum_parsed: emailIdNum,
+        emailIdNum_type: typeof emailIdNum,
+        isValid: !isNaN(emailIdNum)
+      });
+      
+      if (isNaN(emailIdNum)) {
+        throw new Error(`Invalid email_id: ${selectedEmailId}`);
+      }
+      
       const result = await emailSearchApi.getEmailDetail({ 
-        uid: parseInt(selectedEmailId!, 10),
-        folder: selectedFolder,
+        email_id: emailIdNum,  // ✅ Use email_id (integer)
         include_body: true,
         timeout: 15
       });
@@ -32,43 +46,34 @@ export const useEmailDetail = ({ selectedEmailId, selectedFolder }: UseEmailDeta
     refetchOnWindowFocus: false, // ✅ No refetch al cambiar tab
   });
 
-  // Map API response to component format - handle both possible response structures
+  // Map API response to component format - handle get_email_detail response
   const selectedEmail = emailDetailResponse ? (() => {
-    // Check if response is empty array or has no data
-    if (Array.isArray(emailDetailResponse) && emailDetailResponse.length === 0) {
-      console.warn('⚠️ API returned empty array for message');
-      return null;
-    }
-
-    // Try to get the message from response - try multiple paths
-    const msg = emailDetailResponse.message || 
-                emailDetailResponse.data || 
-                emailDetailResponse.email ||
-                emailDetailResponse;
+    // ✅ Handle response structure from get_email_detail
+    const email = emailDetailResponse.email || 
+                  emailDetailResponse.data || 
+                  emailDetailResponse;
     
-    if (!msg || typeof msg !== 'object') {
-      console.warn('⚠️ No valid message data in response:', emailDetailResponse);
+    if (!email || typeof email !== 'object') {
+      console.warn('⚠️ No valid email data in response:', emailDetailResponse);
       return null;
     }
 
-    console.log('📧 Processing message:', msg);
-    console.log('📧 Message fields:', Object.keys(msg));
+    console.log('📧 Processing email from get_email_detail:', email);
+    console.log('📧 Email fields:', Object.keys(email));
 
-    // Access header data correctly from the TMWE API response structure
-    const header = msg.header || msg;
-
-    const bodyContent = extractEmailBody(msg, header);
-    const subjectContent = extractEmailSubject(msg, header);
+    // ✅ According to API docs, response has: body_text, body_html, subject, from, etc.
+    const bodyContent = email.body_html || email.body_text || email.body || '';
+    const subjectContent = email.subject || '(Sin asunto)';
 
     return {
-      id: String(header.uid || msg.uid || msg.id || selectedEmailId),
+      id: String(email.id || email.email_id || selectedEmailId),
       subject: subjectContent,
-      from: convertToString(header.from || msg.from),
-      to: convertToArray(header.to || msg.to),
-      cc: convertToArray(header.cc || msg.cc),
-      date: header.date || msg.date || new Date().toISOString(),
+      from: convertToString(email.from),
+      to: convertToArray(email.to),
+      cc: convertToArray(email.cc),
+      date: email.date || new Date().toISOString(),
       body: bodyContent,
-      attachments: msg.attachments || header.attachments || [],
+      attachments: email.attachments || [],
     };
   })() : null;
 

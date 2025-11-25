@@ -2785,6 +2785,7 @@ export type Database = {
           sender_logo_url: string | null
           subject: string | null
           tags: string[] | null
+          tmwe_email_id: number | null
           updated_at: string | null
           urgency: string | null
           user_email: string
@@ -2814,6 +2815,7 @@ export type Database = {
           sender_logo_url?: string | null
           subject?: string | null
           tags?: string[] | null
+          tmwe_email_id?: number | null
           updated_at?: string | null
           urgency?: string | null
           user_email: string
@@ -2843,6 +2845,7 @@ export type Database = {
           sender_logo_url?: string | null
           subject?: string | null
           tags?: string[] | null
+          tmwe_email_id?: number | null
           updated_at?: string | null
           urgency?: string | null
           user_email?: string

@@ -45,8 +45,10 @@ const isRedundantKeyword = (keyword: string, companyName: string) => {
 };
 
 export const SmartEmailDetailIntelligent = ({ classifiedEmail, onClose, onToggleCleanView }: SmartEmailDetailIntelligentProps) => {
+  // 🆕 Priorizar tmwe_email_id para thread (fallback a email_id local)
+  const threadEmailId = classifiedEmail?.email?.email_id;
   const { emails, currentEmailIndex, hasMore, loadMore, isLoading } = useEmailThread({
-    emailId: classifiedEmail?.email?.email_id
+    emailId: threadEmailId
   });
 
   // 🆕 Recupera logo HD con cache

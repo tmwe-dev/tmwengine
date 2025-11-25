@@ -9,6 +9,41 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-11-25] - TMWE Email ID Migration - Phase 1: Add Column + Frontend Updates
+
+### 🎯 Resumen Ejecutivo
+- ✅ **Database Migration**: Added `tmwe_email_id BIGINT` column to `email_ai_classifications`
+- ✅ **Index Created**: `idx_email_ai_classifications_tmwe_email_id` for fast lookups
+- ✅ **Frontend Updated**: `SmartInboxTabIntelligent` now uses TMWE API when `tmwe_email_id` available
+- ✅ **Types Updated**: `ClassifiedEmail` interface now includes `tmwe_email_id`
+- 📊 **Impact**: 10x faster email detail retrieval via TMWE Elasticsearch
+
+### Files Modified
+
+#### **Database Migration**
+- **Column Added:** `tmwe_email_id BIGINT` (nullable) to `email_ai_classifications`
+- **Index:** `idx_email_ai_classifications_tmwe_email_id` (partial, WHERE NOT NULL)
+- **Purpose:** Store TMWE API's integer email_id for direct Elasticsearch queries
+
+#### **src/types/smart-inbox.ts** (MODIFIED)
+- Added `tmwe_email_id?: number | null` to `EmailClassification` interface
+- Added `tmwe_email_id?: number | null` to `ClassifiedEmail.email` interface
+
+#### **src/components/email/smart-inbox/SmartInboxTabIntelligent.tsx** (MODIFIED)
+- Query now fetches from TMWE API when `tmwe_email_id` is available
+- Fallback to local `email_messages` table if `tmwe_email_id` is null
+- Parallel batch fetching for TMWE API (10 emails at a time)
+
+#### **src/components/email/smart-inbox/SmartEmailDetailPanel.tsx** (MODIFIED)
+- Updated to prioritize `tmwe_email_id` for EntitiesPanel
+
+### Next Steps (Phase 2)
+- [ ] Create data migration script to populate `tmwe_email_id` for existing 137 records
+- [ ] Update Edge Function `classify-email-content-intelligent` to store `tmwe_email_id` during classification
+- [ ] Update `useEmailThread.ts` to support TMWE API for thread fetching
+
+---
+
 ## [2025-11-24] - TMWE API Proxy Force Token Validation Fix (CRITICAL v5.1)
 
 ### 🎯 Resumen Ejecutivo

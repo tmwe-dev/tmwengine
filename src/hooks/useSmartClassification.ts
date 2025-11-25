@@ -77,9 +77,10 @@ export const useSmartClassification = () => {
           
           // Chiama Edge Function per classificazione
           const { data: classifyData, error: classifyError } = await supabase.functions.invoke(
-            'classify-email-content',
+            'email-ai-processor',
             {
               body: {
+                operation: 'classify',
                 email_id: emailId,
                 subject: emailData.subject || '',
                 body_text: emailData.body_text || emailData.body || '',

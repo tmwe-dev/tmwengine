@@ -161,31 +161,20 @@ port = 54327
 vector_port = 54328
 backend = "postgres"
 
+# =====================================================
+# EDGE FUNCTIONS - ACTIVE
+# =====================================================
+
 [functions.tmwe-email-webhook]
 verify_jwt = false
 
-[functions.tmwe-email-sync]
-verify_jwt = true
-
 [functions.tmwe-email-send]
-verify_jwt = true
-
-[functions.tmwe-email-folders]
-verify_jwt = true
-
-[functions.tmwe-email-account]
-verify_jwt = true
-
-[functions.tmwe-email-list]
 verify_jwt = true
 
 [functions.tmwe-test-folder-info]
 verify_jwt = true
 
 [functions.tmwe-email-sync-master]
-verify_jwt = true
-
-[functions.email-sync-v2]
 verify_jwt = true
 
 [functions.process-ai-import]
@@ -218,9 +207,6 @@ verify_jwt = true
 [functions.intranet-ai-chat-assistant]
 verify_jwt = true
 disabled = true
-
-[functions.tmwe-oauth-callback]
-verify_jwt = false
 
 [functions.email-campagne-scheduler]
 verify_jwt = false
@@ -267,31 +253,13 @@ verify_jwt = true
 [functions.fun-email-ai-analysis]
 verify_jwt = true
 
-[functions.tmwe-email-gap-checker]
-verify_jwt = true
-
-[functions.tmwe-email-search-api]
-verify_jwt = true
-
-[functions.classify-email-content]
-verify_jwt = true
-
-[functions.classify-email-content-intelligent]
-verify_jwt = true
-
-[functions.email-ai-automation-processor]
+[functions.email-ai-processor]
 verify_jwt = true
 
 [functions.execute-ai-actions]
 verify_jwt = true
 
 [functions.ai-canvas-chat]
-verify_jwt = true
-
-[functions.background-email-sync]
-verify_jwt = true
-
-[functions.background-email-sync-test]
 verify_jwt = true
 
 [functions.suggest-sender-grouping]
@@ -304,4 +272,22 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.email-ai-learning]
+verify_jwt = true
+
+[functions.email-background-sync]
+verify_jwt = true
+
+[functions.fetch-company-logo]
+verify_jwt = true
+
+[functions.generate-image]
+verify_jwt = true
+
+[functions.transcribe-audio]
+verify_jwt = true
+
+[functions.text-to-speech]
+verify_jwt = true
+
+[functions.embed-text]
 verify_jwt = true

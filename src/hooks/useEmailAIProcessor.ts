@@ -19,8 +19,9 @@ export const useEmailAIProcessor = () => {
   ) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('email-ai-automation-processor', {
+      const { data, error } = await supabase.functions.invoke('email-ai-processor', {
         body: {
+          operation: 'automate',
           email_uid: emailUid,
           sender_email: senderEmail,
           email_subject: emailSubject,

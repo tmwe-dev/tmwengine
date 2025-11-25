@@ -1,0 +1,750 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created_at": "2025-01-29",
+    "project": "TMWEngine",
+    "purpose": "Requisitos funcionales de email para comparación con TMWE API",
+    "architecture_target": "API-Only (sin database locale)"
+  },
+  "requirements": [
+    {
+      "id": "RF-EM-001",
+      "name": "Visualización de lista de emails",
+      "description": "Mostrar lista de emails con subject, sender, fecha, preview del body",
+      "category": "reading",
+      "priority": "critical",
+      "current_implementation": {
+        "source": "email_messages table (Supabase)",
+        "components": ["EmailList", "EmailListItem"],
+        "hooks": ["useEmails", "useEmailList"]
+      },
+      "api_only_impact": {
+        "change_required": true,
+        "new_source": "TMWE API /email_message endpoint",
+        "benefits": ["Datos siempre frescos", "Sin sincronización"],
+        "challenges": ["Latencia de red", "Paginación server-side"]
+      },
+      "data_dependencies": ["message_id", "subject", "sender_email", "sender_name", "received_at", "body_preview"],
+      "acceptance_criteria": [
+        "Lista carga en < 2 segundos",
+        "Paginación funcional",
+        "Preview truncado a 100 caracteres"
+      ]
+    },
+    {
+      "id": "RF-EM-002",
+      "name": "Visualización de email completo",
+      "description": "Mostrar email completo con body HTML/TEXT, attachments, headers",
+      "category": "reading",
+      "priority": "critical",
+      "current_implementation": {
+        "source": "email_messages.body_html, body_text",
+        "components": ["EmailViewer", "EmailBody", "AttachmentList"],
+        "hooks": ["useEmailDetail"]
+      },
+      "api_only_impact": {
+        "change_required": true,
+        "new_source": "TMWE API /email_message con full body",
+        "benefits": ["Sin almacenamiento local de bodies grandes"],
+        "challenges": ["Carga bajo demanda"]
+      },
+      "data_dependencies": ["body_html", "body_text", "attachments", "headers"],
+      "acceptance_criteria": [
+        "HTML renderizado correctamente",
+        "Fallback a TEXT si no hay HTML",
+        "Attachments listados con tamaño"
+      ]
+    },
+    {
+      "id": "RF-EM-003",
+      "name": "Filtrado por carpeta",
+      "description": "Filtrar emails por carpeta (INBOX, Sent, Drafts, etc.)",
+      "category": "reading",
+      "priority": "critical",
+      "current_implementation": {
+        "source": "email_messages.folder_name",
+        "components": ["FolderSidebar", "FolderSelector"],
+        "hooks": ["useFolders", "useEmailsByFolder"]
+      },
+      "api_only_impact": {
+        "change_required": true,
+        "new_source": "TMWE API con folder_name parameter",
+        "benefits": ["Carpetas siempre actualizadas"],
+        "challenges": ["Query por carpeta en cada cambio"]
+      },
+      "data_dependencies": ["folder_name", "folder_count"],
+      "acceptance_criteria": [
+        "Cambio de carpeta < 1 segundo",
+        "Contador de emails por carpeta",
+        "Soporte carpetas custom"
+      ]
+    },
+    {
+      "id": "RF-EM-004",
+      "name": "Búsqueda de emails",
+      "description": "Buscar emails por subject, sender, body content",
+      "category": "reading",
+      "priority": "high",
+      "current_implementation": {
+        "source": "Supabase full-text search o ILIKE",
+        "components": ["EmailSearchBar", "SearchResults"],
+        "hooks": ["useEmailSearch"]
+      },
+      "api_only_impact": {
+        "change_required": true,
+        "new_source": "TMWE API search endpoint",
+        "benefits": ["Búsqueda en tiempo real sobre datos completos"],
+        "challenges": ["Depende de capacidades de búsqueda de TMWE"]
+      },
+      "data_dependencies": ["search_query", "search_fields"],
+      "acceptance_criteria": [
+        "Resultados en < 3 segundos",
+        "Highlight de términos encontrados",
+        "Búsqueda en subject + body"
+      ]
+    },
+    {
+      "id": "RF-EM-005",
+      "name": "Visualización de attachments",
+      "description": "Listar y descargar attachments de emails",
+      "category": "reading",
+      "priority": "high",
+      "current_implementation": {
+        "source": "email_messages.attachments (JSONB)",
+        "components": ["AttachmentList", "AttachmentItem"],
+        "hooks": ["useAttachments"]
+      },
+      "api_only_impact": {
+        "change_required": false,
+        "new_source": "TMWE API attachment download",
+        "benefits": ["Sin almacenamiento local de attachments"],
+        "challenges": ["Download on-demand"]
+      },
+      "data_dependencies": ["attachment_name", "attachment_size", "content_type", "attachment_id"],
+      "acceptance_criteria": [
+        "Lista de attachments visible",
+        "Descarga funcional",
+        "Preview de imágenes inline"
+      ]
+    },
+    {
+      "id": "RF-EM-006",
+      "name": "Filtrado por fecha",
+      "description": "Filtrar emails por rango de fechas",
+      "category": "reading",
+      "priority": "medium",
+      "current_implementation": {
+        "source": "email_messages.received_at con date range",
+        "components": ["DateRangeFilter"],
+        "hooks": ["useEmailsByDateRange"]
+      },
+      "api_only_impact": {
+        "change_required": true,
+        "new_source": "TMWE API con date parameters",
+        "benefits": ["Filtrado preciso"],
+        "challenges": ["Parámetros de fecha en API"]
+      },
+      "data_dependencies": ["date_from", "date_to"],
+      "acceptance_criteria": [
+        "Filtro por día/semana/mes",
+        "Rango personalizado",
+        "Resultados ordenados por fecha"
+      ]
+    },
+    {
+      "id": "RF-EM-007",
+      "name": "Contador de emails no leídos",
+      "description": "Mostrar cantidad de emails no leídos por carpeta",
+      "category": "reading",
+      "priority": "medium",
+      "current_implementation": {
+        "source": "COUNT en email_messages WHERE is_read = false",
+        "components": ["UnreadBadge"],
+        "hooks": ["useUnreadCount"]
+      },
+      "api_only_impact": {
+        "change_required": true,
+        "new_source": "TMWE API folder stats",
+        "benefits": ["Contador siempre actualizado"],
+        "challenges": ["Endpoint específico necesario"]
+      },
+      "data_dependencies": ["is_read", "folder_name"],
+      "acceptance_criteria": [
+        "Badge visible en sidebar",
+        "Actualización en tiempo real",
+        "Soporte todas las carpetas"
+      ]
+    },
+    {
+      "id": "RF-EM-008",
+      "name": "Ordenamiento de emails",
+      "description": "Ordenar emails por fecha, sender, subject",
+      "category": "reading",
+      "priority": "low",
+      "current_implementation": {
+        "source": "ORDER BY en query Supabase",
+        "components": ["SortSelector"],
+        "hooks": ["useSortedEmails"]
+      },
+      "api_only_impact": {
+        "change_required": true,
+        "new_source": "TMWE API sort parameters",
+        "benefits": ["Ordenamiento server-side eficiente"],
+        "challenges": ["Parámetros de sort en API"]
+      },
+      "data_dependencies": ["sort_field", "sort_direction"],
+      "acceptance_criteria": [
+        "Sort por fecha (default)",
+        "Sort por sender",
+        "Dirección ASC/DESC"
+      ]
+    },
+    {
+      "id": "RF-EM-009",
+      "name": "Envío de emails nuevos",
+      "description": "Componer y enviar emails nuevos",
+      "category": "writing",
+      "priority": "critical",
+      "current_implementation": {
+        "source": "TMWE API /email_send",
+        "components": ["EmailComposer", "ComposeDialog"],
+        "hooks": ["useSendEmail"]
+      },
+      "api_only_impact": {
+        "change_required": false,
+        "reason": "Ya usa API directamente",
+        "benefits": ["Sin cambios necesarios"]
+      },
+      "data_dependencies": ["to", "cc", "bcc", "subject", "body", "attachments"],
+      "acceptance_criteria": [
+        "Envío exitoso con confirmación",
+        "Soporte CC/BCC",
+        "Attachments hasta 10MB"
+      ]
+    },
+    {
+      "id": "RF-EM-010",
+      "name": "Respuesta a emails",
+      "description": "Responder a emails (reply, reply-all)",
+      "category": "writing",
+      "priority": "critical",
+      "current_implementation": {
+        "source": "TMWE API /email_send con in_reply_to",
+        "components": ["ReplyComposer"],
+        "hooks": ["useReplyEmail"]
+      },
+      "api_only_impact": {
+        "change_required": false,
+        "reason": "Ya usa API directamente",
+        "benefits": ["Threading manejado por servidor"]
+      },
+      "data_dependencies": ["in_reply_to", "references", "original_message"],
+      "acceptance_criteria": [
+        "Quote del mensaje original",
+        "Headers de threading correctos",
+        "Reply-all incluye todos los destinatarios"
+      ]
+    },
+    {
+      "id": "RF-EM-011",
+      "name": "Reenvío de emails",
+      "description": "Reenviar emails a otros destinatarios",
+      "category": "writing",
+      "priority": "high",
+      "current_implementation": {
+        "source": "TMWE API /email_send con forward flag",
+        "components": ["ForwardComposer"],
+        "hooks": ["useForwardEmail"]
+      },
+      "api_only_impact": {
+        "change_required": false,
+        "reason": "Ya usa API directamente",
+        "benefits": ["Attachments incluidos automáticamente"]
+      },
+      "data_dependencies": ["original_message", "new_recipients"],
+      "acceptance_criteria": [
+        "Attachments originales incluidos",
+        "Prefijo 'Fwd:' en subject",
+        "Body original citado"
+      ]
+    },
+    {
+      "id": "RF-EM-012",
+      "name": "Guardado de borradores",
+      "description": "Guardar emails como borrador para envío posterior",
+      "category": "writing",
+      "priority": "medium",
+      "current_implementation": {
+        "source": "TMWE API /email_draft o carpeta Drafts",
+        "components": ["DraftSaver"],
+        "hooks": ["useSaveDraft"]
+      },
+      "api_only_impact": {
+        "change_required": false,
+        "reason": "Usa API para guardar en servidor",
+        "benefits": ["Borradores sincronizados entre dispositivos"]
+      },
+      "data_dependencies": ["draft_content", "draft_recipients"],
+      "acceptance_criteria": [
+        "Auto-save cada 30 segundos",
+        "Recuperación de borradores",
+        "Lista de borradores en sidebar"
+      ]
+    },
+    {
+      "id": "RF-EM-013",
+      "name": "Eliminación de emails",
+      "description": "Mover emails a papelera o eliminar permanentemente",
+      "category": "writing",
+      "priority": "high",
+      "current_implementation": {
+        "source": "TMWE API /email_delete o move to Trash",
+        "components": ["DeleteButton", "TrashManager"],
+        "hooks": ["useDeleteEmail"]
+      },
+      "api_only_impact": {
+        "change_required": false,
+        "reason": "Ya usa API directamente",
+        "benefits": ["Eliminación sincronizada"]
+      },
+      "data_dependencies": ["message_id", "permanent_delete"],
+      "acceptance_criteria": [
+        "Mover a Trash por defecto",
+        "Eliminación permanente con confirmación",
+        "Vaciar papelera masivamente"
+      ]
+    },
+    {
+      "id": "RF-EM-014",
+      "name": "Sincronización inicial completa",
+      "description": "Descargar todos los emails históricos al iniciar",
+      "category": "synchronization",
+      "priority": "critical",
+      "current_implementation": {
+        "source": "tmwe-email-sync-master edge function",
+        "components": ["SyncProgressDialog"],
+        "hooks": ["useEmailSync", "useFullSync"]
+      },
+      "api_only_impact": {
+        "change_required": "eliminable",
+        "reason": "No necesario si se consulta API directamente",
+        "benefits": ["Eliminación de proceso complejo de sync"],
+        "migration_note": "Reemplazar por paginación on-demand"
+      },
+      "data_dependencies": ["all_folders", "date_range"],
+      "acceptance_criteria": [
+        "N/A en arquitectura API-Only",
+        "Paginación reemplaza sync completa"
+      ]
+    },
+    {
+      "id": "RF-EM-015",
+      "name": "Sincronización incremental",
+      "description": "Sincronizar solo emails nuevos desde última sincronización",
+      "category": "synchronization",
+      "priority": "high",
+      "current_implementation": {
+        "source": "email_sync_progress table + edge function",
+        "components": ["IncrementalSyncButton"],
+        "hooks": ["useIncrementalSync"]
+      },
+      "api_only_impact": {
+        "change_required": "eliminable",
+        "reason": "API siempre devuelve datos frescos",
+        "benefits": ["Eliminación de lógica de delta sync"],
+        "migration_note": "Reemplazar por polling o websocket"
+      },
+      "data_dependencies": ["last_sync_uid", "folder_name"],
+      "acceptance_criteria": [
+        "N/A en arquitectura API-Only",
+        "Refresh on-demand reemplaza sync"
+      ]
+    },
+    {
+      "id": "RF-EM-016",
+      "name": "Progreso de sincronización",
+      "description": "Mostrar progreso de sincronización en tiempo real",
+      "category": "synchronization",
+      "priority": "medium",
+      "current_implementation": {
+        "source": "email_sync_progress table polling",
+        "components": ["SyncProgressBar", "SyncStatus"],
+        "hooks": ["useSyncProgress"]
+      },
+      "api_only_impact": {
+        "change_required": "eliminable",
+        "reason": "Sin sincronización, sin progreso",
+        "benefits": ["UI simplificada"],
+        "migration_note": "Reemplazar por loading states estándar"
+      },
+      "data_dependencies": ["processed_count", "total_count", "current_folder"],
+      "acceptance_criteria": [
+        "N/A en arquitectura API-Only",
+        "Loading spinner estándar suficiente"
+      ]
+    },
+    {
+      "id": "RF-EM-017",
+      "name": "Cancelación de sincronización",
+      "description": "Permitir cancelar sincronización en progreso",
+      "category": "synchronization",
+      "priority": "low",
+      "current_implementation": {
+        "source": "Flag en edge function + cleanup",
+        "components": ["CancelSyncButton"],
+        "hooks": ["useCancelSync"]
+      },
+      "api_only_impact": {
+        "change_required": "eliminable",
+        "reason": "Sin sincronización, sin cancelación",
+        "benefits": ["Código eliminado"],
+        "migration_note": "Eliminar completamente"
+      },
+      "data_dependencies": ["sync_session_id"],
+      "acceptance_criteria": [
+        "N/A en arquitectura API-Only"
+      ]
+    },
+    {
+      "id": "RF-EM-018",
+      "name": "Verificación de integridad",
+      "description": "Verificar que emails locales coinciden con servidor",
+      "category": "synchronization",
+      "priority": "low",
+      "current_implementation": {
+        "source": "Comparación UIDs locales vs servidor",
+        "components": ["IntegrityChecker"],
+        "hooks": ["useIntegrityCheck"]
+      },
+      "api_only_impact": {
+        "change_required": "eliminable",
+        "reason": "Sin datos locales, sin verificación",
+        "benefits": ["Eliminación de proceso complejo"],
+        "migration_note": "Eliminar completamente"
+      },
+      "data_dependencies": ["local_uids", "server_uids"],
+      "acceptance_criteria": [
+        "N/A en arquitectura API-Only"
+      ]
+    },
+    {
+      "id": "RF-EM-019",
+      "name": "Clasificación AI de emails",
+      "description": "Clasificar emails automáticamente usando AI",
+      "category": "ai_classification",
+      "priority": "high",
+      "current_implementation": {
+        "source": "email_ai_classifications table",
+        "components": ["AIClassificationBadge", "ClassificationPanel"],
+        "hooks": ["useAIClassification"]
+      },
+      "api_only_impact": {
+        "change_required": "adaptation",
+        "new_approach": "Clasificar al visualizar, cache en IndexedDB",
+        "benefits": ["Clasificación on-demand"],
+        "challenges": ["Persistencia de clasificaciones"],
+        "migration_note": "Cambiar email_message_id por email_uid + folder_name"
+      },
+      "data_dependencies": ["email_content", "classification_result", "confidence"],
+      "acceptance_criteria": [
+        "Clasificación en < 5 segundos",
+        "Cache de resultados",
+        "Categorías: importante, spam, newsletter, personal, trabajo"
+      ]
+    },
+    {
+      "id": "RF-EM-020",
+      "name": "Sugerencias de respuesta AI",
+      "description": "Generar sugerencias de respuesta usando AI",
+      "category": "ai_classification",
+      "priority": "medium",
+      "current_implementation": {
+        "source": "AI prompt con contexto de email",
+        "components": ["AISuggestionPanel"],
+        "hooks": ["useAISuggestions"]
+      },
+      "api_only_impact": {
+        "change_required": false,
+        "reason": "Ya es stateless, usa contenido del email actual",
+        "benefits": ["Sin cambios necesarios"]
+      },
+      "data_dependencies": ["email_content", "conversation_context"],
+      "acceptance_criteria": [
+        "3 sugerencias por email",
+        "Tono ajustable",
+        "Un click para usar sugerencia"
+      ]
+    },
+    {
+      "id": "RF-EM-021",
+      "name": "Resumen AI de emails largos",
+      "description": "Generar resumen de emails extensos",
+      "category": "ai_classification",
+      "priority": "medium",
+      "current_implementation": {
+        "source": "AI summarization on-demand",
+        "components": ["EmailSummary"],
+        "hooks": ["useEmailSummary"]
+      },
+      "api_only_impact": {
+        "change_required": false,
+        "reason": "Ya es stateless",
+        "benefits": ["Sin cambios necesarios"]
+      },
+      "data_dependencies": ["email_body"],
+      "acceptance_criteria": [
+        "Resumen en < 100 palabras",
+        "Bullet points de puntos clave",
+        "Disponible para emails > 500 palabras"
+      ]
+    },
+    {
+      "id": "RF-EM-022",
+      "name": "Detección de urgencia",
+      "description": "Detectar emails urgentes automáticamente",
+      "category": "ai_classification",
+      "priority": "medium",
+      "current_implementation": {
+        "source": "AI analysis + email_priority field",
+        "components": ["UrgencyIndicator"],
+        "hooks": ["useUrgencyDetection"]
+      },
+      "api_only_impact": {
+        "change_required": "adaptation",
+        "new_approach": "Analizar al cargar, indicador temporal",
+        "benefits": ["Análisis en tiempo real"],
+        "migration_note": "No persistir, recalcular cada vez"
+      },
+      "data_dependencies": ["email_content", "sender_importance", "keywords"],
+      "acceptance_criteria": [
+        "Indicador visual de urgencia",
+        "3 niveles: alta, media, baja",
+        "Factores: keywords, sender VIP, deadline mentions"
+      ]
+    },
+    {
+      "id": "RF-EM-023",
+      "name": "Agrupación por sender/dominio",
+      "description": "Agrupar emails por remitente o dominio",
+      "category": "ai_classification",
+      "priority": "low",
+      "current_implementation": {
+        "source": "email_sender_groups table",
+        "components": ["SenderGroupPanel"],
+        "hooks": ["useSenderGroups"]
+      },
+      "api_only_impact": {
+        "change_required": "adaptation",
+        "new_approach": "Grupos definidos por usuario, aplicar al consultar",
+        "benefits": ["Grupos personalizables"],
+        "migration_note": "Mantener tabla de grupos, aplicar filtro client-side"
+      },
+      "data_dependencies": ["sender_email", "sender_domain", "group_rules"],
+      "acceptance_criteria": [
+        "Agrupación automática por dominio",
+        "Grupos personalizados",
+        "Vista colapsable por grupo"
+      ]
+    },
+    {
+      "id": "RF-EM-024",
+      "name": "Reglas automáticas de organización",
+      "description": "Aplicar reglas automáticas a emails entrantes",
+      "category": "automation",
+      "priority": "high",
+      "current_implementation": {
+        "source": "email_sender_rules table",
+        "components": ["RulesManager", "RuleEditor"],
+        "hooks": ["useEmailRules"]
+      },
+      "api_only_impact": {
+        "change_required": "adaptation",
+        "new_approach": "Evaluar reglas al mostrar emails, acciones via API",
+        "benefits": ["Reglas aplicadas en tiempo real"],
+        "migration_note": "Mantener tabla de reglas, ejecutar client-side"
+      },
+      "data_dependencies": ["rule_conditions", "rule_actions", "sender_patterns"],
+      "acceptance_criteria": [
+        "Reglas por sender, subject, keywords",
+        "Acciones: mover, marcar, etiquetar",
+        "Prioridad de reglas"
+      ]
+    },
+    {
+      "id": "RF-EM-025",
+      "name": "Notificaciones de emails importantes",
+      "description": "Notificar cuando llegan emails importantes",
+      "category": "automation",
+      "priority": "medium",
+      "current_implementation": {
+        "source": "Browser notifications + importance detection",
+        "components": ["NotificationManager"],
+        "hooks": ["useEmailNotifications"]
+      },
+      "api_only_impact": {
+        "change_required": "adaptation",
+        "new_approach": "Polling periódico + evaluación de importancia",
+        "benefits": ["Notificaciones en tiempo real"],
+        "challenges": ["Requiere polling o websocket"],
+        "migration_note": "Implementar polling cada N segundos"
+      },
+      "data_dependencies": ["new_email_check", "importance_criteria"],
+      "acceptance_criteria": [
+        "Notificación browser",
+        "Filtro por importancia",
+        "Configurable por usuario"
+      ]
+    },
+    {
+      "id": "RF-EM-026",
+      "name": "Archivado automático",
+      "description": "Archivar emails antiguos automáticamente",
+      "category": "automation",
+      "priority": "low",
+      "current_implementation": {
+        "source": "Scheduled job o manual trigger",
+        "components": ["ArchiveSettings"],
+        "hooks": ["useAutoArchive"]
+      },
+      "api_only_impact": {
+        "change_required": "adaptation",
+        "new_approach": "Trigger via API cuando usuario configura",
+        "benefits": ["Archivado manejado por servidor"],
+        "migration_note": "Solo UI para configurar, acción via API"
+      },
+      "data_dependencies": ["archive_age_days", "archive_folder"],
+      "acceptance_criteria": [
+        "Configuración de días para archivar",
+        "Exclusión de emails importantes",
+        "Ejecución manual o programada"
+      ]
+    },
+    {
+      "id": "RF-EM-027",
+      "name": "Reportes de actividad de email",
+      "description": "Generar reportes de uso de email",
+      "category": "automation",
+      "priority": "low",
+      "current_implementation": {
+        "source": "Agregación de email_messages",
+        "components": ["EmailReportsPage"],
+        "hooks": ["useEmailReports"]
+      },
+      "api_only_impact": {
+        "change_required": "adaptation",
+        "new_approach": "Solicitar stats a API o calcular client-side",
+        "benefits": ["Stats en tiempo real"],
+        "challenges": ["Depende de endpoints de stats en API"],
+        "migration_note": "Endpoint de estadísticas en TMWE API"
+      },
+      "data_dependencies": ["email_count", "response_time", "top_senders"],
+      "acceptance_criteria": [
+        "Emails enviados/recibidos por período",
+        "Top senders/recipients",
+        "Tiempo promedio de respuesta"
+      ]
+    }
+  ],
+  "summary": {
+    "total_requirements": 27,
+    "by_category": {
+      "reading": 8,
+      "writing": 5,
+      "synchronization": 5,
+      "ai_classification": 5,
+      "automation": 4
+    },
+    "by_api_only_impact": {
+      "no_change": 10,
+      "adaptation_required": 9,
+      "eliminable": 5,
+      "improved": 3
+    },
+    "tables_to_eliminate": [
+      "email_messages",
+      "email_sync_progress",
+      "email_sync_logs",
+      "email_quick_download_progress",
+      "email_batch_downloads",
+      "email_sync_status",
+      "email_download_queue"
+    ],
+    "tables_to_keep_adapted": [
+      "email_ai_classifications (cambiar FK a email_uid)",
+      "email_sender_rules",
+      "email_sender_groups",
+      "email_templates",
+      "email_user_preferences",
+      "email_signature"
+    ],
+    "estimated_storage_savings": "~424MB (basado en email_messages actual)",
+    "estimated_code_reduction": "~35% del código de email"
+  },
+  "api_endpoints_required": {
+    "reading": [
+      "GET /email_message - Lista de emails con filtros",
+      "GET /email_message/{uid} - Email completo con body",
+      "GET /email_folders - Lista de carpetas con contadores",
+      "GET /email_search - Búsqueda full-text",
+      "GET /email_attachment/{id} - Descarga de attachment"
+    ],
+    "writing": [
+      "POST /email_send - Envío de email",
+      "POST /email_draft - Guardar borrador",
+      "DELETE /email_message/{uid} - Eliminar email",
+      "PUT /email_message/{uid}/move - Mover a carpeta",
+      "PUT /email_message/{uid}/read - Marcar como leído"
+    ],
+    "optional_stats": [
+      "GET /email_stats - Estadísticas de uso",
+      "GET /email_folders/unread - Contadores de no leídos"
+    ]
+  },
+  "migration_checklist": [
+    {
+      "phase": 1,
+      "name": "Preparación",
+      "tasks": [
+        "Documentar todos los endpoints TMWE disponibles",
+        "Crear mapping de campos DB local vs API response",
+        "Identificar gaps en API actual"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Adaptación de hooks",
+      "tasks": [
+        "Reemplazar useEmails para usar API",
+        "Reemplazar useEmailDetail para fetch on-demand",
+        "Implementar cache client-side (React Query)"
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Eliminación de sync",
+      "tasks": [
+        "Deprecar useEmailSync",
+        "Eliminar edge function tmwe-email-sync-master",
+        "Eliminar tablas de sincronización"
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Adaptación AI",
+      "tasks": [
+        "Cambiar FK email_message_id por email_uid",
+        "Implementar clasificación on-demand",
+        "Cache de clasificaciones en IndexedDB"
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Testing y rollout",
+      "tasks": [
+        "Tests de integración con API",
+        "Performance testing",
+        "Rollout gradual con feature flag"
+      ]
+    }
+  ]
+}

@@ -17,6 +17,42 @@ interface AnalysisRequest {
   context?: string;
 }
 
+// 🆕 ZERO-SYNC: Helper to fetch data from TMWE API
+async function fetchFromTMWEApi(handler: string, params: Record<string, any> = {}): Promise<any> {
+  const TMWE_API_URL = Deno.env.get('TMWE_API_URL') || 'https://findair.it/erp/tmwe_json';
+  const TMWE_API_KEY = Deno.env.get('TMWE_API_KEY');
+  
+  if (!TMWE_API_KEY) {
+    console.warn('⚠️ [Zero-Sync] TMWE_API_KEY not configured, using fallback mode');
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${TMWE_API_URL}/email_search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${TMWE_API_KEY}`
+      },
+      body: JSON.stringify({
+        handler,
+        ...params
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`❌ [Zero-Sync] TMWE API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('❌ [Zero-Sync] TMWE API fetch error:', error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -80,7 +116,34 @@ serve(async (req) => {
   }
 });
 
+// 🆕 ZERO-SYNC: Stats using TMWE API with local fallback
 async function getStats(supabase: any, userEmail: string, filters?: any) {
+  console.log('📊 [Zero-Sync] getStats for:', userEmail);
+  
+  // Try TMWE API first
+  const tmweData = await fetchFromTMWEApi('get_folder_info', {
+    folder_name: filters?.folders?.[0] || 'INBOX',
+    timeout: 10
+  });
+
+  if (tmweData?.folder) {
+    console.log('✅ [Zero-Sync] Using TMWE API stats');
+    return {
+      totalEmails: tmweData.folder.total_messages || tmweData.folder.messages || 0,
+      folderBreakdown: { [filters?.folders?.[0] || 'INBOX']: tmweData.folder.total_messages || 0 },
+      topSenders: [], // Would need separate search call
+      withAttachments: tmweData.folder.with_attachments || 0,
+      dateRange: {
+        earliest: null,
+        latest: null,
+      },
+      source: 'tmwe_api'
+    };
+  }
+
+  // Fallback to local DB
+  console.log('📦 [Fallback] Using local email_messages table');
+  
   let query = supabase
     .from('email_messages')
     .select('*', { count: 'exact', head: false })
@@ -100,7 +163,6 @@ async function getStats(supabase: any, userEmail: string, filters?: any) {
   const { data: emails, count, error } = await query;
   if (error) throw error;
 
-  // Aggregate statistics
   const folderCounts = emails?.reduce((acc: any, email: any) => {
     acc[email.cartella] = (acc[email.cartella] || 0) + 1;
     return acc;
@@ -128,10 +190,44 @@ async function getStats(supabase: any, userEmail: string, filters?: any) {
       earliest: emails?.[0]?.data_ricezione,
       latest: emails?.[emails.length - 1]?.data_ricezione,
     },
+    source: 'local_db'
   };
 }
 
+// 🆕 ZERO-SYNC: Search using TMWE API with local fallback
 async function searchEmails(supabase: any, userEmail: string, filters?: any) {
+  console.log('🔍 [Zero-Sync] searchEmails for:', userEmail);
+
+  // Try TMWE API first
+  if (filters?.keywords?.length || filters?.sender) {
+    const tmweData = await fetchFromTMWEApi('search_emails', {
+      query: filters?.keywords?.[0] || filters?.sender || '',
+      search_folder: filters?.folders?.[0] || 'INBOX',
+      limit: 50,
+      timeout: 15
+    });
+
+    if (tmweData?.emails && tmweData.emails.length > 0) {
+      console.log('✅ [Zero-Sync] Using TMWE API search results:', tmweData.emails.length);
+      return {
+        results: tmweData.emails.map((email: any) => ({
+          id: email.id || email.email_id,
+          tmwe_email_id: email.id || email.email_id,
+          subject: email.subject,
+          from: email.from?.email || email.from_email || email.sender,
+          date: email.date || email.received_at,
+          preview: email.snippet || email.body_preview || '',
+          hasAttachments: email.has_attachments || email.attachment_count > 0,
+        })),
+        count: tmweData.emails.length,
+        source: 'tmwe_api'
+      };
+    }
+  }
+
+  // Fallback to local DB
+  console.log('📦 [Fallback] Using local email_messages table');
+  
   let query = supabase
     .from('email_messages')
     .select('*')
@@ -170,10 +266,64 @@ async function searchEmails(supabase: any, userEmail: string, filters?: any) {
       hasAttachments: email.has_attachments,
     })) || [],
     count: data?.length || 0,
+    source: 'local_db'
   };
 }
 
+// 🆕 ZERO-SYNC: Insights using TMWE API with local fallback
 async function getInsights(supabase: any, userEmail: string, filters?: any) {
+  console.log('💡 [Zero-Sync] getInsights for:', userEmail);
+
+  // Try TMWE API first for metadata
+  const tmweData = await fetchFromTMWEApi('get_emails_metadata', {
+    folder: filters?.folders?.[0] || 'INBOX',
+    limit: 500,
+    timeout: 15
+  });
+
+  if (tmweData?.emails && tmweData.emails.length > 0) {
+    console.log('✅ [Zero-Sync] Using TMWE API for insights:', tmweData.emails.length, 'emails');
+    
+    const emails = tmweData.emails;
+    
+    const noReplies = emails.filter((e: any) => 
+      !e.subject?.toLowerCase().startsWith('re:')
+    ).length;
+
+    const activeThreads = emails.filter((e: any) => 
+      e.subject?.toLowerCase().startsWith('re:')
+    ).length;
+
+    const words = emails.flatMap((e: any) => 
+      e.subject?.toLowerCase().split(/\s+/).filter((w: string) => w.length > 4) || []
+    );
+    
+    const wordCounts = words.reduce((acc: any, word: string) => {
+      acc[word] = (acc[word] || 0) + 1;
+      return acc;
+    }, {});
+
+    const topKeywords = Object.entries(wordCounts)
+      .sort(([, a]: any, [, b]: any) => b - a)
+      .slice(0, 10)
+      .map(([word, count]) => ({ word, count }));
+
+    return {
+      noReplies,
+      activeThreads,
+      topKeywords,
+      insights: [
+        `${noReplies} email potrebbero richiedere una risposta`,
+        `${activeThreads} conversazioni attive in corso`,
+        `Parole chiave più frequenti: ${topKeywords.slice(0, 3).map(k => k.word).join(', ')}`,
+      ],
+      source: 'tmwe_api'
+    };
+  }
+
+  // Fallback to local DB
+  console.log('📦 [Fallback] Using local email_messages table');
+  
   const { data: emails, error } = await supabase
     .from('email_messages')
     .select('*')
@@ -184,17 +334,14 @@ async function getInsights(supabase: any, userEmail: string, filters?: any) {
 
   if (error) throw error;
 
-  // Email without replies (simple heuristic: no "Re:" in subject)
   const noReplies = emails?.filter((e: any) => 
     !e.subject?.toLowerCase().startsWith('re:')
   ).length || 0;
 
-  // Active threads (emails with "Re:" in subject)
   const activeThreads = emails?.filter((e: any) => 
     e.subject?.toLowerCase().startsWith('re:')
   ).length || 0;
 
-  // Extract keywords from subjects
   const words = emails?.flatMap((e: any) => 
     e.subject?.toLowerCase().split(/\s+/).filter((w: string) => w.length > 4) || []
   ) || [];
@@ -218,10 +365,74 @@ async function getInsights(supabase: any, userEmail: string, filters?: any) {
       `${activeThreads} conversazioni attive in corso`,
       `Parole chiave più frequenti: ${topKeywords.slice(0, 3).map(k => k.word).join(', ')}`,
     ],
+    source: 'local_db'
   };
 }
 
+// 🆕 ZERO-SYNC: Actions using TMWE API with local fallback
 async function suggestActions(supabase: any, userEmail: string, filters?: any) {
+  console.log('⚡ [Zero-Sync] suggestActions for:', userEmail);
+
+  // Try TMWE API first
+  const tmweData = await fetchFromTMWEApi('get_emails_metadata', {
+    folder: filters?.folders?.[0] || 'INBOX',
+    limit: 500,
+    timeout: 15
+  });
+
+  if (tmweData?.emails && tmweData.emails.length > 0) {
+    console.log('✅ [Zero-Sync] Using TMWE API for action suggestions');
+    
+    const emails = tmweData.emails;
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const archiveCandidates = emails.filter((e: any) => {
+      const emailDate = new Date(e.date || e.received_at);
+      return emailDate < thirtyDaysAgo && !e.has_attachments;
+    }).length;
+
+    const followUpNeeded = emails.filter((e: any) => {
+      const emailDate = new Date(e.date || e.received_at);
+      return emailDate > sevenDaysAgo && !e.subject?.toLowerCase().startsWith('re:');
+    }).length;
+
+    const urgentKeywords = ['urgent', 'urgente', 'asap', 'importante', 'critical'];
+    const highPriority = emails.filter((e: any) => 
+      urgentKeywords.some(keyword => 
+        e.subject?.toLowerCase().includes(keyword)
+      )
+    ).length;
+
+    return {
+      suggestions: [
+        {
+          action: 'archive',
+          count: archiveCandidates,
+          description: `${archiveCandidates} email più vecchie di 30 giorni potrebbero essere archiviate`,
+          priority: 'low',
+        },
+        {
+          action: 'follow_up',
+          count: followUpNeeded,
+          description: `${followUpNeeded} email recenti potrebbero richiedere un follow-up`,
+          priority: 'medium',
+        },
+        {
+          action: 'review_urgent',
+          count: highPriority,
+          description: `${highPriority} email contengono parole chiave urgenti`,
+          priority: 'high',
+        },
+      ],
+      source: 'tmwe_api'
+    };
+  }
+
+  // Fallback to local DB
+  console.log('📦 [Fallback] Using local email_messages table');
+  
   const { data: emails, error } = await supabase
     .from('email_messages')
     .select('*')
@@ -235,20 +446,17 @@ async function suggestActions(supabase: any, userEmail: string, filters?: any) {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  // Archive candidates (older than 30 days, no attachments)
   const archiveCandidates = emails?.filter((e: any) => {
     const emailDate = new Date(e.data_ricezione);
     return emailDate < thirtyDaysAgo && !e.has_attachments;
   }).length || 0;
 
-  // Follow-up needed (no "Re:" in subject, recent)
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const followUpNeeded = emails?.filter((e: any) => {
     const emailDate = new Date(e.data_ricezione);
     return emailDate > sevenDaysAgo && !e.subject?.toLowerCase().startsWith('re:');
   }).length || 0;
 
-  // High priority (contains urgent keywords)
   const urgentKeywords = ['urgent', 'urgente', 'asap', 'importante', 'critical'];
   const highPriority = emails?.filter((e: any) => 
     urgentKeywords.some(keyword => 
@@ -278,5 +486,6 @@ async function suggestActions(supabase: any, userEmail: string, filters?: any) {
         priority: 'high',
       },
     ],
+    source: 'local_db'
   };
 }

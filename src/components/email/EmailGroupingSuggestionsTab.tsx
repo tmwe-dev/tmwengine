@@ -11,6 +11,7 @@ import { Sparkles, Loader2, Brain, RefreshCw, LayoutGrid, List, Mail, FolderKanb
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { analyzeSenders } from '@/lib/email-sender-analyzer';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import type { EmailSenderGroup, SenderAnalysis, GroupingSuggestion } from '@/types/email-management';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { GroupingSuggestionCard } from './management/GroupingSuggestionCard';
@@ -520,30 +521,59 @@ export function EmailGroupingSuggestionsTab() {
         } : null);
 
         try {
-          // Get email samples - SCHEMA VERIFICATO ✅
-          const { data: emailSamples, error: emailError } = await supabase
-            .from('email_messages')
-            .select('subject, body_text, data_ricezione')
-            .eq('from_email', sender.email)
-            .eq('user_email', profile.tmwe_email)
-            .order('data_ricezione', { ascending: false })
-            .limit(5);
-
-          if (emailError) {
-            console.error(`❌ Errore lettura email per ${sender.email}:`, emailError);
-            errorCount++;
-            setSuggestionProgress(prev => prev ? {
-              ...prev,
-              errorCount: prev.errorCount + 1,
-              logs: [...prev.logs, {
-                timestamp: new Date().toISOString(),
-                type: 'error',
-                message: `❌ Errore lettura email per ${sender.companyName}: ${emailError.message}`,
-                senderEmail: sender.email
-              }]
-            } : null);
-            continue;
+          // 🆕 ZERO-SYNC: Try TMWE API first for email samples
+          let emailSamples: Array<{ subject: string; body_text: string; data_ricezione: string }> = [];
+          
+          try {
+            const tmweResult = await emailSearchApi.searchBySender({
+              sender: sender.email,
+              folder: 'INBOX',
+              limit: 5,
+              timeout: 10
+            });
+            
+            if (tmweResult?.emails && tmweResult.emails.length > 0) {
+              console.log(`✅ [Zero-Sync] TMWE API returned ${tmweResult.emails.length} samples for ${sender.email}`);
+              emailSamples = tmweResult.emails.map((e: any) => ({
+                subject: e.subject || '',
+                body_text: e.snippet || e.body_preview || '',
+                data_ricezione: e.date || e.received_at || new Date().toISOString()
+              }));
+            }
+          } catch (tmweError) {
+            console.warn(`⚠️ [Zero-Sync] TMWE API failed for ${sender.email}, using fallback:`, tmweError);
           }
+          
+          // Fallback to local DB if TMWE API fails
+          if (emailSamples.length === 0) {
+            const { data: localSamples, error: emailError } = await supabase
+              .from('email_messages')
+              .select('subject, body_text, data_ricezione')
+              .eq('from_email', sender.email)
+              .eq('user_email', profile.tmwe_email)
+              .order('data_ricezione', { ascending: false })
+              .limit(5);
+
+            if (emailError) {
+              console.error(`❌ Errore lettura email per ${sender.email}:`, emailError);
+              errorCount++;
+              setSuggestionProgress(prev => prev ? {
+                ...prev,
+                errorCount: prev.errorCount + 1,
+                logs: [...prev.logs, {
+                  timestamp: new Date().toISOString(),
+                  type: 'error',
+                  message: `❌ Errore lettura email per ${sender.companyName}: ${emailError.message}`,
+                  senderEmail: sender.email
+                }]
+              } : null);
+              continue;
+            }
+            
+            emailSamples = localSamples || [];
+          }
+
+          // emailSamples is now populated from TMWE API or local DB
 
           if (!emailSamples || emailSamples.length === 0) {
             console.log(`⚠️ Nessuna email trovata per ${sender.email}`);

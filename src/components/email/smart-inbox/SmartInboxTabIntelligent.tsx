@@ -370,123 +370,181 @@ export const SmartInboxTabIntelligent = ({
     e => !e.classification.is_verified || e.classification.confidence < 0.8
   ).length;
 
+  // 🆕 ZERO-SYNC: handleClassifyNew uses TMWE API first
   const handleClassifyNew = async () => {
-    console.log('🔍 [DEBUG] Classifica Nuove cliccato');
+    console.log('🔍 [Zero-Sync] Classifica Nuove cliccato');
     
     if (!userEmail) {
-      console.error('❌ [DEBUG] Utente non autenticato');
+      console.error('❌ [Zero-Sync] Utente non autenticato');
       toast.error('Utente non autenticato');
       return;
     }
 
     try {
-      console.log('📧 [DEBUG] Recupero email NON classificate dal DB locale...');
-      
-      // ✅ Recupera email NON classificate dal DB locale
-      // Step 1: Fetch all classified email IDs
+      // Step 1: Fetch classified email IDs (both email_id and tmwe_email_id)
       const { data: classifiedIds, error: classifiedError } = await supabase
         .from('email_ai_classifications')
-        .select('email_id')
-        .not('email_id', 'is', null);
+        .select('email_id, tmwe_email_id')
+        .eq('user_email', userEmail)
+        .eq('folder_name', selectedFolder);
 
       if (classifiedError) {
-        console.error('❌ [DEBUG] Error fetching classified IDs:', classifiedError);
+        console.error('❌ [Zero-Sync] Error fetching classified IDs:', classifiedError);
         toast.error('Errore nel recupero classificazioni');
         return;
       }
 
-      const classifiedSet = new Set(classifiedIds?.map(c => c.email_id) || []);
-      console.log('📊 [DEBUG] Email già classificate:', classifiedSet.size);
+      const classifiedUuids = new Set(classifiedIds?.map(c => c.email_id).filter(Boolean) || []);
+      const classifiedTmweIds = new Set(classifiedIds?.map(c => c.tmwe_email_id).filter(Boolean) || []);
+      console.log('📊 [Zero-Sync] Already classified:', classifiedUuids.size, 'UUIDs,', classifiedTmweIds.size, 'TMWE IDs');
 
-      // Step 2: Fetch all emails from folder
-      let allEmailsQuery = supabase
-        .from('email_messages')
-        .select('id, subject, from_email')
-        .eq('user_email', userEmail)
-        .eq('cartella', selectedFolder);
+      // Step 2: 🆕 Try TMWE API first for unclassified emails
+      let unclassifiedEmails: Array<{ email_id?: string; tmwe_email_id?: number; subject?: string; from_email?: string }> = [];
+      
+      try {
+        console.log('🌐 [Zero-Sync] Fetching emails from TMWE API...');
+        const tmweResult = await emailSearchApi.getEmailsMetadata({
+          folder: selectedFolder,
+          limit: 200,
+          is_seen: unreadOnly ? false : undefined,
+          timeout: 15
+        });
 
-      if (unreadOnly) {
-        allEmailsQuery = allEmailsQuery.eq('stato', 'nuovo');
+        if (tmweResult?.emails && tmweResult.emails.length > 0) {
+          console.log('✅ [Zero-Sync] TMWE API returned', tmweResult.emails.length, 'emails');
+          
+          // Filter out already classified emails
+          const unclassifiedFromApi = tmweResult.emails.filter((email: any) => {
+            const tmweId = email.id || email.email_id;
+            return !classifiedTmweIds.has(tmweId);
+          }).slice(0, 100);
+
+          unclassifiedEmails = unclassifiedFromApi.map((email: any) => ({
+            tmwe_email_id: email.id || email.email_id,
+            subject: email.subject,
+            from_email: email.from?.email || email.from_email || email.sender
+          }));
+          
+          console.log('📬 [Zero-Sync] Unclassified from TMWE API:', unclassifiedEmails.length);
+        }
+      } catch (tmweError) {
+        console.warn('⚠️ [Zero-Sync] TMWE API failed, using fallback:', tmweError);
       }
 
-      const { data: allEmails, error: fetchError } = await allEmailsQuery;
+      // Step 3: Fallback to local DB if TMWE API fails or returns empty
+      if (unclassifiedEmails.length === 0) {
+        console.log('📦 [Fallback] Using local email_messages table...');
+        
+        let allEmailsQuery = supabase
+          .from('email_messages')
+          .select('id, subject, from_email')
+          .eq('user_email', userEmail)
+          .eq('cartella', selectedFolder);
 
-      if (fetchError) {
-        console.error('❌ [DEBUG] Error fetching emails:', fetchError);
-        toast.error('Errore nel recupero email');
-        return;
+        if (unreadOnly) {
+          allEmailsQuery = allEmailsQuery.eq('stato', 'nuovo');
+        }
+
+        const { data: allEmails, error: fetchError } = await allEmailsQuery;
+
+        if (fetchError) {
+          console.error('❌ [Fallback] Error fetching emails:', fetchError);
+          toast.error('Errore nel recupero email');
+          return;
+        }
+
+        unclassifiedEmails = allEmails?.filter(email => !classifiedUuids.has(email.id)).slice(0, 100).map(email => ({
+          email_id: email.id,
+          subject: email.subject,
+          from_email: email.from_email
+        })) || [];
+        
+        console.log('📬 [Fallback] Unclassified from local DB:', unclassifiedEmails.length);
       }
 
-      // Step 3: Filter unclassified emails in memory
-      const unclassifiedEmails = allEmails?.filter(email => !classifiedSet.has(email.id)).slice(0, 100);
-
-      console.log('📬 [DEBUG] Email non classificate trovate:', unclassifiedEmails?.length || 0);
-
-      if (!unclassifiedEmails || unclassifiedEmails.length === 0) {
+      if (unclassifiedEmails.length === 0) {
         toast.info('Nessuna nuova email da classificare');
         return;
       }
 
       toast.success(`Trovate ${unclassifiedEmails.length} email da classificare`);
-      console.log('🚀 [DEBUG] Avvio classificazione...');
+      console.log('🚀 [Zero-Sync] Avvio classificazione...');
 
-      // ✅ Classifica usando solo gli ID (UUID) + selected_agent
+      // 🆕 ZERO-SYNC: Pass objects with tmwe_email_id or email_id
       await classifyEmails(
-        unclassifiedEmails.map(e => e.id),
+        unclassifiedEmails.map(e => ({
+          email_id: e.email_id,
+          tmwe_email_id: e.tmwe_email_id
+        })),
         userEmail,
-        undefined,  // forceCategory
-        selectedAgent  // 🆕 Global AI Agent
+        undefined,
+        selectedAgent
       );
 
       // Ricarica lista dopo classificazione
       refetch();
-      console.log('✅ [DEBUG] Classificazione completata');
+      console.log('✅ [Zero-Sync] Classificazione completata');
 
-      // 🤖 FASE 3: Auto-trigger AI Automation Processor per ogni email classificata
-      console.log('🤖 [DEBUG] Avvio AI Automation Processor per email classificate...');
+      // 🤖 AI Automation Processor per email classificate
+      console.log('🤖 [Zero-Sync] Avvio AI Automation Processor...');
       
       const processedCount = { success: 0, failed: 0 };
       
-      for (const email of unclassifiedEmails) {
+      for (const email of unclassifiedEmails.slice(0, 10)) { // Limit to 10 for performance
         try {
-          // Fetch email completa per processamento
-          const { data: fullEmail, error: emailError } = await supabase
-            .from('email_messages')
-            .select('id, subject, from_email, body_text, body_html')
-            .eq('id', email.id)
-            .single();
-
-          if (emailError || !fullEmail) {
-            console.error(`❌ Email ${email.id} non trovata per processamento AI`);
-            processedCount.failed++;
-            continue;
+          // 🆕 Use TMWE API to get email content if tmwe_email_id available
+          let emailContent = { subject: email.subject || 'No subject', body: '' };
+          
+          if (email.tmwe_email_id) {
+            try {
+              const detailResult = await emailSearchApi.getEmailDetail({
+                email_id: email.tmwe_email_id,
+                include_body: true,
+                timeout: 5
+              });
+              if (detailResult?.email) {
+                emailContent.subject = detailResult.email.subject || emailContent.subject;
+                emailContent.body = detailResult.email.body_text || detailResult.email.body_html || detailResult.email.snippet || '';
+              }
+            } catch (detailErr) {
+              console.warn('⚠️ [Zero-Sync] Could not fetch email detail:', detailErr);
+            }
+          } else if (email.email_id) {
+            // Fallback to local DB
+            const { data: fullEmail } = await supabase
+              .from('email_messages')
+              .select('subject, body_text, body_html')
+              .eq('id', email.email_id)
+              .single();
+            
+            if (fullEmail) {
+              emailContent.subject = fullEmail.subject || emailContent.subject;
+              emailContent.body = fullEmail.body_text || fullEmail.body_html || '';
+            }
           }
 
-          // Chiamata a email-ai-processor
           await processEmailWithAI(
-            fullEmail.id, // Usa email_id come UID
-            fullEmail.from_email,
-            fullEmail.subject || 'No subject',
-            fullEmail.body_text || fullEmail.body_html || ''
+            email.email_id || String(email.tmwe_email_id),
+            email.from_email || '',
+            emailContent.subject,
+            emailContent.body
           );
           
           processedCount.success++;
-          console.log(`✅ AI Processor completato per email ${email.id}`);
-          
         } catch (error) {
-          console.error(`❌ AI Processor fallito per email ${email.id}:`, error);
+          console.error(`❌ AI Processor failed:`, error);
           processedCount.failed++;
         }
       }
       
-      console.log(`🎯 [DEBUG] AI Automation: ${processedCount.success} successi, ${processedCount.failed} fallimenti`);
+      console.log(`🎯 [Zero-Sync] AI Automation: ${processedCount.success} successi, ${processedCount.failed} fallimenti`);
       
       if (processedCount.success > 0) {
         toast.success(`🤖 ${processedCount.success} email analizzate per azioni automatiche`);
       }
       
     } catch (error: any) {
-      console.error('❌ [DEBUG] Error in handleClassifyNew:', error);
+      console.error('❌ [Zero-Sync] Error in handleClassifyNew:', error);
       toast.error(`Errore durante la classificazione: ${error.message}`);
     }
   };

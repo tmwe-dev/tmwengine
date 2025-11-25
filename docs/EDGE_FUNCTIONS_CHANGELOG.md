@@ -9,26 +9,52 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
-## [2025-01-29] - Zero-Sync AI Migration
+## [2025-01-29] - Zero-Sync AI Migration (COMPLETE)
 
 ### 🎯 Resumen Ejecutivo
-- ✅ **email-ai-processor**: Now fetches emails from TMWE API via `tmwe_email_id` (primary) with fallback to local DB
+- ✅ **email-ai-processor**: Fetches emails from TMWE API via `tmwe_email_id` (primary) with fallback to local DB
+- ✅ **fun-email-ai-analysis**: All 4 operations (stats/search/insights/actions) now use TMWE API first
 - ✅ **email-sender-analyzer.ts**: Uses TMWE API `getEmailsMetadata()` for sender analysis with local DB fallback  
 - ✅ **useSmartClassificationIntelligent**: Supports `tmwe_email_id` parameter for Zero-Sync classification
+- ✅ **SmartInboxTabIntelligent**: `handleClassifyNew()` fetches unclassified emails from TMWE API first
 - 📊 **Impact**: ~95% reduction in sync dependency, emails fetched on-demand from TMWE API
 
 ### Files Modified
 - `supabase/functions/email-ai-processor/index.ts` - Added `fetchEmailFromTMWEApi()` helper
+- `supabase/functions/fun-email-ai-analysis/index.ts` - All operations use TMWE API + local fallback
 - `src/lib/email-sender-analyzer.ts` - TMWE API primary, local DB fallback
-- `src/hooks/useSmartClassificationIntelligent.ts` - Accepts `tmwe_email_id` in input
+- `src/hooks/useSmartClassificationIntelligent.ts` - Accepts `tmwe_email_id` in input array
+- `src/components/email/smart-inbox/SmartInboxTabIntelligent.tsx` - `handleClassifyNew()` Zero-Sync
+- `src/components/email/EmailGroupingSuggestionsTab.tsx` - Email samples fetch via TMWE API
 
 ### Backups Created
 - `docs/CODE_BACKUPS/2025-01-29_pre-zero-sync/edge-functions/email-ai-processor-index.ts.backup`
+- `docs/CODE_BACKUPS/2025-01-29_pre-zero-sync/edge-functions/fun-email-ai-analysis-index.ts.backup`
 - `docs/CODE_BACKUPS/2025-01-29_pre-zero-sync/lib/email-sender-analyzer.ts.backup`
 
 ### Required Secrets
-- `TMWE_API_URL` - Base URL of TMWE API
+- `TMWE_API_URL` - Base URL of TMWE API (default: https://findair.it/erp/tmwe_json)
 - `TMWE_API_KEY` - Authentication key for TMWE API
+
+### Architecture
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ZERO-SYNC FLOW                           │
+├─────────────────────────────────────────────────────────────┤
+│  Client Request                                             │
+│       ↓                                                     │
+│  Edge Function (email-ai-processor, fun-email-ai-analysis)  │
+│       ↓                                                     │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  1. Try TMWE API (tmwe_email_id)  ←── PRIMARY       │    │
+│  │  2. Fallback to local DB (email_id) ←── FALLBACK    │    │
+│  └─────────────────────────────────────────────────────┘    │
+│       ↓                                                     │
+│  AI Classification (Gemini/GPT/Claude)                      │
+│       ↓                                                     │
+│  Save to Supabase (email_ai_classifications)                │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 

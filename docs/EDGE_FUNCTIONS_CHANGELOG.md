@@ -9,6 +9,125 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-29] - 🚨 CORRECCIÓN CRÍTICA: Restauración de Funciones Faltantes en config.toml
+
+### 🐛 Problema Identificado
+Durante la Fase 3 de consolidación de funciones TMWE, se eliminaron **accidentalmente** de `config.toml` **12 funciones activas** que NO debían ser removidas. Esto causó que estas funciones quedaran "huérfanas" (carpetas existentes pero sin declaración en config).
+
+**Funciones afectadas:**
+1. **🔴 CRÍTICO:** `tmwe-oauth-auth` - Autenticación OAuth para integración TMWE email (sin esta función, el login de email NO funciona)
+2. `tmwe-oauth-refresh` - Refresh de tokens OAuth
+3. `ai-crm-manager` - Gestor de automatización CRM con AI
+4. `auto-assign-admin` - Asignación automática de rol admin
+5. `bar-request-comment` - Sistema de comentarios en conversaciones
+6. `calculate-basic-convergence` - Métricas de convergencia en debates
+7. `execute-crm-action` - Ejecución de acciones CRM automatizadas
+8. `generate-chunked-summary` - Generación de resúmenes por chunks
+9. `process-saved-file-ai` - Procesamiento de archivos guardados con AI
+10. `search-document-embeddings` - Búsqueda semántica en documentos
+11. `send-push-notification` - Envío de notificaciones push
+12. `voice-to-text` - Transcripción de audio a texto
+
+### 🔥 Impacto Crítico
+- ❌ **OAuth de email ROTO** - `tmwe-oauth-auth` era esencial para FunEmail
+- ❌ 12 edge functions no desplegables (sin entrada en config.toml)
+- ❌ Funcionalidades CRM, audio, embeddings, notificaciones afectadas
+- ⚠️ Error detectado antes del deploy gracias a revisión manual
+
+### ✅ Corrección Aplicada
+**Archivo:** `supabase/config.toml`
+
+**Cambios realizados:**
+1. **Restaurado `tmwe-oauth-auth`** (línea 235) con `verify_jwt = false` (OAuth requiere acceso público)
+2. **Restaurado `tmwe-oauth-refresh`** (línea 238) con `verify_jwt = true`
+3. **Restauradas las otras 10 funciones** (líneas 241-271) con `verify_jwt = true`
+4. **Actualizado comentario de consolidación** para reflejar que solo se consolidaron 4 funciones TMWE (jwt-sign, jwt-refresh, supabase-sync, test-folder-info)
+
+**Estructura final en config.toml:**
+```toml
+[functions.summarize-user-message]
+verify_jwt = true
+
+# CRITICAL: OAuth authentication for TMWE email integration
+[functions.tmwe-oauth-auth]
+verify_jwt = false
+
+[functions.tmwe-oauth-refresh]
+verify_jwt = true
+
+# Additional active functions
+[functions.ai-crm-manager]
+verify_jwt = true
+
+[functions.auto-assign-admin]
+verify_jwt = true
+
+[functions.bar-request-comment]
+verify_jwt = true
+
+[functions.calculate-basic-convergence]
+verify_jwt = true
+
+[functions.execute-crm-action]
+verify_jwt = true
+
+[functions.generate-chunked-summary]
+verify_jwt = true
+
+[functions.process-saved-file-ai]
+verify_jwt = true
+
+[functions.search-document-embeddings]
+verify_jwt = true
+
+[functions.send-push-notification]
+verify_jwt = true
+
+[functions.voice-to-text]
+verify_jwt = true
+
+# REMOVED - Consolidated into tmwe-api-proxy:
+# [functions.tmwe-jwt-sign] - handler: internal_jwt_sign
+# [functions.tmwe-jwt-refresh] - handler: internal_jwt_refresh
+# [functions.tmwe-test-folder-info] - handler: internal_test_folder_info
+# [functions.tmwe-supabase-sync] - handler: internal_supabase_sync
+```
+
+### 🎯 Resultado Esperado
+- ✅ OAuth de email funcionando correctamente (`tmwe-oauth-auth` activa)
+- ✅ Todas las 12 funciones declaradas y desplegables
+- ✅ Sin funciones "huérfanas" (carpeta sin config)
+- ✅ Sistema CRM, audio, embeddings, notificaciones operativos
+
+### 📊 Verificación Post-Corrección
+**Checklist de validación:**
+- [x] `tmwe-oauth-auth` presente en config.toml (verify_jwt = false)
+- [x] `tmwe-oauth-refresh` presente en config.toml (verify_jwt = true)
+- [x] Las otras 10 funciones presentes en config.toml
+- [x] Comentarios actualizados para reflejar solo 4 consolidaciones
+- [ ] Deploy exitoso (pending)
+- [ ] Test de login OAuth en FunEmail (pending)
+
+### 🔍 Lecciones Aprendidas
+1. **NUNCA eliminar funciones de config.toml sin verificar dependencias** - `tmwe-oauth-auth` era crítica pero no tenía referencia en comentarios
+2. **Revisar TODAS las carpetas en `supabase/functions/` antes de modificar config** - debe haber 1:1 mapping entre carpetas y entradas en config
+3. **Grep es tu amigo** - `ls supabase/functions/` vs entradas en config.toml debe coincidir
+4. **Comentarios pueden ser engañosos** - El comentario "KEPT (OAuth flow)" NO garantizaba que la función estuviera declarada
+
+### 🚨 Acción Preventiva Futura
+**Antes de modificar config.toml, ejecutar:**
+```bash
+# Lista carpetas de funciones
+ls -1 supabase/functions/ | grep -v "^_"
+
+# Comparar con entradas en config.toml
+grep "^\[functions\." supabase/config.toml | sed 's/\[functions\.//;s/\]//'
+
+# Debe haber match 1:1 (excepto funciones disabled)
+```
+
+---
+
 ## [2025-01-29] - FIX: Zero-Sync Classification Storage Bug
 
 ### 🐛 Bug Fixed

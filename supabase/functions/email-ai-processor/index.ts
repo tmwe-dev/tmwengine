@@ -13,11 +13,62 @@ const corsHeaders = {
 };
 
 interface AIProcessRequest {
-  email_id: string;
+  email_id?: string;              // Legacy: UUID local (deprecated)
+  tmwe_email_id?: number;         // 🆕 TMWE API email_id (primary)
   user_email: string;
   operation?: 'classify' | 'automate';
   selected_agent?: 'gemini' | 'gpt' | 'claude';
   force_category?: string;
+}
+
+// 🆕 TMWE API Helper - Zero-Sync Architecture
+async function fetchEmailFromTMWEApi(tmweEmailId: number, userEmail: string): Promise<any> {
+  const TMWE_API_URL = Deno.env.get('TMWE_API_URL');
+  const TMWE_API_KEY = Deno.env.get('TMWE_API_KEY');
+  
+  if (!TMWE_API_URL || !TMWE_API_KEY) {
+    throw new Error('TMWE_API_URL or TMWE_API_KEY not configured');
+  }
+  
+  console.log(`[TMWE API] 📧 Fetching email ${tmweEmailId} from TMWE API...`);
+  
+  const response = await fetch(`${TMWE_API_URL}/api/email/detail/${tmweEmailId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${TMWE_API_KEY}`,
+      'Content-Type': 'application/json',
+      'X-User-Email': userEmail
+    }
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`TMWE API error (${response.status}): ${errorText}`);
+  }
+  
+  const data = await response.json();
+  
+  if (!data.email) {
+    throw new Error(`Email not found in TMWE API: ${tmweEmailId}`);
+  }
+  
+  console.log(`[TMWE API] ✅ Email loaded: ${data.email.subject}`);
+  
+  // Normalize TMWE API response to match expected format
+  return {
+    id: data.email.id,
+    tmwe_email_id: tmweEmailId,
+    subject: data.email.subject || '',
+    body_text: data.email.body_text || data.email.snippet || '',
+    body_html: data.email.body_html || '',
+    from_email: data.email.from?.email || data.email.from_email || '',
+    to_email: data.email.to?.[0]?.email || '',
+    user_email: userEmail,
+    cartella: data.email.folder || data.email.folder_name || 'INBOX',
+    uid: data.email.uid || String(tmweEmailId),
+    received_at: data.email.date || data.email.received_at,
+    has_attachments: data.email.has_attachments || false
+  };
 }
 
 serve(async (req) => {
@@ -32,7 +83,8 @@ serve(async (req) => {
     // ============================================
 
     const { 
-      email_id, 
+      email_id,                    // Legacy: UUID local (deprecated)
+      tmwe_email_id,               // 🆕 TMWE API email_id (primary)
       user_email, 
       operation = 'classify', 
       selected_agent = 'gemini',
@@ -42,6 +94,7 @@ serve(async (req) => {
 
     console.log('[AI Processor] 📧 Processing request:', {
       email_id,
+      tmwe_email_id,
       user_email,
       operation,
       selected_agent
@@ -52,15 +105,28 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get email
-    const { data: email, error: emailError } = await supabase
-      .from('email_messages')
-      .select('*')
-      .eq('id', email_id)
-      .single();
+    // 🆕 ZERO-SYNC: Get email from TMWE API or fallback to local DB
+    let email: any;
+    
+    if (tmwe_email_id) {
+      // Primary path: Fetch from TMWE API (Zero-Sync)
+      console.log('[AI Processor] 🌐 Using TMWE API (Zero-Sync mode)');
+      email = await fetchEmailFromTMWEApi(tmwe_email_id, user_email);
+    } else if (email_id) {
+      // Fallback path: Legacy local DB query (deprecated)
+      console.log('[AI Processor] ⚠️ Using legacy email_messages (deprecated)');
+      const { data: localEmail, error: emailError } = await supabase
+        .from('email_messages')
+        .select('*')
+        .eq('id', email_id)
+        .single();
 
-    if (emailError || !email) {
-      throw new Error(`Email not found: ${email_id}`);
+      if (emailError || !localEmail) {
+        throw new Error(`Email not found in local DB: ${email_id}`);
+      }
+      email = localEmail;
+    } else {
+      throw new Error('Either tmwe_email_id or email_id is required');
     }
 
     console.log('[AI Processor] ✅ Email loaded:', email.subject);

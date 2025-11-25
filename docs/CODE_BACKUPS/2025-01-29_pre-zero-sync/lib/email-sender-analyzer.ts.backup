@@ -1,0 +1,94 @@
+// ============================================
+// BACKUP: src/lib/email-sender-analyzer.ts
+// Date: 2025-01-29
+// Reason: Pre Zero-Sync Migration
+// To restore: cp this file to src/lib/email-sender-analyzer.ts
+// ============================================
+
+/**
+ * Analizzatore mittenti email - Sistema isolato FunEmail
+ * Estrae domini, nomi azienda, statistiche
+ */
+
+import { supabase } from '@/integrations/supabase/client';
+import type { SenderAnalysis, EmailSenderGroup } from '@/types/email-management';
+
+/**
+ * Estrae nome società da email
+ * "info@barilla.com" → "Barilla"
+ * "support@google.com" → "Google"
+ */
+export function extractCompanyName(email: string): string {
+  try {
+    const match = email.match(/@([^.]+)\./);
+    if (!match) return email.split('@')[0] || email;
+    
+    let domain = match[1];
+    domain = domain.replace(/^(mail|smtp|webmail|email)\./, '');
+    domain = domain.replace(/[-_]/g, ' ');
+    
+    return domain
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+      
+  } catch (error) {
+    console.error('Error extracting company name:', error);
+    return email;
+  }
+}
+
+/**
+ * Estrae dominio da email
+ */
+export function extractDomain(email: string): string {
+  const parts = email.split('@');
+  return parts.length > 1 ? parts[1].toLowerCase() : email;
+}
+
+/**
+ * Analizza tutti i mittenti nel DB per l'utente
+ * ORIGINAL VERSION - Queries email_messages table
+ */
+export async function analyzeSenders(
+  userEmail: string,
+  userId: string
+): Promise<SenderAnalysis[]> {
+  console.log('🔍 Analisi mittenti per:', userEmail);
+  
+  try {
+    // ✅ Paginazione manuale per superare limite implicito client Supabase (~1000 rows)
+    const pageSize = 1000;
+    const allEmails: any[] = [];
+    let page = 0;
+    let hasMore = true;
+
+    console.log('🔄 Inizio caricamento email con paginazione...');
+
+    while (hasMore && allEmails.length < 20000) { // Max 20k email per evitare timeout
+      const rangeStart = page * pageSize;
+      const rangeEnd = (page + 1) * pageSize - 1;
+      
+      const { data: emailsData, error: emailError } = await supabase
+        .from('email_messages')
+        .select('from_email, data_ricezione')
+        .eq('user_email', userEmail)
+        .order('data_ricezione', { ascending: false })
+        .range(rangeStart, rangeEnd);
+      
+      if (emailError) throw emailError;
+      if (!emailsData || emailsData.length === 0) break;
+      
+      allEmails.push(...emailsData);
+      hasMore = emailsData.length === pageSize;
+      page++;
+      
+      console.log(`📄 Pagina ${page}: +${emailsData.length} email (totale: ${allEmails.length})`);
+    }
+
+    // ... rest of original implementation ...
+  } catch (error) {
+    console.error('❌ Errore analisi mittenti:', error);
+    throw error;
+  }
+}

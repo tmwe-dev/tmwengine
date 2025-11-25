@@ -16,22 +16,31 @@ export const useSmartClassificationIntelligent = () => {
     currentEmail: ''
   });
 
-  // ✅ NUOVO: Accetta array di email_id (UUID) invece di EmailMetadata + selectedAgent
+  // ✅ ZERO-SYNC: Accepts array of email_id (UUID) OR objects with tmwe_email_id
+  // Prefer tmwe_email_id when available for Zero-Sync architecture
   const classifyEmails = async (
-    emailIds: string[], 
+    emailIds: string[] | Array<{ email_id?: string; tmwe_email_id?: number }>, 
     userEmail: string, 
     forceCategory?: string,
     selectedAgent?: string  // 🆕 AI agent ID (default: 'gemini' in edge function)
   ) => {
+    // Normalize input to array of objects
+    const normalizedInputs = Array.isArray(emailIds) 
+      ? emailIds.map(id => typeof id === 'string' ? { email_id: id } : id)
+      : emailIds;
+    
     setIsClassifying(true);
-    setProgress({ current: 0, total: emailIds.length, currentEmail: '' });
+    setProgress({ current: 0, total: normalizedInputs.length, currentEmail: '' });
     
     let successCount = 0;
     let errorCount = 0;
 
     try {
-      for (let i = 0; i < emailIds.length; i++) {
-        const emailId = emailIds[i];
+      for (let i = 0; i < normalizedInputs.length; i++) {
+        const input = normalizedInputs[i];
+        const emailIdentifier = input.tmwe_email_id 
+          ? `TMWE:${input.tmwe_email_id}` 
+          : `UUID:${input.email_id?.substring(0, 8)}...`;
         
         try {
           // Get current session
@@ -45,18 +54,19 @@ export const useSmartClassificationIntelligent = () => {
 
           setProgress(p => ({ 
             ...p, 
-            currentEmail: `Email ID: ${emailId.substring(0, 8)}...`
+            currentEmail: `Email: ${emailIdentifier}`
           }));
 
-          console.log('🔵 Starting classification for email_id:', emailId);
+          console.log('🔵 [Zero-Sync] Starting classification for:', emailIdentifier);
 
-          // ✅ Passa email_id (UUID) + selected_agent
+          // ✅ ZERO-SYNC: Pass tmwe_email_id when available (preferred)
           const { data: classifyData, error: classifyError } = await supabase.functions.invoke(
             'email-ai-processor',
             {
               body: {
                 operation: 'classify',
-                email_id: emailId,
+                email_id: input.email_id,           // Legacy UUID (fallback)
+                tmwe_email_id: input.tmwe_email_id, // 🆕 TMWE API ID (preferred)
                 user_email: userEmail,
                 force_category: forceCategory || null,
                 selected_agent: selectedAgent || 'gemini'
@@ -84,14 +94,14 @@ export const useSmartClassificationIntelligent = () => {
           }
           
         } catch (err) {
-          console.error(`Error classifying email ID ${emailId}:`, err);
+          console.error(`Error classifying email ${emailIdentifier}:`, err);
           errorCount++;
         }
         
         setProgress(p => ({ ...p, current: p.current + 1 }));
         
         // Rate limiting: 1 email/sec
-        if (i < emailIds.length - 1) {
+        if (i < normalizedInputs.length - 1) {
           await new Promise(r => setTimeout(r, 1000));
         }
       }

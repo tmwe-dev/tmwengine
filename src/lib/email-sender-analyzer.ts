@@ -1,9 +1,11 @@
 /**
  * Analizzatore mittenti email - Sistema isolato FunEmail
+ * 🆕 Zero-Sync Architecture: Uses TMWE API instead of email_messages
  * Estrae domini, nomi azienda, statistiche
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import type { SenderAnalysis, EmailSenderGroup } from '@/types/email-management';
 
 /**
@@ -40,48 +42,77 @@ export function extractDomain(email: string): string {
 }
 
 /**
- * Analizza tutti i mittenti nel DB per l'utente
+ * 🆕 Zero-Sync: Analizza mittenti via TMWE API invece di email_messages
  */
 export async function analyzeSenders(
   userEmail: string,
   userId: string
 ): Promise<SenderAnalysis[]> {
-  console.log('🔍 Analisi mittenti per:', userEmail);
+  console.log('🔍 [Zero-Sync] Analisi mittenti per:', userEmail);
   
   try {
-    // ✅ Paginazione manuale per superare limite implicito client Supabase (~1000 rows)
-    const pageSize = 1000;
-    const allEmails: any[] = [];
-    let page = 0;
-    let hasMore = true;
+    // 🆕 ZERO-SYNC: Fetch sender statistics from TMWE API
+    console.log('🌐 [Zero-Sync] Fetching sender data from TMWE API...');
+    
+    let allEmails: Array<{ from_email: string; date: string }> = [];
+    
+    try {
+      // Try TMWE API first (Zero-Sync mode) using getEmailsMetadata
+      const searchResult = await emailSearchApi.getEmailsMetadata({
+        folder: 'INBOX',
+        limit: 5000,           // Fetch max emails for analysis
+        timeout: 30
+      });
+      
+      if (searchResult?.emails && searchResult.emails.length > 0) {
+        allEmails = searchResult.emails.map((email: any) => ({
+          from_email: email.from?.email || email.from_email || email.sender || '',
+          date: email.date || email.received_at || new Date().toISOString()
+        })).filter((e: any) => e.from_email);
+        
+        console.log(`🌐 [Zero-Sync] TMWE API returned ${allEmails.length} emails`);
+      }
+    } catch (tmweError) {
+      console.warn('⚠️ [Zero-Sync] TMWE API failed, falling back to local DB:', tmweError);
+    }
+    
+    // Fallback to local DB if TMWE API fails or returns empty
+    if (allEmails.length === 0) {
+      console.log('📦 [Fallback] Using local email_messages table...');
+      
+      const pageSize = 1000;
+      let page = 0;
+      let hasMore = true;
 
-    console.log('🔄 Inizio caricamento email con paginazione...');
-
-    while (hasMore && allEmails.length < 20000) { // Max 20k email per evitare timeout
-      const rangeStart = page * pageSize;
-      const rangeEnd = (page + 1) * pageSize - 1;
+      while (hasMore && allEmails.length < 20000) {
+        const rangeStart = page * pageSize;
+        const rangeEnd = (page + 1) * pageSize - 1;
+        
+        const { data: emailsData, error: emailError } = await supabase
+          .from('email_messages')
+          .select('from_email, data_ricezione')
+          .eq('user_email', userEmail)
+          .order('data_ricezione', { ascending: false })
+          .range(rangeStart, rangeEnd);
+        
+        if (emailError) throw emailError;
+        if (!emailsData || emailsData.length === 0) break;
+        
+        allEmails.push(...emailsData.map(e => ({
+          from_email: e.from_email,
+          date: e.data_ricezione
+        })));
+        hasMore = emailsData.length === pageSize;
+        page++;
+      }
       
-      const { data: emailsData, error: emailError } = await supabase
-        .from('email_messages')
-        .select('from_email, data_ricezione')
-        .eq('user_email', userEmail)
-        .order('data_ricezione', { ascending: false })
-        .range(rangeStart, rangeEnd);
-      
-      if (emailError) throw emailError;
-      if (!emailsData || emailsData.length === 0) break;
-      
-      allEmails.push(...emailsData);
-      hasMore = emailsData.length === pageSize;
-      page++;
-      
-      console.log(`📄 Pagina ${page}: +${emailsData.length} email (totale: ${allEmails.length})`);
+      console.log(`📦 [Fallback] Local DB returned ${allEmails.length} emails`);
     }
 
     console.log(`✅ Caricamento completato: ${allEmails.length} email totali`);
     
     if (allEmails.length === 0) {
-      console.warn('⚠️ Nessun mittente trovato nel DB');
+      console.warn('⚠️ Nessun mittente trovato');
       return [];
     }
     
@@ -96,7 +127,7 @@ export async function analyzeSenders(
       if (!email.from_email) return;
       
       const existing = senderMap.get(email.from_email);
-      const emailDate = new Date(email.data_ricezione);
+      const emailDate = new Date(email.date);
       
       if (existing) {
         existing.count++;

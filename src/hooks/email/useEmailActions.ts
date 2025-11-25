@@ -28,13 +28,23 @@ export const useEmailActions = ({
 
   const handleMarkAsRead = async (emailId: string) => {
     try {
-      await emailSearchApi.markAsRead(parseInt(emailId));
+      const result = await emailSearchApi.markAsRead(parseInt(emailId));
+      
+      // Handle structured error response
+      if (result?.success === false) {
+        console.warn('📧 Mark as read failed (IMAP):', result.error);
+        // Don't show error toast for mark-as-read - it's not critical
+        // The UI state can be updated locally even if IMAP fails
+        return;
+      }
+      
       queryClient.invalidateQueries({ 
         queryKey: ['messages', selectedFolder],
         exact: false
       });
     } catch (error) {
       console.error('Error marking email as read:', error);
+      // Silent fail for mark-as-read - not critical
     }
   };
 
@@ -92,15 +102,26 @@ export const useEmailActions = ({
 
   const handleBulkMarkAsRead = async (emailIds: string[]) => {
     try {
-      await emailMessageApi.markMessages(emailIds, 'read');
-      toast.success(`Marked ${emailIds.length} emails as read`);
+      const result = await emailMessageApi.markMessages(emailIds, 'read');
+      
+      // Handle structured error response from improved API
+      if (result?.success === false) {
+        if (result.error_type === 'connection_refused' || result.error_type === 'server_down') {
+          toast.warning('Servidor de correo no disponible. Inténtalo más tarde.');
+        } else {
+          toast.error(result.error || 'Error al marcar emails como leídos');
+        }
+        return;
+      }
+      
+      toast.success(`Marcados ${emailIds.length} emails como leídos`);
       queryClient.invalidateQueries({ 
         queryKey: ['messages', selectedFolder],
         exact: false
       });
     } catch (error) {
       console.error('Error marking emails as read:', error);
-      toast.error('Failed to mark emails as read');
+      toast.error('Error de conexión con el servidor de correo');
     }
   };
 

@@ -38,9 +38,42 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 - Updated to prioritize `tmwe_email_id` for EntitiesPanel
 
 ### Next Steps (Phase 2)
-- [ ] Create data migration script to populate `tmwe_email_id` for existing 137 records
+- [x] Create data migration edge function `migrate-tmwe-email-ids`
+- [ ] Run migration script to populate existing 137 records
 - [ ] Update Edge Function `classify-email-content-intelligent` to store `tmwe_email_id` during classification
 - [ ] Update `useEmailThread.ts` to support TMWE API for thread fetching
+
+---
+
+## [2025-11-25] - TMWE Email ID Migration Edge Function
+
+### 🎯 Resumen Ejecutivo
+- ✅ **New Edge Function**: `migrate-tmwe-email-ids` - Populates `tmwe_email_id` for existing classifications
+- ✅ **Batch Processing**: Processes 20 records per call with rate limiting
+- ✅ **Dry Run Mode**: Test migration without making changes
+- 📊 **Expected**: 137 records to migrate
+
+### Files Created
+
+#### **supabase/functions/migrate-tmwe-email-ids/index.ts** (NEW)
+- Fetches classifications where `tmwe_email_id IS NULL`
+- Searches TMWE API by sender_email + folder to find matching emails
+- Falls back to subject search if sender search fails
+- Updates classification with `tmwe_email_id` from TMWE API response
+- Rate limited: 500ms between API calls
+
+### Usage
+```bash
+# Dry run (test without changes)
+curl -X POST 'https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/migrate-tmwe-email-ids' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -d '{"batch_size": 20, "dry_run": true}'
+
+# Run migration
+curl -X POST 'https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/migrate-tmwe-email-ids' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -d '{"batch_size": 20, "dry_run": false}'
+```
 
 ---
 

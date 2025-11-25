@@ -220,12 +220,17 @@ export const authenticateWithJWT = async (): Promise<boolean> => {
     console.log('═══════════════════════════════════════════════════════');
     
     // CRITICAL FIX: Call Edge Function to sign JWT server-side with HS256
-    console.log('📤 Requesting signed JWT from Edge Function...');
+    // CONSOLIDATED: Now uses tmwe-api-proxy with internal_jwt_sign handler
+    console.log('📤 Requesting signed JWT from tmwe-api-proxy (consolidated)...');
     
-    const { data: jwtData, error: jwtError } = await supabase.functions.invoke('tmwe-jwt-sign', {
+    const { data: jwtData, error: jwtError } = await supabase.functions.invoke('tmwe-api-proxy', {
       body: {
-        clientId,
-        clientSecret,
+        endpoint: '/app.php',
+        data: {
+          handler: 'internal_jwt_sign',
+          clientId,
+          clientSecret,
+        }
       }
     });
 
@@ -331,13 +336,15 @@ export const refreshAccessToken = async (): Promise<boolean> => {
     console.log('   Auth type:', authType);
     console.log('   User email:', userEmail);
     
-    // CRITICAL FIX: Use different Edge Functions based on auth type
-    const functionName = authType === 'jwt' ? 'tmwe-jwt-refresh' : 'tmwe-oauth-refresh';
-    console.log('   Using Edge Function:', functionName);
+    // CONSOLIDATED: JWT refresh now uses tmwe-api-proxy, OAuth refresh uses tmwe-oauth-refresh
+    const isJwt = authType === 'jwt';
+    console.log('   Using:', isJwt ? 'tmwe-api-proxy (internal_jwt_refresh)' : 'tmwe-oauth-refresh');
     
-    const { data, error } = await supabase.functions.invoke(functionName, {
-      body: { email: userEmail }
-    });
+    const { data, error } = isJwt 
+      ? await supabase.functions.invoke('tmwe-api-proxy', {
+          body: { endpoint: '/app.php', data: { handler: 'internal_jwt_refresh', email: userEmail } }
+        })
+      : await supabase.functions.invoke('tmwe-oauth-refresh', { body: { email: userEmail } });
 
     if (error || !data?.access_token) {
       console.error('❌ Token refresh failed:', error);
@@ -350,7 +357,7 @@ export const refreshAccessToken = async (): Promise<boolean> => {
     console.log('✅ New access token received');
     console.log('   Token preview:', data.access_token.substring(0, 20) + '...');
     console.log('   Expires in:', data.expires_in);
-    console.log('✅ Token refreshed successfully via', functionName);
+    console.log('✅ Token refreshed successfully via', isJwt ? 'tmwe-api-proxy' : 'tmwe-oauth-refresh');
     return true;
   } catch (error) {
     console.error('❌ Error refreshing TMWE token:', error);

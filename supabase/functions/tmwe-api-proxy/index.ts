@@ -76,6 +76,270 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONSOLIDATED INTERNAL HANDLERS (from tmwe-jwt-sign, tmwe-jwt-refresh, etc.)
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  const supabaseAdmin = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+  
+  // Pre-parse body for internal handlers
+  let bodyText = '';
+  let parsedBody: any = null;
+  try {
+    bodyText = await req.text();
+    if (bodyText && bodyText.trim().length > 0) {
+      parsedBody = JSON.parse(bodyText);
+    }
+  } catch (e) {
+    // Will be handled later for non-internal requests
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HANDLER: internal_jwt_sign (consolidado de tmwe-jwt-sign)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (parsedBody?.handler === 'internal_jwt_sign') {
+    try {
+      console.log('🔐 [INTERNAL] JWT Sign handler...');
+      const { clientId, clientSecret } = parsedBody;
+      
+      if (!clientId || !clientSecret) {
+        throw new Error('Missing clientId or clientSecret');
+      }
+      
+      // Verify user
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+        if (userError || !user) {
+          throw new Error(`User authentication failed: ${userError?.message}`);
+        }
+        console.log('✅ User authenticated:', user.email);
+      }
+      
+      // Generate JWT Header
+      const header = { alg: 'HS256', typ: 'JWT' };
+      const now = Math.floor(Date.now() / 1000);
+      const payload = {
+        iss: 'https://findair.it/erp/tmwe_json',
+        sub: clientId,
+        aud: 'https://findair.it/erp/tmwe_json/token',
+        exp: now + 300,
+        iat: now,
+        jti: crypto.randomUUID()
+      };
+      
+      const encoder = new TextEncoder();
+      const headerBase64 = btoa(JSON.stringify(header)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      const payloadBase64 = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      const message = `${headerBase64}.${payloadBase64}`;
+      
+      const key = await crypto.subtle.importKey('raw', encoder.encode(clientSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
+      const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      
+      const jwt = `${message}.${signatureBase64}`;
+      console.log('✅ JWT signed successfully');
+      
+      return new Response(JSON.stringify({ jwt, expiresIn: 300 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
+      });
+    } catch (error: any) {
+      console.error('❌ JWT signing error:', error.message);
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500
+      });
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HANDLER: internal_jwt_refresh (consolidado de tmwe-jwt-refresh)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (parsedBody?.handler === 'internal_jwt_refresh') {
+    try {
+      console.log('🔐 [INTERNAL] JWT Refresh handler...');
+      const { email } = parsedBody;
+      if (!email) throw new Error('Email is required');
+      
+      const { data: credentials, error: fetchError } = await supabaseAdmin
+        .from('user_tmwe_credentials')
+        .select('*')
+        .eq('email', email)
+        .single();
+      
+      if (fetchError || !credentials) {
+        throw new Error(`Failed to fetch credentials: ${fetchError?.message || 'No credentials found'}`);
+      }
+      
+      if (!credentials.refresh_token || !credentials.client_id || !credentials.client_secret) {
+        throw new Error('Missing required credentials');
+      }
+      
+      const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token_jwt',
+          refresh_token: credentials.refresh_token,
+          client_id: credentials.client_id,
+          client_secret: credentials.client_secret,
+        }),
+      });
+      
+      if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        throw new Error(`Token refresh failed: ${tokenResponse.status} ${errorText}`);
+      }
+      
+      const tokenData = await tokenResponse.json();
+      const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
+      
+      await supabaseAdmin
+        .from('user_tmwe_credentials')
+        .update({
+          access_token: tokenData.access_token,
+          expires_at: expiresAt,
+          ...(tokenData.refresh_token && { refresh_token: tokenData.refresh_token })
+        })
+        .eq('email', email);
+      
+      console.log('✅ JWT credentials refreshed');
+      return new Response(JSON.stringify({
+        access_token: tokenData.access_token,
+        expires_in: tokenData.expires_in,
+        token_type: 'Bearer'
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    } catch (error: any) {
+      console.error('❌ JWT refresh error:', error.message);
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500
+      });
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HANDLER: internal_supabase_sync (consolidado de tmwe-supabase-sync)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (parsedBody?.handler === 'internal_supabase_sync') {
+    try {
+      console.log('🔄 [INTERNAL] Supabase Sync handler...');
+      const { tmweEmail, tmweProfile } = parsedBody;
+      
+      if (!tmweEmail) {
+        return new Response(JSON.stringify({ error: 'Email TMWE mancante' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Search existing user
+      const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      if (listError) throw listError;
+      
+      let supabaseUser = existingUsers.users.find(u => u.email === tmweEmail);
+      
+      // Create user if not exists
+      if (!supabaseUser) {
+        console.log(`➕ Creating new Supabase user: ${tmweEmail}`);
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: tmweEmail,
+          email_confirm: true,
+          user_metadata: { tmwe_oauth: true, name: tmweProfile?.name || tmweEmail.split('@')[0] }
+        });
+        if (createError) throw createError;
+        supabaseUser = newUser.user;
+      }
+      
+      // Upsert profile
+      const { data: profile, error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .upsert({
+          user_id: supabaseUser.id,
+          tmwe_email: tmweEmail,
+          display_name: tmweProfile?.name || supabaseUser.email?.split('@')[0],
+        }, { onConflict: 'user_id' })
+        .select()
+        .single();
+      
+      if (profileError) throw profileError;
+      
+      console.log('✅ Sync completed for:', supabaseUser.id);
+      return new Response(JSON.stringify({
+        success: true,
+        supabaseUserId: supabaseUser.id,
+        profile,
+        message: 'Sincronizzazione completata'
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    } catch (error: any) {
+      console.error('❌ Sync error:', error.message);
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500
+      });
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HANDLER: internal_test_folder_info (consolidado de tmwe-test-folder-info)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (parsedBody?.handler === 'internal_test_folder_info') {
+    try {
+      console.log('📁 [INTERNAL] Test Folder Info handler...');
+      
+      let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
+      
+      if (!oauthToken) {
+        const { data: provider } = await supabaseAdmin
+          .from('email_provider')
+          .select('email_provider_credenziali(*)')
+          .eq('provider', 'TMWE')
+          .eq('attivo', true)
+          .maybeSingle();
+        
+        const creds = provider?.email_provider_credenziali;
+        if (creds && (creds.oauth_token || creds.api_key)) {
+          oauthToken = creds.oauth_token || creds.api_key;
+        }
+      }
+      
+      if (!oauthToken) throw new Error('Token non trovato');
+      
+      const baseUrl = 'https://findair.it/erp/tmwe_json';
+      const folderUrl = `${baseUrl}/app.php?action=email_folder`;
+      
+      // Get folder info
+      const folderResponse = await fetch(folderUrl, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${oauthToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handler: 'get_folder_info', folder_name: 'INBOX', include_counts: true })
+      });
+      const folderData = await folderResponse.json();
+      
+      // Get folders list
+      const foldersResponse = await fetch(folderUrl, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${oauthToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handler: 'get_folders', include_counts: true, hierarchy: true })
+      });
+      const foldersData = await foldersResponse.json();
+      
+      return new Response(JSON.stringify({
+        success: true, folder_info: folderData, folders_list: foldersData
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    } catch (error: any) {
+      console.error('❌ Folder info error:', error.message);
+      return new Response(JSON.stringify({ success: false, error: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500
+      });
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MAIN PROXY LOGIC (original code continues)
+  // ═══════════════════════════════════════════════════════════════════════════
+
   try {
     // Parse request body con gestione errori robusta
     let requestBody;

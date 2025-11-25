@@ -231,10 +231,49 @@ verify_jwt = true
 [functions.summarize-user-message]
 verify_jwt = true
 
+# CRITICAL: OAuth authentication for TMWE email integration
+[functions.tmwe-oauth-auth]
+verify_jwt = false
+
+[functions.tmwe-oauth-refresh]
+verify_jwt = true
+
+# Additional active functions
+[functions.ai-crm-manager]
+verify_jwt = true
+
+[functions.auto-assign-admin]
+verify_jwt = true
+
+[functions.bar-request-comment]
+verify_jwt = true
+
+[functions.calculate-basic-convergence]
+verify_jwt = true
+
+[functions.execute-crm-action]
+verify_jwt = true
+
+[functions.generate-chunked-summary]
+verify_jwt = true
+
+[functions.process-saved-file-ai]
+verify_jwt = true
+
+[functions.search-document-embeddings]
+verify_jwt = true
+
+[functions.send-push-notification]
+verify_jwt = true
+
+[functions.voice-to-text]
+verify_jwt = true
+
 # REMOVED - Consolidated into tmwe-api-proxy:
-# [functions.tmwe-oauth-auth] - KEPT (OAuth flow)
 # [functions.tmwe-jwt-sign] - REMOVED → handler: internal_jwt_sign
 # [functions.tmwe-jwt-refresh] - REMOVED → handler: internal_jwt_refresh
+# [functions.tmwe-test-folder-info] - REMOVED → handler: internal_test_folder_info
+# [functions.tmwe-supabase-sync] - REMOVED → handler: internal_supabase_sync
 
 [functions.sync-ai-pricing]
 verify_jwt = true

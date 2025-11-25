@@ -9,6 +9,66 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-11-25] - 🧹 LIMPIEZA: Eliminación de 5 Funciones Sin Uso + Duplicado Corregido
+
+### 🎯 Resumen Ejecutivo
+- ✅ **5 funciones eliminadas** (sin referencias en el codebase)
+- ✅ **1 duplicado corregido** (`sync-ai-pricing` aparecía 2 veces en config.toml)
+- ✅ **Backups creados** en `docs/EDGE_FUNCTIONS_BACKUP/2025-11-25/`
+- 📊 **Impacto:** 48 → 43 funciones activas (5 slots liberados)
+
+### Funciones Eliminadas
+
+| Función | Motivo | Backup |
+|---------|--------|--------|
+| `email-ai-learning` | 0 referencias encontradas | ✅ |
+| `email-background-sync` | 0 referencias encontradas | ✅ |
+| `execute-crm-action` | 0 referencias encontradas | ✅ |
+| `search-document-embeddings` | 0 referencias encontradas | ✅ |
+| `summarize-user-message` | 0 referencias encontradas | ✅ |
+
+### Duplicado Corregido
+- `sync-ai-pricing` aparecía en líneas 278-279 Y 281-282
+- Eliminada la entrada duplicada (líneas 281-282)
+
+### Archivos Modificados
+- **`supabase/config.toml`** - Eliminadas 5 entradas + 1 duplicado
+- **Carpetas eliminadas:**
+  - `supabase/functions/email-ai-learning/`
+  - `supabase/functions/email-background-sync/`
+  - `supabase/functions/execute-crm-action/`
+  - `supabase/functions/search-document-embeddings/`
+  - `supabase/functions/summarize-user-message/`
+
+### Backups Creados
+```
+docs/EDGE_FUNCTIONS_BACKUP/2025-11-25/
+├── email-ai-learning-backup.ts
+├── email-background-sync-backup.ts
+├── execute-crm-action-backup.ts
+├── search-document-embeddings-backup.ts
+└── summarize-user-message-backup.ts
+```
+
+### Rollback Plan
+```bash
+# Restaurar función específica
+cp docs/EDGE_FUNCTIONS_BACKUP/2025-11-25/[function]-backup.ts supabase/functions/[function]/index.ts
+
+# Re-agregar entrada en config.toml:
+[functions.[function-name]]
+verify_jwt = true
+```
+
+### Verificación Post-Limpieza
+- [x] 5 backups creados
+- [x] config.toml actualizado (5 funciones + duplicado eliminados)
+- [x] 5 carpetas eliminadas
+- [x] Changelog actualizado
+- [ ] Deploy exitoso (pending)
+
+---
+
 ## [2025-01-29] - 🚨 CORRECCIÓN CRÍTICA: Restauración de Funciones Faltantes en config.toml
 
 ### 🐛 Problema Identificado

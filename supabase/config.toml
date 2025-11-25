@@ -228,9 +228,6 @@ verify_jwt = true
 [functions.generate-audio]
 verify_jwt = true
 
-[functions.summarize-user-message]
-verify_jwt = true
-
 # CRITICAL: OAuth authentication for TMWE email integration
 [functions.tmwe-oauth-auth]
 verify_jwt = false
@@ -251,16 +248,10 @@ verify_jwt = true
 [functions.calculate-basic-convergence]
 verify_jwt = true
 
-[functions.execute-crm-action]
-verify_jwt = true
-
 [functions.generate-chunked-summary]
 verify_jwt = true
 
 [functions.process-saved-file-ai]
-verify_jwt = true
-
-[functions.search-document-embeddings]
 verify_jwt = true
 
 [functions.send-push-notification]
@@ -274,9 +265,6 @@ verify_jwt = true
 # [functions.tmwe-jwt-refresh] - REMOVED → handler: internal_jwt_refresh
 # [functions.tmwe-test-folder-info] - REMOVED → handler: internal_test_folder_info
 # [functions.tmwe-supabase-sync] - REMOVED → handler: internal_supabase_sync
-
-[functions.sync-ai-pricing]
-verify_jwt = true
 
 [functions.sync-ai-pricing]
 verify_jwt = true
@@ -308,19 +296,21 @@ verify_jwt = true
 [functions.optimize-company-profile]
 verify_jwt = true
 
-[functions.email-ai-learning]
-verify_jwt = true
-
-[functions.email-background-sync]
-verify_jwt = true
-
 [functions.generate-image]
 verify_jwt = true
 
 [functions.text-to-speech]
 verify_jwt = true
 
+# =====================================================
+# REMOVED FUNCTIONS - 2025-11-25 Cleanup
+# =====================================================
+# [functions.summarize-user-message] - REMOVED (no usage found)
+# [functions.execute-crm-action] - REMOVED (no usage found)
+# [functions.search-document-embeddings] - REMOVED (no usage found)
+# [functions.email-ai-learning] - REMOVED (no usage found)
+# [functions.email-background-sync] - REMOVED (no usage found)
+# Backups: docs/EDGE_FUNCTIONS_BACKUP/2025-11-25/
+
 # REMOVED - Phantom functions (no folder exists):
 # fetch-company-logo, transcribe-audio, embed-text
-# REMOVED - Consolidated into tmwe-api-proxy:
-# tmwe-jwt-sign, tmwe-jwt-refresh, tmwe-test-folder-info, tmwe-supabase-sync

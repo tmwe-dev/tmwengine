@@ -171,8 +171,7 @@ verify_jwt = false
 [functions.tmwe-email-send]
 verify_jwt = true
 
-[functions.tmwe-test-folder-info]
-verify_jwt = true
+# REMOVED - tmwe-test-folder-info → consolidated into tmwe-api-proxy (internal_test_folder_info)
 
 [functions.tmwe-email-sync-master]
 verify_jwt = true
@@ -232,13 +231,12 @@ verify_jwt = true
 [functions.summarize-user-message]
 verify_jwt = true
 
-[functions.tmwe-oauth-auth]
-verify_jwt = false
+# REMOVED - Consolidated into tmwe-api-proxy:
+# [functions.tmwe-oauth-auth] - KEPT (OAuth flow)
+# [functions.tmwe-jwt-sign] - REMOVED → handler: internal_jwt_sign
+# [functions.tmwe-jwt-refresh] - REMOVED → handler: internal_jwt_refresh
 
-[functions.tmwe-jwt-sign]
-verify_jwt = true
-
-[functions.tmwe-jwt-refresh]
+[functions.sync-ai-pricing]
 verify_jwt = true
 
 [functions.sync-ai-pricing]
@@ -277,17 +275,13 @@ verify_jwt = true
 [functions.email-background-sync]
 verify_jwt = true
 
-[functions.fetch-company-logo]
-verify_jwt = true
-
 [functions.generate-image]
-verify_jwt = true
-
-[functions.transcribe-audio]
 verify_jwt = true
 
 [functions.text-to-speech]
 verify_jwt = true
 
-[functions.embed-text]
-verify_jwt = true
+# REMOVED - Phantom functions (no folder exists):
+# fetch-company-logo, transcribe-audio, embed-text
+# REMOVED - Consolidated into tmwe-api-proxy:
+# tmwe-jwt-sign, tmwe-jwt-refresh, tmwe-test-folder-info, tmwe-supabase-sync

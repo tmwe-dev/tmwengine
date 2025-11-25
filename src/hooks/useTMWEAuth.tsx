@@ -168,12 +168,17 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
 
   const syncWithSupabase = async (email: string, profile?: UserProfile) => {
     try {
-      console.log('🔄 Sincronizzazione TMWE → Supabase...');
+      console.log('🔄 Sincronizzazione TMWE → Supabase (via tmwe-api-proxy)...');
       
-      const { data, error } = await supabase.functions.invoke('tmwe-supabase-sync', {
+      // CONSOLIDATED: Now uses tmwe-api-proxy with internal_supabase_sync handler
+      const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
         body: {
-          tmweEmail: email,
-          tmweProfile: profile
+          endpoint: '/app.php',
+          data: {
+            handler: 'internal_supabase_sync',
+            tmweEmail: email,
+            tmweProfile: profile
+          }
         }
       });
 

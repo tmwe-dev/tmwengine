@@ -71,12 +71,16 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
 
   const fetchFolderStats = async () => {
     try {
-      // Recupera le cartelle disponibili tramite API TMWE
+      // CONSOLIDATED: Now uses tmwe-api-proxy with internal_test_folder_info handler
       const folderInfoResponse = await fetch(
-        `https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/tmwe-test-folder-info`,
+        `https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/tmwe-api-proxy`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            endpoint: '/app.php',
+            data: { handler: 'internal_test_folder_info' }
+          })
         }
       );
 

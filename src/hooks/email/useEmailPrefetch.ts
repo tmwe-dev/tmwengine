@@ -23,31 +23,35 @@ export const useEmailPrefetch = ({
     const nextEmailId = emailIds[currentIndex + 1];
     
     if (nextEmailId) {
-      queryClient.prefetchQuery({
-        queryKey: ['message', nextEmailId, folder],
-        queryFn: () => emailSearchApi.getEmailDetail({
-          uid: parseInt(nextEmailId, 10),
-          folder: folder,
-          include_body: true,
-          timeout: 15
-        }),
-        staleTime: 5 * 60 * 1000
-      });
+      const emailIdNum = parseInt(nextEmailId, 10);
+      if (!isNaN(emailIdNum)) {
+        queryClient.prefetchQuery({
+          queryKey: ['message', nextEmailId],  // ✅ Simplified queryKey
+          queryFn: () => emailSearchApi.getEmailDetail({
+            email_id: emailIdNum,  // ✅ Use email_id
+            include_body: true,
+            timeout: 15
+          }),
+          staleTime: 5 * 60 * 1000
+        });
+      }
     }
     
     const prevEmailId = emailIds[currentIndex - 1];
     
     if (prevEmailId) {
-      queryClient.prefetchQuery({
-        queryKey: ['message', prevEmailId, folder],
-        queryFn: () => emailSearchApi.getEmailDetail({
-          uid: parseInt(prevEmailId, 10),
-          folder: folder,
-          include_body: true,
-          timeout: 15
-        }),
-        staleTime: 5 * 60 * 1000
-      });
+      const emailIdNum = parseInt(prevEmailId, 10);
+      if (!isNaN(emailIdNum)) {
+        queryClient.prefetchQuery({
+          queryKey: ['message', prevEmailId],  // ✅ Simplified queryKey
+          queryFn: () => emailSearchApi.getEmailDetail({
+            email_id: emailIdNum,  // ✅ Use email_id
+            include_body: true,
+            timeout: 15
+          }),
+          staleTime: 5 * 60 * 1000
+        });
+      }
     }
   }, [currentIndex, emailIds, folder, queryClient]);
 };

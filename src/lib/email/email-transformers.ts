@@ -45,8 +45,16 @@ export const mapApiEmailToComponent = (msg: any) => {
                  (msg.body_html ? msg.body_html.replace(/<[^>]*>/g, '').substring(0, 150) : '') ||
                  '';
 
+  console.log('🔄 [Transformer] Mapping email:', {
+    msg_id: msg.id,
+    msg_id_type: typeof msg.id,
+    msg_uid: msg.uid,
+    has_email_id: !!msg.id
+  });
+
   return {
     id: String(msg.uid || msg.id),
+    email_id: msg.id,             // ✅ NUEVO: Integer para API calls
     subject: msg.subject || '(No Subject)',
     from: fromAddress,
     preview: preview,

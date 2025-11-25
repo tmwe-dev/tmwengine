@@ -328,36 +328,80 @@ export async function parseAIResponse(
 }
 
 // ============================================
-// UPDATE EMAIL CLASSIFICATION
+// UPDATE EMAIL CLASSIFICATION - Zero-Sync Architecture
 // ============================================
+
+export interface EmailClassificationParams {
+  email_id?: string;           // Legacy UUID (optional)
+  tmwe_email_id?: number;      // 🆕 TMWE API ID (preferred)
+  user_email: string;
+  sender_email: string;
+  folder_name?: string;
+  email_uid?: string;
+  subject?: string;
+  body_preview?: string;
+}
 
 export async function updateEmailClassification(
   supabase: SupabaseClient,
-  emailId: string,
+  params: EmailClassificationParams,
   classification: AIClassificationResult
 ): Promise<void> {
-  console.log('[updateEmailClassification] 💾 Updating email classification');
+  console.log('[updateEmailClassification] 💾 Saving to email_ai_classifications');
+  console.log('[updateEmailClassification] 📧 Params:', {
+    email_id: params.email_id,
+    tmwe_email_id: params.tmwe_email_id,
+    user_email: params.user_email,
+    sender_email: params.sender_email
+  });
 
+  // Extract domain from sender email
+  const senderDomain = params.sender_email?.split('@')[1] || null;
+
+  // 🆕 ZERO-SYNC: Upsert into email_ai_classifications table
+  const classificationData = {
+    email_id: params.email_id || null,
+    tmwe_email_id: params.tmwe_email_id || null,
+    user_email: params.user_email,
+    sender_email: params.sender_email,
+    sender_domain: senderDomain,
+    folder_name: params.folder_name || 'INBOX',
+    email_uid: params.email_uid || null,
+    subject: params.subject || null,
+    body_preview: params.body_preview?.substring(0, 500) || null,
+    category: classification.category || 'Sin Clasificar',
+    confidence: classification.confidence || 0.5,
+    ai_summary: classification.summary || null,
+    keywords: classification.keywords || [],
+    urgency: classification.priority || 'normal',
+    action_suggested: classification.suggested_actions?.[0] || null,
+    reasoning: null,
+    updated_at: new Date().toISOString()
+  };
+
+  // Use upsert with conflict on tmwe_email_id (preferred) or email_id
   const { error } = await supabase
-    .from('email_messages')
-    .update({
-      ai_category: classification.category,
-      ai_summary: classification.summary,
-      ai_keywords: classification.keywords,
-      ai_confidence: classification.confidence,
-      ai_priority: classification.priority,
-      ai_requires_action: classification.requires_action,
-      ai_suggested_actions: classification.suggested_actions,
-      ai_processed_at: new Date().toISOString()
-    })
-    .eq('id', emailId);
+    .from('email_ai_classifications')
+    .upsert(classificationData, {
+      onConflict: params.tmwe_email_id ? 'tmwe_email_id' : 'email_id',
+      ignoreDuplicates: false
+    });
 
   if (error) {
-    console.error('[updateEmailClassification] ❌ Error updating:', error);
-    throw error;
+    console.error('[updateEmailClassification] ❌ Error saving:', error);
+    // Fallback: try insert without upsert
+    const { error: insertError } = await supabase
+      .from('email_ai_classifications')
+      .insert(classificationData);
+    
+    if (insertError) {
+      console.error('[updateEmailClassification] ❌ Insert also failed:', insertError);
+      throw insertError;
+    }
   }
 
-  console.log('[updateEmailClassification] ✅ Classification updated');
+  console.log('[updateEmailClassification] ✅ Classification saved to email_ai_classifications');
+  console.log('[updateEmailClassification] 🆕 tmwe_email_id:', params.tmwe_email_id || 'N/A');
 }
 
 // ============================================

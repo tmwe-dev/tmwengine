@@ -9,6 +9,31 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-29] - FIX: Zero-Sync Classification Storage Bug
+
+### 🐛 Bug Fixed
+`updateEmailClassification()` was saving to wrong table (`email_messages`) instead of `email_ai_classifications`, causing 0% Zero-Sync adoption.
+
+### Files Modified
+- `supabase/functions/_shared/ai-helpers.ts` - Refactored `updateEmailClassification()`
+- `supabase/functions/email-ai-processor/index.ts` - Updated call at line 254
+
+### Changes Made
+1. **ai-helpers.ts**: `updateEmailClassification()` now:
+   - Accepts `EmailClassificationParams` object with `tmwe_email_id`
+   - Upserts into `email_ai_classifications` table (correct table)
+   - Saves `tmwe_email_id` for Zero-Sync architecture
+   
+2. **email-ai-processor/index.ts**:
+   - Passes full params object including `tmwe_email_id`, `sender_email`, `folder_name`, etc.
+
+### Rollback Plan
+```bash
+cp docs/CODE_BACKUPS/2025-01-29_pre-zero-sync/edge-functions/email-ai-processor-index.ts.backup supabase/functions/email-ai-processor/index.ts
+```
+
+---
+
 ## [2025-01-29] - Zero-Sync AI Migration (COMPLETE)
 
 ### 🎯 Resumen Ejecutivo

@@ -251,9 +251,20 @@ serve(async (req) => {
     if (operation === 'classify') {
       console.log('[AI Processor] 💾 Updating email classification...');
       
-      await updateEmailClassification(supabase, email_id, classification);
+      // 🆕 ZERO-SYNC: Pass full params including tmwe_email_id
+      await updateEmailClassification(supabase, {
+        email_id: email_id,
+        tmwe_email_id: tmwe_email_id,
+        user_email: user_email,
+        sender_email: email.from_email || '',
+        folder_name: email.cartella || 'INBOX',
+        email_uid: email.uid || '',
+        subject: email.subject || '',
+        body_preview: email.body_text?.substring(0, 500) || ''
+      }, classification);
       
       console.log('[AI Processor] ✅ Classification saved to database');
+      console.log('[AI Processor] 🆕 Zero-Sync tmwe_email_id:', tmwe_email_id || 'N/A (legacy mode)');
     }
 
     // ============================================

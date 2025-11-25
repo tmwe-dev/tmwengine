@@ -52,13 +52,14 @@ export const useSmartClassificationIntelligent = () => {
 
           // ✅ Passa email_id (UUID) + selected_agent
           const { data: classifyData, error: classifyError } = await supabase.functions.invoke(
-            'classify-email-content-intelligent',
+            'email-ai-processor',
             {
               body: {
-                email_id: emailId,       // ✅ UUID dal DB
+                operation: 'classify',
+                email_id: emailId,
                 user_email: userEmail,
                 force_category: forceCategory || null,
-                selected_agent: selectedAgent || 'gemini'  // 🆕 AI agent
+                selected_agent: selectedAgent || 'gemini'
               }
             }
           );

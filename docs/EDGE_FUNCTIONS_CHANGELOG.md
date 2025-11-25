@@ -9,6 +9,41 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-11-25] - 🚀 TMWE Email ID Migration - Phase 2 Complete
+
+### 🎯 Resumen Ejecutivo
+- ✅ **Nueva función:** `migrate-tmwe-email-ids` para poblar `tmwe_email_id` en registros existentes
+- ✅ **useEmailThread.ts** actualizado con soporte TMWE API (Zero-Sync)
+- ✅ **updateEmailClassification** ya guarda `tmwe_email_id` automáticamente
+
+### Cambios Realizados
+
+#### 1. Nueva Edge Function: `migrate-tmwe-email-ids`
+- **Propósito:** Migrar registros existentes de `email_ai_classifications` para poblar `tmwe_email_id`
+- **Lógica:** Busca en TMWE API por subject/sender para encontrar el email correspondiente
+- **Uso:** `POST /functions/v1/migrate-tmwe-email-ids { batch_size: 50, dry_run: false }`
+
+#### 2. Hook `useEmailThread.ts` - Zero-Sync Support
+- **Nueva prop:** `tmweEmailId?: number` para activar modo Zero-Sync
+- **Prioridad:** Si `tmweEmailId` disponible → usa TMWE API (10x más rápido)
+- **Fallback:** Si solo `emailId` → usa base de datos local (legacy)
+
+#### 3. Verificación: `updateEmailClassification`
+- ✅ Ya guarda `tmwe_email_id` automáticamente en `email_ai_classifications`
+- ✅ Usa upsert con conflicto en `tmwe_email_id` cuando disponible
+
+### Archivos Modificados
+- `supabase/functions/migrate-tmwe-email-ids/index.ts` (NUEVO)
+- `supabase/config.toml` (+1 función)
+- `src/hooks/useEmailThread.ts` (soporte TMWE API)
+
+### Próximos Pasos
+1. Ejecutar migración: `curl -X POST .../migrate-tmwe-email-ids`
+2. Verificar que nuevas clasificaciones guarden `tmwe_email_id`
+3. Actualizar componentes para pasar `tmweEmailId` a `useEmailThread`
+
+---
+
 ## [2025-11-25] - 🧹 LIMPIEZA: Eliminación de 5 Funciones Sin Uso + Duplicado Corregido
 
 ### 🎯 Resumen Ejecutivo

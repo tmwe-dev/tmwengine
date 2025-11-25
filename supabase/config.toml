@@ -302,6 +302,9 @@ verify_jwt = true
 [functions.text-to-speech]
 verify_jwt = true
 
+[functions.migrate-tmwe-email-ids]
+verify_jwt = true
+
 # =====================================================
 # REMOVED FUNCTIONS - 2025-11-25 Cleanup
 # =====================================================

@@ -94,52 +94,188 @@ const fetchEmailSearchApi = async (data: any, retryCount = 0): Promise<any> => {
   }
 };
 
+// ============================================================================
+// IMAP ERROR DETECTION: Identify connection vs authentication issues
+// ============================================================================
+interface IMAPError {
+  type: 'connection_refused' | 'auth_failed' | 'timeout' | 'server_down' | 'unknown';
+  message: string;
+  retryable: boolean;
+}
+
+const parseIMAPError = (response: any): IMAPError | null => {
+  if (!response) return null;
+  
+  const errorStr = JSON.stringify(response).toLowerCase();
+  const errors = response?.errors || [];
+  const errorMessages = errors.join(' ').toLowerCase();
+  
+  // Connection refused - server is down or firewall blocking
+  if (errorMessages.includes('connection refused') || errorStr.includes('connection refused')) {
+    return {
+      type: 'connection_refused',
+      message: 'El servidor de correo no está disponible. Por favor, inténtalo más tarde.',
+      retryable: true
+    };
+  }
+  
+  // Authentication failed
+  if (errorMessages.includes('authentication failed') || errorStr.includes('authentication failed')) {
+    return {
+      type: 'auth_failed',
+      message: 'Error de autenticación con el servidor de correo.',
+      retryable: false
+    };
+  }
+  
+  // Timeout
+  if (response?.error?.includes?.('timeout') || response?.timeout_ms) {
+    return {
+      type: 'timeout',
+      message: 'El servidor de correo tardó demasiado en responder.',
+      retryable: true
+    };
+  }
+  
+  // Generic IMAP error
+  if (errorMessages.includes('imap') || errorStr.includes('imap')) {
+    return {
+      type: 'server_down',
+      message: 'No se pudo conectar al servidor IMAP.',
+      retryable: true
+    };
+  }
+  
+  return null;
+};
+
 // ✍️ WRITE OPERATIONS + EMAIL DETAIL: Direct IMAP via legacy proxy
-const fetchEmailMessageApi = async (data: any) => {
+// ✅ ENHANCED: Better error handling for IMAP failures
+const fetchEmailMessageApi = async (data: any, options?: { 
+  silentFail?: boolean;
+  maxRetries?: number;
+}): Promise<any> => {
+  const { silentFail = false, maxRetries = 2 } = options || {};
+  
   console.log('📤 [EMAIL MESSAGE] API Request:', {
     handler: data.handler,
     folder: data.folder,
     uid: data.uid,
+    uids: data.uids,
     timestamp: new Date().toISOString()
   });
   
   const startTime = performance.now();
+  let lastError: any = null;
   
-  try {
-    const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
-      body: {
-        endpoint: '/email_message',
-        data: data
-      }
-    });
-
-    const duration = performance.now() - startTime;
-
-    if (error) {
-      console.error('❌ [EMAIL MESSAGE] Error:', { 
-        handler: data.handler,
-        error,
-        duration: `${duration.toFixed(2)}ms`
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+        body: {
+          endpoint: '/email_message',
+          data: { ...data, timeout: data.timeout || 15 }
+        }
       });
-      throw error;
-    }
 
-    console.log('✅ [EMAIL MESSAGE] Response:', {
-      handler: data.handler,
-      success: responseData?.success,
-      duration: `${duration.toFixed(2)}ms`
-    });
-    
-    return responseData;
-  } catch (error: any) {
-    const duration = performance.now() - startTime;
-    console.error('🔥 [EMAIL MESSAGE] Communication Error:', { 
-      handler: data.handler,
-      error: error.message,
-      duration: `${duration.toFixed(2)}ms`
-    });
-    throw error;
+      const duration = performance.now() - startTime;
+
+      if (error) {
+        console.error('❌ [EMAIL MESSAGE] Supabase Error:', { 
+          handler: data.handler,
+          error,
+          duration: `${duration.toFixed(2)}ms`,
+          attempt: attempt + 1
+        });
+        lastError = error;
+        continue;
+      }
+
+      // Check for IMAP errors in response
+      const imapError = parseIMAPError(responseData);
+      if (imapError) {
+        console.warn(`⚠️ [EMAIL MESSAGE] IMAP Error (${imapError.type}):`, {
+          handler: data.handler,
+          message: imapError.message,
+          retryable: imapError.retryable,
+          duration: `${duration.toFixed(2)}ms`,
+          attempt: attempt + 1
+        });
+        
+        if (!imapError.retryable || attempt >= maxRetries) {
+          if (!silentFail) {
+            // Return a structured error response instead of throwing
+            return {
+              success: false,
+              error: imapError.message,
+              error_type: imapError.type,
+              retryable: imapError.retryable,
+              handler: data.handler
+            };
+          }
+          return null;
+        }
+        
+        // Wait before retry (exponential backoff)
+        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+        continue;
+      }
+
+      // Check for API-level success:false
+      if (responseData?.success === false) {
+        console.warn('⚠️ [EMAIL MESSAGE] API returned success:false:', {
+          handler: data.handler,
+          errors: responseData?.errors,
+          duration: `${duration.toFixed(2)}ms`
+        });
+        
+        const imapErr = parseIMAPError(responseData);
+        if (imapErr) {
+          return {
+            success: false,
+            error: imapErr.message,
+            error_type: imapErr.type,
+            retryable: imapErr.retryable,
+            handler: data.handler
+          };
+        }
+      }
+
+      console.log('✅ [EMAIL MESSAGE] Response:', {
+        handler: data.handler,
+        success: responseData?.success,
+        duration: `${duration.toFixed(2)}ms`,
+        attempt: attempt + 1
+      });
+      
+      return responseData;
+    } catch (error: any) {
+      const duration = performance.now() - startTime;
+      console.error('🔥 [EMAIL MESSAGE] Communication Error:', { 
+        handler: data.handler,
+        error: error.message,
+        duration: `${duration.toFixed(2)}ms`,
+        attempt: attempt + 1
+      });
+      lastError = error;
+      
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      }
+    }
   }
+  
+  // All retries failed
+  if (!silentFail) {
+    return {
+      success: false,
+      error: 'No se pudo conectar al servidor de correo después de varios intentos.',
+      error_type: 'connection_failed',
+      retryable: true,
+      handler: data.handler
+    };
+  }
+  
+  throw lastError || new Error('IMAP operation failed');
 };
 
 export const emailSearchApi = {

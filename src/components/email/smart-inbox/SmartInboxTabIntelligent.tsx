@@ -176,18 +176,17 @@ export const SmartInboxTabIntelligent = ({
     enabled: !!userEmail && !!selectedFolder
   });
 
-  // ✅ Fetch email classificate con JOIN a email_messages
+  // ✅ Fetch email classificate - usando TMWE API per dettagli quando tmwe_email_id disponibile
   const { data: classifiedEmails = [], isLoading, refetch } = useQuery({
     queryKey: ['smart-inbox-intelligent', userEmail, selectedCategory, selectedFolder, unreadOnly],
     queryFn: async () => {
       if (!userEmail) return [];
 
-      // 1️⃣ Query classificazioni con filtri
+      // 1️⃣ Query classificazioni con filtri (incluso tmwe_email_id)
       let classificationsQuery = supabase
         .from('email_ai_classifications')
         .select('*')
-        .eq('user_email', userEmail)
-        .not('email_id', 'is', null);
+        .eq('user_email', userEmail);
 
       // Filtro cartella
       if (selectedFolder) {
@@ -207,97 +206,142 @@ export const SmartInboxTabIntelligent = ({
       if (classError) throw classError;
       if (!classifications || classifications.length === 0) return [];
 
-      // 2️⃣ Estrai email_id univoci
-      const emailIds = [...new Set(classifications.map(c => c.email_id).filter(Boolean))];
+      // 2️⃣ Separar clasificaciones por tipo de identificador
+      const withTmweId = classifications.filter(c => c.tmwe_email_id);
+      const withLocalId = classifications.filter(c => !c.tmwe_email_id && c.email_id);
 
-      // 3️⃣ Query email_messages
-      const { data: emailMessages, error: emailError } = await supabase
-        .from('email_messages')
-        .select('id, subject, from_email, to_email, body_text, body_html, data_ricezione, stato, attachments')
-        .in('id', emailIds);
+      // 3️⃣ Fetch email metadata from TMWE API para las que tienen tmwe_email_id
+      let tmweEmailMap = new Map<number, any>();
+      if (withTmweId.length > 0) {
+        try {
+          // Batch fetch usando TMWE API search (más eficiente)
+          const tmweIds = withTmweId.map(c => c.tmwe_email_id as number);
+          console.log('📧 Fetching', tmweIds.length, 'emails from TMWE API...');
+          
+          // Fetch en paralelo (máximo 10 simultáneos)
+          const batchSize = 10;
+          for (let i = 0; i < tmweIds.length; i += batchSize) {
+            const batch = tmweIds.slice(i, i + batchSize);
+            const results = await Promise.allSettled(
+              batch.map(id => emailSearchApi.getEmailDetail({ 
+                email_id: id, 
+                include_body: false,
+                timeout: 5
+              }))
+            );
+            
+            results.forEach((result, idx) => {
+              if (result.status === 'fulfilled' && result.value?.email) {
+                tmweEmailMap.set(batch[idx], result.value.email);
+              }
+            });
+          }
+          console.log('✅ TMWE API returned', tmweEmailMap.size, 'emails');
+        } catch (err) {
+          console.error('⚠️ TMWE API batch fetch error:', err);
+        }
+      }
 
-      if (emailError) throw emailError;
-
-      // 4️⃣ Crea mappa per lookup O(1)
-      const emailMap = new Map(
-        (emailMessages || []).map(email => [email.id, email])
-      );
-
-      // 5️⃣ Merge classificazioni + email
-      return classifications.map(classification => {
-        const emailData = emailMap.get(classification.email_id);
+      // 4️⃣ Fallback: Query email_messages para las que NO tienen tmwe_email_id
+      let localEmailMap = new Map<string, any>();
+      if (withLocalId.length > 0) {
+        const localIds = [...new Set(withLocalId.map(c => c.email_id).filter(Boolean))];
+        const { data: emailMessages } = await supabase
+          .from('email_messages')
+          .select('id, subject, from_email, to_email, body_text, body_html, data_ricezione, stato, attachments')
+          .in('id', localIds);
         
-        // Fallback se email non trovata
-        if (!emailData) {
-          console.warn(`⚠️ Email ${classification.email_id} non trovata per classificazione ${classification.id}`);
+        (emailMessages || []).forEach(email => {
+          localEmailMap.set(email.id, email);
+        });
+      }
+
+      // 5️⃣ Merge clasificaciones + datos de email
+      return classifications.map(classification => {
+        // Intentar primero con TMWE API data
+        const tmweEmail = classification.tmwe_email_id ? tmweEmailMap.get(classification.tmwe_email_id) : null;
+        const localEmail = classification.email_id ? localEmailMap.get(classification.email_id) : null;
+        
+        const baseClassification = {
+          id: classification.id,
+          email_message_id: classification.email_id,
+          email_uid: classification.email_uid,
+          folder_name: classification.folder_name,
+          user_email: classification.user_email,
+          category: classification.category,
+          confidence: classification.confidence,
+          ai_summary: classification.ai_summary,
+          keywords: classification.keywords,
+          sender_email: classification.sender_email,
+          sender_domain: classification.sender_domain,
+          sender_logo_url: classification.sender_logo_url,
+          is_verified: classification.is_verified || false,
+          created_at: classification.created_at,
+          updated_at: classification.updated_at,
+          tmwe_email_id: classification.tmwe_email_id
+        };
+
+        // Usar TMWE data si disponible
+        if (tmweEmail) {
           return {
-            classification: {
-              id: classification.id,
-              email_message_id: classification.email_id,
-              email_uid: classification.email_uid,
-              folder_name: classification.folder_name,
-              user_email: classification.user_email,
-              category: classification.category,
-              confidence: classification.confidence,
-              ai_summary: classification.ai_summary,
-              keywords: classification.keywords,
-              sender_email: classification.sender_email,
-              sender_domain: classification.sender_domain,
-              sender_logo_url: classification.sender_logo_url,
-              is_verified: classification.is_verified || false,
-              created_at: classification.created_at,
-              updated_at: classification.updated_at
-            },
+            classification: baseClassification,
             email: {
-              uid: classification.email_uid || classification.email_id,
+              uid: classification.email_uid || String(classification.tmwe_email_id),
               email_id: classification.email_id,
-              subject: 'Email non disponibile',
-              from: { email: classification.sender_email || 'unknown' },
-              to: [],
+              tmwe_email_id: classification.tmwe_email_id,
+              subject: tmweEmail.subject || 'Sin asunto',
+              from: tmweEmail.from || { email: classification.sender_email || 'unknown' },
+              to: tmweEmail.to || [],
+              body_preview: tmweEmail.snippet || tmweEmail.body_preview || '',
               body_text: '',
               body_html: '',
-              read: false,
-              has_attachments: false,
-              date: classification.created_at,
+              read: tmweEmail.is_read ?? tmweEmail.seen ?? false,
+              has_attachments: tmweEmail.has_attachments ?? (tmweEmail.attachment_count > 0),
+              date: tmweEmail.date || classification.created_at,
               folder_name: classification.folder_name || 'INBOX'
             }
           };
         }
         
-        // Merge con dati reali
+        // Fallback a local DB
+        if (localEmail) {
+          return {
+            classification: baseClassification,
+            email: {
+              uid: classification.email_uid || localEmail.id,
+              email_id: localEmail.id,
+              tmwe_email_id: classification.tmwe_email_id,
+              subject: localEmail.subject || 'Sin asunto',
+              from: localEmail.from_email 
+                ? { email: localEmail.from_email } 
+                : { email: classification.sender_email || 'unknown' },
+              to: localEmail.to_email ? [{ email: localEmail.to_email }] : [],
+              body_text: localEmail.body_text || '',
+              body_html: localEmail.body_html || '',
+              read: localEmail.stato !== 'nuovo',
+              has_attachments: Array.isArray(localEmail.attachments) && localEmail.attachments.length > 0,
+              date: localEmail.data_ricezione || classification.created_at,
+              folder_name: classification.folder_name || 'INBOX'
+            }
+          };
+        }
+
+        // Sin datos de email - usar metadatos de clasificación
         return {
-          classification: {
-            id: classification.id,
-            email_message_id: classification.email_id,
-            email_uid: classification.email_uid,
-            folder_name: classification.folder_name,
-            user_email: classification.user_email,
-            category: classification.category,
-            confidence: classification.confidence,
-            ai_summary: classification.ai_summary,
-            keywords: classification.keywords,
-            sender_email: classification.sender_email,
-            sender_domain: classification.sender_domain,
-            sender_logo_url: classification.sender_logo_url,
-            is_verified: classification.is_verified || false,
-            created_at: classification.created_at,
-            updated_at: classification.updated_at
-          },
+          classification: baseClassification,
           email: {
-            uid: classification.email_uid || emailData.id,
-            email_id: emailData.id,
-            subject: emailData.subject,
-            from: emailData.from_email 
-              ? { email: emailData.from_email } 
-              : { email: classification.sender_email || 'unknown' },
-            to: emailData.to_email 
-              ? [{ email: emailData.to_email }] 
-              : [],
-            body_text: emailData.body_text || '',
-            body_html: emailData.body_html || '',
-            read: emailData.stato !== 'nuovo',
-            has_attachments: Array.isArray(emailData.attachments) && emailData.attachments.length > 0,
-            date: emailData.data_ricezione || classification.created_at,
+            uid: classification.email_uid || classification.email_id || classification.id,
+            email_id: classification.email_id,
+            tmwe_email_id: classification.tmwe_email_id,
+            subject: classification.subject || 'Email no disponible',
+            from: { email: classification.sender_email || 'unknown' },
+            to: [],
+            body_preview: classification.body_preview || '',
+            body_text: '',
+            body_html: '',
+            read: false,
+            has_attachments: classification.has_attachments || false,
+            date: classification.email_date || classification.created_at,
             folder_name: classification.folder_name || 'INBOX'
           }
         };

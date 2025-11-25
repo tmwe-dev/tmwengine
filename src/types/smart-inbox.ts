@@ -1,7 +1,7 @@
 export interface EmailClassification {
   id: string;
-  email_message_id: string | null; // Legacy field
-  email_uid: string | null; // UID sul server TMWE
+  email_message_id: string | null; // Legacy field (local UUID)
+  email_uid: string | null; // UID sul server IMAP
   folder_name: string | null; // Cartella (es: "INBOX")
   user_email: string;
   category: string;
@@ -14,6 +14,8 @@ export interface EmailClassification {
   is_verified: boolean; // Se classificazione verificata manualmente
   created_at: string;
   updated_at: string;
+  // 🆕 TMWE API Reference - Primary identifier for API calls
+  tmwe_email_id?: number | null; // TMWE API email_id (integer) - use getEmailDetail(tmwe_email_id)
   // 🆕 Campi Smart Inbox Enhancements
   urgency?: 'critical' | 'high' | 'normal' | 'low' | null;
   action_suggested?: string | null;
@@ -26,14 +28,15 @@ export interface EmailClassification {
 export interface ClassifiedEmail {
   classification: EmailClassification;
   email: {
-    uid: string; // UID sul server TMWE
-    email_id?: string; // ✅ UUID dal DB locale
+    uid: string; // UID sul server IMAP
+    email_id?: string; // UUID dal DB locale (legacy)
+    tmwe_email_id?: number | null; // 🆕 TMWE API email_id (integer) - PRIMARY identifier
     subject: string;
     from: any;
     to: any;
     body_preview?: string;
-    body_text?: string; // ✅ Aggiunto per body completo dal DB
-    body_html?: string; // ✅ Aggiunto per body HTML
+    body_text?: string;
+    body_html?: string;
     date: string;
     read: boolean;
     has_attachments: boolean;

@@ -35,8 +35,9 @@ export const SmartEmailDetailPanel = ({
 
   return (
     <div className="space-y-4">
-      {classifiedEmail.email.email_id && (
-        <EntitiesPanel emailId={classifiedEmail.email.email_id} />
+      {/* 🆕 Priorizar tmwe_email_id para EntitiesPanel */}
+      {(classifiedEmail.email.tmwe_email_id || classifiedEmail.email.email_id) && (
+        <EntitiesPanel emailId={classifiedEmail.email.email_id || String(classifiedEmail.email.tmwe_email_id)} />
       )}
       <SmartEmailDetailIntelligent
         classifiedEmail={classifiedEmail}

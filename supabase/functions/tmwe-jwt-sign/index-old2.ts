@@ -9,7 +9,6 @@
 // - Procesa por lotes agrupando por folder_name y user_email
 //
 // Historial:
-// - 2025-11-26 v3: DIAGNOSTIC - Added logging to analyze API response structure
 // - 2025-11-26 v2: Nueva lógica usando get_emails_metadata
 // - 2025-11-26 v1: Búsqueda por subject (no funcionó)
 // - Pre-2025-11: JWT signing (consolidado en tmwe-api-proxy)
@@ -259,40 +258,7 @@ serve(async (req) => {
         continue;
       }
       
-      console.log(`[MIGRATE-v3] 📊 Got ${tmweEmails.length} emails from TMWE for folder: ${folder}`);
-      
-      // ============================================
-      // DIAGNOSTIC LOGGING v3 - Analyze API response structure
-      // ============================================
-      if (tmweEmails.length > 0) {
-        const sample = tmweEmails[0];
-        console.log('[MIGRATE-v3] 🔍 ═══════════════════════════════════════════════');
-        console.log('[MIGRATE-v3] 🔍 DIAGNOSTIC - Sample email structure:');
-        console.log('[MIGRATE-v3] 🔍 Keys:', JSON.stringify(Object.keys(sample)));
-        console.log('[MIGRATE-v3] 🔍 Full sample (first 2000 chars):', JSON.stringify(sample, null, 2).substring(0, 2000));
-        
-        // Log specific candidate fields for ID/UID
-        console.log('[MIGRATE-v3] 🔍 Candidate ID fields:', {
-          'sample.id': sample.id,
-          'sample.email_id': sample.email_id,
-          'sample.message_id': sample.message_id,
-          'sample.tmwe_id': sample.tmwe_id,
-        });
-        console.log('[MIGRATE-v3] 🔍 Candidate UID fields:', {
-          'sample.uid': sample.uid,
-          'sample.imap_uid': sample.imap_uid,
-          'sample.message_uid': sample.message_uid,
-        });
-        console.log('[MIGRATE-v3] 🔍 Other useful fields:', {
-          'sample.folder': sample.folder,
-          'sample.subject': sample.subject?.substring(0, 80),
-          'sample.from': typeof sample.from === 'object' ? sample.from?.email : sample.from,
-        });
-        console.log('[MIGRATE-v3] 🔍 ═══════════════════════════════════════════════');
-      }
-      // ============================================
-      // END DIAGNOSTIC LOGGING
-      // ============================================
+      console.log(`[MIGRATE-v2] 📊 Got ${tmweEmails.length} emails from TMWE for folder: ${folder}`);
       
       // Create uid → tmwe_email_id map
       // TMWE API response includes: { id: 12345, uid: "99667", ... }

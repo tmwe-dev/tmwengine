@@ -9,6 +9,37 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-11-26] - 🔍 DIAGNOSTIC: tmwe-jwt-sign v3 - Analyze TMWE API Response
+
+### File Modificato
+- **Function:** `supabase/functions/tmwe-jwt-sign/index.ts`
+- **Backup Creato:** `index-old2.ts`
+
+### Motivo Modifica
+- Dry Run reportó `not_found: 50` para todos los emails
+- El mapa `uidToTmweId` queda vacío porque los campos `id` y `uid` no existen en la respuesta
+- Necesitamos diagnosticar la estructura real de la respuesta TMWE API
+
+### Modifiche Apportate
+1. Agregado logging diagnóstico detallado después de `fetchTmweEmails()`
+2. Log de `Object.keys(sample)` para ver todos los campos disponibles
+3. Log del objeto completo (primeros 2000 chars)
+4. Log de campos candidatos para ID: `id`, `email_id`, `message_id`, `tmwe_id`
+5. Log de campos candidatos para UID: `uid`, `imap_uid`, `message_uid`
+6. Log de campos útiles: `folder`, `subject`, `from`
+
+### Rollback Plan
+```bash
+cp supabase/functions/tmwe-jwt-sign/index-old2.ts supabase/functions/tmwe-jwt-sign/index.ts
+```
+
+### Próximos Pasos
+1. Ejecutar Dry Run
+2. Revisar logs con estructura real de la respuesta
+3. Corregir mapeo de campos según estructura real
+
+---
+
 ## [2025-11-26] - 🔄 REPURPOSED: tmwe-jwt-sign → Email ID Migration
 
 ### 🎯 Resumen Ejecutivo

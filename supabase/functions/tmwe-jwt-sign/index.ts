@@ -24,10 +24,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// URL base de TMWE API (mismo que usa tmwe-api-proxy)
+const TMWE_API_BASE_URL = 'https://findair.it/erp/tmwe_json';
+
 interface MigrationResult {
   total: number;
   migrated: number;
   failed: number;
+  skipped: number;
   errors: string[];
 }
 
@@ -46,11 +50,11 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    const TMWE_API_URL = Deno.env.get('TMWE_API_URL');
+    // Obtener TMWE_API_KEY del secret de Supabase
     const TMWE_API_KEY = Deno.env.get('TMWE_API_KEY');
     
-    if (!TMWE_API_URL || !TMWE_API_KEY) {
-      throw new Error('TMWE_API_URL or TMWE_API_KEY not configured');
+    if (!TMWE_API_KEY) {
+      throw new Error('TMWE_API_KEY not configured in Supabase secrets');
     }
 
     // 1. Get all classifications without tmwe_email_id
@@ -71,6 +75,7 @@ serve(async (req) => {
       total: pendingClassifications?.length || 0,
       migrated: 0,
       failed: 0,
+      skipped: 0,
       errors: []
     };
 
@@ -87,10 +92,17 @@ serve(async (req) => {
     // 2. Process each classification
     for (const classification of pendingClassifications) {
       try {
+        // Skip if no subject to search
+        if (!classification.subject || classification.subject.trim() === '') {
+          result.skipped++;
+          console.log(`[MIGRATE] ⏭️ Skipped (no subject): ${classification.id}`);
+          continue;
+        }
+
         console.log(`[MIGRATE] 🔍 Searching for email: ${classification.subject?.substring(0, 50)}...`);
         
-        // Search TMWE API for matching email by subject and sender
-        const searchResponse = await fetch(`${TMWE_API_URL}/api/email_search`, {
+        // Search TMWE API for matching email by subject
+        const searchResponse = await fetch(`${TMWE_API_BASE_URL}/app.php?action=email_search`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${TMWE_API_KEY}`,
@@ -106,26 +118,26 @@ serve(async (req) => {
 
         if (!searchResponse.ok) {
           const errorText = await searchResponse.text();
-          throw new Error(`TMWE API search failed: ${errorText}`);
+          throw new Error(`TMWE API search failed (${searchResponse.status}): ${errorText}`);
         }
 
         const searchData = await searchResponse.json();
-        const emails = searchData?.emails || [];
+        const emails = searchData?.emails || searchData?.data?.emails || [];
 
         // Find best match by sender_email + subject similarity
         let bestMatch = null;
         for (const email of emails) {
-          const emailSender = email.from?.email || email.from_email || '';
+          const emailSender = email.from?.email || email.from_email || email.sender || '';
           
-          // Match by sender email (exact match)
+          // Match by sender email (exact match, case insensitive)
           if (emailSender.toLowerCase() === classification.sender_email?.toLowerCase()) {
             bestMatch = email;
             break;
           }
         }
 
-        if (bestMatch && bestMatch.email_id) {
-          const tmweEmailId = parseInt(bestMatch.email_id, 10);
+        if (bestMatch && (bestMatch.email_id || bestMatch.id)) {
+          const tmweEmailId = parseInt(bestMatch.email_id || bestMatch.id, 10);
           
           if (!isNaN(tmweEmailId)) {
             console.log(`[MIGRATE] ✅ Match found: email_id=${tmweEmailId}`);

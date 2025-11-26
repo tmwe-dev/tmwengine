@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Database, Play, TestTube, CheckCircle2, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 
 interface MigrationResult {
   success: boolean;
@@ -32,18 +33,25 @@ interface MigrationResult {
 }
 
 export function TMWEMigrationAdmin() {
+  const { userEmail } = useTMWEAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isDryRun, setIsDryRun] = useState(true);
   const [result, setResult] = useState<MigrationResult | null>(null);
   const [pendingCount, setPendingCount] = useState<number | null>(null);
 
-  // Check pending migrations
+  // Check pending migrations (only for current user)
   const checkPending = async () => {
+    if (!userEmail) {
+      setPendingCount(0);
+      return;
+    }
+    
     try {
       const { count, error } = await supabase
         .from('email_ai_classifications')
         .select('*', { count: 'exact', head: true })
-        .is('tmwe_email_id', null);
+        .is('tmwe_email_id', null)
+        .eq('user_email', userEmail);
 
       if (error) throw error;
       setPendingCount(count || 0);
@@ -55,6 +63,11 @@ export function TMWEMigrationAdmin() {
 
   // Execute migration
   const executeMigration = async (dryRun: boolean) => {
+    if (!userEmail) {
+      toast.error('No hay usuario autenticado');
+      return;
+    }
+    
     setIsLoading(true);
     setIsDryRun(dryRun);
     setResult(null);
@@ -63,7 +76,8 @@ export function TMWEMigrationAdmin() {
       const { data, error } = await supabase.functions.invoke('tmwe-jwt-sign', {
         body: {
           batch_size: 50,
-          dry_run: dryRun
+          dry_run: dryRun,
+          user_email: userEmail
         }
       });
 

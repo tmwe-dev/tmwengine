@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Wrench, Zap, Settings, Bug, Activity, Mail } from 'lucide-react';
+import { Wrench, Zap, Settings, Bug, Activity, Mail, Database } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +46,14 @@ export function ToolsDropdownMenu() {
         <DropdownMenuItem onClick={() => navigate('/funnemail?view=debugger')}>
           <Bug className="mr-2 h-4 w-4" />
           Backend Debugger
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuLabel>Admin</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => navigate('/funnemail?view=migration')}>
+          <Database className="mr-2 h-4 w-4" />
+          TMWE ID Migration
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

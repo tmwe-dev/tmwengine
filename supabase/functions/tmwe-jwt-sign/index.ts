@@ -1,7 +1,8 @@
 // ============================================
-// MIGRATE TMWE EMAIL IDS - Phase 2 Migration
-// Populates tmwe_email_id in email_ai_classifications
-// by searching TMWE API for matching emails
+// TMWE-JWT-SIGN - Repurposed for Migration
+// Original: JWT signing (now in tmwe-api-proxy)
+// Current: Populates tmwe_email_id in email_ai_classifications
+// Repurposed: 2025-11-26
 // ============================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";

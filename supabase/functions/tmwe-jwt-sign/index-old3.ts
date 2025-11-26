@@ -50,40 +50,34 @@ serve(async (req) => {
   }
 
   try {
-    const { batch_size = 100, dry_run = false, user_email } = await req.json().catch(() => ({}));
+    const { batch_size = 100, dry_run = false, user_email_filter = null } = await req.json().catch(() => ({}));
     
-    console.log('[MIGRATE-v4] 🚀 Starting TMWE Email ID Migration');
-    console.log('[MIGRATE-v4] 📊 Config:', { batch_size, dry_run, user_email });
-
-    // ⚠️ REQUIRED: user_email must be provided
-    if (!user_email) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'user_email is required - must use authenticated user credentials'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    console.log('[MIGRATE-v2] 🚀 Starting TMWE Email ID Migration (get_emails_metadata strategy)');
+    console.log('[MIGRATE-v2] 📊 Config:', { batch_size, dry_run, user_email_filter });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 1. Fetch classifications without tmwe_email_id (ONLY for authenticated user)
-    const { data: pendingClassifications, error: fetchError } = await supabase
+    // 1. Fetch classifications without tmwe_email_id
+    let query = supabase
       .from('email_ai_classifications')
       .select('id, email_uid, sender_email, subject, folder_name, user_email, created_at')
       .is('tmwe_email_id', null)
-      .eq('user_email', user_email)
       .order('created_at', { ascending: false })
       .limit(batch_size);
+    
+    if (user_email_filter) {
+      query = query.eq('user_email', user_email_filter);
+    }
+
+    const { data: pendingClassifications, error: fetchError } = await query;
 
     if (fetchError) {
       throw new Error(`Failed to fetch classifications: ${fetchError.message}`);
     }
 
-    console.log(`[MIGRATE-v4] 📧 Found ${pendingClassifications?.length || 0} classifications for user: ${user_email}`);
+    console.log(`[MIGRATE-v2] 📧 Found ${pendingClassifications?.length || 0} classifications to migrate`);
 
     const result: MigrationResult = {
       total: pendingClassifications?.length || 0,
@@ -301,35 +295,20 @@ serve(async (req) => {
       // ============================================
       
       // Create uid → tmwe_email_id map
-      // TMWE API response: uid may be null, but elasticsearch_id contains: "uid_{UID}_f{folder}_a{account}"
+      // TMWE API response includes: { id: 12345, uid: "99667", ... }
       const uidToTmweId = new Map<string, number>();
       
       for (const email of tmweEmails) {
+        // id is the TMWE email ID (integer), uid is the IMAP UID
         const tmweId = email.id || email.email_id;
-        let uid: string | null = null;
-        
-        // First try direct uid field
-        if (email.uid) {
-          uid = String(email.uid);
-        } 
-        // Fallback: extract UID from elasticsearch_id
-        else if (email.elasticsearch_id) {
-          const match = email.elasticsearch_id.match(/^uid_(\d+)_/);
-          if (match) {
-            uid = match[1];
-          }
-        }
+        const uid = email.uid;
         
         if (tmweId && uid) {
-          uidToTmweId.set(uid, parseInt(String(tmweId), 10));
-          // Log first 3 mappings for debugging
-          if (uidToTmweId.size <= 3) {
-            console.log(`[MIGRATE-v4] ✅ Mapped UID ${uid} → TMWE ID ${tmweId}`);
-          }
+          uidToTmweId.set(String(uid), parseInt(String(tmweId), 10));
         }
       }
       
-      console.log(`[MIGRATE-v4] 🗺️ Created uid→id map with ${uidToTmweId.size} entries (from ${tmweEmails.length} emails)`);
+      console.log(`[MIGRATE-v2] 🗺️ Created uid→id map with ${uidToTmweId.size} entries`);
       
       // Sample: show first 5 mappings
       const sampleEntries = Array.from(uidToTmweId.entries()).slice(0, 5);

@@ -60,7 +60,7 @@ export function TMWEMigrationAdmin() {
     setResult(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('migrate-tmwe-email-ids', {
+      const { data, error } = await supabase.functions.invoke('tmwe-jwt-sign', {
         body: {
           batch_size: 50,
           dry_run: dryRun

@@ -260,8 +260,12 @@ verify_jwt = true
 [functions.voice-to-text]
 verify_jwt = true
 
+# REPURPOSED - tmwe-jwt-sign now handles email ID migration
+# Original JWT functionality consolidated in tmwe-api-proxy (handler: internal_jwt_sign)
+[functions.tmwe-jwt-sign]
+verify_jwt = true
+
 # REMOVED - Consolidated into tmwe-api-proxy:
-# [functions.tmwe-jwt-sign] - REMOVED → handler: internal_jwt_sign
 # [functions.tmwe-jwt-refresh] - REMOVED → handler: internal_jwt_refresh
 # [functions.tmwe-test-folder-info] - REMOVED → handler: internal_test_folder_info
 # [functions.tmwe-supabase-sync] - REMOVED → handler: internal_supabase_sync
@@ -302,8 +306,7 @@ verify_jwt = true
 [functions.text-to-speech]
 verify_jwt = true
 
-[functions.migrate-tmwe-email-ids]
-verify_jwt = true
+# REMOVED - migrate-tmwe-email-ids repurposed into tmwe-jwt-sign (2025-11-26)
 
 # =====================================================
 # REMOVED FUNCTIONS - 2025-11-25 Cleanup

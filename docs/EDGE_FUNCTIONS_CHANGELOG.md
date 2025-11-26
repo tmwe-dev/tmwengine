@@ -9,7 +9,43 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
-## [2025-11-25] - 🚀 TMWE Email ID Migration - Phase 2 Complete
+## [2025-11-26] - 🔄 REPURPOSED: tmwe-jwt-sign → Email ID Migration
+
+### 🎯 Resumen Ejecutivo
+- ✅ **Reutilizada función huérfana** `tmwe-jwt-sign` para evitar límite de Edge Functions
+- ✅ **Eliminada** `migrate-tmwe-email-ids` (código movido a tmwe-jwt-sign)
+- ✅ **Funcionalidad JWT original:** Ya consolidada en `tmwe-api-proxy` (handler: internal_jwt_sign)
+
+### Motivo
+- Límite de ~55 Edge Functions alcanzado en Supabase
+- `tmwe-jwt-sign` existía como función desplegada pero sin código en repo
+- Reutilizar slot existente evita crear nueva función
+
+### Cambios Realizados
+
+#### 1. Función Reutilizada: `tmwe-jwt-sign`
+- **Propósito original:** JWT signing (consolidado en tmwe-api-proxy)
+- **Nuevo propósito:** Migración de `tmwe_email_id` en `email_ai_classifications`
+- **Código:** Copia exacta de `migrate-tmwe-email-ids`
+
+#### 2. Componente Actualizado: `TMWEMigrationAdmin.tsx`
+- Actualizado para llamar `tmwe-jwt-sign` en lugar de `migrate-tmwe-email-ids`
+
+### Archivos Modificados
+- `supabase/functions/tmwe-jwt-sign/index.ts` (RECREADO con código de migración)
+- `supabase/config.toml` (habilitado tmwe-jwt-sign, removido migrate-tmwe-email-ids)
+- `src/components/email/admin/TMWEMigrationAdmin.tsx` (actualizado invoke)
+- `supabase/functions/migrate-tmwe-email-ids/` (ELIMINADO)
+
+### Rollback
+Si se necesita restaurar función JWT separada:
+```bash
+# Restaurar desde tmwe-api-proxy handler: internal_jwt_sign
+# O crear nueva función si hay slots disponibles
+```
+
+---
+
 
 ### 🎯 Resumen Ejecutivo
 - ✅ **Nueva función:** `migrate-tmwe-email-ids` para poblar `tmwe_email_id` en registros existentes

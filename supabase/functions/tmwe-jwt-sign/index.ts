@@ -151,7 +151,8 @@ serve(async (req) => {
         console.log(`[MIGRATE] 🔍 Searching for: ${classification.subject?.substring(0, 40)}...`);
         
         // Search TMWE API for matching email by subject
-        const searchResponse = await fetch(`${TMWE_API_BASE_URL}/app.php?action=email_search`, {
+        // Endpoint correcto: /email_search (no /app.php?action=email_search)
+        const searchResponse = await fetch(`${TMWE_API_BASE_URL}/email_search`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${oauthToken}`,
@@ -161,18 +162,22 @@ serve(async (req) => {
           body: JSON.stringify({
             handler: 'search_emails',
             query: classification.subject || '',
-            limit: 10,
-            timeout: 15
+            folder: classification.folder_name || 'INBOX',
+            limit: 10
           })
         });
 
         if (!searchResponse.ok) {
           const errorText = await searchResponse.text();
+          console.log(`[MIGRATE] ⚠️ API Response (${searchResponse.status}): ${errorText.substring(0, 200)}`);
           throw new Error(`TMWE API (${searchResponse.status}): ${errorText.substring(0, 100)}`);
         }
 
         const searchData = await searchResponse.json();
-        const emails = searchData?.emails || searchData?.data?.emails || searchData?.results || [];
+        console.log(`[MIGRATE] 📬 API Response keys: ${Object.keys(searchData).join(', ')}`);
+        
+        // Try multiple response formats
+        const emails = searchData?.emails || searchData?.data?.emails || searchData?.results || searchData?.messages || [];
 
         // Find best match by sender_email
         let bestMatch = null;

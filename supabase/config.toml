@@ -260,8 +260,11 @@ verify_jwt = true
 [functions.voice-to-text]
 verify_jwt = true
 
-# REPURPOSED - tmwe-jwt-sign now handles email ID migration
-# Original JWT functionality consolidated in tmwe-api-proxy (handler: internal_jwt_sign)
+# ⚠️ NOMBRE LEGACY: tmwe-jwt-sign
+# FUNCIONALIDAD ACTUAL: Migración de tmwe_email_id en email_ai_classifications
+# MOTIVO: Reutilizado para evitar límite de ~55 Edge Functions
+# JWT ORIGINAL: Consolidado en tmwe-api-proxy (handler: internal_jwt_sign)
+# FECHA: 2025-11-26
 [functions.tmwe-jwt-sign]
 verify_jwt = true
 

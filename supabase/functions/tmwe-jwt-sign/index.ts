@@ -1,8 +1,19 @@
 // ============================================
-// TMWE-JWT-SIGN - Repurposed for Migration
-// Original: JWT signing (now in tmwe-api-proxy)
-// Current: Populates tmwe_email_id in email_ai_classifications
-// Repurposed: 2025-11-26
+// EDGE FUNCTION: tmwe-jwt-sign
+// ============================================
+// ⚠️ NOMBRE LEGACY - Función reutilizada para evitar límite de slots
+// 
+// FUNCIONALIDAD ACTUAL: Migración de Email IDs
+// - Pobla campo `tmwe_email_id` en tabla `email_ai_classifications`
+// - Busca emails coincidentes en TMWE API por subject/sender
+// - Soporta dry_run y batch_size configurables
+//
+// FUNCIONALIDAD ORIGINAL (ahora en tmwe-api-proxy):
+// - JWT signing → handler: internal_jwt_sign
+//
+// Historial:
+// - 2025-11-26: Reutilizada para migración de email IDs
+// - Pre-2025-11: JWT signing (consolidado en tmwe-api-proxy)
 // ============================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";

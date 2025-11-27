@@ -1,0 +1,2887 @@
+openapi: 3.0.3
+info:
+  title: TMWE API - FunnEmail Migration Endpoints
+  description: |
+    # TMWE API Enhancement - FunnEmail Integration
+    
+    Este documento especifica los nuevos endpoints requeridos en el API TMWE para migrar 
+    las funcionalidades actuales de FunnEmail desde Supabase Edge Functions al backend TMWE.
+    
+    ## Objetivos de la Migración
+    
+    - **Reducción de Edge Functions**: De ~44 a ~15-20 funciones
+    - **Centralización**: Lógica de negocio unificada en TMWE backend
+    - **Performance**: Reducción de latencia (menos saltos de red)
+    - **Mantenimiento**: Datos unificados y código centralizado
+    - **Seguridad**: Mejor gestión de tokens y autenticación
+    
+    ## Arquitectura Propuesta
+    
+    ```
+    Frontend (Lovable) 
+      ↓
+    tmwe-gateway (Edge Function único)
+      ↓ JWT/OAuth2
+    TMWE API Backend (findair.it)
+      ↓
+    Base de Datos TMWE
+    ```
+    
+    ## Fases de Implementación
+    
+    ### Fase 1 (Crítica) - Q1 2025
+    - `/email_sync_advanced` - Sincronización inteligente
+    - `/email_classification` - Almacenamiento clasificaciones AI
+    
+    ### Fase 2 (Alta Prioridad) - Q2 2025
+    - `/email_analytics` - Analytics e insights
+    - `/email_sender_management` - Gestión de mittenti/grupos
+    
+    ### Fase 3 (Media Prioridad) - Q2-Q3 2025
+    - `/email_campaign` - Gestión de campañas
+    - `/email_actions` - Acciones automatizadas
+    
+    ### Fase 4 (Baja Prioridad) - Q3 2025
+    - `/email_webhook` - Sistema de webhooks
+    
+    ## Autenticación
+    
+    Todos los endpoints requieren autenticación mediante:
+    - **JWT (preferido)**: `Authorization: Bearer <jwt_token>`
+    - **OAuth2**: `Authorization: Bearer <access_token>`
+    
+    ## Rate Limiting
+    
+    - Lectura: 100 req/min por usuario
+    - Escritura: 30 req/min por usuario
+    - Sync: 10 req/min por usuario
+    - Webhooks: 5 req/min por usuario
+    
+    ## Notas Técnicas
+    
+    ### Compatibilidad con Sistema Actual
+    - Todos los endpoints mantienen backward compatibility con estructuras existentes
+    - Los campos `snake_case` se mantienen según convención TMWE
+    - Los UUIDs de email siguen formato IMAP UID
+    
+    ### Funciones que NO se migran
+    Las siguientes funciones permanecen como Edge Functions en Supabase:
+    - `email-ai-processor` - Requiere OpenAI API key
+    - `text-to-speech` - Requiere ElevenLabs API key
+    - `voice-to-text` - Requiere Lovable API key
+    - `generate-image` - Requiere Lovable API key
+    - Todas las funciones de `chat-laboratory-*`
+    
+    ### Edge Function Gateway Unificado
+    Se creará `tmwe-gateway` que:
+    - Centraliza todas las llamadas al TMWE API
+    - Gestiona auto-refresh de tokens JWT/OAuth2
+    - Implementa circuit breaker pattern
+    - Logging centralizado en Supabase
+    
+  version: 4.0.0-funnemail-migration
+  contact:
+    name: TMWE Development Team
+    email: dev@tmwe.com
+  license:
+    name: Proprietary
+    
+servers:
+  - url: https://findair.it/erp/tmwe_json
+    description: Production TMWE API
+  - url: https://staging.findair.it/erp/tmwe_json
+    description: Staging Environment (si existe)
+
+tags:
+  - name: Email Sync
+    description: Sincronización avanzada de emails con IMAP
+  - name: Email Classification
+    description: Almacenamiento y gestión de clasificaciones AI
+  - name: Email Analytics
+    description: Analytics, estadísticas e insights
+  - name: Email Campaigns
+    description: Gestión de campañas de email marketing
+  - name: Email Senders
+    description: Gestión de remitentes y grupos
+  - name: Email Webhooks
+    description: Sistema de notificaciones webhook
+  - name: Email Actions
+    description: Ejecución de acciones automatizadas
+
+paths:
+  # ============================================================================
+  # 1. EMAIL SYNC ADVANCED
+  # ============================================================================
+  
+  /email_sync_advanced:
+    post:
+      tags:
+        - Email Sync
+      summary: Iniciar sincronización inteligente de emails
+      description: |
+        **Reemplaza**: `tmwe-email-sync-master` Edge Function
+        
+        Inicia un proceso de sincronización avanzado con las siguientes características:
+        - Sincronización incremental por carpeta
+        - Detección de cambios delta (flags, movimientos)
+        - Soporte para sync completo o parcial
+        - Procesamiento asíncrono con job tracking
+        - Estimación de tiempo y progreso
+        
+        **Lógica de Negocio**:
+        1. Valida credenciales IMAP del usuario
+        2. Conecta al servidor IMAP
+        3. Identifica carpetas a sincronizar
+        4. Crea job asíncrono para procesamiento
+        5. Retorna job_id para tracking
+        
+        **Criterios de Éxito**:
+        - Reduce tiempo de sync en un 70% vs sync full
+        - Maneja interrupciones y resume automáticamente
+        - Evita duplicados mediante UID tracking
+        
+      operationId: startSmartSync
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - account_id
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                  description: ID de la cuenta de email en TMWE
+                  example: "550e8400-e29b-41d4-a716-446655440000"
+                sync_mode:
+                  type: string
+                  enum: [full, incremental, delta]
+                  default: incremental
+                  description: |
+                    - `full`: Sincroniza todos los emails desde el inicio
+                    - `incremental`: Solo nuevos emails desde última sync
+                    - `delta`: Solo cambios (flags, movimientos)
+                folders:
+                  type: array
+                  items:
+                    type: string
+                  description: Carpetas a sincronizar. Si vacío, sincroniza todas.
+                  example: ["INBOX", "Sent", "Important"]
+                date_from:
+                  type: string
+                  format: date
+                  description: Sincronizar emails desde esta fecha (solo para full)
+                  example: "2025-01-01"
+                date_to:
+                  type: string
+                  format: date
+                  description: Sincronizar emails hasta esta fecha
+                  example: "2025-01-29"
+                priority:
+                  type: string
+                  enum: [low, normal, high]
+                  default: normal
+                  description: Prioridad del job de sincronización
+                webhook_url:
+                  type: string
+                  format: uri
+                  description: URL para notificar cuando termine la sync
+                  example: "https://app.lovable.app/webhook/sync-complete"
+            examples:
+              incremental_sync:
+                summary: Sincronización incremental
+                value:
+                  account_id: "550e8400-e29b-41d4-a716-446655440000"
+                  sync_mode: "incremental"
+                  folders: ["INBOX", "Sent"]
+              full_sync_with_dates:
+                summary: Sincronización completa con rango de fechas
+                value:
+                  account_id: "550e8400-e29b-41d4-a716-446655440000"
+                  sync_mode: "full"
+                  date_from: "2024-01-01"
+                  date_to: "2025-01-29"
+                  priority: "high"
+                  webhook_url: "https://app.lovable.app/webhook/sync-complete"
+              delta_sync:
+                summary: Solo cambios (flags y movimientos)
+                value:
+                  account_id: "550e8400-e29b-41d4-a716-446655440000"
+                  sync_mode: "delta"
+                  
+      responses:
+        '202':
+          description: Sincronización iniciada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  job_id:
+                    type: string
+                    format: uuid
+                    description: ID del job para tracking
+                    example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                  status:
+                    type: string
+                    example: "processing"
+                  estimated_duration_seconds:
+                    type: integer
+                    description: Duración estimada en segundos
+                    example: 120
+                  folders_to_sync:
+                    type: array
+                    items:
+                      type: string
+                    example: ["INBOX", "Sent"]
+                  message:
+                    type: string
+                    example: "Sincronización iniciada. Usa job_id para ver progreso."
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Cuenta de email no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error_code: "ACCOUNT_NOT_FOUND"
+                message: "La cuenta de email no existe o no pertenece al usuario"
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  
+  /email_sync_advanced/status:
+    get:
+      tags:
+        - Email Sync
+      summary: Obtener estado de sincronización
+      description: |
+        Consulta el progreso de un job de sincronización en tiempo real.
+        
+        **Información retornada**:
+        - Estado actual (processing, completed, failed, cancelled)
+        - Progreso por carpeta
+        - Emails sincronizados vs total
+        - Tiempo transcurrido y estimado restante
+        - Errores si los hay
+        
+      operationId: getSyncStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: job_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID del job de sincronización
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+          
+      responses:
+        '200':
+          description: Estado del job
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  job_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [queued, processing, completed, failed, cancelled]
+                    example: "processing"
+                  progress:
+                    type: object
+                    properties:
+                      total_folders:
+                        type: integer
+                        example: 3
+                      completed_folders:
+                        type: integer
+                        example: 1
+                      current_folder:
+                        type: string
+                        example: "INBOX"
+                      emails_processed:
+                        type: integer
+                        example: 145
+                      emails_total:
+                        type: integer
+                        example: 523
+                      percentage:
+                        type: number
+                        format: float
+                        example: 27.7
+                  timing:
+                    type: object
+                    properties:
+                      started_at:
+                        type: string
+                        format: date-time
+                        example: "2025-01-29T10:30:00Z"
+                      elapsed_seconds:
+                        type: integer
+                        example: 45
+                      estimated_remaining_seconds:
+                        type: integer
+                        example: 120
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        folder:
+                          type: string
+                          example: "Spam"
+                        error_code:
+                          type: string
+                          example: "IMAP_TIMEOUT"
+                        message:
+                          type: string
+                          example: "Timeout conectando a carpeta Spam"
+              examples:
+                in_progress:
+                  summary: Sincronización en progreso
+                  value:
+                    success: true
+                    job_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                    status: "processing"
+                    progress:
+                      total_folders: 3
+                      completed_folders: 1
+                      current_folder: "INBOX"
+                      emails_processed: 145
+                      emails_total: 523
+                      percentage: 27.7
+                    timing:
+                      started_at: "2025-01-29T10:30:00Z"
+                      elapsed_seconds: 45
+                      estimated_remaining_seconds: 120
+                    errors: []
+                completed:
+                  summary: Sincronización completada
+                  value:
+                    success: true
+                    job_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                    status: "completed"
+                    progress:
+                      total_folders: 3
+                      completed_folders: 3
+                      emails_processed: 523
+                      emails_total: 523
+                      percentage: 100
+                    timing:
+                      started_at: "2025-01-29T10:30:00Z"
+                      elapsed_seconds: 180
+                      completed_at: "2025-01-29T10:33:00Z"
+                    errors: []
+        '404':
+          description: Job no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error_code: "JOB_NOT_FOUND"
+                message: "El job_id no existe o expiró"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_sync_advanced/cancel:
+    post:
+      tags:
+        - Email Sync
+      summary: Cancelar sincronización en curso
+      description: |
+        Cancela un job de sincronización que esté en estado `queued` o `processing`.
+        
+        **Comportamiento**:
+        - Los emails ya sincronizados se mantienen
+        - El job queda marcado como `cancelled`
+        - Se puede reiniciar con un nuevo job
+        
+      operationId: cancelSync
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - job_id
+              properties:
+                job_id:
+                  type: string
+                  format: uuid
+                  description: ID del job a cancelar
+                  example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                  
+      responses:
+        '200':
+          description: Job cancelado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  job_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    example: "cancelled"
+                  emails_synchronized:
+                    type: integer
+                    description: Emails que alcanzaron a sincronizarse
+                    example: 145
+                  message:
+                    type: string
+                    example: "Sincronización cancelada. Se guardaron 145 emails."
+        '400':
+          description: No se puede cancelar (ya completó o falló)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error_code: "INVALID_STATUS"
+                message: "Solo se pueden cancelar jobs en estado queued o processing"
+        '404':
+          description: Job no encontrado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_sync_advanced/history:
+    get:
+      tags:
+        - Email Sync
+      summary: Historial de sincronizaciones
+      description: |
+        Lista las últimas sincronizaciones realizadas para una cuenta de email.
+        
+        **Útil para**:
+        - Ver cuándo fue la última sync exitosa
+        - Detectar patrones de fallos
+        - Auditoría de operaciones
+        
+      operationId: getSyncHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID de la cuenta de email
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50
+          description: Cantidad de registros a retornar
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, completed, failed, cancelled]
+            default: all
+          description: Filtrar por estado
+          
+      responses:
+        '200':
+          description: Historial de sincronizaciones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  account_id:
+                    type: string
+                    format: uuid
+                  syncs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        job_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                        sync_mode:
+                          type: string
+                        started_at:
+                          type: string
+                          format: date-time
+                        completed_at:
+                          type: string
+                          format: date-time
+                        emails_processed:
+                          type: integer
+                        folders:
+                          type: array
+                          items:
+                            type: string
+                        duration_seconds:
+                          type: integer
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Cuenta no encontrada
+  
+  # ============================================================================
+  # 2. EMAIL CLASSIFICATION
+  # ============================================================================
+  
+  /email_classification:
+    post:
+      tags:
+        - Email Classification
+      summary: Guardar clasificación AI de email
+      description: |
+        **Complementa**: `email-ai-processor` Edge Function
+        
+        Almacena el resultado de la clasificación AI de un email. La inferencia AI 
+        se hace en la Edge Function, pero los resultados se guardan aquí para:
+        - Análisis posterior
+        - Estadísticas de clasificación
+        - Mejora del modelo (feedback loop)
+        
+        **Campos de clasificación**:
+        - `category`: Categoría principal (urgente, marketing, informativo, etc.)
+        - `priority`: Nivel de prioridad (high, medium, low)
+        - `sentiment`: Sentimiento detectado (positive, neutral, negative)
+        - `confidence`: Nivel de confianza del modelo (0-1)
+        - `suggested_actions`: Acciones propuestas por la AI
+        
+      operationId: saveClassification
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email_uid
+                - category
+                - confidence
+              properties:
+                email_uid:
+                  type: string
+                  description: UID del email (IMAP UID o ID interno)
+                  example: "12345"
+                account_id:
+                  type: string
+                  format: uuid
+                  description: ID de la cuenta de email
+                category:
+                  type: string
+                  enum: [urgente, importante, informativo, marketing, spam, newsletter, personal]
+                  example: "urgente"
+                priority:
+                  type: string
+                  enum: [high, medium, low]
+                  example: "high"
+                sentiment:
+                  type: string
+                  enum: [positive, neutral, negative]
+                  example: "neutral"
+                confidence:
+                  type: number
+                  format: float
+                  minimum: 0
+                  maximum: 1
+                  description: Confianza del modelo (0-1)
+                  example: 0.89
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags adicionales detectados
+                  example: ["cliente_vip", "requiere_respuesta", "contrato"]
+                suggested_actions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      action_type:
+                        type: string
+                        example: "create_task"
+                      description:
+                        type: string
+                        example: "Crear tarea de seguimiento para revisar contrato"
+                      confidence:
+                        type: number
+                        format: float
+                        example: 0.75
+                model_version:
+                  type: string
+                  description: Versión del modelo AI usado
+                  example: "gpt-4-turbo-2024-01"
+                processing_time_ms:
+                  type: integer
+                  description: Tiempo de procesamiento en ms
+                  example: 1523
+            examples:
+              urgent_email:
+                summary: Email urgente con acciones
+                value:
+                  email_uid: "12345"
+                  account_id: "550e8400-e29b-41d4-a716-446655440000"
+                  category: "urgente"
+                  priority: "high"
+                  sentiment: "neutral"
+                  confidence: 0.89
+                  tags: ["cliente_vip", "requiere_respuesta"]
+                  suggested_actions:
+                    - action_type: "create_task"
+                      description: "Responder antes de las 18:00"
+                      confidence: 0.85
+                    - action_type: "set_reminder"
+                      description: "Recordatorio en 2 horas"
+                      confidence: 0.75
+                  model_version: "gpt-4-turbo-2024-01"
+                  processing_time_ms: 1523
+                  
+      responses:
+        '201':
+          description: Clasificación guardada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  classification_id:
+                    type: string
+                    format: uuid
+                    example: "9c8e7f12-3456-4789-abcd-ef1234567890"
+                  message:
+                    type: string
+                    example: "Clasificación guardada correctamente"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: El email ya tiene clasificación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error_code: "ALREADY_CLASSIFIED"
+                message: "Este email ya tiene una clasificación. Usa PUT para actualizar."
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    get:
+      tags:
+        - Email Classification
+      summary: Obtener clasificación de un email
+      description: |
+        Recupera la clasificación AI almacenada para un email específico.
+        
+      operationId: getClassification
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: email_uid
+          in: query
+          required: true
+          schema:
+            type: string
+          description: UID del email
+          example: "12345"
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID de la cuenta de email
+          
+      responses:
+        '200':
+          description: Clasificación encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  classification:
+                    type: object
+                    properties:
+                      classification_id:
+                        type: string
+                        format: uuid
+                      email_uid:
+                        type: string
+                      category:
+                        type: string
+                      priority:
+                        type: string
+                      sentiment:
+                        type: string
+                      confidence:
+                        type: number
+                      tags:
+                        type: array
+                        items:
+                          type: string
+                      suggested_actions:
+                        type: array
+                        items:
+                          type: object
+                      created_at:
+                        type: string
+                        format: date-time
+                      model_version:
+                        type: string
+        '404':
+          description: Email sin clasificación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error_code: "NOT_CLASSIFIED"
+                message: "Este email no tiene clasificación AI"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_classification/search:
+    get:
+      tags:
+        - Email Classification
+      summary: Buscar emails por clasificación
+      description: |
+        Busca emails que cumplan con criterios de clasificación específicos.
+        
+        **Casos de uso**:
+        - "Mostrarme todos los emails urgentes de esta semana"
+        - "Emails de categoría marketing con sentimiento negativo"
+        - "Emails con confianza baja que necesitan revisión manual"
+        
+      operationId: searchByClassification
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [urgente, importante, informativo, marketing, spam, newsletter, personal]
+          description: Filtrar por categoría
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [high, medium, low]
+          description: Filtrar por prioridad
+        - name: sentiment
+          in: query
+          schema:
+            type: string
+            enum: [positive, neutral, negative]
+        - name: min_confidence
+          in: query
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 1
+          description: Confianza mínima (para filtrar clasificaciones inciertas)
+        - name: tags
+          in: query
+          schema:
+            type: string
+          description: Tags separados por comas
+          example: "cliente_vip,requiere_respuesta"
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            
+      responses:
+        '200':
+          description: Resultados de búsqueda
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        email_uid:
+                          type: string
+                        subject:
+                          type: string
+                        from_email:
+                          type: string
+                        classification:
+                          type: object
+                          properties:
+                            category:
+                              type: string
+                            priority:
+                              type: string
+                            sentiment:
+                              type: string
+                            confidence:
+                              type: number
+                            tags:
+                              type: array
+                              items:
+                                type: string
+                        received_date:
+                          type: string
+                          format: date-time
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+              examples:
+                urgent_vip:
+                  summary: Emails urgentes de clientes VIP
+                  value:
+                    success: true
+                    results:
+                      - email_uid: "12345"
+                        subject: "URGENTE: Revisión de contrato antes del viernes"
+                        from_email: "cliente@empresa.com"
+                        classification:
+                          category: "urgente"
+                          priority: "high"
+                          sentiment: "neutral"
+                          confidence: 0.92
+                          tags: ["cliente_vip", "requiere_respuesta", "contrato"]
+                        received_date: "2025-01-29T09:15:00Z"
+                    pagination:
+                      total: 15
+                      limit: 50
+                      offset: 0
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_classification/bulk:
+    post:
+      tags:
+        - Email Classification
+      summary: Clasificar múltiples emails en batch
+      description: |
+        Guarda clasificaciones para múltiples emails en una sola operación.
+        
+        **Límites**:
+        - Máximo 100 emails por request
+        - Todas las clasificaciones deben ser de la misma cuenta
+        
+      operationId: bulkClassify
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - account_id
+                - classifications
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                classifications:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+                    required:
+                      - email_uid
+                      - category
+                      - confidence
+                    properties:
+                      email_uid:
+                        type: string
+                      category:
+                        type: string
+                      priority:
+                        type: string
+                      sentiment:
+                        type: string
+                      confidence:
+                        type: number
+                      tags:
+                        type: array
+                        items:
+                          type: string
+                          
+      responses:
+        '201':
+          description: Clasificaciones guardadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  saved_count:
+                    type: integer
+                    example: 97
+                  failed_count:
+                    type: integer
+                    example: 3
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        email_uid:
+                          type: string
+                        error:
+                          type: string
+              example:
+                success: true
+                saved_count: 97
+                failed_count: 3
+                errors:
+                  - email_uid: "12348"
+                    error: "Email ya clasificado"
+                  - email_uid: "12350"
+                    error: "Email no existe"
+        '400':
+          description: Request inválido (más de 100 emails, etc.)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_classification/stats:
+    get:
+      tags:
+        - Email Classification
+      summary: Estadísticas de clasificación
+      description: |
+        Retorna estadísticas agregadas de clasificaciones para una cuenta.
+        
+        **Métricas incluidas**:
+        - Distribución por categoría
+        - Distribución por prioridad
+        - Sentimiento promedio
+        - Confianza promedio
+        - Tags más frecuentes
+        - Tendencias temporales
+        
+      operationId: getClassificationStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: group_by
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+          description: Agrupar estadísticas por período
+          
+      responses:
+        '200':
+          description: Estadísticas de clasificación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  account_id:
+                    type: string
+                    format: uuid
+                  period:
+                    type: object
+                    properties:
+                      from:
+                        type: string
+                        format: date
+                      to:
+                        type: string
+                        format: date
+                  total_classified:
+                    type: integer
+                    example: 1523
+                  by_category:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                    example:
+                      urgente: 145
+                      importante: 523
+                      informativo: 678
+                      marketing: 177
+                  by_priority:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                    example:
+                      high: 268
+                      medium: 1055
+                      low: 200
+                  by_sentiment:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                    example:
+                      positive: 678
+                      neutral: 723
+                      negative: 122
+                  avg_confidence:
+                    type: number
+                    format: float
+                    example: 0.847
+                  top_tags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tag:
+                          type: string
+                        count:
+                          type: integer
+                    example:
+                      - tag: "requiere_respuesta"
+                        count: 345
+                      - tag: "cliente_vip"
+                        count: 178
+                  timeline:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                        count:
+                          type: integer
+                        by_category:
+                          type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  # ============================================================================
+  # 3. EMAIL ANALYTICS
+  # ============================================================================
+  
+  /email_analytics/stats:
+    get:
+      tags:
+        - Email Analytics
+      summary: Estadísticas generales de email
+      description: |
+        **Reemplaza**: Parte de `fun-email-ai-analysis` Edge Function
+        
+        Retorna métricas y estadísticas sobre el uso de email:
+        - Volumen de emails (recibidos, enviados)
+        - Tasa de respuesta
+        - Tiempo promedio de respuesta
+        - Emails sin leer
+        - Distribución por carpeta
+        - Tendencias temporales
+        
+      operationId: getEmailStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: folders
+          in: query
+          schema:
+            type: string
+          description: Carpetas a incluir (separadas por comas)
+          example: "INBOX,Sent"
+          
+      responses:
+        '200':
+          description: Estadísticas de email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  account_id:
+                    type: string
+                  period:
+                    type: object
+                    properties:
+                      from:
+                        type: string
+                        format: date
+                      to:
+                        type: string
+                        format: date
+                  volume:
+                    type: object
+                    properties:
+                      total_received:
+                        type: integer
+                        example: 1523
+                      total_sent:
+                        type: integer
+                        example: 234
+                      unread:
+                        type: integer
+                        example: 45
+                      starred:
+                        type: integer
+                        example: 12
+                  response_metrics:
+                    type: object
+                    properties:
+                      avg_response_time_hours:
+                        type: number
+                        format: float
+                        example: 4.5
+                      response_rate_percentage:
+                        type: number
+                        format: float
+                        example: 78.3
+                      pending_responses:
+                        type: integer
+                        example: 23
+                  by_folder:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                    example:
+                      INBOX: 1234
+                      Sent: 234
+                      Important: 55
+                  by_sender_type:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                    example:
+                      customer: 567
+                      internal: 345
+                      partner: 234
+                      marketing: 377
+                  timeline:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                        received:
+                          type: integer
+                        sent:
+                          type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_analytics/insights:
+    get:
+      tags:
+        - Email Analytics
+      summary: Insights y recomendaciones AI
+      description: |
+        **Reemplaza**: Parte de `fun-email-ai-analysis` Edge Function
+        
+        Genera insights inteligentes sobre patrones de email:
+        - Remitentes más frecuentes
+        - Horarios de mayor actividad
+        - Emails que requieren atención
+        - Anomalías detectadas
+        - Recomendaciones de acción
+        
+      operationId: getEmailInsights
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: insight_types
+          in: query
+          schema:
+            type: string
+          description: Tipos de insights (separados por comas)
+          example: "top_senders,action_required,anomalies"
+          
+      responses:
+        '200':
+          description: Insights generados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  account_id:
+                    type: string
+                  generated_at:
+                    type: string
+                    format: date-time
+                  insights:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: "action_required"
+                        title:
+                          type: string
+                          example: "23 emails esperan respuesta"
+                        description:
+                          type: string
+                          example: "Tienes 23 emails de clientes VIP sin responder desde hace más de 24 horas"
+                        severity:
+                          type: string
+                          enum: [low, medium, high, critical]
+                          example: "high"
+                        actionable:
+                          type: boolean
+                          example: true
+                        suggested_action:
+                          type: string
+                          example: "Revisar bandeja de clientes VIP y priorizar respuestas"
+                        data:
+                          type: object
+                          description: Datos adicionales específicos del insight
+              examples:
+                multiple_insights:
+                  value:
+                    success: true
+                    account_id: "550e8400-e29b-41d4-a716-446655440000"
+                    generated_at: "2025-01-29T11:30:00Z"
+                    insights:
+                      - type: "action_required"
+                        title: "23 emails esperan respuesta"
+                        description: "Tienes 23 emails de clientes VIP sin responder desde hace más de 24 horas"
+                        severity: "high"
+                        actionable: true
+                        suggested_action: "Revisar bandeja de clientes VIP"
+                        data:
+                          email_count: 23
+                          oldest_email_age_hours: 48
+                      - type: "top_sender"
+                        title: "cliente@empresa.com te ha escrito 12 veces esta semana"
+                        description: "Es tu contacto más activo. Considera agendar una llamada."
+                        severity: "medium"
+                        actionable: true
+                        suggested_action: "Agendar reunión o llamada"
+                        data:
+                          sender: "cliente@empresa.com"
+                          email_count: 12
+                          avg_response_time_hours: 6.5
+                      - type: "anomaly"
+                        title: "Pico inusual de emails de marketing"
+                        description: "Recibiste 3x más emails de marketing que tu promedio semanal"
+                        severity: "low"
+                        actionable: true
+                        suggested_action: "Revisar suscripciones o configurar filtros"
+                        data:
+                          current_count: 234
+                          avg_count: 78
+                          increase_percentage: 300
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_analytics/actions:
+    get:
+      tags:
+        - Email Analytics
+      summary: Acciones sugeridas por Analytics
+      description: |
+        **Reemplaza**: Parte de `fun-email-ai-analysis` Edge Function
+        
+        Lista acciones concretas sugeridas basadas en análisis de emails:
+        - Emails a responder con prioridad
+        - Contactos a seguir
+        - Newsletters a cancelar
+        - Filtros a crear
+        
+      operationId: getSuggestedActions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: action_types
+          in: query
+          schema:
+            type: string
+          description: Tipos de acciones (separados por comas)
+          example: "respond,follow_up,unsubscribe"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+            
+      responses:
+        '200':
+          description: Acciones sugeridas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  account_id:
+                    type: string
+                  actions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        action_id:
+                          type: string
+                          format: uuid
+                        action_type:
+                          type: string
+                          example: "respond"
+                        priority:
+                          type: string
+                          enum: [high, medium, low]
+                        title:
+                          type: string
+                          example: "Responder a cliente@empresa.com"
+                        description:
+                          type: string
+                          example: "Email urgente sin responder desde hace 36 horas"
+                        related_emails:
+                          type: array
+                          items:
+                            type: string
+                          description: UIDs de emails relacionados
+                        estimated_time_minutes:
+                          type: integer
+                          example: 15
+                        confidence:
+                          type: number
+                          format: float
+                          example: 0.92
+              examples:
+                suggested_actions:
+                  value:
+                    success: true
+                    account_id: "550e8400-e29b-41d4-a716-446655440000"
+                    actions:
+                      - action_id: "a1b2c3d4-5678-90ab-cdef-1234567890ab"
+                        action_type: "respond"
+                        priority: "high"
+                        title: "Responder a cliente@empresa.com"
+                        description: "Email urgente sobre contrato sin responder desde hace 36 horas"
+                        related_emails: ["12345", "12346"]
+                        estimated_time_minutes: 15
+                        confidence: 0.92
+                      - action_id: "b2c3d4e5-6789-01bc-def1-234567890abc"
+                        action_type: "follow_up"
+                        priority: "medium"
+                        title: "Seguimiento a propuesta enviada"
+                        description: "Enviaste propuesta hace 5 días sin respuesta"
+                        related_emails: ["12350"]
+                        estimated_time_minutes: 10
+                        confidence: 0.78
+                      - action_id: "c3d4e5f6-789a-12cd-ef23-34567890abcd"
+                        action_type: "unsubscribe"
+                        priority: "low"
+                        title: "Cancelar 5 newsletters no leídas"
+                        description: "Tienes 234 emails de newsletters que nunca abres"
+                        related_emails: []
+                        estimated_time_minutes: 5
+                        confidence: 0.85
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  # ============================================================================
+  # 4. EMAIL CAMPAIGNS
+  # ============================================================================
+  
+  /email_campaign:
+    post:
+      tags:
+        - Email Campaigns
+      summary: Crear nueva campaña de email
+      description: |
+        **Reemplaza**: `email-campagne-scheduler` Edge Function
+        
+        Crea una campaña de email marketing con programación automática:
+        - Envío diferido/programado
+        - Rate limiting automático
+        - Tracking de aperturas/clicks
+        - A/B testing
+        
+      operationId: createCampaign
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - account_id
+                - campaign_name
+                - recipients
+                - email_template
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                campaign_name:
+                  type: string
+                  example: "Newsletter Enero 2025"
+                description:
+                  type: string
+                recipients:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: [list, filter, segment]
+                      example: "segment"
+                    data:
+                      type: object
+                      description: Según type (lista de emails, filtros, segmento)
+                email_template:
+                  type: object
+                  properties:
+                    subject:
+                      type: string
+                    body_html:
+                      type: string
+                    body_text:
+                      type: string
+                schedule:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: [immediate, scheduled, recurring]
+                    start_date:
+                      type: string
+                      format: date-time
+                    frequency:
+                      type: string
+                      enum: [once, daily, weekly, monthly]
+                    rate_limit:
+                      type: object
+                      properties:
+                        emails_per_hour:
+                          type: integer
+                          example: 100
+                        emails_per_day:
+                          type: integer
+                          example: 1000
+                tracking:
+                  type: object
+                  properties:
+                    track_opens:
+                      type: boolean
+                      default: true
+                    track_clicks:
+                      type: boolean
+                      default: true
+                ab_test:
+                  type: object
+                  description: Configuración de A/B testing (opcional)
+                  properties:
+                    enabled:
+                      type: boolean
+                    variants:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          subject:
+                            type: string
+                          percentage:
+                            type: integer
+                            
+      responses:
+        '201':
+          description: Campaña creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  campaign_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    example: "scheduled"
+                  estimated_start:
+                    type: string
+                    format: date-time
+                  recipient_count:
+                    type: integer
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_campaign/{campaign_id}/status:
+    get:
+      tags:
+        - Email Campaigns
+      summary: Estado de campaña
+      description: |
+        Consulta el estado y progreso de una campaña de email.
+        
+      operationId: getCampaignStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: campaign_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            
+      responses:
+        '200':
+          description: Estado de la campaña
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  campaign_id:
+                    type: string
+                  campaign_name:
+                    type: string
+                  status:
+                    type: string
+                    enum: [draft, scheduled, sending, paused, completed, cancelled, failed]
+                  progress:
+                    type: object
+                    properties:
+                      total_recipients:
+                        type: integer
+                      emails_sent:
+                        type: integer
+                      emails_delivered:
+                        type: integer
+                      emails_opened:
+                        type: integer
+                      emails_clicked:
+                        type: integer
+                      emails_bounced:
+                        type: integer
+                      emails_failed:
+                        type: integer
+                      percentage_complete:
+                        type: number
+                  metrics:
+                    type: object
+                    properties:
+                      open_rate:
+                        type: number
+                        format: float
+                        example: 34.5
+                      click_rate:
+                        type: number
+                        format: float
+                        example: 12.3
+                      bounce_rate:
+                        type: number
+                        format: float
+                        example: 2.1
+                  timing:
+                    type: object
+                    properties:
+                      started_at:
+                        type: string
+                        format: date-time
+                      estimated_completion:
+                        type: string
+                        format: date-time
+                      completed_at:
+                        type: string
+                        format: date-time
+        '404':
+          description: Campaña no encontrada
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_campaign/{campaign_id}/control:
+    post:
+      tags:
+        - Email Campaigns
+      summary: Controlar ejecución de campaña
+      description: |
+        Pausa, reanuda o cancela una campaña en ejecución.
+        
+      operationId: controlCampaign
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: campaign_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+              properties:
+                action:
+                  type: string
+                  enum: [pause, resume, cancel]
+                  example: "pause"
+                reason:
+                  type: string
+                  description: Motivo de la acción (opcional)
+                  
+      responses:
+        '200':
+          description: Acción ejecutada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  campaign_id:
+                    type: string
+                  new_status:
+                    type: string
+                    example: "paused"
+                  message:
+                    type: string
+        '400':
+          description: Acción no válida para el estado actual
+        '404':
+          description: Campaña no encontrada
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_campaign/list:
+    get:
+      tags:
+        - Email Campaigns
+      summary: Listar campañas
+      description: |
+        Lista todas las campañas de un usuario con filtros opcionales.
+        
+      operationId: listCampaigns
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, draft, scheduled, sending, completed, cancelled]
+            default: all
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            
+      responses:
+        '200':
+          description: Lista de campañas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  campaigns:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        campaign_id:
+                          type: string
+                        campaign_name:
+                          type: string
+                        status:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        recipient_count:
+                          type: integer
+                        open_rate:
+                          type: number
+                        click_rate:
+                          type: number
+                  pagination:
+                    type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  # ============================================================================
+  # 5. EMAIL SENDER MANAGEMENT
+  # ============================================================================
+  
+  /email_sender/profile:
+    get:
+      tags:
+        - Email Senders
+      summary: Obtener perfil de remitente
+      description: |
+        **Complementa**: `suggest-sender-grouping` Edge Function
+        
+        Retorna el perfil completo de un remitente (mittente):
+        - Información básica (nombre, email, empresa)
+        - Grupo asignado
+        - Estadísticas de interacción
+        - Historial de clasificaciones
+        - Acciones previas
+        
+      operationId: getSenderProfile
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sender_email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+          example: "cliente@empresa.com"
+        - name: include_stats
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: include_history
+          in: query
+          schema:
+            type: boolean
+            default: false
+            
+      responses:
+        '200':
+          description: Perfil del remitente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  sender:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                      display_name:
+                        type: string
+                      company:
+                        type: string
+                      domain:
+                        type: string
+                      group:
+                        type: object
+                        properties:
+                          group_id:
+                            type: string
+                          group_name:
+                            type: string
+                          group_type:
+                            type: string
+                          confidence:
+                            type: number
+                      stats:
+                        type: object
+                        properties:
+                          total_emails:
+                            type: integer
+                          first_email_date:
+                            type: string
+                            format: date
+                          last_email_date:
+                            type: string
+                            format: date
+                          avg_response_time_hours:
+                            type: number
+                          most_common_category:
+                            type: string
+                          sentiment_distribution:
+                            type: object
+                      history:
+                        type: array
+                        items:
+                          type: object
+                          description: Historial de interacciones (si include_history=true)
+        '404':
+          description: Remitente no encontrado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_sender/assign_group:
+    post:
+      tags:
+        - Email Senders
+      summary: Asignar remitente a grupo
+      description: |
+        Guarda la asignación de un remitente a un grupo (resultado de AI o manual).
+        
+      operationId: assignSenderToGroup
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sender_email
+                - group_id
+              properties:
+                sender_email:
+                  type: string
+                  format: email
+                group_id:
+                  type: string
+                  format: uuid
+                confidence:
+                  type: number
+                  format: float
+                  description: Confianza de la asignación (0-1)
+                assigned_by:
+                  type: string
+                  enum: [ai, user]
+                  default: user
+                reasoning:
+                  type: string
+                  description: Motivo de la asignación
+                  
+      responses:
+        '200':
+          description: Asignación guardada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  sender_email:
+                    type: string
+                  group_id:
+                    type: string
+                  message:
+                    type: string
+        '404':
+          description: Grupo no encontrado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_sender/groups:
+    get:
+      tags:
+        - Email Senders
+      summary: Listar grupos de remitentes
+      description: |
+        Lista todos los grupos de remitentes (cliente, proveedor, partner, marketing, etc.)
+        
+      operationId: listSenderGroups
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: Filtrar por tipo de grupo
+        - name: include_count
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Incluir conteo de remitentes por grupo
+          
+      responses:
+        '200':
+          description: Lista de grupos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  groups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        group_id:
+                          type: string
+                        group_name:
+                          type: string
+                        group_type:
+                          type: string
+                        color:
+                          type: string
+                        icon:
+                          type: string
+                        sender_count:
+                          type: integer
+                        created_at:
+                          type: string
+                          format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    
+    post:
+      tags:
+        - Email Senders
+      summary: Crear grupo de remitentes
+      description: |
+        Crea un nuevo grupo para organizar remitentes.
+        
+      operationId: createSenderGroup
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - group_name
+                - group_type
+              properties:
+                group_name:
+                  type: string
+                  example: "Clientes VIP"
+                group_type:
+                  type: string
+                  enum: [customer, partner, vendor, internal, marketing, other]
+                  example: "customer"
+                description:
+                  type: string
+                color:
+                  type: string
+                  description: Color hex para UI
+                  example: "#FF5733"
+                icon:
+                  type: string
+                  description: Icono para UI
+                  example: "star"
+                  
+      responses:
+        '201':
+          description: Grupo creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  group_id:
+                    type: string
+                    format: uuid
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_sender/by_group:
+    get:
+      tags:
+        - Email Senders
+      summary: Listar remitentes de un grupo
+      description: |
+        Lista todos los remitentes asignados a un grupo específico.
+        
+      operationId: getSendersByGroup
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: group_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            
+      responses:
+        '200':
+          description: Lista de remitentes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  group_id:
+                    type: string
+                  group_name:
+                    type: string
+                  senders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        email:
+                          type: string
+                        display_name:
+                          type: string
+                        company:
+                          type: string
+                        assigned_at:
+                          type: string
+                          format: date-time
+                        confidence:
+                          type: number
+                        email_count:
+                          type: integer
+                  pagination:
+                    type: object
+        '404':
+          description: Grupo no encontrado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  # ============================================================================
+  # 6. EMAIL WEBHOOKS
+  # ============================================================================
+  
+  /email_webhook:
+    post:
+      tags:
+        - Email Webhooks
+      summary: Registrar webhook
+      description: |
+        **Reemplaza**: `tmwe-email-webhook` Edge Function
+        
+        Registra un webhook para recibir notificaciones de eventos de email:
+        - Nuevo email recibido
+        - Email enviado
+        - Clasificación AI completada
+        - Sincronización completada
+        - Error en operación
+        
+      operationId: registerWebhook
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+                - events
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: URL del endpoint que recibirá las notificaciones
+                  example: "https://app.lovable.app/webhook/email-events"
+                events:
+                  type: array
+                  items:
+                    type: string
+                    enum: 
+                      - email.received
+                      - email.sent
+                      - email.classified
+                      - email.sync.completed
+                      - email.sync.failed
+                      - campaign.completed
+                      - campaign.failed
+                  example: ["email.received", "email.classified"]
+                filters:
+                  type: object
+                  description: Filtros opcionales para eventos
+                  properties:
+                    folders:
+                      type: array
+                      items:
+                        type: string
+                      example: ["INBOX", "Important"]
+                    categories:
+                      type: array
+                      items:
+                        type: string
+                      example: ["urgente", "importante"]
+                    sender_groups:
+                      type: array
+                      items:
+                        type: string
+                      example: ["cliente_vip"]
+                secret:
+                  type: string
+                  description: Secret para validar firma HMAC
+                  example: "whsec_abc123xyz789"
+                active:
+                  type: boolean
+                  default: true
+                  
+      responses:
+        '201':
+          description: Webhook registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  webhook_id:
+                    type: string
+                    format: uuid
+                  url:
+                    type: string
+                  events:
+                    type: array
+                    items:
+                      type: string
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    
+    get:
+      tags:
+        - Email Webhooks
+      summary: Listar webhooks registrados
+      description: |
+        Lista todos los webhooks activos del usuario.
+        
+      operationId: listWebhooks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: active
+          in: query
+          schema:
+            type: boolean
+          description: Filtrar por estado activo/inactivo
+          
+      responses:
+        '200':
+          description: Lista de webhooks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  webhooks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        webhook_id:
+                          type: string
+                        url:
+                          type: string
+                        events:
+                          type: array
+                          items:
+                            type: string
+                        active:
+                          type: boolean
+                        created_at:
+                          type: string
+                          format: date-time
+                        last_triggered_at:
+                          type: string
+                          format: date-time
+                        success_count:
+                          type: integer
+                        failure_count:
+                          type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_webhook/{webhook_id}:
+    put:
+      tags:
+        - Email Webhooks
+      summary: Actualizar webhook
+      description: |
+        Actualiza la configuración de un webhook existente.
+        
+      operationId: updateWebhook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: webhook_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                events:
+                  type: array
+                  items:
+                    type: string
+                filters:
+                  type: object
+                active:
+                  type: boolean
+                  
+      responses:
+        '200':
+          description: Webhook actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  webhook_id:
+                    type: string
+                  message:
+                    type: string
+        '404':
+          description: Webhook no encontrado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    
+    delete:
+      tags:
+        - Email Webhooks
+      summary: Eliminar webhook
+      description: |
+        Elimina un webhook registrado.
+        
+      operationId: deleteWebhook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: webhook_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            
+      responses:
+        '200':
+          description: Webhook eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '404':
+          description: Webhook no encontrado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_webhook/{webhook_id}/test:
+    post:
+      tags:
+        - Email Webhooks
+      summary: Probar webhook
+      description: |
+        Envía un evento de prueba al webhook para verificar conectividad.
+        
+      operationId: testWebhook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: webhook_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            
+      responses:
+        '200':
+          description: Test ejecutado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  webhook_id:
+                    type: string
+                  test_result:
+                    type: object
+                    properties:
+                      sent_at:
+                        type: string
+                        format: date-time
+                      response_code:
+                        type: integer
+                      response_time_ms:
+                        type: integer
+                      error:
+                        type: string
+        '404':
+          description: Webhook no encontrado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  # ============================================================================
+  # 7. EMAIL ACTIONS
+  # ============================================================================
+  
+  /email_actions/execute:
+    post:
+      tags:
+        - Email Actions
+      summary: Ejecutar acción sobre email
+      description: |
+        **Reemplaza**: `execute-ai-actions` Edge Function
+        
+        Ejecuta una acción específica sobre un email:
+        - Mover a carpeta
+        - Marcar como leído/no leído
+        - Añadir/quitar estrella
+        - Crear tarea
+        - Crear recordatorio
+        - Reenviar email
+        - Archivar/Eliminar
+        
+      operationId: executeEmailAction
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - account_id
+                - email_uid
+                - action_type
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                email_uid:
+                  type: string
+                  description: UID del email
+                action_type:
+                  type: string
+                  enum: 
+                    - move
+                    - mark_read
+                    - mark_unread
+                    - star
+                    - unstar
+                    - create_task
+                    - create_reminder
+                    - forward
+                    - archive
+                    - delete
+                  example: "move"
+                action_params:
+                  type: object
+                  description: Parámetros específicos de cada acción
+                  example:
+                    destination_folder: "Important"
+                triggered_by:
+                  type: string
+                  enum: [user, ai]
+                  default: user
+            examples:
+              move_to_folder:
+                summary: Mover email a carpeta
+                value:
+                  account_id: "550e8400-e29b-41d4-a716-446655440000"
+                  email_uid: "12345"
+                  action_type: "move"
+                  action_params:
+                    destination_folder: "Important"
+                  triggered_by: "ai"
+              create_task:
+                summary: Crear tarea desde email
+                value:
+                  account_id: "550e8400-e29b-41d4-a716-446655440000"
+                  email_uid: "12345"
+                  action_type: "create_task"
+                  action_params:
+                    title: "Revisar contrato con Cliente X"
+                    due_date: "2025-02-01"
+                    priority: "high"
+                    notes: "Email urgente requiere respuesta antes del viernes"
+                  triggered_by: "ai"
+                  
+      responses:
+        '200':
+          description: Acción ejecutada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  action_id:
+                    type: string
+                    format: uuid
+                  action_type:
+                    type: string
+                  executed_at:
+                    type: string
+                    format: date-time
+                  result:
+                    type: object
+                    description: Resultado específico de la acción
+                  message:
+                    type: string
+        '400':
+          description: Acción no válida o parámetros incorrectos
+        '404':
+          description: Email no encontrado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_actions/bulk:
+    post:
+      tags:
+        - Email Actions
+      summary: Ejecutar acciones en lote
+      description: |
+        Ejecuta la misma acción sobre múltiples emails simultáneamente.
+        
+        **Límites**:
+        - Máximo 50 emails por request
+        - Solo acciones de tipo move, mark_read, mark_unread, star, archive
+        
+      operationId: bulkEmailActions
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - account_id
+                - email_uids
+                - action_type
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                email_uids:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 50
+                  example: ["12345", "12346", "12347"]
+                action_type:
+                  type: string
+                  enum: [move, mark_read, mark_unread, star, unstar, archive]
+                action_params:
+                  type: object
+                  
+      responses:
+        '200':
+          description: Acciones ejecutadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  total:
+                    type: integer
+                  successful:
+                    type: integer
+                  failed:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        email_uid:
+                          type: string
+                        error:
+                          type: string
+        '400':
+          description: Request inválido (más de 50 emails, etc.)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /email_actions/history:
+    get:
+      tags:
+        - Email Actions
+      summary: Historial de acciones
+      description: |
+        Lista las acciones ejecutadas sobre emails (útil para auditoría y analytics).
+        
+      operationId: getActionHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: email_uid
+          in: query
+          schema:
+            type: string
+          description: Filtrar por email específico
+        - name: action_type
+          in: query
+          schema:
+            type: string
+          description: Filtrar por tipo de acción
+        - name: triggered_by
+          in: query
+          schema:
+            type: string
+            enum: [all, user, ai]
+            default: all
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            
+      responses:
+        '200':
+          description: Historial de acciones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  actions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        action_id:
+                          type: string
+                        email_uid:
+                          type: string
+                        action_type:
+                          type: string
+                        action_params:
+                          type: object
+                        triggered_by:
+                          type: string
+                        executed_at:
+                          type: string
+                          format: date-time
+                        success:
+                          type: boolean
+                        error:
+                          type: string
+                  pagination:
+                    type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ==============================================================================
+# COMPONENTS
+# ==============================================================================
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtenido mediante `/token` endpoint.
+        El token debe incluirse en el header: `Authorization: Bearer <token>`
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error_code:
+          type: string
+          example: "INVALID_PARAMETER"
+        message:
+          type: string
+          example: "El parámetro 'account_id' es requerido"
+        details:
+          type: object
+          description: Detalles adicionales del error
+
+  responses:
+    BadRequest:
+      description: Request inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error_code: "BAD_REQUEST"
+            message: "Parámetros inválidos en el request"
+            
+    Unauthorized:
+      description: No autorizado - Token inválido o expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error_code: "UNAUTHORIZED"
+            message: "Token JWT inválido o expirado"
+            
+    RateLimitExceeded:
+      description: Rate limit excedido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error_code: "RATE_LIMIT_EXCEEDED"
+            message: "Has excedido el límite de 100 requests por minuto"
+            details:
+              limit: 100
+              window_seconds: 60
+              retry_after_seconds: 45
+              
+    InternalServerError:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error_code: "INTERNAL_SERVER_ERROR"
+            message: "Error inesperado en el servidor. Contacta a soporte."

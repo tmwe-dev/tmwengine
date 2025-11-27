@@ -6,6 +6,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { loadSenderContext, loadSenderActionHistory, formatSenderContextForAI } from '../_shared/email-sender-context-loader.ts';
+import { getAdaptiveConfidence } from '../_shared/learning-helpers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -335,7 +337,6 @@ serve(async (req) => {
 
       // 🏢 SPRINT 1 CORRECTED: Load Email Sender context
       console.log('[AI Processor] 🏢 Loading Email Sender context...');
-      const { loadSenderContext, loadSenderActionHistory, formatSenderContextForAI } = await import('../_shared/email-sender-context-loader.ts');
       
       const senderContext = await loadSenderContext(supabase, email.from_email);
       const senderActionHistory = await loadSenderActionHistory(supabase, email.from_email);
@@ -344,7 +345,6 @@ serve(async (req) => {
       console.log('[AI Processor] ✅ Email Sender context loaded');
 
       // 📊 INCREMENTO 10: Get adaptive confidence threshold
-      const { getAdaptiveConfidence } = await import('../_shared/learning-helpers.ts');
       const adaptiveThreshold = await getAdaptiveConfidence(
         supabase,
         userId,

@@ -95,6 +95,8 @@ serve(async (req) => {
     console.log('[AI Processor] 📧 Processing request:', {
       email_id,
       tmwe_email_id,
+      has_tmwe_email_id: !!tmwe_email_id,
+      tmwe_email_id_type: typeof tmwe_email_id,
       user_email,
       operation,
       selected_agent

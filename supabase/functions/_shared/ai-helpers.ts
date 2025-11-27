@@ -351,6 +351,8 @@ export async function updateEmailClassification(
   console.log('[updateEmailClassification] 📧 Params:', {
     email_id: params.email_id,
     tmwe_email_id: params.tmwe_email_id,
+    has_tmwe_email_id: !!params.tmwe_email_id,
+    tmwe_email_id_type: typeof params.tmwe_email_id,
     user_email: params.user_email,
     sender_email: params.sender_email
   });
@@ -380,16 +382,27 @@ export async function updateEmailClassification(
   };
 
   // Use upsert with conflict on tmwe_email_id (preferred) or email_id
+  const upsertKey = params.tmwe_email_id ? 'tmwe_email_id' : 'email_id';
+  console.log('[updateEmailClassification] 🔑 Using upsert key:', upsertKey, 'with value:', params.tmwe_email_id || params.email_id);
+  
   const { error } = await supabase
     .from('email_ai_classifications')
     .upsert(classificationData, {
-      onConflict: params.tmwe_email_id ? 'tmwe_email_id' : 'email_id',
+      onConflict: upsertKey,
       ignoreDuplicates: false
     });
 
   if (error) {
-    console.error('[updateEmailClassification] ❌ Error saving:', error);
+    console.error('[updateEmailClassification] ❌ Error during upsert:', error);
+    console.error('[updateEmailClassification] 📊 Classification data attempted:', {
+      tmwe_email_id: classificationData.tmwe_email_id,
+      email_id: classificationData.email_id,
+      user_email: classificationData.user_email,
+      sender_email: classificationData.sender_email
+    });
+    
     // Fallback: try insert without upsert
+    console.log('[updateEmailClassification] 🔄 Attempting fallback insert...');
     const { error: insertError } = await supabase
       .from('email_ai_classifications')
       .insert(classificationData);
@@ -398,10 +411,11 @@ export async function updateEmailClassification(
       console.error('[updateEmailClassification] ❌ Insert also failed:', insertError);
       throw insertError;
     }
+    console.log('[updateEmailClassification] ✅ Fallback insert succeeded');
   }
 
   console.log('[updateEmailClassification] ✅ Classification saved to email_ai_classifications');
-  console.log('[updateEmailClassification] 🆕 tmwe_email_id:', params.tmwe_email_id || 'N/A');
+  console.log('[updateEmailClassification] 🆕 ZERO-SYNC tmwe_email_id:', params.tmwe_email_id || 'N/A (legacy mode)');
 }
 
 // ============================================

@@ -58,6 +58,12 @@ export const useSmartClassificationIntelligent = () => {
           }));
 
           console.log('🔵 [Zero-Sync] Starting classification for:', emailIdentifier);
+          console.log('📊 [Zero-Sync DEBUG] Sending to edge function:', {
+            email_id: input.email_id,
+            tmwe_email_id: input.tmwe_email_id,
+            has_tmwe_id: !!input.tmwe_email_id,
+            user_email: userEmail
+          });
 
           // ✅ ZERO-SYNC: Pass tmwe_email_id when available (preferred)
           const { data: classifyData, error: classifyError } = await supabase.functions.invoke(

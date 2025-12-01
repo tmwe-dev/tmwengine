@@ -337,6 +337,542 @@ serve(async (req) => {
   }
   
   // ═══════════════════════════════════════════════════════════════════════════
+  // HANDLER: oauth_auth (consolidated from tmwe-oauth-auth)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (parsedBody?.handler === 'oauth_auth') {
+    try {
+      console.log('🔐 [OAUTH] OAuth authentication flow...');
+      const { code, redirectUri } = parsedBody;
+      
+      if (!code || !redirectUri) {
+        throw new Error('Missing code or redirectUri');
+      }
+
+      const clientId = Deno.env.get('TMWE_CLIENT_ID');
+      const clientSecret = Deno.env.get('TMWE_CLIENT_SECRET');
+      
+      if (!clientSecret) {
+        throw new Error('TMWE_CLIENT_SECRET not configured');
+      }
+
+      // Exchange authorization code for OAuth tokens
+      const tokenEndpoint = 'https://findair.it/erp/tmwe_json/token';
+      const formData = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+      });
+
+      const tokenResponse = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+      });
+
+      if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        throw new Error(`OAuth2 token exchange failed: ${errorText}`);
+      }
+
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenData.access_token || !tokenData.expires_in) {
+        throw new Error('Invalid TMWE API response: missing required fields');
+      }
+
+      const { access_token, expires_in, email } = tokenData;
+
+      // Get user profile
+      const myProfileResponse = await fetch('https://findair.it/erp/tmwe_json/get_my_profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!myProfileResponse.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+
+      const profileData = await myProfileResponse.json();
+
+      // Find or create Supabase user
+      const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      if (listError) throw listError;
+
+      let supabaseUser = existingUsers.users.find(u => u.email === email);
+
+      if (!supabaseUser) {
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: email,
+          email_confirm: true,
+          user_metadata: {
+            tmwe_oauth: true,
+            tmwe_user_id: email,
+            tmwe_anagrafica_id: profileData.anagrafica_id,
+            name: profileData.name || profileData.username,
+            enterprise_name: profileData.enterprise_name,
+          }
+        });
+
+        if (createError) throw createError;
+        supabaseUser = newUser.user;
+      }
+
+      // Update user profile
+      await supabaseAdmin
+        .from('user_profiles')
+        .upsert({
+          user_id: supabaseUser.id,
+          tmwe_email: email,
+          display_name: profileData.name || profileData.username,
+        }, { onConflict: 'user_id' });
+
+      // Save OAuth credentials
+      const expiresAt = new Date(Date.now() + (expires_in * 1000)).toISOString();
+      const supabaseExpiresInSeconds = Math.floor(expires_in * 0.8);
+      
+      await supabaseAdmin
+        .from('user_tmwe_credentials')
+        .upsert({
+          email: email,
+          access_token: access_token,
+          refresh_token: tokenData.refresh_token || null,
+          expires_at: expiresAt,
+          client_id: clientId,
+          client_secret: clientSecret,
+          token_type: 'oauth',
+        }, { onConflict: 'email' });
+
+      // Generate Supabase magic link
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: email,
+        options: {
+          expiresIn: supabaseExpiresInSeconds,
+        }
+      });
+
+      if (linkError || !linkData) {
+        throw new Error(`Failed to generate magic link: ${linkError?.message}`);
+      }
+
+      console.log('✅ OAuth authentication completed');
+
+      return new Response(JSON.stringify({
+        success: true,
+        email: email,
+        profile: {
+          name: profileData.name,
+          username: profileData.username,
+          enterprise_name: profileData.enterprise_name,
+          rubrica: profileData.rubrica,
+        },
+        supabaseUserId: supabaseUser.id,
+        magicLink: linkData.properties.action_link,
+        tmwe_user_id: email,
+        tmwe_anagrafica_id: profileData.anagrafica_id,
+        tmwe_access_token: access_token,
+        token_format: 'oauth',
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (error: any) {
+      console.error('❌ OAuth authentication error:', error);
+      return new Response(JSON.stringify({ error: error.message || 'OAuth authentication failed' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HANDLER: oauth_refresh (consolidated from tmwe-oauth-refresh)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (parsedBody?.handler === 'oauth_refresh') {
+    try {
+      console.log('🔄 [OAUTH] Refreshing OAuth token...');
+      const { email } = parsedBody;
+      
+      if (!email) {
+        throw new Error('Missing email');
+      }
+
+      // Get stored OAuth credentials
+      const { data: credentials, error: credsError } = await supabaseAdmin
+        .from('user_tmwe_credentials')
+        .select('*')
+        .eq('email', email)
+        .eq('token_type', 'oauth')
+        .single();
+
+      if (credsError || !credentials || !credentials.refresh_token) {
+        throw new Error('OAuth credentials not found or no refresh token available');
+      }
+
+      // Refresh OAuth token
+      const tokenEndpoint = 'https://findair.it/erp/tmwe_json/token';
+      const formData = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: credentials.refresh_token,
+      });
+
+      const tokenResponse = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+      });
+
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.json().catch(() => ({}));
+        throw new Error(`OAuth refresh failed: ${errorData.error?.message || errorData.error || 'Unknown error'}`);
+      }
+
+      const tokenData = await tokenResponse.json();
+      const { access_token, expires_in } = tokenData;
+
+      if (!access_token) {
+        throw new Error('Invalid OAuth token response');
+      }
+
+      // Update stored credentials
+      const expiresAt = expires_in ? new Date(Date.now() + (expires_in * 1000)).toISOString() : null;
+      const updateData: any = {
+        access_token: access_token,
+        expires_at: expiresAt,
+      };
+      
+      if (tokenData.refresh_token) {
+        updateData.refresh_token = tokenData.refresh_token;
+      }
+
+      await supabaseAdmin
+        .from('user_tmwe_credentials')
+        .update(updateData)
+        .eq('email', email)
+        .eq('token_type', 'oauth');
+
+      console.log('✅ OAuth credentials refreshed');
+
+      return new Response(JSON.stringify({
+        success: true,
+        access_token: access_token,
+        expires_in: expires_in,
+        token_format: 'oauth',
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (error: any) {
+      console.error('❌ OAuth refresh error:', error);
+      return new Response(JSON.stringify({ error: error.message || 'OAuth refresh failed' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HANDLER: email_send (consolidated from tmwe-email-send)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (parsedBody?.handler === 'email_send') {
+    try {
+      console.log('📧 [EMAIL] Sending email via TMWE...');
+      const emailData = parsedBody;
+
+      // Get OAuth token (with auto-refresh via oauth-manager module)
+      const authHeader = req.headers.get('Authorization');
+      let oauthToken: string;
+      
+      if (authHeader) {
+        try {
+          const token = authHeader.replace('Bearer ', '');
+          const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+          if (userError || !user) {
+            throw new Error('User authentication failed');
+          }
+
+          const { data: profile } = await supabaseAdmin
+            .from('user_profiles')
+            .select('tmwe_email')
+            .eq('user_id', user.id)
+            .single();
+
+          if (!profile?.tmwe_email) {
+            throw new Error('TMWE email not found in profile');
+          }
+
+          // Get OAuth token from credentials
+          const { data: credentials } = await supabaseAdmin
+            .from('user_tmwe_credentials')
+            .select('access_token')
+            .eq('email', profile.tmwe_email)
+            .single();
+
+          if (!credentials?.access_token) {
+            throw new Error('OAuth token not found');
+          }
+
+          oauthToken = credentials.access_token;
+        } catch (sharedError) {
+          // Fallback to email_provider table
+          const { data: provider } = await supabaseAdmin
+            .from('email_provider')
+            .select('email_provider_credenziali(*)')
+            .eq('provider', 'TMWE')
+            .eq('attivo', true)
+            .maybeSingle();
+
+          const creds = provider?.email_provider_credenziali;
+          if (!creds || (!creds.oauth_token?.trim() && !creds.api_key?.trim())) {
+            throw new Error('TMWE credentials not configured');
+          }
+
+          oauthToken = creds.oauth_token || creds.api_key;
+        }
+      } else {
+        // No auth header - use email_provider
+        const { data: provider } = await supabaseAdmin
+          .from('email_provider')
+          .select('email_provider_credenziali(*)')
+          .eq('provider', 'TMWE')
+          .eq('attivo', true)
+          .maybeSingle();
+
+        const creds = provider?.email_provider_credenziali;
+        if (!creds || (!creds.oauth_token?.trim() && !creds.api_key?.trim())) {
+          throw new Error('TMWE credentials not configured');
+        }
+
+        oauthToken = creds.oauth_token || creds.api_key;
+      }
+
+      // Build payload
+      const payload = {
+        handler: 'send_message',
+        to: emailData.to,
+        subject: emailData.subject,
+        body: emailData.body_text || emailData.body || 'Test message body',
+        body_html: emailData.body_html || ''
+      };
+
+      const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${oauthToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const responseText = await response.text();
+      let responseJson = null;
+      
+      try {
+        if (responseText.trim()) {
+          responseJson = JSON.parse(responseText);
+        }
+      } catch (jsonError) {
+        console.log('JSON parse error:', jsonError);
+      }
+
+      const isSuccess = response.ok && (responseJson?.success !== false);
+
+      return new Response(JSON.stringify({
+        success: isSuccess,
+        message_id: responseJson?.message_id,
+        tmwe_response: responseJson,
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (error: any) {
+      console.error('❌ Email send error:', error);
+      return new Response(JSON.stringify({
+        success: false,
+        error: error.message || 'Email send failed',
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HANDLER: email_sync_master (consolidated from tmwe-email-sync-master)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (parsedBody?.handler === 'email_sync_master') {
+    try {
+      console.log('🔄 [SYNC] Email sync master...');
+      const { mode = 'auto', folder_name = 'INBOX', max_emails = 0, force_full = false, unread_only = false } = parsedBody;
+
+      // Get user email and OAuth token
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        throw new Error('Authorization header required');
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+      if (userError || !user) {
+        throw new Error('User authentication failed');
+      }
+
+      const { data: profile } = await supabaseAdmin
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.tmwe_email) {
+        throw new Error('TMWE email not found in profile');
+      }
+
+      const userEmail = profile.tmwe_email;
+
+      // Get OAuth token from credentials
+      const { data: credentials } = await supabaseAdmin
+        .from('user_tmwe_credentials')
+        .select('access_token')
+        .eq('email', userEmail)
+        .single();
+
+      if (!credentials?.access_token) {
+        throw new Error('OAuth token not found');
+      }
+
+      const oauthToken = credentials.access_token;
+
+      // Get provider ID
+      const { data: providerData } = await supabaseAdmin
+        .from('email_provider')
+        .select('id')
+        .eq('provider', 'TMWE')
+        .eq('attivo', true)
+        .maybeSingle();
+
+      if (!providerData) {
+        throw new Error('Provider TMWE not found');
+      }
+
+      // Determine actual mode
+      let actualMode = mode;
+      if (mode === 'auto') {
+        const { count: existingEmails } = await supabaseAdmin
+          .from('email_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('cartella', folder_name);
+
+        actualMode = (existingEmails === 0 || force_full) ? 'initial' : 'incremental';
+      }
+
+      // Create sync log
+      const { data: syncLog } = await supabaseAdmin
+        .from('email_sync_logs')
+        .insert({
+          provider_id: providerData.id,
+          tipo_sync: actualMode === 'initial' ? 'full_sync' : 'incremental_sync',
+          stato: 'in_corso'
+        })
+        .select()
+        .single();
+
+      // Simplified sync logic (batch processing)
+      const batchSize = 10;
+      const targetEmails = max_emails || (actualMode === 'initial' ? 5000 : 200);
+      let totalImported = 0;
+
+      const baseUrl = 'https://findair.it/erp/tmwe_json';
+      const listUrl = `${baseUrl}/app.php?action=email_message`;
+
+      // Fetch email list
+      const listResponse = await fetch(listUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${oauthToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          handler: 'get_messages',
+          folder: folder_name,
+          limit: targetEmails,
+          offset: 0,
+          include_attachments: true,
+          format: 'text'
+        })
+      });
+
+      if (listResponse.ok) {
+        const listData = await listResponse.json();
+        const emails = listData.messages || [];
+        totalImported = emails.length;
+
+        // Store emails in database (simplified)
+        for (const email of emails) {
+          await supabaseAdmin
+            .from('email_messages')
+            .insert({
+              message_id: email.uid,
+              user_email: userEmail,
+              subject: email.subject || 'No subject',
+              from_email: email.from || '',
+              to_email: email.to || '',
+              data_ricezione: new Date(email.date || Date.now()).toISOString(),
+              cartella: folder_name,
+              provider_id: providerData.id,
+              direzione: 'inbound',
+              stato: email.seen ? 'letto' : 'nuovo',
+              body_text: email.body || '',
+              data_invio: new Date(email.date || Date.now()).toISOString()
+            })
+            .select()
+            .maybeSingle();
+        }
+      }
+
+      // Finalize sync
+      await supabaseAdmin
+        .from('email_sync_logs')
+        .update({
+          stato: 'completato',
+          sync_end: new Date().toISOString(),
+          messaggi_nuovi: totalImported
+        })
+        .eq('id', syncLog.id);
+
+      const { count: totalInDb } = await supabaseAdmin
+        .from('email_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('cartella', folder_name);
+
+      console.log('✅ Sync completed:', totalImported, 'emails');
+
+      return new Response(JSON.stringify({
+        success: true,
+        mode_used: actualMode,
+        emails_downloaded: totalImported,
+        total_emails_in_db: totalInDb || 0,
+        sync_log_id: syncLog.id,
+        message: `Sync completed: ${totalImported} emails imported`
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (error: any) {
+      console.error('❌ Email sync error:', error);
+      return new Response(JSON.stringify({ error: error.message || 'Email sync failed' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
   // MAIN PROXY LOGIC (original code continues)
   // ═══════════════════════════════════════════════════════════════════════════
 

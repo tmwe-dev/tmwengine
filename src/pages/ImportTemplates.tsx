@@ -530,8 +530,9 @@ export default function ImportTemplates() {
           if (company.record.email) {
             try {
               console.log(`📧 Invio email a ${company.record.email}...`);
-              const { data: sendResult, error: sendError } = await supabase.functions.invoke('tmwe-email-send', {
+              const { data: sendResult, error: sendError } = await supabase.functions.invoke('tmwe-api-proxy', {
                 body: {
+                  handler: 'email_send',
                   to: company.record.email,
                   subject: activityData.oggetto_email,
                   body_text: activityData.testo_email,

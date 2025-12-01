@@ -77,11 +77,11 @@ export async function getTMWEOAuthToken(
         console.log('[TMWE-OAuth] 🔄 Iniciando auto-refresh...');
         
         try {
-          // Invoke tmwe-oauth-refresh edge function
+          // Invoke tmwe-api-proxy with oauth_refresh handler
           const { data: refreshData, error: refreshError } = await supabaseClient.functions.invoke(
-            'tmwe-oauth-refresh',
+            'tmwe-api-proxy',
             {
-              body: { email: userEmail }
+              body: { handler: 'oauth_refresh', email: userEmail }
             }
           );
           

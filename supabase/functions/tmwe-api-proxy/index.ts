@@ -915,24 +915,18 @@ serve(async (req) => {
 
   try {
     // Parse request body con gestione errori robusta
-    let requestBody;
-    try {
-      const bodyText = await req.text();
-      if (!bodyText || bodyText.trim().length === 0) {
-        throw new Error('Empty request body');
-      }
-      requestBody = JSON.parse(bodyText);
-    } catch (parseError) {
+    // Use pre-parsed body from lines 90-99 to avoid "Body already consumed" error
+    if (!parsedBody) {
       console.error('═══════════════════════════════════════════════════════');
       console.error('🔥 ERRORE nel parsing del body della richiesta');
       console.error('═══════════════════════════════════════════════════════');
-      console.error('⚠️ Error:', parseError.message);
+      console.error('⚠️ Error: Body is null or invalid');
       console.error('═══════════════════════════════════════════════════════');
       
       return new Response(
         JSON.stringify({ 
           error: 'Invalid request body',
-          details: parseError.message,
+          details: 'Body is null or could not be parsed',
           hint: 'Request body must be valid JSON with endpoint and data fields'
         }),
         { 
@@ -941,6 +935,8 @@ serve(async (req) => {
         }
       );
     }
+    
+    const requestBody = parsedBody;
     
     const { endpoint, data, optimizationFlags, requestTimeout } = requestBody;
     

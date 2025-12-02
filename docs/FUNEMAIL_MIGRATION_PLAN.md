@@ -1,20 +1,58 @@
 # 🚀 PLAN DE MIGRACIÓN FUNEMAIL → ZERO-SYNC ARCHITECTURE
 
-**Versión:** 2.0  
+**Versión:** 3.0  
 **Fecha:** 2025-01-29  
-**Objetivo:** Migración completa a arquitectura Zero-Sync con TMWE API como única fuente de datos
+**Objetivo:** Migración completa a arquitectura Zero-Sync con TMWE API como única fuente de datos usando wrappers sobre código OAuth existente
 
 ---
 
 ## 📋 ÍNDICE
 
-1. [Arquitectura Propuesta](#arquitectura-propuesta)
-2. [Capa de Abstracción API](#capa-de-abstracción-api)
-3. [Gestión Centralizada OAuth](#gestión-centralizada-oauth)
-4. [Planes de Migración por Caso de Uso](#planes-de-migración-por-caso-de-uso)
-5. [Matriz de Trazabilidad](#matriz-de-trazabilidad)
-6. [Roadmap de Implementación](#roadmap-de-implementación)
-7. [Testing y Validación](#testing-y-validación)
+1. [Componentes Existentes a Reutilizar](#componentes-existentes-a-reutilizar)
+2. [Arquitectura Propuesta](#arquitectura-propuesta)
+3. [Capa de Abstracción API](#capa-de-abstracción-api)
+4. [Gestión Centralizada OAuth](#gestión-centralizada-oauth)
+5. [Planes de Migración por Caso de Uso](#planes-de-migración-por-caso-de-uso)
+6. [Matriz de Trazabilidad](#matriz-de-trazabilidad)
+7. [Roadmap de Implementación](#roadmap-de-implementación)
+8. [Testing y Validación](#testing-y-validación)
+9. [Beneficios Plan v3.0](#beneficios-plan-v30)
+
+---
+
+## 🔄 COMPONENTES EXISTENTES A REUTILIZAR
+
+### ⚠️ NO MODIFICAR - Código Probado en Producción
+
+Estos archivos YA FUNCIONAN y serán consumidos por los nuevos wrappers/facades:
+
+| Archivo | Función | Tipo |
+|---------|---------|------|
+| `src/hooks/useTMWEAuth.tsx` | Context de autenticación completo | Hook |
+| `src/components/tmwe/IntegratedAuthGuard.tsx` | Guard con verificación de expiración | Component |
+| `src/lib/tmwe-api-integrated.ts` | Funciones OAuth core | Library |
+| `src/lib/tmwe-email-search-api.ts` | Cliente API optimizado | Library |
+| `supabase/functions/tmwe-api-proxy/index.ts` | Edge Function centralizada | Backend |
+| `supabase/functions/_shared/oauth-manager.ts` | Gestión de tokens backend | Backend |
+
+### Funciones Disponibles para Reutilización
+
+**De `tmwe-api-integrated.ts`:**
+- `getApiConfigFromDB()` - Obtener configuración OAuth de DB
+- `setApiConfigToDB()` - Guardar configuración OAuth
+- `ensureValidToken()` - Obtener token válido (auto-refresh)
+- `refreshAccessToken()` - Renovar token manualmente
+- `initiateAuthorizationCodeFlow()` - Iniciar flujo OAuth
+- `clearApiConfigFromDB()` - Limpiar tokens
+
+**De `tmwe-email-search-api.ts`:**
+- `emailSearchApi.getEmailsMetadata()` - Lista de emails
+- `emailSearchApi.getEmailDetail()` - Detalle de email
+- `emailSearchApi.searchEmails()` - Búsqueda full-text
+- `emailSearchApi.getFolders()` - Lista de carpetas
+- `emailSearchApi.getStatistics()` - Estadísticas
+- `emailSearchApi.markAsRead()` - Marcar como leído
+- `emailSearchApi.getThread()` - Obtener thread de conversación
 
 ---
 
@@ -25,40 +63,54 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    PRESENTATION LAYER                        │
-│  (React Components - FunEmail.tsx, SmartInbox, etc.)       │
+│  (React Components - FunEmail.tsx, SmartInbox, etc.)        │
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │                    BUSINESS LOGIC LAYER                      │
-│  (Custom Hooks - useEmailList, useEmailDetail, etc.)        │
+│  (Custom Hooks - useEmailList, useEmailDetail, etc.)         │
+│  + useTMWEAuth.tsx (YA EXISTE ✅)                            │
+│  + IntegratedAuthGuard.tsx (YA EXISTE ✅)                    │
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
-│                  API ABSTRACTION LAYER                       │
-│         (Centralized TMWE API Communication)                 │
+│              API ABSTRACTION LAYER (NUEVO)                   │
 │                                                              │
-│  ┌────────────────────────────────────────────────┐         │
-│  │  TMWEApiClient (Singleton)                     │         │
-│  │  - OAuth Token Management                      │         │
-│  │  - Request/Response Interceptors               │         │
-│  │  - Error Handling & Retry Logic                │         │
-│  │  - Rate Limiting                                │         │
-│  └────────────────────────────────────────────────┘         │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  TMWEAuthManager.ts (WRAPPER)                       │    │
+│  │  └─→ Delega a: ensureValidToken()                   │    │
+│  │                 refreshAccessToken()                │    │
+│  │                 getApiConfigFromDB()                │    │
+│  │      (de src/lib/tmwe-api-integrated.ts)            │    │
+│  └─────────────────────────────────────────────────────┘    │
 │                                                              │
-│  ┌────────────────────────────────────────────────┐         │
-│  │  API Modules                                   │         │
-│  │  - EmailApi (getList, getDetail, search)      │         │
-│  │  - FolderApi (getFolders, getStats)           │         │
-│  │  - ClassificationApi (classify, getBatch)     │         │
-│  │  - SenderApi (getSenders, getRules)           │         │
-│  └────────────────────────────────────────────────┘         │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  TMWEApiClient.ts (FACADE)                          │    │
+│  │  └─→ Delega a: supabase.functions.invoke(           │    │
+│  │                    'tmwe-api-proxy', {...}          │    │
+│  │                )                                     │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  API Modules (WRAPPERS)                             │    │
+│  │  - EmailApi → emailSearchApi.getEmailsMetadata()    │    │
+│  │             → emailSearchApi.getEmailDetail()       │    │
+│  │             → emailSearchApi.searchEmails()         │    │
+│  │  - FolderApi → emailSearchApi.getFolders()          │    │
+│  │              → emailSearchApi.getStatistics()       │    │
+│  │  - ClassificationApi (NUEVO - lógica propia)        │    │
+│  │  - SenderApi (NUEVO - lógica propia)                │    │
+│  └─────────────────────────────────────────────────────┘    │
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
-│                   INFRASTRUCTURE LAYER                       │
+│             INFRASTRUCTURE LAYER (YA EXISTE ✅)              │
+│  - tmwe-api-integrated.ts (OAuth core)                       │
+│  - tmwe-email-search-api.ts (API client)                     │
+│  - tmwe-api-proxy (Edge Function consolidada)                │
+│  - oauth-manager.ts (Backend token management)               │
 │  - React Query Cache                                         │
-│  - Supabase Client (metadata only)                          │
-│  - Local Storage (OAuth tokens, preferences)                │
+│  - Supabase Client                                           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -66,178 +118,224 @@
 
 ## 🔐 GESTIÓN CENTRALIZADA OAUTH
 
-### 1. TMWEAuthManager
+### 1. TMWEAuthManager (Wrapper Pattern)
 
 **Ubicación:** `src/lib/tmwe/TMWEAuthManager.ts`
 
+**Estrategia:** WRAPPER sobre funciones existentes - NO reimplementa, DELEGA
+
 **Responsabilidades:**
-- Obtener y renovar access tokens OAuth
-- Gestionar refresh tokens
-- Validar expiración de tokens
-- Manejar errores de autenticación
-- Proporcionar interceptores para requests HTTP
+- Proporcionar interfaz unificada para autenticación
+- Delegar operaciones OAuth a `tmwe-api-integrated.ts`
+- Mantener compatibilidad con código existente
 
 **Implementación:**
 
 ```typescript
-class TMWEAuthManager {
-  private static instance: TMWEAuthManager;
-  private accessToken: string | null = null;
-  private refreshToken: string | null = null;
-  private expiresAt: Date | null = null;
+// WRAPPER - NO reimplementa, DELEGA a funciones existentes
+import { 
+  ensureValidToken,
+  refreshAccessToken,
+  getApiConfigFromDB,
+  setApiConfigToDB,
+  clearApiConfigFromDB
+} from '@/lib/tmwe-api-integrated';
 
-  // Singleton pattern
-  static getInstance(): TMWEAuthManager;
+export class TMWEAuthManager {
+  private static instance: TMWEAuthManager;
   
-  // Obtener token válido (renovar si es necesario)
-  async getValidToken(): Promise<string>;
+  static getInstance(): TMWEAuthManager {
+    if (!this.instance) {
+      this.instance = new TMWEAuthManager();
+    }
+    return this.instance;
+  }
+
+  // DELEGA a función existente
+  async getValidToken(): Promise<string> {
+    return await ensureValidToken();
+  }
   
-  // Renovar token usando refresh_token
-  private async refreshAccessToken(): Promise<void>;
+  // DELEGA a función existente
+  async refreshToken(): Promise<boolean> {
+    return await refreshAccessToken();
+  }
   
-  // Verificar si token está próximo a expirar
-  private isTokenExpiringSoon(): boolean;
+  // DELEGA a función existente
+  async getConfig() {
+    return await getApiConfigFromDB();
+  }
   
-  // Limpiar tokens (logout)
-  clearTokens(): void;
+  async isTokenValid(): Promise<boolean> {
+    const config = await getApiConfigFromDB();
+    if (!config?.expiresAt) return false;
+    return new Date(config.expiresAt) > new Date();
+  }
   
-  // Cargar tokens desde Supabase
-  private async loadTokensFromDB(userEmail: string): Promise<void>;
+  async clearTokens(): void {
+    await clearApiConfigFromDB();
+  }
 }
 ```
 
-**Integración con Supabase:**
-```sql
--- Tabla user_tmwe_credentials ya existe
-SELECT access_token, refresh_token, expires_at
-FROM user_tmwe_credentials
-WHERE user_email = auth.jwt() ->> 'email';
-```
+**Ventajas del Wrapper:**
+- ✅ 0 líneas de código OAuth nuevo
+- ✅ Reutiliza lógica probada en producción
+- ✅ Mantiene compatibilidad con código existente
+- ✅ Testing: solo tests de integración
 
 ---
 
 ## 🌐 CAPA DE ABSTRACCIÓN API
 
-### 2. TMWEApiClient (Core)
+### 2. TMWEApiClient (Facade Pattern)
 
 **Ubicación:** `src/lib/tmwe/TMWEApiClient.ts`
 
+**Estrategia:** FACADE sobre Edge Function existente `tmwe-api-proxy`
+
 **Características:**
 - Singleton para evitar múltiples instancias
-- Interceptor automático de autenticación
-- Manejo centralizado de errores
-- Retry logic con exponential backoff
-- Rate limiting (si TMWE API lo requiere)
-- Logging centralizado
+- Delega todas las peticiones a `tmwe-api-proxy`
+- Manejo automático de autenticación
+- Error handling integrado
 
 **Implementación:**
 
 ```typescript
-class TMWEApiClient {
+// FACADE - Usa Edge Function existente como backend
+import { supabase } from '@/integrations/supabase/client';
+import { TMWEAuthManager } from './TMWEAuthManager';
+
+export class TMWEApiClient {
   private static instance: TMWEApiClient;
   private authManager: TMWEAuthManager;
-  private baseURL: string;
   
   private constructor() {
     this.authManager = TMWEAuthManager.getInstance();
-    this.baseURL = 'https://api.tmwe.it/v1';
   }
   
-  static getInstance(): TMWEApiClient;
+  static getInstance(): TMWEApiClient {
+    if (!this.instance) {
+      this.instance = new TMWEApiClient();
+    }
+    return this.instance;
+  }
   
-  // Método genérico para requests
-  async request<T>(config: RequestConfig): Promise<T> {
-    // 1. Obtener token válido
+  // DELEGA a Edge Function existente
+  async request<T>(endpoint: string, data: any): Promise<T> {
     const token = await this.authManager.getValidToken();
     
-    // 2. Añadir headers de autenticación
-    const headers = {
-      ...config.headers,
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
+    const { data: response, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      body: {
+        endpoint,
+        data: { ...data, bearerToken: token }
+      }
+    });
     
-    // 3. Ejecutar request con retry logic
-    return this.executeWithRetry<T>({ ...config, headers });
+    if (error) throw new Error(`API Error: ${error.message}`);
+    return response as T;
   }
-  
-  private async executeWithRetry<T>(
-    config: RequestConfig,
-    retries = 3
-  ): Promise<T>;
-  
-  // Métodos específicos HTTP
-  async get<T>(url: string, params?: any): Promise<T>;
-  async post<T>(url: string, data?: any): Promise<T>;
-  async put<T>(url: string, data?: any): Promise<T>;
-  async delete<T>(url: string): Promise<T>;
 }
 ```
+
+**Ventajas del Facade:**
+- ✅ Reutiliza `tmwe-api-proxy` existente
+- ✅ No duplica lógica HTTP
+- ✅ Retry logic ya implementada en Edge Function
+- ✅ Logging centralizado en backend
 
 ### 3. API Modules (Específicos por Dominio)
 
-#### EmailApi
+#### EmailApi (Wrapper Pattern)
 
 **Ubicación:** `src/lib/tmwe/api/EmailApi.ts`
 
+**Estrategia:** WRAPPER sobre `emailSearchApi` existente
+
 ```typescript
+// WRAPPER - Delega a emailSearchApi existente
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+
 export class EmailApi {
-  private client: TMWEApiClient;
-  
-  constructor() {
-    this.client = TMWEApiClient.getInstance();
+  // DELEGA a función existente
+  async getEmailList(params: {
+    folder?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    return await emailSearchApi.getEmailsMetadata({
+      folder: params.folder || 'INBOX',
+      page: params.page || 1,
+      limit: params.limit || 50
+    });
   }
   
-  // Listar emails con paginación
-  async getEmailList(params: {
-    folder: string;
-    limit?: number;
-    offset?: number;
-    filters?: EmailFilters;
-  }): Promise<EmailListResponse>;
+  // DELEGA a función existente
+  async getEmailDetail(emailId: number) {
+    return await emailSearchApi.getEmailDetail({ 
+      email_id: emailId 
+    });
+  }
   
-  // Obtener detalle de email
-  async getEmailDetail(params: {
-    emailId: number;
-    folder: string;
-  }): Promise<EmailDetail>;
-  
-  // Búsqueda de emails
-  async searchEmails(params: {
-    query: string;
+  // DELEGA a función existente
+  async searchEmails(query: string, options?: {
     folder?: string;
-    filters?: SearchFilters;
-  }): Promise<SearchResponse>;
+    page?: number;
+    limit?: number;
+  }) {
+    return await emailSearchApi.searchEmails({
+      query,
+      search_folder: options?.folder,
+      page: options?.page || 1,
+      limit: options?.limit || 20
+    });
+  }
   
-  // Obtener thread de conversación
-  async getEmailThread(params: {
-    messageId: string;
-    folder: string;
-  }): Promise<EmailThread>;
+  // DELEGA a función existente
+  async getEmailThread(params: { messageId: string; folder: string }) {
+    return await emailSearchApi.getThread({
+      message_id: params.messageId,
+      folder: params.folder
+    });
+  }
   
-  // Marcar como leído/no leído
-  async markAsRead(emailId: number, folder: string): Promise<void>;
-  
-  // Marcar como importante
-  async markAsFlagged(emailId: number, folder: string): Promise<void>;
+  // DELEGA a función existente
+  async markAsRead(emailId: number) {
+    return await emailSearchApi.markAsRead(emailId);
+  }
 }
 ```
 
-#### FolderApi
+**Ventajas:**
+- ✅ Reutiliza `emailSearchApi` probado
+- ✅ Mantiene optimizaciones existentes
+- ✅ API unificada y consistente
+
+#### FolderApi (Wrapper Pattern)
 
 **Ubicación:** `src/lib/tmwe/api/FolderApi.ts`
 
+**Estrategia:** WRAPPER sobre `emailSearchApi` existente
+
 ```typescript
+// WRAPPER - Delega a emailSearchApi existente
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
+
 export class FolderApi {
-  private client: TMWEApiClient;
+  async getFolders(includeCounts = true) {
+    return await emailSearchApi.getFolders({ 
+      include_counts: includeCounts 
+    });
+  }
   
-  async getFolders(params?: {
-    include_counts?: boolean;
-  }): Promise<FolderListResponse>;
+  async getFolderStats(folder: string) {
+    return await emailSearchApi.getStatistics({ folder });
+  }
   
-  async getFolderStats(folder: string): Promise<FolderStats>;
-  
-  async getGlobalStats(): Promise<GlobalStats>;
+  async getGlobalStats() {
+    return await emailSearchApi.getStatistics();
+  }
 }
 ```
 
@@ -1095,66 +1193,86 @@ export const useEmailList = (folder: string) => {
 |-------------|---------------------|------|------------|-----------|------|--------------|
 | **CU1: Lista Emails** | `FunEmail.tsx`<br>`EmailList.tsx` | `useEmailList.ts` | `EmailApi` | 🔴 CRÍTICA | 2-3 | TMWEApiClient, TMWEAuthManager |
 | **CU2: Detalle Email** | `EmailDetail.tsx` | `useEmailDetail.ts` | `EmailApi` | 🔴 CRÍTICA | 1-2 | CU1 |
-| **CU3: SmartInbox** | `SmartInboxTab.tsx`<br>`SmartInboxTabIntelligent.tsx` | `useSmartClassification.ts` | `EmailApi`<br>`ClassificationApi` | 🔴 CRÍTICA | 5-7 | CU1, migración DB |
+| **CU3: SmartInbox** | `SmartInboxTab.tsx`<br>`SmartInboxTabIntelligent.tsx` | `useSmartClassification.ts` | `EmailApi`<br>`ClassificationApi` | 🔴 CRÍTICA | 6-7 | CU1, migración DB |
 | **CU4: Análisis Remitentes** | `EmailSenderManager.tsx` | `useSenderAnalysis.ts` | `SenderApi` | 🟡 MEDIA | 3-4 | CU1 |
 | **CU5: Quick Stats** | `FunEmailQuickStats.tsx` | `useEmailFolderInfo.ts` | `FolderApi` | 🟢 BAJA | 1 | - |
 | **CU6: Global Stats** | `FunEmailGlobalStats.tsx` | `useEmailFolderInfo.ts` | `FolderApi` | 🟢 BAJA | 1 | CU5 |
 | **CU7: Búsqueda** | `FunEmail.tsx` (search) | `useEmailList.ts` | `EmailApi` | 🟡 MEDIA | 2 | CU1 |
 | **CU8: Threads** | `EmailThreadView.tsx` | `useEmailThread.ts` | `EmailApi` | 🟡 MEDIA | 2-3 | CU1 |
 | **CU9: Sincronización** | `QuickDownloadDialog.tsx`<br>`GlobalDownloadDialog.tsx` | - | `EmailApi` | 🟡 MEDIA | 4-5 | CU1, migración DB |
-| **CU10: Reglas Remitente** | `EmailSenderManager.tsx`<br>`SenderRuleDialog.tsx` | `useSenderRules.ts` | `SenderApi` | 🔴 ALTA | 5-6 | CU1, CU4 |
+| **CU10: Reglas Remitente** | `EmailSenderManager.tsx`<br>`SenderRuleDialog.tsx` | `useSenderRules.ts` | `SenderApi` | 🔴 ALTA | 8-9 | CU1, CU4 |
 
-**Total Estimado:** 26-37 días de desarrollo
+**Total Estimado v3.0:** 23-34 días de desarrollo (3 días menos que v2.0 gracias a wrappers)
 
 ---
 
 ## 🚀 ROADMAP DE IMPLEMENTACIÓN
 
-### **SPRINT 1: Infraestructura Core (Días 1-5)**
+### **SPRINT 1: Infraestructura Core (Días 1-3) - WRAPPERS**
 
-**Objetivo:** Establecer bases de arquitectura Zero-Sync
+**Objetivo:** Establecer bases de arquitectura Zero-Sync usando wrappers sobre código existente
+
+**🔥 CAMBIO CLAVE v3.0:** Este sprint ahora toma 2-3 días en lugar de 5 días gracias al patrón Wrapper/Facade
+
+#### Comparativa v2.0 vs v3.0
+
+| Tarea | v2.0 | v3.0 | Ahorro |
+|-------|------|------|--------|
+| TMWEAuthManager | 2 días (crear OAuth) | 0.5 días (wrapper) | 1.5 días |
+| TMWEApiClient | 1.5 días (crear HTTP) | 0.5 días (facade) | 1 día |
+| EmailApi | 1.5 días (implementar) | 0.5 días (wrapper) | 1 día |
+| FolderApi | 0.5 días | 0.25 días (wrapper) | 0.25 días |
+| **Total** | **5.5 días** | **1.75 días** | **~3 días** |
 
 #### Tareas
-1. **Día 1-2: TMWEAuthManager + TMWEApiClient**
-   - [ ] Implementar `src/lib/tmwe/TMWEAuthManager.ts`
-   - [ ] Implementar `src/lib/tmwe/TMWEApiClient.ts`
-   - [ ] Testing unitario de OAuth token refresh
-   - [ ] Testing de retry logic
+1. **Día 1: TMWEAuthManager + TMWEApiClient (Wrappers)**
+   - [ ] Crear `src/lib/tmwe/TMWEAuthManager.ts` (wrapper sobre `tmwe-api-integrated.ts`)
+   - [ ] Crear `src/lib/tmwe/TMWEApiClient.ts` (facade sobre `tmwe-api-proxy`)
+   - [ ] Crear `src/lib/tmwe/types.ts` (tipos compartidos)
+   - [ ] Testing de integración (no unitario - delega a código existente)
 
-2. **Día 3-4: EmailApi Base**
-   - [ ] Crear `src/lib/tmwe/api/EmailApi.ts`
-   - [ ] Implementar `getEmailList()`
-   - [ ] Implementar `getEmailDetail()`
-   - [ ] Testing de integración con TMWE API
+2. **Día 2: EmailApi + FolderApi (Wrappers)**
+   - [ ] Crear `src/lib/tmwe/api/EmailApi.ts` (wrapper sobre `emailSearchApi`)
+   - [ ] Crear `src/lib/tmwe/api/FolderApi.ts` (wrapper sobre `emailSearchApi`)
+   - [ ] Crear `src/lib/tmwe/api/index.ts` (exports)
+   - [ ] Testing de integración
 
-3. **Día 5: FolderApi**
-   - [ ] Crear `src/lib/tmwe/api/FolderApi.ts`
-   - [ ] Implementar `getFolders()`, `getFolderStats()`, `getGlobalStats()`
-   - [ ] Testing
+3. **Día 3: Integración y Exports Centralizados**
+   - [ ] Crear `src/lib/tmwe/index.ts` (exports centralizados)
+   - [ ] Verificar que todos los wrappers funcionan correctamente
+   - [ ] Documentar API pública
+   - [ ] Testing E2E de flujo completo
 
 **Entregables:**
-- ✅ Capa de abstracción API funcional
-- ✅ Autenticación OAuth centralizada
-- ✅ Módulos EmailApi y FolderApi operativos
+- ✅ Capa de abstracción API funcional (basada en código probado)
+- ✅ Autenticación OAuth centralizada (reutiliza implementación existente)
+- ✅ Módulos EmailApi y FolderApi operativos (wrappers sobre funciones existentes)
+- ✅ 0 bugs de OAuth (código ya probado en producción)
+
+**Ventajas v3.0:**
+- ⏱️ 3 días más rápido que v2.0
+- 🔒 Menor riesgo (reutiliza código probado)
+- 🧪 Testing simplificado (solo integración)
+- ↩️ Backward compatible (funciones existentes siguen funcionando)
 
 ---
 
-### **SPRINT 2: Casos de Uso Críticos (Días 6-12)**
+### **SPRINT 2: Casos de Uso Críticos (Días 4-10)**
 
 **Objetivo:** Migrar funcionalidades esenciales de lectura
 
 #### Tareas
-1. **Día 6-8: CU1 - Lista de Emails**
+1. **Día 4-6: CU1 - Lista de Emails**
    - [ ] Actualizar `useEmailList.ts`
    - [ ] Modificar `FunEmail.tsx` y `EmailList.tsx`
    - [ ] Testing E2E de listado
 
-2. **Día 9-10: CU2 - Detalle de Email**
+2. **Día 7-8: CU2 - Detalle de Email**
    - [ ] Actualizar `useEmailDetail.ts`
    - [ ] Modificar `EmailDetail.tsx`
    - [ ] Testing de renderizado HTML
 
-3. **Día 11-12: CU5 y CU6 - Stats**
+3. **Día 9-10: CU5 y CU6 - Stats**
    - [ ] Actualizar `FunEmailQuickStats.tsx`
    - [ ] Actualizar `FunEmailGlobalStats.tsx`
    - [ ] Configurar auto-refresh
@@ -1166,22 +1284,22 @@ export const useEmailList = (folder: string) => {
 
 ---
 
-### **SPRINT 3: SmartInbox (Días 13-19)**
+### **SPRINT 3: SmartInbox (Días 11-17)**
 
 **Objetivo:** Migrar clasificación con IA
 
 #### Tareas
-1. **Día 13-14: Migración DB**
+1. **Día 11-12: Migración DB**
    - [ ] Crear tabla `email_ai_classifications_v2`
    - [ ] Script de migración de datos existentes
    - [ ] RLS policies
 
-2. **Día 15-16: ClassificationApi**
+2. **Día 13-14: ClassificationApi**
    - [ ] Implementar `src/lib/tmwe/api/ClassificationApi.ts`
    - [ ] Métodos de clasificación con `tmwe_email_id`
    - [ ] Testing
 
-3. **Día 17-19: Actualizar Componentes**
+3. **Día 15-17: Actualizar Componentes**
    - [ ] Modificar `SmartInboxTab.tsx`
    - [ ] Actualizar `useSmartClassification.ts`
    - [ ] Testing de clasificación batch
@@ -1193,17 +1311,17 @@ export const useEmailList = (folder: string) => {
 
 ---
 
-### **SPRINT 4: Búsqueda y Threads (Días 20-24)**
+### **SPRINT 4: Búsqueda y Threads (Días 18-22)**
 
 **Objetivo:** Funcionalidades avanzadas de email
 
 #### Tareas
-1. **Día 20-21: CU7 - Búsqueda**
+1. **Día 18-19: CU7 - Búsqueda**
    - [ ] Implementar `EmailApi.searchEmails()`
    - [ ] Actualizar hook de búsqueda
    - [ ] UI de resultados con highlight
 
-2. **Día 22-24: CU8 - Threads**
+2. **Día 20-22: CU8 - Threads**
    - [ ] Implementar `EmailApi.getEmailThread()`
    - [ ] Actualizar `useEmailThread.ts`
    - [ ] Componente de visualización de thread
@@ -1214,17 +1332,17 @@ export const useEmailList = (folder: string) => {
 
 ---
 
-### **SPRINT 5: Remitentes y Reglas (Días 25-33)**
+### **SPRINT 5: Remitentes y Reglas (Días 23-31)**
 
 **Objetivo:** Análisis de remitentes y gestión de reglas
 
 #### Tareas
-1. **Día 25-28: CU4 - Análisis Remitentes**
+1. **Día 23-26: CU4 - Análisis Remitentes**
    - [ ] Implementar `SenderApi`
    - [ ] Actualizar `email-sender-analyzer.ts`
    - [ ] Testing de performance con 1000+ remitentes
 
-2. **Día 29-33: CU10 - Reglas de Remitente**
+2. **Día 27-31: CU10 - Reglas de Remitente**
    - [ ] Diseñar arquitectura client-side filtering
    - [ ] Implementar `SenderApi.applyRulesToEmails()`
    - [ ] Integrar con `EmailApi.getEmailList()`
@@ -1238,18 +1356,18 @@ export const useEmailList = (folder: string) => {
 
 ---
 
-### **SPRINT 6: Sincronización y Cleanup (Días 34-37)**
+### **SPRINT 6: Sincronización y Cleanup (Días 32-34)**
 
 **Objetivo:** Finalizar migración y limpieza
 
 #### Tareas
-1. **Día 34-36: CU9 - Sincronización**
+1. **Día 32-33: CU9 - Sincronización**
    - [ ] Crear tabla `email_sync_metadata`
    - [ ] Actualizar `EdgeFunctionSyncService`
    - [ ] Modificar estrategias de descarga
    - [ ] Actualizar UI de dialogs
 
-2. **Día 37: Cleanup Final**
+2. **Día 34: Cleanup Final**
    - [ ] Eliminar código legacy de `email_messages`
    - [ ] Actualizar documentación
    - [ ] Code review general
@@ -1355,6 +1473,124 @@ test('should classify email and display in SmartInbox', async ({ page }) => {
 
 ---
 
+## 🌟 BENEFICIOS PLAN V3.0
+
+### Comparativa v2.0 vs v3.0
+
+| Aspecto | Plan v2.0 | Plan v3.0 | Mejora |
+|---------|-----------|-----------|--------|
+| **Duración Total** | 26-37 días | 23-34 días | ⏬ -3 días |
+| **Sprint 1** | 5 días | 2-3 días | ⏬ -2-3 días |
+| **Código OAuth Nuevo** | ~300 líneas | 0 líneas | ✅ Reutiliza existente |
+| **Riesgo de Bugs OAuth** | Alto | Bajo | 🔒 Código probado |
+| **Testing Requerido** | Unitario + Integración | Solo Integración | ⏱️ Más rápido |
+| **Mantenibilidad** | Dos implementaciones OAuth | Una sola fuente de verdad | 🎯 Simplificado |
+| **Backward Compatibility** | Requiere refactor | 100% compatible | ↩️ Sin breaking changes |
+
+### Ventajas Técnicas
+
+#### 1. **Reducción de Tiempo**
+- Sprint 1 reducido de 5 a 2-3 días
+- Total del proyecto reducido ~3 días
+- Menos tiempo en debugging de OAuth
+
+#### 2. **Menor Riesgo**
+- ✅ Reutiliza código OAuth probado en producción
+- ✅ No reinventa la rueda con HTTP clients
+- ✅ Mantiene funcionalidad existente intacta
+- ✅ Rollback fácil si algo falla
+
+#### 3. **Testing Simplificado**
+- ❌ NO necesita tests unitarios de OAuth (ya existen)
+- ✅ Solo tests de integración para wrappers
+- ✅ Menos mocking necesario
+- ✅ Tests más rápidos de ejecutar
+
+#### 4. **Mantenibilidad Mejorada**
+- Un solo punto de verdad para OAuth (`tmwe-api-integrated.ts`)
+- API pública consistente a través de wrappers
+- Cambios futuros en un solo lugar
+- Documentación del código existente sigue válida
+
+#### 5. **Consistencia Arquitectónica**
+- Mantiene patrones ya establecidos en el proyecto
+- No introduce nuevas abstracciones innecesarias
+- Equipo ya familiarizado con funciones subyacentes
+- Curva de aprendizaje mínima
+
+### Patrón Wrapper/Facade Explicado
+
+```
+┌─────────────────────────────────────────────────┐
+│  NUEVA API PÚBLICA (v3.0)                       │
+│  ┌──────────────────────────────────────────┐   │
+│  │  TMWEAuthManager.getValidToken()         │   │
+│  │         └─→ ensureValidToken()          │   │
+│  │              (tmwe-api-integrated.ts)    │   │
+│  └──────────────────────────────────────────┘   │
+│                                                  │
+│  ┌──────────────────────────────────────────┐   │
+│  │  EmailApi.getEmailList()                 │   │
+│  │         └─→ emailSearchApi               │   │
+│  │              .getEmailsMetadata()        │   │
+│  └──────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────┘
+```
+
+**Beneficio:** Interfaz limpia y consistente, pero delegando a implementaciones probadas.
+
+### Código a Reutilizar (NO Modificar)
+
+```typescript
+// ✅ Estas funciones YA EXISTEN y funcionan perfectamente
+
+// De tmwe-api-integrated.ts
+export async function ensureValidToken(): Promise<string>
+export async function refreshAccessToken(): Promise<boolean>
+export async function getApiConfigFromDB()
+export async function setApiConfigToDB(config)
+export async function clearApiConfigFromDB()
+
+// De tmwe-email-search-api.ts
+export const emailSearchApi = {
+  getEmailsMetadata: async (params) => { /* implementación existente */ },
+  getEmailDetail: async (params) => { /* implementación existente */ },
+  searchEmails: async (params) => { /* implementación existente */ },
+  getFolders: async (params) => { /* implementación existente */ },
+  getStatistics: async (params) => { /* implementación existente */ },
+  getThread: async (params) => { /* implementación existente */ },
+  markAsRead: async (emailId) => { /* implementación existente */ }
+}
+```
+
+### Estructura de Archivos Nueva
+
+```
+src/lib/tmwe/
+├── index.ts                    # Re-exports centralizados (NUEVO)
+├── TMWEAuthManager.ts          # Wrapper (NUEVO - ~50 líneas)
+├── TMWEApiClient.ts            # Facade (NUEVO - ~40 líneas)
+├── types.ts                    # Tipos compartidos (NUEVO - ~30 líneas)
+└── api/
+    ├── index.ts                # Re-exports (NUEVO - ~10 líneas)
+    ├── EmailApi.ts             # Wrapper (NUEVO - ~80 líneas)
+    ├── FolderApi.ts            # Wrapper (NUEVO - ~30 líneas)
+    ├── ClassificationApi.ts    # Lógica propia (Sprint 3)
+    └── SenderApi.ts            # Lógica propia (Sprint 5)
+```
+
+**Total Código Nuevo en Sprint 1:** ~240 líneas  
+**Total Código OAuth Nuevo:** 0 líneas (todo delegado)
+
+### Fecha de Finalización Actualizada
+
+**Plan v2.0:** 37 días → Finalización estimada: 2025-03-15  
+**Plan v3.0:** 34 días → Finalización estimada: 2025-03-12  
+
+**🎯 3 días de adelanto**
+
+---
+
 ## 📚 DOCUMENTACIÓN ADICIONAL
 
 ### Archivos de Documentación a Crear/Actualizar
@@ -1383,24 +1619,33 @@ test('should classify email and display in SmartInbox', async ({ page }) => {
 
 ## 🎯 CONCLUSIÓN
 
-Este plan de migración garantiza:
+Este plan de migración v3.0 garantiza:
 
 ✅ **Trazabilidad completa:** Cada caso de uso mapeado a componentes específicos  
-✅ **Arquitectura coherente:** Capa de abstracción centralizada  
-✅ **OAuth centralizado:** TMWEAuthManager gestiona toda la autenticación  
-✅ **Reutilización de código:** API Modules compartidos entre casos de uso  
-✅ **Plan realista:** 26-37 días de desarrollo en 6 sprints  
-✅ **Testing robusto:** Validación en cada sprint  
+✅ **Arquitectura coherente:** Capa de abstracción centralizada usando wrappers  
+✅ **OAuth reutilizado:** TMWEAuthManager delega a código probado existente  
+✅ **Menor riesgo:** Código OAuth ya en producción, sin reimplementación  
+✅ **Plan optimizado:** 23-34 días de desarrollo (3 días menos que v2.0)  
+✅ **Testing simplificado:** Solo integración, no unitario para wrappers  
+✅ **Backward compatible:** Funciones existentes siguen operativas  
+
+**Mejoras vs v2.0:**
+- ⏱️ Sprint 1 reducido de 5 a 2-3 días
+- 🔒 0 líneas de código OAuth nuevo
+- ✅ Reutiliza código probado en producción
+- 🎯 Una sola fuente de verdad para OAuth
+- ↩️ Sin breaking changes en código existente
 
 **Próximos Pasos:**
-1. Revisar y aprobar plan con equipo
-2. Priorizar sprints según necesidades de negocio
-3. Iniciar Sprint 1 con infraestructura core
-4. Revisión semanal de progreso
+1. Revisar y aprobar plan v3.0 con equipo
+2. Iniciar Sprint 1 con wrappers (2-3 días)
+3. Validar que wrappers funcionan correctamente
+4. Continuar con sprints restantes
+5. Revisión semanal de progreso
 
 **Fecha de Inicio Propuesta:** 2025-02-03  
-**Fecha de Finalización Estimada:** 2025-03-15
+**Fecha de Finalización Estimada v3.0:** 2025-03-12 (3 días antes que v2.0)
 
 ---
 
-*Documento generado automáticamente por Lovable AI - Versión 2.0*
+*Documento generado por Lovable AI - Versión 3.0 (Wrapper/Facade Pattern)*

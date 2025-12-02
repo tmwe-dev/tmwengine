@@ -9,6 +9,123 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-29] - 🎯 REIMPLEMENTAZIONE: Strategie di Turno nel Radio Chat Orchestrator
+
+### File Modificati
+- **Function:** `supabase/functions/radio-chat-orchestrator/index.ts`
+- **Backup Creato:** `index-20250129_1830.ts`
+- **File Modificato:** `supabase/functions/radio-chat-orchestrator/lib/config-loader.ts`
+- **Backup Creato:** `config-loader-20250129_1830.ts`
+- **File Creato:** `supabase/functions/radio-chat-orchestrator/lib/agent-selector.ts` (NUOVO)
+
+### Motivo Modifica
+Ripristinare le strategie di turno configurabili nel Radio Chat Orchestrator. Il codice attuale chiamava **tutti gli agenti** in sequenza fissa (Gemini → GPT → Claude), ignorando la configurazione `turn_strategy` salvata nel database dalla UI.
+
+### Modifiche Apportate
+
+#### 1. **config-loader.ts**
+- ✅ Aggiunto `turn_strategy` alla query SELECT (riga 181)
+- ✅ Aggiunto default `turn_strategy: 'SMART_PRIORITY'` ai fallback (riga 196, 211)
+- ✅ Aggiunta validazione strategia (righe 228-234)
+- ✅ Esportato `turnStrategy` nel return (riga 284)
+
+#### 2. **agent-selector.ts** (NUOVO FILE)
+Modulo dedicato alla logica di selezione agente:
+- ✅ `selectNextAgent()`: Router principale basato su strategia
+- ✅ `selectRoundRobin()`: Turno circolare sequenziale
+- ✅ `selectRandom30()`: 30% random, 70% sequenziale
+- ✅ `selectInterruptBased()`: Match keyword per urgenza
+- ✅ `selectSmartPriority()`: Selezione basata su lunghezza/complessità messaggio
+
+#### 3. **index.ts**
+- ✅ Aggiunto import `selectNextAgent` (riga 16)
+- ✅ Estratto `turnStrategy` dalla config (riga 95)
+- ✅ Caricato `current_turn_index` e `last_speaker_index` da DB (righe 133-135)
+- ✅ **SOSTITUITO intero loop agenti** (vecchie righe 167-422) con:
+  - Selezione singolo agente basata su strategia
+  - Build system prompt per agente selezionato
+  - Call AI provider singolo
+  - Save messaggio in DB
+  - Update turn_index in `chat_laboratory_conversations`
+- ✅ Aggiunto `turnIndex` e `strategy` al response JSON
+
+### Impatto Funzionale
+
+**PRIMA:**
+```
+User message → Gemini risponde → GPT risponde → Claude risponde
+(Tutti gli agenti attivi rispondono SEMPRE)
+```
+
+**DOPO:**
+```
+User message → [Strategia seleziona 1 agente] → Solo quell'agente risponde
+```
+
+**Strategie Implementate:**
+1. **SMART_PRIORITY**: Scelta intelligente basata su lunghezza messaggio
+   - Breve (<50 char) → Gemini
+   - Medio (<200 char) → GPT
+   - Lungo (>200 char) → Claude
+
+2. **ROUND_ROBIN**: Turno circolare fisso
+   - Gemini → GPT → Claude → Gemini...
+
+3. **RANDOM_30**: 30% random, 70% sequenziale
+   - 70% del tempo: come Round Robin
+   - 30% del tempo: scelta casuale
+
+4. **INTERRUPT_BASED**: Keyword matching
+   - "rapido/veloce" → Gemini
+   - "dettaglio/spiega" → GPT
+   - "riassumi/sintetizza" → Claude
+
+### Database Schema Coinvolto
+```sql
+-- Tabella: chat_laboratory_bar_mode
+turn_strategy TEXT (valori: SMART_PRIORITY, ROUND_ROBIN, RANDOM_30, INTERRUPT_BASED)
+
+-- Tabella: chat_laboratory_conversations
+current_turn_index INTEGER (indice agente corrente)
+last_speaker_index INTEGER (indice ultimo speaker)
+```
+
+### UI Component Coinvolto
+- ✅ `src/components/radio-chat/RadioStrategySelector.tsx` - **GIÀ FUNZIONANTE**
+  - Carica `turn_strategy` da DB (riga 48-52)
+  - Aggiorna `turn_strategy` su cambio (riga 75-78)
+
+### Testing Checklist
+- [ ] **ROUND_ROBIN**: Inviare 3 messaggi → Verificare ordine Gemini → GPT → Claude
+- [ ] **RANDOM_30**: Inviare 10 messaggi → ~70% sequenziale, ~30% random
+- [ ] **INTERRUPT_BASED**: Inviare "Spiega in dettaglio" → Verificare selezione GPT
+- [ ] **SMART_PRIORITY**: Inviare messaggio breve → Verificare selezione Gemini
+- [ ] **Turn Index**: Verificare `current_turn_index` aggiornato dopo ogni risposta
+- [ ] **Audio**: Verificare audio generato solo per agente selezionato
+
+### Rollback Plan
+```bash
+# Ripristinare index.ts
+cp supabase/functions/radio-chat-orchestrator/index-20250129_1830.ts supabase/functions/radio-chat-orchestrator/index.ts
+
+# Ripristinare config-loader.ts
+cp supabase/functions/radio-chat-orchestrator/lib/config-loader-20250129_1830.ts supabase/functions/radio-chat-orchestrator/lib/config-loader.ts
+
+# Rimuovere agent-selector.ts
+rm supabase/functions/radio-chat-orchestrator/lib/agent-selector.ts
+
+# Re-deploy
+# (deploy automatico)
+```
+
+### Note Tecniche
+- ✅ **Backward compatibility**: Se `turn_strategy` è NULL o invalido, fallback a `SMART_PRIORITY`
+- ✅ **Performance**: Chiamata singola AI invece di 3 chiamate sequenziali (risparmio ~60-70%)
+- ✅ **Logging**: Ogni strategia logga la decisione per debug (`🎯 [STRATEGY] Selected: ...`)
+- ✅ **Consistenza naming**: Tutti i campi DB usano `snake_case`
+
+---
+
 ## [2025-11-26] - 🔍 DIAGNOSTIC: tmwe-jwt-sign v3 - Analyze TMWE API Response
 
 ### File Modificato

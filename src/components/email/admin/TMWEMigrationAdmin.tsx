@@ -11,25 +11,19 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Database, Play, TestTube, CheckCircle2, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { Database, Play, TestTube, CheckCircle2, Loader2 } from 'lucide-react';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 
 interface MigrationResult {
   success: boolean;
   dry_run: boolean;
-  total_to_migrate: number;
-  migrated: number;
+  processed: number;
+  updated: number;
   failed: number;
-  skipped: number;
-  details: Array<{
+  errors: Array<{
     id: string;
-    sender_email: string;
-    subject: string;
-    tmwe_email_id?: number;
-    status: 'migrated' | 'failed' | 'skipped';
-    error?: string;
+    error: string;
   }>;
-  errors: string[];
 }
 
 export function TMWEMigrationAdmin() {
@@ -73,12 +67,10 @@ export function TMWEMigrationAdmin() {
     setResult(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      const { data, error } = await supabase.functions.invoke('migrate-classification-tmwe-ids', {
         body: {
-          handler: 'migrate_email_ids',
           batch_size: 50,
           dry_run: dryRun,
-          user_email: userEmail
         }
       });
 
@@ -87,9 +79,9 @@ export function TMWEMigrationAdmin() {
       setResult(data as MigrationResult);
       
       if (dryRun) {
-        toast.info(`Dry-run completado: ${data.total_to_migrate} registros encontrados`);
+        toast.info(`Dry-run completado: ${data.processed} registros procesados`);
       } else {
-        toast.success(`Migración completada: ${data.migrated} registros actualizados`);
+        toast.success(`Migración completada: ${data.updated} registros actualizados`);
         checkPending(); // Refresh count
       }
     } catch (err: any) {
@@ -178,83 +170,50 @@ export function TMWEMigrationAdmin() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Stats */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground">Total</p>
-                <p className="text-xl font-bold">{result.total_to_migrate}</p>
+                <p className="text-xs text-muted-foreground">Procesados</p>
+                <p className="text-xl font-bold">{result.processed}</p>
               </div>
               <div className="text-center p-3 bg-green-500/10 rounded-lg">
-                <p className="text-xs text-green-600">Migrados</p>
-                <p className="text-xl font-bold text-green-600">{result.migrated}</p>
+                <p className="text-xs text-green-600">Actualizados</p>
+                <p className="text-xl font-bold text-green-600">{result.updated}</p>
               </div>
               <div className="text-center p-3 bg-red-500/10 rounded-lg">
                 <p className="text-xs text-red-600">Fallidos</p>
                 <p className="text-xl font-bold text-red-600">{result.failed}</p>
               </div>
-              <div className="text-center p-3 bg-yellow-500/10 rounded-lg">
-                <p className="text-xs text-yellow-600">Omitidos</p>
-                <p className="text-xl font-bold text-yellow-600">{result.skipped}</p>
-              </div>
             </div>
 
             {/* Progress */}
-            {result.total_to_migrate > 0 && (
+            {result.processed > 0 && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Progreso</span>
-                  <span>{Math.round((result.migrated / result.total_to_migrate) * 100)}%</span>
+                  <span>{Math.round((result.updated / result.processed) * 100)}%</span>
                 </div>
-                <Progress value={(result.migrated / result.total_to_migrate) * 100} />
-              </div>
-            )}
-
-            {/* Details */}
-            {result.details && result.details.length > 0 && (
-              <div>
-                <p className="text-sm font-medium mb-2">Detalles ({result.details.length})</p>
-                <ScrollArea className="h-64 border rounded-lg">
-                  <div className="p-2 space-y-2">
-                    {result.details.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-2 bg-muted/30 rounded text-sm"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="truncate font-medium">{item.subject}</p>
-                          <p className="text-xs text-muted-foreground truncate">{item.sender_email}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {item.tmwe_email_id && (
-                            <Badge variant="outline" className="text-xs">
-                              ID: {item.tmwe_email_id}
-                            </Badge>
-                          )}
-                          {item.status === 'migrated' && (
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                          )}
-                          {item.status === 'failed' && (
-                            <XCircle className="h-4 w-4 text-red-500" />
-                          )}
-                          {item.status === 'skipped' && (
-                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
+                <Progress value={(result.updated / result.processed) * 100} />
               </div>
             )}
 
             {/* Errors */}
             {result.errors && result.errors.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-red-600 mb-2">Errores</p>
-                <div className="p-3 bg-red-500/10 rounded-lg text-sm text-red-600">
-                  {result.errors.map((err, idx) => (
-                    <p key={idx}>{err}</p>
-                  ))}
-                </div>
+                <p className="text-sm font-medium text-red-600 mb-2">
+                  Errores ({result.errors.length})
+                </p>
+                <ScrollArea className="h-48 border rounded-lg">
+                  <div className="p-2 space-y-2">
+                    {result.errors.map((err, idx) => (
+                      <div key={idx} className="p-2 bg-red-500/10 rounded text-sm">
+                        <p className="font-mono text-xs text-red-600 mb-1">
+                          ID: {err.id}
+                        </p>
+                        <p className="text-red-700">{err.error}</p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
             )}
           </CardContent>

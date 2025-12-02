@@ -25,20 +25,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
+    const { user_email, batch_size = 50, dry_run = false } = await req.json();
+
+    if (!user_email) {
+      throw new Error('user_email is required');
     }
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
-    if (userError || !user) {
-      throw new Error('Unauthorized');
-    }
-
-    const { batch_size = 50, dry_run = false } = await req.json().catch(() => ({}));
 
     console.log(`[Migration] Starting - batch_size: ${batch_size}, dry_run: ${dry_run}`);
 
@@ -47,7 +38,7 @@ Deno.serve(async (req) => {
       .from('email_ai_classifications')
       .select('id, sender_email, user_email, email_uid, folder_name, created_at')
       .is('tmwe_email_id', null)
-      .eq('user_email', user.email)
+      .eq('user_email', user_email)
       .limit(batch_size)
       .order('created_at', { ascending: false });
 

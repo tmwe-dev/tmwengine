@@ -176,7 +176,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.migrate-classification-tmwe-ids]
-verify_jwt = true
+verify_jwt = false
 
 # =====================================================
 # REMOVED FUNCTIONS - 2025-01-31 Edge Function Cleanup

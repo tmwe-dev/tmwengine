@@ -36,6 +36,7 @@ import { LucaDownloadTester } from '@/components/email/LucaDownloadTester';
 import { ToolsDropdownMenu } from '@/components/email/ToolsDropdownMenu';
 import { TMWEMigrationAdmin } from '@/components/email/admin/TMWEMigrationAdmin';
 import { ZeroSyncTestPanel } from '@/components/email/testing/ZeroSyncTestPanel';
+import { FunEmailNavigation } from '@/components/email/FunEmailNavigation';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();
@@ -260,12 +261,14 @@ const FunEmail = () => {
     }
   };
 
+  const isToolView = ['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail', 'migration', 'zero-sync-test'].includes(currentView);
+
   return (
     <PageLayout 
       gradient={true}
       contentClassName="p-0 max-w-none"
       title={
-        ['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail', 'migration'].includes(currentView) ? (
+        isToolView ? (
           <Button
             variant="ghost"
             size="sm"
@@ -281,11 +284,15 @@ const FunEmail = () => {
         ) : null
       }
       actions={
-        !['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail', 'migration'].includes(currentView) ? (
+        !isToolView ? (
           <ToolsDropdownMenu />
         ) : null
       }
     >
+      {/* Tab Navigation - solo per view principali */}
+      {!isToolView && (
+        <FunEmailNavigation currentView={currentView as 'fun' | 'management' | 'suggestions' | 'inbox' | 'automations'} />
+      )}
       <div className="relative w-full min-h-screen">
         {/* 2 Icone Verticali - solo in view inbox */}
         {currentView === 'inbox' && (

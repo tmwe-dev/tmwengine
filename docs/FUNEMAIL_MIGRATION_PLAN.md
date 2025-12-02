@@ -1,22 +1,56 @@
 # 🚀 PLAN DE MIGRACIÓN FUNEMAIL → ZERO-SYNC ARCHITECTURE
 
-**Versión:** 3.0  
+**Versión:** 3.1 - Fresh Start Edition  
 **Fecha:** 2025-01-29  
-**Objetivo:** Migración completa a arquitectura Zero-Sync con TMWE API como única fuente de datos usando wrappers sobre código OAuth existente
+**Objetivo:** Migración completa a arquitectura Zero-Sync con tablas optimizadas para TMWE API y coexistencia con legacy
 
 ---
 
 ## 📋 ÍNDICE
 
-1. [Componentes Existentes a Reutilizar](#componentes-existentes-a-reutilizar)
-2. [Arquitectura Propuesta](#arquitectura-propuesta)
-3. [Capa de Abstracción API](#capa-de-abstracción-api)
-4. [Gestión Centralizada OAuth](#gestión-centralizada-oauth)
-5. [Planes de Migración por Caso de Uso](#planes-de-migración-por-caso-de-uso)
-6. [Matriz de Trazabilidad](#matriz-de-trazabilidad)
-7. [Roadmap de Implementación](#roadmap-de-implementación)
-8. [Testing y Validación](#testing-y-validación)
-9. [Beneficios Plan v3.0](#beneficios-plan-v30)
+1. [Estrategia Fresh Start](#estrategia-fresh-start)
+2. [Componentes Existentes a Reutilizar](#componentes-existentes-a-reutilizar)
+3. [Arquitectura Propuesta](#arquitectura-propuesta)
+4. [Nuevas Tablas Optimizadas](#nuevas-tablas-optimizadas)
+5. [Estrategia de Coexistencia Legacy](#estrategia-de-coexistencia-legacy)
+6. [Capa de Abstracción API](#capa-de-abstracción-api)
+7. [Gestión Centralizada OAuth](#gestión-centralizada-oauth)
+8. [Planes de Migración por Caso de Uso](#planes-de-migración-por-caso-de-uso)
+9. [Matriz de Trazabilidad](#matriz-de-trazabilidad)
+10. [Roadmap de Implementación](#roadmap-de-implementación)
+11. [Testing y Validación](#testing-y-validación)
+12. [Beneficios Plan v3.1](#beneficios-plan-v31)
+
+---
+
+## 🆕 ESTRATEGIA FRESH START
+
+### Justificación
+
+**Análisis de Datos Existentes:**
+```sql
+-- VERIFICACIÓN REALIZADA 2025-01-29
+SELECT COUNT(*) FROM email_ai_classifications WHERE tmwe_email_id IS NOT NULL;
+-- Resultado: 0 registros
+
+SELECT COUNT(*) FROM email_messages WHERE tmwe_email_id IS NOT NULL;
+-- Resultado: 0 registros
+```
+
+**Conclusión:** No existen datos vinculados a `tmwe_email_id`, por lo tanto:
+- ❌ NO necesitamos migrar datos existentes
+- ✅ Podemos crear tablas optimizadas desde cero
+- ✅ Evitamos complejidad de scripts de migración
+- ✅ Diseño nativo para TMWE API desde el inicio
+
+### Filosofía: "Clean Slate for TMWE"
+
+**Principios:**
+1. **Tablas nuevas optimizadas** para TMWE API como fuente única de datos
+2. **Sin dependencias locales** - No más UUIDs locales como claves primarias
+3. **Coexistencia temporal** - Legacy tables permanecen intactas durante transición
+4. **Feature flag system** - Activación gradual de nuevas tablas
+5. **Plan de deprecación** - Roadmap claro para sunset de legacy
 
 ---
 
@@ -98,8 +132,8 @@ Estos archivos YA FUNCIONAN y serán consumidos por los nuevos wrappers/facades:
 │  │             → emailSearchApi.searchEmails()         │    │
 │  │  - FolderApi → emailSearchApi.getFolders()          │    │
 │  │              → emailSearchApi.getStatistics()       │    │
-│  │  - ClassificationApi (NUEVO - lógica propia)        │    │
-│  │  - SenderApi (NUEVO - lógica propia)                │    │
+│  │  - ClassificationApi → tmwe_classifications (NEW)   │    │
+│  │  - SenderApi → tmwe_sender_profiles (NEW)           │    │
 │  └─────────────────────────────────────────────────────┘    │
 └──────────────────────┬──────────────────────────────────────┘
                        │
@@ -116,6 +150,364 @@ Estos archivos YA FUNCIONAN y serán consumidos por los nuevos wrappers/facades:
 
 ---
 
+## 🗄️ NUEVAS TABLAS OPTIMIZADAS
+
+### Tabla 1: `tmwe_classifications`
+
+**Propósito:** Clasificaciones de emails optimizadas para TMWE API (reemplaza `email_ai_classifications`)
+
+**Diferencias clave vs Legacy:**
+- ✅ Usa `tmwe_email_id` (integer) como referencia principal
+- ✅ NO depende de UUID local
+- ✅ Incluye `subject_preview` para mostrar en listas sin query adicional
+- ✅ Índices optimizados para queries frecuentes
+
+**DDL:**
+```sql
+CREATE TABLE public.tmwe_classifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Referencias TMWE API (no UUIDs locales)
+  tmwe_email_id integer NOT NULL,           -- UID del email en TMWE
+  folder_name text NOT NULL,                -- Carpeta original
+  user_email text NOT NULL,                 -- Usuario propietario
+  
+  -- Datos de clasificación
+  category text NOT NULL,                   -- Categoría asignada
+  confidence numeric(3,2),                  -- Confianza IA (0.00-1.00)
+  ai_summary text,                          -- Resumen generado por IA
+  keywords text[],                          -- Keywords detectadas
+  
+  -- Metadata adicional
+  sender_email text NOT NULL,               -- Para filtros rápidos
+  sender_domain text NOT NULL,              -- Para agrupación
+  subject_preview text,                     -- Preview del asunto (max 100 chars)
+  
+  -- Enhancements SmartInbox
+  urgency text CHECK (urgency IN ('critical', 'high', 'normal', 'low')),
+  action_suggested text,                    -- Acción sugerida
+  detected_patterns text[],                 -- Patrones detectados
+  reasoning text,                           -- Razonamiento IA
+  tags text[],                              -- Tags personalizadas
+  custom_prompt text,                       -- Prompt usado
+  
+  -- Verificación y timestamps
+  is_verified boolean DEFAULT false,        -- Clasificación verificada manualmente
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  
+  -- Constraint único
+  UNIQUE(tmwe_email_id, folder_name, user_email)
+);
+
+-- Índices optimizados
+CREATE INDEX idx_tmwe_class_user_category 
+  ON tmwe_classifications(user_email, category);
+  
+CREATE INDEX idx_tmwe_class_sender 
+  ON tmwe_classifications(sender_email);
+  
+CREATE INDEX idx_tmwe_class_urgency 
+  ON tmwe_classifications(user_email, urgency) 
+  WHERE urgency IN ('critical', 'high');
+
+-- RLS Policies
+ALTER TABLE tmwe_classifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users view own classifications"
+  ON tmwe_classifications FOR SELECT
+  USING (auth.jwt() ->> 'email' = user_email);
+
+CREATE POLICY "Users insert own classifications"
+  ON tmwe_classifications FOR INSERT
+  WITH CHECK (auth.jwt() ->> 'email' = user_email);
+
+CREATE POLICY "Users update own classifications"
+  ON tmwe_classifications FOR UPDATE
+  USING (auth.jwt() ->> 'email' = user_email);
+
+CREATE POLICY "Users delete own classifications"
+  ON tmwe_classifications FOR DELETE
+  USING (auth.jwt() ->> 'email' = user_email);
+
+-- Trigger para updated_at
+CREATE TRIGGER update_tmwe_classifications_updated_at
+  BEFORE UPDATE ON tmwe_classifications
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+```
+
+---
+
+### Tabla 2: `tmwe_sender_profiles`
+
+**Propósito:** Perfiles unificados de remitentes optimizados para TMWE (reemplaza `email_sender_groups` + mappings)
+
+**Diferencias clave vs Legacy:**
+- ✅ Un solo registro por remitente (no N mappings)
+- ✅ Estadísticas integradas (no queries separadas)
+- ✅ Configuración completa en un lugar
+- ✅ Diseño desnormalizado para performance
+
+**DDL:**
+```sql
+CREATE TABLE public.tmwe_sender_profiles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Identificación remitente
+  sender_email text NOT NULL,               -- Email del remitente
+  sender_domain text NOT NULL,              -- Dominio extraído
+  sender_name text,                         -- Nombre detectado
+  user_email text NOT NULL,                 -- Usuario propietario
+  
+  -- Agrupación y clasificación
+  group_id uuid,                            -- Grupo asignado (FK a tmwe_sender_groups si se usa)
+  group_name text,                          -- Nombre del grupo (desnormalizado)
+  group_color text,                         -- Color del grupo
+  group_icon text,                          -- Icono del grupo
+  category text,                            -- Categoría (business, personal, etc.)
+  
+  -- Estadísticas integradas
+  total_emails integer DEFAULT 0,           -- Total emails de este remitente
+  unread_count integer DEFAULT 0,           -- Emails sin leer
+  last_email_date timestamptz,              -- Fecha último email
+  first_email_date timestamptz,             -- Fecha primer email
+  avg_response_time_hours numeric(10,2),    -- Tiempo promedio de respuesta
+  
+  -- Configuración de reglas (integrada)
+  auto_archive boolean DEFAULT false,       -- Archivar automáticamente
+  auto_delete boolean DEFAULT false,        -- Eliminar automáticamente
+  auto_label text,                          -- Etiqueta automática
+  move_to_folder text,                      -- Mover a carpeta
+  priority_level integer DEFAULT 0,         -- Nivel de prioridad (-10 a +10)
+  
+  -- Metadata
+  logo_url text,                            -- URL del logo (Company Logos Cache)
+  notes text,                               -- Notas del usuario
+  is_blocked boolean DEFAULT false,         -- Remitente bloqueado
+  is_favorite boolean DEFAULT false,        -- Remitente favorito
+  
+  -- Timestamps
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  last_sync_at timestamptz,                 -- Última sincronización de stats
+  
+  -- Constraint único
+  UNIQUE(sender_email, user_email)
+);
+
+-- Índices optimizados
+CREATE INDEX idx_tmwe_sender_user 
+  ON tmwe_sender_profiles(user_email);
+  
+CREATE INDEX idx_tmwe_sender_domain 
+  ON tmwe_sender_profiles(sender_domain);
+  
+CREATE INDEX idx_tmwe_sender_group 
+  ON tmwe_sender_profiles(group_id) 
+  WHERE group_id IS NOT NULL;
+
+CREATE INDEX idx_tmwe_sender_favorites 
+  ON tmwe_sender_profiles(user_email, is_favorite) 
+  WHERE is_favorite = true;
+
+-- RLS Policies
+ALTER TABLE tmwe_sender_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users view own sender profiles"
+  ON tmwe_sender_profiles FOR SELECT
+  USING (auth.jwt() ->> 'email' = user_email);
+
+CREATE POLICY "Users manage own sender profiles"
+  ON tmwe_sender_profiles FOR ALL
+  USING (auth.jwt() ->> 'email' = user_email);
+
+-- Trigger para updated_at
+CREATE TRIGGER update_tmwe_sender_profiles_updated_at
+  BEFORE UPDATE ON tmwe_sender_profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+```
+
+---
+
+### Tabla 3: `tmwe_classification_rules`
+
+**Propósito:** Reglas simplificadas de clasificación automática (reemplaza lógica compleja de `email_sender_rules`)
+
+**Diferencias clave vs Legacy:**
+- ✅ Scope claro (global vs por remitente)
+- ✅ Condiciones y acciones simples
+- ✅ Fácil de aplicar client-side
+- ✅ No triggers complejos en DB
+
+**DDL:**
+```sql
+CREATE TABLE public.tmwe_classification_rules (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Propietario
+  user_email text NOT NULL,
+  
+  -- Scope de la regla
+  rule_scope text NOT NULL CHECK (rule_scope IN ('global', 'sender', 'domain', 'subject')),
+  rule_name text NOT NULL,
+  rule_description text,
+  
+  -- Condiciones
+  sender_email text,                        -- Si scope = 'sender'
+  sender_domain text,                       -- Si scope = 'domain'
+  subject_contains text,                    -- Si scope = 'subject'
+  keywords_match text[],                    -- Keywords a buscar
+  
+  -- Acciones
+  assign_category text,                     -- Asignar categoría
+  assign_urgency text CHECK (assign_urgency IN ('critical', 'high', 'normal', 'low')),
+  add_tags text[],                          -- Añadir tags
+  auto_archive boolean DEFAULT false,
+  auto_delete boolean DEFAULT false,
+  move_to_folder text,
+  
+  -- Configuración
+  priority integer DEFAULT 0,               -- Prioridad de ejecución (mayor primero)
+  is_active boolean DEFAULT true,
+  stop_if_matched boolean DEFAULT false,    -- Detener evaluación de otras reglas
+  
+  -- Metadata
+  apply_count integer DEFAULT 0,            -- Veces aplicada
+  last_applied_at timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  
+  -- Validación
+  CHECK (
+    (rule_scope = 'sender' AND sender_email IS NOT NULL) OR
+    (rule_scope = 'domain' AND sender_domain IS NOT NULL) OR
+    (rule_scope = 'subject' AND subject_contains IS NOT NULL) OR
+    (rule_scope = 'global')
+  )
+);
+
+-- Índices
+CREATE INDEX idx_tmwe_rules_user 
+  ON tmwe_classification_rules(user_email, is_active) 
+  WHERE is_active = true;
+  
+CREATE INDEX idx_tmwe_rules_priority 
+  ON tmwe_classification_rules(user_email, priority DESC) 
+  WHERE is_active = true;
+
+-- RLS Policies
+ALTER TABLE tmwe_classification_rules ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage own rules"
+  ON tmwe_classification_rules FOR ALL
+  USING (auth.jwt() ->> 'email' = user_email);
+
+-- Trigger para updated_at
+CREATE TRIGGER update_tmwe_classification_rules_updated_at
+  BEFORE UPDATE ON tmwe_classification_rules
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+```
+
+---
+
+## 🔄 ESTRATEGIA DE COEXISTENCIA LEGACY
+
+### Feature Flag System
+
+**Implementación:**
+
+```typescript
+// src/lib/tmwe/config.ts
+export const TMWE_FEATURE_FLAGS = {
+  // Tablas nuevas
+  USE_TMWE_CLASSIFICATIONS: true,    // tmwe_classifications vs email_ai_classifications
+  USE_TMWE_SENDER_PROFILES: true,    // tmwe_sender_profiles vs email_sender_groups
+  USE_TMWE_RULES: true,              // tmwe_classification_rules vs email_sender_rules
+  
+  // Funcionalidad
+  ENABLE_LEGACY_FALLBACK: true,      // Fallback a tablas legacy si falla nueva
+  SHOW_MIGRATION_BANNER: true,       // Banner de migración en UI
+} as const;
+
+// Helper para verificar feature
+export const isFeatureEnabled = (feature: keyof typeof TMWE_FEATURE_FLAGS): boolean => {
+  return TMWE_FEATURE_FLAGS[feature];
+};
+```
+
+**Uso en Código:**
+
+```typescript
+// src/hooks/email/useSmartClassification.ts
+import { isFeatureEnabled } from '@/lib/tmwe/config';
+
+export const useSmartClassification = () => {
+  const useTmweTables = isFeatureEnabled('USE_TMWE_CLASSIFICATIONS');
+  
+  return useQuery({
+    queryKey: ['classifications', useTmweTables ? 'tmwe' : 'legacy'],
+    queryFn: async () => {
+      if (useTmweTables) {
+        // Usar tmwe_classifications
+        const { data } = await supabase
+          .from('tmwe_classifications')
+          .select('*');
+        return data;
+      } else {
+        // Fallback a email_ai_classifications
+        const { data } = await supabase
+          .from('email_ai_classifications')
+          .select('*');
+        return data;
+      }
+    }
+  });
+};
+```
+
+---
+
+### Comparativa: Legacy vs Fresh Start V3.1
+
+| Aspecto | Legacy Tables | TMWE Tables V3.1 | Ventaja |
+|---------|---------------|------------------|---------|
+| **SmartInbox** | `email_ai_classifications` con UUIDs locales | `tmwe_classifications` con `tmwe_email_id` | ✅ No migración de datos<br>✅ Nativo para TMWE API |
+| **Remitentes** | `email_sender_groups` + `email_sender_mappings` | `tmwe_sender_profiles` unificado | ✅ Menos queries<br>✅ Stats integradas |
+| **Reglas** | Triggers complejos en DB | Client-side filtering simple | ✅ Más flexible<br>✅ Fácil debugging |
+| **Queries** | 3-4 JOINs promedio | 1-2 queries directas | ✅ Mejor performance |
+| **Complejidad** | Alta (FK constraints, triggers) | Baja (desnormalizado) | ✅ Más mantenible |
+| **Rollback** | Difícil (migración de vuelta) | Fácil (cambiar feature flag) | ✅ Menos riesgo |
+
+---
+
+### Plan de Deprecación de Legacy
+
+**Fase 1: Coexistencia (Sprints 1-4)**
+- ✅ Tablas nuevas creadas
+- ✅ Feature flags activos
+- ✅ Código usa tablas nuevas por defecto
+- ⚠️ Legacy tables intactas (read-only)
+
+**Fase 2: Migración Opcional (Sprint 5)**
+- ✅ Script de migración disponible (opcional)
+- ✅ Banner en UI sugiriendo migración
+- ⚠️ Usuario decide si migra datos legacy
+
+**Fase 3: Deprecación (Post-lanzamiento, +2 meses)**
+- ⚠️ Warning: "Legacy tables serán removidas en 30 días"
+- ✅ Documentación de cómo exportar datos legacy
+- ✅ Final cleanup de código legacy
+
+**Fase 4: Sunset (Post-lanzamiento, +3 meses)**
+- ❌ Eliminar feature flags
+- ❌ Eliminar código de fallback
+- ❌ (Opcional) DROP legacy tables si usuario confirma
+
+---
+
 ## 🔐 GESTIÓN CENTRALIZADA OAUTH
 
 ### 1. TMWEAuthManager (Wrapper Pattern)
@@ -123,11 +515,6 @@ Estos archivos YA FUNCIONAN y serán consumidos por los nuevos wrappers/facades:
 **Ubicación:** `src/lib/tmwe/TMWEAuthManager.ts`
 
 **Estrategia:** WRAPPER sobre funciones existentes - NO reimplementa, DELEGA
-
-**Responsabilidades:**
-- Proporcionar interfaz unificada para autenticación
-- Delegar operaciones OAuth a `tmwe-api-integrated.ts`
-- Mantener compatibilidad con código existente
 
 **Implementación:**
 
@@ -178,12 +565,6 @@ export class TMWEAuthManager {
 }
 ```
 
-**Ventajas del Wrapper:**
-- ✅ 0 líneas de código OAuth nuevo
-- ✅ Reutiliza lógica probada en producción
-- ✅ Mantiene compatibilidad con código existente
-- ✅ Testing: solo tests de integración
-
 ---
 
 ## 🌐 CAPA DE ABSTRACCIÓN API
@@ -193,12 +574,6 @@ export class TMWEAuthManager {
 **Ubicación:** `src/lib/tmwe/TMWEApiClient.ts`
 
 **Estrategia:** FACADE sobre Edge Function existente `tmwe-api-proxy`
-
-**Características:**
-- Singleton para evitar múltiples instancias
-- Delega todas las peticiones a `tmwe-api-proxy`
-- Manejo automático de autenticación
-- Error handling integrado
 
 **Implementación:**
 
@@ -239,160 +614,222 @@ export class TMWEApiClient {
 }
 ```
 
-**Ventajas del Facade:**
-- ✅ Reutiliza `tmwe-api-proxy` existente
-- ✅ No duplica lógica HTTP
-- ✅ Retry logic ya implementada en Edge Function
-- ✅ Logging centralizado en backend
+---
 
-### 3. API Modules (Específicos por Dominio)
+### 3. API Modules Actualizados
 
-#### EmailApi (Wrapper Pattern)
-
-**Ubicación:** `src/lib/tmwe/api/EmailApi.ts`
-
-**Estrategia:** WRAPPER sobre `emailSearchApi` existente
-
-```typescript
-// WRAPPER - Delega a emailSearchApi existente
-import { emailSearchApi } from '@/lib/tmwe-email-search-api';
-
-export class EmailApi {
-  // DELEGA a función existente
-  async getEmailList(params: {
-    folder?: string;
-    page?: number;
-    limit?: number;
-  }) {
-    return await emailSearchApi.getEmailsMetadata({
-      folder: params.folder || 'INBOX',
-      page: params.page || 1,
-      limit: params.limit || 50
-    });
-  }
-  
-  // DELEGA a función existente
-  async getEmailDetail(emailId: number) {
-    return await emailSearchApi.getEmailDetail({ 
-      email_id: emailId 
-    });
-  }
-  
-  // DELEGA a función existente
-  async searchEmails(query: string, options?: {
-    folder?: string;
-    page?: number;
-    limit?: number;
-  }) {
-    return await emailSearchApi.searchEmails({
-      query,
-      search_folder: options?.folder,
-      page: options?.page || 1,
-      limit: options?.limit || 20
-    });
-  }
-  
-  // DELEGA a función existente
-  async getEmailThread(params: { messageId: string; folder: string }) {
-    return await emailSearchApi.getThread({
-      message_id: params.messageId,
-      folder: params.folder
-    });
-  }
-  
-  // DELEGA a función existente
-  async markAsRead(emailId: number) {
-    return await emailSearchApi.markAsRead(emailId);
-  }
-}
-```
-
-**Ventajas:**
-- ✅ Reutiliza `emailSearchApi` probado
-- ✅ Mantiene optimizaciones existentes
-- ✅ API unificada y consistente
-
-#### FolderApi (Wrapper Pattern)
-
-**Ubicación:** `src/lib/tmwe/api/FolderApi.ts`
-
-**Estrategia:** WRAPPER sobre `emailSearchApi` existente
-
-```typescript
-// WRAPPER - Delega a emailSearchApi existente
-import { emailSearchApi } from '@/lib/tmwe-email-search-api';
-
-export class FolderApi {
-  async getFolders(includeCounts = true) {
-    return await emailSearchApi.getFolders({ 
-      include_counts: includeCounts 
-    });
-  }
-  
-  async getFolderStats(folder: string) {
-    return await emailSearchApi.getStatistics({ folder });
-  }
-  
-  async getGlobalStats() {
-    return await emailSearchApi.getStatistics();
-  }
-}
-```
-
-#### ClassificationApi
+#### ClassificationApi (Usa `tmwe_classifications`)
 
 **Ubicación:** `src/lib/tmwe/api/ClassificationApi.ts`
 
 ```typescript
+import { supabase } from '@/integrations/supabase/client';
+import { TMWEApiClient } from '../TMWEApiClient';
+import { isFeatureEnabled } from '../config';
+
 export class ClassificationApi {
   private client: TMWEApiClient;
   
-  // Clasificar email individual
-  async classifyEmail(params: {
-    emailId: number;
-    folder: string;
-    prompt: string;
-  }): Promise<ClassificationResult>;
+  constructor() {
+    this.client = TMWEApiClient.getInstance();
+  }
   
-  // Clasificación batch
-  async classifyBatch(params: {
-    emails: EmailToClassify[];
+  // Clasificar email individual usando TMWE
+  async classifyEmail(params: {
+    tmwe_email_id: number;      // ✅ Usa tmwe_email_id directamente
+    folder_name: string;
+    user_email: string;
     prompt: string;
-  }): Promise<BatchClassificationResult>;
+  }): Promise<ClassificationResult> {
+    // 1. Obtener contenido de email desde TMWE API
+    const emailApi = new EmailApi();
+    const email = await emailApi.getEmailDetail(params.tmwe_email_id);
+    
+    // 2. Llamar a IA para clasificar
+    const classification = await this.client.request('/classify', {
+      content: email.body_text,
+      subject: email.subject,
+      sender: email.from_email,
+      prompt: params.prompt
+    });
+    
+    // 3. Almacenar en tmwe_classifications
+    const { data, error } = await supabase
+      .from('tmwe_classifications')
+      .insert({
+        tmwe_email_id: params.tmwe_email_id,
+        folder_name: params.folder_name,
+        user_email: params.user_email,
+        sender_email: email.from_email,
+        sender_domain: email.from_email.split('@')[1],
+        subject_preview: email.subject.substring(0, 100),
+        category: classification.category,
+        confidence: classification.confidence,
+        ai_summary: classification.summary,
+        keywords: classification.keywords,
+        urgency: classification.urgency,
+        action_suggested: classification.action,
+        reasoning: classification.reasoning
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
   
   // Obtener clasificaciones existentes
   async getClassifications(params: {
-    folder?: string;
+    user_email: string;
     category?: string;
-  }): Promise<Classification[]>;
+    urgency?: string;
+  }) {
+    let query = supabase
+      .from('tmwe_classifications')
+      .select('*')
+      .eq('user_email', params.user_email);
+    
+    if (params.category) {
+      query = query.eq('category', params.category);
+    }
+    
+    if (params.urgency) {
+      query = query.eq('urgency', params.urgency);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  }
 }
 ```
 
-#### SenderApi
+#### SenderApi (Usa `tmwe_sender_profiles`)
 
 **Ubicación:** `src/lib/tmwe/api/SenderApi.ts`
 
 ```typescript
+import { supabase } from '@/integrations/supabase/client';
+
 export class SenderApi {
-  private client: TMWEApiClient;
+  // Obtener perfil de remitente
+  async getSenderProfile(params: {
+    sender_email: string;
+    user_email: string;
+  }) {
+    const { data, error } = await supabase
+      .from('tmwe_sender_profiles')
+      .select('*')
+      .eq('sender_email', params.sender_email)
+      .eq('user_email', params.user_email)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+    return data;
+  }
   
-  // Obtener lista de remitentes con estadísticas
-  async getSenderList(params: {
-    folder?: string;
-    limit?: number;
-  }): Promise<SenderListResponse>;
+  // Actualizar estadísticas de remitente
+  async updateSenderStats(params: {
+    sender_email: string;
+    user_email: string;
+    increment_total?: boolean;
+    increment_unread?: boolean;
+    last_email_date?: Date;
+  }) {
+    // Upsert con estadísticas actualizadas
+    const { data, error } = await supabase
+      .from('tmwe_sender_profiles')
+      .upsert({
+        sender_email: params.sender_email,
+        sender_domain: params.sender_email.split('@')[1],
+        user_email: params.user_email,
+        total_emails: params.increment_total 
+          ? supabase.raw('COALESCE(total_emails, 0) + 1') 
+          : undefined,
+        unread_count: params.increment_unread
+          ? supabase.raw('COALESCE(unread_count, 0) + 1')
+          : undefined,
+        last_email_date: params.last_email_date,
+        last_sync_at: new Date()
+      }, {
+        onConflict: 'sender_email,user_email'
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
   
-  // Obtener emails de un remitente específico
-  async getEmailsBySender(params: {
-    sender: string;
-    folder?: string;
-  }): Promise<EmailListResponse>;
+  // Aplicar reglas a emails (client-side)
+  async applySenderRules(
+    emails: Email[],
+    user_email: string
+  ): Promise<Email[]> {
+    // 1. Obtener reglas activas
+    const { data: rules } = await supabase
+      .from('tmwe_classification_rules')
+      .select('*')
+      .eq('user_email', user_email)
+      .eq('is_active', true)
+      .order('priority', { ascending: false });
+    
+    if (!rules || rules.length === 0) return emails;
+    
+    // 2. Aplicar reglas a cada email
+    return emails
+      .map(email => {
+        let processedEmail = { ...email };
+        
+        for (const rule of rules) {
+          // Verificar si regla aplica
+          const matches = this.ruleMatches(rule, email);
+          if (!matches) continue;
+          
+          // Aplicar acciones
+          if (rule.assign_category) {
+            processedEmail._category = rule.assign_category;
+          }
+          if (rule.assign_urgency) {
+            processedEmail._urgency = rule.assign_urgency;
+          }
+          if (rule.add_tags) {
+            processedEmail._tags = [...(processedEmail._tags || []), ...rule.add_tags];
+          }
+          if (rule.auto_archive) {
+            processedEmail._archived = true;
+          }
+          if (rule.auto_delete) {
+            return null; // Filtrar email
+          }
+          
+          // Actualizar contador
+          this.incrementRuleApplyCount(rule.id);
+          
+          // Detener si regla marca stop_if_matched
+          if (rule.stop_if_matched) break;
+        }
+        
+        return processedEmail;
+      })
+      .filter(email => email !== null);
+  }
   
-  // Obtener reglas de remitente (desde Supabase)
-  async getSenderRules(userEmail: string): Promise<SenderRule[]>;
-  
-  // Aplicar regla a emails existentes (requiere redesign)
-  async applySenderRule(rule: SenderRule): Promise<ApplyRuleResult>;
+  private ruleMatches(rule: any, email: Email): boolean {
+    switch (rule.rule_scope) {
+      case 'sender':
+        return email.from_email === rule.sender_email;
+      case 'domain':
+        return email.from_email.endsWith(`@${rule.sender_domain}`);
+      case 'subject':
+        return email.subject?.toLowerCase().includes(rule.subject_contains?.toLowerCase());
+      case 'global':
+        return true;
+      default:
+        return false;
+    }
+  }
 }
 ```
 
@@ -400,860 +837,183 @@ export class SenderApi {
 
 ## 📊 PLANES DE MIGRACIÓN POR CASO DE USO
 
-### **CASO DE USO 1: Lectura de Lista de Emails**
+### **CASO DE USO 3: SmartInbox - Clasificación con IA (ACTUALIZADO V3.1)**
 
-#### Componentes Afectados
-- `src/pages/FunEmail.tsx` (principal)
-- `src/components/email/EmailList.tsx`
-- `src/hooks/email/useEmailList.ts`
+#### Estado Objetivo (Zero-Sync con Fresh Start)
 
-#### Estado Actual
 ```typescript
-// ❌ ANTES: Query directo a email_messages
-const { data: emails } = useQuery({
-  queryKey: ['emails', folder],
-  queryFn: async () => {
-    const { data } = await supabase
-      .from('email_messages')
-      .select('*')
-      .eq('folder_name', folder);
-    return data;
-  }
-});
-```
-
-#### Estado Objetivo (Zero-Sync)
-```typescript
-// ✅ DESPUÉS: Uso de EmailApi
-const { data: emails } = useQuery({
-  queryKey: ['emails-zerosync', folder],
-  queryFn: async () => {
-    const emailApi = new EmailApi();
-    return await emailApi.getEmailList({ folder, limit: 50 });
-  },
-  staleTime: 30000 // Cache 30s
-});
-```
-
-#### Plan de Migración
-
-**Fase 1: Crear EmailApi Module**
-- [ ] Implementar `src/lib/tmwe/api/EmailApi.ts`
-- [ ] Definir interfaces `EmailListResponse`, `EmailFilters`
-- [ ] Implementar método `getEmailList()`
-- [ ] Testing unitario de EmailApi
-
-**Fase 2: Actualizar Hook**
-- [ ] Modificar `useEmailList.ts` para usar `EmailApi`
-- [ ] Eliminar query directo a `email_messages`
-- [ ] Actualizar `queryKey` con sufijo `-zerosync`
-- [ ] Ajustar `staleTime` y `gcTime`
-
-**Fase 3: Validar Componentes**
-- [ ] Verificar que `FunEmail.tsx` funciona con nueva data
-- [ ] Verificar que `EmailList.tsx` renderiza correctamente
-- [ ] Testing E2E de lectura de emails
-
-**Fase 4: Cleanup**
-- [ ] Eliminar código legacy de `email_messages`
-- [ ] Actualizar documentación
-
-**Tiempo Estimado:** 2-3 días  
-**Prioridad:** 🔴 CRÍTICA  
-**Dependencias:** TMWEApiClient, EmailApi
-
----
-
-### **CASO DE USO 2: Visualización de Detalle de Email**
-
-#### Componentes Afectados
-- `src/components/email/EmailDetail.tsx`
-- `src/hooks/email/useEmailDetail.ts`
-
-#### Estado Actual
-```typescript
-// ❌ ANTES: Query a email_messages con fallback
-const { data: email } = useQuery({
-  queryKey: ['email', emailId],
-  queryFn: async () => {
-    // Primero intenta API
-    try {
-      return await emailSearchApi.getEmailDetail(emailId);
-    } catch {
-      // Fallback a DB
-      const { data } = await supabase
-        .from('email_messages')
-        .select('*')
-        .eq('id', emailId)
-        .single();
-      return data;
-    }
-  }
-});
-```
-
-#### Estado Objetivo (Zero-Sync)
-```typescript
-// ✅ DESPUÉS: Solo EmailApi, sin fallback
-const { data: email } = useQuery({
-  queryKey: ['email-detail-zerosync', emailId],
-  queryFn: async () => {
-    const emailApi = new EmailApi();
-    return await emailApi.getEmailDetail({
-      emailId,
-      folder: selectedFolder
-    });
-  },
-  staleTime: 60000 // Cache 1 minuto
-});
-```
-
-#### Plan de Migración
-
-**Fase 1: Actualizar EmailApi**
-- [ ] Implementar método `getEmailDetail()` en `EmailApi`
-- [ ] Definir interface `EmailDetail` con todos los campos necesarios
-- [ ] Manejar campos `body_html` vs `body_text`
-- [ ] Testing de parsing de attachments
-
-**Fase 2: Migrar Hook**
-- [ ] Eliminar fallback a `email_messages` en `useEmailDetail.ts`
-- [ ] Usar `EmailApi.getEmailDetail()`
-- [ ] Actualizar `queryKey`
-- [ ] Configurar cache adecuado
-
-**Fase 3: Validar UI**
-- [ ] Verificar que `EmailDetail.tsx` renderiza HTML correctamente
-- [ ] Verificar visualización de attachments
-- [ ] Testing de emails con imágenes embebidas
-
-**Fase 4: Performance**
-- [ ] Implementar prefetch de detalle al hover en lista
-- [ ] Optimizar tamaño de response (¿comprimir HTML?)
-
-**Tiempo Estimado:** 1-2 días  
-**Prioridad:** 🔴 CRÍTICA  
-**Dependencias:** EmailApi, Caso de Uso 1
-
----
-
-### **CASO DE USO 3: SmartInbox - Clasificación con IA**
-
-#### Componentes Afectados
-- `src/components/email/smart-inbox/SmartInboxTab.tsx`
-- `src/components/email/smart-inbox/SmartInboxTabIntelligent.tsx`
-- `src/hooks/email/useSmartClassification.ts`
-- `src/lib/tmwe-email-search-api.ts`
-
-#### Estado Actual - **PROBLEMA CRÍTICO**
-```typescript
-// ❌ PROBLEMA: Clasificaciones almacenadas con `email_id` de tabla local
-// que NO existe en TMWE API
-INSERT INTO email_ai_classifications (email_id, category, ...)
-VALUES (uuid_from_local_db, 'important', ...);
-
-// Cuando queremos mostrar email clasificado:
-SELECT * FROM email_messages em
-JOIN email_ai_classifications eac ON em.id = eac.email_id
-WHERE eac.category = 'important';
-// ❌ NO FUNCIONA porque email_messages ya no tiene datos!
-```
-
-#### Estado Objetivo (Zero-Sync) - **SOLUCIÓN**
-```typescript
-// ✅ SOLUCIÓN: Usar tmwe_email_id + folder_name como clave compuesta
-CREATE TABLE email_ai_classifications_v2 (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tmwe_email_id integer NOT NULL, -- UID del API TMWE
-  folder_name text NOT NULL,
-  user_email text NOT NULL,
-  category text NOT NULL,
-  classification_prompt text,
-  created_at timestamp DEFAULT now(),
-  UNIQUE(tmwe_email_id, folder_name, user_email)
-);
-
-// Clasificar email
-INSERT INTO email_ai_classifications_v2 
-  (tmwe_email_id, folder_name, user_email, category)
-VALUES (12345, 'INBOX', 'jose@tmwe.it', 'important');
-
-// Recuperar emails clasificados
-const emailApi = new EmailApi();
+// ✅ V3.1: Usar tmwe_classifications directamente
 const classificationApi = new ClassificationApi();
 
-// 1. Obtener clasificaciones de categoría
-const classifications = await classificationApi.getClassifications({
-  category: 'important',
-  userEmail: 'jose@tmwe.it'
+// Clasificar email
+await classificationApi.classifyEmail({
+  tmwe_email_id: 12345,              // ✅ ID directo desde TMWE API
+  folder_name: 'INBOX',
+  user_email: 'jose@tmwe.it',
+  prompt: 'Clasifica este email...'
 });
 
-// 2. Obtener detalles de emails desde API
+// Recuperar emails clasificados
+const classifications = await classificationApi.getClassifications({
+  user_email: 'jose@tmwe.it',
+  category: 'important'
+});
+
+// Enriquecer con datos de TMWE API
+const emailApi = new EmailApi();
 const emails = await Promise.all(
   classifications.map(c => 
-    emailApi.getEmailDetail({
-      emailId: c.tmwe_email_id,
-      folder: c.folder_name
-    })
+    emailApi.getEmailDetail(c.tmwe_email_id)
   )
 );
 ```
 
-#### Plan de Migración - **MUY COMPLEJO**
+#### Plan de Migración V3.1 - **SIN MIGRACIÓN DE DATOS**
 
-**Fase 1: Migración de Esquema DB**
-- [ ] Crear tabla `email_ai_classifications_v2` con `tmwe_email_id`
-- [ ] Crear índices compuestos: `(tmwe_email_id, folder_name)`, `(user_email, category)`
-- [ ] Script de migración de datos existentes (si es posible recuperar `tmwe_email_id`)
-- [ ] RLS policies para nueva tabla
+**Fase 1: Crear Tabla Nueva**
+- [ ] Ejecutar DDL de `tmwe_classifications`
+- [ ] Verificar RLS policies activas
+- [ ] Testing de insert/select/update
 
 **Fase 2: Crear ClassificationApi**
 - [ ] Implementar `src/lib/tmwe/api/ClassificationApi.ts`
-- [ ] Método `classifyEmail()` que:
-  1. Llama a TMWE API para obtener contenido de email
-  2. Llama a IA para clasificar
-  3. Almacena resultado en `email_ai_classifications_v2` con `tmwe_email_id`
-- [ ] Método `getClassifications()` que lee de tabla local
-- [ ] Método `classifyBatch()` para clasificación masiva
+- [ ] Método `classifyEmail()` usando `tmwe_email_id`
+- [ ] Método `getClassifications()` desde tabla nueva
+- [ ] Testing unitario
 
 **Fase 3: Actualizar Hooks**
 - [ ] Modificar `useSmartClassification.ts`:
-  - Usar `EmailApi` para obtener contenido de emails
-  - Usar `ClassificationApi` para clasificar y almacenar
-  - Actualizar queries para usar `tmwe_email_id`
-- [ ] Crear `useClassifiedEmails.ts`:
-  - Obtener clasificaciones de tabla local
-  - Enriquecer con datos de `EmailApi`
+  - Usar `ClassificationApi`
+  - Feature flag para usar `tmwe_classifications`
+  - Fallback a legacy si flag desactivado
 
 **Fase 4: Actualizar Componentes**
 - [ ] `SmartInboxTab.tsx`: Usar nuevos hooks
-- [ ] `SmartInboxTabIntelligent.tsx`: Eliminar referencias a `email_messages`
-- [ ] Manejar estado de carga cuando se enriquecen datos
+- [ ] Eliminar referencias directas a `email_ai_classifications`
+- [ ] Mostrar `subject_preview` de tabla nueva
 
-**Fase 5: Manejo de Edge Cases**
-- [ ] ¿Qué pasa si email fue eliminado de TMWE pero sigue clasificado?
-  - Mostrar como "[Email eliminado]" o limpiar clasificación
-- [ ] ¿Cómo manejar re-clasificación de emails?
-  - Update en lugar de insert en tabla clasificaciones
+**Fase 5: Testing**
+- [ ] Clasificación individual funciona
+- [ ] Clasificación batch (100 emails)
+- [ ] Filtros por categoría/urgencia
+- [ ] Performance < 3s por clasificación
 
-**Fase 6: Testing Exhaustivo**
-- [ ] Testing de clasificación individual
-- [ ] Testing de clasificación batch (100+ emails)
-- [ ] Testing de visualización por categoría
-- [ ] Testing de performance (carga de 50 emails clasificados)
-
-**Tiempo Estimado:** 5-7 días  
+**Tiempo Estimado:** 4-5 días (2 días menos que v3.0 - no hay migración)  
 **Prioridad:** 🔴 CRÍTICA  
-**Dependencias:** EmailApi, ClassificationApi, migración DB  
-**Riesgo:** 🔴 ALTO - Requiere migración de datos existentes
+**Dependencias:** EmailApi, tabla `tmwe_classifications`  
+**Riesgo:** 🟢 BAJO - No hay datos que migrar
 
 ---
 
-### **CASO DE USO 4: Análisis de Remitentes**
+### **CASO DE USO 10: Gestión de Reglas de Remitente (ACTUALIZADO V3.1)**
 
-#### Componentes Afectados
-- `src/pages/EmailSenderManager.tsx`
-- `src/lib/email-sender-analyzer.ts`
-- `src/hooks/useSenderAnalysis.ts`
+#### Estado Objetivo (Zero-Sync con Fresh Start)
 
-#### Estado Actual
 ```typescript
-// ❌ ANTES: Análisis desde email_messages
-const analyzeSenders = async (userEmail: string) => {
-  const { data: emails } = await supabase
-    .from('email_messages')
-    .select('sender_email, sender_name, date')
-    .eq('user_email', userEmail);
-  
-  // Agrupar y analizar...
-  const senderStats = emails.reduce((acc, email) => {
-    // ...
-  }, {});
-};
-```
+// ✅ V3.1: Client-side filtering usando tmwe_sender_profiles y tmwe_classification_rules
+const senderApi = new SenderApi();
+const emailApi = new EmailApi();
 
-#### Estado Objetivo (Zero-Sync)
-```typescript
-// ✅ DESPUÉS: Análisis desde SenderApi
-const analyzeSenders = async (userEmail: string) => {
-  const senderApi = new SenderApi();
-  
-  // SenderApi hace la agregación en backend o en memoria
-  const senders = await senderApi.getSenderList({
-    limit: 1000
-  });
-  
-  return senders;
-};
-```
+// 1. Obtener emails desde API
+const emails = await emailApi.getEmailList({ folder: 'INBOX' });
 
-#### Plan de Migración
-
-**Fase 1: Crear SenderApi**
-- [ ] Implementar `src/lib/tmwe/api/SenderApi.ts`
-- [ ] Método `getSenderList()`:
-  - Llama a `EmailApi.getEmailList()` con todos los folders
-  - Agrupa por `sender_email` en memoria
-  - Calcula estadísticas (count, firstSeen, lastSeen)
-- [ ] Método `getEmailsBySender()` para filtrar por remitente
-- [ ] Optimización: Cachear resultados por 5 minutos
-
-**Fase 2: Actualizar Analyzer**
-- [ ] Modificar `email-sender-analyzer.ts` para usar `SenderApi`
-- [ ] Eliminar fallback a `email_messages`
-- [ ] Mantener integración con reglas de Supabase
-
-**Fase 3: Actualizar Hook**
-- [ ] `useSenderAnalysis.ts` usa `SenderApi`
-- [ ] Configurar cache React Query adecuado
-- [ ] Manejar estados de carga
-
-**Fase 4: Performance**
-- [ ] Implementar paginación server-side si TMWE API lo soporta
-- [ ] Si no, cargar en chunks y agregar progresivamente
-- [ ] Mostrar spinner con "Analizando X de Y remitentes..."
-
-**Tiempo Estimado:** 3-4 días  
-**Prioridad:** 🟡 MEDIA  
-**Dependencias:** EmailApi, SenderApi
-
----
-
-### **CASO DE USO 5: Estadísticas Rápidas (Quick Stats)**
-
-#### Componentes Afectados
-- `src/components/email/stats/FunEmailQuickStats.tsx`
-- `src/hooks/email/useEmailFolderInfo.ts`
-
-#### Estado Actual
-```typescript
-// ❌ ANTES: Count de email_messages
-const { data: totalEmails } = useQuery({
-  queryKey: ['total-emails'],
-  queryFn: async () => {
-    const { count } = await supabase
-      .from('email_messages')
-      .select('id', { count: 'exact', head: true });
-    return count;
-  }
-});
-```
-
-#### Estado Objetivo (Zero-Sync)
-```typescript
-// ✅ DESPUÉS: Stats desde FolderApi
-const { data: stats } = useQuery({
-  queryKey: ['quick-stats-zerosync'],
-  queryFn: async () => {
-    const folderApi = new FolderApi();
-    return await folderApi.getGlobalStats();
-  },
-  staleTime: 30000, // Cache 30s
-  refetchInterval: 30000 // Auto-refresh cada 30s
-});
-```
-
-#### Plan de Migración
-
-**Fase 1: FolderApi - Global Stats**
-- [ ] Implementar método `getGlobalStats()` en `FolderApi`
-- [ ] Agregar estadísticas de todos los folders
-- [ ] Retornar: `{ total_emails, unread_count, total_size }`
-
-**Fase 2: Actualizar Hook**
-- [ ] Modificar `useEmailFolderInfo.ts` para usar `FolderApi`
-- [ ] Configurar auto-refetch cada 30s
-- [ ] Eliminar query a `email_messages`
-
-**Fase 3: Actualizar Componente**
-- [ ] `FunEmailQuickStats.tsx` usa nuevo hook
-- [ ] Mostrar indicador de última actualización
-- [ ] Animación suave al actualizar números
-
-**Tiempo Estimado:** 1 día  
-**Prioridad:** 🟢 BAJA  
-**Dependencias:** FolderApi
-
----
-
-### **CASO DE USO 6: Estadísticas Globales (Global Stats)**
-
-#### Componentes Afectados
-- `src/components/email/stats/FunEmailGlobalStats.tsx`
-- `src/hooks/email/useEmailFolderInfo.ts`
-
-#### Plan Similar a Caso 5
-- Usar `FolderApi.getGlobalStats()`
-- Auto-refresh cada 30s
-- Mostrar breakdown por folder
-
-**Tiempo Estimado:** 1 día  
-**Prioridad:** 🟢 BAJA  
-**Dependencias:** FolderApi
-
----
-
-### **CASO DE USO 7: Búsqueda de Emails**
-
-#### Componentes Afectados
-- `src/pages/FunEmail.tsx` (input de búsqueda)
-- `src/hooks/email/useEmailList.ts`
-
-#### Estado Actual
-```typescript
-// ❌ ANTES: searchEmails con fallback
-const searchResults = searchQuery
-  ? await emailSearchApi.searchEmails({ query: searchQuery })
-  : await supabase.from('email_messages').select('*');
-```
-
-#### Estado Objetivo (Zero-Sync)
-```typescript
-// ✅ DESPUÉS: Solo EmailApi.searchEmails
-const { data: results } = useQuery({
-  queryKey: ['email-search', searchQuery],
-  queryFn: async () => {
-    const emailApi = new EmailApi();
-    return await emailApi.searchEmails({
-      query: searchQuery,
-      filters: { folder: selectedFolder }
-    });
-  },
-  enabled: searchQuery.length >= 3
-});
-```
-
-#### Plan de Migración
-
-**Fase 1: EmailApi - Search**
-- [ ] Implementar método `searchEmails()` en `EmailApi`
-- [ ] Soporte de filtros: folder, fecha, attachments, etc.
-- [ ] Paginación de resultados
-
-**Fase 2: Actualizar Hook**
-- [ ] `useEmailList.ts` usa `EmailApi.searchEmails()`
-- [ ] Eliminar fallback a DB
-- [ ] Debounce de 300ms en búsqueda
-
-**Fase 3: UI/UX**
-- [ ] Mostrar número de resultados
-- [ ] Highlight de términos de búsqueda
-- [ ] Skeleton durante búsqueda
-
-**Tiempo Estimado:** 2 días  
-**Prioridad:** 🟡 MEDIA  
-**Dependencias:** EmailApi
-
----
-
-### **CASO DE USO 8: Threads de Conversación**
-
-#### Componentes Afectados
-- `src/hooks/useEmailThread.ts`
-- `src/components/email/EmailThreadView.tsx` (si existe)
-
-#### Estado Actual
-```typescript
-// ❌ ANTES: Usa email_messages con fallback
-const fetchThread = async (messageId: string) => {
-  try {
-    return await emailSearchApi.getThread(messageId);
-  } catch {
-    return await supabase
-      .from('email_messages')
-      .select('*')
-      .eq('thread_id', threadId);
-  }
-};
-```
-
-#### Estado Objetivo (Zero-Sync)
-```typescript
-// ✅ DESPUÉS: Solo EmailApi.getEmailThread
-const { data: thread } = useQuery({
-  queryKey: ['email-thread', messageId],
-  queryFn: async () => {
-    const emailApi = new EmailApi();
-    return await emailApi.getEmailThread({
-      messageId,
-      folder: selectedFolder
-    });
-  }
-});
-```
-
-#### Plan de Migración
-
-**Fase 1: EmailApi - Threads**
-- [ ] Implementar `getEmailThread()` en `EmailApi`
-- [ ] Ordenar emails cronológicamente
-- [ ] Identificar email actual en thread
-
-**Fase 2: Actualizar Hook**
-- [ ] `useEmailThread.ts` usa `EmailApi`
-- [ ] Eliminar fallback a `email_messages`
-- [ ] Cache agresivo (threads no cambian frecuentemente)
-
-**Fase 3: UI**
-- [ ] Componente de visualización de thread
-- [ ] Navegación entre emails del thread
-- [ ] Indicador visual de posición en thread
-
-**Tiempo Estimado:** 2-3 días  
-**Prioridad:** 🟡 MEDIA  
-**Dependencias:** EmailApi
-
----
-
-### **CASO DE USO 9: Descarga/Sincronización de Emails**
-
-#### Componentes Afectados
-- `src/components/email/admin/QuickDownloadDialog.tsx`
-- `src/components/email/admin/GlobalDownloadDialog.tsx`
-- `src/lib/email/strategies/*`
-- `src/lib/email/services/EdgeFunctionSyncService.ts`
-
-#### Estado Actual
-```typescript
-// ❌ ANTES: Descarga y almacena en email_messages
-const downloadEmails = async (folder: string) => {
-  const emails = await tmweApi.getEmails(folder);
-  
-  // Almacenar en Supabase
-  await supabase.from('email_messages').insert(emails);
-};
-```
-
-#### Estado Objetivo (Zero-Sync) - **CAMBIO DE PARADIGMA**
-```typescript
-// ✅ DESPUÉS: NO descargamos, solo sincronizamos metadatos
-const syncMetadata = async (folder: string) => {
-  // 1. Obtener lista de UIDs desde TMWE API
-  const { uids } = await emailApi.getEmailList({ folder });
-  
-  // 2. Almacenar solo UIDs en tabla de sincronización
-  await supabase.from('email_sync_metadata').upsert(
-    uids.map(uid => ({ tmwe_email_id: uid, folder, synced_at: new Date() }))
-  );
-  
-  // 3. NO almacenamos contenido de emails
-};
-```
-
-#### Plan de Migración - **REDISEÑO COMPLETO**
-
-**Fase 1: Nueva Tabla de Sync Metadata**
-```sql
-CREATE TABLE email_sync_metadata (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tmwe_email_id integer NOT NULL,
-  folder_name text NOT NULL,
-  user_email text NOT NULL,
-  synced_at timestamp DEFAULT now(),
-  last_seen_at timestamp DEFAULT now(),
-  UNIQUE(tmwe_email_id, folder_name, user_email)
+// 2. Aplicar reglas automáticamente
+const filteredEmails = await senderApi.applySenderRules(
+  emails,
+  'jose@tmwe.it'
 );
 
-CREATE INDEX idx_sync_metadata_user_folder 
-  ON email_sync_metadata(user_email, folder_name);
+// 3. Mostrar resultado
+return filteredEmails; // Emails ya tienen _category, _urgency, _archived aplicado
 ```
 
-**Fase 2: Actualizar EdgeFunctionSyncService**
-- [ ] Modificar para NO descargar contenido completo
-- [ ] Solo sincronizar lista de UIDs
-- [ ] Actualizar `email_sync_progress` con nuevos nombres de fases
-- [ ] Eliminar inserción en `email_messages`
+#### Plan de Migración V3.1
 
-**Fase 3: Actualizar Estrategias de Descarga**
-- [ ] `SequentialStrategy`, `DanceStrategy`, etc.
-- [ ] Cambiar lógica de "descargar" a "sincronizar metadata"
-- [ ] Actualizar logs y progress indicators
+**Fase 1: Crear Tablas Nuevas**
+- [ ] Ejecutar DDL de `tmwe_sender_profiles`
+- [ ] Ejecutar DDL de `tmwe_classification_rules`
+- [ ] Verificar RLS policies
 
-**Fase 4: UI/UX**
-- [ ] Cambiar terminología: "Descargar" → "Sincronizar"
-- [ ] "X emails sincronizados" en lugar de "descargados"
-- [ ] Explicar a usuario que emails se acceden en tiempo real
+**Fase 2: Crear/Actualizar SenderApi**
+- [ ] Implementar métodos de `SenderApi`:
+  - `getSenderProfile()`
+  - `updateSenderStats()`
+  - `applySenderRules()` (client-side filtering)
+- [ ] Testing unitario de aplicación de reglas
 
-**Fase 5: Cleanup**
-- [ ] Eliminar código de inserción en `email_messages`
-- [ ] Limpiar tabla `email_messages` (opcional, puede mantenerse como backup)
+**Fase 3: Integración con EmailApi**
+- [ ] Modificar `EmailApi.getEmailList()` para aplicar reglas opcionales
+- [ ] Feature flag `USE_TMWE_RULES`
 
-**Tiempo Estimado:** 4-5 días  
-**Prioridad:** 🟡 MEDIA  
-**Dependencias:** EmailApi, migración DB  
-**Riesgo:** 🟡 MEDIO - Cambio conceptual importante
+**Fase 4: Actualizar UI**
+- [ ] `EmailSenderManager.tsx`: Usar `tmwe_sender_profiles`
+- [ ] `SenderRuleDialog.tsx`: CRUD en `tmwe_classification_rules`
+- [ ] Botón "Aplicar ahora" → invalida cache React Query
 
----
-
-### **CASO DE USO 10: Gestión de Reglas de Remitente**
-
-#### Componentes Afectados
-- `src/pages/EmailSenderManager.tsx`
-- `src/components/email/sender-rules/SenderRuleDialog.tsx`
-- `src/hooks/useSenderRules.ts`
-
-#### Estado Actual - **PROBLEMA CRÍTICO**
-```typescript
-// ❌ PROBLEMA: Reglas se aplican sobre email_messages
-CREATE TRIGGER apply_sender_rule
-AFTER INSERT ON email_sender_rules
-FOR EACH ROW EXECUTE FUNCTION apply_rule_to_existing_emails();
-
--- Función intenta actualizar email_messages
-UPDATE email_messages
-SET folder_name = 'Trash', is_archived = true
-WHERE sender_email = NEW.sender_email;
--- ❌ NO FUNCIONA en Zero-Sync porque email_messages está vacío!
-```
-
-#### Estado Objetivo (Zero-Sync) - **SOLUCIÓN: CLIENT-SIDE FILTERING**
-```typescript
-// ✅ SOLUCIÓN: Reglas se aplican al obtener emails desde API
-const getFilteredEmails = async (folder: string, userEmail: string) => {
-  const emailApi = new EmailApi();
-  const senderApi = new SenderApi();
-  
-  // 1. Obtener emails desde API
-  const emails = await emailApi.getEmailList({ folder });
-  
-  // 2. Obtener reglas activas del usuario
-  const rules = await senderApi.getSenderRules(userEmail);
-  
-  // 3. Aplicar reglas en memoria
-  const filteredEmails = emails.filter(email => {
-    const rule = rules.find(r => r.sender_email === email.sender_email);
-    
-    if (!rule || !rule.is_active) return true;
-    
-    // Aplicar acciones de regla
-    if (rule.action === 'delete') return false;
-    if (rule.action === 'archive') {
-      email._isArchived = true;
-      return true;
-    }
-    if (rule.action === 'move') {
-      email._movedToFolder = rule.target_folder;
-      return folder === rule.target_folder;
-    }
-    
-    return true;
-  });
-  
-  return filteredEmails;
-};
-```
-
-#### Plan de Migración - **REDISEÑO ARQUITECTÓNICO**
-
-**Fase 1: Análisis de Impacto**
-- [ ] Documentar todas las reglas existentes en DB
-- [ ] Identificar tipos de acciones soportadas
-- [ ] Determinar si reglas deben aplicarse server-side o client-side
-
-**Fase 2: Decisión Arquitectónica**
-
-**OPCIÓN A: Client-Side Filtering (RECOMENDADO)**
-- ✅ Ventajas:
-  - No requiere modificar TMWE API
-  - Flexible y fácil de debugear
-  - Reglas se aplican en tiempo real
-- ❌ Desventajas:
-  - Puede ser lento con muchas reglas
-  - Reglas no persisten en servidor
-
-**OPCIÓN B: Server-Side Rules via Edge Function**
-- ✅ Ventajas:
-  - Mejor performance
-  - Reglas centralizadas
-- ❌ Desventajas:
-  - Requiere Edge Function adicional
-  - Complejidad de sincronización
-
-**Fase 3: Implementación (Asumiendo Opción A)**
-
-**3.1 Actualizar SenderApi**
-```typescript
-// src/lib/tmwe/api/SenderApi.ts
-class SenderApi {
-  // Obtener reglas desde Supabase
-  async getSenderRules(userEmail: string): Promise<SenderRule[]> {
-    const { data } = await supabase
-      .from('email_sender_rules')
-      .select('*')
-      .eq('user_email', userEmail)
-      .eq('is_active', true);
-    return data || [];
-  }
-  
-  // Aplicar reglas a lista de emails
-  applyRulesToEmails(
-    emails: Email[],
-    rules: SenderRule[]
-  ): Email[] {
-    return emails
-      .map(email => {
-        const rule = rules.find(r => 
-          r.sender_email === email.sender_email
-        );
-        
-        if (!rule) return email;
-        
-        // Aplicar acción
-        switch (rule.action) {
-          case 'delete':
-            return null; // Filtrar
-          case 'archive':
-            return { ...email, _isArchived: true };
-          case 'move':
-            return { ...email, _movedToFolder: rule.target_folder };
-          case 'label':
-            return { ...email, _labels: [...(email._labels || []), rule.label] };
-          default:
-            return email;
-        }
-      })
-      .filter(email => email !== null);
-  }
-}
-```
-
-**3.2 Actualizar EmailApi**
-```typescript
-// src/lib/tmwe/api/EmailApi.ts
-class EmailApi {
-  async getEmailList(params: {
-    folder: string;
-    userEmail: string; // Necesario para aplicar reglas
-    applyRules?: boolean;
-  }): Promise<Email[]> {
-    // 1. Obtener emails desde TMWE API
-    const emails = await this.fetchFromTMWE(params.folder);
-    
-    // 2. Aplicar reglas si está habilitado
-    if (params.applyRules !== false) {
-      const senderApi = new SenderApi();
-      const rules = await senderApi.getSenderRules(params.userEmail);
-      return senderApi.applyRulesToEmails(emails, rules);
-    }
-    
-    return emails;
-  }
-}
-```
-
-**3.3 Actualizar Hooks**
-```typescript
-// src/hooks/email/useEmailList.ts
-export const useEmailList = (folder: string) => {
-  const { userEmail } = useUserEmail();
-  
-  return useQuery({
-    queryKey: ['emails-with-rules', folder, userEmail],
-    queryFn: async () => {
-      const emailApi = new EmailApi();
-      return await emailApi.getEmailList({
-        folder,
-        userEmail: userEmail!,
-        applyRules: true
-      });
-    },
-    enabled: !!userEmail
-  });
-};
-```
-
-**Fase 4: Gestión de Reglas en UI**
-- [ ] Actualizar `SenderRuleDialog.tsx`
-- [ ] Eliminar triggers de DB que intentan modificar `email_messages`
-- [ ] Añadir opción "Aplicar regla ahora" que:
-  1. Guarda regla en DB
-  2. Invalida cache de React Query
-  3. Re-fetch de emails con nuevas reglas
-
-**Fase 5: Performance Optimization**
-- [ ] Cachear reglas en memoria (5 minutos)
-- [ ] Indexar reglas por `sender_email` para búsqueda O(1)
-- [ ] Lazy loading de reglas (solo cuando sea necesario)
-
-**Fase 6: Testing**
-- [ ] Test unitario de `applyRulesToEmails()`
-- [ ] Test de integración: crear regla → ver efecto inmediato
-- [ ] Test de performance: 1000 emails + 50 reglas
+**Fase 5: Performance Testing**
+- [ ] Benchmark: 1000 emails + 50 reglas < 200ms
+- [ ] Si > 200ms → considerar Edge Function para filtering
 
 **Tiempo Estimado:** 5-6 días  
 **Prioridad:** 🔴 ALTA  
 **Dependencias:** EmailApi, SenderApi  
-**Riesgo:** 🔴 ALTO - Rediseño arquitectónico significativo
+**Riesgo:** 🟡 MEDIO - Rediseño client-side
 
 ---
 
 ## 🗺️ MATRIZ DE TRAZABILIDAD
 
-| Caso de Uso | Componente Principal | Hook | API Module | Prioridad | Días | Dependencias |
-|-------------|---------------------|------|------------|-----------|------|--------------|
-| **CU1: Lista Emails** | `FunEmail.tsx`<br>`EmailList.tsx` | `useEmailList.ts` | `EmailApi` | 🔴 CRÍTICA | 2-3 | TMWEApiClient, TMWEAuthManager |
-| **CU2: Detalle Email** | `EmailDetail.tsx` | `useEmailDetail.ts` | `EmailApi` | 🔴 CRÍTICA | 1-2 | CU1 |
-| **CU3: SmartInbox** | `SmartInboxTab.tsx`<br>`SmartInboxTabIntelligent.tsx` | `useSmartClassification.ts` | `EmailApi`<br>`ClassificationApi` | 🔴 CRÍTICA | 6-7 | CU1, migración DB |
-| **CU4: Análisis Remitentes** | `EmailSenderManager.tsx` | `useSenderAnalysis.ts` | `SenderApi` | 🟡 MEDIA | 3-4 | CU1 |
-| **CU5: Quick Stats** | `FunEmailQuickStats.tsx` | `useEmailFolderInfo.ts` | `FolderApi` | 🟢 BAJA | 1 | - |
-| **CU6: Global Stats** | `FunEmailGlobalStats.tsx` | `useEmailFolderInfo.ts` | `FolderApi` | 🟢 BAJA | 1 | CU5 |
-| **CU7: Búsqueda** | `FunEmail.tsx` (search) | `useEmailList.ts` | `EmailApi` | 🟡 MEDIA | 2 | CU1 |
-| **CU8: Threads** | `EmailThreadView.tsx` | `useEmailThread.ts` | `EmailApi` | 🟡 MEDIA | 2-3 | CU1 |
-| **CU9: Sincronización** | `QuickDownloadDialog.tsx`<br>`GlobalDownloadDialog.tsx` | - | `EmailApi` | 🟡 MEDIA | 4-5 | CU1, migración DB |
-| **CU10: Reglas Remitente** | `EmailSenderManager.tsx`<br>`SenderRuleDialog.tsx` | `useSenderRules.ts` | `SenderApi` | 🔴 ALTA | 8-9 | CU1, CU4 |
+| Caso de Uso | Componente Principal | Hook | API Module | Tabla Nueva | Prioridad | Días | Dependencias |
+|-------------|---------------------|------|------------|-------------|-----------|------|--------------|
+| **CU1: Lista Emails** | `FunEmail.tsx`<br>`EmailList.tsx` | `useEmailList.ts` | `EmailApi` | - | 🔴 CRÍTICA | 2-3 | TMWEApiClient, TMWEAuthManager |
+| **CU2: Detalle Email** | `EmailDetail.tsx` | `useEmailDetail.ts` | `EmailApi` | - | 🔴 CRÍTICA | 1-2 | CU1 |
+| **CU3: SmartInbox** | `SmartInboxTab.tsx` | `useSmartClassification.ts` | `EmailApi`<br>`ClassificationApi` | `tmwe_classifications` | 🔴 CRÍTICA | 4-5 | CU1, tabla nueva |
+| **CU4: Análisis Remitentes** | `EmailSenderManager.tsx` | `useSenderAnalysis.ts` | `SenderApi` | `tmwe_sender_profiles` | 🟡 MEDIA | 3-4 | CU1, tabla nueva |
+| **CU5: Quick Stats** | `FunEmailQuickStats.tsx` | `useEmailFolderInfo.ts` | `FolderApi` | - | 🟢 BAJA | 1 | - |
+| **CU6: Global Stats** | `FunEmailGlobalStats.tsx` | `useEmailFolderInfo.ts` | `FolderApi` | - | 🟢 BAJA | 1 | CU5 |
+| **CU7: Búsqueda** | `FunEmail.tsx` (search) | `useEmailList.ts` | `EmailApi` | - | 🟡 MEDIA | 2 | CU1 |
+| **CU8: Threads** | `EmailThreadView.tsx` | `useEmailThread.ts` | `EmailApi` | - | 🟡 MEDIA | 2-3 | CU1 |
+| **CU9: Sincronización** | `QuickDownloadDialog.tsx` | - | `EmailApi` | - | 🟡 MEDIA | 4-5 | CU1 |
+| **CU10: Reglas Remitente** | `EmailSenderManager.tsx`<br>`SenderRuleDialog.tsx` | `useSenderRules.ts` | `SenderApi` | `tmwe_sender_profiles`<br>`tmwe_classification_rules` | 🔴 ALTA | 5-6 | CU1, CU4, tablas nuevas |
 
-**Total Estimado v3.0:** 23-34 días de desarrollo (3 días menos que v2.0 gracias a wrappers)
+**Total Estimado v3.1:** 20-30 días de desarrollo (3-4 días menos que v3.0 - sin migración de datos)
 
 ---
 
 ## 🚀 ROADMAP DE IMPLEMENTACIÓN
 
-### **SPRINT 1: Infraestructura Core (Días 1-3) - WRAPPERS**
+### **SPRINT 1: Infraestructura Core + Tablas Nuevas (Días 1-3)**
 
-**Objetivo:** Establecer bases de arquitectura Zero-Sync usando wrappers sobre código existente
-
-**🔥 CAMBIO CLAVE v3.0:** Este sprint ahora toma 2-3 días en lugar de 5 días gracias al patrón Wrapper/Facade
-
-#### Comparativa v2.0 vs v3.0
-
-| Tarea | v2.0 | v3.0 | Ahorro |
-|-------|------|------|--------|
-| TMWEAuthManager | 2 días (crear OAuth) | 0.5 días (wrapper) | 1.5 días |
-| TMWEApiClient | 1.5 días (crear HTTP) | 0.5 días (facade) | 1 día |
-| EmailApi | 1.5 días (implementar) | 0.5 días (wrapper) | 1 día |
-| FolderApi | 0.5 días | 0.25 días (wrapper) | 0.25 días |
-| **Total** | **5.5 días** | **1.75 días** | **~3 días** |
+**Objetivo:** Establecer bases de arquitectura Zero-Sync con tablas optimizadas
 
 #### Tareas
-1. **Día 1: TMWEAuthManager + TMWEApiClient (Wrappers)**
-   - [ ] Crear `src/lib/tmwe/TMWEAuthManager.ts` (wrapper sobre `tmwe-api-integrated.ts`)
-   - [ ] Crear `src/lib/tmwe/TMWEApiClient.ts` (facade sobre `tmwe-api-proxy`)
-   - [ ] Crear `src/lib/tmwe/types.ts` (tipos compartidos)
-   - [ ] Testing de integración (no unitario - delega a código existente)
+1. **Día 1: TMWEAuthManager + TMWEApiClient + Tablas DB**
+   - [ ] Crear `src/lib/tmwe/TMWEAuthManager.ts` (wrapper)
+   - [ ] Crear `src/lib/tmwe/TMWEApiClient.ts` (facade)
+   - [ ] Crear `src/lib/tmwe/config.ts` (feature flags)
+   - [ ] **Ejecutar migrations:**
+     - [ ] `CREATE TABLE tmwe_classifications`
+     - [ ] `CREATE TABLE tmwe_sender_profiles`
+     - [ ] `CREATE TABLE tmwe_classification_rules`
+   - [ ] Verificar RLS policies activas
 
-2. **Día 2: EmailApi + FolderApi (Wrappers)**
-   - [ ] Crear `src/lib/tmwe/api/EmailApi.ts` (wrapper sobre `emailSearchApi`)
-   - [ ] Crear `src/lib/tmwe/api/FolderApi.ts` (wrapper sobre `emailSearchApi`)
-   - [ ] Crear `src/lib/tmwe/api/index.ts` (exports)
+2. **Día 2: EmailApi + FolderApi + ClassificationApi**
+   - [ ] Crear `src/lib/tmwe/api/EmailApi.ts` (wrapper)
+   - [ ] Crear `src/lib/tmwe/api/FolderApi.ts` (wrapper)
+   - [ ] Crear `src/lib/tmwe/api/ClassificationApi.ts` (usa `tmwe_classifications`)
    - [ ] Testing de integración
 
-3. **Día 3: Integración y Exports Centralizados**
+3. **Día 3: SenderApi + Exports Centralizados**
+   - [ ] Crear `src/lib/tmwe/api/SenderApi.ts` (usa `tmwe_sender_profiles` y `tmwe_classification_rules`)
+   - [ ] Crear `src/lib/tmwe/api/index.ts` (exports)
    - [ ] Crear `src/lib/tmwe/index.ts` (exports centralizados)
-   - [ ] Verificar que todos los wrappers funcionan correctamente
-   - [ ] Documentar API pública
    - [ ] Testing E2E de flujo completo
 
 **Entregables:**
-- ✅ Capa de abstracción API funcional (basada en código probado)
-- ✅ Autenticación OAuth centralizada (reutiliza implementación existente)
-- ✅ Módulos EmailApi y FolderApi operativos (wrappers sobre funciones existentes)
-- ✅ 0 bugs de OAuth (código ya probado en producción)
-
-**Ventajas v3.0:**
-- ⏱️ 3 días más rápido que v2.0
-- 🔒 Menor riesgo (reutiliza código probado)
-- 🧪 Testing simplificado (solo integración)
-- ↩️ Backward compatible (funciones existentes siguen funcionando)
+- ✅ Capa de abstracción API funcional
+- ✅ Tablas nuevas creadas con RLS
+- ✅ ClassificationApi y SenderApi operativos
+- ✅ Feature flags configurados
 
 ---
 
@@ -1261,391 +1021,261 @@ export const useEmailList = (folder: string) => {
 
 **Objetivo:** Migrar funcionalidades esenciales de lectura
 
-#### Tareas
-1. **Día 4-6: CU1 - Lista de Emails**
-   - [ ] Actualizar `useEmailList.ts`
-   - [ ] Modificar `FunEmail.tsx` y `EmailList.tsx`
-   - [ ] Testing E2E de listado
-
-2. **Día 7-8: CU2 - Detalle de Email**
-   - [ ] Actualizar `useEmailDetail.ts`
-   - [ ] Modificar `EmailDetail.tsx`
-   - [ ] Testing de renderizado HTML
-
-3. **Día 9-10: CU5 y CU6 - Stats**
-   - [ ] Actualizar `FunEmailQuickStats.tsx`
-   - [ ] Actualizar `FunEmailGlobalStats.tsx`
-   - [ ] Configurar auto-refresh
-
-**Entregables:**
-- ✅ Listado de emails funcional sin DB local
-- ✅ Detalle de emails desde API
-- ✅ Estadísticas en tiempo real
+(Sin cambios vs v3.0 - este sprint no usa tablas nuevas)
 
 ---
 
-### **SPRINT 3: SmartInbox (Días 11-17)**
+### **SPRINT 3: SmartInbox con Fresh Start (Días 11-15)**
 
-**Objetivo:** Migrar clasificación con IA
+**Objetivo:** SmartInbox usando `tmwe_classifications`
 
 #### Tareas
-1. **Día 11-12: Migración DB**
-   - [ ] Crear tabla `email_ai_classifications_v2`
-   - [ ] Script de migración de datos existentes
-   - [ ] RLS policies
+1. **Día 11-12: Actualizar Hooks**
+   - [ ] Modificar `useSmartClassification.ts`:
+     - Feature flag `USE_TMWE_CLASSIFICATIONS`
+     - Usar `ClassificationApi` si flag activo
+     - Fallback a legacy si desactivado
+   - [ ] Testing con feature flag ON/OFF
 
-2. **Día 13-14: ClassificationApi**
-   - [ ] Implementar `src/lib/tmwe/api/ClassificationApi.ts`
-   - [ ] Métodos de clasificación con `tmwe_email_id`
-   - [ ] Testing
+2. **Día 13-14: Actualizar Componentes**
+   - [ ] `SmartInboxTab.tsx`: Eliminar queries directas a `email_ai_classifications`
+   - [ ] Usar `subject_preview` de `tmwe_classifications` para listas
+   - [ ] Mostrar campos nuevos: urgency, action_suggested
 
-3. **Día 15-17: Actualizar Componentes**
-   - [ ] Modificar `SmartInboxTab.tsx`
-   - [ ] Actualizar `useSmartClassification.ts`
-   - [ ] Testing de clasificación batch
+3. **Día 15: Testing**
+   - [ ] Clasificación individual funciona
+   - [ ] Clasificación batch (100 emails)
+   - [ ] Filtros por categoría/urgencia
+   - [ ] Performance < 3s por clasificación
 
 **Entregables:**
-- ✅ SmartInbox funcional con Zero-Sync
-- ✅ Clasificaciones almacenadas con `tmwe_email_id`
-- ✅ UI sin referencias a `email_messages`
+- ✅ SmartInbox funcional con `tmwe_classifications`
+- ✅ Feature flag permite switch a legacy
+- ✅ UI mejorada con nuevos campos
+
+**Ventaja vs v3.0:** 2 días menos (no hay migración de datos)
 
 ---
 
-### **SPRINT 4: Búsqueda y Threads (Días 18-22)**
+### **SPRINT 4: Búsqueda y Threads (Días 16-20)**
 
-**Objetivo:** Funcionalidades avanzadas de email
-
-#### Tareas
-1. **Día 18-19: CU7 - Búsqueda**
-   - [ ] Implementar `EmailApi.searchEmails()`
-   - [ ] Actualizar hook de búsqueda
-   - [ ] UI de resultados con highlight
-
-2. **Día 20-22: CU8 - Threads**
-   - [ ] Implementar `EmailApi.getEmailThread()`
-   - [ ] Actualizar `useEmailThread.ts`
-   - [ ] Componente de visualización de thread
-
-**Entregables:**
-- ✅ Búsqueda full-text funcional
-- ✅ Threads de conversación desde API
+(Sin cambios vs v3.0 - este sprint no usa tablas nuevas)
 
 ---
 
-### **SPRINT 5: Remitentes y Reglas (Días 23-31)**
+### **SPRINT 5: Remitentes y Reglas con Fresh Start (Días 21-27)**
 
-**Objetivo:** Análisis de remitentes y gestión de reglas
+**Objetivo:** Análisis de remitentes y reglas usando tablas nuevas
 
 #### Tareas
-1. **Día 23-26: CU4 - Análisis Remitentes**
-   - [ ] Implementar `SenderApi`
-   - [ ] Actualizar `email-sender-analyzer.ts`
+1. **Día 21-23: Análisis Remitentes**
+   - [ ] Actualizar `email-sender-analyzer.ts`:
+     - Feature flag `USE_TMWE_SENDER_PROFILES`
+     - Usar `SenderApi.getSenderProfile()`
+     - Actualizar stats en `tmwe_sender_profiles`
    - [ ] Testing de performance con 1000+ remitentes
 
-2. **Día 27-31: CU10 - Reglas de Remitente**
-   - [ ] Diseñar arquitectura client-side filtering
-   - [ ] Implementar `SenderApi.applyRulesToEmails()`
-   - [ ] Integrar con `EmailApi.getEmailList()`
-   - [ ] Actualizar UI de gestión de reglas
-   - [ ] Testing exhaustivo
+2. **Día 24-27: Reglas de Remitente**
+   - [ ] CRUD de reglas en `tmwe_classification_rules` (UI)
+   - [ ] Integrar `SenderApi.applySenderRules()` en `EmailApi`
+   - [ ] Botón "Aplicar ahora" en UI
+   - [ ] Testing exhaustivo:
+     - 1000 emails + 50 reglas < 200ms
 
 **Entregables:**
-- ✅ Análisis de remitentes desde API
-- ✅ Reglas aplicadas en tiempo real
+- ✅ Perfiles de remitentes en `tmwe_sender_profiles`
+- ✅ Reglas aplicadas en tiempo real client-side
 - ✅ UI de gestión funcional
 
 ---
 
-### **SPRINT 6: Sincronización y Cleanup (Días 32-34)**
+### **SPRINT 6: Sincronización y Cleanup (Días 28-30)**
 
-**Objetivo:** Finalizar migración y limpieza
-
-#### Tareas
-1. **Día 32-33: CU9 - Sincronización**
-   - [ ] Crear tabla `email_sync_metadata`
-   - [ ] Actualizar `EdgeFunctionSyncService`
-   - [ ] Modificar estrategias de descarga
-   - [ ] Actualizar UI de dialogs
-
-2. **Día 34: Cleanup Final**
-   - [ ] Eliminar código legacy de `email_messages`
-   - [ ] Actualizar documentación
-   - [ ] Code review general
-   - [ ] Testing de regresión completo
-
-**Entregables:**
-- ✅ Sistema de sincronización metadata-only
-- ✅ Código limpio sin referencias a DB local
-- ✅ Documentación actualizada
+(Sin cambios vs v3.0)
 
 ---
 
 ## 🧪 TESTING Y VALIDACIÓN
 
-### Testing por Sprint
-
-#### Sprint 1: Infraestructura
-```typescript
-// TMWEAuthManager.test.ts
-describe('TMWEAuthManager', () => {
-  it('should refresh token before expiration', async () => {
-    // ...
-  });
-  
-  it('should handle refresh token failure', async () => {
-    // ...
-  });
-});
-
-// TMWEApiClient.test.ts
-describe('TMWEApiClient', () => {
-  it('should retry failed requests with exponential backoff', async () => {
-    // ...
-  });
-  
-  it('should attach OAuth token to all requests', async () => {
-    // ...
-  });
-});
-```
-
-#### Sprint 2-6: Integración
-```typescript
-// E2E Testing con Playwright
-test('should load email list from API', async ({ page }) => {
-  await page.goto('/funnemail');
-  await page.selectOption('[data-testid="folder-select"]', 'INBOX');
-  
-  // Verificar que emails cargan desde API (no DB)
-  const emails = await page.locator('[data-testid="email-item"]').count();
-  expect(emails).toBeGreaterThan(0);
-});
-
-test('should classify email and display in SmartInbox', async ({ page }) => {
-  // 1. Clasificar email
-  await page.goto('/funnemail?tab=smart-inbox');
-  await page.click('[data-testid="classify-new-button"]');
-  await page.waitForSelector('[data-testid="classification-success"]');
-  
-  // 2. Verificar en categoría
-  await page.selectOption('[data-testid="category-select"]', 'important');
-  const classified = await page.locator('[data-testid="classified-email"]').count();
-  expect(classified).toBeGreaterThan(0);
-});
-```
-
-### Performance Benchmarks
-
-| Métrica | Objetivo | Método de Medición |
-|---------|----------|-------------------|
-| **Tiempo de carga lista emails** | < 1s | React Query devtools |
-| **Tiempo de apertura detalle** | < 500ms | Performance API |
-| **Clasificación individual** | < 3s | Supabase logs |
-| **Clasificación batch (100)** | < 30s | Progress tracker |
-| **Aplicación de reglas** | < 200ms | Client-side timing |
-| **Búsqueda full-text** | < 800ms | React Query devtools |
-
-### Checklist de Validación Final
+### Checklist de Validación Final V3.1
 
 **Funcionalidad:**
-- [ ] Todos los casos de uso funcionan sin `email_messages`
-- [ ] SmartInbox clasifica con `tmwe_email_id`
-- [ ] Reglas de remitente se aplican en tiempo real
-- [ ] Búsqueda retorna resultados correctos
-- [ ] Threads muestran conversaciones completas
+- [ ] SmartInbox funciona con `tmwe_classifications`
+- [ ] Feature flags permiten switch entre nuevo/legacy
+- [ ] Reglas de remitente se aplican client-side < 200ms
+- [ ] Perfiles de remitentes muestran stats integradas
+- [ ] Búsqueda y threads funcionan correctamente
+
+**Coexistencia:**
+- [ ] Datos legacy permanecen intactos
+- [ ] Feature flags funcionan correctamente
+- [ ] Rollback a legacy funciona (cambiar flag)
+- [ ] No hay errores con tablas legacy vacías
 
 **Performance:**
-- [ ] Listado de emails < 1s
-- [ ] Sin queries innecesarias a Supabase
-- [ ] Cache de React Query configurado óptimamente
-- [ ] No hay memory leaks en componentes
+- [ ] Clasificación individual < 3s
+- [ ] Aplicación de 50 reglas a 1000 emails < 200ms
+- [ ] Queries a tablas nuevas < 100ms
+- [ ] Sin memory leaks
 
 **Seguridad:**
-- [ ] Tokens OAuth se renuevan automáticamente
-- [ ] No hay tokens expuestos en código cliente
-- [ ] RLS policies activas en todas las tablas
-
-**UX:**
-- [ ] Loading states en todas las operaciones
-- [ ] Error messages claros y accionables
-- [ ] Transiciones suaves entre estados
-- [ ] Feedback visual de operaciones exitosas
+- [ ] RLS policies activas en todas las tablas nuevas
+- [ ] Usuario solo ve sus datos
+- [ ] No hay SQL injection posible
 
 ---
 
-## 🌟 BENEFICIOS PLAN V3.0
+## 🌟 BENEFICIOS PLAN V3.1
 
-### Comparativa v2.0 vs v3.0
+### Comparativa v3.0 vs v3.1
 
-| Aspecto | Plan v2.0 | Plan v3.0 | Mejora |
-|---------|-----------|-----------|--------|
-| **Duración Total** | 26-37 días | 23-34 días | ⏬ -3 días |
-| **Sprint 1** | 5 días | 2-3 días | ⏬ -2-3 días |
-| **Código OAuth Nuevo** | ~300 líneas | 0 líneas | ✅ Reutiliza existente |
-| **Riesgo de Bugs OAuth** | Alto | Bajo | 🔒 Código probado |
-| **Testing Requerido** | Unitario + Integración | Solo Integración | ⏱️ Más rápido |
-| **Mantenibilidad** | Dos implementaciones OAuth | Una sola fuente de verdad | 🎯 Simplificado |
-| **Backward Compatibility** | Requiere refactor | 100% compatible | ↩️ Sin breaking changes |
+| Aspecto | Plan v3.0 | Plan v3.1 Fresh Start | Mejora |
+|---------|-----------|----------------------|--------|
+| **Duración Total** | 23-34 días | 20-30 días | ⏬ -3-4 días |
+| **Migración de Datos** | Script complejo (5-7 días) | 0 días (no hay datos) | ⏱️ 100% ahorro |
+| **Riesgo de Pérdida Datos** | Medio | Cero | 🔒 Sin riesgo |
+| **Rollback** | Complejo | Fácil (feature flag) | ↩️ Instantáneo |
+| **Testing de Migración** | Requerido | No requerido | ⏱️ Más rápido |
+| **Mantenibilidad** | Tabla legacy + script | Solo tablas nuevas | 🎯 Más simple |
+| **Performance** | Igual | Mejor (sin JOINs legacy) | ⚡ Queries más rápidas |
 
-### Ventajas Técnicas
+### Ventajas Técnicas Específicas V3.1
 
-#### 1. **Reducción de Tiempo**
-- Sprint 1 reducido de 5 a 2-3 días
-- Total del proyecto reducido ~3 días
-- Menos tiempo en debugging de OAuth
+#### 1. **Diseño Optimizado Nativo**
+```sql
+-- ✅ V3.1: Diseño optimizado para TMWE desde día 1
+CREATE TABLE tmwe_classifications (
+  tmwe_email_id integer NOT NULL,  -- ✅ Nativo TMWE
+  subject_preview text,             -- ✅ Desnormalizado para listas
+  ...
+);
 
-#### 2. **Menor Riesgo**
-- ✅ Reutiliza código OAuth probado en producción
-- ✅ No reinventa la rueda con HTTP clients
-- ✅ Mantiene funcionalidad existente intacta
-- ✅ Rollback fácil si algo falla
-
-#### 3. **Testing Simplificado**
-- ❌ NO necesita tests unitarios de OAuth (ya existen)
-- ✅ Solo tests de integración para wrappers
-- ✅ Menos mocking necesario
-- ✅ Tests más rápidos de ejecutar
-
-#### 4. **Mantenibilidad Mejorada**
-- Un solo punto de verdad para OAuth (`tmwe-api-integrated.ts`)
-- API pública consistente a través de wrappers
-- Cambios futuros en un solo lugar
-- Documentación del código existente sigue válida
-
-#### 5. **Consistencia Arquitectónica**
-- Mantiene patrones ya establecidos en el proyecto
-- No introduce nuevas abstracciones innecesarias
-- Equipo ya familiarizado con funciones subyacentes
-- Curva de aprendizaje mínima
-
-### Patrón Wrapper/Facade Explicado
-
-```
-┌─────────────────────────────────────────────────┐
-│  NUEVA API PÚBLICA (v3.0)                       │
-│  ┌──────────────────────────────────────────┐   │
-│  │  TMWEAuthManager.getValidToken()         │   │
-│  │         └─→ ensureValidToken()          │   │
-│  │              (tmwe-api-integrated.ts)    │   │
-│  └──────────────────────────────────────────┘   │
-│                                                  │
-│  ┌──────────────────────────────────────────┐   │
-│  │  EmailApi.getEmailList()                 │   │
-│  │         └─→ emailSearchApi               │   │
-│  │              .getEmailsMetadata()        │   │
-│  └──────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────┘
+-- ❌ V3.0: Tabla legacy adaptada
+CREATE TABLE email_ai_classifications (
+  email_id uuid NOT NULL,           -- ❌ UUID local (migración necesaria)
+  email_uid text,                   -- ❌ Segundo identificador (confusión)
+  tmwe_email_id integer,            -- ❌ Añadido después (nullable)
+  ...
+);
 ```
 
-**Beneficio:** Interfaz limpia y consistente, pero delegando a implementaciones probadas.
-
-### Código a Reutilizar (NO Modificar)
-
+#### 2. **Sin Complejidad de Migración**
 ```typescript
-// ✅ Estas funciones YA EXISTEN y funcionan perfectamente
+// ❌ V3.0: Script de migración complejo
+const migrateClassifications = async () => {
+  // 1. Buscar email en TMWE por uid
+  // 2. Mapear email_id local a tmwe_email_id
+  // 3. Actualizar clasificaciones
+  // 4. Manejar errores de emails no encontrados
+  // 5. Rollback si falla
+};
 
-// De tmwe-api-integrated.ts
-export async function ensureValidToken(): Promise<string>
-export async function refreshAccessToken(): Promise<boolean>
-export async function getApiConfigFromDB()
-export async function setApiConfigToDB(config)
-export async function clearApiConfigFromDB()
-
-// De tmwe-email-search-api.ts
-export const emailSearchApi = {
-  getEmailsMetadata: async (params) => { /* implementación existente */ },
-  getEmailDetail: async (params) => { /* implementación existente */ },
-  searchEmails: async (params) => { /* implementación existente */ },
-  getFolders: async (params) => { /* implementación existente */ },
-  getStatistics: async (params) => { /* implementación existente */ },
-  getThread: async (params) => { /* implementación existente */ },
-  markAsRead: async (emailId) => { /* implementación existente */ }
-}
+// ✅ V3.1: No hay migración
+// Las clasificaciones nuevas ya usan tmwe_email_id
 ```
 
-### Estructura de Archivos Nueva
+#### 3. **Queries Más Simples**
+```typescript
+// ❌ V3.0: Query con migración
+const getClassifiedEmails = async () => {
+  // JOIN entre email_ai_classifications y email_messages
+  // para obtener tmwe_email_id
+  const { data } = await supabase
+    .from('email_ai_classifications')
+    .select(`
+      *,
+      email_messages!inner(tmwe_email_id, subject)
+    `);
+};
 
+// ✅ V3.1: Query directa
+const getClassifiedEmails = async () => {
+  const { data } = await supabase
+    .from('tmwe_classifications')
+    .select('*'); // tmwe_email_id y subject_preview ya están
+};
 ```
-src/lib/tmwe/
-├── index.ts                    # Re-exports centralizados (NUEVO)
-├── TMWEAuthManager.ts          # Wrapper (NUEVO - ~50 líneas)
-├── TMWEApiClient.ts            # Facade (NUEVO - ~40 líneas)
-├── types.ts                    # Tipos compartidos (NUEVO - ~30 líneas)
-└── api/
-    ├── index.ts                # Re-exports (NUEVO - ~10 líneas)
-    ├── EmailApi.ts             # Wrapper (NUEVO - ~80 líneas)
-    ├── FolderApi.ts            # Wrapper (NUEVO - ~30 líneas)
-    ├── ClassificationApi.ts    # Lógica propia (Sprint 3)
-    └── SenderApi.ts            # Lógica propia (Sprint 5)
+
+#### 4. **Rollback Instantáneo**
+```typescript
+// ✅ V3.1: Cambiar feature flag = rollback instantáneo
+export const TMWE_FEATURE_FLAGS = {
+  USE_TMWE_CLASSIFICATIONS: false, // ← Cambiar a false = rollback
+};
+
+// ❌ V3.0: Rollback requiere restaurar DB desde backup
 ```
 
-**Total Código Nuevo en Sprint 1:** ~240 líneas  
-**Total Código OAuth Nuevo:** 0 líneas (todo delegado)
-
-### Fecha de Finalización Actualizada
-
-**Plan v2.0:** 37 días → Finalización estimada: 2025-03-15  
-**Plan v3.0:** 34 días → Finalización estimada: 2025-03-12  
-
-**🎯 3 días de adelanto**
+#### 5. **Menor Deuda Técnica**
+- ❌ V3.0: Mantener código de migración + fallbacks + validación
+- ✅ V3.1: Código limpio desde el inicio, eliminar flags después
 
 ---
 
-## 📚 DOCUMENTACIÓN ADICIONAL
+### Tabla Comparativa Final
 
-### Archivos de Documentación a Crear/Actualizar
-
-1. **`docs/API_ARCHITECTURE.md`**
-   - Diagrama de clases de capa de abstracción
-   - Flujos de datos
-   - Manejo de errores
-
-2. **`docs/OAUTH_INTEGRATION.md`**
-   - Flujo de autenticación OAuth
-   - Renovación de tokens
-   - Debugging de problemas de auth
-
-3. **`docs/ZERO_SYNC_BEST_PRACTICES.md`**
-   - Patrones recomendados
-   - Anti-patrones a evitar
-   - Optimización de cache
-
-4. **`docs/TESTING_GUIDE.md`**
-   - Setup de entorno de testing
-   - Mocking de TMWE API
-   - Casos de test críticos
+| Métrica | v2.0 (Implementación Completa) | v3.0 (Wrappers + Migración) | v3.1 (Fresh Start) |
+|---------|-------------------------------|-----------------------------|--------------------|
+| **Días Totales** | 26-37 | 23-34 | 20-30 |
+| **Código OAuth Nuevo** | ~300 líneas | 0 líneas | 0 líneas |
+| **Migración Datos** | Compleja | Compleja | ❌ No necesaria |
+| **Riesgo** | Alto | Medio | 🟢 Bajo |
+| **Rollback** | Difícil | Medio | ✅ Fácil (feature flag) |
+| **Testing** | Extensivo | Integración | Integración |
+| **Tablas DB** | Adaptar legacy | Adaptar legacy | ✅ Nuevas optimizadas |
+| **Performance** | Media | Media | ✅ Alta (sin JOINs) |
+| **Mantenibilidad** | Baja | Media | ✅ Alta |
 
 ---
 
-## 🎯 CONCLUSIÓN
+### Conclusión: ¿Por qué V3.1 es Superior?
 
-Este plan de migración v3.0 garantiza:
-
-✅ **Trazabilidad completa:** Cada caso de uso mapeado a componentes específicos  
-✅ **Arquitectura coherente:** Capa de abstracción centralizada usando wrappers  
-✅ **OAuth reutilizado:** TMWEAuthManager delega a código probado existente  
-✅ **Menor riesgo:** Código OAuth ya en producción, sin reimplementación  
-✅ **Plan optimizado:** 23-34 días de desarrollo (3 días menos que v2.0)  
-✅ **Testing simplificado:** Solo integración, no unitario para wrappers  
-✅ **Backward compatible:** Funciones existentes siguen operativas  
-
-**Mejoras vs v2.0:**
-- ⏱️ Sprint 1 reducido de 5 a 2-3 días
-- 🔒 0 líneas de código OAuth nuevo
-- ✅ Reutiliza código probado en producción
-- 🎯 Una sola fuente de verdad para OAuth
-- ↩️ Sin breaking changes en código existente
-
-**Próximos Pasos:**
-1. Revisar y aprobar plan v3.0 con equipo
-2. Iniciar Sprint 1 con wrappers (2-3 días)
-3. Validar que wrappers funcionan correctamente
-4. Continuar con sprints restantes
-5. Revisión semanal de progreso
-
-**Fecha de Inicio Propuesta:** 2025-02-03  
-**Fecha de Finalización Estimada v3.0:** 2025-03-12 (3 días antes que v2.0)
+1. **⏱️ Más Rápido:** 20-30 días vs 23-34 días (v3.0)
+2. **🔒 Menos Riesgo:** No hay migración de datos = 0 riesgo de pérdida
+3. **↩️ Rollback Fácil:** Feature flags permiten volver atrás en segundos
+4. **⚡ Mejor Performance:** Tablas desnormalizadas optimizadas para queries frecuentes
+5. **🎯 Más Simple:** Diseño nativo desde día 1, sin adaptar legacy
+6. **📊 Mejor UX:** Campos nuevos (subject_preview, urgency, etc.) desde el inicio
+7. **🧹 Menos Deuda:** No hay código de migración que mantener
 
 ---
 
-*Documento generado por Lovable AI - Versión 3.0 (Wrapper/Facade Pattern)*
+## 📝 NOTAS FINALES
+
+### Decisiones Clave V3.1
+
+1. **Datos Legacy Permanecen Intactos**
+   - No se tocan `email_ai_classifications`, `email_sender_groups`, etc.
+   - Usuario puede exportar/consultar datos legacy si lo necesita
+   - Eventual cleanup después de +3 meses
+
+2. **Feature Flags como Estrategia**
+   - Permite probar tablas nuevas sin comprometer legacy
+   - Rollback instantáneo si algo falla
+   - Activación gradual por usuario si se desea
+
+3. **Diseño Desnormalizado Intencional**
+   - `subject_preview` en `tmwe_classifications` evita JOIN
+   - Stats integradas en `tmwe_sender_profiles` mejora performance
+   - Trade-off: Espacio vs Velocidad (elegimos Velocidad)
+
+4. **Client-Side Filtering para Reglas**
+   - Más flexible que triggers complejos en DB
+   - Fácil de debugear y testear
+   - Si performance < 200ms, mantener; si no, migrar a Edge Function
+
+---
+
+### Siguientes Pasos
+
+1. **Revisar y Aprobar Plan V3.1**
+2. **Ejecutar DDL de Tablas Nuevas en Desarrollo**
+3. **Comenzar Sprint 1: Infraestructura Core**
+4. **Configurar Feature Flags**
+5. **Iniciar Testing Continuo**
+
+---
+
+**Versión:** 3.1 - Fresh Start Edition  
+**Última Actualización:** 2025-01-29  
+**Estado:** ✅ Listo para Implementación

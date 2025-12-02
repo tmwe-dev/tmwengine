@@ -29,7 +29,7 @@ import { toast } from 'sonner';
 interface TestResult {
   id: string;
   name: string;
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'warning';
+  status: 'pending' | 'running' | 'passed' | 'failed' | 'warning' | 'info';
   duration?: number;
   message?: string;
   details?: any;
@@ -58,14 +58,14 @@ export function ZeroSyncTestPanel() {
       const response = await emailSearchApi.getFolders();
       const duration = Date.now() - startTime;
 
-      if (response?.data?.length > 0) {
+      if (response?.folders?.length > 0) {
         return {
           id: 'api-connection',
           name: 'API Connection',
           status: 'passed',
           duration,
-          message: `✅ Connected - ${response.data.length} folders found`,
-          details: { folders: response.data.length }
+          message: `✅ Connected - ${response.folders.length} folders found`,
+          details: { folders: response.folders.length }
         };
       } else {
         return {
@@ -269,13 +269,23 @@ export function ZeroSyncTestPanel() {
           message: `✅ All ${total} recent classifications use tmwe_email_id`,
           details: { with_tmwe_id: withTmweId, total }
         };
+      } else if (withTmweId === 0) {
+        // Legacy data (pre Zero-Sync migration)
+        return {
+          id: 'classification-metadata',
+          name: 'Classification Metadata',
+          status: 'info',
+          duration,
+          message: `ℹ️ Legacy data: ${total} classifications without tmwe_email_id (pre Zero-Sync)`,
+          details: { with_tmwe_id: 0, total, note: 'New classifications will use tmwe_email_id' }
+        };
       } else {
         return {
           id: 'classification-metadata',
           name: 'Classification Metadata',
           status: 'warning',
           duration,
-          message: `⚠️ Only ${withTmweId}/${total} use tmwe_email_id`,
+          message: `⚠️ Mixed data: ${withTmweId}/${total} use tmwe_email_id`,
           details: { with_tmwe_id: withTmweId, total }
         };
       }
@@ -412,6 +422,8 @@ export function ZeroSyncTestPanel() {
         return <XCircle className="h-5 w-5 text-red-500" />;
       case 'warning':
         return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+      case 'info':
+        return <Database className="h-5 w-5 text-blue-500" />;
       case 'running':
         return <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />;
       default:
@@ -424,6 +436,7 @@ export function ZeroSyncTestPanel() {
       passed: 'default',
       failed: 'destructive',
       warning: 'secondary',
+      info: 'outline',
       running: 'outline',
       pending: 'outline'
     };

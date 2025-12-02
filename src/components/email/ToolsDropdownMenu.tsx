@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Wrench, Zap, Settings, Bug, Activity, Mail, Database } from 'lucide-react';
+import { Wrench, Zap, Settings, Bug, Activity, Mail, Database, TestTube } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,6 +54,14 @@ export function ToolsDropdownMenu() {
         <DropdownMenuItem onClick={() => navigate('/funnemail?view=migration')}>
           <Database className="mr-2 h-4 w-4" />
           TMWE ID Migration
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuLabel>Testing</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => navigate('/funnemail?view=zero-sync-test')}>
+          <TestTube className="mr-2 h-4 w-4" />
+          Zero-Sync Tests
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

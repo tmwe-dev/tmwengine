@@ -3,7 +3,7 @@
  * Permite ejecutar dry-run y migración completa de email_ai_classifications
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -93,10 +93,10 @@ export function TMWEMigrationAdmin() {
     }
   };
 
-  // Check pending on mount
-  useState(() => {
+  // Check pending on mount and when userEmail changes
+  useEffect(() => {
     checkPending();
-  });
+  }, [userEmail]);
 
   return (
     <div className="space-y-6">

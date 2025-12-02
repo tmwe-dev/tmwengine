@@ -10,8 +10,9 @@ export const syncEmailsToDatabase = async (
   maxEmails?: number,
   unreadOnly?: boolean
 ) => {
-  const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
+  const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
     body: {
+      handler: 'email_sync',
       mode,
       folder_name: folder,
       max_emails: maxEmails,

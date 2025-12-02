@@ -120,27 +120,30 @@ export const SmartInboxTabIntelligent = ({
     },
   });
 
-  // Fetch available folders
+  // 🆕 ZERO-SYNC: Fetch available folders from TMWE API
   const { data: availableFolders = [] } = useQuery({
-    queryKey: ['available-folders', userEmail],
+    queryKey: ['available-folders-zerosync', userEmail],
     queryFn: async () => {
       if (!userEmail) return [];
       
-      const { data, error } = await supabase
-        .from('email_messages')
-        .select('cartella')
-        .eq('user_email', userEmail)
-        .not('cartella', 'is', null);
+      console.log('🌐 [Zero-Sync] Fetching folders from TMWE API...');
+      const response = await emailSearchApi.getFolders({ include_counts: true });
       
-      if (error) {
-        console.error('Error fetching folders:', error);
+      if (!response?.folders) {
+        console.warn('⚠️ [Zero-Sync] No folders returned from API');
         return [];
       }
       
-      const uniqueFolders = Array.from(new Set(data.map(d => d.cartella)));
-      return uniqueFolders.sort();
+      const folderNames = response.folders
+        .map((f: any) => f.folder_name || f.name)
+        .filter(Boolean)
+        .sort();
+      
+      console.log('✅ [Zero-Sync] Loaded', folderNames.length, 'folders from API');
+      return folderNames;
     },
-    enabled: !!userEmail
+    enabled: !!userEmail,
+    staleTime: 60000 // 1 minute cache
   });
 
   // ✅ Query separata per statistiche categorie (NON filtrata per categoria selezionata)

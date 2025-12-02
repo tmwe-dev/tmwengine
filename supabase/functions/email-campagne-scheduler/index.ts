@@ -119,11 +119,6 @@ serve(async (req) => {
           }
         }
       );
-            body_text: emailToSend.corpo_testo,
-            body_html: emailToSend.corpo_html
-          }
-        }
-      );
 
       if (sendError) {
         console.error(`❌ Errore invio ${emailToSend.destinatario_email}:`, sendError);

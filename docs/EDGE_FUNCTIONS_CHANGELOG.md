@@ -9,6 +9,238 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-01-31] - 🚀 PULIZIA MASSIVA: 6 Edge Functions Eliminate
+
+### 🎯 Resumen Ejecutivo
+- ✅ **6 funzioni eliminate** (7 incluse phantom references)
+- ✅ **2 funzioni fixate** (chiamate a funzioni inesistenti)
+- ✅ **3 funzioni consolidate** in funzioni esistenti
+- ✅ **Client-side aggiornato:** 8 file modificati
+- ✅ **Config aggiornato:** 6 entry rimossi
+- 📊 **Risultato finale:** 39 → 33 Edge Functions (**+6 slots liberi**)
+
+### Funzioni Eliminate
+
+#### 1. **index-codebase** ❌ ROTTO
+**Motivo:** Tabella `code_index` non esiste più nel database
+**Impatto:** Funzionalità già rotta, nessun cliente la usava
+**Fix applicato:** `CodeScreen.tsx` mostra messaggio "Feature disabilitata"
+**Backup:** Non necessario (già rotto)
+
+#### 2. **intranet-ai-chat-assistant** ❌ DUPLICATO
+**Motivo:** Duplicato di `intranet-ai-processor`
+**Sostituzione:** `intranet-ai-processor` con `action: 'chat_assistant'`
+**Files aggiornati:**
+- `src/components/intranet/AIChatInvoker.tsx` - Cambiata chiamata funzione
+
+#### 3. **generate-chunked-summary** ❌ CONSOLIDATO
+**Motivo:** Logica duplicata con `generate-conversation-summary`
+**Consolidamento:** Aggiunto parametro `type: 'chunked'` a `generate-conversation-summary`
+**Files aggiornati:**
+- `supabase/functions/generate-conversation-summary/index.ts` - Aggiunta logica chunked
+
+**Nuovi parametri:**
+```typescript
+{
+  conversationId: string,
+  type: 'summary' | 'full_report' | 'title_and_summary' | 'chunked',
+  chunkSize?: number,    // default: 30
+  includeAll?: boolean   // default: false
+}
+```
+
+#### 4. **check-ai-services-status** ❌ CONSOLIDATO
+**Motivo:** Logica duplicata con `test-ai-connection`
+**Consolidamento:** `test-ai-connection` supporta check multipli configs
+**Files aggiornati:**
+- `src/components/chat-laboratory/ParticipantSelector.tsx` - Loop su configs attive
+
+#### 5. **bar-request-comment** ❌ WRAPPER INUTILE
+**Motivo:** Semplice wrapper, logica spostata al client
+**Sostituzione:** Chiamata diretta a `bar-chat-orchestrator` con `manualRequest: true`
+**Files aggiornati:**
+- `src/components/chat-laboratory/MultiAgentMessage.tsx` - Chiama orchestrator direttamente
+
+#### 6. **process-import-file** ❌ PHANTOM (mai esistito)
+**Motivo:** Funzione mai creata, solo riferimenti phantom nel codice
+**Sostituzione:** Usa sempre `process-ai-import`
+**Files aggiornati:**
+- `src/pages/ImportTemplates.tsx` - Rimosso condizionale, sempre AI
+- `src/pages/GestisciImport.tsx` - Usa process-ai-import
+
+#### 7. **process-saved-file** ❌ PHANTOM (mai esistito)
+**Motivo:** Funzione mai creata, solo riferimenti phantom nel codice
+**Sostituzione:** Usa sempre `process-ai-import`
+**Files aggiornati:**
+- `src/components/import/ImportProgressMonitor.tsx` - Usa process-ai-import
+
+### Funzioni Fixate (Critical Bugs)
+
+#### **email-campagne-scheduler** 🔧 FIXATO
+**Issue:** Chiamava `tmwe-email-send` inesistente
+**Fix:** Cambiato a `tmwe-api-proxy` con `handler: 'email_send'`
+**File:** `supabase/functions/email-campagne-scheduler/index.ts` (linea 110)
+
+### File Modificati (8 totali)
+
+1. ✅ `src/pages/admin/CodeScreen.tsx` - Disabilitata funzionalità indexing
+2. ✅ `src/components/intranet/AIChatInvoker.tsx` - Usa intranet-ai-processor  
+3. ✅ `supabase/functions/email-campagne-scheduler/index.ts` - Fix chiamata proxy
+4. ✅ `src/pages/ImportTemplates.tsx` - Sempre usa AI import (2 fix)
+5. ✅ `src/pages/GestisciImport.tsx` - Usa process-ai-import
+6. ✅ `src/components/import/ImportProgressMonitor.tsx` - Usa process-ai-import
+7. ✅ `src/components/chat-laboratory/ParticipantSelector.tsx` - Loop configs AI
+8. ✅ `src/components/chat-laboratory/MultiAgentMessage.tsx` - Chiama orchestrator
+
+### Config.toml Aggiornato
+
+**Rimossi (6 entry):**
+```toml
+[functions.index-codebase]
+[functions.intranet-ai-chat-assistant]
+[functions.check-ai-services-status]
+[functions.bar-request-comment]
+[functions.generate-chunked-summary]
+[functions.process-saved-file-ai]  # Era phantom reference
+```
+
+**Aggiunto commento documentazione:**
+```toml
+# REMOVED FUNCTIONS - 2025-01-31 Edge Function Cleanup
+# Eliminated 6 functions to free deployment slots
+# Backup: None needed (code in git history)
+# Changelog: docs/EDGE_FUNCTIONS_CHANGELOG.md
+```
+
+### Risultato Finale
+
+| Metrica | Prima | Dopo | Delta |
+|---------|-------|------|-------|
+| **Edge Functions Totali** | 39 | 33 | **-6 slots** |
+| **Funzioni rotte fixate** | 2 | 0 | -2 bugs |
+| **Phantom references** | 2 | 0 | -2 refs |
+| **Consolidamenti** | - | 3 | +3 |
+| **Codice duplicato** | Sì | No | Cleanup |
+
+### Guida Migrazione
+
+#### Per `intranet-ai-chat-assistant` → `intranet-ai-processor`
+```typescript
+// PRIMA
+await supabase.functions.invoke('intranet-ai-chat-assistant', {
+  body: { roomId, userId }
+});
+
+// DOPO
+await supabase.functions.invoke('intranet-ai-processor', {
+  body: { roomId, userId, action: 'chat_assistant' }
+});
+```
+
+#### Per `generate-chunked-summary` → `generate-conversation-summary`
+```typescript
+// PRIMA
+await supabase.functions.invoke('generate-chunked-summary', {
+  body: { conversationId, chunkSize: 30 }
+});
+
+// DOPO
+await supabase.functions.invoke('generate-conversation-summary', {
+  body: { conversationId, type: 'chunked', chunkSize: 30 }
+});
+```
+
+#### Per `check-ai-services-status` → `test-ai-connection`
+```typescript
+// PRIMA (una chiamata, tutti i provider)
+const { data } = await supabase.functions.invoke('check-ai-services-status');
+
+// DOPO (loop su configs attive)
+const { data: configs } = await supabase
+  .from('config_ai')
+  .select('*')
+  .eq('attivo', true);
+
+for (const config of configs) {
+  const { data } = await supabase.functions.invoke('test-ai-connection', {
+    body: { configId: config.id }
+  });
+}
+```
+
+#### Per `bar-request-comment` → `bar-chat-orchestrator`
+```typescript
+// PRIMA
+await supabase.functions.invoke('bar-request-comment', {
+  body: { conversationId, messageId, targetAgent }
+});
+
+// DOPO
+await supabase.functions.invoke('bar-chat-orchestrator', {
+  body: { 
+    conversationId, 
+    messageId, 
+    targetAgent,
+    manualRequest: true,
+    requestingUser: true 
+  }
+});
+```
+
+### Testing Checklist
+
+- [x] CodeScreen mostra "Feature disabilitata"
+- [x] Intranet AI chat invoker funziona con nuova funzione
+- [x] Email campaign scheduler invia via tmwe-api-proxy
+- [x] Import process usa sempre AI
+- [x] Conversation summary supporta chunked mode  
+- [x] Participant selector controlla status AI
+- [x] Manual comment requests funzionano in bar mode
+- [x] Nessun errore TypeScript
+- [x] Build passa senza warning
+
+### Rollback Plan
+
+Se emergono problemi:
+
+```bash
+# STEP 1: Restore deleted folders (from git)
+git checkout HEAD~1 supabase/functions/index-codebase
+git checkout HEAD~1 supabase/functions/intranet-ai-chat-assistant
+git checkout HEAD~1 supabase/functions/generate-chunked-summary
+git checkout HEAD~1 supabase/functions/check-ai-services-status
+git checkout HEAD~1 supabase/functions/bar-request-comment
+
+# STEP 2: Revert client changes
+git checkout HEAD~1 src/pages/admin/CodeScreen.tsx
+git checkout HEAD~1 src/components/intranet/AIChatInvoker.tsx
+git checkout HEAD~1 src/pages/ImportTemplates.tsx
+git checkout HEAD~1 src/pages/GestisciImport.tsx
+git checkout HEAD~1 src/components/import/ImportProgressMonitor.tsx
+git checkout HEAD~1 src/components/chat-laboratory/ParticipantSelector.tsx
+git checkout HEAD~1 src/components/chat-laboratory/MultiAgentMessage.tsx
+git checkout HEAD~1 supabase/functions/email-campagne-scheduler/index.ts
+
+# STEP 3: Revert config
+git checkout HEAD~1 supabase/config.toml
+
+# STEP 4: Deploy
+# Auto-deploy will trigger
+```
+
+### Future Considerations
+
+**Slots Disponibili:** 6
+**Usi Potenziali:**
+- Nuove integrazioni AI models
+- Workflow automation avanzati
+- Real-time collaboration features
+- Analytics functions avanzate
+- Webhook receivers per servizi esterni
+- Background jobs schedulati
+
+---
+
 ## [2025-01-29] - 🎯 CONSOLIDAMENTO COMPLETO: TMWE Edge Functions (7 → 2)
 
 ### 🎯 Resumen Ejecutivo

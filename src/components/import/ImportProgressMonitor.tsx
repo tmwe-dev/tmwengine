@@ -61,17 +61,16 @@ export function ImportProgressMonitor({ importLogId, onComplete }: ImportProgres
     }
   };
 
-  // Chiama l'edge function per continuare l'elaborazione
+  // Chiama l'edge function AI per continuare l'elaborazione
   const resumeProcessing = async () => {
     if (!importLogId) return;
     
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('process-saved-file', {
+      const { data, error } = await supabase.functions.invoke('process-ai-import', {
         body: { 
           importLogId,
-          maxProcessingTime: timeoutSettings.maxProcessingTime * 1000, // converti in ms
-          batchSize: timeoutSettings.batchSize
+          aiPrompt: 'Continua l\'elaborazione dei dati importati.'
         }
       });
 

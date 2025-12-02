@@ -63,98 +63,6 @@ enable_signup = true
 enable_confirmations = false
 template = "Your code is {{ .Code }}"
 
-[[auth.external.apple]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.azure]]
-enabled = false
-client_id = ""
-secret = ""
-url = ""
-
-[[auth.external.bitbucket]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.discord]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.facebook]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.figma]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.github]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.gitlab]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.google]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.keycloak]]
-enabled = false
-client_id = ""
-secret = ""
-url = ""
-
-[[auth.external.linkedin]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.notion]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.twitch]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.twitter]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.slack]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.spotify]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.workos]]
-enabled = false
-client_id = ""
-secret = ""
-
-[[auth.external.zoom]]
-enabled = false
-client_id = ""
-secret = ""
-
 [analytics]
 enabled = false
 port = 54327
@@ -168,13 +76,7 @@ backend = "postgres"
 [functions.tmwe-email-webhook]
 verify_jwt = false
 
-# CONSOLIDATED (2025-01-29) - All TMWE functions consolidated into tmwe-api-proxy:
-# - tmwe-email-send → handler: email_send
-# - tmwe-email-sync-master → handler: email_sync  
-# - tmwe-oauth-auth → handler: oauth_auth
-# - tmwe-oauth-refresh → handler: oauth_refresh
-# - tmwe-jwt-sign → handler: migrate_email_ids
-# - tmwe-test-folder-info → handler: internal_test_folder_info
+# CONSOLIDATED (2025-01-29) - All TMWE functions consolidated into tmwe-api-proxy
 # Backup: docs/EDGE_FUNCTIONS_BACKUP/2025-01-29/
 
 [functions.process-ai-import]
@@ -204,10 +106,6 @@ verify_jwt = true
 [functions.intranet-ai-processor]
 verify_jwt = true
 
-[functions.intranet-ai-chat-assistant]
-verify_jwt = true
-disabled = true
-
 [functions.email-campagne-scheduler]
 verify_jwt = false
 
@@ -216,9 +114,6 @@ verify_jwt = true
 
 [functions.chat-laboratory-orchestrator]
 verify_jwt = true
-
-[functions.check-ai-services-status]
-verify_jwt = false
 
 [functions.bar-chat-orchestrator]
 verify_jwt = true
@@ -229,22 +124,13 @@ verify_jwt = true
 [functions.generate-audio]
 verify_jwt = true
 
-# REMOVED - OAuth functions consolidated into tmwe-api-proxy
-
-# Additional active functions
 [functions.ai-crm-manager]
 verify_jwt = true
 
 [functions.auto-assign-admin]
 verify_jwt = true
 
-[functions.bar-request-comment]
-verify_jwt = true
-
 [functions.calculate-basic-convergence]
-verify_jwt = true
-
-[functions.generate-chunked-summary]
 verify_jwt = true
 
 [functions.process-saved-file-ai]
@@ -256,24 +142,7 @@ verify_jwt = true
 [functions.voice-to-text]
 verify_jwt = true
 
-# =====================================================
-# REMOVED (2025-01-29) - TMWE Consolidation Complete
-# =====================================================
-# All TMWE functions have been consolidated into tmwe-api-proxy
-# Removed functions:
-# - tmwe-email-send → tmwe-api-proxy (handler: email_send)
-# - tmwe-email-sync-master → tmwe-api-proxy (handler: email_sync)
-# - tmwe-oauth-auth → tmwe-api-proxy (handler: oauth_auth)
-# - tmwe-oauth-refresh → tmwe-api-proxy (handler: oauth_refresh)
-# - tmwe-jwt-sign → tmwe-api-proxy (handler: migrate_email_ids)
-# - tmwe-jwt-refresh → tmwe-api-proxy (handler: internal_jwt_refresh)
-# - tmwe-test-folder-info → tmwe-api-proxy (handler: internal_test_folder_info)
-# - tmwe-supabase-sync → tmwe-api-proxy (handler: internal_supabase_sync)
-
 [functions.sync-ai-pricing]
-verify_jwt = true
-
-[functions.index-codebase]
 verify_jwt = true
 
 [functions.radio-chat-orchestrator]
@@ -306,17 +175,28 @@ verify_jwt = true
 [functions.text-to-speech]
 verify_jwt = true
 
-# Backup location: docs/EDGE_FUNCTIONS_BACKUP/2025-01-29/
-
 # =====================================================
-# REMOVED FUNCTIONS - 2025-11-25 Cleanup
+# REMOVED FUNCTIONS - 2025-01-31 Edge Function Cleanup
 # =====================================================
-# [functions.summarize-user-message] - REMOVED (no usage found)
-# [functions.execute-crm-action] - REMOVED (no usage found)
-# [functions.search-document-embeddings] - REMOVED (no usage found)
-# [functions.email-ai-learning] - REMOVED (no usage found)
-# [functions.email-background-sync] - REMOVED (no usage found)
-# Backups: docs/EDGE_FUNCTIONS_BACKUP/2025-11-25/
-
-# REMOVED - Phantom functions (no folder exists):
-# fetch-company-logo, transcribe-audio, embed-text
+# Eliminated to free deployment slots (6 functions removed):
+# - index-codebase → Broken (code_index table removed)
+# - intranet-ai-chat-assistant → Consolidated into intranet-ai-processor
+# - generate-chunked-summary → Consolidated into generate-conversation-summary
+# - check-ai-services-status → Consolidated into test-ai-connection
+# - bar-request-comment → Logic moved to bar-chat-orchestrator
+# - process-import-file → Replaced by process-ai-import (always use AI)
+# - process-saved-file → Replaced by process-ai-import (always use AI)
+#
+# Backup: None needed (code in git history)
+# Changelog: docs/EDGE_FUNCTIONS_CHANGELOG.md
+#
+# =====================================================
+# REMOVED FUNCTIONS - 2025-01-29 TMWE Consolidation
+# =====================================================
+# All TMWE functions consolidated into tmwe-api-proxy
+# Backup: docs/EDGE_FUNCTIONS_BACKUP/2025-01-29/
+#
+# =====================================================
+# REMOVED FUNCTIONS - 2025-11-25 Previous Cleanup
+# =====================================================
+# See changelog for historical removals

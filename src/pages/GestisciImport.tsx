@@ -263,15 +263,18 @@ export default function GestisciImport() {
       setMonitoringImportId(importLogId);
 
       const { error: invokeError } = await supabase.functions.invoke(
-        'process-import-file',
+        'process-ai-import',
         {
-          body: { importLogId }
+          body: { 
+            importLogId,
+            aiPrompt: 'Analizza i dati importati e normalizzali nella tabella temporanea.'
+          }
         }
       );
 
       if (invokeError) throw invokeError;
 
-      toast.success('Elaborazione avviata');
+      toast.success('Elaborazione AI avviata');
     } catch (error: any) {
       console.error('Error processing file:', error);
       toast.error(error.message || 'Errore durante l\'elaborazione del file');

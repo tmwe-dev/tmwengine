@@ -1,20 +1,55 @@
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
-import { Database, Folder } from 'lucide-react';
+import { Database, Folder, Loader2 } from 'lucide-react';
+import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 
 interface FunEmailGlobalStatsProps {
-  totalDB: number;
-  folders: { name: string; count: number }[];
+  totalDB?: number;  // Deprecated - kept for backward compatibility
+  folders?: { name: string; count: number }[];  // Deprecated
 }
 
-export const FunEmailGlobalStats = ({ totalDB, folders }: FunEmailGlobalStatsProps) => {
+export const FunEmailGlobalStats = ({ totalDB: _totalDB, folders: _folders }: FunEmailGlobalStatsProps) => {
+  // 🆕 Zero-Sync: Fetch statistiche da TMWE API
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['fun-email-global-stats-zerosync'],
+    queryFn: async () => {
+      const foldersResult = await emailSearchApi.getFolders({ 
+        include_counts: true,
+        timeout: 10 
+      });
+
+      const foldersList = (foldersResult?.folders || []).map((folder: any) => ({
+        name: folder.name,
+        count: folder.message_count || folder.messages || 0
+      }));
+
+      const total = foldersList.reduce((sum, f) => sum + f.count, 0);
+
+      return { total, folders: foldersList };
+    },
+    refetchInterval: 30000, // Refresh every 30s
+  });
+
+  const totalDB = stats?.total ?? _totalDB ?? 0;
+  const folders = stats?.folders ?? _folders ?? [];
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
-        {/* Email Totali nel DB */}
+        {/* 🆕 Zero-Sync: Email totali da TMWE API */}
         <div className="text-center pb-4 border-b">
           <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
             <Database className="h-5 w-5" />
-            <span className="text-sm font-medium">Email nel Database Locale</span>
+            <span className="text-sm font-medium">Email Disponibili (TMWE API)</span>
           </div>
           <p className="text-4xl font-bold text-primary">{totalDB.toLocaleString()}</p>
         </div>

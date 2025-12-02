@@ -5,32 +5,31 @@ import { Loader2 } from 'lucide-react';
 
 export const FunEmailQuickStats = () => {
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['fun-email-quick-stats'],
+    queryKey: ['fun-email-quick-stats-zerosync'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.email) throw new Error('Not authenticated');
 
-      const { count, error } = await supabase
-        .from('email_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_email', user.email)
-        .eq('sync_status', 'fun_email_backup');
-
-      if (error) throw error;
-
-      // Get folder breakdown - usa RPC per evitare limite 1000 record
-      const { data: folderData } = await supabase.rpc('get_email_folder_counts', {
-        p_user_email: user.email,
-        p_sync_status: 'fun_email_backup'
+      // 🆕 Zero-Sync: Usa TMWE API per ottenere statistiche
+      const { emailSearchApi } = await import('@/lib/tmwe-email-search-api');
+      
+      // Fetch folders con conteggi
+      const foldersResult = await emailSearchApi.getFolders({ 
+        include_counts: true,
+        timeout: 10 
       });
 
-      const folderCounts = (folderData || []).reduce((acc: Record<string, number>, row: { cartella: string; count: number }) => {
-        acc[row.cartella] = row.count;
-        return acc;
-      }, {});
+      const folderCounts: Record<string, number> = {};
+      let total = 0;
+      
+      (foldersResult?.folders || []).forEach((folder: any) => {
+        const count = folder.message_count || folder.messages || 0;
+        folderCounts[folder.name] = count;
+        total += count;
+      });
 
       return {
-        total: count || 0,
+        total,
         folders: folderCounts,
       };
     },

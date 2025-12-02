@@ -242,25 +242,13 @@ export const SmartInboxTabIntelligent = ({
         }
       }
 
-      // 4️⃣ Fallback: Query email_messages para las que NO tienen tmwe_email_id
-      let localEmailMap = new Map<string, any>();
-      if (withLocalId.length > 0) {
-        const localIds = [...new Set(withLocalId.map(c => c.email_id).filter(Boolean))];
-        const { data: emailMessages } = await supabase
-          .from('email_messages')
-          .select('id, subject, from_email, to_email, body_text, body_html, data_ricezione, stato, attachments')
-          .in('id', localIds);
-        
-        (emailMessages || []).forEach(email => {
-          localEmailMap.set(email.id, email);
-        });
-      }
+      // 4️⃣ 🆕 Zero-Sync: Solo metadatos de clasificación, NO fallback a DB local
+      // Las clasificaciones sin tmwe_email_id simplemente mostrarán metadatos básicos
 
-      // 5️⃣ Merge clasificaciones + datos de email
+      // 5️⃣ 🆕 Zero-Sync: Merge clasificaciones + datos de email (solo TMWE API)
       return classifications.map(classification => {
-        // Intentar primero con TMWE API data
+        // Solo usar TMWE API data
         const tmweEmail = classification.tmwe_email_id ? tmweEmailMap.get(classification.tmwe_email_id) : null;
-        const localEmail = classification.email_id ? localEmailMap.get(classification.email_id) : null;
         
         const baseClassification = {
           id: classification.id,
@@ -281,7 +269,7 @@ export const SmartInboxTabIntelligent = ({
           tmwe_email_id: classification.tmwe_email_id
         };
 
-        // Usar TMWE data si disponible
+        // 🆕 Zero-Sync: Usar TMWE data o metadatos de clasificación
         if (tmweEmail) {
           return {
             classification: baseClassification,
@@ -302,31 +290,8 @@ export const SmartInboxTabIntelligent = ({
             }
           };
         }
-        
-        // Fallback a local DB
-        if (localEmail) {
-          return {
-            classification: baseClassification,
-            email: {
-              uid: classification.email_uid || localEmail.id,
-              email_id: localEmail.id,
-              tmwe_email_id: classification.tmwe_email_id,
-              subject: localEmail.subject || 'Sin asunto',
-              from: localEmail.from_email 
-                ? { email: localEmail.from_email } 
-                : { email: classification.sender_email || 'unknown' },
-              to: localEmail.to_email ? [{ email: localEmail.to_email }] : [],
-              body_text: localEmail.body_text || '',
-              body_html: localEmail.body_html || '',
-              read: localEmail.stato !== 'nuovo',
-              has_attachments: Array.isArray(localEmail.attachments) && localEmail.attachments.length > 0,
-              date: localEmail.data_ricezione || classification.created_at,
-              folder_name: classification.folder_name || 'INBOX'
-            }
-          };
-        }
 
-        // Sin datos de email - usar metadatos de clasificación
+        // Fallback: Solo metadatos de clasificación (sin datos completos de email)
         return {
           classification: baseClassification,
           email: {
@@ -431,37 +396,7 @@ export const SmartInboxTabIntelligent = ({
         console.warn('⚠️ [Zero-Sync] TMWE API failed, using fallback:', tmweError);
       }
 
-      // Step 3: Fallback to local DB if TMWE API fails or returns empty
-      if (unclassifiedEmails.length === 0) {
-        console.log('📦 [Fallback] Using local email_messages table...');
-        
-        let allEmailsQuery = supabase
-          .from('email_messages')
-          .select('id, subject, from_email')
-          .eq('user_email', userEmail)
-          .eq('cartella', selectedFolder);
-
-        if (unreadOnly) {
-          allEmailsQuery = allEmailsQuery.eq('stato', 'nuovo');
-        }
-
-        const { data: allEmails, error: fetchError } = await allEmailsQuery;
-
-        if (fetchError) {
-          console.error('❌ [Fallback] Error fetching emails:', fetchError);
-          toast.error('Errore nel recupero email');
-          return;
-        }
-
-        unclassifiedEmails = allEmails?.filter(email => !classifiedUuids.has(email.id)).slice(0, 100).map(email => ({
-          email_id: email.id,
-          subject: email.subject,
-          from_email: email.from_email
-        })) || [];
-        
-        console.log('📬 [Fallback] Unclassified from local DB:', unclassifiedEmails.length);
-      }
-
+      // 🆕 Zero-Sync: TMWE API è l'unica fonte - nessun fallback
       if (unclassifiedEmails.length === 0) {
         toast.info('Nessuna nuova email da classificare');
         return;

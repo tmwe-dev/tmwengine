@@ -76,37 +76,10 @@ export async function analyzeSenders(
       console.warn('⚠️ [Zero-Sync] TMWE API failed, falling back to local DB:', tmweError);
     }
     
-    // Fallback to local DB if TMWE API fails or returns empty
+    // 🆕 Zero-Sync: NO FALLBACK - TMWE API è l'unica fonte
     if (allEmails.length === 0) {
-      console.log('📦 [Fallback] Using local email_messages table...');
-      
-      const pageSize = 1000;
-      let page = 0;
-      let hasMore = true;
-
-      while (hasMore && allEmails.length < 20000) {
-        const rangeStart = page * pageSize;
-        const rangeEnd = (page + 1) * pageSize - 1;
-        
-        const { data: emailsData, error: emailError } = await supabase
-          .from('email_messages')
-          .select('from_email, data_ricezione')
-          .eq('user_email', userEmail)
-          .order('data_ricezione', { ascending: false })
-          .range(rangeStart, rangeEnd);
-        
-        if (emailError) throw emailError;
-        if (!emailsData || emailsData.length === 0) break;
-        
-        allEmails.push(...emailsData.map(e => ({
-          from_email: e.from_email,
-          date: e.data_ricezione
-        })));
-        hasMore = emailsData.length === pageSize;
-        page++;
-      }
-      
-      console.log(`📦 [Fallback] Local DB returned ${allEmails.length} emails`);
+      console.warn('⚠️ [Zero-Sync] TMWE API returned no emails. Nessun fallback disponibile.');
+      return [];
     }
 
     console.log(`✅ Caricamento completato: ${allEmails.length} email totali`);

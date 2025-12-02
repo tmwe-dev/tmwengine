@@ -115,7 +115,7 @@ const FunEmail = () => {
     setSelectedSenderForAI(null);
   }, [currentView]);
 
-  // ✅ Query email dal DB locale per la cartella selezionata
+  // ✅ Zero-Sync: Query email direttamente da TMWE API
   const {
     data: messagesData,
     isLoading: messagesLoading,
@@ -123,7 +123,7 @@ const FunEmail = () => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['fun-email-messages', selectedFolder],
+    queryKey: ['fun-email-messages-zerosync', selectedFolder],
     queryFn: async ({ pageParam = 1 }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non autenticato');
@@ -136,29 +136,27 @@ const FunEmail = () => {
       
       if (!profile?.tmwe_email) throw new Error('Email TMWE non configurata');
       
-      const { data, error } = await supabase
-        .from('email_messages')
-        .select('*')
-        .eq('user_email', profile.tmwe_email)
-        .eq('cartella', selectedFolder)
-        .eq('sync_status', 'fun_email_backup')
-        .order('data_ricezione', { ascending: false })
-        .range((pageParam - 1) * 30, pageParam * 30 - 1);
-      
-      if (error) throw error;
+      // 🆕 Zero-Sync: Fetch direttamente da TMWE API
+      const { emailSearchApi } = await import('@/lib/tmwe-email-search-api');
+      const response = await emailSearchApi.getEmailsMetadata({
+        folder: selectedFolder,
+        page: pageParam,
+        limit: 30,
+        timeout: 15,
+      });
       
       return {
-        emails: data?.map(email => ({
-          id: String(email.id),
+        emails: response.emails?.map((email: any) => ({
+          id: String(email.id || email.email_id),
           subject: email.subject || '(No Subject)',
-          from: email.from_email || '',
-          preview: (typeof email.body_text === 'string' ? email.body_text.substring(0, 150) : ''),
-          date: email.data_ricezione,
-          read: email.stato === 'letto',
-          starred: Array.isArray(email.flags) ? email.flags.includes('\\Flagged') : false,
-          hasAttachments: Array.isArray(email.attachments) ? email.attachments.length > 0 : false,
+          from: email.from?.email || email.from_email || email.sender || '',
+          preview: email.snippet || email.body_preview || '',
+          date: email.date || email.received_at || new Date().toISOString(),
+          read: email.is_read ?? email.seen ?? false,
+          starred: email.is_flagged ?? email.flagged ?? false,
+          hasAttachments: email.has_attachments ?? (email.attachment_count > 0),
         })) || [],
-        pagination: { page: pageParam, pages: 999, total: data?.length || 0 }
+        pagination: response.pagination || { page: pageParam, pages: 999, total: response.emails?.length || 0 }
       };
     },
     getNextPageParam: (lastPage, pages) => {
@@ -171,18 +169,17 @@ const FunEmail = () => {
   // Trasforma dati per EmailList
   const emails = messagesData?.pages?.flatMap(page => page?.emails || []) || [];
 
-  // ✅ Query dettaglio email dal DB locale quando selezionato
+  // ✅ Zero-Sync: Query dettaglio email da TMWE API
   const { data: emailDetail } = useQuery({
-    queryKey: ['fun-email-detail', selectedEmailId],
+    queryKey: ['fun-email-detail-zerosync', selectedEmailId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_messages')
-        .select('*')
-        .eq('id', selectedEmailId)
-        .single();
-      
-      if (error) throw error;
-      return data;
+      const { emailSearchApi } = await import('@/lib/tmwe-email-search-api');
+      const response = await emailSearchApi.getEmailDetail({
+        email_id: parseInt(selectedEmailId!),
+        include_body: true,
+        timeout: 10,
+      });
+      return response?.email;
     },
     enabled: !!selectedEmailId,
   });

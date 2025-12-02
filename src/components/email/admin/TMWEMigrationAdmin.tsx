@@ -69,6 +69,7 @@ export function TMWEMigrationAdmin() {
     try {
       const { data, error } = await supabase.functions.invoke('migrate-classification-tmwe-ids', {
         body: {
+          user_email: userEmail,
           batch_size: 50,
           dry_run: dryRun,
         }

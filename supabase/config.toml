@@ -168,13 +168,13 @@ backend = "postgres"
 [functions.tmwe-email-webhook]
 verify_jwt = false
 
-[functions.tmwe-email-send]
-verify_jwt = true
-
-# REMOVED - tmwe-test-folder-info → consolidated into tmwe-api-proxy (internal_test_folder_info)
-
-[functions.tmwe-email-sync-master]
-verify_jwt = true
+# CONSOLIDATED - Functions consolidated into tmwe-api-proxy:
+# - tmwe-email-send → handler: email_send
+# - tmwe-email-sync-master → handler: email_sync
+# - tmwe-oauth-auth → handler: oauth_auth
+# - tmwe-oauth-refresh → handler: oauth_refresh
+# - tmwe-jwt-sign → handler: migrate_email_ids
+# - tmwe-test-folder-info → handler: internal_test_folder_info (già consolidato)
 
 [functions.process-ai-import]
 verify_jwt = true
@@ -228,12 +228,7 @@ verify_jwt = true
 [functions.generate-audio]
 verify_jwt = true
 
-# CRITICAL: OAuth authentication for TMWE email integration
-[functions.tmwe-oauth-auth]
-verify_jwt = false
-
-[functions.tmwe-oauth-refresh]
-verify_jwt = true
+# REMOVED - OAuth functions consolidated into tmwe-api-proxy
 
 # Additional active functions
 [functions.ai-crm-manager]

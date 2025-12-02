@@ -66,8 +66,9 @@ const TMWEAuthCallbackIntegrated = () => {
       });
 
       // 4. Llamar a la edge function OAuth para completar el flujo OAuth2
-      const { data, error: functionError } = await supabase.functions.invoke('tmwe-oauth-auth', {
+      const { data, error: functionError } = await supabase.functions.invoke('tmwe-api-proxy', {
         body: {
+          handler: 'oauth_auth',
           code: code,
           redirectUri: redirectUri,
         }

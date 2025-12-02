@@ -73,8 +73,9 @@ export function TMWEMigrationAdmin() {
     setResult(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('tmwe-jwt-sign', {
+      const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
         body: {
+          handler: 'migrate_email_ids',
           batch_size: 50,
           dry_run: dryRun,
           user_email: userEmail

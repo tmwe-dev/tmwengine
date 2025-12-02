@@ -38,10 +38,11 @@ export const AIChatInvoker = ({ roomId }: AIChatInvokerProps) => {
         throw new Error('Utente non autenticato');
       }
 
-      const { data, error } = await supabase.functions.invoke('intranet-ai-chat-assistant', {
+      const { data, error } = await supabase.functions.invoke('intranet-ai-processor', {
         body: {
           roomId,
-          userId: userData.user.id
+          userId: userData.user.id,
+          action: 'chat_assistant'
         }
       });
 

@@ -40,16 +40,34 @@ export const ParticipantSelector = ({ participants, onToggle }: ParticipantSelec
   const checkAIStatus = async () => {
     setIsRefreshing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('check-ai-services-status');
+      // Chiama test-ai-connection per ogni servizio AI configurato
+      const { data: configs, error: configError } = await supabase
+        .from('config_ai')
+        .select('*')
+        .eq('attivo', true);
       
-      if (error) throw error;
+      if (configError) throw configError;
       
-      setAiStatus({
-        anthropic: data?.anthropic || false,
-        openai: data?.openai || false,
-        lovable: data?.lovable || false
-      });
+      const statusChecks = {
+        anthropic: false,
+        openai: false,
+        lovable: false
+      };
       
+      // Controlla ogni configurazione attiva
+      for (const config of configs || []) {
+        const { data } = await supabase.functions.invoke('test-ai-connection', {
+          body: { configId: config.id }
+        });
+        
+        if (data?.success) {
+          if (config.provider === 'anthropic') statusChecks.anthropic = true;
+          if (config.provider === 'openai') statusChecks.openai = true;
+          if (config.provider === 'lovable' || config.provider === 'google') statusChecks.lovable = true;
+        }
+      }
+      
+      setAiStatus(statusChecks);
       toast.success('Stato servizi AI aggiornato');
     } catch (error) {
       console.error('Error checking AI status:', error);

@@ -69,72 +69,9 @@ export default function CodeScreen() {
   };
 
   const startIndexing = async () => {
-    setIsIndexing(true);
-    setProgress(0);
-    setLogs([]);
-    setStats(null);
-
-    addLog('info', 'Avvio indicizzazione del codebase...');
-
-    try {
-      const startTime = Date.now();
-
-      const { data, error } = await supabase.functions.invoke('index-codebase', {
-        body: {
-          directories: [
-            'src/components',
-            'src/pages',
-            'src/hooks',
-            'src/lib',
-            'src/integrations',
-            'supabase/functions'
-          ],
-          forceReindex
-        }
-      });
-
-      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-
-      if (error) {
-        addLog('error', `Errore durante l'indicizzazione: ${error.message}`);
-        toast.error('Errore durante l\'indicizzazione', {
-          description: error.message
-        });
-        return;
-      }
-
-      if (data?.success) {
-        setStats(data.stats);
-        setProgress(100);
-
-        // Add summary logs
-        addLog('success', `✅ Indicizzati ${data.stats.indexed} file in ${duration}s`);
-        
-        if (data.stats.errors > 0) {
-          addLog('error', `❌ ${data.stats.errors} errori riscontrati`);
-          data.stats.errorDetails?.forEach((err: { file: string; error: string }) => {
-            addLog('error', `  └─ ${err.file}: ${err.error}`);
-          });
-        }
-
-        // Add individual file logs
-        data.stats.files?.forEach((file: string) => {
-          addLog('success', `✅ ${file}`);
-        });
-
-        toast.success('Indicizzazione completata!', {
-          description: `${data.stats.indexed} file indicizzati con ${data.stats.errors} errori`
-        });
-
-        await loadIndexStats();
-      }
-    } catch (error) {
-      console.error('Error during indexing:', error);
-      addLog('error', `Errore imprevisto: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      toast.error('Errore durante l\'indicizzazione');
-    } finally {
-      setIsIndexing(false);
-    }
+    toast.error('Funzionalità disabilitata', {
+      description: 'L\'indicizzazione del codebase è stata rimossa per risparmiare risorse.'
+    });
   };
 
   const clearIndex = async () => {

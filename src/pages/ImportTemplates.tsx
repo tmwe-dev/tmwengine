@@ -1014,8 +1014,8 @@ export default function ImportTemplates() {
 
       if (uploadError) throw uploadError;
 
-      // Phase 1: Save file to database - use AI function if enabled
-      const functionName = useAIImport ? 'process-import-file-ai' : 'process-import-file';
+      // Phase 1: Save file to database - sempre usa AI function
+      const functionName = 'process-ai-import';
       const { data: saveResult, error: saveError } = await supabase.functions
         .invoke(functionName, {
           body: {
@@ -1040,8 +1040,8 @@ export default function ImportTemplates() {
           startTime: Date.now()
         });
 
-        // Start processing the saved file - use AI function if enabled
-        const processFunctionName = useAIImport ? 'process-saved-file-ai' : 'process-saved-file';
+        // Start processing the saved file - sempre usa process-ai-import
+        const processFunctionName = 'process-ai-import';
         const { data: processResult, error: processError } = await supabase.functions
           .invoke(processFunctionName, {
             body: {

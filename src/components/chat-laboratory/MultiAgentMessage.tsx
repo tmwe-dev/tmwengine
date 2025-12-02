@@ -198,11 +198,13 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange, can
         return;
       }
 
-      const { error } = await supabase.functions.invoke('bar-request-comment', {
+      // Chiama direttamente bar-chat-orchestrator con flag di richiesta manuale
+      const { error } = await supabase.functions.invoke('bar-chat-orchestrator', {
         body: {
           conversationId,
           messageId: message.id,
           targetAgent: target,
+          manualRequest: true,
           requestingUser: true
         }
       });
@@ -212,7 +214,7 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange, can
       toast({
         title: "Richiesta inviata",
         description: target === 'all' 
-          ? "Tutti gli agenti sono stati chiamati a commentare" 
+          ? "Tutti gli agenti sono stati chiamati a commentare"
           : `${target.toUpperCase()} è stato chiamato a commentare`
       });
     } catch (error) {

@@ -106,13 +106,19 @@ serve(async (req) => {
         .update({ stato: 'in_invio' })
         .eq('id', emailToSend.id);
 
-      // Chiama tmwe-email-send
+      // Chiama tmwe-api-proxy per inviare l'email
       const { data: sendResult, error: sendError } = await supabaseClient.functions.invoke(
-        'tmwe-email-send',
+        'tmwe-api-proxy',
         {
           body: {
+            handler: 'email_send',
             to: emailToSend.destinatario_email,
             subject: emailToSend.oggetto,
+            body_text: emailToSend.corpo_testo,
+            body_html: emailToSend.corpo_html
+          }
+        }
+      );
             body_text: emailToSend.corpo_testo,
             body_html: emailToSend.corpo_html
           }

@@ -13,6 +13,7 @@ import {
 } from './lib/prompt-builder.ts';
 import { callClaude, callChatGPT, callGemini } from './lib/ai-providers.ts';
 import { generateAudioForSingleResponse } from './lib/audio-generator.ts';
+import { selectNextAgent } from './lib/agent-selector.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -91,7 +92,8 @@ serve(async (req) => {
       conversationStyle, 
       conversationPace, 
       pauseBetweenTurnsMs,
-      voiceEnabled 
+      voiceEnabled,
+      turnStrategy
     } = barModeSettings;
 
     console.log('⚙️ Configurazione:', {
@@ -99,7 +101,8 @@ serve(async (req) => {
       conversationStyle,
       conversationPace,
       pauseBetweenTurnsMs,
-      voiceEnabled
+      voiceEnabled,
+      turnStrategy
     });
     
     // Check if paused
@@ -128,7 +131,12 @@ serve(async (req) => {
       console.log('📦 [DB] Caricati prompt dal database');
     }
     
-    const { recentMessages, cumulativeSummary } = conversationData;
+    const { conversation, recentMessages, cumulativeSummary } = conversationData;
+    
+    // ✅ Carica turn tracking per strategie di turno
+    const currentTurnIndex = conversation?.current_turn_index || 0;
+    const lastSpeakerIndex = conversation?.last_speaker_index || 0;
+    console.log(`📊 Turn tracking: current=${currentTurnIndex}, last_speaker=${lastSpeakerIndex}`);
     
     // FIX 5: DIAGNOSTICA SUMMARY
     console.log('📚 DIAGNOSTICA SUMMARY:', {
@@ -159,259 +167,198 @@ serve(async (req) => {
     // ============ FORMAT HISTORY MESSAGES ============
     const historyMessages = formatHistoryMessages(recentMessages);
 
-    // ============ SEQUENTIAL AGENT CALLS ============
+    // ============ AGENT SELECTION BASED ON TURN STRATEGY ============
     const activeParticipants = participants.filter((p: any) => p.is_active);
-    let aiTurnsCount = 0; // ✅ Contatore turni AI
-    const MAX_AI_TURNS_BEFORE_USER = 6; // ✅ Limite turni
     
-    // Optimize order: Gemini → ChatGPT → Claude
-    const geminiAgent = activeParticipants.find((p: any) => 
-      p.type === 'lovable_ai' || p.type === 'gemini'
+    console.log(`🎯 Selezione agente usando strategia: ${turnStrategy}`);
+    
+    const selectionContext = {
+      userMessage,
+      recentMessages,
+      cumulativeSummary,
+      conversationStyle
+    };
+
+    const { selectedAgent, newTurnIndex } = await selectNextAgent(
+      turnStrategy,
+      activeParticipants,
+      currentTurnIndex,
+      lastSpeakerIndex,
+      selectionContext,
+      supabaseClient,
+      conversationId
     );
-    const openaiAgent = activeParticipants.find((p: any) => 
-      p.type === 'openai' || p.type === 'chatgpt'
-    );
-    const claudeAgent = activeParticipants.find((p: any) => 
-      p.type === 'anthropic' || p.type === 'claude'
-    );
-    const otherAgents = activeParticipants.filter((p: any) => 
-      p.type !== 'lovable_ai' && 
-      p.type !== 'gemini' && 
-      p.type !== 'openai' && 
-      p.type !== 'chatgpt' &&
-      p.type !== 'anthropic' && 
-      p.type !== 'claude'
-    );
+
+    console.log(`🎯 Agente selezionato: ${selectedAgent.name} (tipo: ${selectedAgent.type})`);
+
+    // ============ BUILD SYSTEM PROMPT PER AGENTE SELEZIONATO ============
+    let systemPrompt: string;
     
-    const sortedParticipants = [
-      geminiAgent,
-      openaiAgent,
-      claudeAgent,
-      ...otherAgents
-    ].filter(Boolean);
-    
-    console.log(`⚡ Ordine chiamate ottimizzato: ${sortedParticipants.map((p: any) => p.name).join(' → ')}`);
-    console.log(`🎯 Chiamata sequenziale di ${sortedParticipants.length} agenti attivi`);
-    
-    const allResponses: any[] = [];
-    
-    for (let i = 0; i < sortedParticipants.length; i++) {
-      try {
-        const currentAgent = sortedParticipants[i];
-        console.log(`\n🎯 Agente ${i + 1}/${sortedParticipants.length}: ${currentAgent.name}`);
-        
-        // ============ CHECK IF DIRECTLY CALLED ============
-        const lastResponse = allResponses[allResponses.length - 1];
-        const lastMessage = historyMessages[historyMessages.length - 1];
-
-        const wasCalledByAgent = lastResponse && (
-          lastResponse.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`) ||
-          lastResponse.content.match(new RegExp(`\\b${currentAgent.name}\\b`, 'i'))
-        );
-
-        const wasDirectlyAddressed = lastMessage && (
-          lastMessage.content.toLowerCase().includes(currentAgent.name.toLowerCase()) ||
-          lastMessage.content.toLowerCase().includes(`@${currentAgent.name.toLowerCase()}`)
-        );
-
-        const isDirectCall = wasCalledByAgent || wasDirectlyAddressed;
-
-        if (wasCalledByAgent) {
-          console.log(`📢 ${lastResponse.agentName} ha chiamato ${currentAgent.name} → PRIORITÀ RISPOSTA`);
-        }
-        
-        // ============ BUILD TURN CONTEXT ============
-        const turnContext = [
-          { role: 'user', content: userMessage },
-          ...allResponses.map(r => ({
-            role: 'assistant',
-            content: r.content
-          }))
-        ];
-        
-        console.log(`📝 Context include: messaggio utente + ${allResponses.length} risposte precedenti`);
-
-        // ============ BUILD SYSTEM PROMPT ============
-        let systemPrompt: string;
-        
-        if (isComposedPrompt) {
-          // ✅ USA DIRETTAMENTE il prompt composto - NO assemblaggio
-          systemPrompt = globalSystemPrompt;
-          console.log(`🎯 [${currentAgent.name}] Usando prompt composto diretto (${systemPrompt.length} chars)`);
-        } else {
-          // 🔧 Assemblaggio dinamico per prompt legacy
-          // ⚡ LIVELLO 2: Support both Map and plain object (for client-sent prompts)
-          const agentPersonality = finalCachedPrompts.agentPersonalities instanceof Map
-            ? finalCachedPrompts.agentPersonalities.get(currentAgent.name.toLowerCase()) || ''
-            : finalCachedPrompts.agentPersonalities[currentAgent.name.toLowerCase()] || '';
-          
-          systemPrompt = buildSystemPrompt({
-            globalPrompt: globalSystemPrompt,
-            baseContent: baseContent,
-            agentPersonality: agentPersonality,
-            conversationStyle: conversationStyle,
-            agentMode: agentMode,
-            previousResponses: allResponses,
-            wasCalledDirectly: isDirectCall,
-            styleSections: finalCachedPrompts.conversationStyles,
-            conversationPersonality: finalCachedPrompts.conversationPersonality
-          });
-          console.log(`🔧 [${currentAgent.name}] Prompt assemblato dinamicamente (${systemPrompt.length} chars)`);
-        }
-
-        // ============ BUILD CONVERSATION HISTORY ============
-        const conversationHistory = buildConversationHistory({
-          systemPrompt: systemPrompt,
-          cumulativeSummary: cumulativeSummary,
-          historyMessages: historyMessages,
-          turnContext: turnContext
-        });
-
-        // ============ CALCULATE CONTEXT SIZE ============
-        const contextSize = calculateContextSize(conversationHistory);
-        console.log(`📊 Context: ${contextSize.totalContextChars} chars, ~${contextSize.estimatedTokens} tokens`);
-
-        // ============ CHOOSE AI PROVIDER ============
-        let aiResponse = null;
-        let provider = null;
-        let rawResponse = null;
-
-        if (currentAgent.type === 'anthropic' || currentAgent.type === 'claude') {
-          provider = 'claude';
-          const result = await callClaude({
-            apiKey: anthropicConfig.apiKey,
-            model: anthropicConfig.model,
-            conversationHistory: conversationHistory,
-            callStartTime: Date.now()
-          });
-          aiResponse = result.content;
-          rawResponse = result;
-        } else if (currentAgent.type === 'openai' || currentAgent.type === 'chatgpt') {
-          provider = 'chatgpt';
-          const result = await callChatGPT({
-            lovableApiKey: LOVABLE_API_KEY,
-            openaiConfig: openaiConfig,
-            conversationHistory: conversationHistory,
-            callStartTime: Date.now()
-          });
-          aiResponse = result.content;
-          rawResponse = result;
-        } else if (currentAgent.type === 'lovable_ai' || currentAgent.type === 'gemini') {
-          provider = 'gemini';
-          const result = await callGemini({
-            lovableApiKey: LOVABLE_API_KEY,
-            conversationHistory: conversationHistory,
-            callStartTime: Date.now()
-          });
-          aiResponse = result.content;
-          rawResponse = result;
-        } else {
-          console.warn(`⚠️ Tipo agente sconosciuto: ${currentAgent.type}`);
-          continue;
-        }
-
-        if (!aiResponse) {
-          console.warn(`⚠️ Nessuna risposta da ${currentAgent.name}`);
-          continue;
-        }
-
-        // Trim whitespace from the AI response
-        aiResponse = aiResponse.trim();
-
-        console.log(`✅ Risposta (${provider}): ${aiResponse}`);
-
-        // ============ GENERATE MESSAGE ID (BEFORE AUDIO) ============
-        const messageId = crypto.randomUUID();
-
-        // ============ AUDIO GENERATION ============
-        let audioUrl = null;
-        if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.some((v: any) => v.elevenlabs_agent_id === currentAgent.id)) {
-          try {
-            const voiceAgent = activeVoiceAgents.find((v: any) => v.elevenlabs_agent_id === currentAgent.id);
-            audioUrl = await generateAudioForSingleResponse({
-              supabaseClient: supabaseClient,
-              conversationId: conversationId,
-              messageId: messageId,
-              content: aiResponse,
-              voiceId: voiceAgent?.voice_id || 'EXAVITQu4vr4xnSDxMaL',
-              elevenLabsApiKey: elevenLabsApiKey
-            });
-            console.log(`🔊 Audio richiesto per ${currentAgent.name} (messageId: ${messageId})`);
-          } catch (audioError) {
-            console.error(`❌ Errore generazione audio per ${currentAgent.name}:`, audioError);
-          }
-        } else {
-          console.log(`🔇 Audio disabilitato o agente non abilitato: ${currentAgent.name}`);
-        }
-
-        // ============ SAVE TO DATABASE ============
-        const { error: insertError } = await supabaseClient
-          .from('chat_laboratory_messages')
-          .insert({
-            id: messageId,
-            conversation_id: conversationId,
-            sender_type: currentAgent.type,
-            sender_name: currentAgent.name,
-            content: aiResponse,
-            audio_url: audioUrl,
-            token_input: rawResponse?.tokensIn || 0,
-            token_output: rawResponse?.tokensOut || 0,
-            tempo_risposta_ms: rawResponse?.duration || 0,
-            created_at: new Date().toISOString()
-          });
-
-        if (insertError) {
-          console.error(`❌ Errore salvataggio ${currentAgent.name}:`, insertError);
-        } else {
-          console.log(`✅ ${currentAgent.name} salvato nel DB con ID ${messageId}`);
-        }
-
-        // ============ STORE RESPONSE ============
-        const responseData = {
-          agentName: currentAgent.name,
-          content: aiResponse,
-          audioUrl: audioUrl,
-          raw: rawResponse
-        };
-        allResponses.push(responseData);
-
-        // ============ PAUSE BETWEEN AGENTS ============
-        if (i < sortedParticipants.length - 1) {
-          console.log(`⏸️ Pausa di ${pauseBetweenTurnsMs}ms prima del prossimo agente...`);
-          await delay(pauseBetweenTurnsMs);
-        }
-
-        aiTurnsCount++; // ✅ Incrementa il contatore
-
-        if (aiTurnsCount >= MAX_AI_TURNS_BEFORE_USER) {
-          console.warn(`⚠️ Raggiunto il limite di ${MAX_AI_TURNS_BEFORE_USER} turni AI consecutivi. Interrompo.`);
-          break;
-        }
-      } catch (error) {
-        console.error(`❌ Errore chiamata ${sortedParticipants[i]?.name}:`, error);
-      }
-    }
-
-    // ============ RETURN FINALE (DOPO IL LOOP) ============
-    if (allResponses.length > 0) {
-      const firstResponse = allResponses[0];
-      console.log(`\n✅ Loop completo. Ritorno prima risposta (${firstResponse.agentName}) al client`);
-      return new Response(
-        JSON.stringify({
-          response: firstResponse.content,
-          speaker: firstResponse.agentName,
-          audioUrl: firstResponse.audioUrl,
-          tempResponse: null
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (isComposedPrompt) {
+      // ✅ USA DIRETTAMENTE il prompt composto - NO assemblaggio
+      systemPrompt = globalSystemPrompt;
+      console.log(`🎯 [${selectedAgent.name}] Usando prompt composto diretto (${systemPrompt.length} chars)`);
     } else {
-      console.error('❌ Nessuna risposta generata da nessun agente');
-      return new Response(
-        JSON.stringify({ error: 'Nessuna risposta generata' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      // 🔧 Assemblaggio dinamico per prompt legacy
+      const agentPersonality = finalCachedPrompts.agentPersonalities instanceof Map
+        ? finalCachedPrompts.agentPersonalities.get(selectedAgent.name.toLowerCase()) || ''
+        : finalCachedPrompts.agentPersonalities[selectedAgent.name.toLowerCase()] || '';
+      
+      systemPrompt = buildSystemPrompt({
+        globalPrompt: globalSystemPrompt,
+        baseContent: baseContent,
+        agentPersonality: agentPersonality,
+        conversationStyle: conversationStyle,
+        agentMode: agentMode,
+        previousResponses: [],
+        wasCalledDirectly: false,
+        styleSections: finalCachedPrompts.conversationStyles,
+        conversationPersonality: finalCachedPrompts.conversationPersonality
+      });
+      console.log(`🔧 [${selectedAgent.name}] Prompt assemblato dinamicamente (${systemPrompt.length} chars)`);
     }
+
+    // ============ BUILD CONVERSATION HISTORY ============
+    const turnContext = [
+      { role: 'user', content: userMessage }
+    ];
+    
+    const conversationHistory = buildConversationHistory({
+      systemPrompt: systemPrompt,
+      cumulativeSummary: cumulativeSummary,
+      historyMessages: historyMessages,
+      turnContext: turnContext
+    });
+
+    // ============ CALCULATE CONTEXT SIZE ============
+    const contextSize = calculateContextSize(conversationHistory);
+    console.log(`📊 Context: ${contextSize.totalContextChars} chars, ~${contextSize.estimatedTokens} tokens`);
+
+    // ============ CALL AI PROVIDER ============
+    let aiResponse = null;
+    let provider = null;
+    let rawResponse = null;
+    const callStartTime = Date.now();
+
+    if (selectedAgent.type === 'anthropic' || selectedAgent.type === 'claude') {
+      provider = 'claude';
+      const result = await callClaude({
+        apiKey: anthropicConfig.apiKey,
+        model: anthropicConfig.model,
+        conversationHistory: conversationHistory,
+        callStartTime: callStartTime
+      });
+      aiResponse = result.content;
+      rawResponse = result;
+    } else if (selectedAgent.type === 'openai' || selectedAgent.type === 'chatgpt') {
+      provider = 'chatgpt';
+      const result = await callChatGPT({
+        lovableApiKey: LOVABLE_API_KEY,
+        openaiConfig: openaiConfig,
+        conversationHistory: conversationHistory,
+        callStartTime: callStartTime
+      });
+      aiResponse = result.content;
+      rawResponse = result;
+    } else if (selectedAgent.type === 'lovable_ai' || selectedAgent.type === 'gemini') {
+      provider = 'gemini';
+      const result = await callGemini({
+        lovableApiKey: LOVABLE_API_KEY,
+        conversationHistory: conversationHistory,
+        callStartTime: callStartTime
+      });
+      aiResponse = result.content;
+      rawResponse = result;
+    } else {
+      console.warn(`⚠️ Tipo agente sconosciuto: ${selectedAgent.type}`);
+      throw new Error(`Tipo agente non supportato: ${selectedAgent.type}`);
+    }
+
+    if (!aiResponse) {
+      throw new Error(`Nessuna risposta da ${selectedAgent.name}`);
+    }
+
+    // Trim whitespace from the AI response
+    aiResponse = aiResponse.trim();
+
+    console.log(`✅ Risposta (${provider}): ${aiResponse.substring(0, 100)}...`);
+
+    // ============ GENERATE MESSAGE ID (BEFORE AUDIO) ============
+    const messageId = crypto.randomUUID();
+
+    // ============ AUDIO GENERATION ============
+    let audioUrl = null;
+    if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.some((v: any) => v.elevenlabs_agent_id === selectedAgent.id)) {
+      try {
+        const voiceAgent = activeVoiceAgents.find((v: any) => v.elevenlabs_agent_id === selectedAgent.id);
+        audioUrl = await generateAudioForSingleResponse({
+          supabaseClient: supabaseClient,
+          conversationId: conversationId,
+          messageId: messageId,
+          content: aiResponse,
+          voiceId: voiceAgent?.voice_id || 'EXAVITQu4vr4xnSDxMaL',
+          elevenLabsApiKey: elevenLabsApiKey
+        });
+        console.log(`🔊 Audio generato per ${selectedAgent.name} (messageId: ${messageId})`);
+      } catch (audioError) {
+        console.error(`❌ Errore generazione audio per ${selectedAgent.name}:`, audioError);
+      }
+    } else {
+      console.log(`🔇 Audio disabilitato o agente non abilitato: ${selectedAgent.name}`);
+    }
+
+    // ============ SAVE TO DATABASE ============
+    const { error: insertError } = await supabaseClient
+      .from('chat_laboratory_messages')
+      .insert({
+        id: messageId,
+        conversation_id: conversationId,
+        sender_type: selectedAgent.type,
+        sender_name: selectedAgent.name,
+        content: aiResponse,
+        audio_url: audioUrl,
+        token_input: rawResponse?.tokensIn || 0,
+        token_output: rawResponse?.tokensOut || 0,
+        tempo_risposta_ms: rawResponse?.duration || 0,
+        created_at: new Date().toISOString()
+      });
+
+    if (insertError) {
+      console.error(`❌ Errore salvataggio ${selectedAgent.name}:`, insertError);
+      throw insertError;
+    } else {
+      console.log(`✅ ${selectedAgent.name} salvato nel DB con ID ${messageId}`);
+    }
+
+    // ============ UPDATE TURN INDEX ============
+    const { error: updateError } = await supabaseClient
+      .from('chat_laboratory_conversations')
+      .update({
+        current_turn_index: newTurnIndex,
+        last_speaker_index: newTurnIndex,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', conversationId);
+
+    if (updateError) {
+      console.error(`❌ Errore aggiornamento turn index:`, updateError);
+    } else {
+      console.log(`✅ Turn index aggiornato: ${newTurnIndex}`);
+    }
+
+    // ============ RETURN RESPONSE ============
+    console.log(`\n✅ Risposta generata da ${selectedAgent.name} con strategia ${turnStrategy}`);
+    return new Response(
+      JSON.stringify({
+        response: aiResponse,
+        speaker: selectedAgent.name,
+        audioUrl: audioUrl,
+        tempResponse: null,
+        turnIndex: newTurnIndex,
+        strategy: turnStrategy
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (error) {
     console.error('❌ Errore orchestrator:', error);

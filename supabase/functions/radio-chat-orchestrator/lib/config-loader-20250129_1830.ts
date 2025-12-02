@@ -175,10 +175,10 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
     throw new Error('Nessuna chiave API configurata');
   }
 
-  // ⚡ LIVELLO 1: Fetch campi necessari per Radio Chat (6 campi incluso turn_strategy)
+  // ⚡ LIVELLO 1: Fetch solo campi necessari per Radio Chat (5 campi invece di 10)
   let { data: barModeSettings, error: settingsError } = await supabaseClient
     .from('chat_laboratory_bar_mode')
-    .select('voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms, turn_strategy')
+    .select('voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms')
     .eq('conversation_id', conversationId)
     .maybeSingle();
 
@@ -194,10 +194,9 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
         agent_interaction_mode: 'consultation',
         conversation_style: 'colleagues',
         conversation_pace: 'normal',
-        pause_between_turns_ms: 800,
-        turn_strategy: 'SMART_PRIORITY'
+        pause_between_turns_ms: 800
       })
-      .select('voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms, turn_strategy')
+      .select('voice_enabled, conversation_pace, agent_interaction_mode, conversation_style, pause_between_turns_ms')
       .single();
 
     if (createError) {
@@ -208,8 +207,7 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
         conversation_pace: 'normal',
         agent_interaction_mode: 'consultation',
         conversation_style: 'colleagues',
-        pause_between_turns_ms: 800,
-        turn_strategy: 'SMART_PRIORITY'
+        pause_between_turns_ms: 800
       };
     } else {
       barModeSettings = newSettings;
@@ -227,15 +225,6 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
     fast: 300
   };
   const pauseBetweenTurnsMs = barModeSettings.pause_between_turns_ms || paceDelays[conversationPace as keyof typeof paceDelays];
-
-  // ✅ Carica e valida turn_strategy
-  let turnStrategy = barModeSettings.turn_strategy || 'SMART_PRIORITY';
-  const validStrategies = ['SMART_PRIORITY', 'ROUND_ROBIN', 'RANDOM_30', 'INTERRUPT_BASED'];
-  if (!validStrategies.includes(turnStrategy)) {
-    console.warn(`⚠️ Strategia non valida: ${turnStrategy}, uso SMART_PRIORITY`);
-    turnStrategy = 'SMART_PRIORITY';
-  }
-  console.log(`🎯 Turn Strategy attiva: ${turnStrategy}`);
 
   // Fetch ElevenLabs config if voice enabled
   let elevenLabsApiKey: string | null = null;
@@ -282,8 +271,7 @@ export async function loadBarModeConfig(supabaseClient: any, conversationId: str
       agentMode,
       conversationStyle,
       conversationPace,
-      pauseBetweenTurnsMs,
-      turnStrategy
+      pauseBetweenTurnsMs
     },
     elevenLabsApiKey,
     activeVoiceAgents

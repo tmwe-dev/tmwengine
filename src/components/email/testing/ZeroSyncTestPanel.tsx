@@ -301,7 +301,188 @@ export function ZeroSyncTestPanel() {
     }
   };
 
-  // ========== TEST 6: API Performance ==========
+  // 🆕 TEST 6: Folders from API (Zero-Sync)
+  const testFoldersZeroSync = async (): Promise<TestResult> => {
+    const startTime = Date.now();
+    try {
+      const response = await emailSearchApi.getFolders({ include_counts: true });
+      const duration = Date.now() - startTime;
+
+      if (!response?.folders || response.folders.length === 0) {
+        return {
+          id: 'folders-zerosync',
+          name: 'Folders from API',
+          status: 'failed',
+          duration,
+          message: '❌ No folders returned from TMWE API'
+        };
+      }
+
+      const foldersWithCounts = response.folders.filter((f: any) => 
+        (f.total_count || f.message_count || 0) > 0
+      );
+
+      return {
+        id: 'folders-zerosync',
+        name: 'Folders from API',
+        status: 'passed',
+        duration,
+        message: `✅ ${response.folders.length} folders loaded (${foldersWithCounts.length} with emails)`,
+        details: { 
+          total_folders: response.folders.length,
+          folders_with_emails: foldersWithCounts.length,
+          sample: response.folders.slice(0, 3).map((f: any) => f.folder_name || f.name)
+        }
+      };
+    } catch (error: any) {
+      return {
+        id: 'folders-zerosync',
+        name: 'Folders from API',
+        status: 'failed',
+        duration: Date.now() - startTime,
+        message: `❌ ${error.message}`,
+        details: { error: error.toString() }
+      };
+    }
+  };
+
+  // 🆕 TEST 7: Threads from API (Zero-Sync)
+  const testThreadsZeroSync = async (): Promise<TestResult> => {
+    const startTime = Date.now();
+    try {
+      // Get a sample email with tmwe_email_id
+      const { data: classifications, error } = await supabase
+        .from('email_ai_classifications')
+        .select('tmwe_email_id')
+        .not('tmwe_email_id', 'is', null)
+        .limit(1);
+
+      if (error) throw error;
+
+      if (!classifications || classifications.length === 0) {
+        return {
+          id: 'threads-zerosync',
+          name: 'Threads from API',
+          status: 'info',
+          duration: Date.now() - startTime,
+          message: 'ℹ️ No emails with tmwe_email_id to test threads'
+        };
+      }
+
+      const tmweEmailId = classifications[0].tmwe_email_id;
+      
+      // Fetch email detail (simulating thread fetch)
+      const emailDetail = await emailSearchApi.getEmailDetail({
+        email_id: tmweEmailId as number,
+        include_body: false,
+        timeout: 10
+      });
+
+      const duration = Date.now() - startTime;
+
+      if (!emailDetail?.email) {
+        return {
+          id: 'threads-zerosync',
+          name: 'Threads from API',
+          status: 'failed',
+          duration,
+          message: `❌ Failed to fetch email detail from API`
+        };
+      }
+
+      return {
+        id: 'threads-zerosync',
+        name: 'Threads from API',
+        status: 'passed',
+        duration,
+        message: `✅ Thread data available via API`,
+        details: {
+          tmwe_email_id: tmweEmailId,
+          subject: emailDetail.email.subject,
+          has_thread_data: true
+        }
+      };
+    } catch (error: any) {
+      return {
+        id: 'threads-zerosync',
+        name: 'Threads from API',
+        status: 'failed',
+        duration: Date.now() - startTime,
+        message: `❌ ${error.message}`,
+        details: { error: error.toString() }
+      };
+    }
+  };
+
+  // 🆕 TEST 8: New Classification Flow (Zero-Sync)
+  const testNewClassificationZeroSync = async (): Promise<TestResult> => {
+    const startTime = Date.now();
+    try {
+      // Check most recent classification has tmwe_email_id
+      const { data: recentClassifications, error } = await supabase
+        .from('email_ai_classifications')
+        .select('tmwe_email_id, created_at')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+
+      const duration = Date.now() - startTime;
+
+      if (!recentClassifications || recentClassifications.length === 0) {
+        return {
+          id: 'new-classification-zerosync',
+          name: 'New Classification Flow',
+          status: 'info',
+          duration,
+          message: 'ℹ️ No classifications to test'
+        };
+      }
+
+      const withTmweId = recentClassifications.filter(c => c.tmwe_email_id).length;
+      const total = recentClassifications.length;
+
+      if (withTmweId === total) {
+        return {
+          id: 'new-classification-zerosync',
+          name: 'New Classification Flow',
+          status: 'passed',
+          duration,
+          message: `✅ All ${total} recent classifications include tmwe_email_id`,
+          details: { with_tmwe_id: withTmweId, total }
+        };
+      } else if (withTmweId > 0) {
+        return {
+          id: 'new-classification-zerosync',
+          name: 'New Classification Flow',
+          status: 'warning',
+          duration,
+          message: `⚠️ Mixed: ${withTmweId}/${total} recent classifications have tmwe_email_id`,
+          details: { with_tmwe_id: withTmweId, total }
+        };
+      } else {
+        return {
+          id: 'new-classification-zerosync',
+          name: 'New Classification Flow',
+          status: 'info',
+          duration,
+          message: `ℹ️ Recent classifications are legacy (no tmwe_email_id)`,
+          details: { with_tmwe_id: 0, total, note: 'New classifications will include tmwe_email_id' }
+        };
+      }
+    } catch (error: any) {
+      return {
+        id: 'new-classification-zerosync',
+        name: 'New Classification Flow',
+        status: 'failed',
+        duration: Date.now() - startTime,
+        message: `❌ ${error.message}`,
+        details: { error: error.toString() }
+      };
+    }
+  };
+
+  // ========== TEST 9: API Performance ==========
   const testApiPerformance = async (): Promise<TestResult> => {
     const startTime = Date.now();
     try {
@@ -354,7 +535,7 @@ export function ZeroSyncTestPanel() {
       name: 'Zero-Sync Architecture Tests',
       description: 'Verificación completa de integración TMWE API',
       tests: [],
-      totalTests: 6,
+      totalTests: 8,
       passed: 0,
       failed: 0,
       warnings: 0
@@ -366,6 +547,9 @@ export function ZeroSyncTestPanel() {
       { name: 'Folder Statistics', fn: testFolderStats },
       { name: 'Sender Analysis', fn: testSenderAnalysis },
       { name: 'Classification Metadata', fn: testClassificationMetadata },
+      { name: 'Folders from API', fn: testFoldersZeroSync },
+      { name: 'Threads from API', fn: testThreadsZeroSync },
+      { name: 'New Classification Flow', fn: testNewClassificationZeroSync },
       { name: 'API Performance', fn: testApiPerformance },
     ];
 

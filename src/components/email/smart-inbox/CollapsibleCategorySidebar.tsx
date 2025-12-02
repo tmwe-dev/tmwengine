@@ -65,36 +65,43 @@ export function CollapsibleCategorySidebar({
     },
   });
 
-  // FASE 2: Fetch folder statistics
+  // 🆕 ZERO-SYNC: Fetch folder statistics from TMWE API
   const { data: folderStats } = useQuery({
-    queryKey: ['folder-stats', userEmail, selectedFolder],
+    queryKey: ['folder-stats-zerosync', userEmail, selectedFolder],
     queryFn: async () => {
       if (!userEmail || !selectedFolder) return null;
 
-      // Count total emails in DB for folder
-      const { count: totalInDB } = await supabase
-        .from('email_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_email', userEmail)
-        .eq('cartella', selectedFolder);
+      console.log('📊 [Zero-Sync] Fetching folder stats from API...');
       
-      // Count classified emails
+      // Get email count from TMWE API (source of truth)
+      const { emailSearchApi } = await import('@/lib/tmwe-email-search-api');
+      const apiStats = await emailSearchApi.getStatistics({ folder: selectedFolder });
+      const totalEmails = apiStats?.data?.total || 0;
+      
+      // Count classified emails from local DB (metadata)
       const { count: totalClassified } = await supabase
         .from('email_ai_classifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_email', userEmail)
         .eq('folder_name', selectedFolder);
       
-      const total = totalInDB || 0;
       const classified = totalClassified || 0;
+      const percentage = totalEmails > 0 ? Math.round((classified / totalEmails) * 100) : 0;
+      
+      console.log('✅ [Zero-Sync] Folder stats:', {
+        totalEmails,
+        classified,
+        percentage
+      });
       
       return {
-        totalInDB: total,
+        totalInDB: totalEmails,
         totalClassified: classified,
-        classificationPercentage: total > 0 ? Math.round((classified / total) * 100) : 0
+        classificationPercentage: percentage
       };
     },
-    enabled: !!userEmail && !!selectedFolder
+    enabled: !!userEmail && !!selectedFolder,
+    staleTime: 30000 // 30 seconds
   });
 
   // Trova categoria selezionata per il badge

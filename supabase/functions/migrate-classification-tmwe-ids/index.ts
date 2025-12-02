@@ -72,25 +72,37 @@ Deno.serve(async (req) => {
         console.log(`[Migration] Processing classification ${classification.id}`);
 
         // Buscar email en TMWE API usando tmwe-api-proxy
-        const searchResponse = await supabaseClient.functions.invoke('tmwe-api-proxy', {
-          body: {
-            operation: 'searchEmail',
-            query: {
-              from: classification.sender_email,
-              folder: classification.folder_name || 'INBOX',
-              limit: 5,
+        // Usar headers de autenticación con SERVICE_ROLE_KEY
+        const searchResponse = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/tmwe-api-proxy`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
             },
-          },
-        });
+            body: JSON.stringify({
+              operation: 'searchEmail',
+              query: {
+                from: classification.sender_email,
+                folder: classification.folder_name || 'INBOX',
+                limit: 5,
+              },
+            }),
+          }
+        );
 
-        if (searchResponse.error) {
-          console.error(`[Migration] Search error for ${classification.id}:`, searchResponse.error);
+        if (!searchResponse.ok) {
+          const errorText = await searchResponse.text();
+          console.error(`[Migration] Search error for ${classification.id}:`, errorText);
           failed++;
-          errors.push({ id: classification.id, error: searchResponse.error.message });
+          errors.push({ id: classification.id, error: `HTTP ${searchResponse.status}: ${errorText}` });
           continue;
         }
 
-        const emails = searchResponse.data?.emails || [];
+        const searchData = await searchResponse.json();
+
+        const emails = searchData.emails || [];
         
         if (emails.length === 0) {
           console.log(`[Migration] No emails found for ${classification.id}`);

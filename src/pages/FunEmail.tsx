@@ -35,6 +35,7 @@ import { VerifyFolderNames } from '@/components/email/debug/VerifyFolderNames';
 import { LucaDownloadTester } from '@/components/email/LucaDownloadTester';
 import { ToolsDropdownMenu } from '@/components/email/ToolsDropdownMenu';
 import { TMWEMigrationAdmin } from '@/components/email/admin/TMWEMigrationAdmin';
+import { ZeroSyncTestPanel } from '@/components/email/testing/ZeroSyncTestPanel';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();
@@ -42,7 +43,7 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions' | 'learning' | 'ai-activities' | 'migration'>('management');
+  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions' | 'learning' | 'ai-activities' | 'migration' | 'zero-sync-test'>('management');
   const [automationsSubView, setAutomationsSubView] = useState<'dashboard' | 'pending' | 'learning' | 'ai-activities'>('dashboard');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [isAutoConfigOpen, setIsAutoConfigOpen] = useState(false);
@@ -87,7 +88,7 @@ const FunEmail = () => {
   // Sincronizza currentView con query param "view" dal CRMLayout
   useEffect(() => {
     const viewParam = searchParams.get('view');
-    if (viewParam && ['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail', 'migration'].includes(viewParam)) {
+    if (viewParam && ['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail', 'migration', 'zero-sync-test'].includes(viewParam)) {
       setCurrentView(viewParam as typeof currentView);
     }
   }, [searchParams]);
@@ -401,6 +402,10 @@ const FunEmail = () => {
           ) : currentView === 'migration' ? (
             <div className="p-6 max-w-4xl mx-auto">
               <TMWEMigrationAdmin />
+            </div>
+          ) : currentView === 'zero-sync-test' ? (
+            <div className="p-6 max-w-6xl mx-auto">
+              <ZeroSyncTestPanel />
             </div>
           ) : currentView === 'inbox' ? (
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">

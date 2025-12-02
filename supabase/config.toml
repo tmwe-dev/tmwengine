@@ -168,13 +168,14 @@ backend = "postgres"
 [functions.tmwe-email-webhook]
 verify_jwt = false
 
-# CONSOLIDATED - Functions consolidated into tmwe-api-proxy:
+# CONSOLIDATED (2025-01-29) - All TMWE functions consolidated into tmwe-api-proxy:
 # - tmwe-email-send → handler: email_send
-# - tmwe-email-sync-master → handler: email_sync
+# - tmwe-email-sync-master → handler: email_sync  
 # - tmwe-oauth-auth → handler: oauth_auth
 # - tmwe-oauth-refresh → handler: oauth_refresh
 # - tmwe-jwt-sign → handler: migrate_email_ids
-# - tmwe-test-folder-info → handler: internal_test_folder_info (già consolidato)
+# - tmwe-test-folder-info → handler: internal_test_folder_info
+# Backup: docs/EDGE_FUNCTIONS_BACKUP/2025-01-29/
 
 [functions.process-ai-import]
 verify_jwt = true
@@ -255,18 +256,19 @@ verify_jwt = true
 [functions.voice-to-text]
 verify_jwt = true
 
-# ⚠️ NOMBRE LEGACY: tmwe-jwt-sign
-# FUNCIONALIDAD ACTUAL: Migración de tmwe_email_id en email_ai_classifications
-# MOTIVO: Reutilizado para evitar límite de ~55 Edge Functions
-# JWT ORIGINAL: Consolidado en tmwe-api-proxy (handler: internal_jwt_sign)
-# FECHA: 2025-11-26
-[functions.tmwe-jwt-sign]
-verify_jwt = true
-
-# REMOVED - Consolidated into tmwe-api-proxy:
-# [functions.tmwe-jwt-refresh] - REMOVED → handler: internal_jwt_refresh
-# [functions.tmwe-test-folder-info] - REMOVED → handler: internal_test_folder_info
-# [functions.tmwe-supabase-sync] - REMOVED → handler: internal_supabase_sync
+# =====================================================
+# REMOVED (2025-01-29) - TMWE Consolidation Complete
+# =====================================================
+# All TMWE functions have been consolidated into tmwe-api-proxy
+# Removed functions:
+# - tmwe-email-send → tmwe-api-proxy (handler: email_send)
+# - tmwe-email-sync-master → tmwe-api-proxy (handler: email_sync)
+# - tmwe-oauth-auth → tmwe-api-proxy (handler: oauth_auth)
+# - tmwe-oauth-refresh → tmwe-api-proxy (handler: oauth_refresh)
+# - tmwe-jwt-sign → tmwe-api-proxy (handler: migrate_email_ids)
+# - tmwe-jwt-refresh → tmwe-api-proxy (handler: internal_jwt_refresh)
+# - tmwe-test-folder-info → tmwe-api-proxy (handler: internal_test_folder_info)
+# - tmwe-supabase-sync → tmwe-api-proxy (handler: internal_supabase_sync)
 
 [functions.sync-ai-pricing]
 verify_jwt = true
@@ -304,7 +306,7 @@ verify_jwt = true
 [functions.text-to-speech]
 verify_jwt = true
 
-# REMOVED - migrate-tmwe-email-ids repurposed into tmwe-jwt-sign (2025-11-26)
+# Backup location: docs/EDGE_FUNCTIONS_BACKUP/2025-01-29/
 
 # =====================================================
 # REMOVED FUNCTIONS - 2025-11-25 Cleanup

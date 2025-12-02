@@ -62,6 +62,21 @@ Deno.serve(async (req) => {
 
     console.log(`[Migration] Found ${classifications.length} classifications to process`);
 
+    // Obtener credenciales OAuth del usuario desde la base de datos
+    const { data: credentials, error: credError } = await supabaseClient
+      .from('user_tmwe_credentials')
+      .select('access_token')
+      .eq('email', user_email)
+      .eq('token_type', 'oauth')
+      .single();
+
+    if (credError || !credentials?.access_token) {
+      throw new Error(`OAuth token not found for ${user_email}. Please login to TMWE first.`);
+    }
+
+    const tmweOAuthToken = credentials.access_token;
+    console.log(`[Migration] Got OAuth token for ${user_email}`);
+
     let updated = 0;
     let failed = 0;
     const errors: Array<{ id: string; error: string }> = [];
@@ -80,9 +95,12 @@ Deno.serve(async (req) => {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'X-Service-Role-Call': 'true',
             },
             body: JSON.stringify({
               operation: 'searchEmail',
+              user_email: user_email,
+              bearerToken: tmweOAuthToken,
               query: {
                 from: classification.sender_email,
                 folder: classification.folder_name || 'INBOX',

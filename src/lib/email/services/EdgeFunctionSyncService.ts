@@ -55,7 +55,7 @@ export class EdgeFunctionSyncService {
       });
 
       const supabaseUrl = 'https://dlldkrzoxvjxpgkkttxu.supabase.co';
-      const url = `${supabaseUrl}/functions/v1/tmwe-api-proxy`;
+      const url = `${supabaseUrl}/functions/v1/tmwe-email-sync-master`;
       
       let totalDownloaded = 0;
       let totalErrors = 0;
@@ -90,7 +90,6 @@ export class EdgeFunctionSyncService {
 
         try {
           const requestBody = {
-            handler: 'email_sync_master',
             mode: mode,
             folder_name: folderName,
             max_emails: 500 // Limit per folder

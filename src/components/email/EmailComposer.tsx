@@ -115,9 +115,8 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
         body_text: data.body
       });
 
-      const { data: result, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      const { data: result, error } = await supabase.functions.invoke('tmwe-email-send', {
         body: {
-          handler: 'email_send',
           to: data.to,
           subject: data.subject,
           body: data.body

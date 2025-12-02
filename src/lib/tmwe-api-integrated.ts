@@ -344,9 +344,7 @@ export const refreshAccessToken = async (): Promise<boolean> => {
       ? await supabase.functions.invoke('tmwe-api-proxy', {
           body: { endpoint: '/app.php', data: { handler: 'internal_jwt_refresh', email: userEmail } }
         })
-      : await supabase.functions.invoke('tmwe-api-proxy', { 
-          body: { handler: 'oauth_refresh', email: userEmail } 
-        });
+      : await supabase.functions.invoke('tmwe-oauth-refresh', { body: { email: userEmail } });
 
     if (error || !data?.access_token) {
       console.error('❌ Token refresh failed:', error);

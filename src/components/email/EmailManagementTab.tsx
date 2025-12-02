@@ -378,9 +378,8 @@ export function EmailManagementTab({ onOpenAISidebar }: EmailManagementTabProps)
         description: 'Download email in corso...',
       });
 
-      const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
         body: {
-          handler: 'email_sync_master',
           mode: 'incremental',
           folder_name: 'INBOX',
           max_emails: 50,

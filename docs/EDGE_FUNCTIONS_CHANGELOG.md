@@ -9,6 +9,33 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-12-03] - Fix Lovable Provider Credentials in ai-helpers.ts
+
+### File Modificato
+- **Module:** `supabase/functions/_shared/ai-helpers.ts`
+- **Backup Creato:** `ai-helpers-old1.ts`
+
+### Motivo Modifica
+Fix 401 "No cookie auth credentials found" errors when using lovable provider for email classification.
+The module was incorrectly using `config.api_key` from `config_ai` table (value: 'auto', which is too short/invalid)
+instead of the valid `LOVABLE_API_KEY` Supabase secret that is used by 30+ other edge functions.
+
+### Modifiche Apportate
+1. Changed endpoint from `openrouter.ai` to `ai.gateway.lovable.dev` (lines 243-249)
+2. Changed to use `Deno.env.get('LOVABLE_API_KEY')` instead of `config.api_key` (lines 271-281)
+3. Added error handling if secret is not configured
+
+### Rollback Plan
+```bash
+cp supabase/functions/_shared/ai-helpers-old1.ts supabase/functions/_shared/ai-helpers.ts
+```
+
+### Impact
+- Affects: email-ai-processor, and any other edge function using ai-helpers.ts
+- Now consistent with chat-laboratory-orchestrator, bar-chat-orchestrator, intranet-ai-processor, etc.
+
+---
+
 ## [2025-12-03] - Fix Missing Imports in email-ai-processor
 
 ### File Modificato

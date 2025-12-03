@@ -46,14 +46,14 @@ export async function getAIConfig(
 ): Promise<AIConfig> {
   console.log('[getAIConfig] 🤖 Loading AI config for agent:', selectedAgent);
   
-  // Mappa agent → provider
+  // Mappa agent → provider (updated to match config_ai table)
   const agentToProviderMap: Record<string, string> = {
     'gpt': 'openai',
-    'gemini': 'google',
+    'gemini': 'lovable',    // ✅ Fixed: gemini uses 'lovable' provider in DB
     'claude': 'anthropic'
   };
 
-  const targetProvider = agentToProviderMap[selectedAgent] || 'google';
+  const targetProvider = agentToProviderMap[selectedAgent] || 'lovable';
   console.log('[getAIConfig] Provider:', targetProvider);
 
   // Get active config for provider
@@ -65,23 +65,31 @@ export async function getAIConfig(
     .maybeSingle();
 
   if (configError || !configData) {
-    console.warn(`[getAIConfig] ⚠️ Config ${targetProvider} not available, falling back to Gemini`);
+    console.warn(`[getAIConfig] ⚠️ Config ${targetProvider} not available, trying fallbacks...`);
     
-    // Fallback to Gemini
-    const { data: fallbackConfig } = await supabase
-      .from('config_ai')
-      .select('*')
-      .eq('attivo', true)
-      .eq('provider', 'google')
-      .maybeSingle();
+    // Fallback order: lovable → openai → anthropic
+    const fallbackProviders = ['lovable', 'openai', 'anthropic'];
+    
+    for (const fallbackProvider of fallbackProviders) {
+      if (fallbackProvider === targetProvider) continue;
+      
+      const { data: fallbackConfig } = await supabase
+        .from('config_ai')
+        .select('*')
+        .eq('attivo', true)
+        .eq('provider', fallbackProvider)
+        .maybeSingle();
 
-    if (!fallbackConfig) {
-      throw new Error('No active AI configuration found');
+      if (fallbackConfig) {
+        console.log(`[getAIConfig] ✅ Using fallback provider: ${fallbackProvider}`);
+        return fallbackConfig as AIConfig;
+      }
     }
 
-    return fallbackConfig as AIConfig;
+    throw new Error('No active AI configuration found');
   }
 
+  console.log(`[getAIConfig] ✅ Config loaded: ${configData.provider} / ${configData.modello}`);
   return configData as AIConfig;
 }
 
@@ -199,7 +207,7 @@ export async function callAIProvider(
   userPrompt: string,
   tools?: any[]
 ): Promise<any> {
-  console.log('[callAIProvider] 🤖 Calling AI provider:', config.provider);
+  console.log('[callAIProvider] 🤖 Calling AI provider:', config.provider, 'model:', config.modello);
 
   let endpoint = '';
   let model = config.modello;
@@ -232,6 +240,13 @@ export async function callAIProvider(
         maxOutputTokens: 1500
       }
     };
+  } else if (config.provider === 'lovable') {
+    // ✅ Lovable provider uses OpenRouter API with Gemini models
+    endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+    // Extract actual model name (e.g., 'google/gemini-2.5-flash' → keep as is for OpenRouter)
+    requestBody.model = model || 'google/gemini-2.5-flash';
+    requestBody.temperature = 0.7;
+    requestBody.max_tokens = 1500;
   } else if (config.provider === 'anthropic') {
     endpoint = 'https://api.anthropic.com/v1/messages';
     requestBody.model = model || 'claude-3-5-sonnet-20241022';
@@ -253,6 +268,10 @@ export async function callAIProvider(
 
   if (config.provider === 'google') {
     endpoint = `${endpoint}?key=${config.api_key}`;
+  } else if (config.provider === 'lovable') {
+    headers['Authorization'] = `Bearer ${config.api_key}`;
+    headers['HTTP-Referer'] = 'https://lovable.dev';
+    headers['X-Title'] = 'TMWEngine Email Classifier';
   } else {
     headers['Authorization'] = `Bearer ${config.api_key}`;
   }
@@ -260,6 +279,8 @@ export async function callAIProvider(
   if (config.provider === 'anthropic') {
     headers['anthropic-version'] = '2023-06-01';
   }
+
+  console.log('[callAIProvider] 📡 Calling endpoint:', endpoint.split('?')[0]);
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -269,10 +290,13 @@ export async function callAIProvider(
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('[callAIProvider] ❌ API Error:', response.status, errorText);
     throw new Error(`AI API call failed: ${response.statusText} - ${errorText}`);
   }
 
-  return await response.json();
+  const result = await response.json();
+  console.log('[callAIProvider] ✅ API response received');
+  return result;
 }
 
 // ============================================
@@ -288,7 +312,8 @@ export async function parseAIResponse(
 
   let result: AIClassificationResult = {};
 
-  if (provider === 'openai') {
+  // OpenAI and Lovable (OpenRouter) use same response format
+  if (provider === 'openai' || provider === 'lovable') {
     const message = response.choices?.[0]?.message;
     if (message?.tool_calls?.[0]) {
       const toolCall = message.tool_calls[0];
@@ -297,7 +322,14 @@ export async function parseAIResponse(
     } else if (message?.content) {
       // Try to parse JSON from content
       try {
-        result = JSON.parse(message.content);
+        // Clean markdown code blocks if present
+        let content = message.content.trim();
+        if (content.startsWith('```json')) {
+          content = content.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (content.startsWith('```')) {
+          content = content.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+        result = JSON.parse(content);
       } catch {
         result = { summary: message.content };
       }

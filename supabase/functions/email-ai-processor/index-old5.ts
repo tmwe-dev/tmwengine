@@ -348,46 +348,11 @@ serve(async (req) => {
 
     console.log('[AI Processor] 🔍 Extracting entities...');
     
-    // 🆕 ZERO-SYNC FIX: Get userId from user_profiles by tmwe_email
-    // This works for both Zero-Sync (user_email param) and legacy (email_id) modes
-    let userId = '';
-
-    if (user_email) {
-      // Zero-Sync mode: lookup by tmwe_email directly
-      const { data: userProfile } = await supabase
-        .from('user_profiles')
-        .select('user_id')
-        .eq('tmwe_email', user_email)
-        .maybeSingle();
-      
-      userId = userProfile?.user_id || '';
-      console.log(`[AI Processor] 👤 User lookup via tmwe_email (${user_email}): ${userId ? '✅ Found' : '⚠️ Not found'}`);
-    }
-
-    // Fallback for legacy mode (when email_id is a UUID from email_messages table)
-    if (!userId && email_id) {
-      console.log('[AI Processor] ⚠️ Attempting legacy user lookup via email_id...');
-      try {
-        const { data: emailData } = await supabase
-          .from('email_messages')
-          .select('user_email')
-          .eq('id', email_id)
-          .maybeSingle();
-        
-        if (emailData?.user_email) {
-          const { data: fallbackProfile } = await supabase
-            .from('user_profiles')
-            .select('user_id')
-            .eq('tmwe_email', emailData.user_email)
-            .maybeSingle();
-          
-          userId = fallbackProfile?.user_id || '';
-          console.log(`[AI Processor] 👤 Legacy user lookup: ${userId ? '✅ Found' : '⚠️ Not found'}`);
-        }
-      } catch (e) {
-        console.log('[AI Processor] ⚠️ Legacy lookup failed:', e);
-      }
-    }
+    const { data: { user: authUser } } = await supabase.auth.admin.getUserById(
+      (await supabase.from('email_messages').select('user_email').eq('id', email_id).single()).data?.user_email || ''
+    );
+    
+    const userId = authUser?.id || '';
     
     if (userId) {
       const entities = await extractEntities(supabase, emailData, aiConfig);

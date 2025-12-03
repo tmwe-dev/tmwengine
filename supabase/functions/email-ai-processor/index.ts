@@ -15,6 +15,7 @@ import {
   callAIProvider, 
   parseAIResponse, 
   updateEmailClassification,
+  extractEntities,
   EmailData 
 } from '../_shared/ai-helpers.ts';
 

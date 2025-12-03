@@ -1,11 +1,12 @@
 // ============================================
-// EMAIL AI PROCESSOR v2.0 - Progressive Exclusion + Contextual Memory
+// EMAIL AI PROCESSOR v2.1 - Zero-Sync with OAuth from DB
 // Implementa: Analisi Gerarchica | Memoria Multilivello | Ricerca Attiva
+// FIX: Uses OAuth token from user_tmwe_credentials table
 // ============================================
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { loadSenderContext, loadSenderActionHistory, formatSenderContextForAI } from '../_shared/email-sender-context-loader.ts';
 import { getAdaptiveConfidence } from '../_shared/learning-helpers.ts';
 
@@ -13,6 +14,9 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// TMWE API Base URL (same as tmwe-api-proxy)
+const TMWE_API_BASE_URL = 'https://findair.it/erp/tmwe_json';
 
 interface AIProcessRequest {
   email_id?: string;              // Legacy: UUID local (deprecated)
@@ -23,24 +27,63 @@ interface AIProcessRequest {
   force_category?: string;
 }
 
-// 🆕 TMWE API Helper - Zero-Sync Architecture
-async function fetchEmailFromTMWEApi(tmweEmailId: number, userEmail: string): Promise<any> {
-  const TMWE_API_URL = Deno.env.get('TMWE_API_URL');
-  const TMWE_API_KEY = Deno.env.get('TMWE_API_KEY');
+// 🆕 Get TMWE OAuth Token from Database
+async function getTMWETokenFromDB(supabase: SupabaseClient, userEmail: string): Promise<string> {
+  console.log(`[TMWE Auth] 🔍 Fetching token for: ${userEmail}`);
   
-  if (!TMWE_API_URL || !TMWE_API_KEY) {
-    throw new Error('TMWE_API_URL or TMWE_API_KEY not configured');
+  const { data: credentials, error } = await supabase
+    .from('user_tmwe_credentials')
+    .select('access_token, expires_at, token_type')
+    .eq('email', userEmail)
+    .maybeSingle();
+  
+  if (error) {
+    console.error('[TMWE Auth] ❌ DB error:', error.message);
+    throw new Error(`Error fetching TMWE credentials: ${error.message}`);
   }
+  
+  if (!credentials?.access_token) {
+    console.error('[TMWE Auth] ❌ No token found for user');
+    throw new Error(`Token TMWE no encontrado para ${userEmail}. Por favor, realiza login TMWE primero.`);
+  }
+  
+  // Check expiration
+  if (credentials.expires_at) {
+    const expiresAt = new Date(credentials.expires_at);
+    const now = new Date();
+    
+    if (expiresAt < now) {
+      console.warn('[TMWE Auth] ⚠️ Token expired, may need refresh');
+      // Still return it - the API will reject if truly invalid
+    } else {
+      console.log(`[TMWE Auth] ✅ Token valid until: ${expiresAt.toISOString()}`);
+    }
+  }
+  
+  return credentials.access_token;
+}
+
+// 🆕 TMWE API Helper - Zero-Sync Architecture (uses DB token)
+async function fetchEmailFromTMWEApi(
+  supabase: SupabaseClient, 
+  tmweEmailId: number, 
+  userEmail: string
+): Promise<any> {
+  // Get token from database instead of env vars
+  const accessToken = await getTMWETokenFromDB(supabase, userEmail);
   
   console.log(`[TMWE API] 📧 Fetching email ${tmweEmailId} from TMWE API...`);
   
-  const response = await fetch(`${TMWE_API_URL}/api/email/detail/${tmweEmailId}`, {
-    method: 'GET',
+  const response = await fetch(`${TMWE_API_BASE_URL}/email_message`, {
+    method: 'POST',
     headers: {
-      'Authorization': `Bearer ${TMWE_API_KEY}`,
+      'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
-      'X-User-Email': userEmail
-    }
+    },
+    body: JSON.stringify({
+      handler: 'get_detail',
+      id: tmweEmailId
+    })
   });
   
   if (!response.ok) {
@@ -50,26 +93,32 @@ async function fetchEmailFromTMWEApi(tmweEmailId: number, userEmail: string): Pr
   
   const data = await response.json();
   
-  if (!data.email) {
+  if (data.error) {
+    throw new Error(`TMWE API error: ${data.error}`);
+  }
+  
+  const email = data.email || data.result || data;
+  
+  if (!email || (!email.subject && !email.body_text)) {
     throw new Error(`Email not found in TMWE API: ${tmweEmailId}`);
   }
   
-  console.log(`[TMWE API] ✅ Email loaded: ${data.email.subject}`);
+  console.log(`[TMWE API] ✅ Email loaded: ${email.subject || '(no subject)'}`);
   
   // Normalize TMWE API response to match expected format
   return {
-    id: data.email.id,
+    id: email.id || tmweEmailId,
     tmwe_email_id: tmweEmailId,
-    subject: data.email.subject || '',
-    body_text: data.email.body_text || data.email.snippet || '',
-    body_html: data.email.body_html || '',
-    from_email: data.email.from?.email || data.email.from_email || '',
-    to_email: data.email.to?.[0]?.email || '',
+    subject: email.subject || '',
+    body_text: email.body_text || email.snippet || '',
+    body_html: email.body_html || '',
+    from_email: email.from?.email || email.from_email || email.sender || '',
+    to_email: email.to?.[0]?.email || email.to_email || '',
     user_email: userEmail,
-    cartella: data.email.folder || data.email.folder_name || 'INBOX',
-    uid: data.email.uid || String(tmweEmailId),
-    received_at: data.email.date || data.email.received_at,
-    has_attachments: data.email.has_attachments || false
+    cartella: email.folder || email.folder_name || 'INBOX',
+    uid: email.uid || String(tmweEmailId),
+    received_at: email.date || email.received_at,
+    has_attachments: email.has_attachments || false
   };
 }
 
@@ -113,9 +162,9 @@ serve(async (req) => {
     let email: any;
     
     if (tmwe_email_id) {
-      // Primary path: Fetch from TMWE API (Zero-Sync)
+      // Primary path: Fetch from TMWE API (Zero-Sync) - uses token from DB
       console.log('[AI Processor] 🌐 Using TMWE API (Zero-Sync mode)');
-      email = await fetchEmailFromTMWEApi(tmwe_email_id, user_email);
+      email = await fetchEmailFromTMWEApi(supabase, tmwe_email_id, user_email);
     } else if (email_id) {
       // Fallback path: Legacy local DB query (deprecated)
       console.log('[AI Processor] ⚠️ Using legacy email_messages (deprecated)');

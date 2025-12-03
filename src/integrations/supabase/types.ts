@@ -6383,6 +6383,192 @@ export type Database = {
         }
         Relationships: []
       }
+      tmwe_classification_rules: {
+        Row: {
+          auto_apply: boolean | null
+          created_at: string | null
+          hit_count: number | null
+          id: string
+          is_active: boolean | null
+          last_hit_at: string | null
+          match_type: string | null
+          match_value: string
+          priority: number | null
+          rule_name: string
+          scope: string
+          target_color: string | null
+          target_group: string
+          target_icon: string | null
+          updated_at: string | null
+          user_email: string
+        }
+        Insert: {
+          auto_apply?: boolean | null
+          created_at?: string | null
+          hit_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_hit_at?: string | null
+          match_type?: string | null
+          match_value: string
+          priority?: number | null
+          rule_name: string
+          scope: string
+          target_color?: string | null
+          target_group: string
+          target_icon?: string | null
+          updated_at?: string | null
+          user_email: string
+        }
+        Update: {
+          auto_apply?: boolean | null
+          created_at?: string | null
+          hit_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_hit_at?: string | null
+          match_type?: string | null
+          match_value?: string
+          priority?: number | null
+          rule_name?: string
+          scope?: string
+          target_color?: string | null
+          target_group?: string
+          target_icon?: string | null
+          updated_at?: string | null
+          user_email?: string
+        }
+        Relationships: []
+      }
+      tmwe_classifications: {
+        Row: {
+          ai_model: string | null
+          ai_reasoning: string | null
+          classification_date: string | null
+          confidence: number | null
+          created_at: string | null
+          group_color: string | null
+          group_icon: string | null
+          group_name: string
+          id: string
+          is_manual_override: boolean | null
+          sender_email: string | null
+          sender_name: string | null
+          status: string | null
+          subject_preview: string | null
+          tmwe_email_id: number
+          updated_at: string | null
+          user_email: string
+        }
+        Insert: {
+          ai_model?: string | null
+          ai_reasoning?: string | null
+          classification_date?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          group_color?: string | null
+          group_icon?: string | null
+          group_name: string
+          id?: string
+          is_manual_override?: boolean | null
+          sender_email?: string | null
+          sender_name?: string | null
+          status?: string | null
+          subject_preview?: string | null
+          tmwe_email_id: number
+          updated_at?: string | null
+          user_email: string
+        }
+        Update: {
+          ai_model?: string | null
+          ai_reasoning?: string | null
+          classification_date?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          group_color?: string | null
+          group_icon?: string | null
+          group_name?: string
+          id?: string
+          is_manual_override?: boolean | null
+          sender_email?: string | null
+          sender_name?: string | null
+          status?: string | null
+          subject_preview?: string | null
+          tmwe_email_id?: number
+          updated_at?: string | null
+          user_email?: string
+        }
+        Relationships: []
+      }
+      tmwe_sender_profiles: {
+        Row: {
+          created_at: string | null
+          email_count: number | null
+          first_email_at: string | null
+          group_color: string | null
+          group_icon: string | null
+          group_name: string
+          group_type: string | null
+          id: string
+          is_active: boolean | null
+          is_blocked: boolean | null
+          is_favorite: boolean | null
+          last_email_at: string | null
+          notes: string | null
+          sender_domain: string | null
+          sender_email: string
+          sender_name: string | null
+          tags: string[] | null
+          unread_count: number | null
+          updated_at: string | null
+          user_email: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_count?: number | null
+          first_email_at?: string | null
+          group_color?: string | null
+          group_icon?: string | null
+          group_name?: string
+          group_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_blocked?: boolean | null
+          is_favorite?: boolean | null
+          last_email_at?: string | null
+          notes?: string | null
+          sender_domain?: string | null
+          sender_email: string
+          sender_name?: string | null
+          tags?: string[] | null
+          unread_count?: number | null
+          updated_at?: string | null
+          user_email: string
+        }
+        Update: {
+          created_at?: string | null
+          email_count?: number | null
+          first_email_at?: string | null
+          group_color?: string | null
+          group_icon?: string | null
+          group_name?: string
+          group_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_blocked?: boolean | null
+          is_favorite?: boolean | null
+          last_email_at?: string | null
+          notes?: string | null
+          sender_domain?: string | null
+          sender_email?: string
+          sender_name?: string | null
+          tags?: string[] | null
+          unread_count?: number | null
+          updated_at?: string | null
+          user_email?: string
+        }
+        Relationships: []
+      }
       ui_component_backups: {
         Row: {
           animations: Json
@@ -6881,6 +7067,15 @@ export type Database = {
       }
       increment_prompt_library_usage: {
         Args: { prompt_id: string }
+        Returns: undefined
+      }
+      increment_sender_stats: {
+        Args: {
+          p_increment_count?: number
+          p_is_unread?: boolean
+          p_sender_email: string
+          p_user_email: string
+        }
         Returns: undefined
       }
       increment_token_count: {

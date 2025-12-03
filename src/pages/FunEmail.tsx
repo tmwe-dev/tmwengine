@@ -20,6 +20,7 @@ import { QuickEmailDownloader } from '@/components/email/QuickEmailDownloader';
 import { EmailIntegrityChecker } from '@/components/email/EmailIntegrityChecker';
 import { TmweBackendDebugger } from '@/components/email/TmweBackendDebugger';
 import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartInboxTabIntelligent';
+import { SmartInboxZeroSync } from '@/components/email/smart-inbox/SmartInboxZeroSync';
 import { GradientBackground } from '@/components/design-system';
 import { cn } from '@/lib/utils';
 import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
@@ -44,7 +45,7 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions' | 'learning' | 'ai-activities' | 'migration' | 'zero-sync-test'>('management');
+  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions' | 'learning' | 'ai-activities' | 'migration' | 'zero-sync-test' | 'zero-sync'>('management');
   const [automationsSubView, setAutomationsSubView] = useState<'dashboard' | 'pending' | 'learning' | 'ai-activities'>('dashboard');
   const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [isAutoConfigOpen, setIsAutoConfigOpen] = useState(false);
@@ -104,7 +105,7 @@ const FunEmail = () => {
       return;
     }
     
-    if (tabParam && ['fun', 'management', 'suggestions', 'inbox', 'automations'].includes(tabParam)) {
+    if (tabParam && ['fun', 'management', 'suggestions', 'inbox', 'automations', 'zero-sync'].includes(tabParam)) {
       setCurrentView(tabParam as typeof currentView);
     } else if (!tabParam && !searchParams.get('view')) {
       setCurrentView('management'); // Default = Management
@@ -291,7 +292,7 @@ const FunEmail = () => {
     >
       {/* Tab Navigation - solo per view principali */}
       {!isToolView && (
-        <FunEmailNavigation currentView={currentView as 'fun' | 'management' | 'suggestions' | 'inbox' | 'automations'} />
+        <FunEmailNavigation currentView={currentView as 'fun' | 'management' | 'suggestions' | 'inbox' | 'automations' | 'zero-sync'} />
       )}
       <div className="relative w-full min-h-screen">
         {/* 2 Icone Verticali - solo in view inbox */}
@@ -414,6 +415,10 @@ const FunEmail = () => {
             <div className="p-6 max-w-6xl mx-auto">
               <ZeroSyncTestPanel />
             </div>
+          ) : currentView === 'zero-sync' ? (
+            <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)]">
+              <SmartInboxZeroSync onOpenAISidebar={openAISidebarForSender} />
+            </GradientBackground>
           ) : currentView === 'inbox' ? (
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)] p-4">
               <SmartInboxTabIntelligent 

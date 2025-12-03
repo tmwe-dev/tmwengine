@@ -13,37 +13,41 @@
 import { supabase } from '@/integrations/supabase/client';
 import { isFeatureEnabled } from '../config';
 
+/**
+ * Interface matching tmwe_classifications DB schema
+ */
 export interface TMWEClassification {
+  id: string;
   tmwe_email_id: number;
   user_email: string;
-  sender_email: string;
-  subject: string;
-  subject_preview?: string;
+  sender_email?: string | null;
+  sender_name?: string | null;
+  subject_preview?: string | null;
   
   // Classification
-  group_id?: string;
   group_name: string;
-  group_type: string;
-  confidence?: number;
-  reasoning?: string;
+  group_color?: string | null;
+  group_icon?: string | null;
+  confidence?: number | null;
+  ai_reasoning?: string | null;
+  ai_model?: string | null;
   
   // Metadata
-  ai_model: string;
-  classified_at?: string;
-  is_manual_override?: boolean;
-  status?: 'active' | 'archived' | 'deleted';
+  is_manual_override?: boolean | null;
+  classification_date?: string | null;
+  status?: string | null;
   
-  created_at?: string;
-  updated_at?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface CreateClassificationParams {
   tmwe_email_id: number;
   user_email: string;
   sender_email: string;
-  subject: string;
+  subject: string; // Will be truncated to subject_preview
   group_name: string;
-  group_type: string;
+  group_type?: string; // Maps to group_color or stored separately
   ai_model: string;
   confidence?: number;
   reasoning?: string;
@@ -70,9 +74,9 @@ export class ClassificationApi {
     }
 
     try {
-      // Generate subject preview (first 50 chars)
-      const subject_preview = params.subject.length > 50 
-        ? params.subject.substring(0, 50) + '...'
+      // Generate subject preview (first 100 chars)
+      const subject_preview = params.subject.length > 100 
+        ? params.subject.substring(0, 100) + '...'
         : params.subject;
 
       const { data, error } = await supabase
@@ -81,15 +85,13 @@ export class ClassificationApi {
           tmwe_email_id: params.tmwe_email_id,
           user_email: params.user_email,
           sender_email: params.sender_email,
-          subject: params.subject,
           subject_preview,
-          group_id: params.group_id || null,
           group_name: params.group_name,
-          group_type: params.group_type,
+          group_color: params.group_type || null, // Store group_type in color for now
           confidence: params.confidence || null,
-          reasoning: params.reasoning || null,
+          ai_reasoning: params.reasoning || null,
           ai_model: params.ai_model,
-          classified_at: new Date().toISOString(),
+          classification_date: new Date().toISOString(),
           is_manual_override: false,
           status: 'active'
         })
@@ -147,7 +149,7 @@ export class ClassificationApi {
         .select('*')
         .eq('user_email', user_email)
         .eq('status', 'active')
-        .order('classified_at', { ascending: false })
+        .order('classification_date', { ascending: false })
         .limit(limit);
 
       if (error) {
@@ -175,7 +177,7 @@ export class ClassificationApi {
         .eq('user_email', user_email)
         .eq('sender_email', sender_email)
         .eq('status', 'active')
-        .order('classified_at', { ascending: false });
+        .order('classification_date', { ascending: false });
 
       if (error) {
         console.error('❌ [ClassificationApi] Get by sender failed:', error);
@@ -190,12 +192,40 @@ export class ClassificationApi {
   }
 
   /**
+   * Get classifications by group name
+   */
+  static async getByGroup(user_email: string, group_name: string, limit = 100): Promise<TMWEClassification[]> {
+    if (!this.isEnabled()) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from(this.TABLE)
+        .select('*')
+        .eq('user_email', user_email)
+        .eq('group_name', group_name)
+        .eq('status', 'active')
+        .order('classification_date', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('❌ [ClassificationApi] Get by group failed:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('🔥 [ClassificationApi] Get by group error:', error);
+      return [];
+    }
+  }
+
+  /**
    * Update classification (manual override)
    */
   static async update(
     tmwe_email_id: number,
     user_email: string,
-    updates: Partial<Pick<TMWEClassification, 'group_id' | 'group_name' | 'group_type' | 'is_manual_override'>>
+    updates: Partial<Pick<TMWEClassification, 'group_name' | 'group_color' | 'is_manual_override'>>
   ): Promise<boolean> {
     if (!this.isEnabled()) return false;
 
@@ -315,7 +345,9 @@ export class ClassificationApi {
 
       data.forEach(item => {
         by_group[item.group_name] = (by_group[item.group_name] || 0) + 1;
-        by_model[item.ai_model] = (by_model[item.ai_model] || 0) + 1;
+        if (item.ai_model) {
+          by_model[item.ai_model] = (by_model[item.ai_model] || 0) + 1;
+        }
         if (item.is_manual_override) manual_overrides++;
       });
 
@@ -333,6 +365,30 @@ export class ClassificationApi {
         by_model: {},
         manual_overrides: 0
       };
+    }
+  }
+
+  /**
+   * Get distinct group names
+   */
+  static async getGroups(user_email: string): Promise<string[]> {
+    if (!this.isEnabled()) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from(this.TABLE)
+        .select('group_name')
+        .eq('user_email', user_email)
+        .eq('status', 'active');
+
+      if (error || !data) return [];
+
+      // Get unique group names
+      const groups = [...new Set(data.map(d => d.group_name))];
+      return groups.sort();
+    } catch (error) {
+      console.error('🔥 [ClassificationApi] Get groups error:', error);
+      return [];
     }
   }
 }

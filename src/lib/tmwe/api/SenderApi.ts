@@ -13,40 +13,47 @@
 import { supabase } from '@/integrations/supabase/client';
 import { isFeatureEnabled } from '../config';
 
+/**
+ * Interface matching tmwe_sender_profiles DB schema
+ */
 export interface TMWESenderProfile {
   id: string;
   user_email: string;
   sender_email: string;
-  sender_domain: string;
+  sender_name?: string | null;
+  sender_domain?: string | null;
   
   // Group Configuration
   group_name: string;
-  group_type: string;
-  color?: string;
-  icon?: string;
+  group_type?: string | null;
+  group_color?: string | null;
+  group_icon?: string | null;
   
   // Statistics (denormalized)
-  total_emails: number;
-  unread_emails: number;
-  last_email_at?: string;
-  first_email_at?: string;
+  email_count?: number | null;
+  unread_count?: number | null;
+  last_email_at?: string | null;
+  first_email_at?: string | null;
   
   // Settings
-  is_active: boolean;
-  auto_archive: boolean;
-  notification_enabled: boolean;
+  is_active?: boolean | null;
+  is_favorite?: boolean | null;
+  is_blocked?: boolean | null;
+  notes?: string | null;
+  tags?: string[] | null;
   
-  created_at?: string;
-  updated_at?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface CreateSenderProfileParams {
   user_email: string;
   sender_email: string;
+  sender_name?: string;
   group_name: string;
-  group_type: string;
-  color?: string;
-  icon?: string;
+  group_type?: string;
+  group_color?: string;
+  group_icon?: string;
 }
 
 export class SenderApi {
@@ -83,16 +90,17 @@ export class SenderApi {
         .insert({
           user_email: params.user_email,
           sender_email: params.sender_email,
+          sender_name: params.sender_name || null,
           sender_domain,
           group_name: params.group_name,
-          group_type: params.group_type,
-          color: params.color || null,
-          icon: params.icon || null,
-          total_emails: 0,
-          unread_emails: 0,
+          group_type: params.group_type || null,
+          group_color: params.group_color || null,
+          group_icon: params.group_icon || null,
+          email_count: 0,
+          unread_count: 0,
           is_active: true,
-          auto_archive: false,
-          notification_enabled: true
+          is_favorite: false,
+          is_blocked: false
         })
         .select()
         .single();
@@ -148,7 +156,7 @@ export class SenderApi {
         .select('*')
         .eq('user_email', user_email)
         .eq('is_active', true)
-        .order('total_emails', { ascending: false });
+        .order('email_count', { ascending: false });
 
       if (error) {
         console.error('❌ [SenderApi] Get by user failed:', error);
@@ -194,7 +202,7 @@ export class SenderApi {
    */
   static async update(
     id: string,
-    updates: Partial<Pick<TMWESenderProfile, 'group_name' | 'group_type' | 'color' | 'icon' | 'auto_archive' | 'notification_enabled'>>
+    updates: Partial<Pick<TMWESenderProfile, 'group_name' | 'group_type' | 'group_color' | 'group_icon' | 'is_favorite' | 'is_blocked' | 'notes' | 'tags'>>
   ): Promise<boolean> {
     if (!this.isEnabled()) return false;
 
@@ -239,7 +247,7 @@ export class SenderApi {
         });
       }
 
-      // Increment counts
+      // Increment counts using RPC function
       const { error } = await supabase.rpc('increment_sender_stats', {
         p_user_email: user_email,
         p_sender_email: sender_email,
@@ -343,8 +351,8 @@ export class SenderApi {
   static async getGroupedStats(user_email: string): Promise<{
     by_group: Record<string, {
       count: number;
-      total_emails: number;
-      unread_emails: number;
+      email_count: number;
+      unread_count: number;
     }>;
     by_domain: Record<string, number>;
     total_senders: number;
@@ -360,7 +368,7 @@ export class SenderApi {
     try {
       const { data, error } = await supabase
         .from(this.TABLE)
-        .select('group_name, sender_domain, total_emails, unread_emails')
+        .select('group_name, sender_domain, email_count, unread_count')
         .eq('user_email', user_email)
         .eq('is_active', true);
 
@@ -372,7 +380,7 @@ export class SenderApi {
         };
       }
 
-      const by_group: Record<string, { count: number; total_emails: number; unread_emails: number }> = {};
+      const by_group: Record<string, { count: number; email_count: number; unread_count: number }> = {};
       const by_domain: Record<string, number> = {};
 
       data.forEach(item => {
@@ -380,16 +388,18 @@ export class SenderApi {
         if (!by_group[item.group_name]) {
           by_group[item.group_name] = {
             count: 0,
-            total_emails: 0,
-            unread_emails: 0
+            email_count: 0,
+            unread_count: 0
           };
         }
         by_group[item.group_name].count++;
-        by_group[item.group_name].total_emails += item.total_emails || 0;
-        by_group[item.group_name].unread_emails += item.unread_emails || 0;
+        by_group[item.group_name].email_count += item.email_count || 0;
+        by_group[item.group_name].unread_count += item.unread_count || 0;
 
         // Domain stats
-        by_domain[item.sender_domain] = (by_domain[item.sender_domain] || 0) + 1;
+        if (item.sender_domain) {
+          by_domain[item.sender_domain] = (by_domain[item.sender_domain] || 0) + 1;
+        }
       });
 
       return {
@@ -404,6 +414,60 @@ export class SenderApi {
         by_domain: {},
         total_senders: 0
       };
+    }
+  }
+
+  /**
+   * Toggle favorite status
+   */
+  static async toggleFavorite(id: string, is_favorite: boolean): Promise<boolean> {
+    if (!this.isEnabled()) return false;
+
+    try {
+      const { error } = await supabase
+        .from(this.TABLE)
+        .update({
+          is_favorite,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('❌ [SenderApi] Toggle favorite failed:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('🔥 [SenderApi] Toggle favorite error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Toggle blocked status
+   */
+  static async toggleBlocked(id: string, is_blocked: boolean): Promise<boolean> {
+    if (!this.isEnabled()) return false;
+
+    try {
+      const { error } = await supabase
+        .from(this.TABLE)
+        .update({
+          is_blocked,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('❌ [SenderApi] Toggle blocked failed:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('🔥 [SenderApi] Toggle blocked error:', error);
+      return false;
     }
   }
 }

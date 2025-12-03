@@ -5,9 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, RefreshCw, Search, Mail, Inbox, Sparkles, Clock } from 'lucide-react';
 import { useSmartInboxZeroSync } from '@/hooks/useSmartInboxZeroSync';
+import { LoadingState } from '@/components/design-system/data-display/LoadingState';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -16,57 +16,8 @@ interface SmartInboxZeroSyncProps {
   onOpenAISidebar?: (senderEmail: string) => void;
 }
 
-// Helper function to get display label for group names
-const getGroupLabel = (groupName: string): string => {
-  if (groupName === '__all__') return 'Tutte';
-  if (groupName === '__unclassified__') return 'Non classificate';
-  return groupName;
-};
-
-// Skeleton component for email list
-function EmailListSkeleton() {
-  return (
-    <div className="p-2 space-y-2">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="p-3 rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-3 w-3/4" />
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <Skeleton className="h-3 w-12" />
-              <Skeleton className="h-5 w-16" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Skeleton component for email detail
-function EmailDetailSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div>
-        <Skeleton className="h-6 w-3/4 mb-2" />
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="h-3 w-32 mt-1" />
-      </div>
-      <Skeleton className="h-5 w-24" />
-      <div className="pt-4 border-t space-y-2">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-2/3" />
-      </div>
-    </div>
-  );
-}
-
 export function SmartInboxZeroSync({ onOpenAISidebar }: SmartInboxZeroSyncProps) {
-  const [selectedGroup, setSelectedGroup] = useState<string>('__all__');
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEmailId, setSelectedEmailId] = useState<number | null>(null);
 
@@ -78,19 +29,28 @@ export function SmartInboxZeroSync({ onOpenAISidebar }: SmartInboxZeroSyncProps)
     isLoading,
     isLoadingMore,
     isClassifying,
-    classifyingCount,
     hasNextPage,
     fetchNextPage,
     classifyEmail,
     classifyBatch,
     refreshAll,
+    userEmail,
   } = useSmartInboxZeroSync({
     folder: 'INBOX',
-    group_name: selectedGroup,
+    group_name: selectedGroup === 'all' ? null : selectedGroup,
     search_query: searchQuery || undefined,
   });
 
-  // Get unclassified emails for the batch button
+  // Filter emails based on group
+  const filteredEmails = useMemo(() => {
+    if (selectedGroup === 'all') return emails;
+    if (selectedGroup === 'unclassified') {
+      return emails.filter(e => !e.is_classified);
+    }
+    return emails.filter(e => e.classification?.group_name === selectedGroup);
+  }, [emails, selectedGroup]);
+
+  // Get unclassified emails
   const unclassifiedEmails = useMemo(() => 
     allEmails.filter(e => !e.is_classified),
     [allEmails]
@@ -107,6 +67,10 @@ export function SmartInboxZeroSync({ onOpenAISidebar }: SmartInboxZeroSyncProps)
   const selectedEmail = selectedEmailId 
     ? allEmails.find(e => e.tmwe_email_id === selectedEmailId) 
     : null;
+
+  if (isLoading && !emails.length) {
+    return <LoadingState message="Caricamento email da TMWE API..." />;
+  }
 
   return (
     <div className="h-full flex flex-col gap-4 p-4">
@@ -125,12 +89,6 @@ export function SmartInboxZeroSync({ onOpenAISidebar }: SmartInboxZeroSyncProps)
             <Badge variant="secondary" className="gap-1">
               <Clock className="h-3 w-3" />
               {unclassifiedEmails.length} da classificare
-            </Badge>
-          )}
-          {isClassifying && classifyingCount > 0 && (
-            <Badge variant="default" className="gap-1 animate-pulse">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Classificando {classifyingCount}...
             </Badge>
           )}
         </div>
@@ -183,7 +141,9 @@ export function SmartInboxZeroSync({ onOpenAISidebar }: SmartInboxZeroSyncProps)
                 value={group.group_name}
                 className="gap-1.5 text-xs"
               >
-                {getGroupLabel(group.group_name)}
+                {group.group_name === 'all' ? 'Tutte' : 
+                 group.group_name === 'unclassified' ? 'Non classificate' : 
+                 group.group_name}
                 <Badge variant="secondary" className="h-5 px-1.5 text-xs">
                   {group.count}
                 </Badge>
@@ -199,116 +159,104 @@ export function SmartInboxZeroSync({ onOpenAISidebar }: SmartInboxZeroSyncProps)
         <Card className="flex flex-col min-h-0">
           <CardHeader className="py-3 px-4 border-b">
             <CardTitle className="text-sm font-medium flex items-center justify-between">
-              <span>Email ({emails.length})</span>
+              <span>Email ({filteredEmails.length})</span>
               {isLoadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
             </CardTitle>
           </CardHeader>
           <ScrollArea className="flex-1">
-            {isLoading && !emails.length ? (
-              <EmailListSkeleton />
-            ) : (
-              <div className="p-2 space-y-1">
-                {emails.map((email) => {
-                  const classification = email.classification || classificationsMap.get(email.tmwe_email_id);
-                  const isSelected = selectedEmailId === email.tmwe_email_id;
-                  const isClassifyingThis = email.is_classifying;
-                  
-                  return (
-                    <div
-                      key={email.tmwe_email_id}
-                      onClick={() => setSelectedEmailId(email.tmwe_email_id)}
-                      className={cn(
-                        "p-3 rounded-lg cursor-pointer transition-colors",
-                        "hover:bg-accent/50",
-                        isSelected && "bg-accent",
-                        !email.is_read && "bg-primary/5"
-                      )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={cn(
-                              "font-medium text-sm truncate",
-                              !email.is_read && "font-semibold"
-                            )}>
-                              {email.from_name || email.from_email}
-                            </span>
-                            {!email.is_read && (
-                              <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
-                            )}
-                          </div>
-                          <p className="text-sm truncate text-foreground/90">
-                            {email.subject || '(Nessun oggetto)'}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {email.body_preview}
-                          </p>
-                        </div>
-                        
-                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                          <span className="text-xs text-muted-foreground">
-                            {email.date ? format(new Date(email.date), 'dd MMM', { locale: it }) : ''}
+            <div className="p-2 space-y-1">
+              {filteredEmails.map((email) => {
+                const classification = email.classification || classificationsMap.get(email.tmwe_email_id);
+                const isSelected = selectedEmailId === email.tmwe_email_id;
+                const isClassifyingThis = email.is_classifying;
+                
+                return (
+                  <div
+                    key={email.tmwe_email_id}
+                    onClick={() => setSelectedEmailId(email.tmwe_email_id)}
+                    className={cn(
+                      "p-3 rounded-lg cursor-pointer transition-colors",
+                      "hover:bg-accent/50",
+                      isSelected && "bg-accent",
+                      !email.is_read && "bg-primary/5"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={cn(
+                            "font-medium text-sm truncate",
+                            !email.is_read && "font-semibold"
+                          )}>
+                            {email.from_name || email.from_email}
                           </span>
-                          
-                          {isClassifyingThis ? (
-                            <Badge variant="outline" className="gap-1 text-xs">
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            </Badge>
-                          ) : classification ? (
-                            <Badge 
-                              variant="secondary" 
-                              className="text-xs"
-                              style={{ 
-                                backgroundColor: classification.group_color || undefined,
-                                color: classification.group_color ? 'white' : undefined
-                              }}
-                            >
-                              {classification.group_name}
-                            </Badge>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                classifyEmail(email);
-                              }}
-                            >
-                              <Sparkles className="h-3 w-3" />
-                            </Button>
+                          {!email.is_read && (
+                            <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                           )}
                         </div>
+                        <p className="text-sm truncate text-foreground/90">
+                          {email.subject || '(Nessun oggetto)'}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {email.body_preview}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className="text-xs text-muted-foreground">
+                          {email.date ? format(new Date(email.date), 'dd MMM', { locale: it }) : ''}
+                        </span>
+                        
+                        {isClassifyingThis ? (
+                          <Badge variant="outline" className="gap-1 text-xs">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          </Badge>
+                        ) : classification ? (
+                          <Badge 
+                            variant="secondary" 
+                            className="text-xs"
+                            style={{ 
+                              backgroundColor: classification.group_color || undefined,
+                              color: classification.group_color ? 'white' : undefined
+                            }}
+                          >
+                            {classification.group_name}
+                          </Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              classifyEmail(email);
+                            }}
+                          >
+                            <Sparkles className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-                
-                {/* Empty state */}
-                {!isLoading && emails.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                    <Mail className="h-12 w-12 mb-4 opacity-50" />
-                    <p>Nessuna email trovata</p>
                   </div>
-                )}
-                
-                {/* Load More */}
-                {hasNextPage && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full mt-2"
-                    onClick={() => fetchNextPage()}
-                    disabled={isLoadingMore}
-                  >
-                    {isLoadingMore ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
-                    Carica altre email
-                  </Button>
-                )}
-              </div>
-            )}
+                );
+              })}
+              
+              {/* Load More */}
+              {hasNextPage && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-2"
+                  onClick={() => fetchNextPage()}
+                  disabled={isLoadingMore}
+                >
+                  {isLoadingMore ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
+                  Carica altre email
+                </Button>
+              )}
+            </div>
           </ScrollArea>
         </Card>
 
@@ -318,9 +266,7 @@ export function SmartInboxZeroSync({ onOpenAISidebar }: SmartInboxZeroSyncProps)
             <CardTitle className="text-sm font-medium">Dettaglio Email</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 p-4 overflow-auto">
-            {isLoading && !selectedEmail ? (
-              <EmailDetailSkeleton />
-            ) : selectedEmail ? (
+            {selectedEmail ? (
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-lg">{selectedEmail.subject}</h3>

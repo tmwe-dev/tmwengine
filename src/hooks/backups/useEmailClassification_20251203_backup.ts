@@ -4,9 +4,10 @@
  * ✅ Handles AI classification of individual emails
  * ✅ Saves results to tmwe_classifications
  * ✅ Supports batch operations with queue
- * ✅ Uses email-ai-processor edge function
  * 
- * UPDATED: 2025-12-03 - Changed from tmwe-email-ai-classify to email-ai-processor
+ * PROTECTED: Uses ClassificationApi (do not modify)
+ * 
+ * BACKUP: 2025-12-03
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -47,18 +48,17 @@ export const useEmailClassification = (userEmail: string | null) => {
   const [processedCount, setProcessedCount] = useState(0);
 
   /**
-   * Call AI classification using email-ai-processor edge function
+   * Call AI classification edge function
    */
   const callAIClassification = async (email: EmailToClassify): Promise<AIClassificationResponse> => {
     try {
-      const { data, error } = await supabase.functions.invoke('email-ai-processor', {
+      const { data, error } = await supabase.functions.invoke('tmwe-email-ai-classify', {
         body: {
-          operation: 'classify',
-          email_uid: String(email.tmwe_email_id),
-          sender_email: email.from_email,
-          email_subject: email.subject,
-          email_body: email.body_preview || '',
-          selected_agent: 'gemini',
+          email_id: email.tmwe_email_id,
+          subject: email.subject,
+          from_email: email.from_email,
+          body_preview: email.body_preview,
+          user_email: userEmail,
         },
       });
 
@@ -67,17 +67,13 @@ export const useEmailClassification = (userEmail: string | null) => {
         return { success: false, error: error.message };
       }
 
-      // Map response from email-ai-processor format
-      const groupName = data?.classification?.group_name || data?.group_name || 'General';
-      const groupType = data?.classification?.group_type || data?.group_type || 'auto';
-      
       return {
         success: true,
-        group_name: groupName,
-        group_type: groupType,
-        confidence: data?.confidence || data?.classification?.confidence || 0.8,
-        reasoning: data?.reasoning || data?.classification?.reasoning,
-        model: data?.model || 'gemini-2.5-flash',
+        group_name: data?.group_name || 'General',
+        group_type: data?.group_type || 'auto',
+        confidence: data?.confidence,
+        reasoning: data?.reasoning,
+        model: data?.model || 'gpt-4o-mini',
       };
     } catch (error: any) {
       console.error('🔥 [Classification] Request failed:', error);
@@ -135,6 +131,7 @@ export const useEmailClassification = (userEmail: string | null) => {
       return { success: true, classification };
     },
     onSuccess: () => {
+      // Invalidate classifications cache
       queryClient.invalidateQueries({ queryKey: ['tmwe-classifications'] });
     },
   });
@@ -159,7 +156,7 @@ export const useEmailClassification = (userEmail: string | null) => {
     setProcessing(true);
     setProcessedCount(0);
 
-    const BATCH_SIZE = 3;
+    const BATCH_SIZE = 3; // Process 3 at a time
     const toProcess = [...queue];
     setQueue([]);
 
@@ -185,6 +182,7 @@ export const useEmailClassification = (userEmail: string | null) => {
       }
     } finally {
       setProcessing(false);
+      // Refresh classifications after batch completes
       queryClient.invalidateQueries({ queryKey: ['tmwe-classifications'] });
     }
   }, [processing, queue, userEmail, classifyMutation, queryClient]);

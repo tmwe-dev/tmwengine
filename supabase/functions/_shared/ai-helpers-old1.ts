@@ -241,9 +241,9 @@ export async function callAIProvider(
       }
     };
   } else if (config.provider === 'lovable') {
-    // ✅ Lovable provider uses Lovable AI Gateway (NOT OpenRouter)
-    // This matches chat-laboratory-orchestrator, bar-chat-orchestrator, intranet-ai-processor
-    endpoint = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+    // ✅ Lovable provider uses OpenRouter API with Gemini models
+    endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+    // Extract actual model name (e.g., 'google/gemini-2.5-flash' → keep as is for OpenRouter)
     requestBody.model = model || 'google/gemini-2.5-flash';
     requestBody.temperature = 0.7;
     requestBody.max_tokens = 1500;
@@ -269,13 +269,7 @@ export async function callAIProvider(
   if (config.provider === 'google') {
     endpoint = `${endpoint}?key=${config.api_key}`;
   } else if (config.provider === 'lovable') {
-    // ✅ Use Supabase secret LOVABLE_API_KEY instead of config_ai.api_key
-    // This matches the pattern used by 30+ other edge functions in this project
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY secret not configured in Supabase. Go to Settings → Edge Functions → Secrets');
-    }
-    headers['Authorization'] = `Bearer ${lovableApiKey}`;
+    headers['Authorization'] = `Bearer ${config.api_key}`;
     headers['HTTP-Referer'] = 'https://lovable.dev';
     headers['X-Title'] = 'TMWEngine Email Classifier';
   } else {

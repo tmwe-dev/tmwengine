@@ -9,6 +9,31 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-12-03] - Fix Missing Imports in email-ai-processor
+
+### File Modificato
+- **Function:** `supabase/functions/email-ai-processor/index.ts`
+- **Backup Creato:** `index-old4.ts`
+
+### Motivo Modifica
+`ReferenceError: buildPrompt is not defined` - Le funzioni `buildPrompt`, `callAIProvider`, `parseAIResponse`, `updateEmailClassification` e il tipo `EmailData` venivano usate ma non importate da `ai-helpers.ts`.
+
+### Modifiche Apportate
+1. Aggiornato import da `ai-helpers.ts` per includere tutte le dipendenze:
+   - `getAIConfig` (già presente)
+   - `buildPrompt` (aggiunto)
+   - `callAIProvider` (aggiunto)
+   - `parseAIResponse` (aggiunto)
+   - `updateEmailClassification` (aggiunto)
+   - `EmailData` type (aggiunto)
+
+### Rollback Plan
+```bash
+cp supabase/functions/email-ai-processor/index-old4.ts supabase/functions/email-ai-processor/index.ts
+```
+
+---
+
 ## [2025-01-31] - 🚀 PULIZIA MASSIVA: 6 Edge Functions Eliminate
 
 ### 🎯 Resumen Ejecutivo

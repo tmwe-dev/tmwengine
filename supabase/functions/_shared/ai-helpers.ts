@@ -347,7 +347,7 @@ export async function updateEmailClassification(
   params: EmailClassificationParams,
   classification: AIClassificationResult
 ): Promise<void> {
-  console.log('[updateEmailClassification] 💾 Saving to email_ai_classifications');
+  console.log('[updateEmailClassification] 💾 Saving to tmwe_classifications (Zero-Sync)');
   console.log('[updateEmailClassification] 📧 Params:', {
     email_id: params.email_id,
     tmwe_email_id: params.tmwe_email_id,
@@ -357,65 +357,89 @@ export async function updateEmailClassification(
     sender_email: params.sender_email
   });
 
-  // Extract domain from sender email
-  const senderDomain = params.sender_email?.split('@')[1] || null;
+  // 🆕 ZERO-SYNC: Validate required fields for tmwe_classifications
+  if (!params.tmwe_email_id) {
+    console.error('[updateEmailClassification] ❌ tmwe_email_id is required for Zero-Sync');
+    throw new Error('tmwe_email_id is required for Zero-Sync classification');
+  }
 
-  // 🆕 ZERO-SYNC: Upsert into email_ai_classifications table
+  if (!params.user_email) {
+    console.error('[updateEmailClassification] ❌ user_email is required');
+    throw new Error('user_email is required for classification');
+  }
+
+  // Extract sender name from email if available
+  const senderName = params.sender_email?.split('@')[0] || null;
+
+  // 🆕 ZERO-SYNC: Upsert into tmwe_classifications table
   const classificationData = {
-    email_id: params.email_id || null,
-    tmwe_email_id: params.tmwe_email_id || null,
+    tmwe_email_id: params.tmwe_email_id,
     user_email: params.user_email,
-    sender_email: params.sender_email,
-    sender_domain: senderDomain,
-    folder_name: params.folder_name || 'INBOX',
-    email_uid: params.email_uid || null,
-    subject: params.subject || null,
-    body_preview: params.body_preview?.substring(0, 500) || null,
-    category: classification.category || 'Sin Clasificar',
+    group_name: classification.category || 'General',  // category → group_name
+    group_color: getGroupColor(classification.category),
+    group_icon: getGroupIcon(classification.category),
     confidence: classification.confidence || 0.5,
-    ai_summary: classification.summary || null,
-    keywords: classification.keywords || [],
-    urgency: classification.priority || 'normal',
-    action_suggested: classification.suggested_actions?.[0] || null,
-    reasoning: null,
+    ai_model: 'gemini',  // Default model
+    ai_reasoning: classification.summary || null,  // summary → ai_reasoning
+    subject_preview: params.subject?.substring(0, 200) || null,
+    sender_email: params.sender_email || null,
+    sender_name: senderName,
+    is_manual_override: false,
+    classification_date: new Date().toISOString(),
+    status: 'active',
     updated_at: new Date().toISOString()
   };
 
-  // Use upsert with conflict on tmwe_email_id (preferred) or email_id
-  const upsertKey = params.tmwe_email_id ? 'tmwe_email_id' : 'email_id';
-  console.log('[updateEmailClassification] 🔑 Using upsert key:', upsertKey, 'with value:', params.tmwe_email_id || params.email_id);
+  console.log('[updateEmailClassification] 🔑 Using tmwe_email_id:', params.tmwe_email_id);
   
+  // Upsert with conflict on (tmwe_email_id, user_email)
   const { error } = await supabase
-    .from('email_ai_classifications')
+    .from('tmwe_classifications')
     .upsert(classificationData, {
-      onConflict: upsertKey,
+      onConflict: 'tmwe_email_id,user_email',
       ignoreDuplicates: false
     });
 
   if (error) {
-    console.error('[updateEmailClassification] ❌ Error during upsert:', error);
-    console.error('[updateEmailClassification] 📊 Classification data attempted:', {
-      tmwe_email_id: classificationData.tmwe_email_id,
-      email_id: classificationData.email_id,
-      user_email: classificationData.user_email,
-      sender_email: classificationData.sender_email
-    });
-    
-    // Fallback: try insert without upsert
-    console.log('[updateEmailClassification] 🔄 Attempting fallback insert...');
-    const { error: insertError } = await supabase
-      .from('email_ai_classifications')
-      .insert(classificationData);
-    
-    if (insertError) {
-      console.error('[updateEmailClassification] ❌ Insert also failed:', insertError);
-      throw insertError;
-    }
-    console.log('[updateEmailClassification] ✅ Fallback insert succeeded');
+    console.error('[updateEmailClassification] ❌ Error during upsert to tmwe_classifications:', error);
+    console.error('[updateEmailClassification] 📊 Classification data attempted:', classificationData);
+    throw error;
   }
 
-  console.log('[updateEmailClassification] ✅ Classification saved to email_ai_classifications');
-  console.log('[updateEmailClassification] 🆕 ZERO-SYNC tmwe_email_id:', params.tmwe_email_id || 'N/A (legacy mode)');
+  console.log('[updateEmailClassification] ✅ Classification saved to tmwe_classifications');
+  console.log('[updateEmailClassification] 🆕 Zero-Sync tmwe_email_id:', params.tmwe_email_id);
+}
+
+// Helper: Get color for group
+function getGroupColor(category: string | undefined): string {
+  const colorMap: Record<string, string> = {
+    'Fatture': '#22c55e',
+    'Bolle / Packing List': '#3b82f6',
+    'Preventivi / Quotazioni': '#f59e0b',
+    'Rate Aeree / Rate Navali': '#8b5cf6',
+    'Documenti Spedizione': '#06b6d4',
+    'Offerte di Lavoro': '#ec4899',
+    'Marketing / Pubblicità': '#f97316',
+    'Spam / Non Rilevante': '#6b7280',
+    'General': '#9ca3af'
+  };
+  return colorMap[category || 'General'] || '#9ca3af';
+}
+
+// Helper: Get icon for group
+function getGroupIcon(category: string | undefined): string {
+  const iconMap: Record<string, string> = {
+    'Fatture': 'receipt',
+    'Bolle / Packing List': 'package',
+    'Preventivi / Quotazioni': 'file-text',
+    'Rate Aeree / Rate Navali': 'plane',
+    'Documenti Spedizione': 'truck',
+    'Offerte di Lavoro': 'briefcase',
+    'Marketing / Pubblicità': 'megaphone',
+    'Spam / Non Rilevante': 'trash',
+    'General': 'mail'
+  };
+  return iconMap[category || 'General'] || 'mail';
 }
 
 // ============================================

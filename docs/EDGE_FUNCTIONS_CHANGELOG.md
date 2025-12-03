@@ -9,6 +9,29 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2025-12-03] - Fix UUID Error in Entity Extraction (Zero-Sync)
+
+### File Modificato
+- **Function:** `supabase/functions/email-ai-processor/index.ts`
+- **Backup Creato:** `index-old5.ts`
+
+### Motivo Modifica
+Error: `@supabase/auth-js: Expected parameter to be UUID but is not`
+- In Zero-Sync mode, `email_id` is undefined (TMWE API uses integer IDs)
+- Code was passing `user_email` (string) to `getUserById()` which expects UUID
+
+### Modifiche Apportate
+1. Replaced `getUserById()` call with `user_profiles.tmwe_email` lookup
+2. Added fallback for legacy mode (email_id UUID from email_messages)
+3. Added improved logging for user lookup process
+
+### Rollback Plan
+```bash
+cp index-old5.ts index.ts
+```
+
+---
+
 ## [2025-12-03] - Fix Lovable Provider Credentials in ai-helpers.ts
 
 ### File Modificato

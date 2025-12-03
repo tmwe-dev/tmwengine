@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Zap, Inbox, Lightbulb, Bot } from 'lucide-react';
+import { Settings, Zap, Inbox, Lightbulb, Bot, Sparkles } from 'lucide-react';
 
 interface FunEmailNavigationProps {
-  currentView: 'fun' | 'management' | 'suggestions' | 'inbox' | 'automations';
+  currentView: 'fun' | 'management' | 'suggestions' | 'inbox' | 'automations' | 'zero-sync';
 }
 
 export const FunEmailNavigation = ({ currentView }: FunEmailNavigationProps) => {
@@ -13,6 +13,7 @@ export const FunEmailNavigation = ({ currentView }: FunEmailNavigationProps) => 
     { value: 'management', label: 'Management', icon: Settings },
     { value: 'fun', label: 'Fun', icon: Zap },
     { value: 'inbox', label: 'Smart Inbox', icon: Inbox },
+    { value: 'zero-sync', label: 'Zero-Sync', icon: Sparkles },
     { value: 'suggestions', label: 'Suggestions', icon: Lightbulb },
     { value: 'automations', label: 'Automations', icon: Bot },
   ] as const;

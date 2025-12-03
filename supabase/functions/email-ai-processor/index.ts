@@ -64,6 +64,7 @@ async function getTMWETokenFromDB(supabase: SupabaseClient, userEmail: string): 
 }
 
 // 🆕 TMWE API Helper - Zero-Sync Architecture (uses DB token)
+// ✅ FIXED: Use /email_search endpoint with handler 'get_email_detail'
 async function fetchEmailFromTMWEApi(
   supabase: SupabaseClient, 
   tmweEmailId: number, 
@@ -72,34 +73,47 @@ async function fetchEmailFromTMWEApi(
   // Get token from database instead of env vars
   const accessToken = await getTMWETokenFromDB(supabase, userEmail);
   
-  console.log(`[TMWE API] 📧 Fetching email ${tmweEmailId} from TMWE API...`);
+  console.log(`[TMWE API] 📧 Fetching email ${tmweEmailId} via /email_search API...`);
   
-  const response = await fetch(`${TMWE_API_BASE_URL}/email_message`, {
+  // ✅ CORRECT: Use /email_search endpoint (RabbitMQ + Elasticsearch)
+  const response = await fetch(`${TMWE_API_BASE_URL}/email_search`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      handler: 'get_detail',
-      id: tmweEmailId
+      handler: 'get_email_detail',  // ✅ Correct handler
+      email_id: tmweEmailId,        // ✅ Correct parameter name
+      include_body: true,
+      timeout: 15
     })
   });
   
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[TMWE API] ❌ HTTP Error ${response.status}:`, errorText);
     throw new Error(`TMWE API error (${response.status}): ${errorText}`);
   }
   
   const data = await response.json();
   
+  console.log(`[TMWE API] 📩 Raw response:`, {
+    success: data.success,
+    hasEmail: !!data.email,
+    hasResult: !!data.result,
+    keys: Object.keys(data)
+  });
+  
   if (data.error) {
     throw new Error(`TMWE API error: ${data.error}`);
   }
   
+  // Handle response structure - could be data.email, data.result, or direct
   const email = data.email || data.result || data;
   
-  if (!email || (!email.subject && !email.body_text)) {
+  if (!email || (!email.subject && !email.body_text && !email.snippet)) {
+    console.error(`[TMWE API] ❌ Email not found or empty:`, { tmweEmailId, response: data });
     throw new Error(`Email not found in TMWE API: ${tmweEmailId}`);
   }
   
@@ -107,10 +121,10 @@ async function fetchEmailFromTMWEApi(
   
   // Normalize TMWE API response to match expected format
   return {
-    id: email.id || tmweEmailId,
+    id: email.id || email.email_id || tmweEmailId,
     tmwe_email_id: tmweEmailId,
     subject: email.subject || '',
-    body_text: email.body_text || email.snippet || '',
+    body_text: email.body_text || email.body || email.snippet || '',
     body_html: email.body_html || '',
     from_email: email.from?.email || email.from_email || email.sender || '',
     to_email: email.to?.[0]?.email || email.to_email || '',

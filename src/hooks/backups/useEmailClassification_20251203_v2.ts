@@ -1,6 +1,9 @@
 /**
  * useEmailClassification - Email Classification Hook
  * 
+ * BACKUP v2: 2025-12-03
+ * Reason: Pre-parameter fix backup
+ * 
  * ✅ Handles AI classification of individual emails
  * ✅ Saves results to tmwe_classifications
  * ✅ Supports batch operations with queue
@@ -49,17 +52,15 @@ export const useEmailClassification = (userEmail: string | null) => {
   /**
    * Call AI classification using email-ai-processor edge function
    */
-  /**
-   * Call AI classification using email-ai-processor edge function
-   * FIXED: 2025-12-03 - Correct parameters (tmwe_email_id, user_email) and response mapping (category → group_name)
-   */
   const callAIClassification = async (email: EmailToClassify): Promise<AIClassificationResponse> => {
     try {
       const { data, error } = await supabase.functions.invoke('email-ai-processor', {
         body: {
           operation: 'classify',
-          tmwe_email_id: email.tmwe_email_id,  // ✅ Integer, correct parameter name
-          user_email: userEmail,                // ✅ Required by edge function
+          email_uid: String(email.tmwe_email_id),
+          sender_email: email.from_email,
+          email_subject: email.subject,
+          email_body: email.body_preview || '',
           selected_agent: 'gemini',
         },
       });
@@ -70,16 +71,15 @@ export const useEmailClassification = (userEmail: string | null) => {
       }
 
       // Map response from email-ai-processor format
-      // Edge function returns: { classification: { category, confidence, summary, keywords } }
-      const groupName = data?.classification?.category || data?.category || 'General';
-      const groupType = 'auto';
+      const groupName = data?.classification?.group_name || data?.group_name || 'General';
+      const groupType = data?.classification?.group_type || data?.group_type || 'auto';
       
       return {
         success: true,
         group_name: groupName,
         group_type: groupType,
-        confidence: data?.classification?.confidence || data?.confidence || 0.8,
-        reasoning: data?.classification?.summary || data?.reasoning,
+        confidence: data?.confidence || data?.classification?.confidence || 0.8,
+        reasoning: data?.reasoning || data?.classification?.reasoning,
         model: data?.model || 'gemini-2.5-flash',
       };
     } catch (error: any) {

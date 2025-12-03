@@ -1,6 +1,9 @@
 /**
  * useSmartInboxZeroSync - Zero-Sync Smart Inbox Hook
  * 
+ * BACKUP v2: 2025-12-03
+ * Reason: Pre-parameter fix backup
+ * 
  * ✅ Fetches emails directly from TMWE API (no local sync)
  * ✅ Uses tmwe_classifications for classification data
  * ✅ On-demand classification for unclassified emails
@@ -14,7 +17,7 @@ import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tansta
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { ClassificationApi, TMWEClassification } from '@/lib/tmwe/api/ClassificationApi';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserEmail } from './useUserEmail';
+import { useUserEmail } from '../useUserEmail';
 import { useState, useMemo, useCallback } from 'react';
 
 // Types
@@ -201,7 +204,6 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
 
   // =========================================================================
   // 6. On-demand classification mutation using email-ai-processor
-  // FIXED: 2025-12-03 - Correct parameters and response mapping
   // =========================================================================
   const classifyMutation = useMutation({
     mutationFn: async (email: SmartInboxEmail) => {
@@ -212,12 +214,13 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
       
       try {
         // Call email-ai-processor edge function via supabase.functions.invoke
-        // ✅ FIXED: Using correct parameters (tmwe_email_id, user_email)
         const { data, error } = await supabase.functions.invoke('email-ai-processor', {
           body: {
             operation: 'classify',
-            tmwe_email_id: email.tmwe_email_id,  // ✅ Integer, correct name
-            user_email: userEmail,               // ✅ Required parameter
+            email_uid: String(email.tmwe_email_id),
+            sender_email: email.from_email,
+            email_subject: email.subject,
+            email_body: email.body_preview || '',
             selected_agent: 'gemini',
           },
         });
@@ -225,9 +228,8 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
         if (error) throw new Error(error.message);
         
         // Map response from email-ai-processor format
-        // Edge function returns: { classification: { category, confidence, summary, keywords } }
-        const groupName = data?.classification?.category || data?.category || 'General';
-        const groupType = 'auto';
+        const groupName = data?.classification?.group_name || data?.group_name || 'General';
+        const groupType = data?.classification?.group_type || data?.group_type || 'auto';
         
         // Save classification to tmwe_classifications
         const classification = await ClassificationApi.create({
@@ -238,8 +240,8 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
           group_name: groupName,
           group_type: groupType,
           ai_model: data?.model || 'gemini-2.5-flash',
-          confidence: data?.classification?.confidence || data?.confidence || 0.8,
-          reasoning: data?.classification?.summary || data?.reasoning,
+          confidence: data?.confidence || data?.classification?.confidence || 0.8,
+          reasoning: data?.reasoning || data?.classification?.reasoning,
         });
 
         return classification;

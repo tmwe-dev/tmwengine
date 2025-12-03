@@ -5,16 +5,16 @@
  * ✅ Uses tmwe_classifications for classification data
  * ✅ On-demand classification for unclassified emails
  * ✅ Pagination and group filtering
- * ✅ Uses email-ai-processor edge function
  * 
- * UPDATED: 2025-12-03 - Changed to use supabase.functions.invoke with email-ai-processor
+ * PROTECTED: Uses TMWEApiClient (do not modify)
+ * 
+ * BACKUP: 2025-12-03
  */
 
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { emailSearchApi } from '@/lib/tmwe-email-search-api';
 import { ClassificationApi, TMWEClassification } from '@/lib/tmwe/api/ClassificationApi';
-import { supabase } from '@/integrations/supabase/client';
-import { useUserEmail } from './useUserEmail';
+import { useUserEmail } from '@/hooks/useUserEmail';
 import { useState, useMemo, useCallback } from 'react';
 
 // Types
@@ -96,8 +96,8 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
     },
     initialPageParam: 1,
     enabled: !!userEmail,
-    staleTime: 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // =========================================================================
@@ -111,7 +111,7 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
     queryKey: ['tmwe-classifications', userEmail],
     queryFn: () => ClassificationApi.getByUser(userEmail!, 500),
     enabled: !!userEmail,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   // Create a map for O(1) lookup
@@ -160,10 +160,7 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
   // 4. Filter by group_name if specified
   // =========================================================================
   const filteredEmails = useMemo(() => {
-    if (!filters.group_name || filters.group_name === '__all__') return allEmails;
-    if (filters.group_name === '__unclassified__') {
-      return allEmails.filter(email => !email.is_classified);
-    }
+    if (!filters.group_name) return allEmails;
     return allEmails.filter(email => 
       email.classification?.group_name === filters.group_name
     );
@@ -175,10 +172,10 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
   const groupStats = useMemo((): GroupStats[] => {
     const statsMap = new Map<string, { count: number; unread: number }>();
     
-    // Add "Tutte" first
+    // Add "Todos" first
     statsMap.set('__all__', { count: allEmails.length, unread: allEmails.filter(e => !e.is_read).length });
     
-    // Add "Non classificate"
+    // Add "Sin clasificar"
     const unclassified = allEmails.filter(e => !e.is_classified);
     statsMap.set('__unclassified__', { count: unclassified.length, unread: unclassified.filter(e => !e.is_read).length });
     
@@ -200,7 +197,7 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
   }, [allEmails]);
 
   // =========================================================================
-  // 6. On-demand classification mutation using email-ai-processor
+  // 6. On-demand classification mutation
   // =========================================================================
   const classifyMutation = useMutation({
     mutationFn: async (email: SmartInboxEmail) => {
@@ -210,23 +207,26 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
       setClassifyingIds(prev => new Set(prev).add(email.tmwe_email_id));
       
       try {
-        // Call email-ai-processor edge function via supabase.functions.invoke
-        const { data, error } = await supabase.functions.invoke('email-ai-processor', {
-          body: {
-            operation: 'classify',
-            email_uid: String(email.tmwe_email_id),
-            sender_email: email.from_email,
-            email_subject: email.subject,
-            email_body: email.body_preview || '',
-            selected_agent: 'gemini',
-          },
-        });
+        // Call AI classification edge function
+        const { data, error } = await fetch(
+          `https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/tmwe-email-ai-classify`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsbGRrcnpveHZqeHBna2t0dHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA1ODQsImV4cCI6MjA3NDI5NjU4NH0.PrHXldlTqbNm63S90_Wo4bFcFeSBMVeSxjJpUxoKf5A',
+            },
+            body: JSON.stringify({
+              email_id: email.tmwe_email_id,
+              subject: email.subject,
+              from_email: email.from_email,
+              body_preview: email.body_preview,
+              user_email: userEmail,
+            }),
+          }
+        ).then(r => r.json());
 
-        if (error) throw new Error(error.message);
-        
-        // Map response from email-ai-processor format
-        const groupName = data?.classification?.group_name || data?.group_name || 'General';
-        const groupType = data?.classification?.group_type || data?.group_type || 'auto';
+        if (error) throw new Error(error);
         
         // Save classification to tmwe_classifications
         const classification = await ClassificationApi.create({
@@ -234,11 +234,11 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
           user_email: userEmail,
           sender_email: email.from_email,
           subject: email.subject,
-          group_name: groupName,
-          group_type: groupType,
-          ai_model: data?.model || 'gemini-2.5-flash',
-          confidence: data?.confidence || data?.classification?.confidence || 0.8,
-          reasoning: data?.reasoning || data?.classification?.reasoning,
+          group_name: data?.group_name || 'General',
+          group_type: data?.group_type || 'auto',
+          ai_model: data?.model || 'unknown',
+          confidence: data?.confidence,
+          reasoning: data?.reasoning,
         });
 
         return classification;
@@ -251,6 +251,7 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
       }
     },
     onSuccess: () => {
+      // Refresh classifications
       queryClient.invalidateQueries({ queryKey: ['tmwe-classifications'] });
     },
   });
@@ -266,11 +267,6 @@ export const useSmartInboxZeroSync = (filters: SmartInboxFilters) => {
     for (let i = 0; i < unclassified.length; i += BATCH_SIZE) {
       const batch = unclassified.slice(i, i + BATCH_SIZE);
       await Promise.all(batch.map(email => classifyMutation.mutateAsync(email)));
-      
-      // Small delay between batches
-      if (i + BATCH_SIZE < unclassified.length) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
     }
   }, [classifyMutation]);
 

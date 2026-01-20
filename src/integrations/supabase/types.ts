@@ -7023,6 +7023,7 @@ export type Database = {
         }[]
       }
       get_temp_table_data:
+        | { Args: { table_name: string }; Returns: Json }
         | {
             Args: {
               page_limit?: number
@@ -7031,7 +7032,6 @@ export type Database = {
             }
             Returns: Json
           }
-        | { Args: { table_name: string }; Returns: Json }
       get_unread_messages_count: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: number

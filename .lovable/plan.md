@@ -1,82 +1,71 @@
 
 
-# Estrazione Animazione Carosello 3D per WordPress
+# Creazione Documento Completo per Export Design System
 
-## Panoramica
+## Obiettivo
 
-Estrarrò il movimento fluido del carosello 3D da `RadioCarousel3D.tsx` in un documento standalone pronto per WordPress. L'animazione usa:
+Creare un unico file `docs/COMPLETE_DESIGN_SYSTEM_EXPORT.md` che contiene **tutto il necessario** per riutilizzare il design system in altri progetti (WordPress, React, HTML puro).
 
-- **Three.js** per la scena 3D
-- **GSAP** per la rotazione fluida con easing `power2.inOut`
+## Contenuto del Documento
 
-## Cosa verrà incluso nel documento
+### Sezione 1: Quick Start
+- Istruzioni rapide per iniziare subito
+- Dipendenze necessarie (CDN e npm)
 
-### 1. Dipendenze CDN (per WordPress)
-```html
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-```
+### Sezione 2: Token CSS Completi
+- Tutti i colori HSL (5 temi: Lilla, Ocean, Sunset, Forest, Sky)
+- Spaziature (`--spacing-xs` a `--spacing-2xl`)
+- Tipografia (font sizes, weights, line heights)
+- Ombre e gradienti
+- Border radius e geometria
+- Transizioni e animazioni
 
-### 2. Struttura HTML
-```html
-<div id="carousel-container" style="width: 100%; height: 600px;"></div>
-```
+### Sezione 3: Configurazione Tailwind
+- File `tailwind.config.ts` completo
+- Mapping colori semantici
+- Keyframes e animazioni custom
 
-### 3. Codice JavaScript Estratto
+### Sezione 4: Utility Functions
+- Funzione `cn()` per merge classi CSS
+- Dipendenze: `clsx`, `tailwind-merge`
 
-**Configurazione del carosello:**
-- `MAX_SLOTS = 8` → numero di elementi nel cerchio
-- `radius = 7.8` → raggio del carosello
-- `angleStep = (Math.PI * 2) / MAX_SLOTS` → angolo tra ogni elemento
+### Sezione 5: Carosello 3D (Standalone)
+- Codice completo JavaScript per WordPress
+- Configurazione parametri
+- API pubblica per controllo esterno
 
-**Animazione della rotazione (il cuore del movimento):**
-```javascript
-function rotateToIndex(group, targetIndex, totalSlots) {
-  const targetAngle = -(targetIndex / totalSlots) * Math.PI * 2 + Math.PI / 2;
-  gsap.to(group.rotation, {
-    y: targetAngle,
-    duration: 1.2,           // Durata in secondi
-    ease: 'power2.inOut'     // Easing fluido (accelera e decelera)
-  });
-}
-```
+### Sezione 6: Componenti Design System
+- Lista componenti disponibili
+- Pattern di utilizzo
+- Istruzioni per copiare da React
 
-**Parametri personalizzabili:**
-| Parametro | Valore attuale | Descrizione |
-|-----------|---------------|-------------|
-| `duration` | 1.2s | Velocità della rotazione |
-| `ease` | power2.inOut | Curva di accelerazione |
-| `radius` | 7.8 | Raggio del cerchio |
-| `MAX_SLOTS` | 8 | Numero di card |
+### Sezione 7: Integrazione per Piattaforme
+- **WordPress**: Blocco HTML, Elementor, Shortcode
+- **React/Vite**: Copia file e configura
+- **HTML Puro**: CDN e snippet standalone
 
-### 4. Varianti di Easing GSAP
+### Sezione 8: Checklist Export
+- Lista controlli prima di usare in produzione
 
-Per modificare il "feeling" dell'animazione:
-- `power2.inOut` → Fluido (attuale)
-- `elastic.out(1, 0.5)` → Effetto rimbalzo
-- `back.out(1.7)` → Overshoot leggero
-- `expo.inOut` → Molto drammatico
+## Struttura File
 
-## File da creare
+| Sezione | Contenuto |
+|---------|-----------|
+| Header | Versione, data, compatibilità |
+| Quick Start | 5 minuti per iniziare |
+| CSS Variables | Tutti i token completi |
+| Tailwind Config | Configurazione completa |
+| Utils | Funzioni helper |
+| Carousel 3D | Codice standalone |
+| Componenti | Lista e pattern |
+| Integrazioni | Guide per piattaforma |
+| Checklist | Controlli finali |
 
-| File | Descrizione |
-|------|-------------|
-| `docs/CAROUSEL_3D_ANIMATION_EXTRACT.md` | Documentazione completa con codice pronto per WordPress |
+## Note Tecniche
 
-## Contenuto del documento
-
-Il documento includerà:
-
-1. **Quick Start** - copia-incolla per WordPress
-2. **Codice completo** - JavaScript standalone
-3. **Istruzioni di integrazione** - come aggiungere a WordPress (shortcode, page builder, custom HTML)
-4. **Parametri configurabili** - tabella con tutte le variabili
-5. **Esempi di navigazione** - click, autoplay, swipe
-
-## Note tecniche
-
-- Il codice sarà **vanilla JavaScript** (no React, no TypeScript)
-- Compatibile con tutti i temi WordPress
-- Include fallback per browser senza WebGL
+- Tutto il CSS usa **HSL** per facile personalizzazione
+- Supporto **Dark Mode** incluso
+- **5 temi colore** pre-configurati (Lilla, Ocean, Sunset, Forest, Sky)
+- Animazioni GSAP per il carosello 3D
 - Responsive con ResizeObserver
 

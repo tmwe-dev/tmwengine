@@ -94,7 +94,7 @@ export default function NotificationSettings() {
         await navigator.serviceWorker.ready;
 
         // Ottieni subscription
-        const subscription = await registration.pushManager.subscribe({
+        const subscription = await (registration as any).pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_CONFIG.publicKey) as BufferSource
         });

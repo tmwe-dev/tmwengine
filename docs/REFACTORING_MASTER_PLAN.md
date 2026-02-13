@@ -74,9 +74,30 @@
   - ai-config, admin-prompts, language-manager, theme, country-selector, language-selector, ai-guide
 - Totale sezioni con contenuto: 22/22 (100% copertura)
 - Componenti UI (GuideNavigation, GuideSearchBar, GuideSection): verificati, funzionali
-### FASE 16 - Standardizzazione Types (TODO)
-### FASE 17 - Pulizia Documenti (TODO)
-### FASE 18 - Pulizia tmwenginej (TODO)
+### FASE 16 - Standardizzazione Types ✅
+- 7 file type in `src/types/`: smart-inbox, email-management, email-automation, email-carousel, radio, design-lab, design-lab-scanner
+- Tutte le interface: PascalCase ✓ (conforme)
+- Campi DB: snake_case ✓ (conforme)
+- `SenderAnalysis` ha campi camelCase (companyName, emailCount) → campi UI computati, non mappatura DB → accettabile
+- Nessuna modifica strutturale necessaria
+
+### FASE 17 - Audit Documenti ✅
+- 57 file markdown/yaml/json in `docs/`
+- `docs/CODE_BACKUPS/`: ~45 file backup storici + 5 sotto-cartelle
+  - Backup datati (2025-01 → 2025-11), mantenuti per protocollo rollback
+  - Candidati per archiviazione futura: cartelle pre-2025-06
+- `docs/EDGE_FUNCTIONS_BACKUP/`: 1 cartella (2025-11-25)
+- `docs/references/`: 1 file HTML (TMW-Full-Platform.html)
+- `docs/DATABASE_BACKUPS/`, `docs/TMWE_API_REFERENCE/`: reference attive
+- ⚠️ Raccomandazione: i backup in CODE_BACKUPS più vecchi di 3 mesi sono candidati per archiviazione esterna
+
+### FASE 18 - Audit tmwenginej ✅
+- App satellite compatta: 6 pagine, 8 componenti, 3 lib, 2 hooks, 1 type file
+- Nessun backup trovato, struttura pulita
+- Pagine: Login, AuthCallback, EmailDashboard, EmailSyncTest, TMWEApiComparison, RadioChat, DesignLab, DesignLabDashboard, NotFound
+- Condivide stesso Supabase project (dlldkrzoxvjxpgkkttxu)
+- Nessuna pulizia necessaria
+
 ### FASE 19 - Test End-to-End (TODO)
 ### FASE 20 - Documento Finale (TODO)
 

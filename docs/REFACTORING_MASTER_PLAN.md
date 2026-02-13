@@ -66,7 +66,14 @@
   - `orchestrator_test_configs/results` → ATTIVE, usate da calibration module
   - `temp_ai_import/reviewed` → tabelle temporanee per flusso import
 - ⚠️ Raccomandazione: `email_sender_grouping_suggestions_backup_20250107` e `debugging` sono candidate per eliminazione futura
-### FASE 15 - Aggiornamento Guida Utente (TODO)
+### FASE 15 - Aggiornamento Guida Utente ✅
+- guide-structure.json: 22 sezioni in 6 gruppi (Commerciale, Email, Chat&AI, Import, Impostazioni, Globali)
+- guide-content-it.json: aggiunto contenuto per 16 sezioni mancanti:
+  - rubrica-avanzata, campagne, email-dashboard, email-campagne, email-senders
+  - chat, intranet, intranet-admin, gestisci-import, record-importati
+  - ai-config, admin-prompts, language-manager, theme, country-selector, language-selector, ai-guide
+- Totale sezioni con contenuto: 22/22 (100% copertura)
+- Componenti UI (GuideNavigation, GuideSearchBar, GuideSection): verificati, funzionali
 ### FASE 16 - Standardizzazione Types (TODO)
 ### FASE 17 - Pulizia Documenti (TODO)
 ### FASE 18 - Pulizia tmwenginej (TODO)

@@ -1,12 +1,14 @@
 import { LucideIcon } from 'lucide-react';
 import { 
   BarChart3, Mail, MessageSquare, Upload, Settings, 
-  Code, Phone, BookOpen, Sparkles, Database, Shield,
+  Code, Phone, BookOpen, Sparkles, Database,
   FileText, Calendar, Radio, Bot, Palette, Brain,
   Users, Activity, Megaphone, Inbox, FolderOpen,
   Tag, Filter, TestTube, GitCompare, Mic, Languages,
   LayoutDashboard, Wrench, Map, Globe, Server,
-  FlaskConical, Layers, Eye, Workflow, Bell
+  FlaskConical, Layers, Eye, Workflow, Bell,
+  Shield, Rocket, Download, AlertTriangle, Sliders,
+  MonitorSmartphone, Zap
 } from 'lucide-react';
 
 export interface PageInfo {
@@ -62,6 +64,13 @@ export const siteMapGroups: PageGroup[] = [
         description: 'Gestione di campagne di marketing e vendite',
         icon: Megaphone,
         requiresAuth: true
+      },
+      {
+        title: 'Email Campagne',
+        path: '/email-campagne',
+        description: 'Campagne email marketing con template e invio automatico',
+        icon: Mail,
+        requiresAuth: true
       }
     ]
   },
@@ -82,122 +91,132 @@ export const siteMapGroups: PageGroup[] = [
       {
         title: 'Chat Laboratory',
         path: '/chat-laboratory',
-        description: 'Laboratorio sperimentale per testare diversi modelli di IA',
+        description: 'Laboratorio sperimentale multi-agente per testare diversi modelli di IA',
         icon: Sparkles,
+        requiresAuth: true
+      },
+      {
+        title: 'Calibrazione Lab',
+        path: '/chat-laboratory/calibration',
+        description: 'Calibrazione e tuning degli agenti del laboratorio AI',
+        icon: Sliders,
         requiresAuth: true
       },
       {
         title: 'Radio Chat',
         path: '/radio-chat',
-        description: 'Chat con comunicazione vocale e audio in tempo reale',
+        description: 'Chat con comunicazione vocale e carosello 3D',
         icon: Radio,
         requiresAuth: true
       },
       {
-        title: 'Chat Intranet',
-        path: '/chat-intranet',
-        description: 'Sistema di messaggistica interna per team',
-        icon: Users,
-        requiresAuth: true
-      },
-      {
-        title: 'Brain AI',
-        path: '/brain-ai',
-        description: 'Sistema di analisi intelligente con agenti multipli',
+        title: 'AI Communication Hub',
+        path: '/ai-communication-hub',
+        description: 'Hub comunicazione AI con ElevenLabs e WebRTC',
         icon: Brain,
         requiresAuth: true
       },
       {
-        title: 'Agent Composer',
-        path: '/agent-composer',
-        description: 'Composizione e configurazione di agenti IA personalizzati',
+        title: 'Prompt System Manager',
+        path: '/prompt-system-manager',
+        description: 'Gestione centralizzata del sistema prompt per tutti gli agenti',
         icon: Bot,
         requiresAuth: true
-      },
+      }
+    ]
+  },
+  {
+    id: 'intranet',
+    name: 'Intranet',
+    description: 'Sistema di comunicazione interna per il team',
+    icon: Users,
+    color: 'teal',
+    pages: [
       {
-        title: 'Prompt Library',
-        path: '/prompt-library',
-        description: 'Libreria di prompt riutilizzabili per IA',
-        icon: FileText,
+        title: 'Intranet',
+        path: '/intranet',
+        description: 'Chat interna del team con stanze e messaggi in tempo reale',
+        icon: MessageSquare,
         requiresAuth: true
       },
       {
-        title: 'Knowledge Base',
-        path: '/knowledge-base',
-        description: 'Base di conoscenza per addestramento IA',
-        icon: Database,
-        requiresAuth: true
+        title: 'Admin Intranet',
+        path: '/intranet-admin',
+        description: 'Pannello di amministrazione intranet (gestione stanze, utenti)',
+        icon: Shield,
+        requiresAuth: true,
+        requiresAdmin: true
       }
     ]
   },
   {
     id: 'email',
     name: 'Gestione Email',
-    description: 'Sistema completo di gestione e analisi delle email',
+    description: 'Sistema completo di gestione, download e analisi delle email',
     icon: Mail,
     color: 'green',
     pages: [
       {
-        title: 'Dashboard Email',
-        path: '/',
-        description: 'Pannello principale di gestione email con statistiche',
+        title: 'Email Manager',
+        path: '/email-manager',
+        description: 'Dashboard email principale con integrazione TMWE (richiede auth Microsoft)',
         icon: LayoutDashboard,
         requiresAuth: true
       },
       {
         title: 'FunnEmail',
         path: '/funnemail',
-        description: 'Analisi avanzata di email con categorizzazione intelligente',
-        icon: Mail,
+        description: 'Analisi avanzata di email con categorizzazione intelligente AI',
+        icon: Sparkles,
         requiresAuth: true
       },
       {
-        title: 'Test Sincronizzazione Email',
-        path: '/email-sync-test',
-        description: 'Test di sincronizzazione delle email',
-        icon: TestTube,
+        title: 'Email Hub',
+        path: '/emailhub',
+        description: 'Hub centralizzato per gestione email con viste multiple',
+        icon: Inbox,
         requiresAuth: true
       },
       {
-        title: 'Cartelle Email',
-        path: '/email-folders',
-        description: 'Organizzazione e gestione delle cartelle email',
-        icon: FolderOpen,
+        title: 'Single Mail Importer',
+        path: '/single-mail',
+        description: 'Importazione singola email da Microsoft Graph',
+        icon: Download,
         requiresAuth: true
       },
       {
-        title: 'Gruppi Mittenti',
-        path: '/email-sender-groups',
-        description: 'Raggruppamento e categorizzazione dei mittenti',
+        title: 'Single Fast',
+        path: '/single-fast',
+        description: 'Download veloce email con log real-time e sequenza automatica',
+        icon: Rocket,
+        requiresAuth: true
+      },
+      {
+        title: 'Dual Download',
+        path: '/dual-download',
+        description: 'Download dual-phase email con strategie multiple',
+        icon: Download,
+        requiresAuth: true
+      },
+      {
+        title: 'Email Senders',
+        path: '/email-senders',
+        description: 'Gestione e raggruppamento mittenti email',
         icon: Tag,
         requiresAuth: true
       },
       {
-        title: 'Classificatore Email',
-        path: '/email-classifier',
-        description: 'Classificazione automatica delle email con IA',
+        title: 'Email Rules',
+        path: '/email-rules',
+        description: 'Regole di classificazione email con integrazione TMWE',
         icon: Filter,
         requiresAuth: true
       },
       {
-        title: 'Template Email',
-        path: '/email-templates',
-        description: 'Template riutilizzabili per risposte rapide',
-        icon: FileText,
-        requiresAuth: true
-      },
-      {
-        title: 'Analisi Email',
-        path: '/email-analytics',
-        description: 'Analisi e metriche di attività email',
-        icon: BarChart3,
-        requiresAuth: true
-      },
-      {
-        title: 'Gestione Posta in Arrivo',
-        path: '/inbox-management',
-        description: 'Gestione avanzata della casella di posta',
-        icon: Inbox,
+        title: 'Email Debug Tester',
+        path: '/email-debug-tester',
+        description: 'Strumenti di debug e test per il sistema email',
+        icon: TestTube,
         requiresAuth: true
       }
     ]
@@ -210,38 +229,38 @@ export const siteMapGroups: PageGroup[] = [
     color: 'orange',
     pages: [
       {
-        title: 'Importa Contatti',
-        path: '/import-contacts',
-        description: 'Importazione massiva di contatti da file',
+        title: 'Import Templates',
+        path: '/import-templates',
+        description: 'Template di importazione per diverse sorgenti dati',
         icon: Upload,
         requiresAuth: true
       },
       {
-        title: 'Esporta Dati',
-        path: '/export-data',
-        description: 'Esportazione di dati in formati multipli',
-        icon: Database,
-        requiresAuth: true
-      },
-      {
-        title: 'Importa CSV',
-        path: '/csv-import',
-        description: 'Importazione specializzata di file CSV',
-        icon: FileText,
-        requiresAuth: true
-      },
-      {
-        title: 'Mappatura Dati',
-        path: '/data-mapping',
-        description: 'Mappatura campi per importazione personalizzata',
+        title: 'Gestisci Import',
+        path: '/gestisci-import',
+        description: 'Gestione e monitoraggio delle importazioni in corso',
         icon: Layers,
         requiresAuth: true
       },
       {
-        title: 'Storico Import',
-        path: '/import-history',
-        description: 'Cronologia delle importazioni effettuate',
-        icon: Activity,
+        title: 'Record Importati',
+        path: '/record-importati',
+        description: 'Visualizzazione e gestione dei record importati',
+        icon: FileText,
+        requiresAuth: true
+      },
+      {
+        title: 'Monitor Errori Import',
+        path: '/import-errors-monitor',
+        description: 'Monitoraggio e risoluzione errori di importazione',
+        icon: AlertTriangle,
+        requiresAuth: true
+      },
+      {
+        title: 'Template Alias',
+        path: '/template-alias',
+        description: 'Gestione alias per mappatura campi template',
+        icon: Tag,
         requiresAuth: true
       }
     ]
@@ -262,22 +281,29 @@ export const siteMapGroups: PageGroup[] = [
       },
       {
         title: 'Configurazione AI',
-        path: '/config-ai',
+        path: '/ai-config',
         description: 'Configurazione di modelli e API di intelligenza artificiale',
         icon: Bot,
         requiresAuth: true
       },
       {
-        title: 'Profilo Utente',
-        path: '/profile',
-        description: 'Configurazione profilo utente',
-        icon: Users,
+        title: 'Configurazione Generale',
+        path: '/general-config',
+        description: 'Impostazioni generali della piattaforma',
+        icon: Sliders,
         requiresAuth: true
       },
       {
-        title: 'Notifiche',
-        path: '/notifications',
-        description: 'Gestione notifiche e alert',
+        title: 'Impostazioni Database',
+        path: '/database-settings',
+        description: 'Configurazione e gestione del database',
+        icon: Database,
+        requiresAuth: true
+      },
+      {
+        title: 'Impostazioni Notifiche',
+        path: '/notification-settings',
+        description: 'Configurazione notifiche push e alert',
         icon: Bell,
         requiresAuth: true
       },
@@ -300,86 +326,65 @@ export const siteMapGroups: PageGroup[] = [
       {
         title: 'Design Lab',
         path: '/design-lab',
-        description: 'Laboratorio di design per prototipi e componenti',
+        description: 'Dashboard Design Lab per prototipi e componenti',
         icon: Palette,
         requiresAuth: true
       },
       {
-        title: 'Confronto API',
-        path: '/api-comparison',
-        description: 'Confronto tra diverse API e modelli di IA',
-        icon: GitCompare,
+        title: 'Design Lab Scanner',
+        path: '/design-lab-scanner',
+        description: 'Scanner automatico dei componenti del design system',
+        icon: Eye,
         requiresAuth: true
       },
       {
-        title: 'Ispettore Database',
-        path: '/database-inspector',
-        description: 'Ispezione e analisi del database',
+        title: 'Tables',
+        path: '/tables',
+        description: 'Visualizzazione e ispezione tabelle database',
         icon: Database,
-        requiresAuth: true,
-        requiresAdmin: true
+        requiresAuth: true
       },
       {
-        title: 'Log API',
-        path: '/api-logs',
-        description: 'Visualizzazione log API ed errori',
-        icon: FileText,
-        requiresAuth: true,
-        requiresAdmin: true
-      },
-      {
-        title: 'Monitor Sistema',
-        path: '/system-monitor',
-        description: 'Monitoraggio prestazioni e risorse del sistema',
-        icon: Activity,
-        requiresAuth: true,
-        requiresAdmin: true
-      },
-      {
-        title: 'Playground Test',
-        path: '/testing-playground',
-        description: 'Ambiente di test per nuove funzionalità',
-        icon: FlaskConical,
-        requiresAuth: true,
-        requiresAdmin: true
-      },
-      {
-        title: 'Console Debug',
-        path: '/debug-console',
-        description: 'Console di debug in tempo reale',
+        title: 'Code Review',
+        path: '/code-review',
+        description: 'Strumenti di code review e analisi codice',
         icon: Code,
-        requiresAuth: true,
-        requiresAdmin: true
+        requiresAuth: true
       },
       {
-        title: 'Admin Intranet',
-        path: '/intranet-admin',
-        description: 'Pannello di amministrazione intranet',
-        icon: Shield,
-        requiresAuth: true,
-        requiresAdmin: true
+        title: 'TMWE API Tester',
+        path: '/tmwe-api-tester',
+        description: 'Test interattivo delle API TMWE (Microsoft Graph)',
+        icon: FlaskConical,
+        requiresAuth: true
       },
       {
-        title: 'Gestione Utenti',
-        path: '/user-management',
-        description: 'Gestione utenti e permessi',
-        icon: Users,
-        requiresAuth: true,
-        requiresAdmin: true
+        title: 'API Functions Reference',
+        path: '/api-functions',
+        description: 'Documentazione e riferimento funzioni API disponibili',
+        icon: FileText,
+        requiresAuth: true
       },
       {
-        title: 'Designer Workflow',
-        path: '/workflow-designer',
-        description: 'Designer visuale di flussi di lavoro automatizzati',
-        icon: Workflow,
-        requiresAuth: true,
-        requiresAdmin: true
-      },
-      {
-        title: 'Monitor Edge Functions',
-        path: '/edge-functions-monitor',
-        description: 'Monitoraggio funzioni serverless',
+        title: 'Edge Function Versions',
+        path: '/edge-function-versions',
+        description: 'Gestione versioni e storico delle edge functions',
         icon: Server,
+        requiresAuth: true
+      },
+      {
+        title: 'Admin Prompts',
+        path: '/admin/prompts',
+        description: 'Amministrazione prompt di sistema',
+        icon: Bot,
+        requiresAuth: true,
+        requiresAdmin: true
+      },
+      {
+        title: 'Code Screen',
+        path: '/admin/codescreen',
+        description: 'Schermo codice admin per visualizzazione e editing',
+        icon: MonitorSmartphone,
         requiresAuth: true,
         requiresAdmin: true
       }
@@ -393,17 +398,17 @@ export const siteMapGroups: PageGroup[] = [
     color: 'cyan',
     pages: [
       {
-        title: 'Call Center',
-        path: '/call-center',
-        description: 'Centro chiamate con WebRTC',
-        icon: Phone,
+        title: 'Call Metrics',
+        path: '/call-metrics',
+        description: 'Dashboard metriche e statistiche chiamate',
+        icon: Activity,
         requiresAuth: true
       },
       {
-        title: 'Cronologia Chiamate',
-        path: '/call-history',
-        description: 'Cronologia e registrazioni delle chiamate',
-        icon: Activity,
+        title: 'Call Room',
+        path: '/call-room',
+        description: 'Stanza chiamata WebRTC per audio/video in tempo reale',
+        icon: Phone,
         requiresAuth: true
       }
     ]
@@ -418,15 +423,38 @@ export const siteMapGroups: PageGroup[] = [
       {
         title: 'Guida Utente',
         path: '/user-guide',
-        description: 'Guida completa utente del sistema',
+        description: 'Guida completa interattiva del sistema',
         icon: BookOpen,
         requiresAuth: true
       },
       {
-        title: 'Documentazione API',
-        path: '/api-docs',
-        description: 'Documentazione tecnica delle API disponibili',
-        icon: Code,
+        title: 'Mappa del Sito',
+        path: '/site-map',
+        description: 'Esploratore completo di tutte le pagine e funzionalità',
+        icon: Map,
+        requiresAuth: true
+      }
+    ]
+  },
+  {
+    id: 'auth',
+    name: 'Autenticazione',
+    description: 'Pagine di autenticazione e integrazione OAuth',
+    icon: Shield,
+    color: 'indigo',
+    pages: [
+      {
+        title: 'Login',
+        path: '/auth',
+        description: 'Pagina di autenticazione utente',
+        icon: Shield,
+        requiresAuth: false
+      },
+      {
+        title: 'TMWE Auth Test',
+        path: '/tmwe-test',
+        description: 'Test autenticazione Microsoft (TMWE)',
+        icon: TestTube,
         requiresAuth: true
       }
     ]

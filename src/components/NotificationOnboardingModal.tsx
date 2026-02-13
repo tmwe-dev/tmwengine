@@ -63,7 +63,7 @@ export function NotificationOnboardingModal({ open, onClose }: NotificationOnboa
           await registration.update();
           
           // 3. Ottieni subscription (Web Push API)
-          const subscription = await registration.pushManager.subscribe({
+          const subscription = await (registration as any).pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(VAPID_CONFIG.publicKey)
           });

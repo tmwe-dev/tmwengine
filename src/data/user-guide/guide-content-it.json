@@ -43,6 +43,31 @@
     ],
     "related": ["attivita", "email-campagne", "import-templates"]
   },
+  "rubrica-avanzata": {
+    "title": "Rubrica Avanzata",
+    "overview": "Visualizzazione avanzata dei contatti con tabella dati, filtri multipli, ordinamento per colonna e gestione batch. Ideale per operazioni su grandi volumi di dati.",
+    "sections": [
+      {
+        "title": "Vista Tabella",
+        "content": "**Layout tabellare**: Mostra tutti i contatti in formato griglia con colonne personalizzabili.\n\n**Colonne disponibili**:\n- Nome, Azienda, Email, Telefono, Cellulare\n- Città, Paese, Tags\n- Data creazione, Ultima modifica\n\n**Ordinamento**: Clicca su qualsiasi header colonna per ordinare ascendente/discendente."
+      },
+      {
+        "title": "Filtri e Ricerca",
+        "content": "**Ricerca full-text**: Cerca contemporaneamente in tutti i campi (nome, azienda, email, note).\n\n**Filtri combinati**:\n- Combina più filtri simultaneamente\n- Filtra per tag, città, paese\n- Mostra solo contatti con email valida\n- Filtra per data di creazione\n\n💡 **Tip**: Usa la Rubrica Avanzata per esportazioni bulk e verifiche qualità dati!"
+      },
+      {
+        "title": "Azioni Batch",
+        "content": "**Selezione multipla**: Seleziona più contatti per azioni di massa.\n\n**Operazioni disponibili**:\n- Elimina multipli contatti\n- Assegna tag in blocco\n- Esporta selezione\n\n⚠️ **Attenzione**: Le eliminazioni batch sono irreversibili!"
+      }
+    ],
+    "faq": [
+      {
+        "q": "Qual è la differenza con la Rubrica normale?",
+        "a": "La Rubrica Avanzata offre vista tabellare, ordinamento colonne e operazioni batch. La Rubrica standard usa card individuali per una navigazione più visiva."
+      }
+    ],
+    "related": ["rubrica", "attivita"]
+  },
   "attivita": {
     "title": "Gestione Attività",
     "overview": "Gestisci tutte le tue attività commerciali: chiamate, meeting, email e task. Sistema completo con filtri avanzati, azioni batch e integrazione AI.",
@@ -88,6 +113,119 @@
       }
     ],
     "related": ["rubrica", "campagne", "chat"]
+  },
+  "campagne": {
+    "title": "Campagne Marketing",
+    "overview": "Crea e gestisci campagne marketing con target specifici, budget, scheduling automatico e monitoraggio stato invii.",
+    "sections": [
+      {
+        "title": "Creare una Campagna",
+        "content": "1. Clicca **+ Nuova Campagna**\n2. Inserisci **nome** e **obiettivo** della campagna\n3. Configura:\n   - **Date**: inizio e fine campagna\n   - **Budget**: importo previsto\n   - **Frequenza**: tipo e valore di invio\n   - **Limiti**: max email/ora e max email/giorno\n   - **Orari**: ora inizio e fine invio\n4. Salva la campagna\n\n💡 **Tip**: Imposta limiti di invio per evitare di finire in spam!"
+      },
+      {
+        "title": "Gestire Campagne",
+        "content": "**Stati campagna**:\n- **Bozza**: in preparazione\n- **Attiva**: invii in corso\n- **In pausa**: temporaneamente sospesa\n- **Completata**: obiettivo raggiunto\n\n**Azioni disponibili**:\n- Modifica parametri\n- Pausa/riprendi invii\n- Visualizza statistiche\n- Elimina campagna\n\n**Ricerca**: Cerca campagne per nome con la barra in alto."
+      },
+      {
+        "title": "Associare Attività",
+        "content": "Ogni campagna può avere attività associate per tracciare follow-up e risultati.\n\n**Come collegare**:\n- Crea attività dalla pagina Attività selezionando la campagna\n- Le attività create mostrano il badge campagna\n- Monitora avanzamento dalla dashboard campagna"
+      }
+    ],
+    "faq": [
+      {
+        "q": "Come monitoro l'avanzamento degli invii?",
+        "a": "Nella card campagna vedi lo stato invio e le statistiche. Vai su Email Campagne per dettagli coda."
+      }
+    ],
+    "related": ["email-campagne", "attivita", "rubrica"]
+  },
+  "email-dashboard": {
+    "title": "Email Manager",
+    "overview": "Dashboard centralizzata per visualizzare, scaricare e gestire le email sincronizzate. Supporta download rapido, classificazione AI e gestione mittenti.",
+    "sections": [
+      {
+        "title": "Panoramica Dashboard",
+        "content": "**Funzionalità principali**:\n- Visualizzazione email scaricate con preview\n- Filtri per cartella (Inbox, Sent, Draft, etc.)\n- Ricerca full-text nel contenuto email\n- Statistiche: email totali, non lette, per cartella\n\n**Modalità visualizzazione**:\n- Lista compatta\n- Card espanse con preview corpo"
+      },
+      {
+        "title": "Download Email",
+        "content": "**Strategie di download disponibili**:\n- **Quick Download**: Scarica velocemente le email più recenti\n- **Full Sync**: Sincronizzazione completa di tutte le cartelle\n- **Edge Sync**: Sincronizzazione tramite edge function per grandi volumi\n\n**Progress bar**: Mostra avanzamento download con conteggio X/Y email.\n\n💡 **Tip**: Usa Quick Download per aggiornamenti rapidi, Full Sync per la prima configurazione."
+      },
+      {
+        "title": "Classificazione AI",
+        "content": "**Smart Inbox**: Classificazione intelligente delle email tramite AI.\n\n**Categorie automatiche**:\n- Clienti importanti\n- Newsletter\n- Notifiche sistema\n- Spam/marketing\n\n**Azioni**: Accetta o rifiuta suggerimenti AI per addestrare il sistema."
+      }
+    ],
+    "faq": [
+      {
+        "q": "Quanto tempo richiede il primo download?",
+        "a": "Dipende dal volume: ~1000 email in 2-5 minuti con Quick Download. Full Sync può richiedere più tempo."
+      }
+    ],
+    "related": ["email-campagne", "email-senders", "settings"]
+  },
+  "email-campagne": {
+    "title": "Email Campagne",
+    "overview": "Gestisci la coda di invio email e monitora lo stato delle campagne email. Visualizza email in attesa, inviate e fallite.",
+    "sections": [
+      {
+        "title": "Coda Email",
+        "content": "**Visualizzazione coda**:\n- Email in attesa di invio\n- Email inviate con successo\n- Email fallite con dettaglio errore\n\n**Statistiche**:\n- Totale in coda\n- Inviate oggi\n- Tasso di successo\n\n**Azioni sulla coda**:\n- Riprova invio falliti\n- Cancella email dalla coda\n- Modifica priorità invio"
+      },
+      {
+        "title": "Composizione Email",
+        "content": "**Editor email**:\n- Oggetto e corpo messaggio\n- Template predefiniti selezionabili\n- Allegati\n- Destinatari da rubrica\n\n**Scheduling**:\n- Invio immediato\n- Programmazione data/ora\n- Invio batch con intervalli\n\n💡 **Tip**: Usa template per mantenere comunicazioni coerenti!"
+      }
+    ],
+    "faq": [
+      {
+        "q": "Posso annullare un'email già in coda?",
+        "a": "Sì, finché non è stata inviata puoi rimuoverla dalla coda dalla lista email in attesa."
+      }
+    ],
+    "related": ["campagne", "email-dashboard", "email-senders"]
+  },
+  "email-senders": {
+    "title": "Gestione Mittenti",
+    "overview": "Organizza e categorizza i mittenti email in gruppi personalizzati. Gestisci priorità, colori e icone per ogni gruppo di mittenti.",
+    "sections": [
+      {
+        "title": "Gruppi Mittenti",
+        "content": "**Organizzazione in gruppi**:\n- Crea gruppi personalizzati (es: Clienti VIP, Fornitori, Newsletter)\n- Assegna colore e icona a ogni gruppo\n- Drag & drop per spostare mittenti tra gruppi\n\n**Tipi gruppo**:\n- **business**: Contatti commerciali\n- **personal**: Contatti personali\n- **newsletter**: Newsletter e marketing\n- **system**: Notifiche di sistema"
+      },
+      {
+        "title": "Categorizzazione AI",
+        "content": "**Suggerimenti automatici**:\n- L'AI analizza i mittenti e suggerisce gruppi appropriati\n- Accetta o rifiuta ogni suggerimento\n- Il sistema impara dalle tue scelte\n\n**Batch categorization**:\n- Categorizza tutti i mittenti non classificati in un click\n- Review e conferma suggerimenti\n\n💡 **Tip**: Più suggerimenti accetti, più preciso diventa il sistema!"
+      },
+      {
+        "title": "Statistiche Mittenti",
+        "content": "Per ogni mittente puoi vedere:\n- Numero totale email ricevute\n- Ultima email ricevuta\n- Dominio di appartenenza\n- Logo aziendale (auto-detect)\n- Gruppo assegnato"
+      }
+    ],
+    "related": ["email-dashboard", "email-campagne"]
+  },
+  "chat": {
+    "title": "Chat AI Standard",
+    "overview": "Chat one-to-one con un singolo modello AI. Interfaccia semplice per conversazioni dirette con supporto system prompt, economy mode e storico conversazioni.",
+    "sections": [
+      {
+        "title": "Iniziare una Conversazione",
+        "content": "1. Clicca **+ Nuova Conversazione** nella sidebar\n2. Seleziona un system prompt (opzionale)\n3. Scrivi il tuo messaggio e premi Invio\n\n**Modelli disponibili**: Dipendono dalla configurazione AI (vedi AI Config).\n\n**System Prompts**: Scegli tra prompt predefiniti per contestualizzare la conversazione (es: consulente marketing, analista dati)."
+      },
+      {
+        "title": "Gestire Conversazioni",
+        "content": "**Sidebar conversazioni**:\n- Lista cronologica di tutte le chat\n- Titolo auto-generato\n- Badge token utilizzati\n- Ricerca per titolo\n\n**Azioni**:\n- Rinomina conversazione\n- Elimina conversazione\n- Cambia system prompt\n\n**Economy Mode**: Attiva per ridurre costi token nelle conversazioni lunghe."
+      },
+      {
+        "title": "Funzionalità Avanzate",
+        "content": "**Allegati**: Puoi allegare immagini alla conversazione.\n\n**Riassunti**: I messaggi lunghi vengono automaticamente riassunti per ottimizzare il contesto.\n\n**Token Counter**: Badge in header mostra token input/output per ogni messaggio.\n\n💡 **Tip**: Per conversazioni complesse multi-agente, usa il Chat Laboratory!"
+      }
+    ],
+    "shortcuts": [
+      "Cmd/Ctrl + Enter: Invia messaggio",
+      "Cmd/Ctrl + N: Nuova conversazione"
+    ],
+    "related": ["chat-laboratory", "ai-config"]
   },
   "chat-laboratory": {
     "title": "Chat Laboratory",
@@ -138,6 +276,205 @@
       }
     ],
     "related": ["chat", "ai-config", "settings", "sistema-tecnico"]
+  },
+  "intranet": {
+    "title": "Intranet Team",
+    "overview": "Chat interna per il team aziendale. Stanze tematiche, messaggi in tempo reale, condivisione file e notifiche push per comunicazione efficace.",
+    "sections": [
+      {
+        "title": "Stanze Chat",
+        "content": "**Stanze disponibili**:\n- Stanze pubbliche visibili a tutti gli utenti\n- Stanze private con accesso limitato\n- Messaggi diretti uno-a-uno\n\n**Creare una stanza**:\n1. Clicca **+ Nuova Stanza**\n2. Inserisci nome e descrizione\n3. Scegli tipo (pubblica/privata)\n4. Invita membri (per stanze private)\n\n**Navigazione**: Sidebar sinistra con lista stanze e indicatori messaggi non letti."
+      },
+      {
+        "title": "Messaggistica",
+        "content": "**Funzionalità messaggi**:\n- Testo con formattazione base\n- Emoji e reazioni\n- Menzioni @utente\n- Allegati e immagini\n- Indicatore digitazione in tempo reale\n\n**Notifiche**:\n- Badge stanza per messaggi non letti\n- Notifiche push (se abilitate)\n- Suono notifica configurabile\n\n💡 **Tip**: Usa le menzioni @nome per notificare direttamente un collega!"
+      }
+    ],
+    "faq": [
+      {
+        "q": "Chi può vedere le stanze private?",
+        "a": "Solo gli utenti esplicitamente invitati e gli amministratori."
+      }
+    ],
+    "related": ["intranet-admin", "settings"]
+  },
+  "intranet-admin": {
+    "title": "Intranet Admin",
+    "overview": "Pannello amministrativo per gestire stanze, utenti e permessi dell'intranet aziendale. Solo per utenti con ruolo admin.",
+    "sections": [
+      {
+        "title": "Gestione Stanze",
+        "content": "**Operazioni admin**:\n- Creare/eliminare stanze\n- Modificare nome e descrizione\n- Cambiare tipo (pubblica ↔ privata)\n- Archiviare stanze inattive\n\n**Gestione membri**:\n- Aggiungere/rimuovere utenti dalle stanze\n- Assegnare ruoli (admin stanza, membro)\n- Visualizzare statistiche attività per stanza"
+      },
+      {
+        "title": "Moderazione",
+        "content": "**Strumenti moderazione**:\n- Eliminare messaggi inappropriati\n- Silenziare utenti temporaneamente\n- Visualizzare log attività\n- Gestire segnalazioni\n\n⚠️ **Attenzione**: Le azioni di moderazione sono registrate nel log di sistema."
+      }
+    ],
+    "related": ["intranet", "settings"]
+  },
+  "gestisci-import": {
+    "title": "Gestisci Import",
+    "overview": "Monitora e gestisci tutti gli import eseguiti. Visualizza storico, stato di ogni batch e dettagli errori per singolo import.",
+    "sections": [
+      {
+        "title": "Storico Import",
+        "content": "**Lista import**:\n- Data e ora esecuzione\n- File sorgente utilizzato\n- Record totali / importati / errori\n- Stato: completato, parziale, fallito\n\n**Dettaglio singolo import**:\n- Clicca su un import per vedere:\n  - Record importati con successo\n  - Record con errori e dettaglio problema\n  - Template mappatura utilizzato\n  - Durata elaborazione"
+      },
+      {
+        "title": "Gestire Errori",
+        "content": "**Per ogni record errato**:\n- Visualizza errore specifico (formato, duplicato, campo mancante)\n- Correggi manualmente\n- Usa AI per suggerimenti correzione\n- Riprova import singolo record\n\n**Azioni batch**:\n- Elimina tutti i record falliti\n- Riprova import per tutti gli errori\n- Esporta lista errori\n\n💡 **Tip**: Correggi gli errori nel file sorgente e reimporta per risultati migliori!"
+      }
+    ],
+    "related": ["import-templates", "record-importati"]
+  },
+  "record-importati": {
+    "title": "Record Importati",
+    "overview": "Visualizza e gestisci i record in staging dopo l'import. Da qui puoi revisionare, correggere e spostare i contatti nella rubrica ufficiale.",
+    "sections": [
+      {
+        "title": "Area Staging",
+        "content": "**Record in attesa**:\n- Tutti i record importati finiscono qui prima di entrare in rubrica\n- Visualizzazione tabellare con tutti i campi\n- Filtri per stato (da revisionare, approvato, scartato)\n\n**Review processo**:\n1. Seleziona record da revisionare\n2. Verifica dati (AI evidenzia anomalie)\n3. Correggi se necessario\n4. Approva per spostamento in rubrica"
+      },
+      {
+        "title": "Spostare in Rubrica",
+        "content": "**Singolo record**: Clicca 'Approva' per spostare in rubrica ufficiale.\n\n**Batch**: Seleziona multipli record e usa 'Approva Selezionati'.\n\n**Tutti**: 'Approva Tutti' per spostare l'intero batch.\n\n⚠️ **Attenzione**: Una volta in rubrica, i record seguono le regole standard di gestione contatti."
+      }
+    ],
+    "related": ["import-templates", "gestisci-import", "rubrica"]
+  },
+  "settings": {
+    "title": "Impostazioni Generali",
+    "overview": "Configura profilo utente, telefonia, voice agent ElevenLabs e preferenze generali del sistema.",
+    "sections": [
+      {
+        "title": "Profilo Utente",
+        "content": "**UserProfileSettings**:\n- Nome, cognome\n- Email principale\n- Telefono ufficio\n- Ruolo in azienda\n- Foto profilo\n\n**Sincronizzazione TMWE**:\n- OAuth status\n- Email account TMWE collegato\n- Ultimo sync timestamp\n- Forza re-sync\n\n💡 **Tip**: Mantieni profilo aggiornato per notifiche email corrette!"
+      },
+      {
+        "title": "Configurazioni Telefono",
+        "content": "**Prefisso Paese Predefinito**:\n- Seleziona paese principale (es: IT +39)\n- Auto-detect da browser location\n- Usa per nuovi contatti\n\n**Formato Numero**:\n- Internazionale: +39 123 456 7890\n- Nazionale: 0123 456 7890\n- Compatto: +39123456789\n\n**WhatsApp Integration**:\n- Abilita click-to-chat\n- Template messaggio predefinito\n- Usa numero cellulare preferenziale"
+      },
+      {
+        "title": "Voice Agent (ElevenLabs)",
+        "content": "**Configurazione Base**:\n1. Inserisci ElevenLabs API Key in Settings → Voice Agent\n2. Testa connessione\n3. Abilita widget vocale\n\n**Widget Posizioni**:\n- Bottom-right (default)\n- Bottom-left\n- Floating minimizzato\n\n**Stato connessione**: Badge verde = attivo, rosso = errore API.\n\n⚠️ **Attenzione**: API key è personale, non condividerla!"
+      },
+      {
+        "title": "Bar Chat Agents",
+        "content": "**BarChatAgentsSection**: Gestisci fino a 10 agenti vocali custom.\n\n**Per ogni agente configura**:\n- **Nome**: Identificativo (max 30 caratteri)\n- **Agent ID**: ID ElevenLabs agente\n- **Voice ID**: ID voce (20 caratteri)\n- **Prompt Personalità**: Comportamento agente (min 50 caratteri)\n- **Stile Risposta**: bar_chat, formal, casual\n- **Speaking Pace**: slow, normal, fast\n- **Interruption Style**: polite, assertive, disabled\n- **Max Words**: Lunghezza risposta (20-100 parole)\n\n**Gestione**:\n- Drag & drop per riordinare\n- Elimina agenti non usati\n- Test singolo agente\n- Vedi usage stats (caratteri, richieste, limiti giornalieri)\n\n**Limiti Free Tier ElevenLabs**:\n- 10.000 caratteri/giorno\n- 50 richieste/giorno\n- Reset automatico ogni 24h"
+      },
+      {
+        "title": "Config Generale",
+        "content": "**Email**:\n- Max email inviate/giorno (default 100)\n- Intervallo minimo tra invii (secondi)\n- Template firma email predefinita\n\n**Sistema**:\n- Timezone (auto-detect o manuale)\n- Formato data (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)\n- Formato ora (24h, 12h AM/PM)\n\n**Notifiche**:\n- Email per nuove attività assegnate\n- Push per messaggi intranet\n- Suono notifiche (abilita/disabilita)"
+      }
+    ],
+    "shortcuts": [],
+    "faq": [
+      {
+        "q": "Come ottengo ElevenLabs API Key?",
+        "a": "Vai su elevenlabs.io, crea account, vai in Settings → API Keys e genera nuova chiave."
+      },
+      {
+        "q": "Posso usare agenti ElevenLabs diversi per progetti diversi?",
+        "a": "Sì! Configura più agenti in Bar Chat Agents e selezionali dinamicamente in Chat Laboratory Bar Mode."
+      }
+    ],
+    "related": ["ai-config", "chat-laboratory"]
+  },
+  "ai-config": {
+    "title": "Configurazione AI",
+    "overview": "Gestisci provider e modelli AI utilizzati dal sistema. Configura API key, testa connessioni e imposta il modello predefinito.",
+    "sections": [
+      {
+        "title": "Provider AI",
+        "content": "**Provider supportati**:\n- **OpenAI**: GPT-5, GPT-4.1, GPT-4.1-mini\n- **Anthropic**: Claude Sonnet 4.5, Claude Opus 4.1\n- **Google**: Gemini 2.5 Pro, Gemini 2.5 Flash\n- **Lovable**: Modelli integrati via gateway\n\n**Per ogni provider**:\n1. Inserisci API Key\n2. Testa connessione\n3. Seleziona modello predefinito\n4. Attiva/disattiva provider"
+      },
+      {
+        "title": "Testare Connessioni",
+        "content": "**Test rapido**:\n- Clicca 'Test' accanto a ogni provider\n- Il sistema invia una richiesta di prova\n- Risultato: ✅ Connesso / ❌ Errore (con dettaglio)\n\n**Status tracking**:\n- Ultimo test eseguito\n- Ultimo errore registrato\n- Stato attuale connessione\n\n💡 **Tip**: Testa le connessioni periodicamente per assicurarti che le API key siano valide!"
+      },
+      {
+        "title": "Costi e Pricing",
+        "content": "**Tabella prezzi**:\n- Costo per token input/output per ogni modello\n- Tasso di cambio USD/EUR configurabile\n- Modelli gratuiti evidenziati\n\n**Monitoraggio**:\n- Costi aggregati per periodo\n- Breakdown per modello/provider\n- Alert su soglie configurabili"
+      }
+    ],
+    "faq": [
+      {
+        "q": "Quale provider è più economico?",
+        "a": "Lovable gateway offre modelli gratuiti. Per uso intensivo, Gemini Flash ha il miglior rapporto qualità/prezzo."
+      }
+    ],
+    "related": ["settings", "chat-laboratory", "chat"]
+  },
+  "admin-prompts": {
+    "title": "Admin Prompts",
+    "overview": "Gestisci la libreria di system prompt utilizzabili in Chat e Chat Laboratory. Crea, modifica e organizza prompt per diversi casi d'uso.",
+    "sections": [
+      {
+        "title": "Libreria Prompts",
+        "content": "**Gestione prompt**:\n- Lista tutti i prompt disponibili\n- Filtra per categoria (commerciale, tecnico, creativo)\n- Cerca per nome o contenuto\n- Ordina per utilizzo o data\n\n**Per ogni prompt**:\n- Nome identificativo\n- Descrizione breve\n- Contenuto system prompt completo\n- Categoria e tags\n- Contatore utilizzi\n- Stato attivo/inattivo"
+      },
+      {
+        "title": "Creare Prompt",
+        "content": "1. Clicca **+ Nuovo Prompt**\n2. Inserisci nome e descrizione\n3. Scrivi il system prompt\n4. Seleziona categoria\n5. Configura opzioni avanzate:\n   - Temperature suggerita\n   - Max tokens suggeriti\n   - Richiede dati aziendali\n   - Richiede template email\n6. Salva\n\n💡 **Tip**: Prompt ben scritti migliorano drasticamente la qualità delle risposte AI!"
+      }
+    ],
+    "related": ["chat", "chat-laboratory", "ai-config"]
+  },
+  "language-manager": {
+    "title": "Gestione Lingue",
+    "overview": "Configura le traduzioni dell'interfaccia. Gestisci chiavi di traduzione, aggiungi nuove lingue e personalizza i testi del sistema.",
+    "sections": [
+      {
+        "title": "Traduzioni",
+        "content": "**Lingue supportate**:\n- Italiano (IT) - lingua principale\n- Inglese (EN)\n- Altre lingue configurabili\n\n**Gestione chiavi**:\n- Cerca chiave di traduzione\n- Modifica testo per ogni lingua\n- Aggiungi nuove chiavi\n- Importa/esporta traduzioni\n\n**Auto-detect**: Il sistema rileva automaticamente la lingua del browser e imposta l'interfaccia di conseguenza."
+      }
+    ],
+    "related": ["settings"]
+  },
+  "theme": {
+    "title": "Theme Switcher",
+    "overview": "Alterna tra tema chiaro e scuro per l'intera interfaccia. La preferenza viene salvata e mantenuta tra le sessioni.",
+    "sections": [
+      {
+        "title": "Cambiare Tema",
+        "content": "**Come cambiare**:\n- Clicca l'icona sole/luna nella barra di navigazione\n- Il tema cambia istantaneamente su tutte le pagine\n- La preferenza viene salvata nel browser\n\n**Temi disponibili**:\n- ☀️ **Chiaro**: Sfondo bianco, testo scuro\n- 🌙 **Scuro**: Sfondo scuro, testo chiaro\n\n💡 **Tip**: Il tema scuro riduce l'affaticamento visivo durante sessioni prolungate!"
+      }
+    ],
+    "related": ["settings"]
+  },
+  "country-selector": {
+    "title": "Selettore Paese",
+    "overview": "Seleziona il paese predefinito per il formato telefonico e le impostazioni regionali del CRM.",
+    "sections": [
+      {
+        "title": "Configurazione Paese",
+        "content": "**Funzionalità**:\n- Seleziona paese predefinito dalla barra di navigazione\n- Imposta automaticamente prefisso telefonico (es: +39 per Italia)\n- Configura formato indirizzo regionale\n\n**Effetti**:\n- Nuovi contatti usano il prefisso selezionato\n- Formato telefono adattato al paese\n- Validazione numeri basata su regole nazionali"
+      }
+    ],
+    "related": ["settings", "rubrica"]
+  },
+  "language-selector": {
+    "title": "Selettore Lingua",
+    "overview": "Cambia la lingua dell'interfaccia utente. Supporta italiano e inglese con possibilità di aggiungere altre lingue.",
+    "sections": [
+      {
+        "title": "Cambiare Lingua",
+        "content": "**Come cambiare**:\n- Clicca l'icona bandiera nella barra di navigazione\n- Seleziona la lingua desiderata\n- L'interfaccia si aggiorna immediatamente\n\n**Lingue disponibili**:\n- 🇮🇹 Italiano\n- 🇬🇧 English\n\n**Persistenza**: La scelta viene salvata e mantenuta tra le sessioni."
+      }
+    ],
+    "related": ["language-manager", "settings"]
+  },
+  "ai-guide": {
+    "title": "AI Assistant",
+    "overview": "Assistente AI contestuale disponibile su tutte le pagine. Fornisce aiuto intelligente basato sulla sezione in cui ti trovi.",
+    "sections": [
+      {
+        "title": "Utilizzare l'Assistente",
+        "content": "**Come attivare**:\n- Clicca l'icona 🧠 (Brain) nella barra di navigazione\n- L'assistente si apre nel contesto della pagina corrente\n\n**Funzionalità**:\n- Risposte contestuali alla pagina attuale\n- Suggerimenti proattivi\n- Aiuto su funzionalità specifiche\n- Analisi dati visibili sulla pagina\n\n**Esempi d'uso**:\n- In Rubrica: 'Trova clienti senza attività recenti'\n- In Attività: 'Mostra attività scadute questa settimana'\n- In Email: 'Analizza pattern di comunicazione'\n\n💡 **Tip**: Più contesto fornisci nella domanda, più precisa sarà la risposta!"
+      }
+    ],
+    "related": ["chat", "ai-config"]
   },
   "sistema-tecnico": {
     "title": "Sistema e Strumenti Tecnici",
@@ -194,43 +531,5 @@
       }
     ],
     "related": ["gestisci-import", "record-importati", "rubrica"]
-  },
-  "settings": {
-    "title": "Impostazioni Generali",
-    "overview": "Configura profilo utente, telefonia, voice agent ElevenLabs e preferenze generali del sistema.",
-    "sections": [
-      {
-        "title": "Profilo Utente",
-        "content": "**UserProfileSettings**:\n- Nome, cognome\n- Email principale\n- Telefono ufficio\n- Ruolo in azienda\n- Foto profilo\n\n**Sincronizzazione TMWE**:\n- OAuth status\n- Email account TMWE collegato\n- Ultimo sync timestamp\n- Forza re-sync\n\n💡 **Tip**: Mantieni profilo aggiornato per notifiche email corrette!"
-      },
-      {
-        "title": "Configurazioni Telefono",
-        "content": "**Prefisso Paese Predefinito**:\n- Seleziona paese principale (es: IT +39)\n- Auto-detect da browser location\n- Usa per nuovi contatti\n\n**Formato Numero**:\n- Internazionale: +39 123 456 7890\n- Nazionale: 0123 456 7890\n- Compatto: +39123456789\n\n**WhatsApp Integration**:\n- Abilita click-to-chat\n- Template messaggio predefinito\n- Usa numero cellulare preferenziale"
-      },
-      {
-        "title": "Voice Agent (ElevenLabs)",
-        "content": "**Configurazione Base**:\n1. Inserisci ElevenLabs API Key in Settings → Voice Agent\n2. Testa connessione\n3. Abilita widget vocale\n\n**Widget Posizioni**:\n- Bottom-right (default)\n- Bottom-left\n- Floating minimizzato\n\n**Stato connessione**: Badge verde = attivo, rosso = errore API.\n\n⚠️ **Attenzione**: API key è personale, non condividerla!"
-      },
-      {
-        "title": "Bar Chat Agents",
-        "content": "**BarChatAgentsSection**: Gestisci fino a 10 agenti vocali custom.\n\n**Per ogni agente configura**:\n- **Nome**: Identificativo (max 30 caratteri)\n- **Agent ID**: ID ElevenLabs agente\n- **Voice ID**: ID voce (20 caratteri)\n- **Prompt Personalità**: Comportamento agente (min 50 caratteri)\n- **Stile Risposta**: bar_chat, formal, casual\n- **Speaking Pace**: slow, normal, fast\n- **Interruption Style**: polite, assertive, disabled\n- **Max Words**: Lunghezza risposta (20-100 parole)\n\n**Gestione**:\n- Drag & drop per riordinare\n- Elimina agenti non usati\n- Test singolo agente\n- Vedi usage stats (caratteri, richieste, limiti giornalieri)\n\n**Limiti Free Tier ElevenLabs**:\n- 10.000 caratteri/giorno\n- 50 richieste/giorno\n- Reset automatico ogni 24h"
-      },
-      {
-        "title": "Config Generale",
-        "content": "**Email**:\n- Max email inviate/giorno (default 100)\n- Intervallo minimo tra invii (secondi)\n- Template firma email predefinita\n\n**Sistema**:\n- Timezone (auto-detect o manuale)\n- Formato data (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)\n- Formato ora (24h, 12h AM/PM)\n\n**Notifiche**:\n- Email per nuove attività assegnate\n- Push per messaggi intranet\n- Suono notifiche (abilita/disabilita)"
-      }
-    ],
-    "shortcuts": [],
-    "faq": [
-      {
-        "q": "Come ottengo ElevenLabs API Key?",
-        "a": "Vai su elevenlabs.io, crea account, vai in Settings → API Keys e genera nuova chiave."
-      },
-      {
-        "q": "Posso usare agenti ElevenLabs diversi per progetti diversi?",
-        "a": "Sì! Configura più agenti in Bar Chat Agents e selezionali dinamicamente in Chat Laboratory Bar Mode."
-      }
-    ],
-    "related": ["ai-config", "chat-laboratory"]
   }
 }

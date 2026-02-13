@@ -51,8 +51,21 @@
 
 ---
 
-### FASE 13 - Pulizia Edge Functions (TODO)
-### FASE 14 - Audit Database (TODO)
+### FASE 13 - Inventario Edge Functions ✅
+- 35 edge functions attive documentate in `docs/EDGE_FUNCTIONS_INVENTORY.md`
+- 7 moduli condivisi in `_shared/`
+- 4 file backup preservati (da protocollo): 3 `index-old*.ts` + 1 `ai-helpers-old1.ts`
+- Nessuna funzione orfana trovata
+
+### FASE 14 - Audit Database ✅
+- 120 tabelle totali nel schema public
+- Tabelle sospette identificate:
+  - `email_sender_grouping_suggestions_backup_20250107` → backup DB, non referenziata nel codice (solo types.ts auto-generato)
+  - `debugging` → tabella debug, non usata nel codice applicativo
+  - `ui_component_backups` → usata come storage backup componenti UI (referenziata in EmailList.tsx)
+  - `orchestrator_test_configs/results` → ATTIVE, usate da calibration module
+  - `temp_ai_import/reviewed` → tabelle temporanee per flusso import
+- ⚠️ Raccomandazione: `email_sender_grouping_suggestions_backup_20250107` e `debugging` sono candidate per eliminazione futura
 ### FASE 15 - Aggiornamento Guida Utente (TODO)
 ### FASE 16 - Standardizzazione Types (TODO)
 ### FASE 17 - Pulizia Documenti (TODO)

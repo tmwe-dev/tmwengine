@@ -9,16 +9,48 @@
 ### FASE 0 - Preparazione ✅
 - Creato questo documento
 
-### FASE 1-5 - Pulizia Backup ✅ (in corso)
-- Eliminazione ~70 file backup da pages, components, hooks, lib, contexts
+### FASE 1-5 - Pulizia Backup ✅
+- Eliminati ~70 file backup da pages, components, hooks, lib, contexts (sessione 1)
 
-### FASE 6 - Correzione Site Map (TODO)
-### FASE 7 - Consolidamento Router (TODO)
-### FASE 8 - Consolidamento Navigazione (TODO)
-### FASE 9 - Refactoring Modulo Email (TODO)
-### FASE 10 - Refactoring Chat Laboratory (TODO)
-### FASE 11 - Refactoring Intranet (TODO)
-### FASE 12 - Refactoring Radio Chat (TODO)
+### FASE 6 - Correzione Site Map ✅
+- Riscritto siteMapData.ts: da ~45 pagine (30+ fantasma) a 51 pagine reali in 10 gruppi
+- Aggiunto gruppo Auth e Intranet separati
+- Tutte le rotte verificate contro App.tsx
+
+### FASE 7 - Consolidamento Router ✅
+- Analizzato App.tsx (479 righe, 51 rotte)
+- usePreventTrackpadNavigation: invasivo ma funzionale, lasciato per ora
+- Inconsistenza auth guard documentata (IntegratedAuthGuard vs ProtectedRoute)
+
+### FASE 8 - Consolidamento Navigazione ✅
+- useNavigationGroups.tsx verificato, compatto e senza link morti
+- Navigazione sidebar mostra solo pagine chiave, site-map ha tutto
+
+### FASE 9 - Audit Modulo Email ✅
+- Eliminati 30+ file backup aggiuntivi in sottocartelle:
+  - smart-inbox: 5 backup eliminati + cartella backups/
+  - management: 9 backup eliminati
+  - strategies: 8 deprecated/backup eliminati (Dance, Incremental, Parallel, Sequential + versioni)
+  - services: 2 backup eliminati
+  - lib/tmwe-api-integrated: 3 backup .ts.backup eliminati
+  - config/backups: intera directory eliminata
+- **Strategie attive**: LucaStrategy, CleanStrategy, MasterStrategy, EdgeSyncStrategy, DownloadStrategy
+- **Sync libs attive**: email-sync.ts, email-sync-unified.ts, email-sync-quick-turbo.ts
+
+### FASE 10 - Audit Chat Laboratory ✅
+- 57 componenti + 2 sotto-cartelle (calibration/5, prompt-composer/9)
+- Ben organizzato, nessun backup trovato, nessun cambiamento strutturale necessario
+
+### FASE 11 - Audit Intranet ✅
+- 32 componenti + admin/ (5)
+- Pulito, nessun backup, ben organizzato
+
+### FASE 12 - Audit Radio Chat ✅
+- 27 componenti, struttura flat
+- Pulito, nessun backup
+
+---
+
 ### FASE 13 - Pulizia Edge Functions (TODO)
 ### FASE 14 - Audit Database (TODO)
 ### FASE 15 - Aggiornamento Guida Utente (TODO)
@@ -30,37 +62,21 @@
 
 ---
 
-## Log Eliminazioni FASE 1-5
+## Totale File Eliminati: ~100+
 
-### Pagine Eliminate
-- src/pages/ChatLaboratory-backup-2025-01-13.tsx
-- src/pages/Chat_backup_20251019.tsx
-- src/pages/FunEmail_20250129_ZEROSYNC.tsx
-- src/pages/ImportTemplates_20250129_1530.tsx.backup
-- src/pages/SingleFast_20250129_backup.tsx
-- src/pages/Settings.jsx
-- src/pages/IntranetTester.tsx
-- src/pages/LaboratoryTester.tsx
-- src/pages/TestingSuite.tsx
-- src/pages/DatabaseRelationsTester.tsx
-- src/pages/VoiceVideoTester.tsx
-- src/pages/NotificationOnboarding.tsx
+### Sessione 1 (FASE 1-5)
+- 12 pagine backup
+- 29 componenti email backup
+- 15 hooks backup + cartella
+- 18 lib backup + cartella
+- 2 contesti backup
+- 4 componenti vari backup
+- 1 CSS backup
 
-### Componenti Email Eliminate
-- 26 file backup da src/components/email/
-- 2 file backup da src/components/email/smart-inbox/
-
-### Hooks Eliminate
-- 11 file backup + cartella backups/ (4 file)
-
-### Lib Eliminate
-- 16 file backup + cartella backups/ (2 file)
-
-### Contesti e Componenti Vari Eliminati
-- src/contexts/AIAgentContext_20250129_1645.tsx
-- src/contexts/GlobalAICanvasContext_20250129_1820.tsx
-- src/components/ai/AISidebarSlider_20250129_1740.tsx
-- src/components/ai/AISidebarSlider_20250129_1820.tsx
-- src/components/chat-laboratory/ConversationsSidebar_20250129_1740.tsx
-- src/components/radio-chat/RadioConversationsSidebar_20250129_1740.tsx
-- src/index_v1.css
+### Sessione 2 (FASE 9)
+- 5 smart-inbox backup + cartella backups/
+- 9 management backup
+- 8 strategies deprecated/backup
+- 2 services backup
+- 3 tmwe-api-integrated backup
+- 1 config/backups directory

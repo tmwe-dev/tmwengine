@@ -14,3 +14,25 @@ export interface RadioMessage {
   is_visible_to_ai?: boolean;
   created_at: string;
 }
+
+export interface RadioParticipant {
+  id: string;
+  type: 'chatgpt' | 'gemini' | 'claude';
+  name: string;
+  is_active: boolean;
+  voice_id?: string;
+}
+
+export interface RadioConversation {
+  id: string;
+  titolo: string | null;
+  created_at: string;
+  updated_at: string | null;
+  riassunto_contesto?: string | null;
+  active_participants?: any;
+  message_count?: number;
+  total_tokens?: number;
+}
+
+export type RadioViewMode = 'carousel' | 'messages';
+export type RadioSidebarTab = 'conversations' | 'settings';

@@ -18,14 +18,20 @@ export const useRadioConversations = (userId: string | undefined) => {
   }, []);
 
   const loadConversations = useCallback(async () => {
-    if (!userId) return;
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('chat_laboratory_conversations')
         .select('id, titolo, created_at, updated_at, riassunto_contesto, active_participants')
-        .eq('user_id', userId)
         .order('updated_at', { ascending: false });
 
+      // Filter by user_id if available, otherwise load conversations without user_id
+      if (userId) {
+        query = query.eq('user_id', userId);
+      } else {
+        query = query.is('user_id', null);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
 
       const conversationsWithStats = await Promise.all(
@@ -63,14 +69,15 @@ export const useRadioConversations = (userId: string | undefined) => {
   }, [setConversationId]);
 
   const createConversation = useCallback(async () => {
-    if (!userId) return null;
     try {
+      const insertData: any = {
+        titolo: 'Radio Chat ' + new Date().toLocaleDateString()
+      };
+      if (userId) insertData.user_id = userId;
+
       const { data: newConv, error } = await supabase
         .from('chat_laboratory_conversations')
-        .insert({
-          user_id: userId,
-          titolo: 'Radio Chat ' + new Date().toLocaleDateString()
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -118,23 +125,27 @@ export const useRadioConversations = (userId: string | undefined) => {
     }
   }, [loadConversations, toast]);
 
-  // Create conversation on first send (without user_id requirement)
   const createQuickConversation = useCallback(async (participantNames: Array<{ name: string; type: string }>) => {
-    const { data, error } = await supabase
-      .from('chat_laboratory_conversations')
-      .insert({
+    try {
+      const insertData: any = {
         titolo: `Radio Chat ${new Date().toLocaleString()}`,
         active_participants: participantNames,
-      })
-      .select()
-      .single();
+      };
+      if (userId) insertData.user_id = userId;
 
-    if (error) {
+      const { data, error } = await supabase
+        .from('chat_laboratory_conversations')
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data.id;
+    } catch (err) {
       toast({ title: 'Errore', description: 'Impossibile creare la conversazione', variant: 'destructive' });
       return null;
     }
-    return data.id;
-  }, [toast]);
+  }, [userId, toast]);
 
   return {
     conversations,

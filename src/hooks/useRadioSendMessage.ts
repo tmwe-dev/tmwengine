@@ -72,6 +72,7 @@ export const useRadioSendMessage = ({
       }
     } catch (error: any) {
       toast({ title: 'Errore', description: error.message || 'Errore durante invio', variant: 'destructive' });
+    } finally {
       setIsSending(false);
     }
   }, [currentConversationId, setConversationId, createQuickConversation, participants, setIsSending, cachedPrompts, toast]);

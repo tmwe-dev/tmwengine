@@ -288,31 +288,23 @@ serve(async (req) => {
 
     // ============ AUDIO GENERATION ============
     let audioUrl = null;
-    if (voiceEnabled && elevenLabsApiKey) {
-      // Match voice agent by name (normalized) or by elevenlabs_agent_id
-      const voiceAgent = activeVoiceAgents.find((v: any) => 
-        v.elevenlabs_agent_id === selectedAgent.id ||
-        v.name.toLowerCase().includes(selectedAgent.name.toLowerCase()) ||
-        selectedAgent.name.toLowerCase().includes(v.name.toLowerCase())
-      ) || activeVoiceAgents[0]; // Fallback to first agent
-      
-      if (voiceAgent?.voice_id) {
-        try {
-          audioUrl = await generateAudioForSingleResponse({
-            supabaseClient, conversationId, messageId,
-            content: aiResponse,
-            voiceId: voiceAgent.voice_id,
-            elevenLabsApiKey
-          });
-          console.log(`🔊 Audio generato per ${selectedAgent.name} (voiceId: ${voiceAgent.voice_id.substring(0, 8)})`);
-        } catch (audioError) {
-          console.error(`❌ Errore audio per ${selectedAgent.name}:`, audioError);
-        }
-      } else {
-        console.warn(`⚠️ Nessun voice_id trovato per ${selectedAgent.name}, voiceAgents disponibili: ${activeVoiceAgents.map((v: any) => v.name).join(', ')}`);
+    if (voiceEnabled && elevenLabsApiKey && activeVoiceAgents.some((v: any) => v.elevenlabs_agent_id === selectedAgent.id)) {
+      try {
+        const voiceAgent = activeVoiceAgents.find((v: any) => v.elevenlabs_agent_id === selectedAgent.id);
+        audioUrl = await generateAudioForSingleResponse({
+          supabaseClient: supabaseClient,
+          conversationId: conversationId,
+          messageId: messageId,
+          content: aiResponse,
+          voiceId: voiceAgent?.voice_id || 'EXAVITQu4vr4xnSDxMaL',
+          elevenLabsApiKey: elevenLabsApiKey
+        });
+        console.log(`🔊 Audio generato per ${selectedAgent.name} (messageId: ${messageId})`);
+      } catch (audioError) {
+        console.error(`❌ Errore generazione audio per ${selectedAgent.name}:`, audioError);
       }
     } else {
-      console.log(`🔇 Audio disabilitato: voiceEnabled=${voiceEnabled}, hasApiKey=${!!elevenLabsApiKey}`);
+      console.log(`🔇 Audio disabilitato o agente non abilitato: ${selectedAgent.name}`);
     }
 
     // ============ SAVE TO DATABASE ============

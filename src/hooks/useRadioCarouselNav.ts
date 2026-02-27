@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { RadioMessage } from '@/types/radio';
 
 export const useRadioCarouselNav = (
@@ -18,7 +18,7 @@ export const useRadioCarouselNav = (
   const firstAiMessageId = useMemo(() => aiMessages.length > 0 ? aiMessages[0].id : '', [aiMessages]);
 
   // Auto-set first AI message
-  useMemo(() => {
+  useEffect(() => {
     if (firstAiMessageId && !activeMessageId) {
       setActiveMessageId(firstAiMessageId);
     }

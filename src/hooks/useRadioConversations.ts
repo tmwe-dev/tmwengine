@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { RadioConversation } from '@/types/radio';
@@ -9,6 +9,8 @@ export const useRadioConversations = (userId: string | undefined) => {
     return localStorage.getItem('radio-current-conversation-id') || null;
   });
   const { toast } = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
 
   // Persist to localStorage
   const setConversationId = useCallback((id: string | null) => {
@@ -24,7 +26,6 @@ export const useRadioConversations = (userId: string | undefined) => {
         .select('id, titolo, created_at, updated_at, riassunto_contesto, active_participants')
         .order('updated_at', { ascending: false });
 
-      // Filter by user_id if available, otherwise load conversations without user_id
       if (userId) {
         query = query.eq('user_id', userId);
       } else {
@@ -34,35 +35,42 @@ export const useRadioConversations = (userId: string | undefined) => {
       const { data, error } = await query;
       if (error) throw error;
 
-      const conversationsWithStats = await Promise.all(
-        (data || []).map(async (conv) => {
-          const { count } = await supabase
-            .from('chat_laboratory_messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('conversation_id', conv.id);
+      const convIds = (data || []).map(c => c.id);
 
-          const { data: messagesData } = await supabase
-            .from('chat_laboratory_messages')
-            .select('token_input, token_output')
-            .eq('conversation_id', conv.id);
+      // Batch: load all messages for all conversations in ONE query
+      let allMessages: Array<{ conversation_id: string; token_input: number | null; token_output: number | null }> = [];
+      if (convIds.length > 0) {
+        const { data: msgData } = await supabase
+          .from('chat_laboratory_messages')
+          .select('conversation_id, token_input, token_output')
+          .in('conversation_id', convIds);
+        allMessages = msgData || [];
+      }
 
-          const totalTokens = (messagesData || []).reduce((sum, msg) =>
-            sum + (msg.token_input || 0) + (msg.token_output || 0), 0);
+      // Aggregate in-memory
+      const statsMap = new Map<string, { count: number; tokens: number }>();
+      for (const msg of allMessages) {
+        const existing = statsMap.get(msg.conversation_id) || { count: 0, tokens: 0 };
+        existing.count++;
+        existing.tokens += (msg.token_input || 0) + (msg.token_output || 0);
+        statsMap.set(msg.conversation_id, existing);
+      }
 
-          return {
-            ...conv,
-            message_count: count || 0,
-            total_tokens: totalTokens,
-            active_participants: conv.active_participants || []
-          } as RadioConversation;
-        })
-      );
+      const conversationsWithStats: RadioConversation[] = (data || []).map(conv => {
+        const stats = statsMap.get(conv.id) || { count: 0, tokens: 0 };
+        return {
+          ...conv,
+          message_count: stats.count,
+          total_tokens: stats.tokens,
+          active_participants: conv.active_participants || []
+        } as RadioConversation;
+      });
 
       setConversations(conversationsWithStats);
     } catch (err) {
-      toast({ title: "Errore", description: "Impossibile caricare conversazioni", variant: "destructive" });
+      toastRef.current({ title: "Errore", description: "Impossibile caricare conversazioni", variant: "destructive" });
     }
-  }, [userId, toast]);
+  }, [userId]);
 
   const selectConversation = useCallback((conversationId: string) => {
     setConversationId(conversationId);
@@ -84,13 +92,13 @@ export const useRadioConversations = (userId: string | undefined) => {
       if (error) throw error;
       setConversationId(newConv.id);
       await loadConversations();
-      toast({ title: "✨ Nuova conversazione", description: "Inizia a chattare!" });
+      toastRef.current({ title: "✨ Nuova conversazione", description: "Inizia a chattare!" });
       return newConv.id;
     } catch (error) {
-      toast({ title: "Errore", description: "Impossibile creare conversazione", variant: "destructive" });
+      toastRef.current({ title: "Errore", description: "Impossibile creare conversazione", variant: "destructive" });
       return null;
     }
-  }, [userId, loadConversations, setConversationId, toast]);
+  }, [userId, loadConversations, setConversationId]);
 
   const deleteConversation = useCallback(async (conversationId: string) => {
     try {
@@ -104,11 +112,11 @@ export const useRadioConversations = (userId: string | undefined) => {
         setConversationId(null);
       }
       await loadConversations();
-      toast({ title: "Conversazione eliminata", description: "La conversazione è stata eliminata con successo" });
+      toastRef.current({ title: "Conversazione eliminata", description: "La conversazione è stata eliminata con successo" });
     } catch (err) {
-      toast({ title: "Errore", description: "Impossibile eliminare conversazione", variant: "destructive" });
+      toastRef.current({ title: "Errore", description: "Impossibile eliminare conversazione", variant: "destructive" });
     }
-  }, [currentConversationId, loadConversations, setConversationId, toast]);
+  }, [currentConversationId, loadConversations, setConversationId]);
 
   const updateTitle = useCallback(async (conversationId: string, title: string) => {
     try {
@@ -119,11 +127,11 @@ export const useRadioConversations = (userId: string | undefined) => {
 
       if (error) throw error;
       await loadConversations();
-      toast({ title: "Titolo aggiornato", description: "Il titolo è stato modificato con successo" });
+      toastRef.current({ title: "Titolo aggiornato", description: "Il titolo è stato modificato con successo" });
     } catch (err) {
-      toast({ title: "Errore", description: "Impossibile aggiornare titolo", variant: "destructive" });
+      toastRef.current({ title: "Errore", description: "Impossibile aggiornare titolo", variant: "destructive" });
     }
-  }, [loadConversations, toast]);
+  }, [loadConversations]);
 
   const createQuickConversation = useCallback(async (participantNames: Array<{ name: string; type: string }>) => {
     try {
@@ -142,10 +150,10 @@ export const useRadioConversations = (userId: string | undefined) => {
       if (error) throw error;
       return data.id;
     } catch (err) {
-      toast({ title: 'Errore', description: 'Impossibile creare la conversazione', variant: 'destructive' });
+      toastRef.current({ title: 'Errore', description: 'Impossibile creare la conversazione', variant: 'destructive' });
       return null;
     }
-  }, [userId, toast]);
+  }, [userId]);
 
   return {
     conversations,

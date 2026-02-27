@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { RadioParticipant } from '@/types/radio';
@@ -7,6 +7,8 @@ export const useRadioParticipants = () => {
   const [participants, setParticipants] = useState<RadioParticipant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
 
   useEffect(() => {
     const loadParticipants = async () => {
@@ -18,12 +20,12 @@ export const useRadioParticipants = () => {
           .order('order_index', { ascending: true });
 
         if (error) {
-          toast({ title: "Errore caricamento agenti", description: error.message, variant: "destructive" });
+          toastRef.current({ title: "Errore caricamento agenti", description: error.message, variant: "destructive" });
           return;
         }
 
         if (!data || data.length === 0) {
-          toast({ title: "Nessun agente disponibile", description: "Attiva almeno un agente nelle impostazioni AI", variant: "destructive" });
+          toastRef.current({ title: "Nessun agente disponibile", description: "Attiva almeno un agente nelle impostazioni AI", variant: "destructive" });
           return;
         }
 
@@ -48,27 +50,27 @@ export const useRadioParticipants = () => {
         });
 
         setParticipants(mapped);
-        toast({ title: "Agenti caricati", description: `${mapped.length} agenti disponibili` });
+        toastRef.current({ title: "Agenti caricati", description: `${mapped.length} agenti disponibili` });
       } catch (err) {
-        toast({ title: "Errore critico", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+        toastRef.current({ title: "Errore critico", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
     };
 
     loadParticipants();
-  }, [toast]);
+  }, []);
 
   const toggleParticipant = useCallback((id: string) => {
     const participant = participants.find(p => p.id === id);
     if (!participant) return;
     const newState = !participant.is_active;
     setParticipants(prev => prev.map(p => p.id === id ? { ...p, is_active: newState } : p));
-    toast({
+    toastRef.current({
       title: newState ? 'Agente attivato' : 'Agente disattivato',
       description: `${participant.name} è ${newState ? 'attivo' : 'disattivo'} in questa conversazione`,
     });
-  }, [participants, toast]);
+  }, [participants]);
 
   return { participants, setParticipants, toggleParticipant, isLoading };
 };

@@ -20,9 +20,16 @@ interface InteractiveMicrophoneButtonProps {
   onStatusChange?: (status: { isActive: boolean; audioLevel: number; silenceCountdown: number }) => void;
 }
 
-const SILENCE_DURATION = 2000; // Base per PTT
+const SILENCE_DURATION = 2000;
 const VAD_THRESHOLD = 0.01;
-const VAD_SILENCE_MS = 1500; // Per HYBRID
+const VAD_SILENCE_MS = 1500;
+
+// Watermark patterns to filter out
+const SUSPICIOUS_PATTERNS = [
+  /grazie\s+per\s+aver\s+guardato/i,
+  /sottotitoli\s+creati\s+dalla\s+comunit/i,
+  /sottotitoli\s+fatti\s+dalla\s+comunit/i,
+];
 
 export const InteractiveMicrophoneButton = ({
   mode,
@@ -38,13 +45,11 @@ export const InteractiveMicrophoneButton = ({
   description,
   onStatusChange
 }: InteractiveMicrophoneButtonProps) => {
-  // Stati comuni
-  const [isActive, setIsActive] = useState(false); // recording per PTT, listening per HYBRID
+  const [isActive, setIsActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [silenceCountdown, setSilenceCountdown] = useState(0);
 
-  // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -54,19 +59,21 @@ export const InteractiveMicrophoneButton = ({
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSpeechTimeRef = useRef<number>(Date.now());
-  
-  // Notifica cambiamenti di stato al genitore
+  const isActiveRef = useRef(false);
+
+  // Keep ref in sync
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
+
   useEffect(() => {
     if (onStatusChange) {
       onStatusChange({ isActive, audioLevel, silenceCountdown });
     }
   }, [isActive, audioLevel, silenceCountdown, onStatusChange]);
 
-  // Cleanup al unmount
   useEffect(() => {
-    return () => {
-      cleanup();
-    };
+    return () => cleanup();
   }, []);
 
   const cleanup = () => {
@@ -94,22 +101,20 @@ export const InteractiveMicrophoneButton = ({
     setSilenceCountdown(0);
   };
 
-  // Monitoraggio audio level e VAD
   const monitorAudioLevel = () => {
     if (!analyserRef.current) return;
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
     analyserRef.current.getByteFrequencyData(dataArray);
-    
+
     const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
     const normalizedLevel = average / 255;
     setAudioLevel(normalizedLevel);
 
-    // VAD - rileva silenzio
     if (normalizedLevel > VAD_THRESHOLD) {
       lastSpeechTimeRef.current = Date.now();
       setSilenceCountdown(0);
-      
+
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = null;
@@ -121,11 +126,11 @@ export const InteractiveMicrophoneButton = ({
     } else {
       const silenceDuration = Date.now() - lastSpeechTimeRef.current;
       const targetSilence = mode === 'ptt' ? vadTimeout * 1000 : VAD_SILENCE_MS;
-      
+
       if (silenceDuration > 500 && !silenceTimerRef.current) {
         const remainingTime = Math.ceil((targetSilence - silenceDuration) / 1000);
         setSilenceCountdown(remainingTime > 0 ? remainingTime : 0);
-        
+
         countdownIntervalRef.current = setInterval(() => {
           const currentSilence = Date.now() - lastSpeechTimeRef.current;
           const remaining = Math.ceil((targetSilence - currentSilence) / 1000);
@@ -145,8 +150,57 @@ export const InteractiveMicrophoneButton = ({
     animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
   };
 
-  // PTT: Start Recording
-  const startRecording = async () => {
+  // ✅ Helper: convert blob to base64 via Promise (no callback race)
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result?.toString().split(',')[1];
+        if (base64) resolve(base64);
+        else reject(new Error('Conversione audio fallita'));
+      };
+      reader.onerror = () => reject(new Error('FileReader error'));
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // ✅ Unified transcription function
+  const transcribeChunks = async (chunks: Blob[], filterWatermarks: boolean = true) => {
+    if (chunks.length === 0) return;
+
+    setIsProcessing(true);
+    try {
+      const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+      const base64Audio = await blobToBase64(audioBlob);
+
+      const { data, error } = await supabase.functions.invoke('voice-to-text', {
+        body: { audio: base64Audio }
+      });
+
+      if (error) throw error;
+
+      const transcribedText = data?.text?.trim() || '';
+
+      if (filterWatermarks) {
+        const isSuspicious = SUSPICIOUS_PATTERNS.some(p => p.test(transcribedText));
+        if (transcribedText && !isSuspicious) {
+          onTranscriptionComplete(transcribedText);
+        }
+      } else {
+        if (transcribedText) {
+          onTranscriptionComplete(transcribedText);
+        }
+      }
+    } catch (error) {
+      console.error('Transcription error:', error);
+      toast.error('Errore durante la trascrizione');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // ✅ Unified: start audio capture (shared between PTT and HYBRID)
+  const startCapture = async (onStopCallback?: () => void) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -168,7 +222,6 @@ export const InteractiveMicrophoneButton = ({
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
       analyser.smoothingTimeConstant = 0.8;
-
       source.connect(analyser);
       analyserRef.current = analyser;
 
@@ -183,108 +236,79 @@ export const InteractiveMicrophoneButton = ({
         }
       };
 
-      mediaRecorder.onstop = () => {
-        transcribeAudio();
-      };
+      if (onStopCallback) {
+        mediaRecorder.onstop = onStopCallback;
+      }
 
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start(100);
       setIsActive(true);
       lastSpeechTimeRef.current = Date.now();
       monitorAudioLevel();
-
     } catch (error) {
-      console.error('Error starting recording:', error);
+      console.error('Error starting capture:', error);
       toast.error('Impossibile accedere al microfono');
     }
+  };
+
+  // PTT: Start Recording
+  const startRecording = () => {
+    startCapture(() => {
+      // onstop callback: transcribe with watermark filter
+      const chunks = [...audioChunksRef.current];
+      audioChunksRef.current = [];
+      transcribeChunks(chunks, true);
+    });
   };
 
   // PTT: Stop Recording
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stop(); // triggers onstop → transcribeChunks
     }
-
     cleanup();
     setIsActive(false);
     setAudioLevel(0);
   };
 
   // HYBRID: Start Listening
-  const startListening = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 48000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        }
-      });
+  const startListening = () => {
+    startCapture(); // no onstop callback for hybrid
+  };
 
-      streamRef.current = stream;
-      audioChunksRef.current = [];
+  // ✅ HYBRID: Stop Current Chunk - wait for onstop before transcribing
+  const stopCurrentChunk = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      const recorder = mediaRecorderRef.current;
+      
+      // Wait for onstop event before transcribing
+      recorder.onstop = async () => {
+        const chunks = [...audioChunksRef.current];
+        audioChunksRef.current = [];
+        
+        // Transcribe without watermark filter for hybrid chunks
+        await transcribeChunks(chunks, false);
 
-      const audioContext = new AudioContext({ sampleRate: 48000 });
-      audioContextRef.current = audioContext;
+        // Restart a new chunk if still active
+        if (isActiveRef.current && streamRef.current) {
+          const newRecorder = new MediaRecorder(streamRef.current, {
+            mimeType: 'audio/webm;codecs=opus',
+            audioBitsPerSecond: 128000
+          });
 
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      analyser.smoothingTimeConstant = 0.8;
+          newRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              audioChunksRef.current.push(event.data);
+            }
+          };
 
-      source.connect(analyser);
-      analyserRef.current = analyser;
-
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 128000
-      });
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+          mediaRecorderRef.current = newRecorder;
+          newRecorder.start(100);
+          lastSpeechTimeRef.current = Date.now();
         }
       };
 
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100);
-      setIsActive(true);
-      lastSpeechTimeRef.current = Date.now();
-      monitorAudioLevel();
-
-    } catch (error) {
-      console.error('Error starting listening:', error);
-      toast.error('Impossibile accedere al microfono');
-    }
-  };
-
-  // HYBRID: Stop Current Chunk
-  const stopCurrentChunk = async () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-      
-      await transcribeCurrentChunk();
-      
-      // Riavvia subito un nuovo chunk se ancora attivo
-      if (isActive && streamRef.current) {
-        audioChunksRef.current = [];
-        const mediaRecorder = new MediaRecorder(streamRef.current, {
-          mimeType: 'audio/webm;codecs=opus',
-          audioBitsPerSecond: 128000
-        });
-
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
-          }
-        };
-
-        mediaRecorderRef.current = mediaRecorder;
-        mediaRecorder.start(100);
-        lastSpeechTimeRef.current = Date.now();
-      }
+      recorder.stop();
     }
   };
 
@@ -295,117 +319,17 @@ export const InteractiveMicrophoneButton = ({
     setAudioLevel(0);
   };
 
-  // Trascrizione PTT
-  const transcribeAudio = async () => {
-    if (audioChunksRef.current.length === 0) return;
-
-    setIsProcessing(true);
-
-    try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      
-      reader.onloadend = async () => {
-        const base64Audio = reader.result?.toString().split(',')[1];
-        
-        if (!base64Audio) {
-          throw new Error('Conversione audio fallita');
-        }
-
-        const { data, error } = await supabase.functions.invoke('voice-to-text', {
-          body: { audio: base64Audio }
-        });
-
-        if (error) throw error;
-
-        const transcribedText = data?.text?.trim() || '';
-        
-        // Filtra watermark comuni
-        const suspiciousPatterns = [
-          /grazie\s+per\s+aver\s+guardato/i,
-          /sottotitoli\s+creati\s+dalla\s+comunit/i,
-          /sottotitoli\s+fatti\s+dalla\s+comunit/i,
-        ];
-
-        const isSuspicious = suspiciousPatterns.some(pattern => pattern.test(transcribedText));
-
-        if (transcribedText && !isSuspicious) {
-          onTranscriptionComplete(transcribedText);
-        }
-      };
-    } catch (error) {
-      console.error('Transcription error:', error);
-      toast.error('Errore durante la trascrizione');
-    } finally {
-      setIsProcessing(false);
-      audioChunksRef.current = [];
-    }
-  };
-
-  // Trascrizione HYBRID
-  const transcribeCurrentChunk = async () => {
-    if (audioChunksRef.current.length === 0) return;
-
-    setIsProcessing(true);
-
-    try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      
-      reader.onloadend = async () => {
-        const base64Audio = reader.result?.toString().split(',')[1];
-        
-        if (!base64Audio) {
-          throw new Error('Conversione audio fallita');
-        }
-
-        const { data, error } = await supabase.functions.invoke('voice-to-text', {
-          body: { audio: base64Audio }
-        });
-
-        if (error) throw error;
-
-        const transcribedText = data?.text?.trim() || '';
-        
-        if (transcribedText) {
-          onTranscriptionComplete(transcribedText);
-        }
-      };
-    } catch (error) {
-      console.error('Transcription error:', error);
-      toast.error('Errore durante la trascrizione');
-    } finally {
-      setIsProcessing(false);
-      audioChunksRef.current = [];
-    }
-  };
-
-  // Handler click principale
   const handleClick = () => {
-    // Se non selezionato, seleziona E attiva contemporaneamente
     if (!isSelected) {
       onSelect();
-      // Non fare return, continua ad attivare il microfono
     }
 
-    // Toggle registrazione/ascolto
     if (mode === 'ptt') {
-      if (isActive) {
-        stopRecording(); // Ferma e invia subito
-      } else {
-        startRecording(); // Inizia con VAD
-      }
+      if (isActive) stopRecording();
+      else startRecording();
     } else {
-      // HYBRID
-      if (isActive) {
-        stopListening();
-      } else {
-        startListening();
-      }
+      if (isActive) stopListening();
+      else startListening();
     }
   };
 

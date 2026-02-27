@@ -13,6 +13,7 @@ type AudioMode = 'stable' | 'v2_hybrid';
 interface RadioAudioControlsProps {
   conversationId: string | null;
   onClose: () => void;
+  onSendMessage?: (text: string) => void;
   participants?: Array<{
     id: string;
     type: string;
@@ -26,6 +27,7 @@ interface RadioAudioControlsProps {
 export const RadioAudioControls = ({
   conversationId,
   onClose,
+  onSendMessage,
   participants = [],
   cachedPrompts
 }: RadioAudioControlsProps) => {
@@ -57,14 +59,12 @@ export const RadioAudioControls = ({
 
   const loadPauseState = async () => {
     if (!conversationId) return;
-
     try {
       const { data, error } = await supabase
         .from('chat_laboratory_conversations')
         .select('is_paused')
         .eq('id', conversationId)
         .single();
-
       if (error) throw error;
       setIsPaused(data?.is_paused || false);
     } catch (error) {
@@ -79,7 +79,6 @@ export const RadioAudioControls = ({
         .select('max_words_per_response')
         .limit(1)
         .single();
-
       if (error) throw error;
       if (data) {
         setMaxWords(data.max_words_per_response || 80);
@@ -89,80 +88,26 @@ export const RadioAudioControls = ({
     }
   };
 
+  // ✅ Simplified: delegate to parent's sendMessage or fallback to textarea injection
   const handleTranscription = async (text: string) => {
     if (!conversationId) return;
 
-    // 🔍 CONTROLLO: il campo testo è attivo?
+    // Check if textarea is focused → inject text
     const textareaElement = document.querySelector('textarea') as HTMLTextAreaElement;
     const isTextareaFocused = document.activeElement === textareaElement;
 
     if (isTextareaFocused && textareaElement) {
-      // SCENARIO 1: Inserisco nel campo esistente
       const currentValue = textareaElement.value;
       textareaElement.value = currentValue + text;
-      
-      // Trigger evento change per React
       const event = new Event('input', { bubbles: true });
       textareaElement.dispatchEvent(event);
-      
       toast.success('Trascrizione inserita nel campo');
+    } else if (onSendMessage) {
+      // ✅ Delegate to parent's sendMessage (no duplication)
+      onSendMessage(text);
+      toast.success('Messaggio vocale inviato agli agenti');
     } else {
-      // SCENARIO 2: Invio diretto DB + orchestrator
-      const { error: insertError } = await supabase
-        .from('chat_laboratory_messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_type: 'human',
-          sender_name: 'Human',
-          content: text,
-          created_at: new Date().toISOString()
-        });
-
-      if (insertError) {
-        toast.error('Errore invio messaggio vocale');
-        return;
-      }
-
-      // ✅ Prepara participants attivi (stesso formato di RadioChat)
-      const activeParticipants = participants
-        .filter(p => p.is_active)
-        .map(p => ({
-          id: p.id,
-          type: p.type,
-          name: p.name,
-          is_active: true,
-          voiceId: p.voice_id
-        }));
-
-      // ✅ Costruisci body completo
-      const requestBody: any = {
-        conversationId,
-        userMessage: text,
-        participants: activeParticipants
-      };
-
-      // ⚡ Includi cached prompts se disponibili (performance boost)
-      if (cachedPrompts) {
-        requestBody.cachedPrompts = cachedPrompts;
-      }
-
-      // ⚡ Chiama orchestratore con timeout (come handleSend in RadioChat)
-      try {
-        const orchestratorPromise = supabase.functions.invoke('radio-chat-orchestrator', {
-          body: requestBody
-        });
-
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout')), 90000)
-        );
-
-        await Promise.race([orchestratorPromise, timeoutPromise]);
-        
-        toast.success('Messaggio vocale inviato agli agenti');
-      } catch (error) {
-        console.error('Error calling orchestrator:', error);
-        toast.error('Errore elaborazione risposta');
-      }
+      toast.error('Nessun handler disponibile per inviare il messaggio');
     }
   };
 
@@ -203,7 +148,7 @@ export const RadioAudioControls = ({
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-purple-500/5 pointer-events-none" />
       
-      {/* Volume bar e countdown - Mostrati SOPRA i controlli quando attivo */}
+      {/* Volume bar e countdown */}
       {micStatus.isActive && (
         <div className="relative z-10 flex items-center gap-2 px-2 py-1 bg-purple-500/20 rounded-md border border-purple-400/40 animate-fade-in">
           <Volume2 className="h-3 w-3 text-purple-300" />
@@ -221,10 +166,10 @@ export const RadioAudioControls = ({
         </div>
       )}
       
-      {/* Contenuto principale orizzontale */}
+      {/* Main horizontal content */}
       <div className="relative z-10 flex items-center gap-2">
         
-        {/* Microfoni interattivi (tasto 1 e 2) */}
+        {/* Interactive microphones */}
         <div className="flex items-center gap-1.5">
           {modes.map((mode) => (
             <InteractiveMicrophoneButton
@@ -245,10 +190,9 @@ export const RadioAudioControls = ({
           ))}
         </div>
         
-        {/* Separatore */}
         <div className="h-6 w-px bg-purple-400/30" />
         
-        {/* VAD Slider (solo PTT) */}
+        {/* VAD Slider (PTT only) */}
         {audioMode === 'stable' && (
           <>
             <div className="flex items-center gap-1.5 min-w-[100px]">
@@ -277,7 +221,6 @@ export const RadioAudioControls = ({
           />
         </div>
         
-        {/* Separatore */}
         <div className="h-6 w-px bg-purple-400/30" />
         
         {/* Close button */}

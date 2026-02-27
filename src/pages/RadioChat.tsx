@@ -265,6 +265,7 @@ const RadioChatContent = () => {
             <RadioAudioControls
               conversationId={currentConversationId}
               onClose={() => ui.setShowAudioControls(false)}
+              onSendMessage={sendMessage}
               participants={participants}
               cachedPrompts={cachedPrompts}
             />

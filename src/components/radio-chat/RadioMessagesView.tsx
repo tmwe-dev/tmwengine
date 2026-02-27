@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioMessage } from '@/types/radio';
 import { useTabSwitching } from '@/hooks/useTabSwitching';
 import { useAudioPlayback } from '@/hooks/useAudioPlayback';
+import { cn } from '@/lib/utils';
 
 interface RadioMessagesViewProps {
   messages: RadioMessage[];
@@ -17,14 +18,12 @@ export function RadioMessagesView({
   isAudioEnabled = true
 }: RadioMessagesViewProps) {
   
-  // 🎯 Hook audio playback
   const { 
     isAudioPlaying, 
     handleAudioStart, 
     handleAudioEnd: audioEnd 
   } = useAudioPlayback();
 
-  // 🎯 Hook tab switching con coda intelligente
   const {
     activeTab,
     setActiveTab,
@@ -35,34 +34,19 @@ export function RadioMessagesView({
     isAudioPlaying
   });
 
-  // 🎯 State per sincronizzare tab switch dopo audio end
   const [shouldSwitchTab, setShouldSwitchTab] = useState(false);
 
-  // 🎯 Callback completo: quando audio finisce
   const onAudioEndComplete = () => {
-    const timestamp = new Date().toISOString();
-    console.log(`🎬 [RadioMessagesView] onAudioEndComplete chiamato @ ${timestamp}`);
-    console.log(`   - activeTab prima del cambio: ${activeTab.substring(0, 8)}`);
-    audioEnd(); // Setta isAudioPlaying = false
-    
-    // ✅ Delay 200ms per garantire cleanup completo di AudioMessagePlayer
-    // (pause, removeEventListener, unmount)
+    audioEnd();
     setTimeout(() => {
-      console.log(`⏱️ [RadioMessagesView] Delay completato, settando shouldSwitchTab @ ${new Date().toISOString()}`);
       setShouldSwitchTab(true);
     }, 200);
   };
 
-  // 🎯 Effetto: cambia tab DOPO che isAudioPlaying è aggiornato
   useEffect(() => {
     if (shouldSwitchTab && !isAudioPlaying) {
-      const timestamp = new Date().toISOString();
-      console.log(`🔄 [RadioMessagesView] Sincronizzazione completata @ ${timestamp}`);
-      console.log(`   - isAudioPlaying: ${isAudioPlaying}`);
-      console.log(`   - Chiamando tabSwitchOnAudioEnd()`);
       tabSwitchOnAudioEnd();
       setShouldSwitchTab(false);
-      console.log(`✅ [RadioMessagesView] setActiveTab completato @ ${new Date().toISOString()}`);
     }
   }, [shouldSwitchTab, isAudioPlaying, tabSwitchOnAudioEnd]);
 
@@ -93,11 +77,17 @@ export function RadioMessagesView({
         {formattedMessages.map((message) => {
           const isActive = message.id === activeTab;
           
-          // ✅ CHIAVE: smonta i componenti non attivi
-          if (!isActive) return null;
-          
           return (
-            <div key={message.id}>
+            <div 
+              key={message.id}
+              className={cn(
+                "transition-all duration-300",
+                isActive 
+                  ? "ring-2 ring-primary/50 rounded-lg" 
+                  : "opacity-70 hover:opacity-100"
+              )}
+              onClick={() => setActiveTab(message.id)}
+            >
               <MultiAgentMessage
                 message={message}
                 canAutoPlay={isActive}

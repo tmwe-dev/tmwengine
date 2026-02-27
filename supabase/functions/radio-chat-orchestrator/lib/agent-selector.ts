@@ -120,11 +120,11 @@ async function selectInterruptBased(
   };
   
   for (let i = 0; i < participants.length; i++) {
-    const agentName = participants[i].name.toLowerCase();
+    const participantType = participants[i].type.toLowerCase();
     
-    // Cerca match tra nome agente e keywords
+    // Cerca match tra tipo agente e keywords
     for (const [agentType, keywords] of Object.entries(keywordMap)) {
-      if (agentName.includes(agentType)) {
+      if (participantType.includes(agentType)) {
         const hasMatch = keywords.some(kw => userMsg.includes(kw));
         if (hasMatch) {
           console.log(`🎤 [INTERRUPT_BASED] Match trovato per ${participants[i].name}`);
@@ -168,9 +168,9 @@ async function selectSmartPriority(
     console.log(`🧠 [SMART_PRIORITY] Messaggio lungo (${msgLength} char) → Claude`);
   }
   
-  // Trova agente corrispondente
+  // Trova agente corrispondente per tipo (chatgpt, gemini, claude)
   const agentIndex = participants.findIndex(p => 
-    p.name.toLowerCase().includes(targetAgentName)
+    p.type.toLowerCase().includes(targetAgentName)
   );
   
   if (agentIndex !== -1) {

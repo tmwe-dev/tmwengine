@@ -1,40 +1,52 @@
 
 
-# Fix SMART_PRIORITY Agent Selection Bug
+# Piano: Multi-Agent Response per Radio Chat
 
-## Problem
-The `selectSmartPriority` function in `agent-selector.ts` searches for agents by checking if their **name** contains `'claude'`, `'gpt'`, or `'gemini'`. But the actual agent names are "Albert", "Pitagora", "Archimede" — none match. Result: always falls back to index 0 (Albert), making rotation broken.
+## Problema Principale
 
-Same bug exists in `selectInterruptBased` — it matches `agentName` against keyword map keys like `'gemini'`, `'gpt'`, `'claude'`.
+L'orchestrator attuale (`radio-chat-orchestrator`) seleziona **un solo agente** per ogni messaggio utente. Quando invii un messaggio, risponde solo Albert (o chi viene selezionato dalla strategia). Gli altri due agenti non vengono mai chiamati.
 
-## Test Results
-- **Albert (GPT-5)**: 200 OK, responded correctly with audio
-- **SMART_PRIORITY rotation**: BROKEN — always selects Albert (index 0) regardless of message length
-- **Root cause**: `participants.findIndex(p => p.name.toLowerCase().includes('claude'))` never matches "archimede"
+La logica SMART_PRIORITY (messaggio breve → Gemini, medio → GPT, lungo → Claude) serviva a scegliere **quale unico agente** risponde — non ha senso in un contesto dove tutti e tre devono partecipare.
 
-## Fix Plan
+## Cosa Vedevi Prima (e Cosa Vedi Ora)
 
-### Step 1: Fix `selectSmartPriority` in `agent-selector.ts`
-Change the agent matching from name-based to **type-based**:
-```typescript
-const agentIndex = participants.findIndex(p => 
-  p.type.toLowerCase().includes(targetAgentName)
-);
-```
+- **Settings sidebar**: 3 agenti con toggle (corretto, funziona)
+- **Carousel/Avatar column**: mostra solo gli avatar dei messaggi AI **gia' ricevuti** — se risponde solo Albert, vedi solo Albert
+- **Il problema non e' nella UI**, e' nell'edge function che genera una sola risposta
 
-### Step 2: Fix `selectInterruptBased` in `agent-selector.ts`
-Change keyword matching from `agentName` to `agent.type`:
-```typescript
-const agentType = participants[i].type.toLowerCase();
-```
+## Piano di Fix
 
-### Step 3: Deploy and re-test
-- Short message → should select Pitagora (gemini)
-- Medium message → should select Albert (chatgpt)
-- Long message → should select Archimede (claude)
+### Step 1: Modificare `radio-chat-orchestrator/index.ts` per Multi-Agent Response
 
-## Files Modified
-| File | Risk |
-|------|------|
-| `supabase/functions/radio-chat-orchestrator/lib/agent-selector.ts` | Low — logic fix only |
+Invece di selezionare UN agente e generare UNA risposta, il flusso diventa:
+
+1. Per ogni agente attivo nei `participants`, genera una risposta AI
+2. Ogni risposta viene salvata come messaggio separato nel DB
+3. Ogni risposta ha il suo audio generato (se voice enabled)
+4. Ritorna un array di risposte invece di una singola
+
+La strategia di turno (SMART_PRIORITY, ROUND_ROBIN, ecc.) verra' usata solo per determinare l'**ordine** in cui gli agenti rispondono, non per escluderne alcuni.
+
+### Step 2: Aggiornare `useRadioSendMessage.ts`
+
+Il hook attualmente aspetta una singola risposta. Deve gestire l'array di risposte multiple che tornano dall'orchestrator.
+
+### Step 3: Gestire i costi e la parallelizzazione
+
+- Le chiamate AI vengono fatte in sequenza (non parallelo) per evitare rate limiting
+- Un breve delay tra le chiamate (configurabile via `pauseBetweenTurnsMs`)
+- Nessun limite sulla lunghezza delle risposte — gli agenti rispondono liberamente secondo i loro prompt
+
+### File Modificati
+
+| File | Modifica | Rischio |
+|------|----------|---------|
+| `supabase/functions/radio-chat-orchestrator/index.ts` | Loop su tutti gli agenti attivi | Medio |
+| `src/hooks/useRadioSendMessage.ts` | Gestione risposta multipla | Basso |
+
+### Funzionalita' Preservate
+- Toggle agenti nella sidebar (disattivare un agente lo esclude)
+- Audio TTS per ogni risposta
+- Carousel 3D con navigazione tra messaggi
+- Tutte le strategie di turno (usate per l'ordine, non per la selezione)
 

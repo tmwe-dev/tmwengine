@@ -94,6 +94,7 @@ export function RadioMessagesView({
                 isAudioPlayingGlobally={isAudioPlaying}
                 onAudioEnd={onAudioEndComplete}
                 onAudioStateChange={(playing) => playing ? handleAudioStart() : audioEnd()}
+                orchestratorFunction="radio-chat-orchestrator"
               />
             </div>
           );

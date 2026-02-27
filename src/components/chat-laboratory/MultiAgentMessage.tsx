@@ -74,6 +74,7 @@ interface MultiAgentMessageProps {
   onAudioStateChange?: (isPlaying: boolean) => void;
   canAutoPlay?: boolean;
   isAudioPlayingGlobally?: boolean;
+  orchestratorFunction?: string;
 }
 
 const SENDER_CONFIG = {
@@ -111,7 +112,7 @@ const SENDER_CONFIG = {
   }
 };
 
-export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange, canAutoPlay = true, isAudioPlayingGlobally = false }: MultiAgentMessageProps) => {
+export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange, canAutoPlay = true, isAudioPlayingGlobally = false, orchestratorFunction = 'bar-chat-orchestrator' }: MultiAgentMessageProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('friendly');
   const [appendixAudioPlaying, setAppendixAudioPlaying] = useState(false);
   const [appendixOpen, setAppendixOpen] = useState(false);
@@ -198,8 +199,8 @@ export const MultiAgentMessage = ({ message, onAudioEnd, onAudioStateChange, can
         return;
       }
 
-      // Chiama direttamente bar-chat-orchestrator con flag di richiesta manuale
-      const { error } = await supabase.functions.invoke('bar-chat-orchestrator', {
+      // Chiama l'orchestrator appropriato con flag di richiesta manuale
+      const { error } = await supabase.functions.invoke(orchestratorFunction, {
         body: {
           conversationId,
           messageId: message.id,

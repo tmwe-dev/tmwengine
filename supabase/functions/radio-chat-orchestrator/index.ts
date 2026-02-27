@@ -167,11 +167,10 @@ serve(async (req) => {
     // ============ FORMAT HISTORY MESSAGES ============
     const historyMessages = formatHistoryMessages(recentMessages);
 
-    // ============ AGENT SELECTION BASED ON TURN STRATEGY ============
+    // ============ MULTI-AGENT: ALL ACTIVE AGENTS RESPOND ============
     const activeParticipants = participants.filter((p: any) => p.is_active);
     
-    console.log(`🎯 Selezione agente usando strategia: ${turnStrategy}`);
-    
+    // Use strategy to determine ORDER of responses
     const selectionContext = {
       userMessage,
       recentMessages,
@@ -179,7 +178,8 @@ serve(async (req) => {
       conversationStyle
     };
 
-    const { selectedAgent, newTurnIndex } = await selectNextAgent(
+    // Determine order: use strategy to pick the "first" agent, then rotate from there
+    const { newTurnIndex } = await selectNextAgent(
       turnStrategy,
       activeParticipants,
       currentTurnIndex,
@@ -189,181 +189,203 @@ serve(async (req) => {
       conversationId
     );
 
-    console.log(`🎯 Agente selezionato: ${selectedAgent.name} (tipo: ${selectedAgent.type})`);
-
-    // ============ BUILD SYSTEM PROMPT PER AGENTE SELEZIONATO ============
-    let systemPrompt: string;
-    
-    if (isComposedPrompt) {
-      // ✅ USA DIRETTAMENTE il prompt composto - NO assemblaggio
-      systemPrompt = globalSystemPrompt;
-      console.log(`🎯 [${selectedAgent.name}] Usando prompt composto diretto (${systemPrompt.length} chars)`);
-    } else {
-      // 🔧 Assemblaggio dinamico per prompt legacy
-      const agentPersonality = finalCachedPrompts.agentPersonalities instanceof Map
-        ? finalCachedPrompts.agentPersonalities.get(selectedAgent.name.toLowerCase()) || ''
-        : finalCachedPrompts.agentPersonalities[selectedAgent.name.toLowerCase()] || '';
-      
-      systemPrompt = buildSystemPrompt({
-        globalPrompt: globalSystemPrompt,
-        baseContent: baseContent,
-        agentPersonality: agentPersonality,
-        conversationStyle: conversationStyle,
-        agentMode: agentMode,
-        previousResponses: [],
-        wasCalledDirectly: false,
-        styleSections: finalCachedPrompts.conversationStyles,
-        conversationPersonality: finalCachedPrompts.conversationPersonality
-      });
-      console.log(`🔧 [${selectedAgent.name}] Prompt assemblato dinamicamente (${systemPrompt.length} chars)`);
+    // Build ordered list: start from selected agent, then cycle through rest
+    const orderedAgents: any[] = [];
+    for (let i = 0; i < activeParticipants.length; i++) {
+      const idx = (newTurnIndex + i) % activeParticipants.length;
+      orderedAgents.push(activeParticipants[idx]);
     }
 
-    // ============ BUILD CONVERSATION HISTORY ============
-    const turnContext = [
-      { role: 'user', content: userMessage }
-    ];
-    
-    const conversationHistory = buildConversationHistory({
-      systemPrompt: systemPrompt,
-      cumulativeSummary: cumulativeSummary,
-      historyMessages: historyMessages,
-      turnContext: turnContext
-    });
+    console.log(`🎯 Ordine risposte (${turnStrategy}): ${orderedAgents.map((a: any) => a.name).join(' → ')}`);
 
-    // ============ CALCULATE CONTEXT SIZE ============
-    const contextSize = calculateContextSize(conversationHistory);
-    console.log(`📊 Context: ${contextSize.totalContextChars} chars, ~${contextSize.estimatedTokens} tokens`);
+    // ============ SEQUENTIAL MULTI-AGENT RESPONSES ============
+    const allResponses: Array<{ agentName: string; content: string; messageId: string }> = [];
+    const responseResults: any[] = [];
 
-    // ============ CALL AI PROVIDER ============
-    let aiResponse = null;
-    let provider = null;
-    let rawResponse = null;
-    const callStartTime = Date.now();
+    for (let agentIdx = 0; agentIdx < orderedAgents.length; agentIdx++) {
+      const currentAgent = orderedAgents[agentIdx];
+      console.log(`\n🤖 [${agentIdx + 1}/${orderedAgents.length}] Generando risposta per ${currentAgent.name} (${currentAgent.type})...`);
 
-    if (selectedAgent.type === 'anthropic' || selectedAgent.type === 'claude') {
-      provider = 'claude';
-      const result = await callClaude({
-        apiKey: anthropicConfig.apiKey,
-        model: anthropicConfig.model,
-        conversationHistory: conversationHistory,
-        callStartTime: callStartTime
-      });
-      aiResponse = result.content;
-      rawResponse = result;
-    } else if (selectedAgent.type === 'openai' || selectedAgent.type === 'chatgpt') {
-      provider = 'chatgpt';
-      const result = await callChatGPT({
-        lovableApiKey: LOVABLE_API_KEY,
-        openaiConfig: openaiConfig,
-        conversationHistory: conversationHistory,
-        callStartTime: callStartTime
-      });
-      aiResponse = result.content;
-      rawResponse = result;
-    } else if (selectedAgent.type === 'lovable_ai' || selectedAgent.type === 'gemini') {
-      provider = 'gemini';
-      const result = await callGemini({
-        lovableApiKey: LOVABLE_API_KEY,
-        conversationHistory: conversationHistory,
-        callStartTime: callStartTime
-      });
-      aiResponse = result.content;
-      rawResponse = result;
-    } else {
-      console.warn(`⚠️ Tipo agente sconosciuto: ${selectedAgent.type}`);
-      throw new Error(`Tipo agente non supportato: ${selectedAgent.type}`);
-    }
-
-    if (!aiResponse) {
-      throw new Error(`Nessuna risposta da ${selectedAgent.name}`);
-    }
-
-    // Trim whitespace from the AI response
-    aiResponse = aiResponse.trim();
-
-    console.log(`✅ Risposta (${provider}): ${aiResponse.substring(0, 100)}...`);
-
-    // ============ GENERATE MESSAGE ID (BEFORE AUDIO) ============
-    const messageId = crypto.randomUUID();
-
-    // ============ AUDIO GENERATION ============
-    let audioUrl = null;
-    if (voiceEnabled && elevenLabsApiKey) {
-      // Match voice agent by name (normalized) or by elevenlabs_agent_id
-      const voiceAgent = activeVoiceAgents.find((v: any) => 
-        v.elevenlabs_agent_id === selectedAgent.id ||
-        v.name.toLowerCase().includes(selectedAgent.name.toLowerCase()) ||
-        selectedAgent.name.toLowerCase().includes(v.name.toLowerCase())
-      ) || activeVoiceAgents[0]; // Fallback to first agent
-      
-      if (voiceAgent?.voice_id) {
-        try {
-          audioUrl = await generateAudioForSingleResponse({
-            supabaseClient, conversationId, messageId,
-            content: aiResponse,
-            voiceId: voiceAgent.voice_id,
-            elevenLabsApiKey
-          });
-          console.log(`🔊 Audio generato per ${selectedAgent.name} (voiceId: ${voiceAgent.voice_id.substring(0, 8)})`);
-        } catch (audioError) {
-          console.error(`❌ Errore audio per ${selectedAgent.name}:`, audioError);
-        }
-      } else {
-        console.warn(`⚠️ Nessun voice_id trovato per ${selectedAgent.name}, voiceAgents disponibili: ${activeVoiceAgents.map((v: any) => v.name).join(', ')}`);
+      // Add delay between agents (skip first)
+      if (agentIdx > 0 && pauseBetweenTurnsMs > 0) {
+        console.log(`⏳ Pausa ${pauseBetweenTurnsMs}ms tra agenti...`);
+        await delay(pauseBetweenTurnsMs);
       }
-    } else {
-      console.log(`🔇 Audio disabilitato: voiceEnabled=${voiceEnabled}, hasApiKey=${!!elevenLabsApiKey}`);
-    }
 
-    // ============ SAVE TO DATABASE ============
-    const { error: insertError } = await supabaseClient
-      .from('chat_laboratory_messages')
-      .insert({
-        id: messageId,
-        conversation_id: conversationId,
-        sender_type: selectedAgent.type,
-        sender_name: selectedAgent.name,
-        content: aiResponse,
-        audio_url: audioUrl,
-        token_input: rawResponse?.tokensIn || 0,
-        token_output: rawResponse?.tokensOut || 0,
-        tempo_risposta_ms: rawResponse?.duration || 0,
-        created_at: new Date().toISOString()
+      // ============ BUILD SYSTEM PROMPT PER QUESTO AGENTE ============
+      let systemPrompt: string;
+      
+      if (isComposedPrompt) {
+        systemPrompt = globalSystemPrompt;
+      } else {
+        const agentPersonality = finalCachedPrompts.agentPersonalities instanceof Map
+          ? finalCachedPrompts.agentPersonalities.get(currentAgent.name.toLowerCase()) || ''
+          : finalCachedPrompts.agentPersonalities[currentAgent.name.toLowerCase()] || '';
+        
+        systemPrompt = buildSystemPrompt({
+          globalPrompt: globalSystemPrompt,
+          baseContent: baseContent,
+          agentPersonality: agentPersonality,
+          conversationStyle: conversationStyle,
+          agentMode: agentMode,
+          previousResponses: allResponses, // Pass previous agent responses for context
+          wasCalledDirectly: false,
+          styleSections: finalCachedPrompts.conversationStyles,
+          conversationPersonality: finalCachedPrompts.conversationPersonality
+        });
+      }
+
+      // ============ BUILD CONVERSATION HISTORY ============
+      const turnContext = [{ role: 'user', content: userMessage }];
+      
+      // Add previous agents' responses in this turn as assistant messages
+      for (const prevResp of allResponses) {
+        turnContext.push({ role: 'assistant', content: `[${prevResp.agentName}]: ${prevResp.content}` });
+      }
+      
+      const conversationHistory = buildConversationHistory({
+        systemPrompt,
+        cumulativeSummary,
+        historyMessages,
+        turnContext
       });
 
-    if (insertError) {
-      console.error(`❌ Errore salvataggio ${selectedAgent.name}:`, insertError);
-      throw insertError;
-    } else {
-      console.log(`✅ ${selectedAgent.name} salvato nel DB con ID ${messageId}`);
+      // ============ CALL AI PROVIDER ============
+      let aiResponse = null;
+      let rawResponse = null;
+      const callStartTime = Date.now();
+
+      try {
+        if (currentAgent.type === 'anthropic' || currentAgent.type === 'claude') {
+          const result = await callClaude({
+            apiKey: anthropicConfig.apiKey,
+            model: anthropicConfig.model,
+            conversationHistory,
+            callStartTime
+          });
+          aiResponse = result.content;
+          rawResponse = result;
+        } else if (currentAgent.type === 'openai' || currentAgent.type === 'chatgpt') {
+          const result = await callChatGPT({
+            lovableApiKey: LOVABLE_API_KEY,
+            openaiConfig,
+            conversationHistory,
+            callStartTime
+          });
+          aiResponse = result.content;
+          rawResponse = result;
+        } else if (currentAgent.type === 'lovable_ai' || currentAgent.type === 'gemini') {
+          const result = await callGemini({
+            lovableApiKey: LOVABLE_API_KEY,
+            conversationHistory,
+            callStartTime
+          });
+          aiResponse = result.content;
+          rawResponse = result;
+        } else {
+          console.warn(`⚠️ Tipo agente sconosciuto: ${currentAgent.type}, skip`);
+          continue;
+        }
+      } catch (aiError: any) {
+        console.error(`❌ Errore AI per ${currentAgent.name}:`, aiError.message);
+        continue; // Skip this agent, try next
+      }
+
+      if (!aiResponse) {
+        console.warn(`⚠️ Nessuna risposta da ${currentAgent.name}, skip`);
+        continue;
+      }
+
+      aiResponse = aiResponse.trim();
+
+      // Skip if agent explicitly says SKIP
+      if (aiResponse === '[SKIP]' || aiResponse === 'SKIP') {
+        console.log(`⏭️ ${currentAgent.name} ha scelto di non rispondere (SKIP)`);
+        continue;
+      }
+
+      console.log(`✅ Risposta ${currentAgent.name}: ${aiResponse.substring(0, 100)}...`);
+
+      // ============ GENERATE MESSAGE ID & AUDIO ============
+      const messageId = crypto.randomUUID();
+      let audioUrl = null;
+
+      if (voiceEnabled && elevenLabsApiKey) {
+        const voiceAgent = activeVoiceAgents.find((v: any) => 
+          v.elevenlabs_agent_id === currentAgent.id ||
+          v.name.toLowerCase().includes(currentAgent.name.toLowerCase()) ||
+          currentAgent.name.toLowerCase().includes(v.name.toLowerCase())
+        ) || activeVoiceAgents[0];
+        
+        if (voiceAgent?.voice_id) {
+          try {
+            audioUrl = await generateAudioForSingleResponse({
+              supabaseClient, conversationId, messageId,
+              content: aiResponse,
+              voiceId: voiceAgent.voice_id,
+              elevenLabsApiKey
+            });
+            console.log(`🔊 Audio generato per ${currentAgent.name}`);
+          } catch (audioError) {
+            console.error(`❌ Errore audio per ${currentAgent.name}:`, audioError);
+          }
+        }
+      }
+
+      // ============ SAVE TO DATABASE ============
+      const { error: insertError } = await supabaseClient
+        .from('chat_laboratory_messages')
+        .insert({
+          id: messageId,
+          conversation_id: conversationId,
+          sender_type: currentAgent.type,
+          sender_name: currentAgent.name,
+          content: aiResponse,
+          audio_url: audioUrl,
+          token_input: rawResponse?.tokensIn || 0,
+          token_output: rawResponse?.tokensOut || 0,
+          tempo_risposta_ms: rawResponse?.duration || 0,
+          created_at: new Date().toISOString()
+        });
+
+      if (insertError) {
+        console.error(`❌ Errore salvataggio ${currentAgent.name}:`, insertError);
+      } else {
+        console.log(`✅ ${currentAgent.name} salvato nel DB con ID ${messageId}`);
+        allResponses.push({ agentName: currentAgent.name, content: aiResponse, messageId });
+        responseResults.push({
+          speaker: currentAgent.name,
+          response: aiResponse,
+          audioUrl,
+          messageId
+        });
+      }
     }
 
     // ============ UPDATE TURN INDEX ============
-    const { error: updateError } = await supabaseClient
+    const finalTurnIndex = (newTurnIndex + orderedAgents.length - 1) % activeParticipants.length;
+    await supabaseClient
       .from('chat_laboratory_conversations')
       .update({
-        current_turn_index: newTurnIndex,
-        last_speaker_index: newTurnIndex,
+        current_turn_index: finalTurnIndex,
+        last_speaker_index: finalTurnIndex,
         updated_at: new Date().toISOString()
       })
       .eq('id', conversationId);
 
-    if (updateError) {
-      console.error(`❌ Errore aggiornamento turn index:`, updateError);
-    } else {
-      console.log(`✅ Turn index aggiornato: ${newTurnIndex}`);
-    }
-
     // ============ RETURN RESPONSE ============
-    console.log(`\n✅ Risposta generata da ${selectedAgent.name} con strategia ${turnStrategy}`);
+    console.log(`\n✅ Multi-agent completato: ${responseResults.length}/${orderedAgents.length} risposte generate`);
     return new Response(
       JSON.stringify({
-        response: aiResponse,
-        speaker: selectedAgent.name,
-        audioUrl: audioUrl,
+        responses: responseResults,
+        totalResponses: responseResults.length,
+        strategy: turnStrategy,
+        // Backward compat: first response as primary
+        response: responseResults[0]?.response || '',
+        speaker: responseResults[0]?.speaker || '',
+        audioUrl: responseResults[0]?.audioUrl || null,
         tempResponse: null,
-        turnIndex: newTurnIndex,
-        strategy: turnStrategy
+        turnIndex: finalTurnIndex
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

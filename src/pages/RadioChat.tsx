@@ -218,6 +218,10 @@ const RadioChatContent = () => {
                   messages={messages}
                   isAutoAdvanceEnabled={preferences.isAutoAdvanceEnabled}
                   isAudioEnabled={isAudioEnabled}
+                  currentPlayingId={currentPlayingId}
+                  isAudioPlaying={isAudioPlaying}
+                  onAudioStart={handleAudioStart}
+                  onAudioEnd={handleAudioEnd}
                 />
               </div>
             </div>
@@ -226,7 +230,7 @@ const RadioChatContent = () => {
             <div className={preferences.viewMode === 'tabs' ? 'block' : 'hidden'}>
               <div className="w-full h-full pt-20 pb-24">
                 <MessageTabsView
-                  messages={messages.filter(m => m.sender_type !== 'human').map(m => ({
+                  messages={messages.map(m => ({
                     ...m,
                     conversation_id: m.conversation_id || currentConversationId || '',
                     is_visible_to_ai: m.is_visible_to_ai ?? true,

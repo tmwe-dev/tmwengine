@@ -228,7 +228,7 @@ const RadioChatContent = () => {
 
             {/* Tabs View */}
             <div className={preferences.viewMode === 'tabs' ? 'block' : 'hidden'}>
-              <div className="w-full h-full pt-20 pb-24">
+              <div className="w-full pt-20 pb-24 h-[calc(100vh-160px)]">
                 <MessageTabsView
                   messages={messages.map(m => ({
                     ...m,

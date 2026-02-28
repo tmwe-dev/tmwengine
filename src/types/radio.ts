@@ -34,5 +34,5 @@ export interface RadioConversation {
   total_tokens?: number;
 }
 
-export type RadioViewMode = 'carousel' | 'messages';
+export type RadioViewMode = 'carousel' | 'messages' | 'tabs';
 export type RadioSidebarTab = 'conversations' | 'settings';

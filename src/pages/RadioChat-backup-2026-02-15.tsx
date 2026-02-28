@@ -73,9 +73,9 @@ const RadioChatContent = () => {
   const [cachedPrompts, setCachedPrompts] = useState<any>(null);
   
   // ✅ Fix 2: Persist viewMode in localStorage
-  const [viewMode, setViewMode] = useState<'carousel' | 'messages'>(() => {
+  const [viewMode, setViewMode] = useState<'carousel' | 'messages' | 'tabs'>(() => {
     const saved = localStorage.getItem('radio-view-mode');
-    return (saved as 'carousel' | 'messages') || 'carousel';
+    return (saved as 'carousel' | 'messages' | 'tabs') || 'carousel';
   });
   
   const [participants, setParticipants] = useState<RadioParticipant[]>([]);

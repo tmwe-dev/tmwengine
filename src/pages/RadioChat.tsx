@@ -26,6 +26,7 @@ import { RadioCarouselContainer } from '@/components/radio-chat/RadioCarouselCon
 import { RadioInputArea } from '@/components/radio-chat/RadioInputArea';
 import { RadioDebugPanel } from '@/components/radio-chat/RadioDebugPanel';
 import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
+import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
 import { RadioCarouselAudioPlayerWrapper } from '@/components/radio-chat/RadioCarouselAudioPlayerWrapper';
 import { RadioAudioControls } from '@/components/radio-chat/RadioAudioControls';
 import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
@@ -217,6 +218,21 @@ const RadioChatContent = () => {
                   messages={messages}
                   isAutoAdvanceEnabled={preferences.isAutoAdvanceEnabled}
                   isAudioEnabled={isAudioEnabled}
+                />
+              </div>
+            </div>
+
+            {/* Tabs View */}
+            <div className={preferences.viewMode === 'tabs' ? 'block' : 'hidden'}>
+              <div className="w-full h-full pt-20 pb-24">
+                <MessageTabsView
+                  messages={messages.filter(m => m.sender_type !== 'human').map(m => ({
+                    ...m,
+                    conversation_id: m.conversation_id || currentConversationId || '',
+                    is_visible_to_ai: m.is_visible_to_ai ?? true,
+                  }))}
+                  isAutoFollowEnabled={preferences.isAutoAdvanceEnabled}
+                  onAutoFollowChange={preferences.setIsAutoAdvanceEnabled}
                 />
               </div>
             </div>

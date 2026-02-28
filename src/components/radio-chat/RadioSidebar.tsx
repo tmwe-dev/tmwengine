@@ -1,4 +1,4 @@
-import { X, LayoutGrid, MessageSquare } from 'lucide-react';
+import { X, LayoutGrid, MessageSquare, Columns } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioVoiceSelector } from './RadioVoiceSelector';
@@ -20,8 +20,8 @@ interface RadioSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   conversationId: string | null;
-  viewMode: 'carousel' | 'messages';
-  onViewModeChange: (mode: 'carousel' | 'messages') => void;
+  viewMode: 'carousel' | 'messages' | 'tabs';
+  onViewModeChange: (mode: 'carousel' | 'messages' | 'tabs') => void;
   isAutoAdvanceEnabled?: boolean;
   onAutoAdvanceChange?: (enabled: boolean) => void;
   participants: RadioParticipant[];
@@ -107,6 +107,15 @@ export function RadioSidebar({
                   >
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Messages
+                  </Button>
+                  <Button
+                    variant={viewMode === 'tabs' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => onViewModeChange('tabs')}
+                    className="w-full justify-start"
+                  >
+                    <Columns className="w-4 h-4 mr-2" />
+                    Tabs
                   </Button>
                 </div>
 

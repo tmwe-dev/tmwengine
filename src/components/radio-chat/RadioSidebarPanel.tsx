@@ -98,6 +98,7 @@ export const RadioSidebarPanel = ({
       ) : (
         <RadioSidebar
           isOpen={true}
+          embedded={true}
           onClose={() => {
             onClose();
             if (crmMenuOpen) setCrmMenuOpen(false);

@@ -1,10 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Upload, FileSpreadsheet, Calendar, TrendingUp, AlertTriangle, Wrench } from 'lucide-react';
+import { Users, Upload, FileSpreadsheet, Calendar, TrendingUp, AlertTriangle, Wrench, FileDown, TableProperties } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ImportLog {
   id: string;
@@ -21,21 +22,28 @@ interface ImportLogMobileCardProps {
   log: ImportLog;
   onProcess: () => void;
   onViewRecords: () => void;
-  
+  onDownloadOriginal: () => void;
+  onDownloadContacts: () => void;
   getStatusBadge: (status: string) => React.ReactNode;
   isProcessing: boolean;
   isLoading: boolean;
   isSelected: boolean;
+  isExportingOriginal: boolean;
+  isExportingContacts: boolean;
 }
 
 export function ImportLogMobileCard({
   log,
   onProcess,
   onViewRecords,
+  onDownloadOriginal,
+  onDownloadContacts,
   getStatusBadge,
   isProcessing,
   isLoading,
-  isSelected
+  isSelected,
+  isExportingOriginal,
+  isExportingContacts
 }: ImportLogMobileCardProps) {
   const navigate = useNavigate();
   const canProcess = log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato';
@@ -113,7 +121,7 @@ export function ImportLogMobileCard({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pt-2 justify-start">
+          <div className="flex gap-2 pt-2 justify-start flex-wrap">
             {canProcess && (
               <Button 
                 size="sm"
@@ -136,6 +144,43 @@ export function ImportLogMobileCard({
               <Users className="h-4 w-4 mr-1" />
               {isLoading ? 'Caricamento...' : 'Gestisci'}
             </Button>
+
+            {canView && (
+              <>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onDownloadOriginal}
+                        disabled={isExportingOriginal}
+                        className="px-2"
+                      >
+                        <FileDown className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Scarica CSV originale</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onDownloadContacts}
+                        disabled={isExportingContacts}
+                        className="px-2"
+                      >
+                        <TableProperties className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Esporta contatti elaborati CSV</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </>
+            )}
           </div>
         </div>
       </CardContent>

@@ -1,33 +1,39 @@
 
 
-# Piano: Download dei dati dal database
+## Piano: Spostare i pulsanti export nella riga Azioni dello Storico Import
 
-## Situazione
-Il file originale da 13,034 righe e' gia' salvato integralmente nella colonna `file_content` della tabella `file_imports` (4.5MB di CSV). I restanti 8,059 record sono nella tabella `imported_contacts`.
+### Problema
+I pulsanti "Scarica File Originale" e "Esporta Contatti Importati" sono stati messi nella pagina DatabaseSettings invece che nella pagina GestisciImport, dove l'utente li vuole -- nella colonna Azioni di ogni riga dello Storico Import.
 
-## Soluzione
-Aggiungere un pulsante "Scarica CSV" nella pagina dei Record Importati che permette di scaricare entrambi i dataset:
+### Cosa fare
 
-### Opzione 1: File Originale (13,034 righe)
-- Query `file_imports` per `id = bf387b3b-...`, prende `file_content`
-- Crea un Blob CSV e lo scarica come `tmwe_commercial_contact.csv`
-- Nessuna edge function necessaria: il contenuto e' gia' testo nel DB
+**1. Aggiornare `useExportImportedData.ts`**
+- Modificare `download_original_file` per accettare un `import_log_id` come parametro e filtrare `file_imports` per quel specifico import (via `import_log_id`), non prendere l'ultimo generico.
+- Modificare `download_imported_contacts` per accettare un `import_log_id` e filtrare `imported_contacts` per quello specifico import.
 
-### Opzione 2: Record Elaborati (8,059 righe)
-- Query paginata su `imported_contacts` (blocchi da 1000 per il limite Supabase)
-- Concatena tutti i risultati e genera CSV lato client
-- Scarica come `imported_contacts_export.csv`
+**2. Aggiungere 2 icone nella colonna Azioni di `GestisciImport.tsx`**
+- Icona `FileDown` (download file originale) con tooltip "Scarica CSV originale"
+- Icona `TableProperties` (export elaborati) con tooltip "Esporta contatti elaborati CSV"
+- Entrambe nella `div` delle azioni (riga 640), accanto a Eye, PlayCircle, Wrench, Trash2.
+- Disabilitate durante loading. Visibili solo per import con stato completato/completato_con_errori.
+- Importare e usare l'hook `useExportImportedData`, passando `log.id` a ciascuna funzione.
 
-### Implementazione
-1. Creare un hook `useExportImportedData.ts` con due funzioni: `downloadOriginalFile()` e `downloadImportedContacts()`
-2. Aggiungere due pulsanti Download nella pagina che gestisce i record importati (o nella pagina DatabaseSettings)
+**3. Rimuovere i 2 pulsanti da `DatabaseSettings.tsx`**
+- Rimuovere le voci "Scarica File Originale (13K)" e "Esporta Contatti Importati (8K)" dal menu.
+- Rimuovere import di `useExportImportedData` e relativi state da DatabaseSettings.
 
-### File da modificare/creare
+**4. Aggiornare anche `ImportLogMobileCard.tsx`**
+- Aggiungere le stesse 2 icone download nella versione mobile della card.
+
+### File da modificare
+
 | File | Azione |
 |------|--------|
-| `src/hooks/useExportImportedData.ts` | Nuovo — logica export CSV |
-| Pagina record importati (da identificare) | Aggiunta pulsanti download |
+| `src/hooks/useExportImportedData.ts` | Parametrizzare per `import_log_id` |
+| `src/pages/GestisciImport.tsx` | Aggiungere icone download nella riga Azioni |
+| `src/pages/DatabaseSettings.tsx` | Rimuovere i 2 pulsanti export |
+| `src/components/import/ImportLogMobileCard.tsx` | Aggiungere icone download mobile |
 
 ### Rischio: Basso
-- Operazione read-only, nessuna modifica a tabelle o dati esistenti
+- Nessuna modifica a tabelle DB. Solo spostamento UI e parametrizzazione query esistenti.
 

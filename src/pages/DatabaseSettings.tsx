@@ -1,13 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, FileText, Archive, Settings, Activity, AlertCircle, Brain, Download } from "lucide-react";
+import { Database, FileText, Archive, Settings, Activity, AlertCircle, Brain, Download, FileDown, TableProperties } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { exportAllPromptsToTxt, downloadTxtFile } from "@/lib/promptExporter";
 import { useState } from "react";
+import { useExportImportedData } from "@/hooks/useExportImportedData";
 
 export default function DatabaseSettings() {
   const { toast } = useToast();
   const [exporting, setExporting] = useState(false);
+  const { download_original_file, download_imported_contacts, exporting_original, exporting_contacts } = useExportImportedData();
 
   const handleExportPrompts = async () => {
     setExporting(true);
@@ -87,6 +89,22 @@ export default function DatabaseSettings() {
       icon: AlertCircle,
       href: "/import-errors",
       color: "text-red-500"
+    },
+    {
+      title: "Scarica File Originale (13K)",
+      description: "Download del CSV originale caricato (13,034 righe)",
+      icon: FileDown,
+      href: "#",
+      color: "text-emerald-500",
+      onClick: download_original_file
+    },
+    {
+      title: "Esporta Contatti Importati (8K)",
+      description: "Export CSV dei record elaborati dalla tabella imported_contacts",
+      icon: TableProperties,
+      href: "#",
+      color: "text-teal-500",
+      onClick: download_imported_contacts
     }
   ];
 
@@ -106,7 +124,7 @@ export default function DatabaseSettings() {
               <button
                 key={item.title}
                 onClick={item.onClick}
-                disabled={exporting}
+                disabled={exporting || exporting_original || exporting_contacts}
                 type="button"
                 className="w-full text-left"
               >

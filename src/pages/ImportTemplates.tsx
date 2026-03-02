@@ -2470,10 +2470,14 @@ export default function ImportTemplates() {
                       log={log}
                       onProcess={() => processFile(log.id)}
                       onViewRecords={() => viewImportRecords(log)}
+                      onDownloadOriginal={() => {}}
+                      onDownloadContacts={() => {}}
                       getStatusBadge={getStatusBadge}
                       isProcessing={importProgress.isProcessing}
                       isLoading={loadingAllRecords && selectedImport?.id === log.id}
                       isSelected={selectedImport?.id === log.id}
+                      isExportingOriginal={false}
+                      isExportingContacts={false}
                     />
                   ))}
                 </div>

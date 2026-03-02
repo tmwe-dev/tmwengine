@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Eye, PlayCircle, RefreshCw, Users, X, Search, Filter, ChevronDown, ChevronUp, Database, Activity, FileText, Wrench } from 'lucide-react';
+import { Trash2, Eye, PlayCircle, RefreshCw, Users, X, Search, Filter, ChevronDown, ChevronUp, Database, Activity, FileText, Wrench, FileDown, TableProperties } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
@@ -11,6 +11,7 @@ import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
 import { ImportedContactMobileCard } from '@/components/import/ImportedContactMobileCard';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { cn } from '@/lib/utils';
+import { useExportImportedData } from '@/hooks/useExportImportedData';
 import {
   Table,
   TableBody,
@@ -119,6 +120,7 @@ export default function GestisciImport() {
   const isMobile = useIsMobile();
   const { getActivityCount, getCompanyActivities } = useCompanyActivities();
   const navigate = useNavigate();
+  const { download_original_file, download_imported_contacts, exporting_original, exporting_contacts } = useExportImportedData();
 
   // States for record viewing dialog
   const [showRecordsDialog, setShowRecordsDialog] = useState(false);
@@ -599,10 +601,14 @@ export default function GestisciImport() {
                   log={log}
                   onViewRecords={() => viewImportRecords(log)}
                   onProcess={() => processFile(log.id)}
+                  onDownloadOriginal={() => download_original_file(log.id)}
+                  onDownloadContacts={() => download_imported_contacts(log.id)}
                   getStatusBadge={getStatusBadge}
                   isProcessing={monitoringImportId === log.id}
                   isLoading={loadingAllRecords && selectedImport?.id === log.id}
                   isSelected={selectedImport?.id === log.id}
+                  isExportingOriginal={exporting_original}
+                  isExportingContacts={exporting_contacts}
                 />
               ))}
             </div>
@@ -665,6 +671,40 @@ export default function GestisciImport() {
                           >
                             <Wrench className="h-4 w-4" />
                           </Button>
+                        )}
+                        {log.stato !== 'pronto_per_elaborazione' && log.stato !== 'file_salvato' && (
+                          <>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => download_original_file(log.id)}
+                                    disabled={exporting_original}
+                                  >
+                                    <FileDown className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Scarica CSV originale</p></TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => download_imported_contacts(log.id)}
+                                    disabled={exporting_contacts}
+                                  >
+                                    <TableProperties className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Esporta contatti elaborati CSV</p></TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </>
                         )}
                         <Button
                           variant="ghost"

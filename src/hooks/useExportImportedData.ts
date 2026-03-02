@@ -19,22 +19,21 @@ export function useExportImportedData() {
     URL.revokeObjectURL(url);
   };
 
-  const download_original_file = async () => {
+  const download_original_file = async (import_log_id: string) => {
     set_exporting_original(true);
     try {
-      // Get the most recent file import with file_content
       const { data, error } = await supabase
         .from('file_imports')
         .select('file_name, file_content')
+        .eq('import_log_id', import_log_id)
         .not('file_content', 'is', null)
-        .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
       if (error) throw error;
       if (!data?.file_content) throw new Error('Nessun contenuto file trovato');
 
-      const filename = data.file_name || 'tmwe_commercial_contact.csv';
+      const filename = data.file_name || 'original_import.csv';
       download_blob(data.file_content, filename);
 
       toast({
@@ -53,7 +52,7 @@ export function useExportImportedData() {
     }
   };
 
-  const download_imported_contacts = async () => {
+  const download_imported_contacts = async (import_log_id: string) => {
     set_exporting_contacts(true);
     try {
       const PAGE_SIZE = 1000;
@@ -61,11 +60,11 @@ export function useExportImportedData() {
       let offset = 0;
       let has_more = true;
 
-      // Paginated fetch
       while (has_more) {
         const { data, error } = await supabase
           .from('imported_contacts')
           .select('*')
+          .eq('import_log_id', import_log_id)
           .range(offset, offset + PAGE_SIZE - 1)
           .order('created_at', { ascending: true });
 
@@ -83,13 +82,12 @@ export function useExportImportedData() {
       if (all_records.length === 0) {
         toast({
           title: '⚠️ Nessun dato',
-          description: 'La tabella imported_contacts è vuota',
+          description: 'Nessun record elaborato trovato per questo import',
           variant: 'destructive',
         });
         return;
       }
 
-      // Generate CSV
       const headers = Object.keys(all_records[0]);
       const csv_rows = [
         headers.join(','),
@@ -98,7 +96,6 @@ export function useExportImportedData() {
             const val = record[h];
             if (val === null || val === undefined) return '';
             const str = String(val);
-            // Escape CSV values with commas, quotes, or newlines
             if (str.includes(',') || str.includes('"') || str.includes('\n')) {
               return `"${str.replace(/"/g, '""')}"`;
             }
@@ -107,7 +104,7 @@ export function useExportImportedData() {
         ),
       ];
 
-      download_blob(csv_rows.join('\n'), 'imported_contacts_export.csv');
+      download_blob(csv_rows.join('\n'), `imported_contacts_${import_log_id.slice(0, 8)}.csv`);
 
       toast({
         title: '✅ Export completato',

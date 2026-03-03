@@ -1,74 +1,65 @@
 
 
-# Analisi Completa Radio Chat — Piano di Refactoring
+# Piano: Fix Sincronizzazione Audio/Carousel in Radio Chat
 
-## Problemi Identificati
+## Problema Centrale
 
-### BUG 1: Autenticazione blocca il flusso (CRITICO)
-`useRadioAuth` tenta `getUser()` e `getSession()`. Senza login, entrambi falliscono. `currentUser` resta `null`, il toast "Non autenticato" appare, e `useRadioConversations(undefined)` carica solo conversazioni con `user_id IS NULL`. Le nuove conversazioni create si accumulano senza `user_id`, ma se poi un utente si logga, non le vede piu'.
+`stopCurrentAudio()` in `useRadioAudioPlayback` resetta solo lo **stato React** (`isAudioPlaying = false`), ma **non ferma l'elemento `HTMLAudioElement`** reale. Risultato:
 
-**Fix**: In dev mode (auth bypass), `useRadioAuth` deve impostare un utente fittizio o semplicemente non bloccare il flusso. Le conversazioni devono caricarsi senza filtro `user_id` quando non c'e' autenticazione.
+1. **Voci sovrapposte**: Quando si cambia card nel carousel, `stopCurrentAudio()` cambia lo stato ma l'audio precedente continua a suonare finche' React non rimonta il componente
+2. **Nessun avanzamento automatico**: `handleCarouselAudioEnd` chiama `handleAudioEnd()` e poi dopo 50ms cambia `activeMessageId`, ma il nuovo audio non parte perche' `handleAudioStart` non viene mai chiamato dal player
+3. **Nessun controllo imperativo**: Non esiste un modo per fermare immediatamente l'audio dall'esterno dei componenti player
 
-### BUG 2: `createConversation` e `createQuickConversation` duplicati
-Quando si invia il primo messaggio senza conversazione, `useRadioSendMessage` chiama `createQuickConversation` per creare una conversazione al volo. Ma l'utente potrebbe aver gia' cliccato "Nuova conversazione" (che chiama `createConversation`). Risultato: conversazioni duplicate. Inoltre `createQuickConversation` non chiama `setConversationId`, quindi il `currentConversationId` non si aggiorna nel parent.
+## Soluzione: AudioRef centralizzato
 
-**Fix**: Unificare la logica di creazione. `createQuickConversation` deve anche fare `setConversationId(data.id)`.
+Aggiungere un **ref condiviso** (`audioElementRef`) nel hook `useRadioAudioPlayback` che punta all'`HTMLAudioElement` attivo. Quando `stopCurrentAudio()` viene chiamato, chiama `audioElementRef.current.pause()` oltre a resettare lo stato.
 
-### BUG 3: `useEffect` per caricare conversazioni dipende da `currentUser?.id`
-Riga 73-82 di `RadioChat.tsx`: `loadConversations()` parte solo se `currentUser?.id` e' truthy. Con auth bypass, `currentUser` e' `null` e le conversazioni non si caricano mai automaticamente.
+### File da modificare
 
-**Fix**: Rimuovere la dipendenza da `currentUser?.id` per il caricamento iniziale, o usare un flag `isReady` indipendente dall'auth.
+**1. `src/hooks/useRadioAudioPlayback.ts`**
+- Aggiungere `audioElementRef: React.MutableRefObject<HTMLAudioElement | null>` 
+- `stopCurrentAudio()` chiama `audioElementRef.current?.pause()` prima di resettare lo stato
+- `handleAudioEnd()` chiama `audioElementRef.current?.pause()` 
+- Esporre `audioElementRef` per registrazione dai player
 
-### BUG 4: `clearMessages()` non resetta `activeMessageId` nel carousel
-In `handleNewConversation`, `setActiveMessageId('')` viene chiamato ma `useRadioCarouselNav` ha il suo `activeMessageId` interno. L'`useEffect` alla riga 21-25 del carousel nav si riattiva solo quando `firstAiMessageId` cambia, ma con messaggi vuoti non c'e' trigger di reset. Il vecchio `activeMessageId` puo' persistere creando uno stato inconsistente.
+**2. `src/components/radio-chat/RadioAudioPlayer.tsx`**
+- Accettare prop `audioElementRef` opzionale
+- Dopo aver creato `new Audio()`, registrarlo nel ref condiviso: `audioElementRef.current = audio`
+- Nel cleanup, deregistrare: `if (audioElementRef.current === audio) audioElementRef.current = null`
 
-**Fix**: Esporre un `resetCarousel()` dal hook carousel nav, chiamato da `handleNewConversation`.
+**3. `src/components/radio-chat/RadioAudioPlayerMini.tsx`**
+- Stessa logica: accettare `audioElementRef`, registrare l'audio element
 
-### BUG 5: `localStorage` stale conversation ID
-`currentConversationId` inizializzato da `localStorage` (riga 8-10 di `useRadioConversations`). Se la conversazione salvata e' stata eliminata, il sistema tenta di caricare messaggi per una conversazione inesistente senza fallback.
+**4. `src/components/radio-chat/RadioCarouselAudioPlayerWrapper.tsx`**
+- Passare `audioElementRef` sia a `RadioAudioPlayer` che a `RadioAudioPlayerMini`
+- Accettare `audioElementRef` come prop dal parent
 
-**Fix**: Validare il `localStorage` ID contro le conversazioni caricate. Se non esiste piu', reset a `null`.
+**5. `src/pages/RadioChat.tsx`**
+- Passare `audioElementRef` da `useRadioAudioPlayback` al `RadioCarouselAudioPlayerWrapper` via props
+- Nella sezione `RadioMessagesView`: passare i callback correttamente per stop audio
 
-### BUG 6: Realtime subscription non si attiva su nuova conversazione creata da `sendMessage`
-`useRadioMessages` si iscrive al canale realtime basandosi su `conversationId`. Ma quando `sendMessage` crea una conversazione via `createQuickConversation`, il `conversationId` passato a `useRadioMessages` e' ancora `null` al momento della creazione. Il nuovo ID viene settato via `setConversationId` ma il re-render e la nuova subscription avvengono dopo che l'orchestrator ha gia' salvato i messaggi, quindi i messaggi AI potrebbero arrivare prima che la subscription sia attiva.
+**6. `src/hooks/useRadioCarouselNav.ts`**
+- `handleCarouselAudioEnd`: dopo `handleAudioEnd()`, il cambio di `activeMessageId` trigger il rimontaggio del player che fa autoplay del prossimo messaggio -- verificare che il flusso sia corretto
 
-**Fix**: Dopo `createQuickConversation` in `sendMessage`, fare `await loadMessages(convId)` con un piccolo delay post-orchestrator, oppure assicurarsi che la subscription si attivi prima della chiamata all'orchestrator.
+### Flusso dopo il fix
 
-## Piano di Intervento (Solo Logica, Nessun Cambio Grafico)
+```text
+User cambia card → stopCurrentAudio()
+  → audioElementRef.current.pause()  ← NUOVO: stop immediato
+  → setIsAudioPlaying(false)
+  → setActiveMessageId(newId)
+  → React rimonta RadioAudioPlayer con nuovo messageId
+  → useEffect crea new Audio() e registra nel ref
+  → autoPlay → audio.play() → handleAudioStart()
 
-### 1. `useRadioAuth.ts` — Bypass completo in dev
-- Se `getUser()` e `getSession()` falliscono, impostare `currentUser` a un oggetto fittizio `{ id: 'dev-anonymous' }` invece di `null`
-- Rimuovere il toast "Non autenticato" in modalita' dev/bypass
+Audio finisce → handleEnded → onPlayEnd → handleCarouselAudioEnd
+  → handleAudioEnd() resetta stato
+  → setTimeout → setActiveMessageId(nextId)
+  → Stesso flusso di rimontaggio sopra
+```
 
-### 2. `useRadioConversations.ts` — Fix creazione e caricamento
-- `createQuickConversation`: aggiungere `setConversationId(data.id)` dopo la creazione
-- `loadConversations`: se `userId` e' il dev anonymous ID, caricare tutte le conversazioni senza filtro `user_id`
-- Validare `localStorage` ID dopo il caricamento delle conversazioni
-
-### 3. `useRadioMessages.ts` — Robustezza subscription
-- Aggiungere un controllo che, se `conversationId` cambia da null a un valore, forzi un `loadMessages` immediato dopo un breve delay (per catturare messaggi inseriti prima della subscription)
-
-### 4. `useRadioCarouselNav.ts` — Reset state
-- Aggiungere ed esporre funzione `resetNavigation()` che resetta `activeMessageId` a `''`
-- Gestire il caso in cui `aiMessages` diventa vuoto (nuova conversazione)
-
-### 5. `RadioChat.tsx` — Orchestrazione corretta
-- Rimuovere la condizione `if (currentUser?.id)` dal `useEffect` di caricamento iniziale
-- In `handleNewConversation`, chiamare il nuovo `resetNavigation()`
-- Aggiungere validazione del `localStorage` conversation ID all'avvio
-
-### File da Modificare
-
-| File | Rischio |
-|------|---------|
-| `src/hooks/useRadioAuth.ts` | Basso |
-| `src/hooks/useRadioConversations.ts` | Basso |
-| `src/hooks/useRadioMessages.ts` | Basso |
-| `src/hooks/useRadioCarouselNav.ts` | Basso |
-| `src/pages/RadioChat.tsx` | Basso |
-
-### File NON toccati
-- Nessun componente UI/grafico
-- Nessuna edge function
-- Nessuna tabella DB
+### Rischio: Basso
+- Solo logica audio, nessun cambio UI/grafico
+- Pattern additivo: si aggiunge un ref, non si rimuove nulla
+- 6 file toccati, tutti nel modulo Radio Chat
 

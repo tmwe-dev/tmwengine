@@ -11,20 +11,22 @@ interface RadioCarouselAudioPlayerWrapperProps {
   onAudioEnd: () => void;
   className?: string;
   isAudioEnabled?: boolean;
+  /** Shared ref for centralized audio control */
+  sharedAudioRef?: React.MutableRefObject<HTMLAudioElement | null>;
 }
 
 export const RadioCarouselAudioPlayerWrapper = ({ 
   message,
   onAudioEnd,
   className,
-  isAudioEnabled = true
+  isAudioEnabled = true,
+  sharedAudioRef
 }: RadioCarouselAudioPlayerWrapperProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const { setIsPlayerExpanded } = useRadioAudioPlayer();
 
-  // Sincronizza stato locale con context
   useEffect(() => {
     setIsPlayerExpanded(isExpanded);
   }, [isExpanded, setIsPlayerExpanded]);
@@ -37,7 +39,7 @@ export const RadioCarouselAudioPlayerWrapper = ({
 
   const isHuman = message.sender_type === 'human';
 
-  // Visualizzazione MINI (default)
+  // Mini view (default)
   if (!isExpanded) {
     return (
       <RadioAudioPlayerMini
@@ -53,17 +55,17 @@ export const RadioCarouselAudioPlayerWrapper = ({
         canAutoPlay={true}
         onPlayStart={(id) => console.log(`▶️ [Carousel Mini] Audio START: ${id}`)}
         onPlayEnd={onAudioEnd}
+        sharedAudioRef={sharedAudioRef}
       />
     );
   }
 
-  // Visualizzazione ESTESA
+  // Expanded view
   return (
     <div className={cn(
       "max-h-[100px] w-full max-w-3xl border-2 border-purple-400/40 bg-black/95 backdrop-blur-lg rounded-xl shadow-[0_0_40px_rgba(168,85,247,0.3)] relative overflow-hidden",
       className
     )}>
-      {/* Bottone minimize */}
       <button
         onClick={() => setIsExpanded(false)}
         className="absolute top-2 right-2 w-8 h-8 rounded-full bg-purple-500/20 hover:bg-purple-500/30 flex items-center justify-center transition-all z-10"
@@ -85,6 +87,7 @@ export const RadioCarouselAudioPlayerWrapper = ({
         showProgress={true}
         showSenderName={true}
         onTimeUpdate={handleTimeUpdate}
+        sharedAudioRef={sharedAudioRef}
       />
     </div>
   );

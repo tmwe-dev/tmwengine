@@ -14,6 +14,8 @@ interface RadioAudioPlayerMiniProps {
   canAutoPlay?: boolean;
   onPlayStart?: (messageId: string) => void;
   onPlayEnd?: () => void;
+  /** Shared ref for centralized audio control */
+  sharedAudioRef?: React.MutableRefObject<HTMLAudioElement | null>;
 }
 
 export const RadioAudioPlayerMini = ({
@@ -28,7 +30,8 @@ export const RadioAudioPlayerMini = ({
   autoPlay = false,
   canAutoPlay = false,
   onPlayStart,
-  onPlayEnd
+  onPlayEnd,
+  sharedAudioRef
 }: RadioAudioPlayerMiniProps) => {
   const [internalIsPlaying, setInternalIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -40,23 +43,24 @@ export const RadioAudioPlayerMini = ({
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
-    // Autoplay logic
+    // Register in shared ref for centralized control
+    if (sharedAudioRef) {
+      sharedAudioRef.current = audio;
+    }
+
     if (autoPlay && canAutoPlay && isAudioEnabled) {
-      console.log(`🔊 [Mini Player] Attempting autoplay for message: ${messageId}`);
+      console.log(`🔊 [Mini Player] Autoplay: ${messageId}`);
       audio.play()
         .then(() => {
-          console.log(`✅ [Mini Player] Autoplay SUCCESS: ${messageId}`);
+          console.log(`✅ [Mini Player] Autoplay OK: ${messageId}`);
           setIsPlaying(true);
           if (onPlayStart) onPlayStart(messageId);
         })
-        .catch(err => {
-          console.error(`❌ [Mini Player] Autoplay FAILED: ${messageId}`, err);
-        });
+        .catch(err => console.error(`❌ [Mini Player] Autoplay FAILED:`, err));
     }
 
-    // Handle audio end
     const handleEnded = () => {
-      console.log(`⏹️ [Mini Player] Audio ENDED: ${messageId}`);
+      console.log(`⏹️ [Mini Player] ENDED: ${messageId}`);
       setIsPlaying(false);
       if (onPlayEnd) onPlayEnd();
     };
@@ -66,6 +70,10 @@ export const RadioAudioPlayerMini = ({
     return () => {
       audio.removeEventListener('ended', handleEnded);
       audio.pause();
+      // Deregister from shared ref only if it's still this audio
+      if (sharedAudioRef && sharedAudioRef.current === audio) {
+        sharedAudioRef.current = null;
+      }
     };
   }, [audioUrl, autoPlay, canAutoPlay, isAudioEnabled, messageId]);
 
@@ -90,7 +98,6 @@ export const RadioAudioPlayerMini = ({
                     border-2 border-purple-400/40 
                     rounded-xl shadow-[0_0_30px_rgba(168,85,247,0.25)]
                     p-2 flex items-center gap-2 w-24">
-      {/* Play/Pause Button */}
       <button
         onClick={togglePlay}
         disabled={!isAudioEnabled}
@@ -106,7 +113,6 @@ export const RadioAudioPlayerMini = ({
         )}
       </button>
 
-      {/* Expand Button */}
       <button
         onClick={onExpand}
         className="w-8 h-8 rounded-full bg-purple-500/10 hover:bg-purple-500/20 

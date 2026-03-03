@@ -61,7 +61,7 @@ const RadioChatContent = () => {
   });
   const { generateSummary, generateFullReport } = useRadioSummary(loadConversations);
   const {
-    isAudioPlaying, currentPlayingId, handleAudioStart, handleAudioEnd, stopCurrentAudio
+    isAudioPlaying, currentPlayingId, audioElementRef, handleAudioStart, handleAudioEnd, stopCurrentAudio
   } = useRadioAudioPlayback();
   const {
     activeMessageId, setActiveMessageId, currentMessage, aiMessages,
@@ -278,6 +278,7 @@ const RadioChatContent = () => {
               onAudioEnd={handleCarouselAudioEnd}
               isAudioEnabled={isAudioEnabled}
               className={ui.messageViewVisible ? 'opacity-0 pointer-events-none' : ''}
+              sharedAudioRef={audioElementRef}
             />
           )}
           {currentConversationId && ui.showAudioControls && (

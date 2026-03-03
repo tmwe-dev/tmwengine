@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
+import { Play, Pause } from 'lucide-react';
 
 interface RadioAudioPlayerProps {
   audioUrl: string;
@@ -16,6 +14,8 @@ interface RadioAudioPlayerProps {
   showSenderName?: boolean;
   senderName?: string;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
+  /** Shared ref for centralized audio control */
+  sharedAudioRef?: React.MutableRefObject<HTMLAudioElement | null>;
 }
 
 export const RadioAudioPlayer = ({
@@ -30,7 +30,8 @@ export const RadioAudioPlayer = ({
   showProgress = true,
   showSenderName = false,
   senderName = '',
-  onTimeUpdate
+  onTimeUpdate,
+  sharedAudioRef
 }: RadioAudioPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -41,28 +42,32 @@ export const RadioAudioPlayer = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasStartedRef = useRef(false);
   
-  // ✅ Refs per callback sempre aggiornate senza causare re-mount
+  // Refs for callbacks (avoid re-mount)
   const onPlayStartRef = useRef(onPlayStart);
   const onPlayEndRef = useRef(onPlayEnd);
   const onPlayingChangeRef = useRef(onPlayingChange);
   const onTimeUpdateRef = useRef(onTimeUpdate);
-  
-  // ✅ Refs per props che non devono triggerare re-mount
-  const autoPlayRef = useRef(autoPlay);
-  const canAutoPlayRef = useRef(canAutoPlay);
-  const isAudioEnabledRef = useRef(isAudioEnabled);
 
   useEffect(() => {
-    console.log(`🔄 [RadioAudioPlayer] SETUP per: ${messageId.substring(0,8)}`);
-    // ✅ RESET hasStartedRef per permettere nuovo autoplay
+    onPlayStartRef.current = onPlayStart;
+    onPlayEndRef.current = onPlayEnd;
+    onPlayingChangeRef.current = onPlayingChange;
+    onTimeUpdateRef.current = onTimeUpdate;
+  }, [onPlayStart, onPlayEnd, onPlayingChange, onTimeUpdate]);
+
+  useEffect(() => {
+    console.log(`🔄 [RadioAudioPlayer] SETUP: ${messageId.substring(0,8)}`);
     hasStartedRef.current = false;
     
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
-    const handleLoadedMetadata = () => {
-      setDuration(audio.duration);
-    };
+    // Register in shared ref for centralized control
+    if (sharedAudioRef) {
+      sharedAudioRef.current = audio;
+    }
+
+    const handleLoadedMetadata = () => setDuration(audio.duration);
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
@@ -70,6 +75,7 @@ export const RadioAudioPlayer = ({
     };
 
     const handleEnded = () => {
+      console.log(`⏹️ [RadioAudioPlayer] ENDED: ${messageId.substring(0,8)}`);
       setIsPlaying(false);
       onPlayingChangeRef.current?.(false);
       onPlayEndRef.current?.();
@@ -86,72 +92,51 @@ export const RadioAudioPlayer = ({
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
-    if (autoPlay && canAutoPlay && isAudioEnabled && !hasStartedRef.current && audio.paused) {
-      console.log(`🎬 [RadioAudioPlayer] Tentativo autoplay: ${messageId}`);
+    if (autoPlay && canAutoPlay && isAudioEnabled && !hasStartedRef.current) {
+      console.log(`🎬 [RadioAudioPlayer] Autoplay: ${messageId.substring(0,8)}`);
       audio.play()
         .then(() => {
-          console.log(`▶️ [RadioAudioPlayer] Autoplay START: ${messageId}`);
+          console.log(`▶️ [RadioAudioPlayer] Autoplay OK: ${messageId.substring(0,8)}`);
           setIsPlaying(true);
           onPlayingChangeRef.current?.(true);
           onPlayStartRef.current?.(messageId);
           hasStartedRef.current = true;
         })
-        .catch(err => console.warn('⚠️ Autoplay bloccato:', err));
+        .catch(err => console.warn('⚠️ Autoplay blocked:', err));
     }
 
     return () => {
-      console.log(`🧹 [RadioAudioPlayer] CLEANUP per: ${messageId.substring(0,8)}`);
+      console.log(`🧹 [RadioAudioPlayer] CLEANUP: ${messageId.substring(0,8)}`);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
       audio.pause();
+      // Deregister from shared ref only if it's still this audio
+      if (sharedAudioRef && sharedAudioRef.current === audio) {
+        sharedAudioRef.current = null;
+      }
       hasStartedRef.current = false;
     };
   }, [messageId, audioUrl]);
 
-  // Aggiorna refs quando le callback o props cambiano (senza triggerare re-mount audio)
+  // Monitor canAutoPlay changes
   useEffect(() => {
-    onPlayStartRef.current = onPlayStart;
-    onPlayEndRef.current = onPlayEnd;
-    onPlayingChangeRef.current = onPlayingChange;
-    onTimeUpdateRef.current = onTimeUpdate;
-    autoPlayRef.current = autoPlay;
-    canAutoPlayRef.current = canAutoPlay;
-    isAudioEnabledRef.current = isAudioEnabled;
-  }, [onPlayStart, onPlayEnd, onPlayingChange, onTimeUpdate, autoPlay, canAutoPlay, isAudioEnabled]);
-
-  // ✅ NUOVO: Monitora canAutoPlay per avviare audio quando il messaggio diventa attivo
-  useEffect(() => {
-    console.log(`🔍 [RadioAudioPlayer] canAutoPlay monitor:`, {
-      messageId: messageId.substring(0,8),
-      canAutoPlay,
-      isAudioEnabled,
-      paused: audioRef.current?.paused,
-      hasStarted: hasStartedRef.current
-    });
-    
     if (!audioRef.current || !canAutoPlay || !isAudioEnabled) return;
     
-    // Se canAutoPlay diventa true E l'audio non è già in riproduzione
     if (canAutoPlay && audioRef.current.paused && !hasStartedRef.current) {
-      console.log(`🎬 [RadioAudioPlayer] canAutoPlay trigger: ${messageId.substring(0,8)}`);
-      
       audioRef.current.play()
         .then(() => {
-          console.log(`▶️ [RadioAudioPlayer] Autoplay START (triggered by canAutoPlay): ${messageId.substring(0,8)}`);
           setIsPlaying(true);
           onPlayingChangeRef.current?.(true);
           onPlayStartRef.current?.(messageId);
           hasStartedRef.current = true;
         })
-        .catch(err => console.warn('⚠️ Autoplay bloccato:', err));
+        .catch(err => console.warn('⚠️ Autoplay blocked:', err));
     }
   }, [canAutoPlay, isAudioEnabled, messageId]);
 
-  // ✅ Reset esplicito di hasStarted quando cambia messageId
   useEffect(() => {
-    console.log(`🔄 [RadioAudioPlayer] Reset hasStarted per: ${messageId.substring(0,8)}`);
     hasStartedRef.current = false;
   }, [messageId]);
 
@@ -171,7 +156,6 @@ export const RadioAudioPlayer = ({
     } else {
       audioRef.current.play()
         .then(() => {
-          console.log(`▶️ [RadioAudioPlayer] Manual START: ${messageId}`);
           setIsPlaying(true);
           onPlayingChangeRef.current?.(true);
           if (!hasStartedRef.current) {
@@ -183,22 +167,13 @@ export const RadioAudioPlayer = ({
     }
   };
 
-  const handleSeek = (value: number[]) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = value[0];
-      setCurrentTime(value[0]);
-    }
-  };
-
-  const handleVolumeChange = (value: number[]) => {
-    setVolume(value[0]);
-    if (value[0] > 0 && isMuted) {
-      setIsMuted(false);
-    }
-  };
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
+  const handleSeekClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = x / rect.width;
+    audioRef.current.currentTime = percentage * duration;
+    setCurrentTime(audioRef.current.currentTime);
   };
 
   const formatTime = (time: number): string => {
@@ -207,25 +182,12 @@ export const RadioAudioPlayer = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const handleSeekClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current || !duration) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = x / rect.width;
-    const newTime = percentage * duration;
-
-    audioRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-  };
-
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   if (!audioUrl || audioUrl.trim() === '') return null;
 
   return (
     <div className="flex items-center gap-3 px-2 py-2">
-      {/* Play/Pause Button */}
       <button
         onClick={togglePlay}
         disabled={!isAudioEnabled}
@@ -239,46 +201,37 @@ export const RadioAudioPlayer = ({
         )}
       </button>
 
-      {/* Sender Name (optional) */}
       {showSenderName && senderName && (
         <div className="text-xs text-purple-300/70 font-medium shrink-0">
           {senderName}
         </div>
       )}
 
-      {/* Progress Bar Container */}
       {showProgress && (
         <div className="flex items-center gap-4">
-        {/* Current Time */}
-        <span className="text-xs text-purple-300/60 font-mono min-w-[35px] text-right">
-          {formatTime(currentTime)}
-        </span>
+          <span className="text-xs text-purple-300/60 font-mono min-w-[35px] text-right">
+            {formatTime(currentTime)}
+          </span>
 
-        {/* Progress Bar */}
-        <div 
-          className="w-32 h-1 bg-white/10 rounded-full cursor-pointer group relative"
-          onClick={handleSeekClick}
-        >
-          {/* Background Track */}
-          <div className="absolute inset-0 rounded-full overflow-hidden">
-            {/* Progress Fill */}
+          <div 
+            className="w-32 h-1 bg-white/10 rounded-full cursor-pointer group relative"
+            onClick={handleSeekClick}
+          >
+            <div className="absolute inset-0 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-purple-400 to-purple-300 rounded-full transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
             <div 
-              className="h-full bg-gradient-to-r from-purple-400 to-purple-300 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
+              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-purple-400 rounded-full shadow-lg shadow-purple-400/50 transition-all group-hover:w-3.5 group-hover:h-3.5"
+              style={{ left: `calc(${progress}% - 6px)` }}
             />
           </div>
-          
-          {/* Playhead Circle */}
-          <div 
-            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-purple-400 rounded-full shadow-lg shadow-purple-400/50 transition-all group-hover:w-3.5 group-hover:h-3.5"
-            style={{ left: `calc(${progress}% - 6px)` }}
-          />
-        </div>
 
-        {/* Duration */}
-        <span className="text-xs text-purple-300/60 font-mono min-w-[35px]">
-          {formatTime(duration)}
-        </span>
+          <span className="text-xs text-purple-300/60 font-mono min-w-[35px]">
+            {formatTime(duration)}
+          </span>
         </div>
       )}
     </div>

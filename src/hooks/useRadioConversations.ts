@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { RadioConversation } from '@/types/radio';
 
+const DEV_ANONYMOUS_ID = 'dev-anonymous';
+
 export const useRadioConversations = (userId: string | undefined) => {
   const [conversations, setConversations] = useState<RadioConversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(() => {
@@ -12,7 +14,6 @@ export const useRadioConversations = (userId: string | undefined) => {
   const toastRef = useRef(toast);
   toastRef.current = toast;
 
-  // Persist to localStorage
   const setConversationId = useCallback((id: string | null) => {
     setCurrentConversationId(id);
     if (id) localStorage.setItem('radio-current-conversation-id', id);
@@ -26,18 +27,17 @@ export const useRadioConversations = (userId: string | undefined) => {
         .select('id, titolo, created_at, updated_at, riassunto_contesto, active_participants')
         .order('updated_at', { ascending: false });
 
-      if (userId) {
+      // Dev-anonymous: load all conversations without user_id filter
+      if (userId && userId !== DEV_ANONYMOUS_ID) {
         query = query.eq('user_id', userId);
-      } else {
-        query = query.is('user_id', null);
       }
+      // If no userId or dev-anonymous, don't filter — load all
 
       const { data, error } = await query;
       if (error) throw error;
 
       const convIds = (data || []).map(c => c.id);
 
-      // Batch: load all messages for all conversations in ONE query
       let allMessages: Array<{ conversation_id: string; token_input: number | null; token_output: number | null }> = [];
       if (convIds.length > 0) {
         const { data: msgData } = await supabase
@@ -47,7 +47,6 @@ export const useRadioConversations = (userId: string | undefined) => {
         allMessages = msgData || [];
       }
 
-      // Aggregate in-memory
       const statsMap = new Map<string, { count: number; tokens: number }>();
       for (const msg of allMessages) {
         const existing = statsMap.get(msg.conversation_id) || { count: 0, tokens: 0 };
@@ -67,10 +66,17 @@ export const useRadioConversations = (userId: string | undefined) => {
       });
 
       setConversations(conversationsWithStats);
+
+      // BUG 5 fix: Validate localStorage ID against loaded conversations
+      const savedId = localStorage.getItem('radio-current-conversation-id');
+      if (savedId && convIds.length > 0 && !convIds.includes(savedId)) {
+        console.log('📻 Stale localStorage conversation ID, resetting');
+        setConversationId(null);
+      }
     } catch (err) {
       toastRef.current({ title: "Errore", description: "Impossibile caricare conversazioni", variant: "destructive" });
     }
-  }, [userId]);
+  }, [userId, setConversationId]);
 
   const selectConversation = useCallback((conversationId: string) => {
     setConversationId(conversationId);
@@ -81,7 +87,7 @@ export const useRadioConversations = (userId: string | undefined) => {
       const insertData: any = {
         titolo: 'Radio Chat ' + new Date().toLocaleDateString()
       };
-      if (userId) insertData.user_id = userId;
+      if (userId && userId !== DEV_ANONYMOUS_ID) insertData.user_id = userId;
 
       const { data: newConv, error } = await supabase
         .from('chat_laboratory_conversations')
@@ -133,13 +139,14 @@ export const useRadioConversations = (userId: string | undefined) => {
     }
   }, [loadConversations]);
 
+  // BUG 2 fix: createQuickConversation now also sets conversationId
   const createQuickConversation = useCallback(async (participantNames: Array<{ name: string; type: string }>) => {
     try {
       const insertData: any = {
         titolo: `Radio Chat ${new Date().toLocaleString()}`,
         active_participants: participantNames,
       };
-      if (userId) insertData.user_id = userId;
+      if (userId && userId !== DEV_ANONYMOUS_ID) insertData.user_id = userId;
 
       const { data, error } = await supabase
         .from('chat_laboratory_conversations')
@@ -148,12 +155,13 @@ export const useRadioConversations = (userId: string | undefined) => {
         .single();
 
       if (error) throw error;
+      setConversationId(data.id);
       return data.id;
     } catch (err) {
       toastRef.current({ title: 'Errore', description: 'Impossibile creare la conversazione', variant: 'destructive' });
       return null;
     }
-  }, [userId]);
+  }, [userId, setConversationId]);
 
   return {
     conversations,

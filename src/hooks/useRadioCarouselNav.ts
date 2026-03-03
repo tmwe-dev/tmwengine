@@ -24,7 +24,19 @@ export const useRadioCarouselNav = (
     }
   }, [firstAiMessageId, activeMessageId]);
 
+  // BUG 4 fix: Reset when aiMessages becomes empty (new conversation)
+  useEffect(() => {
+    if (aiMessages.length === 0 && activeMessageId !== '') {
+      setActiveMessageId('');
+    }
+  }, [aiMessages.length, activeMessageId]);
+
   const currentMessage = useMemo(() => messages.find(m => m.id === activeMessageId) || null, [messages, activeMessageId]);
+
+  // BUG 4 fix: Expose resetNavigation
+  const resetNavigation = useCallback(() => {
+    setActiveMessageId('');
+  }, []);
 
   const handleCarouselAudioEnd = useCallback(() => {
     handleAudioEnd();
@@ -81,6 +93,7 @@ export const useRadioCarouselNav = (
     setActiveMessageId,
     currentMessage,
     aiMessages,
+    resetNavigation,
     handleCarouselAudioEnd,
     handlePrevCard,
     handleNextCard,

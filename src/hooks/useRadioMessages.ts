@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RadioMessage } from '@/types/radio';
 
@@ -22,6 +22,7 @@ const castMessage = (msg: any): RadioMessage => ({
 export const useRadioMessages = (conversationId: string | null) => {
   const [messages, setMessages] = useState<RadioMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const prevConversationId = useRef<string | null>(null);
 
   const loadMessages = useCallback(async (convId: string) => {
     const { data, error } = await supabase
@@ -39,9 +40,66 @@ export const useRadioMessages = (conversationId: string | null) => {
 
   // Realtime subscription
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId) {
+      prevConversationId.current = null;
+      return;
+    }
 
     loadMessages(conversationId);
+
+    // BUG 6 fix: If transitioning from null, reload after a delay to catch messages
+    // inserted before subscription was active
+    if (prevConversationId.current === null) {
+      const catchupTimer = setTimeout(() => {
+        loadMessages(conversationId);
+      }, 2000);
+      // Clean up on unmount or conversationId change
+      prevConversationId.current = conversationId;
+
+      const channel = supabase
+        .channel(`radio-chat-${conversationId}`)
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'chat_laboratory_messages', filter: `conversation_id=eq.${conversationId}` },
+          (payload) => {
+            const typedMessage = castMessage(payload.new);
+            setMessages(prev => {
+              if (prev.some(m => m.id === typedMessage.id)) return prev;
+              return [...prev, typedMessage];
+            });
+            if (payload.new.sender_type !== 'human') {
+              setIsSending(false);
+            }
+          }
+        )
+        .on('postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'chat_laboratory_messages', filter: `conversation_id=eq.${conversationId}` },
+          (payload) => {
+            const updatedMsg = payload.new;
+            setMessages(prev => {
+              const existing = prev.find(m => m.id === updatedMsg.id);
+              if (
+                existing?.audio_url === updatedMsg.audio_url &&
+                existing?.token_input === updatedMsg.token_input &&
+                existing?.token_output === updatedMsg.token_output
+              ) return prev;
+
+              return prev.map(msg =>
+                msg.id === updatedMsg.id
+                  ? { ...msg, audio_url: updatedMsg.audio_url, token_input: updatedMsg.token_input, token_output: updatedMsg.token_output, tempo_risposta_ms: updatedMsg.tempo_risposta_ms }
+                  : msg
+              );
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        clearTimeout(catchupTimer);
+        supabase.removeChannel(channel);
+      };
+    }
+
+    prevConversationId.current = conversationId;
 
     const channel = supabase
       .channel(`radio-chat-${conversationId}`)
@@ -53,7 +111,6 @@ export const useRadioMessages = (conversationId: string | null) => {
             if (prev.some(m => m.id === typedMessage.id)) return prev;
             return [...prev, typedMessage];
           });
-          // Unlock input after AI message
           if (payload.new.sender_type !== 'human') {
             setIsSending(false);
           }

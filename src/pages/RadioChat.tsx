@@ -65,21 +65,20 @@ const RadioChatContent = () => {
   } = useRadioAudioPlayback();
   const {
     activeMessageId, setActiveMessageId, currentMessage, aiMessages,
-    handleCarouselAudioEnd, handlePrevCard, handleNextCard,
+    resetNavigation, handleCarouselAudioEnd, handlePrevCard, handleNextCard,
     touchHandlers, handleWheel
   } = useRadioCarouselNav(messages, isAudioPlaying, stopCurrentAudio, handleAudioEnd, preferences.isAutoAdvanceEnabled);
 
-  // Load conversations on user ready
+  // Load conversations on user ready (no auth dependency)
   useEffect(() => {
-    if (currentUser?.id) {
-      loadConversations();
-      const savedConvId = localStorage.getItem('radio-current-conversation-id');
-      if (savedConvId) {
-        loadMessages(savedConvId);
-        loadCachedPrompts(savedConvId);
-      }
+    if (!currentUser) return; // wait for auth hook to resolve (even dev-anonymous)
+    loadConversations();
+    const savedConvId = localStorage.getItem('radio-current-conversation-id');
+    if (savedConvId) {
+      loadMessages(savedConvId);
+      loadCachedPrompts(savedConvId);
     }
-  }, [currentUser?.id, loadConversations, loadMessages, loadCachedPrompts]);
+  }, [currentUser, loadConversations, loadMessages, loadCachedPrompts]);
 
   // Close sidebar when CRM menu opens
   useEffect(() => {
@@ -99,7 +98,7 @@ const RadioChatContent = () => {
   const handleNewConversation = async () => {
     const newId = await createConversation();
     if (newId) {
-      setActiveMessageId('');
+      resetNavigation();
       clearMessages();
       setInputValue('');
       ui.setInputVisible(false);

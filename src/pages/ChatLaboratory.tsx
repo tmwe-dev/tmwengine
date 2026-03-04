@@ -50,6 +50,8 @@ import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
 import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
 import { useGlobalAICanvas } from '@/hooks/useGlobalAICanvas';
 import { cn } from '@/lib/utils';
+import { useCRMLayout } from '@/contexts/CRMLayoutContext';
+import { SidebarPortal } from '@/components/layout/SidebarPortal';
 
 interface Message {
   id: string;
@@ -111,7 +113,7 @@ const ChatLaboratory = () => {
   
   // Sidebar States
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { menuOpen: sidebarOpen, setMenuOpen: setSidebarOpen } = useCRMLayout();
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const { state: aiCanvasState } = useGlobalAICanvas();
   
@@ -1317,20 +1319,23 @@ const ChatLaboratory = () => {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20 p-0 m-0">
-    {/* Sidebar Conversazioni - UNIFORMATO */}
-    <ConversationsSidebar
-      isOpen={sidebarOpen && !isFullScreenMode}
-      conversations={conversations}
-      currentConversationId={currentConversationId}
-      onSelectConversation={handleSelectConversation}
-      onNewConversation={handleNewConversation}
-      onDeleteConversation={handleDeleteConversation}
-      onUpdateTitle={handleUpdateTitle}
-      onGenerateSummary={handleGenerateSummary}
-      onGenerateFullReport={handleGenerateFullReport}
-      onCloseSidebar={() => setSidebarOpen(false)}
-      onFocusTextarea={() => textareaRef.current?.focus()}
-    />
+    {/* Sidebar Conversazioni - Unified via Portal */}
+    {!isFullScreenMode && (
+      <SidebarPortal>
+        <ConversationsSidebar
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onSelectConversation={handleSelectConversation}
+          onNewConversation={handleNewConversation}
+          onDeleteConversation={handleDeleteConversation}
+          onUpdateTitle={handleUpdateTitle}
+          onGenerateSummary={handleGenerateSummary}
+          onGenerateFullReport={handleGenerateFullReport}
+          onCloseSidebar={() => setSidebarOpen(false)}
+          onFocusTextarea={() => textareaRef.current?.focus()}
+        />
+      </SidebarPortal>
+    )}
 
       {/* AI Assistant Trigger */}
       <AISidebarTrigger

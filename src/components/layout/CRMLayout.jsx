@@ -79,7 +79,7 @@ import { useCRMLayout } from '@/contexts/CRMLayoutContext';
 const CRMLayout = ({ children }) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const { menuOpen, setMenuOpen } = useCRMLayout();
+  const { menuOpen, setMenuOpen, portalContainerRef, hasPageSidebar } = useCRMLayout();
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -501,22 +501,32 @@ const CRMLayout = ({ children }) => {
       </header>
 
       <div className={cn("relative", isMobile ? "h-[calc(100vh-6rem)]" : "h-[calc(100vh-7rem)]")}>
-        {/* Backdrop quando menu aperto su mobile */}
-        {menuOpen && isMobile && (
+        {/* Backdrop - mobile always, desktop when page sidebar is open */}
+        {menuOpen && (hasPageSidebar || isMobile) && (
           <div 
-            className="fixed inset-0 top-28 bg-black/20 z-40"
+            className="fixed inset-0 top-28 bg-black/20 backdrop-blur-sm z-40"
             onClick={() => setMenuOpen(false)}
             aria-hidden="true"
           />
         )}
 
-        {/* Sidebar */}
+        {/* Unified Sidebar */}
         <aside className={cn(
-          "fixed left-0 top-28 h-[calc(100vh-7rem)] w-64 z-50",
+          "fixed left-0 top-28 h-[calc(100vh-7rem)] z-50",
           "bg-card-transparent border-r border-border",
-          "transition-transform duration-300 overflow-hidden",
-          menuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 lg:w-16"
+          "transition-all duration-300 overflow-hidden",
+          menuOpen 
+            ? cn("translate-x-0", hasPageSidebar ? "w-80" : "w-64")
+            : "-translate-x-full lg:translate-x-0 lg:w-16"
         )}>
+          {/* Portal target for page-specific sidebar content */}
+          <div 
+            ref={portalContainerRef} 
+            className={cn("h-full", !(hasPageSidebar && menuOpen) && "hidden")}
+          />
+
+          {/* Default navigation - shown when no active page sidebar */}
+          {!(hasPageSidebar && menuOpen) && (
           <nav className="p-4 space-y-2">
             {/* Gruppi collassabili */}
             {navigationGroups.map((group) => {
@@ -607,6 +617,7 @@ const CRMLayout = ({ children }) => {
               )}
             </div>
           </nav>
+          )}
         </aside>
 
         {/* Main Content */}

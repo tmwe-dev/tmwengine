@@ -162,16 +162,7 @@ export const RadioConversationsSidebar = ({
 
   return (
     <div className="flex flex-col h-full bg-transparent">
-      {/* Header with Title + Close Button */}
-      <div className="flex items-center justify-between p-4 border-b bg-transparent">
-        <h2 className="text-lg font-semibold">Conversazioni</h2>
-        <button
-          onClick={onCloseSidebar}
-          className="p-2 rounded-lg hover:bg-muted transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
+      {/* Header removed — parent RadioSidebarPanel manages close button */}
 
       {/* Compact Header */}
       <div className="p-3 border-b border-border/40">

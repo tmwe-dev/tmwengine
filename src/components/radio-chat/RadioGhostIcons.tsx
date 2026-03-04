@@ -33,18 +33,24 @@ export const RadioGhostIcons = ({
   showAudioControls, setShowAudioControls,
   inputVisible, setInputVisible
 }: RadioGhostIconsProps) => {
-  // When sidebar is open, hide all ghost icons completely
   const hiddenBySidebar = sidebarOpen;
 
+  // Each icon is visible if: sidebar closed AND (mouse nearby OR that feature is active)
+  const showIcon = (featureActive: boolean) =>
+    !hiddenBySidebar && (shouldShowLeftIcons || featureActive);
+
   return (
-    <>
+    <div
+      className={cn(
+        "fixed left-0 bottom-8 z-40 flex flex-col gap-1 transition-all duration-300",
+        hiddenBySidebar && "opacity-0 pointer-events-none -translate-x-full"
+      )}
+    >
       {/* AI Assistant Trigger */}
       <AISidebarTrigger
         className={cn(
-          "fixed left-0 bottom-[24rem] z-40 transition-all duration-300",
-          hiddenBySidebar && "opacity-0 pointer-events-none",
-          !hiddenBySidebar && !shouldShowLeftIcons && !aiSidebarOpen && "opacity-0 pointer-events-none",
-          !hiddenBySidebar && (shouldShowLeftIcons || aiSidebarOpen) && "opacity-100"
+          "transition-all duration-300",
+          !showIcon(aiSidebarOpen) && "opacity-0 pointer-events-none"
         )}
         isOpen={aiSidebarOpen}
         onToggle={() => setAiSidebarOpen(!aiSidebarOpen)}
@@ -54,10 +60,8 @@ export const RadioGhostIcons = ({
       {/* Hamburger Sidebar */}
       <RadioSidebarTrigger
         className={cn(
-          "fixed left-0 bottom-[18.5rem] z-40 transition-all duration-300",
-          hiddenBySidebar && "opacity-0 pointer-events-none",
-          !hiddenBySidebar && !shouldShowLeftIcons && "opacity-0 pointer-events-none",
-          !hiddenBySidebar && shouldShowLeftIcons && "opacity-100"
+          "transition-all duration-300",
+          !showIcon(false) && "opacity-0 pointer-events-none"
         )}
         isOpen={sidebarOpen}
         onToggle={() => {
@@ -73,11 +77,9 @@ export const RadioGhostIcons = ({
       <button
         onClick={() => setMessageViewVisible(!messageViewVisible)}
         className={cn(
-          "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-transparent rounded-r-lg border border-border/20",
+          "w-12 h-14 bg-transparent rounded-r-lg border border-border/20",
           "flex items-center justify-center transition-all duration-300 hover:bg-muted/5",
-          hiddenBySidebar && "opacity-0 pointer-events-none",
-          !hiddenBySidebar && !shouldShowLeftIcons && !messageViewVisible && "opacity-0 pointer-events-none",
-          !hiddenBySidebar && (shouldShowLeftIcons || messageViewVisible) && "opacity-100"
+          !showIcon(messageViewVisible) && "opacity-0 pointer-events-none"
         )}
         aria-label="Toggle message view"
       >
@@ -93,10 +95,8 @@ export const RadioGhostIcons = ({
       {/* Mic Icon */}
       <RadioMicTrigger
         className={cn(
-          "fixed left-0 bottom-[7.5rem] z-40 transition-all duration-300",
-          hiddenBySidebar && "opacity-0 pointer-events-none",
-          !hiddenBySidebar && !shouldShowLeftIcons && !showAudioControls && "opacity-0 pointer-events-none",
-          !hiddenBySidebar && (shouldShowLeftIcons || showAudioControls) && "opacity-100"
+          "transition-all duration-300",
+          !showIcon(showAudioControls) && "opacity-0 pointer-events-none"
         )}
         isActive={showAudioControls}
         onClick={() => setShowAudioControls(!showAudioControls)}
@@ -106,11 +106,9 @@ export const RadioGhostIcons = ({
       <button
         onClick={() => setInputVisible(!inputVisible)}
         className={cn(
-          "fixed left-0 bottom-8 z-40 w-12 h-20 bg-transparent rounded-r-lg border border-border/20",
+          "w-12 h-14 bg-transparent rounded-r-lg border border-border/20",
           "flex items-center justify-center transition-all duration-300 hover:bg-muted/5",
-          hiddenBySidebar && "opacity-0 pointer-events-none",
-          !hiddenBySidebar && !shouldShowLeftIcons && !inputVisible && "opacity-0 pointer-events-none",
-          !hiddenBySidebar && (shouldShowLeftIcons || inputVisible) && "opacity-100"
+          !showIcon(inputVisible) && "opacity-0 pointer-events-none"
         )}
         aria-label="Toggle input"
       >
@@ -122,6 +120,6 @@ export const RadioGhostIcons = ({
           strokeWidth={1}
         />
       </button>
-    </>
+    </div>
   );
 };

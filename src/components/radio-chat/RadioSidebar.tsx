@@ -1,4 +1,4 @@
-import { X, LayoutGrid, MessageSquare, Columns } from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioVoiceSelector } from './RadioVoiceSelector';
@@ -6,8 +6,6 @@ import { RadioPromptSelector } from './RadioPromptSelector';
 import { RadioStrategySelector } from './RadioStrategySelector';
 import { RadioParticipantSelector } from './RadioParticipantSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 
 interface RadioParticipant {
   id: string;
@@ -66,59 +64,6 @@ export function RadioSidebar({
         </TabsList>
 
         <TabsContent value="voice" className="mt-0">
-          <div className="p-4 border-b flex flex-col gap-2">
-            <Button
-              variant={viewMode === 'carousel' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => onViewModeChange('carousel')}
-              className="w-full justify-start"
-            >
-              <LayoutGrid className="w-4 h-4 mr-2" />
-              Carousel
-            </Button>
-            <Button
-              variant={viewMode === 'messages' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => onViewModeChange('messages')}
-              className="w-full justify-start"
-            >
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Messages
-            </Button>
-            <Button
-              variant={viewMode === 'tabs' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => onViewModeChange('tabs')}
-              className="w-full justify-start"
-            >
-              <Columns className="w-4 h-4 mr-2" />
-              Tabs
-            </Button>
-          </div>
-
-          {viewMode === 'carousel' && (
-            <div className="p-4 border-b">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium">Carousel Zoom</label>
-                <span className="text-xs text-muted-foreground">
-                  {Math.round(carouselZoom * 100)}%
-                </span>
-              </div>
-              <Slider
-                value={[carouselZoom]}
-                onValueChange={([val]) => onCarouselZoomChange?.(val)}
-                min={0.5}
-                max={2.0}
-                step={0.01}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>50%</span>
-                <span>200%</span>
-              </div>
-            </div>
-          )}
-
           <RadioVoiceSelector 
             conversationId={conversationId}
             isAutoAdvanceEnabled={isAutoAdvanceEnabled}

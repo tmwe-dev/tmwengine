@@ -280,6 +280,7 @@ const RadioChatContent = () => {
               className={ui.messageViewVisible ? 'opacity-0 pointer-events-none' : ''}
               sharedAudioRef={audioElementRef}
               isAudioPlaying={isAudioPlaying}
+              onAudioStart={handleAudioStart}
             />
           )}
           {currentConversationId && ui.showAudioControls && (

@@ -16,20 +16,8 @@ export function RadioSidebarTrigger({
   isAudioEnabled = false,
   isAutoAdvanceEnabled = false
 }: RadioSidebarTriggerProps) {
-  // ✅ LOGGING TEMPORANEO PER DEBUG
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🍺 [RadioSidebarTrigger] Props ricevute:', {
-      isAudioEnabled,
-      isAutoAdvanceEnabled,
-      shouldShowYellow: isAudioEnabled && isAutoAdvanceEnabled,
-      shouldShowBlue: isAudioEnabled && !isAutoAdvanceEnabled,
-      shouldShowGray: !isAudioEnabled
-    });
-  }
-  
-  // ✅ 3 STATI: Spenta | Azzurra (solo audio) | Gialla+Bianca (audio+autoadvance)
   const beerColor = !isAudioEnabled 
-    ? 'text-gray-500'
+    ? 'text-muted-foreground' 
     : isAutoAdvanceEnabled 
       ? 'text-amber-500'
       : 'text-cyan-400';
@@ -44,24 +32,20 @@ export function RadioSidebarTrigger({
     <button
       onClick={onToggle}
       className={cn(
-        "w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+        "w-10 h-12 bg-transparent rounded-r-lg border border-border/20",
         "flex items-center justify-center",
         "transition-all duration-300",
-        "hover:bg-white/5",
+        "hover:bg-muted/5",
         className
       )}
     >
       <div className="relative">
         <Beer 
-          className={cn(
-            "w-6 h-6 transition-colors duration-300",
-            beerColor
-          )}
+          className={cn("w-5 h-5 transition-colors duration-300", beerColor)}
           strokeWidth={1}
         />
-        {/* Schiuma sopra la birra */}
         <div className={cn(
-          "absolute -top-0.5 left-1/2 -translate-x-1/2 w-4 h-1.5 rounded-full transition-colors duration-300",
+          "absolute -top-0.5 left-1/2 -translate-x-1/2 w-3.5 h-1 rounded-full transition-colors duration-300",
           foamColor
         )} />
       </div>

@@ -1,65 +1,65 @@
 
 
-# Piano: Fix Sincronizzazione Audio/Carousel in Radio Chat
+# Piano: Fix Sincronizzazione Audio — Voci Che Partono Insieme
 
-## Problema Centrale
+## Causa Root
 
-`stopCurrentAudio()` in `useRadioAudioPlayback` resetta solo lo **stato React** (`isAudioPlaying = false`), ma **non ferma l'elemento `HTMLAudioElement`** reale. Risultato:
+Il problema ha due livelli:
 
-1. **Voci sovrapposte**: Quando si cambia card nel carousel, `stopCurrentAudio()` cambia lo stato ma l'audio precedente continua a suonare finche' React non rimonta il componente
-2. **Nessun avanzamento automatico**: `handleCarouselAudioEnd` chiama `handleAudioEnd()` e poi dopo 50ms cambia `activeMessageId`, ma il nuovo audio non parte perche' `handleAudioStart` non viene mai chiamato dal player
-3. **Nessun controllo imperativo**: Non esiste un modo per fermare immediatamente l'audio dall'esterno dei componenti player
+### Lato Orchestrator (Backend)
+L'orchestrator e' **gia' sequenziale** — processa un agente alla volta (linee 205-363 di `index.ts`). Ogni messaggio viene salvato nel DB con `audio_url` prima di passare al prossimo agente. Non c'e' problema lato backend.
 
-## Soluzione: AudioRef centralizzato
+### Lato Frontend (IL VERO PROBLEMA)
+Quando i messaggi arrivano via realtime subscription uno dopo l'altro:
 
-Aggiungere un **ref condiviso** (`audioElementRef`) nel hook `useRadioAudioPlayback` che punta all'`HTMLAudioElement` attivo. Quando `stopCurrentAudio()` viene chiamato, chiama `audioElementRef.current.pause()` oltre a resettare lo stato.
+1. **Messaggio 1 arriva** → `activeMessageId` viene settato → `RadioCarouselAudioPlayerWrapper` monta con `autoPlay=true` → audio parte
+2. **Messaggio 2 arriva** (dopo ~5-15 secondi) → il componente si ri-renderizza. Se `activeMessageId` non cambia, il player del messaggio 1 continua. Ma se qualcosa causa un rimontaggio (es. `currentMessage` cambia ref), un NUOVO `Audio()` puo' essere creato senza che il precedente venga stoppato.
+3. **Il `canAutoPlay` e' hardcoded a `true`** in `RadioCarouselAudioPlayerWrapper` (linea 55) — non controlla MAI se un altro audio e' gia' in riproduzione.
 
-### File da modificare
+Il `sharedAudioRef` stoppa l'audio solo quando `stopCurrentAudio()` viene chiamato esplicitamente (cambio card manuale). Ma quando il player si rimonta per lo stesso messaggio a causa di un re-render, il cleanup chiama `audio.pause()` e il nuovo `useEffect` crea un nuovo `Audio()` che fa autoplay — ma tra cleanup e mount c'e' un gap dove il ref viene nullificato.
 
-**1. `src/hooks/useRadioAudioPlayback.ts`**
-- Aggiungere `audioElementRef: React.MutableRefObject<HTMLAudioElement | null>` 
-- `stopCurrentAudio()` chiama `audioElementRef.current?.pause()` prima di resettare lo stato
-- `handleAudioEnd()` chiama `audioElementRef.current?.pause()` 
-- Esporre `audioElementRef` per registrazione dai player
+## Soluzione
 
-**2. `src/components/radio-chat/RadioAudioPlayer.tsx`**
-- Accettare prop `audioElementRef` opzionale
-- Dopo aver creato `new Audio()`, registrarlo nel ref condiviso: `audioElementRef.current = audio`
-- Nel cleanup, deregistrare: `if (audioElementRef.current === audio) audioElementRef.current = null`
+### 1. `RadioCarouselAudioPlayerWrapper.tsx` — Rispettare lo stato globale
+- Passare `canAutoPlay` basandosi su `isAudioPlaying` dal parent: `canAutoPlay={!isAudioPlaying}`
+- Accettare nuova prop `isAudioPlaying` dal parent
 
-**3. `src/components/radio-chat/RadioAudioPlayerMini.tsx`**
-- Stessa logica: accettare `audioElementRef`, registrare l'audio element
+### 2. `RadioAudioPlayer.tsx` — Guard sull'autoplay
+- Prima di fare `audio.play()` nell'autoplay, controllare `sharedAudioRef.current` — se un altro audio e' gia' in esecuzione, NON fare play
+- Aggiungere guard: `if (sharedAudioRef?.current && !sharedAudioRef.current.paused) return;`
 
-**4. `src/components/radio-chat/RadioCarouselAudioPlayerWrapper.tsx`**
-- Passare `audioElementRef` sia a `RadioAudioPlayer` che a `RadioAudioPlayerMini`
-- Accettare `audioElementRef` come prop dal parent
+### 3. `useRadioCarouselNav.ts` — Non auto-avanzare durante la riproduzione
+- `handleCarouselAudioEnd`: aggiungere un delay piu' lungo (300ms invece di 50ms) per dare tempo allo state di propagarsi prima di settare il nuovo `activeMessageId`
 
-**5. `src/pages/RadioChat.tsx`**
-- Passare `audioElementRef` da `useRadioAudioPlayback` al `RadioCarouselAudioPlayerWrapper` via props
-- Nella sezione `RadioMessagesView`: passare i callback correttamente per stop audio
+### 4. `RadioChat.tsx` — Passare `isAudioPlaying` al wrapper
+- Aggiungere prop `isAudioPlaying` a `RadioCarouselAudioPlayerWrapper`
 
-**6. `src/hooks/useRadioCarouselNav.ts`**
-- `handleCarouselAudioEnd`: dopo `handleAudioEnd()`, il cambio di `activeMessageId` trigger il rimontaggio del player che fa autoplay del prossimo messaggio -- verificare che il flusso sia corretto
+## File da modificare
 
-### Flusso dopo il fix
+| File | Modifica |
+|------|----------|
+| `src/components/radio-chat/RadioCarouselAudioPlayerWrapper.tsx` | Aggiungere prop `isAudioPlaying`, passare `canAutoPlay={!isAudioPlaying}` ai player figli |
+| `src/components/radio-chat/RadioAudioPlayer.tsx` | Guard sull'autoplay: controllare `sharedAudioRef` prima di play |
+| `src/hooks/useRadioCarouselNav.ts` | Delay 300ms nel `handleCarouselAudioEnd` |
+| `src/pages/RadioChat.tsx` | Passare `isAudioPlaying` al wrapper |
+
+## Flusso dopo il fix
 
 ```text
-User cambia card → stopCurrentAudio()
-  → audioElementRef.current.pause()  ← NUOVO: stop immediato
-  → setIsAudioPlaying(false)
-  → setActiveMessageId(newId)
-  → React rimonta RadioAudioPlayer con nuovo messageId
-  → useEffect crea new Audio() e registra nel ref
-  → autoPlay → audio.play() → handleAudioStart()
+Messaggio 1 arriva → autoPlay=true, canAutoPlay=true → PLAY ✅
+  → handleAudioStart() → isAudioPlaying=true
 
-Audio finisce → handleEnded → onPlayEnd → handleCarouselAudioEnd
-  → handleAudioEnd() resetta stato
-  → setTimeout → setActiveMessageId(nextId)
-  → Stesso flusso di rimontaggio sopra
+Messaggio 2 arriva (durante play msg 1):
+  → RadioCarouselAudioPlayerWrapper riceve isAudioPlaying=true
+  → canAutoPlay={!isAudioPlaying} = false
+  → Player NON fa autoplay ✅
+
+Audio msg 1 finisce → handleCarouselAudioEnd()
+  → handleAudioEnd() → isAudioPlaying=false
+  → 300ms delay
+  → setActiveMessageId(msg2.id)
+  → Wrapper rimonta con canAutoPlay=true → PLAY ✅
 ```
 
-### Rischio: Basso
-- Solo logica audio, nessun cambio UI/grafico
-- Pattern additivo: si aggiunge un ref, non si rimuove nulla
-- 6 file toccati, tutti nel modulo Radio Chat
+Rischio: **Basso** — Solo 4 file, modifiche additive, nessun cambio grafico.
 

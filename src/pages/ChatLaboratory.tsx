@@ -46,9 +46,7 @@ import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
 import { AudioModeSelector } from '@/components/chat-laboratory/AudioModeSelector';
 import { CompactControlBar } from '@/components/chat-laboratory/CompactControlBar';
 import { WordLimitSliderCompact } from '@/components/chat-laboratory/WordLimitSliderCompact';
-import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
-import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
-import { useGlobalAICanvas } from '@/hooks/useGlobalAICanvas';
+
 import { cn } from '@/lib/utils';
 import { useCRMLayout } from '@/contexts/CRMLayoutContext';
 import { SidebarPortal } from '@/components/layout/SidebarPortal';
@@ -113,9 +111,7 @@ const ChatLaboratory = () => {
   
   // Sidebar States
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const { menuOpen: sidebarOpen, setMenuOpen: setSidebarOpen } = useCRMLayout();
-  const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
-  const { state: aiCanvasState } = useGlobalAICanvas();
+  const { menuOpen: sidebarOpen, setMenuOpen: setSidebarOpen, aiSidebarOpen, setAiSidebarOpen } = useCRMLayout();
   
   // Bar Mode States
   const [isBarMode, setIsBarMode] = useState(false);
@@ -1337,34 +1333,7 @@ const ChatLaboratory = () => {
       </SidebarPortal>
     )}
 
-      {/* AI Assistant Trigger */}
-      <AISidebarTrigger
-        isOpen={aiSidebarOpen}
-        onToggle={() => {
-          const newState = !aiSidebarOpen;
-          setAiSidebarOpen(newState);
-          if (newState) setSidebarOpen(false);
-        }}
-        hasActiveConversation={aiCanvasState.messages.length > 0}
-        className={cn(
-          "fixed left-0 bottom-[12rem] z-40 transition-all duration-300",
-          (sidebarOpen || aiSidebarOpen) && "translate-x-[320px]"
-        )}
-      />
-
-      {/* AI Assistant Sidebar */}
-      <AISidebarSlider
-        isOpen={aiSidebarOpen}
-        onClose={() => setAiSidebarOpen(false)}
-        onToggle={() => {
-          const newState = !aiSidebarOpen;
-          setAiSidebarOpen(newState);
-          if (newState) setSidebarOpen(false);
-        }}
-        enableAudio={true}
-        conversationId={currentConversationId || 'chat-laboratory-general'}
-        hideButton={true}
-      />
+      {/* AI sidebar now handled globally by CRMLayout */}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-full pt-0 mt-0">

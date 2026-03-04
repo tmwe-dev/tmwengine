@@ -30,7 +30,6 @@ import { RadioMessagesView } from '@/components/radio-chat/RadioMessagesView';
 import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
 import { RadioCarouselAudioPlayerWrapper } from '@/components/radio-chat/RadioCarouselAudioPlayerWrapper';
 import { RadioAudioControls } from '@/components/radio-chat/RadioAudioControls';
-import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
 import { SidebarPortal } from '@/components/layout/SidebarPortal';
 
 const RadioChat = () => (
@@ -316,16 +315,7 @@ const RadioChatContent = () => {
             )}
           </div>
         }
-        aiSidebar={
-          <AISidebarSlider
-            isOpen={ui.aiSidebarOpen}
-            onClose={() => ui.setAiSidebarOpen(false)}
-            onToggle={() => ui.setAiSidebarOpen(!ui.aiSidebarOpen)}
-            enableAudio={true}
-            conversationId={currentConversationId}
-            hideButton={true}
-          />
-        }
+        aiSidebar={null}
       />
     </RadioChatProvider>
   );

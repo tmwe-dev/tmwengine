@@ -75,11 +75,12 @@ import {
   CollapsibleContent,
 } from '@/components/ui/collapsible';
 import { useCRMLayout } from '@/contexts/CRMLayoutContext';
+import { AISidebarSliderContent } from '@/components/ai/AISidebarSliderContent';
 
 const CRMLayout = ({ children }) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const { menuOpen, setMenuOpen, portalContainerRef, hasPageSidebar } = useCRMLayout();
+  const { menuOpen, setMenuOpen, portalContainerRef, hasPageSidebar, aiSidebarOpen, setAiSidebarOpen } = useCRMLayout();
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -514,20 +515,29 @@ const CRMLayout = ({ children }) => {
         <aside className={cn(
           "fixed left-0 top-28 h-[calc(100vh-7rem)] z-50",
           "bg-card-transparent border-r border-border",
-          "transition-all duration-300 overflow-hidden",
+          "transition-all duration-300 overflow-hidden flex flex-col",
           menuOpen 
-            ? cn("translate-x-0", hasPageSidebar ? "w-80" : "w-64")
+            ? cn("translate-x-0", (hasPageSidebar || aiSidebarOpen) ? "w-80" : "w-64")
             : "-translate-x-full lg:translate-x-0 lg:w-16"
         )}>
+          {/* AI Sidebar Content - shown when AI sidebar is open */}
+          {aiSidebarOpen && menuOpen && (
+            <div className="h-full">
+              <AISidebarSliderContent
+                onClose={() => setAiSidebarOpen(false)}
+              />
+            </div>
+          )}
+
           {/* Portal target for page-specific sidebar content */}
           <div 
             ref={portalContainerRef} 
-            className={cn("h-full", !(hasPageSidebar && menuOpen) && "hidden")}
+            className={cn("h-full", !(hasPageSidebar && menuOpen && !aiSidebarOpen) && "hidden")}
           />
 
-          {/* Default navigation - shown when no active page sidebar */}
-          {!(hasPageSidebar && menuOpen) && (
-          <nav className="p-4 space-y-2">
+          {/* Default navigation - shown when no active page sidebar and no AI sidebar */}
+          {!(hasPageSidebar && menuOpen) && !aiSidebarOpen && (
+          <nav className="flex-1 p-4 space-y-2 overflow-auto">
             {/* Gruppi collassabili */}
             {navigationGroups.map((group) => {
               const isCollapsed = !menuOpen && !isMobile;
@@ -617,6 +627,27 @@ const CRMLayout = ({ children }) => {
               )}
             </div>
           </nav>
+          )}
+
+          {/* AI Trigger Footer - always visible */}
+          {!aiSidebarOpen && (
+            <div className="shrink-0 border-t border-border p-2">
+              <button
+                onClick={() => {
+                  setAiSidebarOpen(true);
+                  if (!menuOpen) setMenuOpen(true);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-lg",
+                  "text-sm font-medium transition-all duration-200",
+                  "hover:bg-primary/10 text-muted-foreground hover:text-primary"
+                )}
+                title="AI Assistant"
+              >
+                <Sparkles className="w-4 h-4 shrink-0" />
+                {menuOpen && <span>AI Assistant</span>}
+              </button>
+            </div>
           )}
         </aside>
 

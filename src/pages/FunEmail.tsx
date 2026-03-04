@@ -23,8 +23,6 @@ import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartIn
 import { SmartInboxZeroSync } from '@/components/email/smart-inbox/SmartInboxZeroSync';
 import { GradientBackground } from '@/components/design-system';
 import { cn } from '@/lib/utils';
-import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
-import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
 import { AIAutomationDashboard } from '@/components/email/automation/AIAutomationDashboard';
 import { PendingActionsPanel } from '@/components/email/automation/PendingActionsPanel';
 import { AIGeneratedActivitiesPanel } from '@/components/email/automation/AIGeneratedActivitiesPanel';
@@ -56,11 +54,10 @@ const FunEmail = () => {
   });
   const [isDownloadActive, setIsDownloadActive] = useState(false);
   
-  // AI Sidebar globale state
-  const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
+  // AI Sidebar globale state - now from context
+  const { aiSidebarOpen, setAiSidebarOpen, menuOpen: crmMenuOpen, setMenuOpen: setCrmMenuOpen } = useCRMLayout();
   const [selectedSenderForAI, setSelectedSenderForAI] = useState<string | null>(null);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const { menuOpen: crmMenuOpen, setMenuOpen: setCrmMenuOpen } = useCRMLayout();
   
   // Smart Inbox filters
   const [smartInboxFolder, setSmartInboxFolder] = useState('INBOX');
@@ -312,7 +309,7 @@ const FunEmail = () => {
         {/* 2 Icone Verticali - solo in view inbox */}
         {currentView === 'inbox' && (
           <>
-            {/* Inbox/Categories Icon - Top */}
+            {/* Categories Icon */}
             <button
               onClick={handleToggleCategories}
               className={cn(
@@ -324,18 +321,7 @@ const FunEmail = () => {
             >
               <span className="text-2xl">📬</span>
             </button>
-
-            {/* AI Icon - Bottom (20px gap) */}
-            <AISidebarTrigger
-              isOpen={aiSidebarOpen}
-              onToggle={handleToggleAI}
-              hasActiveConversation={selectedSenderForAI !== null}
-              className={cn(
-                "fixed left-0 bottom-[7.5rem] z-40 transition-all duration-300",
-                aiSidebarOpen && "translate-x-[320px]",
-                !shouldShowLeftIcons && !aiSidebarOpen && "hidden"
-              )}
-            />
+            {/* AI sidebar now handled globally by CRMLayout */}
           </>
         )}
 
@@ -541,19 +527,7 @@ const FunEmail = () => {
         </div>
       )}
 
-      {/* AI Sidebar Globale - disponibile in tutte le view email */}
-      {!['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail'].includes(currentView) && (
-        <AISidebarSlider
-          isOpen={aiSidebarOpen}
-          onClose={handleToggleAI}
-          onToggle={handleToggleAI}
-          senderEmail={selectedSenderForAI}
-          onPromptCreated={handlePromptCreatedGlobal}
-          hideButton={true}
-          enableAudio={true}
-          conversationId={`funnemail-${selectedSenderForAI || 'general'}`}
-        />
-      )}
+      {/* AI sidebar now handled globally by CRMLayout */}
 
       {/* Auto-Execute Config Dialog */}
       <AutoExecuteConfigDialog

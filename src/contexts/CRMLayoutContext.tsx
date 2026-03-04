@@ -8,6 +8,9 @@ interface CRMSidebarContextType {
   portalContainerRef: React.RefObject<HTMLDivElement | null>;
   hasPageSidebar: boolean;
   setHasPageSidebar: (v: boolean) => void;
+  // Global AI sidebar state
+  aiSidebarOpen: boolean;
+  setAiSidebarOpen: (open: boolean) => void;
 }
 
 const CRMSidebarContext = createContext<CRMSidebarContextType | undefined>(undefined);
@@ -15,6 +18,7 @@ const CRMSidebarContext = createContext<CRMSidebarContextType | undefined>(undef
 export const CRMSidebarProvider = ({ children }: { children: ReactNode }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasPageSidebar, setHasPageSidebar] = useState(false);
+  const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const portalContainerRef = useRef<HTMLDivElement | null>(null);
 
   const closeSidebar = useCallback(() => {
@@ -24,7 +28,8 @@ export const CRMSidebarProvider = ({ children }: { children: ReactNode }) => {
   return (
     <CRMSidebarContext.Provider value={{ 
       menuOpen, setMenuOpen, closeSidebar,
-      portalContainerRef, hasPageSidebar, setHasPageSidebar
+      portalContainerRef, hasPageSidebar, setHasPageSidebar,
+      aiSidebarOpen, setAiSidebarOpen
     }}>
       {children}
     </CRMSidebarContext.Provider>

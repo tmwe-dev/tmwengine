@@ -1,118 +1,67 @@
 
+Obiettivo: eliminare i problemi di sincronizzazione audio/UI in Radio Chat (Carousel, Messages, Tabs), garantendo lettura completa per agente, avanzamento corretto, nuova chat vuota all’apertura, e autoplay coerente con la vista visibile.
 
-# Piano di Refactoring Completo — Radio Chat
+Diagnosi profonda (root cause confermate):
+1) Le 3 viste sono sempre montate (`hidden/block` via CSS in `RadioChat.tsx`): `MessageTabsView` continua a girare in background e può avviare audio anche quando sei in Carousel.
+2) Stato audio frammentato: Carousel usa `useRadioAudioPlayback` (globale), Tabs usa `useAudioPlayback` locale; non esiste un unico arbitro audio.
+3) `MessageTabsView`/`useTabSwitching` non è robusto al cambio conversazione (stati/queue non sempre resettati), e mette in coda anche messaggi `human` (può bloccare o sfasare l’avanzamento).
+4) Persistenza conversazione: `useRadioConversations` riprende `radio-current-conversation-id` da localStorage, quindi all’apertura ricarica la chat vecchia.
+5) `useRadioMessages` non pulisce lo stato quando `conversationId=null` e non protegge da race async (risposta tardiva di una fetch vecchia può sporcare la UI corrente).
+6) Cambio vista durante playback: possibile stato audio globale “stale” se il player viene smontato senza reset esplicito.
+7) Verifica DB: i messaggi risultano separati per agente e ordinati; il problema principale è di orchestrazione frontend, non di salvataggio backend.
 
-## Analisi dei Problemi
+Piano di refactoring ottimizzato (market-grade):
 
-### 1. File Morti (7 componenti mai importati dal codice attivo)
-| File | Stato |
-|------|-------|
-| `RadioAudioSettingsPopup.tsx` | Mai importato |
-| `RadioMessageList.tsx` | Solo dal backup |
-| `RadioCursor.tsx` | Mai importato |
-| `RadioParticipantIcon.tsx` | Solo dal backup |
-| `RadioVoiceRecorder.tsx` | Sostituito da `InteractiveMicrophoneButton` |
-| `RadioVoiceRecorderV2_Hybrid.tsx` | Sostituito |
-| `RadioMessageIcons.tsx` | Mai importato |
-| `RadioChat-backup-2026-02-15.tsx` | Backup obsoleto (1000+ righe) |
+Fase 0 — Safety/backup (obbligatoria)
+- Backup dei file Radio Chat coinvolti in `docs/...pre-radio-sync-refactor`.
+- Log change nel tracciamento progetto/changelog come da policy.
 
-### 2. Sdoppiamento Sidebar: `RadioSidebar.tsx` vs `RadioSidebarPanel.tsx`
-`RadioSidebar.tsx` (127 righe) e' un componente legacy con logica duplicata. Il `RadioSidebarPanel` lo ha completamente sostituito ma `RadioSidebar` esiste ancora con standalone mode (backdrop, header, close button) che nessuno usa. La modalita' `embedded` non e' piu' invocata dal codice attivo.
+Fase 1 — Isolamento vista attiva (fix critico)
+- `RadioChat.tsx`: rendere mutualmente esclusivo il mount delle viste (non solo `hidden` CSS).
+- Solo la vista attiva esiste nel DOM; niente side-effect/audio in background.
+- Al cambio vista: stop/reset audio centralizzato prima del mount della nuova vista.
 
-### 3. Ghost Icons vs Header CRM
-Il menu header dell'app (CRM) ha il proprio hamburger menu tramite `CRMLayoutContext`. Radio Chat ha un SECONDO hamburger (Beer icon) per il proprio sidebar. Quando entrambi sono aperti si sovrappongono. La logica di mutua esclusione e' gestita manualmente con `useEffect` e prop drilling di `crmMenuOpen/setCrmMenuOpen` attraverso 3 livelli di componenti.
+Fase 2 — Unificazione playback controller
+- Introdurre un controller unico (hook dedicato) per:
+  - `active_message_id`
+  - `current_playing_id`
+  - `is_audio_playing`
+  - `advance_to_next()`
+  - guardia “single-audio-at-a-time” via ref condiviso
+- Tabs e Messages devono usare lo stesso controller del Carousel (niente `useAudioPlayback` locale nei Tabs).
 
-### 4. Ghost Icons: 5 bottoni con visibilita' complessa
-Ogni icona ha la propria logica show/hide basata su `showIcon(featureActive)`. La colonna e' compatta (`gap-1`) ma i bottoni sono alti 80px (`h-20`) ciascuno per i trigger e 56px (`h-14`) per FileText/Keyboard = totale ~400px di colonna verticale. Su schermi < 700px di altezza, overflow.
+Fase 3 — Sequenza deterministica per agente
+- Tabs: autoplay solo del tab visibile.
+- Avanzamento solo su evento `ended` reale del messaggio corrente.
+- Escludere messaggi `human` dalla coda audio automatica.
+- Reset completo queue/seen/active al cambio conversazione.
+- Garantire: “un agente finisce tutto il suo audio prima di passare al successivo”.
 
-### 5. `RadioMessageView.tsx` quasi vuoto
-Solo 35 righe, renderizza nome + contenuto senza formattazione markdown, senza audio player, senza metadata. Usato solo come overlay nel carousel. E' un componente incompleto rispetto a `MultiAgentMessage` usato in Messages view.
+Fase 4 — Startup “nuova chat vuota”
+- Cambiare policy iniziale in `useRadioConversations`:
+  - default: sessione nuova (no resume automatico della vecchia).
+  - opzionale (futuro): toggle “Riprendi ultima chat”.
+- `useRadioMessages`: quando `conversationId` è null, `setMessages([])` immediato.
+- Aggiungere guardia anti-race nelle fetch (`request_id`/abort pattern).
 
-### 6. Tre viste con gestione inconsistente
-- **Carousel**: Ha `RadioCarouselContainer` con 3D, avatar nav, zoom, overlay text. Audio via `RadioCarouselAudioPlayerWrapper`.
-- **Messages**: Usa `RadioMessagesView` → `MultiAgentMessage` (dal Chat Laboratory). Audio integrato nei messaggi.
-- **Tabs**: Usa `MessageTabsView` dal Chat Laboratory. Nessuna integrazione audio propria.
+Fase 5 — Hardened sync & resilienza
+- Rifinire `useRadioMessages`: try/catch completi + fallback poll leggero se realtime perde eventi.
+- Rimuovere trigger prematuri che alterano stati di invio/playback fuori sequenza.
+- Logging tecnico coerente per timeline audio->tab->next.
 
-Le tre viste hanno integrazioni audio completamente diverse: il carousel usa un player esterno centralizzato, messages usa player inline, tabs non ha audio.
+File target principali:
+- `src/pages/RadioChat.tsx`
+- `src/hooks/useRadioConversations.ts`
+- `src/hooks/useRadioMessages.ts`
+- `src/components/chat-laboratory/MessageTabsView.tsx` (o wrapper Radio dedicato)
+- `src/hooks/useTabSwitching.ts` (o sostituzione con hook Radio unificato)
+- Nuovo hook audio coordinator Radio (single source of truth)
 
-### 7. Props Drilling Eccessivo
-`RadioChat.tsx` passa 25+ props a `RadioSidebarPanel`, 17 props a `RadioGhostIcons`. La pagina orchestratore e' a 311 righe ma ha 11 hook imports. Non e' critico ma la prop surface e' ampia.
-
----
-
-## Piano di Refactoring (5 fasi)
-
-### Fase 1: Pulizia File Morti
-Eliminare 8 file non referenziati dal codice attivo:
-- `RadioAudioSettingsPopup.tsx`
-- `RadioMessageList.tsx`
-- `RadioCursor.tsx`
-- `RadioParticipantIcon.tsx`
-- `RadioVoiceRecorder.tsx`
-- `RadioVoiceRecorderV2_Hybrid.tsx`
-- `RadioMessageIcons.tsx`
-- `RadioChat-backup-2026-02-15.tsx`
-
-**Rischio**: Nullo — nessun import attivo.
-
-### Fase 2: Eliminare `RadioSidebar.tsx`
-Il `RadioSidebarPanel` gestisce gia' tutto (3 tab: Chat/Agenti/Config). `RadioSidebar.tsx` ha due modalita':
-- **Standalone**: Non usata (nessun import attivo la chiama senza `embedded`)
-- **Embedded**: Il panel gia' integra direttamente `RadioParticipantSelector`, `RadioVoiceSelector`, `RadioStrategySelector`, `RadioPromptSelector` senza passare per RadioSidebar.
-
-Azione: Eliminare `RadioSidebar.tsx`. Nessuna modifica ad altri file necessaria.
-
-**Rischio**: Nullo.
-
-### Fase 3: Unificare `RadioMessageView` con `MultiAgentMessage`
-Il text overlay del carousel (`RadioMessageView`) mostra solo testo grezzo. Sostituirlo con una versione lightweight di `MultiAgentMessage` (solo testo + sender, senza audio player inline) per coerenza visiva tra le 3 viste.
-
-File modificati:
-- `RadioCarouselContainer.tsx`: Sostituire `RadioMessageView` con `MultiAgentMessage` (prop `compact={true}`)
-- Eliminare `RadioMessageView.tsx`
-
-**Rischio**: Basso.
-
-### Fase 4: Ridurre il Prop Drilling con un Context dedicato
-Creare `RadioChatContext` che espone le prop condivise (sidebar state, view mode, audio state, participants) cosi' i componenti figli possono consumarle direttamente senza passare attraverso RadioChat.tsx.
-
-File:
-- Nuovo: `src/contexts/RadioChatContext.tsx`
-- Modificati: `RadioChat.tsx` (wrappa con provider), `RadioGhostIcons.tsx`, `RadioSidebarPanel.tsx` (consumano context invece di props)
-
-Questo ridurra' `RadioSidebarPanel` da 25+ props a ~8 (solo callbacks specifiche come onSelectConversation, onNewConversation, etc.) e `RadioGhostIcons` da 17 props a ~3.
-
-**Rischio**: Medio — richiede test completo delle interazioni.
-
-### Fase 5: Compattare Ghost Icons per responsive
-Ridurre le dimensioni dei trigger da `h-20` a `h-12` e `w-12` a `w-10`. Aggiungere un breakpoint `max-h-[600px]:hidden` per nascondere gli icon meno importanti (FileText, Keyboard) su schermi piccoli, dato che l'input e' accessibile tramite double-click sulla zona centrale e il message view e' disponibile nel carousel overlay.
-
-File modificati:
-- `RadioGhostIcons.tsx`
-- `RadioSidebarTrigger.tsx` (ridurre dimensioni)
-- `RadioMicTrigger.tsx` (ridurre dimensioni)
-- `AISidebarTrigger.tsx` (ridurre dimensioni)
-
-**Rischio**: Basso — solo CSS.
-
----
-
-## NON TOCCARE
-- `RadioCarousel3D.tsx` (477 righe Three.js)
-- `FloatingZoomControl` e tutta la logica zoom
-- `RadioCarouselContainer.tsx` (navigazione avatar, touch handlers, wheel)
-- `RadioAudioPlayer.tsx`, `RadioAudioPlayerMini.tsx`, `RadioCarouselAudioPlayerWrapper.tsx` (appena fixati)
-- `RadioAudioControls.tsx` (barra microfoni bottom)
-- `AISidebarSlider` (indipendente)
-- `useRadioCarouselNav`, `useRadioAudioPlayback` e tutti gli hook audio
-
-## Riepilogo Impatto
-
-| Metrica | Prima | Dopo |
-|---------|-------|------|
-| File in `radio-chat/` | 33 | 23 |
-| Props RadioSidebarPanel | 25+ | ~8 |
-| Props RadioGhostIcons | 17 | ~3 |
-| Componenti duplicati | 3 (Sidebar, MessageView, ParticipantIcon) | 0 |
-| File backup/morti | 8 | 0 |
-
+Criteri di accettazione (must-pass):
+1) Aprendo `/radio-chat` vedi chat nuova vuota, non la precedente.
+2) In Carousel/Tabs/Messages non parte mai audio da viste non visibili.
+3) Un solo audio alla volta; nessuna sovrapposizione.
+4) Fine audio => avanzamento alla pagina successiva corretta (se autorun attivo).
+5) Navigando avanti/indietro nei tab, viene letto solo il messaggio della pagina frontale.
+6) Nessun “mix” percepito tra agenti: testo e voce restano accoppiati allo stesso messaggio/agente.
+7) Test end-to-end su conversazione con 3 agenti e più turni consecutivi, incluso cambio vista durante playback.

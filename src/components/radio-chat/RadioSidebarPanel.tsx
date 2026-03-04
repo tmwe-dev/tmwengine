@@ -8,12 +8,11 @@ import { RadioPromptSelector } from './RadioPromptSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { RadioParticipant, RadioConversation, RadioSidebarTab, RadioViewMode } from '@/types/radio';
+import React from 'react';
 
 interface RadioSidebarPanelProps {
-  isOpen: boolean;
   activeSidebarTab: RadioSidebarTab;
   setActiveSidebarTab: (tab: RadioSidebarTab) => void;
-  // Conversations tab
   conversations: RadioConversation[];
   currentConversationId: string | null;
   onSelectConversation: (id: string) => void;
@@ -22,7 +21,6 @@ interface RadioSidebarPanelProps {
   onUpdateTitle: (id: string, title: string) => void;
   onGenerateSummary: (id: string) => void;
   onGenerateFullReport: (id: string) => void;
-  // Settings tab
   conversationId: string | null;
   viewMode: RadioViewMode;
   onViewModeChange: (mode: RadioViewMode) => void;
@@ -32,7 +30,6 @@ interface RadioSidebarPanelProps {
   onToggleParticipant: (id: string) => void;
   carouselZoom: number;
   onCarouselZoomChange: (z: number) => void;
-  // Close
   onClose: () => void;
   crmMenuOpen: boolean;
   setCrmMenuOpen: (v: boolean) => void;
@@ -41,7 +38,7 @@ interface RadioSidebarPanelProps {
 type PanelTab = 'conversations' | 'agents' | 'config';
 
 export const RadioSidebarPanel = ({
-  isOpen, activeSidebarTab, setActiveSidebarTab,
+  activeSidebarTab, setActiveSidebarTab,
   conversations, currentConversationId,
   onSelectConversation, onNewConversation, onDeleteConversation, onUpdateTitle,
   onGenerateSummary, onGenerateFullReport,
@@ -51,13 +48,11 @@ export const RadioSidebarPanel = ({
   carouselZoom, onCarouselZoomChange,
   onClose, crmMenuOpen, setCrmMenuOpen
 }: RadioSidebarPanelProps) => {
-  // Map the external tab type to our internal 3-tab system
   const activeTab: PanelTab = activeSidebarTab === 'conversations' ? 'conversations' : 
     activeSidebarTab === 'settings' ? 'agents' : 'agents';
   
   const [internalTab, setInternalTab] = React.useState<PanelTab>(activeTab);
 
-  // Sync external tab changes
   React.useEffect(() => {
     if (activeSidebarTab === 'conversations') setInternalTab('conversations');
     else setInternalTab('agents');
@@ -70,10 +65,7 @@ export const RadioSidebarPanel = ({
   ];
 
   return (
-    <div className={cn(
-      "fixed left-0 top-24 md:top-28 h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] w-[320px] bg-transparent border-r border-border/40 z-50 transition-transform duration-300",
-      isOpen ? "translate-x-0" : "-translate-x-full"
-    )}>
+    <div className="flex flex-col h-full">
       {/* Tab Navigation + Close */}
       <div className="flex items-center border-b border-border/40">
         <div className="flex flex-1">
@@ -109,12 +101,10 @@ export const RadioSidebarPanel = ({
           onSelectConversation={(id) => {
             onSelectConversation(id);
             onClose();
-            if (crmMenuOpen) setCrmMenuOpen(false);
           }}
           onNewConversation={() => {
             onNewConversation();
             onClose();
-            if (crmMenuOpen) setCrmMenuOpen(false);
           }}
           onDeleteConversation={onDeleteConversation}
           onUpdateTitle={onUpdateTitle}
@@ -143,7 +133,6 @@ export const RadioSidebarPanel = ({
 
       {internalTab === 'config' && (
         <ScrollArea className="h-[calc(100%-3rem)]">
-          {/* View Mode Selector */}
           <div className="p-4 border-b">
             <h3 className="text-sm font-medium mb-3">View Mode</h3>
             <div className="flex flex-col gap-2">
@@ -176,7 +165,6 @@ export const RadioSidebarPanel = ({
               </Button>
             </div>
           </div>
-
           <RadioStrategySelector conversationId={conversationId} />
           <RadioPromptSelector conversationId={conversationId} />
         </ScrollArea>
@@ -184,6 +172,3 @@ export const RadioSidebarPanel = ({
     </div>
   );
 };
-
-// Need React import for useState/useEffect
-import React from 'react';

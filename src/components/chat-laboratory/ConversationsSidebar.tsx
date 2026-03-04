@@ -58,7 +58,6 @@ interface Conversation {
 }
 
 interface ConversationsSidebarProps {
-  isOpen: boolean;
   conversations: Conversation[];
   currentConversationId: string | null;
   onSelectConversation: (id: string) => void;
@@ -72,7 +71,6 @@ interface ConversationsSidebarProps {
 }
 
 export const ConversationsSidebar = ({
-  isOpen,
   conversations,
   currentConversationId,
   onSelectConversation,
@@ -175,21 +173,7 @@ export const ConversationsSidebar = ({
 
   return (
     <>
-      {/* Backdrop - UNIFORMATO */}
-      {isOpen && (
-        <div 
-          className="fixed left-0 right-0 bottom-0 top-14 bg-transparent backdrop-blur-sm z-40 animate-in fade-in"
-          onClick={onCloseSidebar}
-        />
-      )}
-
-      {/* Sidebar - UNIFORMATO */}
-      <div className={cn(
-        "fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-80 bg-background border-r z-50",
-        "transition-transform duration-300",
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex flex-col h-full bg-background">
+      <div className="flex flex-col h-full bg-background">
       {/* Compact Header - Single Row */}
       <div className="p-3 border-b border-border/40 bg-background">
         <div className="flex items-center justify-between gap-2">
@@ -525,7 +509,6 @@ export const ConversationsSidebar = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-        </div>
       </div>
     </>
   );

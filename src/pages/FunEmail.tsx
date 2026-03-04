@@ -38,6 +38,7 @@ import { ToolsDropdownMenu } from '@/components/email/ToolsDropdownMenu';
 import { TMWEMigrationAdmin } from '@/components/email/admin/TMWEMigrationAdmin';
 import { ZeroSyncTestPanel } from '@/components/email/testing/ZeroSyncTestPanel';
 import { FunEmailNavigation } from '@/components/email/FunEmailNavigation';
+import { useCRMLayout } from '@/contexts/CRMLayoutContext';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();
@@ -59,6 +60,7 @@ const FunEmail = () => {
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const [selectedSenderForAI, setSelectedSenderForAI] = useState<string | null>(null);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const { menuOpen: crmMenuOpen, setMenuOpen: setCrmMenuOpen } = useCRMLayout();
   
   // Smart Inbox filters
   const [smartInboxFolder, setSmartInboxFolder] = useState('INBOX');
@@ -188,12 +190,22 @@ const FunEmail = () => {
   });
 
   // Mutua esclusione sidebar (pattern RadioChat)
+  // Mutual exclusion: CRM sidebar vs page sidebars
+  useEffect(() => {
+    if (crmMenuOpen) {
+      setSidebarOpen(false);
+      setAiSidebarOpen(false);
+      setCategoriesOpen(false);
+    }
+  }, [crmMenuOpen]);
+
   const handleToggleMenu = () => {
     const newState = !sidebarOpen;
     setSidebarOpen(newState);
     if (newState) {
       setAiSidebarOpen(false);
       setCategoriesOpen(false);
+      setCrmMenuOpen(false);
     }
   };
 
@@ -203,6 +215,7 @@ const FunEmail = () => {
     if (newState) {
       setSidebarOpen(false);
       setCategoriesOpen(false);
+      setCrmMenuOpen(false);
     }
   };
 
@@ -212,6 +225,7 @@ const FunEmail = () => {
     if (newState) {
       setSidebarOpen(false);
       setAiSidebarOpen(false);
+      setCrmMenuOpen(false);
     }
   };
 

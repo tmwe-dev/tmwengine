@@ -31,6 +31,7 @@ import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
 import { RadioCarouselAudioPlayerWrapper } from '@/components/radio-chat/RadioCarouselAudioPlayerWrapper';
 import { RadioAudioControls } from '@/components/radio-chat/RadioAudioControls';
 import { AISidebarSlider } from '@/components/ai/AISidebarSlider';
+import { SidebarPortal } from '@/components/layout/SidebarPortal';
 
 const RadioChat = () => (
   <RadioAudioPlayerProvider>
@@ -39,7 +40,8 @@ const RadioChat = () => (
 );
 
 const RadioChatContent = () => {
-  const { menuOpen: crmMenuOpen, setMenuOpen: setCrmMenuOpen } = useCRMLayout();
+  // 🔴 Unified sidebar: menuOpen controls the single CRM sidebar
+  const { menuOpen, setMenuOpen } = useCRMLayout();
   const { state: aiCanvasState } = useGlobalAICanvas();
   const { isAudioEnabled } = useAudioPreference();
   const [inputValue, setInputValue] = useState('');
@@ -70,13 +72,13 @@ const RadioChatContent = () => {
     touchHandlers, handleWheel
   } = useRadioCarouselNav(messages, isAudioPlaying, stopCurrentAudio, handleAudioEnd, preferences.isAutoAdvanceEnabled);
 
-  // 🔴 FASE 1: Stop audio on view change — only active view is mounted
+  // Stop audio on view change
   useEffect(() => {
     console.log(`🔄 [RadioChat] View changed to: ${preferences.viewMode}, stopping audio`);
     stopCurrentAudio();
   }, [preferences.viewMode, stopCurrentAudio]);
 
-  // Load conversations on user ready — NO auto-resume from localStorage
+  // Load conversations on user ready
   useEffect(() => {
     if (!currentUser) return;
     loadConversations();
@@ -89,21 +91,15 @@ const RadioChatContent = () => {
     loadCachedPrompts(currentConversationId);
   }, [currentConversationId, loadMessages, loadCachedPrompts]);
 
-  // Close sidebar when CRM menu opens
-  useEffect(() => {
-    if (crmMenuOpen && ui.sidebarOpen) ui.setSidebarOpen(false);
-  }, [crmMenuOpen, ui.sidebarOpen, ui.setSidebarOpen]);
-
-  // Handle conversation selection
+  // Handle conversation selection — closes unified sidebar
   const handleSelectConversation = useCallback(async (conversationId: string) => {
     stopCurrentAudio();
     selectConversation(conversationId);
     resetNavigation();
-    ui.setSidebarOpen(false);
-    if (crmMenuOpen) setCrmMenuOpen(false);
-  }, [selectConversation, resetNavigation, stopCurrentAudio, ui, crmMenuOpen, setCrmMenuOpen]);
+    setMenuOpen(false);
+  }, [selectConversation, resetNavigation, stopCurrentAudio, setMenuOpen]);
 
-  // Handle new conversation
+  // Handle new conversation — closes unified sidebar
   const handleNewConversation = useCallback(async () => {
     stopCurrentAudio();
     const newId = await createConversation();
@@ -114,10 +110,9 @@ const RadioChatContent = () => {
       ui.setInputVisible(false);
       ui.setMessageViewVisible(false);
       loadCachedPrompts(newId);
-      ui.setSidebarOpen(false);
-      if (crmMenuOpen) setCrmMenuOpen(false);
+      setMenuOpen(false);
     }
-  }, [createConversation, resetNavigation, clearMessages, stopCurrentAudio, loadCachedPrompts, ui, crmMenuOpen, setCrmMenuOpen]);
+  }, [createConversation, resetNavigation, clearMessages, stopCurrentAudio, loadCachedPrompts, ui, setMenuOpen]);
 
   // Handle send
   const handleSend = useCallback(async () => {
@@ -128,7 +123,7 @@ const RadioChatContent = () => {
     await sendMessage(msg);
   }, [inputValue, isSending, sendMessage, ui]);
 
-  // 🔴 FASE 2: Unified audio callbacks for Tabs/Messages views
+  // Unified audio callbacks for Tabs/Messages views
   const handleTabsAudioStart = useCallback((messageId: string) => {
     handleAudioStart(messageId);
   }, [handleAudioStart]);
@@ -137,10 +132,10 @@ const RadioChatContent = () => {
     handleAudioEnd();
   }, [handleAudioEnd]);
 
-  // Context value — shared across ghost icons, sidebar, etc.
+  // Context value — sidebarOpen/crmMenuOpen both map to unified menuOpen
   const contextValue = {
-    sidebarOpen: ui.sidebarOpen,
-    setSidebarOpen: ui.setSidebarOpen,
+    sidebarOpen: menuOpen,
+    setSidebarOpen: setMenuOpen,
     aiSidebarOpen: ui.aiSidebarOpen,
     setAiSidebarOpen: ui.setAiSidebarOpen,
     messageViewVisible: ui.messageViewVisible,
@@ -149,9 +144,9 @@ const RadioChatContent = () => {
     setShowAudioControls: ui.setShowAudioControls,
     inputVisible: ui.inputVisible,
     setInputVisible: ui.setInputVisible,
-    shouldShowLeftIcons: ui.shouldShowLeftIcons || crmMenuOpen,
-    crmMenuOpen,
-    setCrmMenuOpen,
+    shouldShowLeftIcons: ui.shouldShowLeftIcons || menuOpen,
+    crmMenuOpen: menuOpen,
+    setCrmMenuOpen: setMenuOpen,
     aiCanvasHasMessages: aiCanvasState.messages.length > 0,
     isAudioEnabled,
     isAutoAdvanceEnabled: preferences.isAutoAdvanceEnabled,
@@ -162,31 +157,32 @@ const RadioChatContent = () => {
     <RadioChatProvider value={contextValue}>
       <RadioLayout
         sidebar={
-          <RadioSidebarPanel
-            isOpen={ui.sidebarOpen}
-            activeSidebarTab={ui.activeSidebarTab}
-            setActiveSidebarTab={ui.setActiveSidebarTab}
-            conversations={conversations}
-            currentConversationId={currentConversationId}
-            onSelectConversation={handleSelectConversation}
-            onNewConversation={handleNewConversation}
-            onDeleteConversation={deleteConversation}
-            onUpdateTitle={updateTitle}
-            onGenerateSummary={generateSummary}
-            onGenerateFullReport={generateFullReport}
-            conversationId={currentConversationId}
-            viewMode={preferences.viewMode}
-            onViewModeChange={preferences.setViewMode}
-            isAutoAdvanceEnabled={preferences.isAutoAdvanceEnabled}
-            onAutoAdvanceChange={preferences.setIsAutoAdvanceEnabled}
-            participants={participants}
-            onToggleParticipant={toggleParticipant}
-            carouselZoom={preferences.carouselZoom}
-            onCarouselZoomChange={preferences.handleZoomChange}
-            onClose={() => ui.setSidebarOpen(false)}
-            crmMenuOpen={crmMenuOpen}
-            setCrmMenuOpen={setCrmMenuOpen}
-          />
+          <SidebarPortal>
+            <RadioSidebarPanel
+              activeSidebarTab={ui.activeSidebarTab}
+              setActiveSidebarTab={ui.setActiveSidebarTab}
+              conversations={conversations}
+              currentConversationId={currentConversationId}
+              onSelectConversation={handleSelectConversation}
+              onNewConversation={handleNewConversation}
+              onDeleteConversation={deleteConversation}
+              onUpdateTitle={updateTitle}
+              onGenerateSummary={generateSummary}
+              onGenerateFullReport={generateFullReport}
+              conversationId={currentConversationId}
+              viewMode={preferences.viewMode}
+              onViewModeChange={preferences.setViewMode}
+              isAutoAdvanceEnabled={preferences.isAutoAdvanceEnabled}
+              onAutoAdvanceChange={preferences.setIsAutoAdvanceEnabled}
+              participants={participants}
+              onToggleParticipant={toggleParticipant}
+              carouselZoom={preferences.carouselZoom}
+              onCarouselZoomChange={preferences.handleZoomChange}
+              onClose={() => setMenuOpen(false)}
+              crmMenuOpen={menuOpen}
+              setCrmMenuOpen={setMenuOpen}
+            />
+          </SidebarPortal>
         }
         ghostIcons={
           <RadioGhostIcons currentMessage={currentMessage} />
@@ -208,9 +204,8 @@ const RadioChatContent = () => {
             />
 
             <div className="pt-4 pb-[200px]">
-              {/* 🔴 FASE 1: Conditional mount — only active view exists in DOM */}
+              {/* Conditional mount — only active view exists in DOM */}
 
-              {/* Carousel View */}
               {preferences.viewMode === 'carousel' && (
                 <RadioCarouselContainer
                   messages={messages}
@@ -223,8 +218,8 @@ const RadioChatContent = () => {
                   setCarouselZoom={preferences.setCarouselZoom}
                   carouselVerticalOffset={preferences.carouselVerticalOffset}
                   setCarouselVerticalOffset={preferences.setCarouselVerticalOffset}
-                  sidebarOpen={ui.sidebarOpen}
-                  crmMenuOpen={crmMenuOpen}
+                  sidebarOpen={menuOpen}
+                  crmMenuOpen={menuOpen}
                   handlePrevCard={handlePrevCard}
                   handleNextCard={handleNextCard}
                   handleCarouselAudioEnd={handleCarouselAudioEnd}
@@ -235,7 +230,6 @@ const RadioChatContent = () => {
                 />
               )}
 
-              {/* Messages View */}
               {preferences.viewMode === 'messages' && (
                 <div className="w-full h-full pt-20 pb-24">
                   <RadioMessagesView
@@ -250,7 +244,6 @@ const RadioChatContent = () => {
                 </div>
               )}
 
-              {/* Tabs View — uses unified audio controller */}
               {preferences.viewMode === 'tabs' && (
                 <div className="w-full pt-20 pb-24 h-[calc(100vh-160px)]">
                   <MessageTabsView

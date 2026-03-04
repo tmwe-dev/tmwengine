@@ -1,26 +1,42 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 
-interface CRMLayoutContextType {
+interface CRMSidebarContextType {
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
+  closeSidebar: () => void;
+  // Portal system for page-specific sidebar content
+  portalContainerRef: React.RefObject<HTMLDivElement | null>;
+  hasPageSidebar: boolean;
+  setHasPageSidebar: (v: boolean) => void;
 }
 
-const CRMLayoutContext = createContext<CRMLayoutContextType | undefined>(undefined);
+const CRMSidebarContext = createContext<CRMSidebarContextType | undefined>(undefined);
 
-export const CRMLayoutProvider = ({ children }: { children: ReactNode }) => {
+export const CRMSidebarProvider = ({ children }: { children: ReactNode }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [hasPageSidebar, setHasPageSidebar] = useState(false);
+  const portalContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const closeSidebar = useCallback(() => {
+    setMenuOpen(false);
+  }, []);
 
   return (
-    <CRMLayoutContext.Provider value={{ menuOpen, setMenuOpen }}>
+    <CRMSidebarContext.Provider value={{ 
+      menuOpen, setMenuOpen, closeSidebar,
+      portalContainerRef, hasPageSidebar, setHasPageSidebar
+    }}>
       {children}
-    </CRMLayoutContext.Provider>
+    </CRMSidebarContext.Provider>
   );
 };
 
-export const useCRMLayout = () => {
-  const context = useContext(CRMLayoutContext);
-  if (!context) {
-    throw new Error('useCRMLayout deve essere usato dentro CRMLayoutProvider');
-  }
+export const useCRMSidebar = () => {
+  const context = useContext(CRMSidebarContext);
+  if (!context) throw new Error('useCRMSidebar must be used within CRMSidebarProvider');
   return context;
 };
+
+// Backward compatibility aliases
+export const useCRMLayout = useCRMSidebar;
+export const CRMLayoutProvider = CRMSidebarProvider;

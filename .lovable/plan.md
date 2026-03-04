@@ -1,122 +1,73 @@
 
 
-# Piano: Unificazione Sidebar a Livello Piattaforma
+# Piano: Eliminazione Sidebar Duplicate Rimanenti
 
-## Problema Attuale
+## Stato Attuale
 
-La piattaforma ha **6 sidebar indipendenti** che competono per lo stesso spazio `fixed left-0`:
+Il sistema portal (`SidebarPortal` + `CRMSidebarContext`) e' gia' operativo per RadioChat e ChatLaboratory. Tuttavia rimangono **7 componenti `fixed left-0`** duplicati:
 
-| Sidebar | Pagina | Posizione | z-index |
-|---------|--------|-----------|---------|
-| **CRMLayout sidebar** | Globale (tutte le pagine) | `fixed left-0 top-28, w-64, z-50` | Sempre presente, collassa a `w-16` su desktop |
-| **RadioSidebarPanel** | `/radio-chat` | `fixed left-0 top-24, w-[320px], z-50` | Slide-in/out |
-| **RadioGhostIcons** | `/radio-chat` | `fixed left-0 bottom-8, z-40` | 5 icone verticali |
-| **ConversationsSidebar** | `/chat-laboratory` | `fixed left-0 top-14, w-80, z-50` | Slide-in/out |
-| **CollapsibleCategorySidebar** | `/funnemail` (inbox) | `fixed left-0 top-14, w-80, z-50` | Slide-in/out |
-| **AISidebarSlider** | Radio, ChatLab, FunEmail | `fixed left-0 top-14, w-80, z-50` | Slide-in/out |
+| Componente | Pagina | Tipo |
+|---|---|---|
+| `AISidebarSlider` | RadioChat | `fixed left-0 top-14 w-80 z-50` |
+| `AISidebarSlider` | ChatLaboratory | `fixed left-0 top-14 w-80 z-50` |
+| `AISidebarSlider` | FunEmail | `fixed left-0 top-14 w-80 z-50` |
+| `AISidebarTrigger` | ChatLaboratory | `fixed left-0 bottom-[12rem] z-40` |
+| `AISidebarTrigger` + Categories trigger | FunEmail | `fixed left-0 z-40` |
+| `CollapsibleCategorySidebar` | FunEmail | `fixed left-0 top-14 w-80 z-50` |
+| `RadioGhostIcons` | RadioChat | `fixed left-0 bottom-8 z-40` |
 
-Il CRM sidebar (`w-16` collapsed) è **sempre visibile su desktop** (`lg:translate-x-0 lg:w-16`). Quando le pagine aprono le loro sidebar, si sovrappongono alla CRM sidebar. La mutua esclusione è gestita manualmente via `useCRMLayout` con prop drilling in RadioChat e con nessun meccanismo in ChatLaboratory/FunEmail.
+## Piano di Implementazione
 
-## Soluzione: Sidebar Unica Contextuale
+### Fase 1 — Espandere CRMSidebarContext con AI state globale
+Aggiungere al context:
+- `aiSidebarOpen` / `setAiSidebarOpen` — stato globale AI sidebar
+- Cosi' tutte le pagine condividono lo stesso toggle AI senza stato locale
 
-Trasformare il CRMLayout sidebar in un **contenitore universale** che cambia contenuto in base alla pagina corrente, eliminando tutte le sidebar `fixed left-0` duplicate.
+File: `src/contexts/CRMLayoutContext.tsx`
 
-### Architettura
+### Fase 2 — AI Sidebar nel footer della CRM sidebar (globale)
+Aggiungere un trigger Sparkles nel footer della sidebar CRM (`CRMLayout.jsx`), visibile su tutte le pagine (anche in stato collapsed `w-16`). Quando cliccato, il contenuto della sidebar CRM mostra `AISidebarSlider` come content-only (senza il suo wrapper `fixed`).
 
-```text
-┌─────────────────────────────────────────────┐
-│  CRMLayout Sidebar (unica, w-64 / w-16)    │
-│                                             │
-│  ┌─────────────────────────────────────┐    │
-│  │  Tab superiori (contextual by page) │    │
-│  ├─────────────────────────────────────┤    │
-│  │                                     │    │
-│  │  GENERIC pages:                     │    │
-│  │    → Navigation groups (attuale)    │    │
-│  │                                     │    │
-│  │  /radio-chat:                       │    │
-│  │    → Tab Chat/Agenti/Config         │    │
-│  │    → (RadioSidebarPanel content)    │    │
-│  │                                     │    │
-│  │  /chat-laboratory:                  │    │
-│  │    → ConversationsSidebar content   │    │
-│  │                                     │    │
-│  │  /funnemail (inbox):                │    │
-│  │    → Categories sidebar content     │    │
-│  │                                     │    │
-│  └─────────────────────────────────────┘    │
-│                                             │
-│  Footer: AI Trigger (sempre presente)       │
-└─────────────────────────────────────────────┘
-```
+File: `src/components/layout/CRMLayout.jsx`, `src/components/ai/AISidebarSlider.tsx`
 
-### Fasi di Implementazione
+### Fase 3 — Rimuovere AISidebarSlider e AISidebarTrigger dalle 3 pagine
+- **RadioChat.tsx**: Rimuovere import e render di `AISidebarSlider`. L'AI e' ora nel CRM sidebar.
+- **ChatLaboratory.tsx**: Rimuovere `AISidebarSlider`, `AISidebarTrigger` (fixed), e stato locale `aiSidebarOpen`.
+- **FunEmail.tsx**: Rimuovere `AISidebarSlider`, `AISidebarTrigger` (fixed), e stato locale `aiSidebarOpen`.
 
-**Fase 1 — Creare `CRMSidebarContext`**
-Sostituire `CRMLayoutContext` con un context più ricco che gestisce:
-- `menuOpen` / `setMenuOpen` (esistente)
-- `sidebarContent: 'nav' | 'radio' | 'chatlab' | 'email' | 'ai'` — cosa mostrare nel corpo della sidebar
-- `setSidebarContent(content)` — le pagine registrano il loro contenuto
-- `closeSidebar()` — chiude tutto in un colpo
+### Fase 4 — FunEmail: Categories sidebar via Portal
+- Wrappare `CollapsibleCategorySidebar` in `SidebarPortal` (come RadioChat e ChatLab)
+- Rimuovere il wrapper `fixed left-0` da `CollapsibleCategorySidebar.tsx`, renderlo content-only
+- Rimuovere il trigger `📬` fixed da FunEmail — l'apertura avviene tramite hamburger CRM
 
-Questo elimina il prop drilling di `crmMenuOpen/setCrmMenuOpen` in RadioChat, ChatLab, FunEmail.
+File: `src/pages/FunEmail.tsx`, `src/components/email/smart-inbox/CollapsibleCategorySidebar.tsx`
 
-**Fase 2 — Refactoring CRMLayout sidebar**
-- La sidebar CRM diventa un contenitore generico con uno slot per il contenuto
-- Quando `menuOpen=true`:
-  - Su pagine generiche: mostra navigation groups (come ora)
-  - Su `/radio-chat`: mostra il contenuto di `RadioSidebarPanel` (3 tab)
-  - Su `/chat-laboratory`: mostra il contenuto di `ConversationsSidebar`
-  - Su `/funnemail`: mostra il contenuto di `CollapsibleCategorySidebar`
-- Il comportamento collapsed (`w-16` icon strip) resta invariato
-- Un solo hamburger button nell'header controlla tutto
+### Fase 5 — Ghost Icons di RadioChat nel footer sidebar
+- Spostare le 5 icone (AI, Sidebar trigger, FileText, Mic, Keyboard) come quick-actions nel footer della sidebar CRM, visibili solo su `/radio-chat`
+- Renderle visibili anche in stato collapsed (`w-16`) come icone piccole
+- Eliminare `RadioGhostIcons` come componente `fixed left-0` separato
 
-**Fase 3 — Eliminare sidebar duplicate**
-- `RadioSidebarPanel.tsx`: rimuovere il wrapper `fixed left-0` e renderlo un componente "content-only" che si innesta dentro la sidebar CRM
-- `ConversationsSidebar.tsx`: stessa operazione — solo contenuto, niente posizionamento
-- `CollapsibleCategorySidebar.tsx`: stessa operazione
-- `AISidebarSlider.tsx`: integrare come tab/sezione nella sidebar CRM (footer della sidebar o tab dedicato)
+File: `src/components/layout/CRMLayout.jsx`, `src/components/radio-chat/RadioGhostIcons.tsx`, `src/pages/RadioChat.tsx`
 
-**Fase 4 — Ghost Icons → Sidebar footer**
-- Spostare le 5 icone di RadioChat (AI, Sidebar, FileText, Mic, Keyboard) come **quick actions nel footer della sidebar** quando siamo su `/radio-chat`
-- Eliminare `RadioGhostIcons.tsx` come componente `fixed left-0` separato
-- Le icone appaiono nella parte bassa della sidebar (anche in stato collapsed `w-16`)
-
-**Fase 5 — AI Sidebar unificato**
-- `AISidebarSliderUnified` è già montato globalmente in App.tsx ma non utilizzato
-- Rendere l'AI trigger sempre presente nel footer della sidebar CRM (tutte le pagine)
-- Quando aperto, l'AI sidebar diventa il contenuto della sidebar CRM (non una seconda sidebar sovrapposta)
-- Eliminare le istanze locali di `AISidebarSlider` da RadioChat, ChatLab, FunEmail
-
-### File da modificare
+### File Modificati
 
 | File | Azione |
-|------|--------|
-| `src/contexts/CRMLayoutContext.tsx` | Espandere con `sidebarContent`, rinominare a `CRMSidebarContext` |
-| `src/components/layout/CRMLayout.jsx` | Sidebar contextuale con slot per contenuto page-specific |
-| `src/pages/RadioChat.tsx` | Registrare contenuto sidebar via context, rimuovere `RadioSidebarPanel` fixed |
-| `src/pages/ChatLaboratory.tsx` | Registrare contenuto sidebar via context |
-| `src/pages/FunEmail.tsx` | Registrare contenuto sidebar via context |
-| `src/components/radio-chat/RadioSidebarPanel.tsx` | Content-only (rimuovere fixed positioning) |
-| `src/components/chat-laboratory/ConversationsSidebar.tsx` | Content-only |
-| `src/components/email/smart-inbox/CollapsibleCategorySidebar.tsx` | Content-only |
-| `src/components/radio-chat/RadioGhostIcons.tsx` | Trasformare in sidebar footer actions |
-| `src/components/ai/AISidebarSlider.tsx` | Integrare nella sidebar unificata |
+|---|---|
+| `src/contexts/CRMLayoutContext.tsx` | Aggiungere `aiSidebarOpen` state |
+| `src/components/layout/CRMLayout.jsx` | AI trigger footer + ghost icons slot per radio-chat |
+| `src/components/ai/AISidebarSlider.tsx` | Aggiungere modalita' content-only (senza fixed wrapper) |
+| `src/pages/RadioChat.tsx` | Rimuovere AISidebarSlider, ghost icons diventa sidebar footer |
+| `src/pages/ChatLaboratory.tsx` | Rimuovere AISidebarSlider + AISidebarTrigger fixed |
+| `src/pages/FunEmail.tsx` | Rimuovere AISidebarSlider + trigger fixed, usare SidebarPortal per categories |
+| `src/components/email/smart-inbox/CollapsibleCategorySidebar.tsx` | Content-only (rimuovere fixed wrapper) |
+| `src/components/radio-chat/RadioGhostIcons.tsx` | Convertire da fixed a sidebar footer content |
 
 ### NON TOCCARE
-- Header CRM (hamburger button, logo, toolbar destra)
-- Contenuto delle sidebar (liste conversazioni, tab agenti/config, categorie email)
-- Carousel 3D, zoom, audio playback
-- Routing, auth, query
+- Header CRM (hamburger, logo, toolbar)
+- Contenuto interno delle sidebar (liste conversazioni, tab agenti, categorie email)
+- Carousel 3D, audio, zoom
+- `AISidebarSliderUnified.tsx` (componente separato gia' in App.tsx)
 
 ### Rischio
-**Medio-Alto** — Tocca 3 pagine principali e il layout globale. Richiede test end-to-end su tutte le pagine. Backup obbligatorio prima dell'implementazione.
-
-### Risultato Atteso
-- **1 sola sidebar** in tutta la piattaforma
-- **1 solo hamburger** per aprirla/chiuderla
-- Nessuna sovrapposizione possibile
-- Contenuto contextuale per pagina
-- AI assistant accessibile ovunque dal footer sidebar
-- Zero prop drilling di `crmMenuOpen/setCrmMenuOpen`
+**Medio-Alto** — Tocca 3 pagine e il layout globale. Backup obbligatorio. Test end-to-end su tutte le pagine dopo implementazione.
 

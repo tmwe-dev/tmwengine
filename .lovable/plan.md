@@ -1,72 +1,88 @@
 
 
-# Piano: Fix Audio Sequenziale — Voci Che Partono Insieme e Nessun Avanzamento
+# Piano: Ricompattamento Menu e Controlli Radio Chat
 
-## Causa Root (3 problemi interconnessi)
+## Analisi Completa dei Componenti Menu/UI
 
-### Problema 1: `isAudioPlaying` non viene MAI settato a `true`
-Il `RadioCarouselAudioPlayerWrapper` ha `onPlayStart` che fa solo `console.log`:
-```
-onPlayStart={(id) => console.log(`▶️ [Carousel Mini] Audio START: ${id}`)}
-```
-Non chiama MAI `handleAudioStart` dal parent. Quindi `isAudioPlaying` resta `false`, `canAutoPlay={!isAudioPlaying}` e' sempre `true`, e la guard non funziona. Ogni nuovo messaggio che arriva via realtime puo' fare autoplay.
+Dopo analisi riga per riga, ecco la mappa completa degli elementi UI legati ai menu:
 
-### Problema 2: Closure stale su `onPlayEnd` nel Mini Player
-`RadioAudioPlayerMini` crea il listener `handleEnded` dentro un `useEffect` che NON ha `onPlayEnd` nelle dipendenze:
-```
-}, [audioUrl, autoPlay, canAutoPlay, isAudioEnabled, messageId]);
-```
-Quando `handleCarouselAudioEnd` viene ricreato con nuovi `aiMessages`, il mini player continua a chiamare la versione vecchia con la lista incompleta, trovando `aiMessages[currentIndex + 1]` = undefined.
+### Ghost Icons (barra sinistra, 5 bottoni verticali)
+Posizionati `fixed left-0` con spacing verticale hardcoded:
+1. **AISidebarTrigger** — `bottom-[24rem]` — Apre AI Sidebar slider
+2. **RadioSidebarTrigger** (Beer icon) — `bottom-[18.5rem]` — Apre sidebar panel (Chat + Impostazioni)
+3. **FileText** — `bottom-[13rem]` — Toggle message view overlay
+4. **RadioMicTrigger** — `bottom-[7.5rem]` — Toggle audio controls bar
+5. **Keyboard** — `bottom-8` — Toggle text input
 
-### Problema 3: Guard `sharedAudioRef` si auto-annulla
-In `RadioAudioPlayer`, il nuovo audio viene registrato nel ref PRIMA della guard:
-```
-sharedAudioRef.current = audio;  // ← nuovo audio (paused)
-// ...
-const anotherPlaying = sharedAudioRef?.current && !sharedAudioRef.current.paused;
-// ↑ controlla se STESSO (paused) → anotherPlaying = false sempre
-```
+### Sidebar Panel (320px, fixed left)
+Due tab:
+- **Chat**: `RadioConversationsSidebar` (497 righe) — lista conversazioni con search, date filter, hover cards, edit, delete, summary, report
+- **Impostazioni**: `RadioSidebar` embedded — contiene:
+  - `RadioParticipantSelector` (agenti con GIF)
+  - Tabs Voice/Strategy/Prompts:
+    - Voice: view mode selector (Carousel/Messages/Tabs), carousel zoom slider, `RadioVoiceSelector` (audio toggle + auto-advance toggle)
+    - Strategy: `RadioStrategySelector` (4 strategie)
+    - Prompts: `RadioPromptSelector` (global + composed prompts)
 
-## Soluzione (4 file)
+### Bottom Controls (fisso centro-basso)
+- `RadioCarouselAudioPlayerWrapper` — mini player audio
+- `RadioAudioControls` — barra microfoni PTT/Listen + VAD slider + word limit
 
-### 1. `RadioCarouselAudioPlayerWrapper.tsx`
-- Aggiungere prop `onAudioStart: (id: string) => void`
-- Passare `onPlayStart={onAudioStart}` ai player figli invece di `console.log`
+### AI Sidebar (slider destro)
+- `AISidebarSlider` — assistant AI indipendente
 
-### 2. `RadioAudioPlayerMini.tsx`
-- Usare un `useRef` per `onPlayEnd` (come gia' fa `RadioAudioPlayer` con `onPlayEndRef`)
-- Cosi' `handleEnded` chiama sempre la versione aggiornata del callback
+## Problemi Identificati
 
-### 3. `RadioAudioPlayer.tsx`
-- Salvare il vecchio `sharedAudioRef.current` PRIMA di registrare il nuovo audio
-- Controllare il vecchio ref nella guard: `const anotherPlaying = oldAudio && !oldAudio.paused`
+1. **5 ghost icons** con spacing hardcoded creano una colonna fragile e poco compatta
+2. **RadioSidebar** mischia view mode, zoom, voice settings, strategy e prompts in modo confuso — il tab "Voice" contiene i bottoni view mode che non c'entrano con le voci
+3. **RadioConversationsSidebar** ha header duplicato (X button + titolo) sopra i tab del panel
+4. La logica show/hide dei ghost icons e' complessa (mouse proximity + stato apertura) ma funzionale
 
-### 4. `RadioChat.tsx`
-- Passare `onAudioStart={handleAudioStart}` al `RadioCarouselAudioPlayerWrapper`
+## Soluzione: Riorganizzazione Compatta
 
-## Flusso corretto dopo il fix
+### NON TOCCARE
+- Carousel 3D, zoom controls, `RadioCarousel3D`, `FloatingZoomControl`
+- `RadioCarouselContainer` (avatar navigation, zoom)
+- Audio playback logic, audio players
+- `AISidebarSlider` (gia' indipendente)
+- `RadioAudioControls` (bottom bar microfoni)
 
-```text
-Msg1 arriva → autoPlay=true, canAutoPlay=true → PLAY
-  → onPlayStart → handleAudioStart("msg1") → isAudioPlaying=true ← NUOVO
+### Modifiche
 
-Msg2 arriva (durante play msg1):
-  → canAutoPlay={!isAudioPlaying} = false → NON fa play ✅
+**1. `RadioGhostIcons.tsx` — Compattare in colonna unificata**
+- Raggruppare i 5 bottoni in un container `flex flex-col` con `gap-1` invece di posizioni `bottom-[Xrem]` hardcoded
+- Usare un singolo `fixed left-0 bottom-8` container
+- Mantere stessa logica di visibilita' (mouse proximity)
+- Stessi stili (trasparente, rounded-r, border border-white/20)
 
-Msg1 audio finisce → handleEnded → onPlayEnd (via ref, sempre aggiornato) ← NUOVO
-  → handleCarouselAudioEnd() → handleAudioEnd() → isAudioPlaying=false
-  → 300ms → setActiveMessageId(msg2.id)
-  → Wrapper riceve nuovo message → Player monta con canAutoPlay=true → PLAY ✅
+**2. `RadioSidebarPanel.tsx` — Riorganizzare i tab**
+- Rimuovere header duplicato da `RadioConversationsSidebar` (la X e' gia' sul panel)
+- Cambiare i 2 tab a 3 tab: **Chat | Agenti | Config**
+  - **Chat**: lista conversazioni (invariata ma senza header duplicato)
+  - **Agenti**: `RadioParticipantSelector` + `RadioVoiceSelector` (audio on/off, auto-advance)
+  - **Config**: `RadioStrategySelector` + `RadioPromptSelector` + View Mode selector
+- Rimuovere carousel zoom dal sidebar (e' gia' nel `FloatingZoomControl`)
 
-Msg2 audio finisce → stessa catena → avanza a msg3 ✅
-```
+**3. `RadioConversationsSidebar.tsx` — Rimuovere header duplicato**
+- Rimuovere il blocco header con titolo "Conversazioni" e X button (linee 166-174)
+- Il panel parent gia' gestisce la chiusura
+
+**4. `RadioSidebar.tsx` — Semplificare**
+- Rimuovere view mode buttons (spostati in Config tab del panel)
+- Rimuovere carousel zoom slider (gia' nel FloatingZoomControl)
+- Mantenere solo il contenuto embedded usato dal panel
+
+**5. `RadioSidebarPanel.tsx` — Aggiungere close button nell'header tab**
+- Aggiungere X button a fianco dei tab per chiudere il panel
 
 ## File da modificare
 
-| File | Rischio |
-|------|---------|
-| `RadioCarouselAudioPlayerWrapper.tsx` | Basso |
-| `RadioAudioPlayerMini.tsx` | Basso |
-| `RadioAudioPlayer.tsx` | Basso |
-| `RadioChat.tsx` (1 riga) | Basso |
+| File | Azione |
+|------|--------|
+| `RadioGhostIcons.tsx` | Colonna compatta con gap invece di posizioni hardcoded |
+| `RadioSidebarPanel.tsx` | 3 tab (Chat/Agenti/Config) + X button nell'header |
+| `RadioConversationsSidebar.tsx` | Rimuovere header duplicato |
+| `RadioSidebar.tsx` | Rimuovere view mode + zoom (spostati nel panel) |
+
+**Rischio**: Basso — Solo riorganizzazione layout, nessuna logica funzionale modificata. Il carousel e lo zoom non vengono toccati.
 

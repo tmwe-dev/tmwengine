@@ -279,6 +279,7 @@ const RadioChatContent = () => {
               isAudioEnabled={isAudioEnabled}
               className={ui.messageViewVisible ? 'opacity-0 pointer-events-none' : ''}
               sharedAudioRef={audioElementRef}
+              isAudioPlaying={isAudioPlaying}
             />
           )}
           {currentConversationId && ui.showAudioControls && (

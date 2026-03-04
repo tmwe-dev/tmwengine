@@ -45,7 +45,7 @@ export const useRadioCarouselNav = (
       const currentIndex = aiMessages.findIndex(m => m.id === activeMessageId);
       const nextMessage = aiMessages[currentIndex + 1];
       if (nextMessage) setActiveMessageId(nextMessage.id);
-    }, 50);
+    }, 300);
   }, [handleAudioEnd, isAutoAdvanceEnabled, aiMessages, activeMessageId]);
 
   const handlePrevCard = useCallback(() => {

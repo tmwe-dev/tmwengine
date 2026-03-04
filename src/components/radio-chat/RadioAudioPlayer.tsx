@@ -59,6 +59,9 @@ export const RadioAudioPlayer = ({
     console.log(`🔄 [RadioAudioPlayer] SETUP: ${messageId.substring(0,8)}`);
     hasStartedRef.current = false;
     
+    // Capture previous audio BEFORE creating new one (for guard check)
+    const previousAudio = sharedAudioRef?.current;
+
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
@@ -92,8 +95,8 @@ export const RadioAudioPlayer = ({
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
-    // Guard: don't autoplay if another audio is already playing via shared ref
-    const anotherPlaying = sharedAudioRef?.current && !sharedAudioRef.current.paused;
+    // Guard: don't autoplay if another audio was already playing
+    const anotherPlaying = previousAudio && !previousAudio.paused;
     if (autoPlay && canAutoPlay && isAudioEnabled && !hasStartedRef.current && !anotherPlaying) {
       console.log(`🎬 [RadioAudioPlayer] Autoplay: ${messageId.substring(0,8)}`);
       audio.play()

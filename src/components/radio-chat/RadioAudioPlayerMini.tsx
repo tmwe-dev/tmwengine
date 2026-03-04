@@ -1,5 +1,5 @@
 import { Play, Pause, Maximize2 } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 interface RadioAudioPlayerMiniProps {
   audioUrl: string;
@@ -39,7 +39,18 @@ export const RadioAudioPlayerMini = ({
   const isPlaying = externalIsPlaying ?? internalIsPlaying;
   const setIsPlaying = onPlayingChange ?? setInternalIsPlaying;
 
+  // Refs for callbacks to avoid stale closures
+  const onPlayEndRef = useRef(onPlayEnd);
+  const onPlayStartRef = useRef(onPlayStart);
   useEffect(() => {
+    onPlayEndRef.current = onPlayEnd;
+    onPlayStartRef.current = onPlayStart;
+  }, [onPlayEnd, onPlayStart]);
+
+  useEffect(() => {
+    // Capture previous audio BEFORE creating new one (for guard check)
+    const previousAudio = sharedAudioRef?.current;
+
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
@@ -48,13 +59,15 @@ export const RadioAudioPlayerMini = ({
       sharedAudioRef.current = audio;
     }
 
-    if (autoPlay && canAutoPlay && isAudioEnabled) {
+    // Guard: don't autoplay if another audio is already playing
+    const anotherPlaying = previousAudio && !previousAudio.paused;
+    if (autoPlay && canAutoPlay && isAudioEnabled && !anotherPlaying) {
       console.log(`🔊 [Mini Player] Autoplay: ${messageId}`);
       audio.play()
         .then(() => {
           console.log(`✅ [Mini Player] Autoplay OK: ${messageId}`);
           setIsPlaying(true);
-          if (onPlayStart) onPlayStart(messageId);
+          onPlayStartRef.current?.(messageId);
         })
         .catch(err => console.error(`❌ [Mini Player] Autoplay FAILED:`, err));
     }
@@ -62,7 +75,7 @@ export const RadioAudioPlayerMini = ({
     const handleEnded = () => {
       console.log(`⏹️ [Mini Player] ENDED: ${messageId}`);
       setIsPlaying(false);
-      if (onPlayEnd) onPlayEnd();
+      onPlayEndRef.current?.();
     };
 
     audio.addEventListener('ended', handleEnded);

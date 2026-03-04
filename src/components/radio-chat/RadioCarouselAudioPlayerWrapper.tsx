@@ -15,6 +15,8 @@ interface RadioCarouselAudioPlayerWrapperProps {
   sharedAudioRef?: React.MutableRefObject<HTMLAudioElement | null>;
   /** Whether audio is currently playing globally */
   isAudioPlaying?: boolean;
+  /** Called when audio starts playing */
+  onAudioStart?: (id: string) => void;
 }
 
 export const RadioCarouselAudioPlayerWrapper = ({ 
@@ -23,7 +25,8 @@ export const RadioCarouselAudioPlayerWrapper = ({
   className,
   isAudioEnabled = true,
   sharedAudioRef,
-  isAudioPlaying = false
+  isAudioPlaying = false,
+  onAudioStart
 }: RadioCarouselAudioPlayerWrapperProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
@@ -56,7 +59,7 @@ export const RadioCarouselAudioPlayerWrapper = ({
         onTimeUpdate={handleTimeUpdate}
         autoPlay={!isHuman}
         canAutoPlay={!isAudioPlaying}
-        onPlayStart={(id) => console.log(`▶️ [Carousel Mini] Audio START: ${id}`)}
+        onPlayStart={(id) => { console.log(`▶️ [Carousel Mini] Audio START: ${id}`); onAudioStart?.(id); }}
         onPlayEnd={onAudioEnd}
         sharedAudioRef={sharedAudioRef}
       />
@@ -83,7 +86,7 @@ export const RadioCarouselAudioPlayerWrapper = ({
         senderName={message.sender_name}
         autoPlay={!isHuman}
         canAutoPlay={!isAudioPlaying}
-        onPlayStart={(id) => console.log(`▶️ [Carousel] Audio START: ${id}`)}
+        onPlayStart={(id) => { console.log(`▶️ [Carousel] Audio START: ${id}`); onAudioStart?.(id); }}
         onPlayEnd={onAudioEnd}
         onPlayingChange={setIsPlaying}
         isAudioEnabled={isAudioEnabled}

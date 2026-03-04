@@ -19,10 +19,10 @@ export function RadioMicTrigger({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "w-12 h-20 bg-transparent rounded-r-lg border border-white/20",
+        "w-10 h-12 bg-transparent rounded-r-lg border border-border/20",
         "flex items-center justify-center",
         "transition-all duration-300",
-        "hover:bg-white/5",
+        "hover:bg-muted/5",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         className
       )}
@@ -30,8 +30,8 @@ export function RadioMicTrigger({
     >
       <Mic 
         className={cn(
-          "w-6 h-6 transition-colors duration-300",
-          isActive ? 'text-cyan-400' : 'text-gray-500'
+          "w-5 h-5 transition-colors duration-300",
+          isActive ? 'text-cyan-400' : 'text-muted-foreground'
         )}
         strokeWidth={1}
       />

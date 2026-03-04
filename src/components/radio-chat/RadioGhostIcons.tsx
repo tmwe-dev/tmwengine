@@ -4,49 +4,35 @@ import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
 import { RadioSidebarTrigger } from './RadioSidebarTrigger';
 import { RadioMicTrigger } from './RadioMicTrigger';
 import { RadioMessage } from '@/types/radio';
+import { useRadioChatContext } from '@/contexts/RadioChatContext';
 
 interface RadioGhostIconsProps {
-  shouldShowLeftIcons: boolean;
-  sidebarOpen: boolean;
-  crmMenuOpen: boolean;
-  setCrmMenuOpen: (v: boolean) => void;
-  aiSidebarOpen: boolean;
-  setAiSidebarOpen: (v: boolean) => void;
-  aiCanvasHasMessages: boolean;
-  setSidebarOpen: (v: boolean) => void;
-  isAudioEnabled: boolean;
-  isAutoAdvanceEnabled: boolean;
-  messageViewVisible: boolean;
-  setMessageViewVisible: (v: boolean) => void;
   currentMessage: RadioMessage | null;
-  showAudioControls: boolean;
-  setShowAudioControls: (v: boolean) => void;
-  inputVisible: boolean;
-  setInputVisible: (v: boolean) => void;
 }
 
-export const RadioGhostIcons = ({
-  shouldShowLeftIcons, sidebarOpen, crmMenuOpen, setCrmMenuOpen,
-  aiSidebarOpen, setAiSidebarOpen, aiCanvasHasMessages,
-  setSidebarOpen, isAudioEnabled, isAutoAdvanceEnabled,
-  messageViewVisible, setMessageViewVisible, currentMessage,
-  showAudioControls, setShowAudioControls,
-  inputVisible, setInputVisible
-}: RadioGhostIconsProps) => {
+export const RadioGhostIcons = ({ currentMessage }: RadioGhostIconsProps) => {
+  const {
+    shouldShowLeftIcons, sidebarOpen, crmMenuOpen, setCrmMenuOpen,
+    aiSidebarOpen, setAiSidebarOpen, aiCanvasHasMessages,
+    setSidebarOpen, isAudioEnabled, isAutoAdvanceEnabled,
+    messageViewVisible, setMessageViewVisible,
+    showAudioControls, setShowAudioControls,
+    inputVisible, setInputVisible
+  } = useRadioChatContext();
+
   const hiddenBySidebar = sidebarOpen;
 
-  // Each icon is visible if: sidebar closed AND (mouse nearby OR that feature is active)
   const showIcon = (featureActive: boolean) =>
     !hiddenBySidebar && (shouldShowLeftIcons || featureActive);
 
   return (
     <div
       className={cn(
-        "fixed left-0 bottom-8 z-40 flex flex-col gap-1 transition-all duration-300",
+        "fixed left-0 bottom-8 z-40 flex flex-col gap-0.5 transition-all duration-300",
         hiddenBySidebar && "opacity-0 pointer-events-none -translate-x-full"
       )}
     >
-      {/* AI Assistant Trigger */}
+      {/* AI Assistant */}
       <AISidebarTrigger
         className={cn(
           "transition-all duration-300",
@@ -57,7 +43,7 @@ export const RadioGhostIcons = ({
         hasActiveConversation={aiCanvasHasMessages}
       />
 
-      {/* Hamburger Sidebar */}
+      {/* Sidebar */}
       <RadioSidebarTrigger
         className={cn(
           "transition-all duration-300",
@@ -73,26 +59,27 @@ export const RadioGhostIcons = ({
         isAutoAdvanceEnabled={isAutoAdvanceEnabled}
       />
 
-      {/* FileText Icon */}
+      {/* FileText — hidden on short screens */}
       <button
         onClick={() => setMessageViewVisible(!messageViewVisible)}
         className={cn(
-          "w-12 h-14 bg-transparent rounded-r-lg border border-border/20",
+          "w-10 h-10 bg-transparent rounded-r-lg border border-border/20",
           "flex items-center justify-center transition-all duration-300 hover:bg-muted/5",
+          "max-h-[600px]:hidden",
           !showIcon(messageViewVisible) && "opacity-0 pointer-events-none"
         )}
         aria-label="Toggle message view"
       >
         <FileText
           className={cn(
-            "w-6 h-6 transition-colors",
+            "w-5 h-5 transition-colors",
             messageViewVisible ? 'text-primary' : (currentMessage ? 'text-primary' : 'text-muted-foreground')
           )}
           strokeWidth={1}
         />
       </button>
 
-      {/* Mic Icon */}
+      {/* Mic */}
       <RadioMicTrigger
         className={cn(
           "transition-all duration-300",
@@ -102,19 +89,20 @@ export const RadioGhostIcons = ({
         onClick={() => setShowAudioControls(!showAudioControls)}
       />
 
-      {/* Keyboard Icon */}
+      {/* Keyboard — hidden on short screens */}
       <button
         onClick={() => setInputVisible(!inputVisible)}
         className={cn(
-          "w-12 h-14 bg-transparent rounded-r-lg border border-border/20",
+          "w-10 h-10 bg-transparent rounded-r-lg border border-border/20",
           "flex items-center justify-center transition-all duration-300 hover:bg-muted/5",
+          "max-h-[600px]:hidden",
           !showIcon(inputVisible) && "opacity-0 pointer-events-none"
         )}
         aria-label="Toggle input"
       >
         <Keyboard
           className={cn(
-            "w-6 h-6 transition-colors",
+            "w-5 h-5 transition-colors",
             inputVisible ? 'text-primary' : 'text-muted-foreground'
           )}
           strokeWidth={1}

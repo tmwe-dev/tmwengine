@@ -4,12 +4,14 @@ interface Message {
   id: string;
   sender_type: 'human' | 'chatgpt' | 'gemini' | 'claude';
   sender_name: string;
+  conversation_id?: string;
 }
 
 interface UseTabSwitchingProps {
   messages: Message[];
   isAutoFollowEnabled: boolean;
   isAudioPlaying: boolean;
+  conversationId?: string | null;
 }
 
 interface UseTabSwitchingReturn {
@@ -22,12 +24,22 @@ interface UseTabSwitchingReturn {
 export const useTabSwitching = ({
   messages,
   isAutoFollowEnabled,
-  isAudioPlaying
+  isAudioPlaying,
+  conversationId
 }: UseTabSwitchingProps): UseTabSwitchingReturn => {
   const [activeTab, setActiveTab] = useState(messages.length > 0 ? messages[0].id : '');
   const [unseenMessagesQueue, setUnseenMessagesQueue] = useState<string[]>([]);
   const seenMessagesRef = useRef<Set<string>>(new Set());
   const previousMessagesLengthRef = useRef(0);
+
+  // 🔴 FASE 3: Reset completo al cambio conversazione
+  useEffect(() => {
+    console.log(`🔄 [useTabSwitching] Conversation changed, full reset`);
+    setActiveTab('');
+    setUnseenMessagesQueue([]);
+    seenMessagesRef.current.clear();
+    previousMessagesLengthRef.current = 0;
+  }, [conversationId]);
 
   // 🎯 Gestione nuovi messaggi
   useEffect(() => {
@@ -35,30 +47,27 @@ export const useTabSwitching = ({
 
     const newMessages = messages.slice(previousMessagesLengthRef.current);
     console.log(`📨 [useTabSwitching] ${newMessages.length} nuovi messaggi ricevuti`);
-    console.log(`📊 [useTabSwitching] Stato corrente:`, {
-      activeTab,
-      isAudioPlaying,
-      unseenQueueLength: unseenMessagesQueue.length,
-      seenMessagesCount: seenMessagesRef.current.size
-    });
 
     newMessages.forEach((message) => {
-      console.log(`🆕 [useTabSwitching] Processando messaggio:`, {
-        id: message.id.substring(0, 8),
-        type: message.sender_type,
-        name: message.sender_name,
-        isAudioPlaying,
-        currentActiveTab: activeTab.substring(0, 8),
-        queueSize: unseenMessagesQueue.length
+      // 🔴 FASE 3: Escludi messaggi HUMAN dalla coda audio automatica
+      if (message.sender_type === 'human') {
+        console.log(`👤 [useTabSwitching] Messaggio HUMAN ${message.sender_name} — skip coda audio`);
+        seenMessagesRef.current.add(message.id);
+        // Se nessun tab attivo, mostra comunque il messaggio human
+        if (!activeTab) {
+          setActiveTab(message.id);
+        }
+        return;
+      }
+
+      // Primo messaggio AI in assoluto: attiva subito
+      const hasSeenAny = Array.from(seenMessagesRef.current).some(id => {
+        const msg = messages.find(m => m.id === id);
+        return msg && msg.sender_type !== 'human';
       });
 
-      // ✅ LOGICA UNIFICATA: Tutti i messaggi (HUMAN e AI) seguono le stesse regole
-      console.log(`🆕 [useTabSwitching] Nuovo messaggio da ${message.sender_name} (${message.sender_type})`);
-
-      // Primo messaggio in assoluto: attiva subito
-      const isFirstMessage = seenMessagesRef.current.size === 0;
-      if (isFirstMessage) {
-        console.log(`🎬 [useTabSwitching] Primo messaggio → Attivo subito`);
+      if (!hasSeenAny) {
+        console.log(`🎬 [useTabSwitching] Primo messaggio AI → Attivo subito: ${message.sender_name}`);
         setActiveTab(message.id);
         seenMessagesRef.current.add(message.id);
         return;
@@ -72,16 +81,10 @@ export const useTabSwitching = ({
         return;
       }
 
-      // Audio attivo: TUTTI vanno in coda (HUMAN incluso)
+      // Audio attivo: AI messages vanno in coda
       if (!seenMessagesRef.current.has(message.id)) {
-        console.log(`⏳ [useTabSwitching] Audio attivo → ${message.sender_name} AGGIUNTO IN CODA`);
-        console.log(`   - Tipo: ${message.sender_type}`);
-        console.log(`   - Queue PRIMA: ${unseenMessagesQueue.length}`);
-        setUnseenMessagesQueue((prev) => {
-          const newQueue = [...prev, message.id];
-          console.log(`   - Queue DOPO: ${newQueue.length}`);
-          return newQueue;
-        });
+        console.log(`⏳ [useTabSwitching] Audio attivo → ${message.sender_name} IN CODA`);
+        setUnseenMessagesQueue((prev) => [...prev, message.id]);
         return;
       }
     });
@@ -89,47 +92,38 @@ export const useTabSwitching = ({
     previousMessagesLengthRef.current = messages.length;
   }, [messages, isAudioPlaying]);
 
-  // 🎯 Quando audio finisce, passa al PRIMO messaggio NON VISTO
+  // 🔴 FASE 3: Quando audio finisce, passa al PRIMO messaggio AI NON VISTO
   const handleAudioEnd = useCallback(() => {
     if (!isAutoFollowEnabled) {
       console.log(`⏹️ [handleAudioEnd] AutoFollow disabilitato, skip cambio tab`);
       return;
     }
 
-    const timestamp = new Date().toISOString();
-    console.log(`🎵 [handleAudioEnd] CHIAMATO @ ${timestamp}`);
-    console.log(`   - unseenMessagesQueue:`, unseenMessagesQueue);
-    console.log(`   - unseenMessagesQueue.length:`, unseenMessagesQueue.length);
-    console.log(`   - activeTab:`, activeTab);
-    console.log(`   - messages.length:`, messages.length);
-    console.log(`   - seenMessages:`, Array.from(seenMessagesRef.current));
+    console.log(`🎵 [handleAudioEnd] Audio ended. Queue: ${unseenMessagesQueue.length}, activeTab: ${activeTab.substring(0, 8)}`);
 
     if (unseenMessagesQueue.length > 0) {
       const nextMessageId = unseenMessagesQueue[0];
       const nextMessage = messages.find((m) => m.id === nextMessageId);
 
       if (nextMessage) {
-        console.log(`✅ [handleAudioEnd] Prossimo dalla coda: ${nextMessage.sender_name} (${nextMessageId.substring(0, 8)})`);
-        console.log(`   - Cambio activeTab @ ${new Date().toISOString()}`);
+        console.log(`✅ [handleAudioEnd] Prossimo dalla coda: ${nextMessage.sender_name}`);
         setActiveTab(nextMessageId);
         seenMessagesRef.current.add(nextMessageId);
-        setUnseenMessagesQueue((prev) => prev.slice(1)); // Rimuovi dalla coda
-        console.log(`   - activeTab CAMBIATO @ ${new Date().toISOString()}`);
+        setUnseenMessagesQueue((prev) => prev.slice(1));
       }
     } else {
-      // Nessun messaggio in coda: passa al successivo nell'ordine
+      // Nessun messaggio in coda: passa al successivo AI nell'ordine
       const currentIndex = messages.findIndex((m) => m.id === activeTab);
-      const nextMessage = messages[currentIndex + 1];
-
-      if (nextMessage) {
-        console.log(`✅ [handleAudioEnd] Prossimo sequenziale: ${nextMessage.sender_name} (${nextMessage.id.substring(0, 8)})`);
-        console.log(`   - Cambio activeTab @ ${new Date().toISOString()}`);
-        setActiveTab(nextMessage.id);
-        seenMessagesRef.current.add(nextMessage.id);
-        console.log(`   - activeTab CAMBIATO @ ${new Date().toISOString()}`);
-      } else {
-        console.log(`⏹️ [handleAudioEnd] Nessun altro messaggio da mostrare`);
+      // Find next AI message after current
+      for (let i = currentIndex + 1; i < messages.length; i++) {
+        if (messages[i].sender_type !== 'human') {
+          console.log(`✅ [handleAudioEnd] Prossimo sequenziale AI: ${messages[i].sender_name}`);
+          setActiveTab(messages[i].id);
+          seenMessagesRef.current.add(messages[i].id);
+          return;
+        }
       }
+      console.log(`⏹️ [handleAudioEnd] Nessun altro messaggio AI da mostrare`);
     }
   }, [unseenMessagesQueue, messages, activeTab, isAutoFollowEnabled]);
 

@@ -22,84 +22,46 @@ const castMessage = (msg: any): RadioMessage => ({
 export const useRadioMessages = (conversationId: string | null) => {
   const [messages, setMessages] = useState<RadioMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
-  const prevConversationId = useRef<string | null>(null);
+  // 🔴 FASE 5: Anti-race guard — track active request
+  const activeRequestIdRef = useRef<string | null>(null);
 
   const loadMessages = useCallback(async (convId: string) => {
-    const { data, error } = await supabase
-      .from('chat_laboratory_messages')
-      .select('*')
-      .eq('conversation_id', convId)
-      .order('created_at', { ascending: true });
+    const requestId = `${convId}-${Date.now()}`;
+    activeRequestIdRef.current = requestId;
 
-    if (error) {
-      console.error('❌ Errore caricamento messaggi:', error);
-      return;
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true });
+
+      // 🔴 Guard: only apply if this is still the active request
+      if (activeRequestIdRef.current !== requestId) {
+        console.log(`⚠️ [useRadioMessages] Stale response discarded for ${convId.substring(0, 8)}`);
+        return;
+      }
+
+      if (error) {
+        console.error('❌ Errore caricamento messaggi:', error);
+        return;
+      }
+      setMessages((data || []).map(castMessage));
+    } catch (err) {
+      console.error('❌ [useRadioMessages] Fetch error:', err);
     }
-    setMessages((data || []).map(castMessage));
   }, []);
 
-  // Realtime subscription
+  // 🔴 FASE 4: Clear messages immediately when conversationId is null
   useEffect(() => {
     if (!conversationId) {
-      prevConversationId.current = null;
+      setMessages([]);
+      setIsSending(false);
+      activeRequestIdRef.current = null;
       return;
     }
 
     loadMessages(conversationId);
-
-    // BUG 6 fix: If transitioning from null, reload after a delay to catch messages
-    // inserted before subscription was active
-    if (prevConversationId.current === null) {
-      const catchupTimer = setTimeout(() => {
-        loadMessages(conversationId);
-      }, 2000);
-      // Clean up on unmount or conversationId change
-      prevConversationId.current = conversationId;
-
-      const channel = supabase
-        .channel(`radio-chat-${conversationId}`)
-        .on('postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'chat_laboratory_messages', filter: `conversation_id=eq.${conversationId}` },
-          (payload) => {
-            const typedMessage = castMessage(payload.new);
-            setMessages(prev => {
-              if (prev.some(m => m.id === typedMessage.id)) return prev;
-              return [...prev, typedMessage];
-            });
-            if (payload.new.sender_type !== 'human') {
-              setIsSending(false);
-            }
-          }
-        )
-        .on('postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'chat_laboratory_messages', filter: `conversation_id=eq.${conversationId}` },
-          (payload) => {
-            const updatedMsg = payload.new;
-            setMessages(prev => {
-              const existing = prev.find(m => m.id === updatedMsg.id);
-              if (
-                existing?.audio_url === updatedMsg.audio_url &&
-                existing?.token_input === updatedMsg.token_input &&
-                existing?.token_output === updatedMsg.token_output
-              ) return prev;
-
-              return prev.map(msg =>
-                msg.id === updatedMsg.id
-                  ? { ...msg, audio_url: updatedMsg.audio_url, token_input: updatedMsg.token_input, token_output: updatedMsg.token_output, tempo_risposta_ms: updatedMsg.tempo_risposta_ms }
-                  : msg
-              );
-            });
-          }
-        )
-        .subscribe();
-
-      return () => {
-        clearTimeout(catchupTimer);
-        supabase.removeChannel(channel);
-      };
-    }
-
-    prevConversationId.current = conversationId;
 
     const channel = supabase
       .channel(`radio-chat-${conversationId}`)
@@ -138,11 +100,20 @@ export const useRadioMessages = (conversationId: string | null) => {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Catchup reload after 2s to handle messages inserted before subscription
+    const catchupTimer = setTimeout(() => {
+      loadMessages(conversationId);
+    }, 2000);
+
+    return () => {
+      clearTimeout(catchupTimer);
+      supabase.removeChannel(channel);
+    };
   }, [conversationId, loadMessages]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
+    activeRequestIdRef.current = null;
   }, []);
 
   return { messages, setMessages, loadMessages, isSending, setIsSending, clearMessages };

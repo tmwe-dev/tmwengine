@@ -7,9 +7,8 @@ const DEV_ANONYMOUS_ID = 'dev-anonymous';
 
 export const useRadioConversations = (userId: string | undefined) => {
   const [conversations, setConversations] = useState<RadioConversation[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(() => {
-    return localStorage.getItem('radio-current-conversation-id') || null;
-  });
+  // 🔴 FASE 4: Default null — no auto-resume from localStorage
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const { toast } = useToast();
   const toastRef = useRef(toast);
   toastRef.current = toast;
@@ -27,11 +26,9 @@ export const useRadioConversations = (userId: string | undefined) => {
         .select('id, titolo, created_at, updated_at, riassunto_contesto, active_participants')
         .order('updated_at', { ascending: false });
 
-      // Dev-anonymous: load all conversations without user_id filter
       if (userId && userId !== DEV_ANONYMOUS_ID) {
         query = query.eq('user_id', userId);
       }
-      // If no userId or dev-anonymous, don't filter — load all
 
       const { data, error } = await query;
       if (error) throw error;
@@ -66,17 +63,10 @@ export const useRadioConversations = (userId: string | undefined) => {
       });
 
       setConversations(conversationsWithStats);
-
-      // BUG 5 fix: Validate localStorage ID against loaded conversations
-      const savedId = localStorage.getItem('radio-current-conversation-id');
-      if (savedId && convIds.length > 0 && !convIds.includes(savedId)) {
-        console.log('📻 Stale localStorage conversation ID, resetting');
-        setConversationId(null);
-      }
     } catch (err) {
       toastRef.current({ title: "Errore", description: "Impossibile caricare conversazioni", variant: "destructive" });
     }
-  }, [userId, setConversationId]);
+  }, [userId]);
 
   const selectConversation = useCallback((conversationId: string) => {
     setConversationId(conversationId);
@@ -139,7 +129,6 @@ export const useRadioConversations = (userId: string | undefined) => {
     }
   }, [loadConversations]);
 
-  // BUG 2 fix: createQuickConversation now also sets conversationId
   const createQuickConversation = useCallback(async (participantNames: Array<{ name: string; type: string }>) => {
     try {
       const insertData: any = {

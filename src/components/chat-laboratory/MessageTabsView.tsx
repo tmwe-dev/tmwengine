@@ -4,7 +4,6 @@ import { MultiAgentMessage, StructuredAttachments } from './MultiAgentMessage';
 import { TabNavigation } from './TabNavigation';
 import { NewMessagesIndicator } from './NewMessagesIndicator';
 import { useTabSwitching } from '@/hooks/useTabSwitching';
-import { useAudioPlayback } from '@/hooks/useAudioPlayback';
 import { useNewMessagesIndicator } from '@/hooks/useNewMessagesIndicator';
 import { UploadedFile } from '@/components/chat/FileUploader';
 
@@ -28,17 +27,43 @@ interface MessageTabsViewProps {
   messages: Message[];
   isAutoFollowEnabled?: boolean;
   onAutoFollowChange?: (enabled: boolean) => void;
+  // 🔴 FASE 2: Unified audio controller from parent (Radio Chat)
+  isAudioPlaying?: boolean;
+  onAudioStart?: (messageId: string) => void;
+  onAudioEnd?: () => void;
+  conversationId?: string | null;
 }
 
 export const MessageTabsView = ({
   messages,
   isAutoFollowEnabled: externalAutoFollow,
-  onAutoFollowChange
+  onAutoFollowChange,
+  isAudioPlaying: externalAudioPlaying,
+  onAudioStart: externalAudioStart,
+  onAudioEnd: externalAudioEnd,
+  conversationId
 }: MessageTabsViewProps) => {
   const isAutoFollowEnabled = externalAutoFollow ?? true;
 
-  // 🎯 Hook audio playback
-  const { isAudioPlaying, handleAudioStart, handleAudioEnd: audioEnd, handleAudioError } = useAudioPlayback();
+  // 🔴 FASE 2: Use external audio state if provided, otherwise local fallback
+  const [localAudioPlaying, setLocalAudioPlaying] = useState(false);
+  const isAudioPlaying = externalAudioPlaying ?? localAudioPlaying;
+
+  const handleAudioStart = (messageId: string) => {
+    if (externalAudioStart) {
+      externalAudioStart(messageId);
+    } else {
+      setLocalAudioPlaying(true);
+    }
+  };
+
+  const handleAudioEndLocal = () => {
+    if (externalAudioEnd) {
+      externalAudioEnd();
+    } else {
+      setLocalAudioPlaying(false);
+    }
+  };
 
   // 🎯 Hook tab switching con coda intelligente
   const {
@@ -49,7 +74,8 @@ export const MessageTabsView = ({
   } = useTabSwitching({
     messages,
     isAutoFollowEnabled,
-    isAudioPlaying
+    isAudioPlaying,
+    conversationId
   });
 
   // 🎯 Hook indicatore nuovi messaggi
@@ -67,21 +93,20 @@ export const MessageTabsView = ({
   // 🎯 State per sincronizzare tab switch dopo audio end
   const [shouldSwitchTab, setShouldSwitchTab] = useState(false);
 
-  // 🎯 Callback completo: quando audio finisce, setta flag per tab switch
+  // 🔴 FASE 3: Callback completo — audio finisce, marca per tab switch
   const onAudioEndComplete = () => {
-    console.log(`🎬 [MessageTabsView] onAudioEndComplete chiamato`);
-    audioEnd(); // Setta isAudioPlaying = false (asincrono)
-    
-    // 🔴 Delay per assicurare che isAudioPlaying sia aggiornato
+    console.log(`🎬 [MessageTabsView] onAudioEndComplete — audio ended for active tab`);
+    handleAudioEndLocal();
+    // Delay per assicurare che isAudioPlaying sia aggiornato
     setTimeout(() => {
       setShouldSwitchTab(true);
-    }, 50); // 50ms delay
+    }, 50);
   };
 
   // 🎯 Effetto: cambia tab DOPO che isAudioPlaying è aggiornato
   useEffect(() => {
     if (shouldSwitchTab && !isAudioPlaying) {
-      console.log(`🔄 [MessageTabsView] Sincronizzazione completata, cambio tab`);
+      console.log(`🔄 [MessageTabsView] Audio confirmed stopped, advancing tab`);
       tabSwitchOnAudioEnd();
       setShouldSwitchTab(false);
     }
@@ -108,7 +133,12 @@ export const MessageTabsView = ({
               <MultiAgentMessage
                 message={message}
                 onAudioEnd={onAudioEndComplete}
-                onAudioStateChange={(playing) => (playing ? handleAudioStart() : audioEnd())}
+                onAudioStateChange={(playing) => {
+                  if (playing) {
+                    handleAudioStart(message.id);
+                  }
+                  // Don't call audioEnd on false — let onAudioEndComplete handle it
+                }}
               />
               <div ref={messagesEndRef} />
             </div>

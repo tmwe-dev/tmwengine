@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useCRMLayout } from '@/contexts/CRMLayoutContext';
 import { useGlobalAICanvas } from '@/hooks/useGlobalAICanvas';
@@ -62,7 +62,7 @@ const RadioChatContent = () => {
   });
   const { generateSummary, generateFullReport } = useRadioSummary(loadConversations);
   const {
-    isAudioPlaying, currentPlayingId, audioElementRef, handleAudioStart, handleAudioEnd, stopCurrentAudio
+    isAudioPlaying, currentPlayingId, audioElementRef, handleAudioStart, handleAudioEnd, handleAudioError, stopCurrentAudio
   } = useRadioAudioPlayback();
   const {
     activeMessageId, setActiveMessageId, currentMessage, aiMessages,
@@ -70,16 +70,24 @@ const RadioChatContent = () => {
     touchHandlers, handleWheel
   } = useRadioCarouselNav(messages, isAudioPlaying, stopCurrentAudio, handleAudioEnd, preferences.isAutoAdvanceEnabled);
 
-  // Load conversations on user ready
+  // 🔴 FASE 1: Stop audio on view change — only active view is mounted
+  useEffect(() => {
+    console.log(`🔄 [RadioChat] View changed to: ${preferences.viewMode}, stopping audio`);
+    stopCurrentAudio();
+  }, [preferences.viewMode, stopCurrentAudio]);
+
+  // Load conversations on user ready — NO auto-resume from localStorage
   useEffect(() => {
     if (!currentUser) return;
     loadConversations();
-    const savedConvId = localStorage.getItem('radio-current-conversation-id');
-    if (savedConvId) {
-      loadMessages(savedConvId);
-      loadCachedPrompts(savedConvId);
-    }
-  }, [currentUser, loadConversations, loadMessages, loadCachedPrompts]);
+  }, [currentUser, loadConversations]);
+
+  // When a conversation is selected, load its messages & prompts
+  useEffect(() => {
+    if (!currentConversationId) return;
+    loadMessages(currentConversationId);
+    loadCachedPrompts(currentConversationId);
+  }, [currentConversationId, loadMessages, loadCachedPrompts]);
 
   // Close sidebar when CRM menu opens
   useEffect(() => {
@@ -87,16 +95,17 @@ const RadioChatContent = () => {
   }, [crmMenuOpen, ui.sidebarOpen, ui.setSidebarOpen]);
 
   // Handle conversation selection
-  const handleSelectConversation = async (conversationId: string) => {
+  const handleSelectConversation = useCallback(async (conversationId: string) => {
+    stopCurrentAudio();
     selectConversation(conversationId);
-    await loadMessages(conversationId);
-    loadCachedPrompts(conversationId);
+    resetNavigation();
     ui.setSidebarOpen(false);
     if (crmMenuOpen) setCrmMenuOpen(false);
-  };
+  }, [selectConversation, resetNavigation, stopCurrentAudio, ui, crmMenuOpen, setCrmMenuOpen]);
 
   // Handle new conversation
-  const handleNewConversation = async () => {
+  const handleNewConversation = useCallback(async () => {
+    stopCurrentAudio();
     const newId = await createConversation();
     if (newId) {
       resetNavigation();
@@ -108,16 +117,25 @@ const RadioChatContent = () => {
       ui.setSidebarOpen(false);
       if (crmMenuOpen) setCrmMenuOpen(false);
     }
-  };
+  }, [createConversation, resetNavigation, clearMessages, stopCurrentAudio, loadCachedPrompts, ui, crmMenuOpen, setCrmMenuOpen]);
 
   // Handle send
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!inputValue.trim() || isSending) return;
     const msg = inputValue;
     setInputValue('');
     ui.setInputVisible(false);
     await sendMessage(msg);
-  };
+  }, [inputValue, isSending, sendMessage, ui]);
+
+  // 🔴 FASE 2: Unified audio callbacks for Tabs/Messages views
+  const handleTabsAudioStart = useCallback((messageId: string) => {
+    handleAudioStart(messageId);
+  }, [handleAudioStart]);
+
+  const handleTabsAudioEnd = useCallback(() => {
+    handleAudioEnd();
+  }, [handleAudioEnd]);
 
   // Context value — shared across ghost icons, sidebar, etc.
   const contextValue = {
@@ -190,8 +208,10 @@ const RadioChatContent = () => {
             />
 
             <div className="pt-4 pb-[200px]">
+              {/* 🔴 FASE 1: Conditional mount — only active view exists in DOM */}
+
               {/* Carousel View */}
-              <div className={preferences.viewMode === 'carousel' ? 'block' : 'hidden'}>
+              {preferences.viewMode === 'carousel' && (
                 <RadioCarouselContainer
                   messages={messages}
                   aiMessages={aiMessages}
@@ -213,10 +233,10 @@ const RadioChatContent = () => {
                   isAudioEnabled={isAudioEnabled}
                   handleAudioStart={handleAudioStart}
                 />
-              </div>
+              )}
 
               {/* Messages View */}
-              <div className={preferences.viewMode === 'messages' ? 'block' : 'hidden'}>
+              {preferences.viewMode === 'messages' && (
                 <div className="w-full h-full pt-20 pb-24">
                   <RadioMessagesView
                     messages={messages}
@@ -228,10 +248,10 @@ const RadioChatContent = () => {
                     onAudioEnd={handleAudioEnd}
                   />
                 </div>
-              </div>
+              )}
 
-              {/* Tabs View */}
-              <div className={preferences.viewMode === 'tabs' ? 'block' : 'hidden'}>
+              {/* Tabs View — uses unified audio controller */}
+              {preferences.viewMode === 'tabs' && (
                 <div className="w-full pt-20 pb-24 h-[calc(100vh-160px)]">
                   <MessageTabsView
                     messages={messages.map(m => ({
@@ -241,9 +261,13 @@ const RadioChatContent = () => {
                     }))}
                     isAutoFollowEnabled={preferences.isAutoAdvanceEnabled}
                     onAutoFollowChange={preferences.setIsAutoAdvanceEnabled}
+                    isAudioPlaying={isAudioPlaying}
+                    onAudioStart={handleTabsAudioStart}
+                    onAudioEnd={handleTabsAudioEnd}
+                    conversationId={currentConversationId}
                   />
                 </div>
-              </div>
+              )}
             </div>
           </>
         }

@@ -92,7 +92,9 @@ export const RadioAudioPlayer = ({
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
-    if (autoPlay && canAutoPlay && isAudioEnabled && !hasStartedRef.current) {
+    // Guard: don't autoplay if another audio is already playing via shared ref
+    const anotherPlaying = sharedAudioRef?.current && !sharedAudioRef.current.paused;
+    if (autoPlay && canAutoPlay && isAudioEnabled && !hasStartedRef.current && !anotherPlaying) {
       console.log(`🎬 [RadioAudioPlayer] Autoplay: ${messageId.substring(0,8)}`);
       audio.play()
         .then(() => {
@@ -124,7 +126,9 @@ export const RadioAudioPlayer = ({
   useEffect(() => {
     if (!audioRef.current || !canAutoPlay || !isAudioEnabled) return;
     
-    if (canAutoPlay && audioRef.current.paused && !hasStartedRef.current) {
+    // Guard: don't autoplay if another audio is already playing via shared ref
+    const anotherPlaying = sharedAudioRef?.current && sharedAudioRef.current !== audioRef.current && !sharedAudioRef.current.paused;
+    if (canAutoPlay && audioRef.current.paused && !hasStartedRef.current && !anotherPlaying) {
       audioRef.current.play()
         .then(() => {
           setIsPlaying(true);

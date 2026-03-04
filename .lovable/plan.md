@@ -1,88 +1,118 @@
 
 
-# Piano: Ricompattamento Menu e Controlli Radio Chat
+# Piano di Refactoring Completo — Radio Chat
 
-## Analisi Completa dei Componenti Menu/UI
+## Analisi dei Problemi
 
-Dopo analisi riga per riga, ecco la mappa completa degli elementi UI legati ai menu:
+### 1. File Morti (7 componenti mai importati dal codice attivo)
+| File | Stato |
+|------|-------|
+| `RadioAudioSettingsPopup.tsx` | Mai importato |
+| `RadioMessageList.tsx` | Solo dal backup |
+| `RadioCursor.tsx` | Mai importato |
+| `RadioParticipantIcon.tsx` | Solo dal backup |
+| `RadioVoiceRecorder.tsx` | Sostituito da `InteractiveMicrophoneButton` |
+| `RadioVoiceRecorderV2_Hybrid.tsx` | Sostituito |
+| `RadioMessageIcons.tsx` | Mai importato |
+| `RadioChat-backup-2026-02-15.tsx` | Backup obsoleto (1000+ righe) |
 
-### Ghost Icons (barra sinistra, 5 bottoni verticali)
-Posizionati `fixed left-0` con spacing verticale hardcoded:
-1. **AISidebarTrigger** — `bottom-[24rem]` — Apre AI Sidebar slider
-2. **RadioSidebarTrigger** (Beer icon) — `bottom-[18.5rem]` — Apre sidebar panel (Chat + Impostazioni)
-3. **FileText** — `bottom-[13rem]` — Toggle message view overlay
-4. **RadioMicTrigger** — `bottom-[7.5rem]` — Toggle audio controls bar
-5. **Keyboard** — `bottom-8` — Toggle text input
+### 2. Sdoppiamento Sidebar: `RadioSidebar.tsx` vs `RadioSidebarPanel.tsx`
+`RadioSidebar.tsx` (127 righe) e' un componente legacy con logica duplicata. Il `RadioSidebarPanel` lo ha completamente sostituito ma `RadioSidebar` esiste ancora con standalone mode (backdrop, header, close button) che nessuno usa. La modalita' `embedded` non e' piu' invocata dal codice attivo.
 
-### Sidebar Panel (320px, fixed left)
-Due tab:
-- **Chat**: `RadioConversationsSidebar` (497 righe) — lista conversazioni con search, date filter, hover cards, edit, delete, summary, report
-- **Impostazioni**: `RadioSidebar` embedded — contiene:
-  - `RadioParticipantSelector` (agenti con GIF)
-  - Tabs Voice/Strategy/Prompts:
-    - Voice: view mode selector (Carousel/Messages/Tabs), carousel zoom slider, `RadioVoiceSelector` (audio toggle + auto-advance toggle)
-    - Strategy: `RadioStrategySelector` (4 strategie)
-    - Prompts: `RadioPromptSelector` (global + composed prompts)
+### 3. Ghost Icons vs Header CRM
+Il menu header dell'app (CRM) ha il proprio hamburger menu tramite `CRMLayoutContext`. Radio Chat ha un SECONDO hamburger (Beer icon) per il proprio sidebar. Quando entrambi sono aperti si sovrappongono. La logica di mutua esclusione e' gestita manualmente con `useEffect` e prop drilling di `crmMenuOpen/setCrmMenuOpen` attraverso 3 livelli di componenti.
 
-### Bottom Controls (fisso centro-basso)
-- `RadioCarouselAudioPlayerWrapper` — mini player audio
-- `RadioAudioControls` — barra microfoni PTT/Listen + VAD slider + word limit
+### 4. Ghost Icons: 5 bottoni con visibilita' complessa
+Ogni icona ha la propria logica show/hide basata su `showIcon(featureActive)`. La colonna e' compatta (`gap-1`) ma i bottoni sono alti 80px (`h-20`) ciascuno per i trigger e 56px (`h-14`) per FileText/Keyboard = totale ~400px di colonna verticale. Su schermi < 700px di altezza, overflow.
 
-### AI Sidebar (slider destro)
-- `AISidebarSlider` — assistant AI indipendente
+### 5. `RadioMessageView.tsx` quasi vuoto
+Solo 35 righe, renderizza nome + contenuto senza formattazione markdown, senza audio player, senza metadata. Usato solo come overlay nel carousel. E' un componente incompleto rispetto a `MultiAgentMessage` usato in Messages view.
 
-## Problemi Identificati
+### 6. Tre viste con gestione inconsistente
+- **Carousel**: Ha `RadioCarouselContainer` con 3D, avatar nav, zoom, overlay text. Audio via `RadioCarouselAudioPlayerWrapper`.
+- **Messages**: Usa `RadioMessagesView` → `MultiAgentMessage` (dal Chat Laboratory). Audio integrato nei messaggi.
+- **Tabs**: Usa `MessageTabsView` dal Chat Laboratory. Nessuna integrazione audio propria.
 
-1. **5 ghost icons** con spacing hardcoded creano una colonna fragile e poco compatta
-2. **RadioSidebar** mischia view mode, zoom, voice settings, strategy e prompts in modo confuso — il tab "Voice" contiene i bottoni view mode che non c'entrano con le voci
-3. **RadioConversationsSidebar** ha header duplicato (X button + titolo) sopra i tab del panel
-4. La logica show/hide dei ghost icons e' complessa (mouse proximity + stato apertura) ma funzionale
+Le tre viste hanno integrazioni audio completamente diverse: il carousel usa un player esterno centralizzato, messages usa player inline, tabs non ha audio.
 
-## Soluzione: Riorganizzazione Compatta
+### 7. Props Drilling Eccessivo
+`RadioChat.tsx` passa 25+ props a `RadioSidebarPanel`, 17 props a `RadioGhostIcons`. La pagina orchestratore e' a 311 righe ma ha 11 hook imports. Non e' critico ma la prop surface e' ampia.
 
-### NON TOCCARE
-- Carousel 3D, zoom controls, `RadioCarousel3D`, `FloatingZoomControl`
-- `RadioCarouselContainer` (avatar navigation, zoom)
-- Audio playback logic, audio players
-- `AISidebarSlider` (gia' indipendente)
-- `RadioAudioControls` (bottom bar microfoni)
+---
 
-### Modifiche
+## Piano di Refactoring (5 fasi)
 
-**1. `RadioGhostIcons.tsx` — Compattare in colonna unificata**
-- Raggruppare i 5 bottoni in un container `flex flex-col` con `gap-1` invece di posizioni `bottom-[Xrem]` hardcoded
-- Usare un singolo `fixed left-0 bottom-8` container
-- Mantere stessa logica di visibilita' (mouse proximity)
-- Stessi stili (trasparente, rounded-r, border border-white/20)
+### Fase 1: Pulizia File Morti
+Eliminare 8 file non referenziati dal codice attivo:
+- `RadioAudioSettingsPopup.tsx`
+- `RadioMessageList.tsx`
+- `RadioCursor.tsx`
+- `RadioParticipantIcon.tsx`
+- `RadioVoiceRecorder.tsx`
+- `RadioVoiceRecorderV2_Hybrid.tsx`
+- `RadioMessageIcons.tsx`
+- `RadioChat-backup-2026-02-15.tsx`
 
-**2. `RadioSidebarPanel.tsx` — Riorganizzare i tab**
-- Rimuovere header duplicato da `RadioConversationsSidebar` (la X e' gia' sul panel)
-- Cambiare i 2 tab a 3 tab: **Chat | Agenti | Config**
-  - **Chat**: lista conversazioni (invariata ma senza header duplicato)
-  - **Agenti**: `RadioParticipantSelector` + `RadioVoiceSelector` (audio on/off, auto-advance)
-  - **Config**: `RadioStrategySelector` + `RadioPromptSelector` + View Mode selector
-- Rimuovere carousel zoom dal sidebar (e' gia' nel `FloatingZoomControl`)
+**Rischio**: Nullo — nessun import attivo.
 
-**3. `RadioConversationsSidebar.tsx` — Rimuovere header duplicato**
-- Rimuovere il blocco header con titolo "Conversazioni" e X button (linee 166-174)
-- Il panel parent gia' gestisce la chiusura
+### Fase 2: Eliminare `RadioSidebar.tsx`
+Il `RadioSidebarPanel` gestisce gia' tutto (3 tab: Chat/Agenti/Config). `RadioSidebar.tsx` ha due modalita':
+- **Standalone**: Non usata (nessun import attivo la chiama senza `embedded`)
+- **Embedded**: Il panel gia' integra direttamente `RadioParticipantSelector`, `RadioVoiceSelector`, `RadioStrategySelector`, `RadioPromptSelector` senza passare per RadioSidebar.
 
-**4. `RadioSidebar.tsx` — Semplificare**
-- Rimuovere view mode buttons (spostati in Config tab del panel)
-- Rimuovere carousel zoom slider (gia' nel FloatingZoomControl)
-- Mantenere solo il contenuto embedded usato dal panel
+Azione: Eliminare `RadioSidebar.tsx`. Nessuna modifica ad altri file necessaria.
 
-**5. `RadioSidebarPanel.tsx` — Aggiungere close button nell'header tab**
-- Aggiungere X button a fianco dei tab per chiudere il panel
+**Rischio**: Nullo.
 
-## File da modificare
+### Fase 3: Unificare `RadioMessageView` con `MultiAgentMessage`
+Il text overlay del carousel (`RadioMessageView`) mostra solo testo grezzo. Sostituirlo con una versione lightweight di `MultiAgentMessage` (solo testo + sender, senza audio player inline) per coerenza visiva tra le 3 viste.
 
-| File | Azione |
-|------|--------|
-| `RadioGhostIcons.tsx` | Colonna compatta con gap invece di posizioni hardcoded |
-| `RadioSidebarPanel.tsx` | 3 tab (Chat/Agenti/Config) + X button nell'header |
-| `RadioConversationsSidebar.tsx` | Rimuovere header duplicato |
-| `RadioSidebar.tsx` | Rimuovere view mode + zoom (spostati nel panel) |
+File modificati:
+- `RadioCarouselContainer.tsx`: Sostituire `RadioMessageView` con `MultiAgentMessage` (prop `compact={true}`)
+- Eliminare `RadioMessageView.tsx`
 
-**Rischio**: Basso — Solo riorganizzazione layout, nessuna logica funzionale modificata. Il carousel e lo zoom non vengono toccati.
+**Rischio**: Basso.
+
+### Fase 4: Ridurre il Prop Drilling con un Context dedicato
+Creare `RadioChatContext` che espone le prop condivise (sidebar state, view mode, audio state, participants) cosi' i componenti figli possono consumarle direttamente senza passare attraverso RadioChat.tsx.
+
+File:
+- Nuovo: `src/contexts/RadioChatContext.tsx`
+- Modificati: `RadioChat.tsx` (wrappa con provider), `RadioGhostIcons.tsx`, `RadioSidebarPanel.tsx` (consumano context invece di props)
+
+Questo ridurra' `RadioSidebarPanel` da 25+ props a ~8 (solo callbacks specifiche come onSelectConversation, onNewConversation, etc.) e `RadioGhostIcons` da 17 props a ~3.
+
+**Rischio**: Medio — richiede test completo delle interazioni.
+
+### Fase 5: Compattare Ghost Icons per responsive
+Ridurre le dimensioni dei trigger da `h-20` a `h-12` e `w-12` a `w-10`. Aggiungere un breakpoint `max-h-[600px]:hidden` per nascondere gli icon meno importanti (FileText, Keyboard) su schermi piccoli, dato che l'input e' accessibile tramite double-click sulla zona centrale e il message view e' disponibile nel carousel overlay.
+
+File modificati:
+- `RadioGhostIcons.tsx`
+- `RadioSidebarTrigger.tsx` (ridurre dimensioni)
+- `RadioMicTrigger.tsx` (ridurre dimensioni)
+- `AISidebarTrigger.tsx` (ridurre dimensioni)
+
+**Rischio**: Basso — solo CSS.
+
+---
+
+## NON TOCCARE
+- `RadioCarousel3D.tsx` (477 righe Three.js)
+- `FloatingZoomControl` e tutta la logica zoom
+- `RadioCarouselContainer.tsx` (navigazione avatar, touch handlers, wheel)
+- `RadioAudioPlayer.tsx`, `RadioAudioPlayerMini.tsx`, `RadioCarouselAudioPlayerWrapper.tsx` (appena fixati)
+- `RadioAudioControls.tsx` (barra microfoni bottom)
+- `AISidebarSlider` (indipendente)
+- `useRadioCarouselNav`, `useRadioAudioPlayback` e tutti gli hook audio
+
+## Riepilogo Impatto
+
+| Metrica | Prima | Dopo |
+|---------|-------|------|
+| File in `radio-chat/` | 33 | 23 |
+| Props RadioSidebarPanel | 25+ | ~8 |
+| Props RadioGhostIcons | 17 | ~3 |
+| Componenti duplicati | 3 (Sidebar, MessageView, ParticipantIcon) | 0 |
+| File backup/morti | 8 | 0 |
 

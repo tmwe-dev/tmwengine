@@ -1,65 +1,72 @@
 
 
-# Piano: Fix Sincronizzazione Audio — Voci Che Partono Insieme
+# Piano: Fix Audio Sequenziale — Voci Che Partono Insieme e Nessun Avanzamento
 
-## Causa Root
+## Causa Root (3 problemi interconnessi)
 
-Il problema ha due livelli:
+### Problema 1: `isAudioPlaying` non viene MAI settato a `true`
+Il `RadioCarouselAudioPlayerWrapper` ha `onPlayStart` che fa solo `console.log`:
+```
+onPlayStart={(id) => console.log(`▶️ [Carousel Mini] Audio START: ${id}`)}
+```
+Non chiama MAI `handleAudioStart` dal parent. Quindi `isAudioPlaying` resta `false`, `canAutoPlay={!isAudioPlaying}` e' sempre `true`, e la guard non funziona. Ogni nuovo messaggio che arriva via realtime puo' fare autoplay.
 
-### Lato Orchestrator (Backend)
-L'orchestrator e' **gia' sequenziale** — processa un agente alla volta (linee 205-363 di `index.ts`). Ogni messaggio viene salvato nel DB con `audio_url` prima di passare al prossimo agente. Non c'e' problema lato backend.
+### Problema 2: Closure stale su `onPlayEnd` nel Mini Player
+`RadioAudioPlayerMini` crea il listener `handleEnded` dentro un `useEffect` che NON ha `onPlayEnd` nelle dipendenze:
+```
+}, [audioUrl, autoPlay, canAutoPlay, isAudioEnabled, messageId]);
+```
+Quando `handleCarouselAudioEnd` viene ricreato con nuovi `aiMessages`, il mini player continua a chiamare la versione vecchia con la lista incompleta, trovando `aiMessages[currentIndex + 1]` = undefined.
 
-### Lato Frontend (IL VERO PROBLEMA)
-Quando i messaggi arrivano via realtime subscription uno dopo l'altro:
+### Problema 3: Guard `sharedAudioRef` si auto-annulla
+In `RadioAudioPlayer`, il nuovo audio viene registrato nel ref PRIMA della guard:
+```
+sharedAudioRef.current = audio;  // ← nuovo audio (paused)
+// ...
+const anotherPlaying = sharedAudioRef?.current && !sharedAudioRef.current.paused;
+// ↑ controlla se STESSO (paused) → anotherPlaying = false sempre
+```
 
-1. **Messaggio 1 arriva** → `activeMessageId` viene settato → `RadioCarouselAudioPlayerWrapper` monta con `autoPlay=true` → audio parte
-2. **Messaggio 2 arriva** (dopo ~5-15 secondi) → il componente si ri-renderizza. Se `activeMessageId` non cambia, il player del messaggio 1 continua. Ma se qualcosa causa un rimontaggio (es. `currentMessage` cambia ref), un NUOVO `Audio()` puo' essere creato senza che il precedente venga stoppato.
-3. **Il `canAutoPlay` e' hardcoded a `true`** in `RadioCarouselAudioPlayerWrapper` (linea 55) — non controlla MAI se un altro audio e' gia' in riproduzione.
+## Soluzione (4 file)
 
-Il `sharedAudioRef` stoppa l'audio solo quando `stopCurrentAudio()` viene chiamato esplicitamente (cambio card manuale). Ma quando il player si rimonta per lo stesso messaggio a causa di un re-render, il cleanup chiama `audio.pause()` e il nuovo `useEffect` crea un nuovo `Audio()` che fa autoplay — ma tra cleanup e mount c'e' un gap dove il ref viene nullificato.
+### 1. `RadioCarouselAudioPlayerWrapper.tsx`
+- Aggiungere prop `onAudioStart: (id: string) => void`
+- Passare `onPlayStart={onAudioStart}` ai player figli invece di `console.log`
 
-## Soluzione
+### 2. `RadioAudioPlayerMini.tsx`
+- Usare un `useRef` per `onPlayEnd` (come gia' fa `RadioAudioPlayer` con `onPlayEndRef`)
+- Cosi' `handleEnded` chiama sempre la versione aggiornata del callback
 
-### 1. `RadioCarouselAudioPlayerWrapper.tsx` — Rispettare lo stato globale
-- Passare `canAutoPlay` basandosi su `isAudioPlaying` dal parent: `canAutoPlay={!isAudioPlaying}`
-- Accettare nuova prop `isAudioPlaying` dal parent
+### 3. `RadioAudioPlayer.tsx`
+- Salvare il vecchio `sharedAudioRef.current` PRIMA di registrare il nuovo audio
+- Controllare il vecchio ref nella guard: `const anotherPlaying = oldAudio && !oldAudio.paused`
 
-### 2. `RadioAudioPlayer.tsx` — Guard sull'autoplay
-- Prima di fare `audio.play()` nell'autoplay, controllare `sharedAudioRef.current` — se un altro audio e' gia' in esecuzione, NON fare play
-- Aggiungere guard: `if (sharedAudioRef?.current && !sharedAudioRef.current.paused) return;`
+### 4. `RadioChat.tsx`
+- Passare `onAudioStart={handleAudioStart}` al `RadioCarouselAudioPlayerWrapper`
 
-### 3. `useRadioCarouselNav.ts` — Non auto-avanzare durante la riproduzione
-- `handleCarouselAudioEnd`: aggiungere un delay piu' lungo (300ms invece di 50ms) per dare tempo allo state di propagarsi prima di settare il nuovo `activeMessageId`
+## Flusso corretto dopo il fix
 
-### 4. `RadioChat.tsx` — Passare `isAudioPlaying` al wrapper
-- Aggiungere prop `isAudioPlaying` a `RadioCarouselAudioPlayerWrapper`
+```text
+Msg1 arriva → autoPlay=true, canAutoPlay=true → PLAY
+  → onPlayStart → handleAudioStart("msg1") → isAudioPlaying=true ← NUOVO
+
+Msg2 arriva (durante play msg1):
+  → canAutoPlay={!isAudioPlaying} = false → NON fa play ✅
+
+Msg1 audio finisce → handleEnded → onPlayEnd (via ref, sempre aggiornato) ← NUOVO
+  → handleCarouselAudioEnd() → handleAudioEnd() → isAudioPlaying=false
+  → 300ms → setActiveMessageId(msg2.id)
+  → Wrapper riceve nuovo message → Player monta con canAutoPlay=true → PLAY ✅
+
+Msg2 audio finisce → stessa catena → avanza a msg3 ✅
+```
 
 ## File da modificare
 
-| File | Modifica |
-|------|----------|
-| `src/components/radio-chat/RadioCarouselAudioPlayerWrapper.tsx` | Aggiungere prop `isAudioPlaying`, passare `canAutoPlay={!isAudioPlaying}` ai player figli |
-| `src/components/radio-chat/RadioAudioPlayer.tsx` | Guard sull'autoplay: controllare `sharedAudioRef` prima di play |
-| `src/hooks/useRadioCarouselNav.ts` | Delay 300ms nel `handleCarouselAudioEnd` |
-| `src/pages/RadioChat.tsx` | Passare `isAudioPlaying` al wrapper |
-
-## Flusso dopo il fix
-
-```text
-Messaggio 1 arriva → autoPlay=true, canAutoPlay=true → PLAY ✅
-  → handleAudioStart() → isAudioPlaying=true
-
-Messaggio 2 arriva (durante play msg 1):
-  → RadioCarouselAudioPlayerWrapper riceve isAudioPlaying=true
-  → canAutoPlay={!isAudioPlaying} = false
-  → Player NON fa autoplay ✅
-
-Audio msg 1 finisce → handleCarouselAudioEnd()
-  → handleAudioEnd() → isAudioPlaying=false
-  → 300ms delay
-  → setActiveMessageId(msg2.id)
-  → Wrapper rimonta con canAutoPlay=true → PLAY ✅
-```
-
-Rischio: **Basso** — Solo 4 file, modifiche additive, nessun cambio grafico.
+| File | Rischio |
+|------|---------|
+| `RadioCarouselAudioPlayerWrapper.tsx` | Basso |
+| `RadioAudioPlayerMini.tsx` | Basso |
+| `RadioAudioPlayer.tsx` | Basso |
+| `RadioChat.tsx` (1 riga) | Basso |
 

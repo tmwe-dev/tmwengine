@@ -1,67 +1,122 @@
 
-Obiettivo: eliminare i problemi di sincronizzazione audio/UI in Radio Chat (Carousel, Messages, Tabs), garantendo lettura completa per agente, avanzamento corretto, nuova chat vuota all’apertura, e autoplay coerente con la vista visibile.
 
-Diagnosi profonda (root cause confermate):
-1) Le 3 viste sono sempre montate (`hidden/block` via CSS in `RadioChat.tsx`): `MessageTabsView` continua a girare in background e può avviare audio anche quando sei in Carousel.
-2) Stato audio frammentato: Carousel usa `useRadioAudioPlayback` (globale), Tabs usa `useAudioPlayback` locale; non esiste un unico arbitro audio.
-3) `MessageTabsView`/`useTabSwitching` non è robusto al cambio conversazione (stati/queue non sempre resettati), e mette in coda anche messaggi `human` (può bloccare o sfasare l’avanzamento).
-4) Persistenza conversazione: `useRadioConversations` riprende `radio-current-conversation-id` da localStorage, quindi all’apertura ricarica la chat vecchia.
-5) `useRadioMessages` non pulisce lo stato quando `conversationId=null` e non protegge da race async (risposta tardiva di una fetch vecchia può sporcare la UI corrente).
-6) Cambio vista durante playback: possibile stato audio globale “stale” se il player viene smontato senza reset esplicito.
-7) Verifica DB: i messaggi risultano separati per agente e ordinati; il problema principale è di orchestrazione frontend, non di salvataggio backend.
+# Piano: Unificazione Sidebar a Livello Piattaforma
 
-Piano di refactoring ottimizzato (market-grade):
+## Problema Attuale
 
-Fase 0 — Safety/backup (obbligatoria)
-- Backup dei file Radio Chat coinvolti in `docs/...pre-radio-sync-refactor`.
-- Log change nel tracciamento progetto/changelog come da policy.
+La piattaforma ha **6 sidebar indipendenti** che competono per lo stesso spazio `fixed left-0`:
 
-Fase 1 — Isolamento vista attiva (fix critico)
-- `RadioChat.tsx`: rendere mutualmente esclusivo il mount delle viste (non solo `hidden` CSS).
-- Solo la vista attiva esiste nel DOM; niente side-effect/audio in background.
-- Al cambio vista: stop/reset audio centralizzato prima del mount della nuova vista.
+| Sidebar | Pagina | Posizione | z-index |
+|---------|--------|-----------|---------|
+| **CRMLayout sidebar** | Globale (tutte le pagine) | `fixed left-0 top-28, w-64, z-50` | Sempre presente, collassa a `w-16` su desktop |
+| **RadioSidebarPanel** | `/radio-chat` | `fixed left-0 top-24, w-[320px], z-50` | Slide-in/out |
+| **RadioGhostIcons** | `/radio-chat` | `fixed left-0 bottom-8, z-40` | 5 icone verticali |
+| **ConversationsSidebar** | `/chat-laboratory` | `fixed left-0 top-14, w-80, z-50` | Slide-in/out |
+| **CollapsibleCategorySidebar** | `/funnemail` (inbox) | `fixed left-0 top-14, w-80, z-50` | Slide-in/out |
+| **AISidebarSlider** | Radio, ChatLab, FunEmail | `fixed left-0 top-14, w-80, z-50` | Slide-in/out |
 
-Fase 2 — Unificazione playback controller
-- Introdurre un controller unico (hook dedicato) per:
-  - `active_message_id`
-  - `current_playing_id`
-  - `is_audio_playing`
-  - `advance_to_next()`
-  - guardia “single-audio-at-a-time” via ref condiviso
-- Tabs e Messages devono usare lo stesso controller del Carousel (niente `useAudioPlayback` locale nei Tabs).
+Il CRM sidebar (`w-16` collapsed) è **sempre visibile su desktop** (`lg:translate-x-0 lg:w-16`). Quando le pagine aprono le loro sidebar, si sovrappongono alla CRM sidebar. La mutua esclusione è gestita manualmente via `useCRMLayout` con prop drilling in RadioChat e con nessun meccanismo in ChatLaboratory/FunEmail.
 
-Fase 3 — Sequenza deterministica per agente
-- Tabs: autoplay solo del tab visibile.
-- Avanzamento solo su evento `ended` reale del messaggio corrente.
-- Escludere messaggi `human` dalla coda audio automatica.
-- Reset completo queue/seen/active al cambio conversazione.
-- Garantire: “un agente finisce tutto il suo audio prima di passare al successivo”.
+## Soluzione: Sidebar Unica Contextuale
 
-Fase 4 — Startup “nuova chat vuota”
-- Cambiare policy iniziale in `useRadioConversations`:
-  - default: sessione nuova (no resume automatico della vecchia).
-  - opzionale (futuro): toggle “Riprendi ultima chat”.
-- `useRadioMessages`: quando `conversationId` è null, `setMessages([])` immediato.
-- Aggiungere guardia anti-race nelle fetch (`request_id`/abort pattern).
+Trasformare il CRMLayout sidebar in un **contenitore universale** che cambia contenuto in base alla pagina corrente, eliminando tutte le sidebar `fixed left-0` duplicate.
 
-Fase 5 — Hardened sync & resilienza
-- Rifinire `useRadioMessages`: try/catch completi + fallback poll leggero se realtime perde eventi.
-- Rimuovere trigger prematuri che alterano stati di invio/playback fuori sequenza.
-- Logging tecnico coerente per timeline audio->tab->next.
+### Architettura
 
-File target principali:
-- `src/pages/RadioChat.tsx`
-- `src/hooks/useRadioConversations.ts`
-- `src/hooks/useRadioMessages.ts`
-- `src/components/chat-laboratory/MessageTabsView.tsx` (o wrapper Radio dedicato)
-- `src/hooks/useTabSwitching.ts` (o sostituzione con hook Radio unificato)
-- Nuovo hook audio coordinator Radio (single source of truth)
+```text
+┌─────────────────────────────────────────────┐
+│  CRMLayout Sidebar (unica, w-64 / w-16)    │
+│                                             │
+│  ┌─────────────────────────────────────┐    │
+│  │  Tab superiori (contextual by page) │    │
+│  ├─────────────────────────────────────┤    │
+│  │                                     │    │
+│  │  GENERIC pages:                     │    │
+│  │    → Navigation groups (attuale)    │    │
+│  │                                     │    │
+│  │  /radio-chat:                       │    │
+│  │    → Tab Chat/Agenti/Config         │    │
+│  │    → (RadioSidebarPanel content)    │    │
+│  │                                     │    │
+│  │  /chat-laboratory:                  │    │
+│  │    → ConversationsSidebar content   │    │
+│  │                                     │    │
+│  │  /funnemail (inbox):                │    │
+│  │    → Categories sidebar content     │    │
+│  │                                     │    │
+│  └─────────────────────────────────────┘    │
+│                                             │
+│  Footer: AI Trigger (sempre presente)       │
+└─────────────────────────────────────────────┘
+```
 
-Criteri di accettazione (must-pass):
-1) Aprendo `/radio-chat` vedi chat nuova vuota, non la precedente.
-2) In Carousel/Tabs/Messages non parte mai audio da viste non visibili.
-3) Un solo audio alla volta; nessuna sovrapposizione.
-4) Fine audio => avanzamento alla pagina successiva corretta (se autorun attivo).
-5) Navigando avanti/indietro nei tab, viene letto solo il messaggio della pagina frontale.
-6) Nessun “mix” percepito tra agenti: testo e voce restano accoppiati allo stesso messaggio/agente.
-7) Test end-to-end su conversazione con 3 agenti e più turni consecutivi, incluso cambio vista durante playback.
+### Fasi di Implementazione
+
+**Fase 1 — Creare `CRMSidebarContext`**
+Sostituire `CRMLayoutContext` con un context più ricco che gestisce:
+- `menuOpen` / `setMenuOpen` (esistente)
+- `sidebarContent: 'nav' | 'radio' | 'chatlab' | 'email' | 'ai'` — cosa mostrare nel corpo della sidebar
+- `setSidebarContent(content)` — le pagine registrano il loro contenuto
+- `closeSidebar()` — chiude tutto in un colpo
+
+Questo elimina il prop drilling di `crmMenuOpen/setCrmMenuOpen` in RadioChat, ChatLab, FunEmail.
+
+**Fase 2 — Refactoring CRMLayout sidebar**
+- La sidebar CRM diventa un contenitore generico con uno slot per il contenuto
+- Quando `menuOpen=true`:
+  - Su pagine generiche: mostra navigation groups (come ora)
+  - Su `/radio-chat`: mostra il contenuto di `RadioSidebarPanel` (3 tab)
+  - Su `/chat-laboratory`: mostra il contenuto di `ConversationsSidebar`
+  - Su `/funnemail`: mostra il contenuto di `CollapsibleCategorySidebar`
+- Il comportamento collapsed (`w-16` icon strip) resta invariato
+- Un solo hamburger button nell'header controlla tutto
+
+**Fase 3 — Eliminare sidebar duplicate**
+- `RadioSidebarPanel.tsx`: rimuovere il wrapper `fixed left-0` e renderlo un componente "content-only" che si innesta dentro la sidebar CRM
+- `ConversationsSidebar.tsx`: stessa operazione — solo contenuto, niente posizionamento
+- `CollapsibleCategorySidebar.tsx`: stessa operazione
+- `AISidebarSlider.tsx`: integrare come tab/sezione nella sidebar CRM (footer della sidebar o tab dedicato)
+
+**Fase 4 — Ghost Icons → Sidebar footer**
+- Spostare le 5 icone di RadioChat (AI, Sidebar, FileText, Mic, Keyboard) come **quick actions nel footer della sidebar** quando siamo su `/radio-chat`
+- Eliminare `RadioGhostIcons.tsx` come componente `fixed left-0` separato
+- Le icone appaiono nella parte bassa della sidebar (anche in stato collapsed `w-16`)
+
+**Fase 5 — AI Sidebar unificato**
+- `AISidebarSliderUnified` è già montato globalmente in App.tsx ma non utilizzato
+- Rendere l'AI trigger sempre presente nel footer della sidebar CRM (tutte le pagine)
+- Quando aperto, l'AI sidebar diventa il contenuto della sidebar CRM (non una seconda sidebar sovrapposta)
+- Eliminare le istanze locali di `AISidebarSlider` da RadioChat, ChatLab, FunEmail
+
+### File da modificare
+
+| File | Azione |
+|------|--------|
+| `src/contexts/CRMLayoutContext.tsx` | Espandere con `sidebarContent`, rinominare a `CRMSidebarContext` |
+| `src/components/layout/CRMLayout.jsx` | Sidebar contextuale con slot per contenuto page-specific |
+| `src/pages/RadioChat.tsx` | Registrare contenuto sidebar via context, rimuovere `RadioSidebarPanel` fixed |
+| `src/pages/ChatLaboratory.tsx` | Registrare contenuto sidebar via context |
+| `src/pages/FunEmail.tsx` | Registrare contenuto sidebar via context |
+| `src/components/radio-chat/RadioSidebarPanel.tsx` | Content-only (rimuovere fixed positioning) |
+| `src/components/chat-laboratory/ConversationsSidebar.tsx` | Content-only |
+| `src/components/email/smart-inbox/CollapsibleCategorySidebar.tsx` | Content-only |
+| `src/components/radio-chat/RadioGhostIcons.tsx` | Trasformare in sidebar footer actions |
+| `src/components/ai/AISidebarSlider.tsx` | Integrare nella sidebar unificata |
+
+### NON TOCCARE
+- Header CRM (hamburger button, logo, toolbar destra)
+- Contenuto delle sidebar (liste conversazioni, tab agenti/config, categorie email)
+- Carousel 3D, zoom, audio playback
+- Routing, auth, query
+
+### Rischio
+**Medio-Alto** — Tocca 3 pagine principali e il layout globale. Richiede test end-to-end su tutte le pagine. Backup obbligatorio prima dell'implementazione.
+
+### Risultato Atteso
+- **1 sola sidebar** in tutta la piattaforma
+- **1 solo hamburger** per aprirla/chiuderla
+- Nessuna sovrapposizione possibile
+- Contenuto contextuale per pagina
+- AI assistant accessibile ovunque dal footer sidebar
+- Zero prop drilling di `crmMenuOpen/setCrmMenuOpen`
+

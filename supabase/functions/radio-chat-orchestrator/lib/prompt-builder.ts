@@ -121,6 +121,14 @@ NON aggiungere conteggi parole o metadata al testo.
   
   composedPrompt += styleInstructions + '\n\n';
 
+  // ✅ CRITICAL: Tell the agent to respond ONLY as itself, never roleplay other agents
+  composedPrompt += `
+⚠️ REGOLA FONDAMENTALE: Rispondi SOLO come te stesso. 
+NON generare risposte per altri agenti o personaggi.
+NON usare il formato [NomeAltroAgente]: prima delle tue frasi.
+Scrivi direttamente il tuo intervento, senza prefissi con nomi tra parentesi quadre.
+`;
+
   // Add context about other agents
   if (previousResponses.length > 0) {
     const previousAgentsContext = previousResponses
@@ -128,10 +136,10 @@ NON aggiungere conteggi parole o metadata al testo.
       .join('\n\n');
     
     composedPrompt += `
-RISPOSTE PRECEDENTI IN QUESTO TURNO:
+RISPOSTE PRECEDENTI IN QUESTO TURNO (solo per contesto, NON rispondere al loro posto):
 ${previousAgentsContext}
 
-Considera queste risposte quando formuli la tua. Puoi:
+Considera queste risposte quando formuli la TUA UNICA risposta. Puoi:
 - Concordare o aggiungere nuovi punti
 - Offrire una prospettiva diversa
 - Rispondere direttamente a uno degli altri agenti

@@ -120,11 +120,19 @@ export const RadioAudioPlayer = ({
 
     return () => {
       console.log(`🧹 [RadioAudioPlayer] CLEANUP: ${messageId.substring(0,8)}`);
+      // ✅ FIX: Signal playback ended BEFORE removing listeners, so isAudioPlaying resets
+      const wasPlaying = !audio.paused;
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
       audio.pause();
+      // ✅ If audio was playing when cleanup ran, notify parent so isAudioPlaying resets
+      if (wasPlaying) {
+        console.log(`⏹️ [RadioAudioPlayer] CLEANUP while playing — signaling end`);
+        onPlayingChangeRef.current?.(false);
+        onPlayEndRef.current?.();
+      }
       // ✅ Keep the shared audio element alive (pre-unlocked) — just reset src
       if (sharedAudioRef && sharedAudioRef.current === audio) {
         audio.src = '';

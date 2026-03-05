@@ -125,8 +125,12 @@ export const RadioAudioPlayer = ({
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
       audio.pause();
+      // ✅ Keep the shared audio element alive (pre-unlocked) — just reset src
       if (sharedAudioRef && sharedAudioRef.current === audio) {
-        sharedAudioRef.current = null;
+        audio.src = '';
+        audio.currentTime = 0;
+        // Do NOT nullify sharedAudioRef.current — it stays unlocked for reuse
+        console.log(`🔓 [RadioAudioPlayer] Shared audio element preserved for reuse`);
       }
       hasStartedRef.current = false;
     };

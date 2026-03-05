@@ -1,260 +1,24 @@
-import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, CheckCircle } from 'lucide-react';
-
-interface GlobalPrompt {
-  id: string;
-  nome: string;
-  contenuto: string;
-}
-
-interface ComposedPrompt {
-  id: string;
-  name: string;
-  content: string;
-  target_agent: string;
-}
-
-interface PromptSection {
-  id: string;
-  section_name: string;
-  content: string;
-  section_type: string;
-}
+import { Loader2, Save } from 'lucide-react';
+import { useRadioPromptCRUD } from '@/hooks/useRadioPromptCRUD';
 
 interface RadioPromptSelectorProps {
   conversationId?: string | null;
 }
 
 export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps) => {
-  const [globalPrompts, setGlobalPrompts] = useState<GlobalPrompt[]>([]);
-  const [selectedGlobalId, setSelectedGlobalId] = useState<string>('');
-  const [globalContent, setGlobalContent] = useState('');
-  const [conversationPromptId, setConversationPromptId] = useState<string | null>(null);
-  
-  const [composedPrompts, setComposedPrompts] = useState<ComposedPrompt[]>([]);
-  const [selectedComposedId, setSelectedComposedId] = useState<string>('');
-  const [composedContent, setComposedContent] = useState('');
-  const [conversationComposedId, setConversationComposedId] = useState<string | null>(null);
-  
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    loadData();
-  }, [conversationId]);
-
-  const loadData = async () => {
-    setLoading(true);
-    
-    // 1️⃣ PRIMA: Carica tutti i prompt in parallelo
-    const { data: globals, error: globalError } = await supabase
-      .from('chat_laboratory_system_prompts')
-      .select('id, nome, contenuto')
-      .order('nome');
-    
-    const { data: composed, error: composedError } = await supabase
-      .from('chat_laboratory_composed_prompts')
-      .select('id, name, content, target_agent')
-      .order('created_at', { ascending: false });
-    
-    if (globals) setGlobalPrompts(globals);
-    if (composed) setComposedPrompts(composed);
-    
-    // 2️⃣ POI: Carica la conversazione e controlla PRIMA il composed_prompt_id
-    if (conversationId) {
-      const { data: conv } = await supabase
-        .from('chat_laboratory_conversations')
-        .select('system_prompt_id, composed_prompt_id')
-        .eq('id', conversationId)
-        .single();
-      
-      // ✅ PRIORITÀ 1: Se esiste composed_prompt_id, usa quello
-      if (conv?.composed_prompt_id && composed) {
-        const selectedComposed = composed.find(p => p.id === conv.composed_prompt_id);
-        if (selectedComposed) {
-          setSelectedComposedId(conv.composed_prompt_id);
-          setComposedContent(selectedComposed.content);
-          setConversationComposedId(conv.composed_prompt_id);
-          console.log('✅ [RESTORE] Composed prompt loaded:', conv.composed_prompt_id);
-        }
-      }
-      // ✅ PRIORITÀ 2: Altrimenti usa system_prompt_id
-      else if (conv?.system_prompt_id && globals) {
-        const selectedPrompt = globals.find(p => p.id === conv.system_prompt_id);
-        if (selectedPrompt) {
-          setSelectedGlobalId(conv.system_prompt_id);
-          setGlobalContent(selectedPrompt.contenuto);
-          setConversationPromptId(conv.system_prompt_id);
-          console.log('✅ [RESTORE] Global prompt loaded:', conv.system_prompt_id);
-        }
-      }
-      // ✅ FALLBACK: Se nessuno dei due esiste, usa il primo global prompt
-      else if (globals && globals.length > 0) {
-        setSelectedGlobalId(globals[0].id);
-        setGlobalContent(globals[0].contenuto);
-        console.log('✅ [FALLBACK] Default global prompt loaded');
-      }
-    }
-    // 3️⃣ Se non c'è conversazione, usa il primo global prompt
-    else if (globals && globals.length > 0) {
-      setSelectedGlobalId(globals[0].id);
-      setGlobalContent(globals[0].contenuto);
-    }
-    
-    setLoading(false);
-  };
-
-  const saveGlobalPrompt = async () => {
-    if (!selectedGlobalId) return;
-    
-    setSaving(true);
-    const { error } = await supabase
-      .from('chat_laboratory_system_prompts')
-      .update({ contenuto: globalContent })
-      .eq('id', selectedGlobalId);
-
-    if (error) {
-      toast({
-        title: 'Errore',
-        description: 'Impossibile salvare il prompt globale',
-        variant: 'destructive'
-      });
-    } else {
-      toast({
-        title: 'Salvato',
-        description: 'Prompt globale aggiornato con successo',
-      });
-    }
-    setSaving(false);
-  };
-
-
-  const assignPromptToConversation = async () => {
-    if (!conversationId || !selectedGlobalId) {
-      toast({
-        title: 'Errore',
-        description: 'Nessuna conversazione attiva',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    setSaving(true);
-    const { error } = await supabase
-      .from('chat_laboratory_conversations')
-      .update({ 
-        system_prompt_id: selectedGlobalId,
-        composed_prompt_id: null // Reset composed when assigning global
-      })
-      .eq('id', conversationId);
-
-    if (error) {
-      toast({
-        title: 'Errore',
-        description: 'Impossibile assegnare il prompt',
-        variant: 'destructive'
-      });
-    } else {
-      setConversationPromptId(selectedGlobalId);
-      setConversationComposedId(null);
-      toast({
-        title: 'Prompt assegnato',
-        description: 'Prompt globale assegnato alla conversazione',
-      });
-    }
-    setSaving(false);
-  };
-
-  const assignComposedPromptToConversation = async () => {
-    if (!conversationId || !selectedComposedId) {
-      toast({
-        title: 'Errore',
-        description: 'Nessuna conversazione attiva',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    setSaving(true);
-    const { error } = await supabase
-      .from('chat_laboratory_conversations')
-      .update({ 
-        composed_prompt_id: selectedComposedId,
-        system_prompt_id: null // Reset global when assigning composed
-      })
-      .eq('id', conversationId);
-
-    if (error) {
-      toast({
-        title: 'Errore',
-        description: 'Impossibile assegnare il prompt pronto',
-        variant: 'destructive'
-      });
-    } else {
-      setConversationComposedId(selectedComposedId);
-      setConversationPromptId(null);
-      toast({
-        title: 'Prompt pronto assegnato',
-        description: 'Questo prompt preconfezionato sarà usato per la conversazione',
-      });
-    }
-    setSaving(false);
-  };
-
-
-  const onGlobalChange = async (id: string) => {
-    setSelectedGlobalId(id);
-    const prompt = globalPrompts.find(p => p.id === id);
-    if (prompt) setGlobalContent(prompt.contenuto);
-    
-    // Auto-save: salva immediatamente nel DB
-    if (conversationId) {
-      const { error } = await supabase
-        .from('chat_laboratory_conversations')
-        .update({ 
-          system_prompt_id: id,
-          composed_prompt_id: null 
-        })
-        .eq('id', conversationId);
-      
-      if (!error) {
-        setConversationPromptId(id);
-        setConversationComposedId(null);
-        console.log('✅ Auto-saved prompt:', id);
-      }
-    }
-  };
-
-  const onComposedChange = async (id: string) => {
-    setSelectedComposedId(id);
-    const prompt = composedPrompts.find(p => p.id === id);
-    if (prompt) setComposedContent(prompt.content);
-    
-    // Auto-save: salva immediatamente nel DB
-    if (conversationId) {
-      const { error } = await supabase
-        .from('chat_laboratory_conversations')
-        .update({ 
-          composed_prompt_id: id,
-          system_prompt_id: null 
-        })
-        .eq('id', conversationId);
-      
-      if (!error) {
-        setConversationComposedId(id);
-        setConversationPromptId(null);
-        console.log('✅ Auto-saved composed prompt:', id);
-      }
-    }
-  };
+  const {
+    globalPrompts, selectedGlobalId, globalContent, setGlobalContent,
+    conversationPromptId,
+    composedPrompts, selectedComposedId, composedContent,
+    conversationComposedId,
+    loading, saving,
+    saveGlobalPrompt, onGlobalChange, onComposedChange
+  } = useRadioPromptCRUD(conversationId);
 
   if (loading) {
     return (
@@ -276,9 +40,7 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
           <div className="space-y-2">
             <Label className="text-sm">Prompt Sistema (Globale)</Label>
             <Select value={selectedGlobalId} onValueChange={onGlobalChange}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {globalPrompts.map(prompt => (
                   <SelectItem key={prompt.id} value={prompt.id}>
@@ -297,23 +59,8 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
             placeholder="Contenuto del prompt..."
           />
 
-          <Button
-            onClick={saveGlobalPrompt}
-            disabled={saving || !selectedGlobalId}
-            variant="outline"
-            className="w-full"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Salvataggio...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Salva Prompt
-              </>
-            )}
+          <Button onClick={saveGlobalPrompt} disabled={saving || !selectedGlobalId} variant="outline" className="w-full">
+            {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvataggio...</> : <><Save className="w-4 h-4 mr-2" />Salva Prompt</>}
           </Button>
         </TabsContent>
 
@@ -321,9 +68,7 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
           <div className="space-y-2">
             <Label className="text-sm">Prompt Pronto (Preconfezionato)</Label>
             <Select value={selectedComposedId} onValueChange={onComposedChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleziona un prompt pronto..." />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Seleziona un prompt pronto..." /></SelectTrigger>
               <SelectContent>
                 {composedPrompts.map(prompt => (
                   <SelectItem key={prompt.id} value={prompt.id}>
@@ -337,23 +82,16 @@ export const RadioPromptSelector = ({ conversationId }: RadioPromptSelectorProps
 
           {selectedComposedId && (
             <>
-              <Textarea
-                value={composedContent}
-                readOnly
-                className="min-h-[200px] font-mono text-xs bg-muted"
-                placeholder="Anteprima prompt pronto..."
-              />
-
+              <Textarea value={composedContent} readOnly className="min-h-[200px] font-mono text-xs bg-muted" placeholder="Anteprima prompt pronto..." />
               <div className="bg-muted p-3 rounded text-sm">
                 <p className="text-muted-foreground">
-                  💡 <strong>Nota:</strong> I prompt pronti sono preconfezionati e non modificabili. 
+                  💡 <strong>Nota:</strong> I prompt pronti sono preconfezionati e non modificabili.
                   Se assegni un prompt pronto, sostituirà il prompt globale per questa conversazione.
                 </p>
               </div>
             </>
           )}
         </TabsContent>
-
       </Tabs>
     </div>
   );

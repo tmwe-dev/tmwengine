@@ -73,12 +73,10 @@ export function CollapsibleCategorySidebar({
 
       console.log('📊 [Zero-Sync] Fetching folder stats from API...');
       
-      // Get email count from TMWE API (source of truth)
       const { emailSearchApi } = await import('@/lib/tmwe-email-search-api');
       const apiStats = await emailSearchApi.getStatistics({ folder: selectedFolder });
       const totalEmails = apiStats?.data?.total || 0;
       
-      // Count classified emails from local DB (metadata)
       const { count: totalClassified } = await supabase
         .from('email_ai_classifications')
         .select('*', { count: 'exact', head: true })
@@ -88,12 +86,6 @@ export function CollapsibleCategorySidebar({
       const classified = totalClassified || 0;
       const percentage = totalEmails > 0 ? Math.round((classified / totalEmails) * 100) : 0;
       
-      console.log('✅ [Zero-Sync] Folder stats:', {
-        totalEmails,
-        classified,
-        percentage
-      });
-      
       return {
         totalInDB: totalEmails,
         totalClassified: classified,
@@ -101,10 +93,9 @@ export function CollapsibleCategorySidebar({
       };
     },
     enabled: !!userEmail && !!selectedFolder,
-    staleTime: 30000 // 30 seconds
+    staleTime: 30000
   });
 
-  // Trova categoria selezionata per il badge
   const getSelectedInfo = () => {
     if (selectedCategory === 'all') {
       const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
@@ -119,169 +110,124 @@ export function CollapsibleCategorySidebar({
 
   const selectedInfo = getSelectedInfo();
 
+  // Content-only: no fixed wrapper, no backdrop — rendered inside SidebarPortal
   return (
-    <>
-      {/* Backdrop - UNIFORMATO */}
-      {isOpen && !isLocked && (
-        <div 
-          className="fixed left-0 right-0 bottom-0 top-14 bg-transparent backdrop-blur-sm z-40 animate-in fade-in"
-          onClick={() => onOpenChange(false)}
-        />
-      )}
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-background">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Smart Inbox</h2>
+          <Badge 
+            variant="outline" 
+            className="text-xs"
+            style={{ borderColor: selectedInfo.color }}
+          >
+            {selectedInfo.icon} {selectedInfo.count}
+          </Badge>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onOpenChange(false)}
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
 
-      {/* Sidebar - UNIFORMATO */}
-      <aside className={cn(
-        "fixed left-0 top-14 bottom-0 w-80 bg-background border-r z-50",
-        "transition-transform duration-300",
-        isOpen ? "translate-x-0" : "-translate-x-full hidden"
-      )}>
-        <div className="flex flex-col h-full">
-          {/* Header uniforme */}
-          <div className="flex items-center justify-between p-4 border-b bg-background">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Smart Inbox</h2>
-              <Badge 
-                variant="outline" 
-                className="text-xs"
-                style={{ borderColor: selectedInfo.color }}
-              >
-                {selectedInfo.icon} {selectedInfo.count}
-              </Badge>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsLocked(!isLocked)}
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
-                title={isLocked ? "Sblocca sidebar" : "Blocca sidebar aperta"}
-              >
-                {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-              </button>
-              {!isLocked && (
-                <button
-                  onClick={() => onOpenChange(false)}
-                  className="p-2 rounded-lg hover:bg-muted transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
-            </div>
+      {/* AI Agent Selector */}
+      <div className="p-4 border-b">
+        <GlobalAIAgentSelector />
+      </div>
+
+      {/* Filtri e Azioni */}
+      <div className="p-4 border-b space-y-3">
+        <Select value={selectedFolder} onValueChange={onFolderChange}>
+          <SelectTrigger className="w-full h-9 bg-white/5 border-white/20">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {availableFolders.map(folder => (
+              <SelectItem key={folder} value={folder}>{folder}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-white/70">Solo non lette</label>
+            <Switch checked={unreadOnly} onCheckedChange={onUnreadOnlyChange} />
           </div>
-
-          {/* AI Agent Selector */}
-          <div className="p-4 border-b">
-            <GlobalAIAgentSelector />
-          </div>
-
-          {/* Filtri e Azioni su una riga */}
-          <div className="p-4 border-b space-y-3">
-          {/* Folder Selector */}
-          <Select value={selectedFolder} onValueChange={onFolderChange}>
-            <SelectTrigger className="w-full h-9 bg-white/5 border-white/20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {availableFolders.map(folder => (
-                <SelectItem key={folder} value={folder}>{folder}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Riga unica: Toggle + Icone */}
-          <div className="flex items-center justify-between gap-2">
-            {/* Toggle Solo non lette */}
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-white/70">Solo non lette</label>
-              <Switch checked={unreadOnly} onCheckedChange={onUnreadOnlyChange} />
-            </div>
-
-            {/* Icone Azioni */}
-            <div className="flex items-center gap-1">
-              {/* Icona Classifica */}
-              <Button 
-                onClick={onClassifyNew}
-                variant="ghost"
-                size="sm"
-                disabled={isClassifying}
-                className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10"
-              >
-                <Sparkles className="h-4 w-4" />
-              </Button>
-
-              {/* Icona Vedi Prompt */}
+          <div className="flex items-center gap-1">
+            <Button 
+              onClick={onClassifyNew}
+              variant="ghost"
+              size="sm"
+              disabled={isClassifying}
+              className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10"
+            >
+              <Sparkles className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onPromptViewerChange(true)}
+              className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+            {onToggleCleanView && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onPromptViewerChange(true)}
+                onClick={onToggleCleanView}
                 className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10"
+                title={cleanViewMode ? "Vista Intelligente" : "Vista Pulita"}
               >
-                <FileText className="h-4 w-4" />
+                {cleanViewMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
-
-              {/* 🆕 Toggle Vista Pulita */}
-              {onToggleCleanView && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onToggleCleanView}
-                  className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10"
-                  title={cleanViewMode ? "Vista Intelligente" : "Vista Pulita"}
-                >
-                  {cleanViewMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* FASE 2: Folder Statistics */}
-        {folderStats && (
-          <div className="px-4 py-2 border-b border-white/10">
-            <Card className="bg-white/5 border-white/10">
-              <CardContent className="p-3 space-y-1.5">
-                {/* Numeri con icone su una riga */}
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span>📧</span>
-                    <span className="font-semibold">{folderStats.totalInDB}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span>✅</span>
-                    <span className="font-semibold text-green-400">{folderStats.totalClassified}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="font-semibold">{folderStats.classificationPercentage}%</span>
-                  </div>
+      {/* Folder Statistics */}
+      {folderStats && (
+        <div className="px-4 py-2 border-b border-white/10">
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-3 space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span>📧</span>
+                  <span className="font-semibold">{folderStats.totalInDB}</span>
                 </div>
-                {/* Barra progresso sottilissima lilla */}
-                <Progress 
-                  value={folderStats.classificationPercentage} 
-                  className="h-0.5 bg-white/10"
-                  style={{ '--progress-color': 'hsl(270, 70%, 65%)' } as React.CSSProperties}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Contenuto sidebar */}
-        <div className="h-[calc(100%-22rem)] overflow-y-auto p-4">
-          <CategoriesVerticalSidebar
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onCategoryChange={onCategoryChange}
-            unverifiedCount={unverifiedCount}
-          />
-          </div>
+                <div className="flex items-center gap-1.5">
+                  <span>✅</span>
+                  <span className="font-semibold text-green-400">{folderStats.totalClassified}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="font-semibold">{folderStats.classificationPercentage}%</span>
+                </div>
+              </div>
+              <Progress 
+                value={folderStats.classificationPercentage} 
+                className="h-0.5 bg-white/10"
+                style={{ '--progress-color': 'hsl(270, 70%, 65%)' } as React.CSSProperties}
+              />
+            </CardContent>
+          </Card>
         </div>
-      </aside>
-
-      {/* Backdrop (quando aperta e non locked) */}
-      {isOpen && !isLocked && (
-        <div 
-          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm transition-opacity"
-          onClick={() => onOpenChange(false)}
-        />
       )}
-    </>
+
+      {/* Categories content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <CategoriesVerticalSidebar
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategoryChange={onCategoryChange}
+          unverifiedCount={unverifiedCount}
+        />
+      </div>
+    </div>
   );
 }

@@ -5,6 +5,7 @@ import { SmartInboxHeaderIntelligent } from './SmartInboxHeaderIntelligent';
 import { SmartEmailListIntelligent } from './SmartEmailListIntelligent';
 import { EmptyDetailPanel } from './EmptyDetailPanel';
 import { CollapsibleCategorySidebar } from './CollapsibleCategorySidebar';
+import { SidebarPortal } from '@/components/layout/SidebarPortal';
 import { AIActionsSidebar } from './AIActionsSidebar';
 import { AIPromptDialog } from './AIPromptDialog';
 import { AIActionConfirmation } from './AIActionConfirmation';
@@ -626,27 +627,29 @@ export const SmartInboxTabIntelligent = ({
       
       {/* 🆕 Layout 2 Colonne: Lista Email | Dettaglio + Sidebar Collassabile */}
       <div className="flex-1 flex gap-4 overflow-hidden">
-        {/* Sidebar Categorie Collassabile (controllata da FunEmail) */}
-        <CollapsibleCategorySidebar
-          categories={categoryStats}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          unverifiedCount={unverifiedCount}
-          isOpen={categoriesOpen}
-          onOpenChange={onCategoriesOpenChange}
-          selectedFolder={selectedFolder}
-          unreadOnly={unreadOnly}
-          onFolderChange={onFolderChange}
-          onUnreadOnlyChange={onUnreadOnlyChange}
-          availableFolders={availableFolders}
-          onClassifyNew={handleClassifyNew}
-          isClassifying={isClassifying}
-          onPromptViewerChange={setPromptViewerOpen}
-          selectedAgent={selectedAgent}
-          onAgentChange={setSelectedAgent}
-          cleanViewMode={cleanViewMode}
-          onToggleCleanView={() => setCleanViewMode(!cleanViewMode)}
-        />
+        {/* Sidebar Categorie via unified CRM sidebar portal */}
+        <SidebarPortal>
+          <CollapsibleCategorySidebar
+            categories={categoryStats}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            unverifiedCount={unverifiedCount}
+            isOpen={categoriesOpen}
+            onOpenChange={onCategoriesOpenChange}
+            selectedFolder={selectedFolder}
+            unreadOnly={unreadOnly}
+            onFolderChange={onFolderChange}
+            onUnreadOnlyChange={onUnreadOnlyChange}
+            availableFolders={availableFolders}
+            onClassifyNew={handleClassifyNew}
+            isClassifying={isClassifying}
+            onPromptViewerChange={setPromptViewerOpen}
+            selectedAgent={selectedAgent}
+            onAgentChange={setSelectedAgent}
+            cleanViewMode={cleanViewMode}
+            onToggleCleanView={() => setCleanViewMode(!cleanViewMode)}
+          />
+        </SidebarPortal>
 
         {/* Colonna 1: Lista Email - MAX 40% larghezza in split, 100% centrata in list */}
         <div 

@@ -1,112 +1,84 @@
 import { cn } from '@/lib/utils';
 import { FileText, Keyboard } from 'lucide-react';
-import { AISidebarTrigger } from '@/components/ai/AISidebarTrigger';
-import { RadioSidebarTrigger } from './RadioSidebarTrigger';
 import { RadioMicTrigger } from './RadioMicTrigger';
 import { RadioMessage } from '@/types/radio';
 import { useRadioChatContext } from '@/contexts/RadioChatContext';
+import { useCRMSidebar } from '@/contexts/CRMLayoutContext';
 
 interface RadioGhostIconsProps {
   currentMessage: RadioMessage | null;
 }
 
+/**
+ * RadioGhostIcons — quick-action icons rendered inside the CRM sidebar footer
+ * via SidebarFooterPortal. No longer uses fixed positioning.
+ */
 export const RadioGhostIcons = ({ currentMessage }: RadioGhostIconsProps) => {
   const {
-    shouldShowLeftIcons, sidebarOpen, crmMenuOpen, setCrmMenuOpen,
     aiSidebarOpen, setAiSidebarOpen, aiCanvasHasMessages,
-    setSidebarOpen, isAudioEnabled, isAutoAdvanceEnabled,
+    isAudioEnabled, isAutoAdvanceEnabled,
     messageViewVisible, setMessageViewVisible,
     showAudioControls, setShowAudioControls,
     inputVisible, setInputVisible
   } = useRadioChatContext();
-
-  const hiddenBySidebar = sidebarOpen;
-
-  const showIcon = (featureActive: boolean) =>
-    !hiddenBySidebar && (shouldShowLeftIcons || featureActive);
+  
+  const { menuOpen, aiSidebarOpen: globalAiOpen, setAiSidebarOpen: setGlobalAiOpen, setMenuOpen } = useCRMSidebar();
 
   return (
-    <div
-      className={cn(
-        "fixed left-0 bottom-8 z-40 flex flex-col gap-0.5 transition-all duration-300",
-        hiddenBySidebar && "opacity-0 pointer-events-none -translate-x-full"
-      )}
-    >
+    <div className="flex flex-col gap-0.5 w-full">
       {/* AI Assistant */}
-      <AISidebarTrigger
-        className={cn(
-          "transition-all duration-300",
-          !showIcon(aiSidebarOpen) && "opacity-0 pointer-events-none"
-        )}
-        isOpen={aiSidebarOpen}
-        onToggle={() => setAiSidebarOpen(!aiSidebarOpen)}
-        hasActiveConversation={aiCanvasHasMessages}
-      />
-
-      {/* Sidebar */}
-      <RadioSidebarTrigger
-        className={cn(
-          "transition-all duration-300",
-          !showIcon(false) && "opacity-0 pointer-events-none"
-        )}
-        isOpen={sidebarOpen}
-        onToggle={() => {
-          const newState = !sidebarOpen;
-          setSidebarOpen(newState);
-          if (newState && crmMenuOpen) setCrmMenuOpen(false);
+      <button
+        onClick={() => {
+          setGlobalAiOpen(!globalAiOpen);
+          if (!menuOpen) setMenuOpen(true);
         }}
-        isAudioEnabled={isAudioEnabled}
-        isAutoAdvanceEnabled={isAutoAdvanceEnabled}
-      />
+        className={cn(
+          "w-full flex items-center gap-2 px-3 py-2 rounded-lg",
+          "text-sm transition-all duration-200",
+          "hover:bg-primary/10",
+          globalAiOpen ? "text-purple-400" : "text-muted-foreground"
+        )}
+        aria-label="Toggle AI Assistant"
+      >
+        <span className="w-5 h-5 flex items-center justify-center">✨</span>
+        {menuOpen && <span className="text-xs">AI</span>}
+      </button>
 
-      {/* FileText — hidden on short screens */}
+      {/* FileText — message view */}
       <button
         onClick={() => setMessageViewVisible(!messageViewVisible)}
         className={cn(
-          "w-10 h-10 bg-transparent rounded-r-lg border border-border/20",
-          "flex items-center justify-center transition-all duration-300 hover:bg-muted/5",
-          "max-h-[600px]:hidden",
-          !showIcon(messageViewVisible) && "opacity-0 pointer-events-none"
+          "w-full flex items-center gap-2 px-3 py-2 rounded-lg",
+          "text-sm transition-all duration-200",
+          "hover:bg-muted/10",
+          messageViewVisible ? 'text-primary' : (currentMessage ? 'text-primary' : 'text-muted-foreground')
         )}
         aria-label="Toggle message view"
       >
-        <FileText
-          className={cn(
-            "w-5 h-5 transition-colors",
-            messageViewVisible ? 'text-primary' : (currentMessage ? 'text-primary' : 'text-muted-foreground')
-          )}
-          strokeWidth={1}
-        />
+        <FileText className="w-4 h-4" strokeWidth={1} />
+        {menuOpen && <span className="text-xs">Messages</span>}
       </button>
 
       {/* Mic */}
       <RadioMicTrigger
-        className={cn(
-          "transition-all duration-300",
-          !showIcon(showAudioControls) && "opacity-0 pointer-events-none"
-        )}
+        className="w-full"
         isActive={showAudioControls}
         onClick={() => setShowAudioControls(!showAudioControls)}
       />
 
-      {/* Keyboard — hidden on short screens */}
+      {/* Keyboard — input toggle */}
       <button
         onClick={() => setInputVisible(!inputVisible)}
         className={cn(
-          "w-10 h-10 bg-transparent rounded-r-lg border border-border/20",
-          "flex items-center justify-center transition-all duration-300 hover:bg-muted/5",
-          "max-h-[600px]:hidden",
-          !showIcon(inputVisible) && "opacity-0 pointer-events-none"
+          "w-full flex items-center gap-2 px-3 py-2 rounded-lg",
+          "text-sm transition-all duration-200",
+          "hover:bg-muted/10",
+          inputVisible ? 'text-primary' : 'text-muted-foreground'
         )}
         aria-label="Toggle input"
       >
-        <Keyboard
-          className={cn(
-            "w-5 h-5 transition-colors",
-            inputVisible ? 'text-primary' : 'text-muted-foreground'
-          )}
-          strokeWidth={1}
-        />
+        <Keyboard className="w-4 h-4" strokeWidth={1} />
+        {menuOpen && <span className="text-xs">Input</span>}
       </button>
     </div>
   );

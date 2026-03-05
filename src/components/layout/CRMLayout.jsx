@@ -80,7 +80,7 @@ import { AISidebarSliderContent } from '@/components/ai/AISidebarSliderContent';
 const CRMLayout = ({ children }) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const { menuOpen, setMenuOpen, portalContainerRef, hasPageSidebar, aiSidebarOpen, setAiSidebarOpen } = useCRMLayout();
+  const { menuOpen, setMenuOpen, portalContainerRef, hasPageSidebar, aiSidebarOpen, setAiSidebarOpen, footerPortalRef, hasFooterContent } = useCRMLayout();
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -628,6 +628,9 @@ const CRMLayout = ({ children }) => {
             </div>
           </nav>
           )}
+
+          {/* Footer portal target for page-specific quick actions */}
+          <div ref={footerPortalRef} className="shrink-0" />
 
           {/* AI Trigger Footer - always visible */}
           {!aiSidebarOpen && (

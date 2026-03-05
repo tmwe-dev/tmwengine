@@ -306,24 +306,8 @@ const FunEmail = () => {
         <FunEmailNavigation currentView={currentView as 'fun' | 'management' | 'suggestions' | 'inbox' | 'automations' | 'zero-sync'} />
       )}
       <div className="relative w-full min-h-screen">
-        {/* 2 Icone Verticali - solo in view inbox */}
-        {currentView === 'inbox' && (
-          <>
-            {/* Categories Icon */}
-            <button
-              onClick={handleToggleCategories}
-              className={cn(
-                "fixed left-0 bottom-[13rem] z-40 w-12 h-20 bg-white/5 rounded-r-md",
-                "flex items-center justify-center transition-all duration-300 hover:bg-white/10",
-                categoriesOpen && "translate-x-[280px]",
-                !shouldShowLeftIcons && !categoriesOpen && "hidden"
-              )}
-            >
-              <span className="text-2xl">📬</span>
-            </button>
-            {/* AI sidebar now handled globally by CRMLayout */}
-          </>
-        )}
+        {/* Categories sidebar now handled via SidebarPortal in SmartInboxTabIntelligent */}
+        {/* AI sidebar now handled globally by CRMLayout */}
 
         {/* Content - condizionale in base alla view */}
         <div className="w-full">

@@ -8,6 +8,10 @@ interface CRMSidebarContextType {
   portalContainerRef: React.RefObject<HTMLDivElement | null>;
   hasPageSidebar: boolean;
   setHasPageSidebar: (v: boolean) => void;
+  // Footer portal for page-specific footer actions (e.g. RadioGhostIcons)
+  footerPortalRef: React.RefObject<HTMLDivElement | null>;
+  hasFooterContent: boolean;
+  setHasFooterContent: (v: boolean) => void;
   // Global AI sidebar state
   aiSidebarOpen: boolean;
   setAiSidebarOpen: (open: boolean) => void;
@@ -18,8 +22,10 @@ const CRMSidebarContext = createContext<CRMSidebarContextType | undefined>(undef
 export const CRMSidebarProvider = ({ children }: { children: ReactNode }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasPageSidebar, setHasPageSidebar] = useState(false);
+  const [hasFooterContent, setHasFooterContent] = useState(false);
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const portalContainerRef = useRef<HTMLDivElement | null>(null);
+  const footerPortalRef = useRef<HTMLDivElement | null>(null);
 
   const closeSidebar = useCallback(() => {
     setMenuOpen(false);
@@ -29,6 +35,7 @@ export const CRMSidebarProvider = ({ children }: { children: ReactNode }) => {
     <CRMSidebarContext.Provider value={{ 
       menuOpen, setMenuOpen, closeSidebar,
       portalContainerRef, hasPageSidebar, setHasPageSidebar,
+      footerPortalRef, hasFooterContent, setHasFooterContent,
       aiSidebarOpen, setAiSidebarOpen
     }}>
       {children}

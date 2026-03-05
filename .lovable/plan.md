@@ -1,73 +1,47 @@
 
 
-# Piano: Eliminazione Sidebar Duplicate Rimanenti
+# Piano: Fix Audio Autoplay nel Carousel Radio Chat
 
-## Stato Attuale
+## Diagnosi
 
-Il sistema portal (`SidebarPortal` + `CRMSidebarContext`) e' gia' operativo per RadioChat e ChatLaboratory. Tuttavia rimangono **7 componenti `fixed left-0`** duplicati:
+Il flusso attuale ha **2 problemi critici** che impediscono l'autoplay:
 
-| Componente | Pagina | Tipo |
-|---|---|---|
-| `AISidebarSlider` | RadioChat | `fixed left-0 top-14 w-80 z-50` |
-| `AISidebarSlider` | ChatLaboratory | `fixed left-0 top-14 w-80 z-50` |
-| `AISidebarSlider` | FunEmail | `fixed left-0 top-14 w-80 z-50` |
-| `AISidebarTrigger` | ChatLaboratory | `fixed left-0 bottom-[12rem] z-40` |
-| `AISidebarTrigger` + Categories trigger | FunEmail | `fixed left-0 z-40` |
-| `CollapsibleCategorySidebar` | FunEmail | `fixed left-0 top-14 w-80 z-50` |
-| `RadioGhostIcons` | RadioChat | `fixed left-0 bottom-8 z-40` |
+### Problema 1: Browser Autoplay Policy
+Quando l'utente invia un messaggio (vocale o testuale), passano ~25 secondi prima che l'orchestrator risponda. Il contesto "user gesture" del browser e' scaduto. La chiamata `audio.play()` nel `RadioAudioPlayerMini` viene silenziosamente bloccata dal browser (il `.catch` logga solo un warning).
 
-## Piano di Implementazione
+**Soluzione**: Pre-creare e "sbloccare" un `HTMLAudioElement` durante il gesto utente (invio messaggio). Salvarlo nel `audioElementRef` condiviso. Quando arriva l'AI response, riutilizzare quell'elemento gia' sbloccato anziche' crearne uno nuovo.
 
-### Fase 1 — Espandere CRMSidebarContext con AI state globale
-Aggiungere al context:
-- `aiSidebarOpen` / `setAiSidebarOpen` — stato globale AI sidebar
-- Cosi' tutte le pagine condividono lo stesso toggle AI senza stato locale
+### Problema 2: Auto-navigazione mancante per nuovi turni
+In `useRadioCarouselNav`, l'auto-selezione del primo AI message funziona solo quando `activeMessageId === ''` (prima volta). Nei turni successivi, `activeMessageId` e' gia' impostato su un messaggio precedente, quindi i nuovi AI messages non vengono auto-selezionati e l'audio non parte.
 
-File: `src/contexts/CRMLayoutContext.tsx`
+**Soluzione**: Quando arrivano nuovi AI messages (dopo un invio dell'utente), auto-navigare all'ultimo messaggio AI ricevuto.
 
-### Fase 2 — AI Sidebar nel footer della CRM sidebar (globale)
-Aggiungere un trigger Sparkles nel footer della sidebar CRM (`CRMLayout.jsx`), visibile su tutte le pagine (anche in stato collapsed `w-16`). Quando cliccato, il contenuto della sidebar CRM mostra `AISidebarSlider` come content-only (senza il suo wrapper `fixed`).
+## Implementazione
 
-File: `src/components/layout/CRMLayout.jsx`, `src/components/ai/AISidebarSlider.tsx`
+### File 1: `src/hooks/useRadioAudioPlayback.ts`
+- Aggiungere funzione `unlockAudioElement()` che crea un `Audio()`, chiama `.play()` con audio vuoto (sblocca il contesto browser), e lo assegna a `audioElementRef`.
+- Questa funzione viene chiamata durante il gesto utente (click invio).
 
-### Fase 3 — Rimuovere AISidebarSlider e AISidebarTrigger dalle 3 pagine
-- **RadioChat.tsx**: Rimuovere import e render di `AISidebarSlider`. L'AI e' ora nel CRM sidebar.
-- **ChatLaboratory.tsx**: Rimuovere `AISidebarSlider`, `AISidebarTrigger` (fixed), e stato locale `aiSidebarOpen`.
-- **FunEmail.tsx**: Rimuovere `AISidebarSlider`, `AISidebarTrigger` (fixed), e stato locale `aiSidebarOpen`.
+### File 2: `src/hooks/useRadioCarouselNav.ts`
+- Aggiungere logica per rilevare nuovi AI messages e auto-navigare ad essi.
+- Tracciare il conteggio precedente di `aiMessages` via ref. Quando aumenta, spostare `activeMessageId` al primo nuovo AI message.
 
-### Fase 4 — FunEmail: Categories sidebar via Portal
-- Wrappare `CollapsibleCategorySidebar` in `SidebarPortal` (come RadioChat e ChatLab)
-- Rimuovere il wrapper `fixed left-0` da `CollapsibleCategorySidebar.tsx`, renderlo content-only
-- Rimuovere il trigger `📬` fixed da FunEmail — l'apertura avviene tramite hamburger CRM
+### File 3: `src/components/radio-chat/RadioAudioPlayerMini.tsx`
+- Modificare per riutilizzare `sharedAudioRef.current` se gia' presente (elemento pre-sbloccato) anziche' creare sempre un nuovo `Audio`.
+- Impostare solo il `src` sull'elemento esistente.
 
-File: `src/pages/FunEmail.tsx`, `src/components/email/smart-inbox/CollapsibleCategorySidebar.tsx`
+### File 4: `src/pages/RadioChat.tsx`
+- Nella funzione `handleSend`, chiamare `unlockAudioElement()` immediatamente (nel contesto del click/gesto) prima dell'`await sendMessage()`.
 
-### Fase 5 — Ghost Icons di RadioChat nel footer sidebar
-- Spostare le 5 icone (AI, Sidebar trigger, FileText, Mic, Keyboard) come quick-actions nel footer della sidebar CRM, visibili solo su `/radio-chat`
-- Renderle visibili anche in stato collapsed (`w-16`) come icone piccole
-- Eliminare `RadioGhostIcons` come componente `fixed left-0` separato
+### File 5: `src/components/radio-chat/RadioAudioPlayer.tsx`
+- Stessa modifica del MiniPlayer: riutilizzare `sharedAudioRef.current` se gia' pre-sbloccato.
 
-File: `src/components/layout/CRMLayout.jsx`, `src/components/radio-chat/RadioGhostIcons.tsx`, `src/pages/RadioChat.tsx`
+## NON TOCCARE
+- Sidebar, layout, CRMLayout
+- Carousel 3D, Three.js
+- Edge functions, database
+- Contenuto sidebar, routing
 
-### File Modificati
-
-| File | Azione |
-|---|---|
-| `src/contexts/CRMLayoutContext.tsx` | Aggiungere `aiSidebarOpen` state |
-| `src/components/layout/CRMLayout.jsx` | AI trigger footer + ghost icons slot per radio-chat |
-| `src/components/ai/AISidebarSlider.tsx` | Aggiungere modalita' content-only (senza fixed wrapper) |
-| `src/pages/RadioChat.tsx` | Rimuovere AISidebarSlider, ghost icons diventa sidebar footer |
-| `src/pages/ChatLaboratory.tsx` | Rimuovere AISidebarSlider + AISidebarTrigger fixed |
-| `src/pages/FunEmail.tsx` | Rimuovere AISidebarSlider + trigger fixed, usare SidebarPortal per categories |
-| `src/components/email/smart-inbox/CollapsibleCategorySidebar.tsx` | Content-only (rimuovere fixed wrapper) |
-| `src/components/radio-chat/RadioGhostIcons.tsx` | Convertire da fixed a sidebar footer content |
-
-### NON TOCCARE
-- Header CRM (hamburger, logo, toolbar)
-- Contenuto interno delle sidebar (liste conversazioni, tab agenti, categorie email)
-- Carousel 3D, audio, zoom
-- `AISidebarSliderUnified.tsx` (componente separato gia' in App.tsx)
-
-### Rischio
-**Medio-Alto** — Tocca 3 pagine e il layout globale. Backup obbligatorio. Test end-to-end su tutte le pagine dopo implementazione.
+## Rischio
+**Basso** — Modifica isolata al flusso audio. Nessun impatto su layout o dati.
 

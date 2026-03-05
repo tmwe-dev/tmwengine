@@ -1,47 +1,100 @@
 
 
-# Piano: Fix Audio Autoplay nel Carousel Radio Chat
+# Piano: Fix Bug Critici + Miglioramenti Sistema Radio Chat
 
-## Diagnosi
+## FASE 1 — BUG CRITICI (Priorita' massima)
 
-Il flusso attuale ha **2 problemi critici** che impediscono l'autoplay:
+### 1.1 `globalPrompt` ignorato in `buildSystemPrompt`
+**File**: `supabase/functions/radio-chat-orchestrator/lib/prompt-builder.ts`
+**Bug**: Il parametro `globalPrompt` viene destructured (riga 25) ma mai usato nel corpo della funzione. Il prompt globale selezionato dall'utente non viene mai iniettato nel system prompt finale.
+**Fix**: Aggiungere `globalPrompt` come sezione iniziale del `composedPrompt`, dopo il dynamic word limit e prima del base content:
+```
+composedPrompt += '=== ISTRUZIONI GLOBALI ===\n';
+composedPrompt += globalPrompt + '\n\n';
+```
 
-### Problema 1: Browser Autoplay Policy
-Quando l'utente invia un messaggio (vocale o testuale), passano ~25 secondi prima che l'orchestrator risponda. Il contesto "user gesture" del browser e' scaduto. La chiamata `audio.play()` nel `RadioAudioPlayerMini` viene silenziosamente bloccata dal browser (il `.catch` logga solo un warning).
+### 1.2 Auth check mancante nell'orchestrator
+**File**: `supabase/functions/radio-chat-orchestrator/index.ts`
+**Bug**: L'edge function usa `SUPABASE_SERVICE_ROLE_KEY` senza verificare l'identita' del chiamante. Chiunque con l'anon key puo' invocare l'orchestrator.
+**Fix**: Aggiungere validazione JWT all'inizio della funzione, dopo il CORS check:
+- Estrarre `Authorization` header
+- Validare con `supabase.auth.getUser(token)`
+- Ritornare 401 se non autenticato
+- Continuare a usare `SERVICE_ROLE_KEY` per le operazioni DB interne
 
-**Soluzione**: Pre-creare e "sbloccare" un `HTMLAudioElement` durante il gesto utente (invio messaggio). Salvarlo nel `audioElementRef` condiviso. Quando arriva l'AI response, riutilizzare quell'elemento gia' sbloccato anziche' crearne uno nuovo.
+### 1.3 Proprieta' `startTime` vs `callStartTime` mismatch
+**File**: `supabase/functions/radio-chat-orchestrator/lib/orchestration-loop.ts`
+**Bug**: Riga 103 passa `callStartTime` come proprieta', ma `AICallParams` definisce `startTime`. Il campo `callStartTime` non esiste nell'interfaccia — il provider lo riceve ma lo ignora e usa `startTime` (che e' `undefined`), producendo `duration: NaN`.
+**Fix**: Cambiare `callStartTime` → `startTime` nelle 3 chiamate ai provider (righe 103, 107, 111).
 
-### Problema 2: Auto-navigazione mancante per nuovi turni
-In `useRadioCarouselNav`, l'auto-selezione del primo AI message funziona solo quando `activeMessageId === ''` (prima volta). Nei turni successivi, `activeMessageId` e' gia' impostato su un messaggio precedente, quindi i nuovi AI messages non vengono auto-selezionati e l'audio non parte.
+---
 
-**Soluzione**: Quando arrivano nuovi AI messages (dopo un invio dell'utente), auto-navigare all'ultimo messaggio AI ricevuto.
+## FASE 2 — BUG AD ALTO IMPATTO
 
-## Implementazione
+### 2.1 `isComposedPrompt` detection fragile
+**File**: `supabase/functions/radio-chat-orchestrator/index.ts` (righe 68-70)
+**Bug**: La detection si basa su euristica testuale (`length > 500 && includes('IDENTITA:')`) che puo' facilmente dare falsi positivi/negativi.
+**Fix**: Usare il campo `composed_prompt_id` dalla conversazione (gia' caricato in `config-loader.ts`). Aggiungere un flag `isComposedPrompt` nel return di `getCachedPrompts` che si basa su `conv?.composed_prompt_id != null`.
 
-### File 1: `src/hooks/useRadioAudioPlayback.ts`
-- Aggiungere funzione `unlockAudioElement()` che crea un `Audio()`, chiama `.play()` con audio vuoto (sblocca il contesto browser), e lo assegna a `audioElementRef`.
-- Questa funzione viene chiamata durante il gesto utente (click invio).
+### 2.2 `max_tokens` incoerenti tra provider
+**File**: Provider files
+**Stato attuale**:
+- Claude: `max_tokens: 800`
+- ChatGPT (Lovable Gateway): `max_completion_tokens: 1200`
+- ChatGPT (Direct): `max_tokens: 200` (troppo basso!)
+- Gemini: `max_tokens: 200` (troppo basso!)
 
-### File 2: `src/hooks/useRadioCarouselNav.ts`
-- Aggiungere logica per rilevare nuovi AI messages e auto-navigare ad essi.
-- Tracciare il conteggio precedente di `aiMessages` via ref. Quando aumenta, spostare `activeMessageId` al primo nuovo AI message.
+**Fix**: Normalizzare a `800` per tutti i provider. Iniettare il valore come parametro dal loop, non hardcoded in ogni provider.
 
-### File 3: `src/components/radio-chat/RadioAudioPlayerMini.tsx`
-- Modificare per riutilizzare `sharedAudioRef.current` se gia' presente (elemento pre-sbloccato) anziche' creare sempre un nuovo `Audio`.
-- Impostare solo il `src` sull'elemento esistente.
+### 2.3 Memory leak Three.js nel carousel
+**File**: `src/components/radio-chat/RadioCarousel3D.tsx`
+**Bug**: `renderedMessagesRef` non viene mai svuotato quando si cambia conversazione. Le texture vecchie restano in memoria.
+**Fix**: Aggiungere cleanup nel return del useEffect di inizializzazione slots e resettare `renderedMessagesRef` quando cambiano i messaggi in modo significativo (conversazione diversa).
 
-### File 4: `src/pages/RadioChat.tsx`
-- Nella funzione `handleSend`, chiamare `unlockAudioElement()` immediatamente (nel contesto del click/gesto) prima dell'`await sendMessage()`.
+---
 
-### File 5: `src/components/radio-chat/RadioAudioPlayer.tsx`
-- Stessa modifica del MiniPlayer: riutilizzare `sharedAudioRef.current` se gia' pre-sbloccato.
+## FASE 3 — MIGLIORAMENTI STRUTTURALI
+
+### 3.1 `SMART_PRIORITY` piu' intelligente
+**File**: `supabase/functions/radio-chat-orchestrator/lib/agent-selector.ts`
+**Problema**: Usa solo `msgLength` come criterio, che non ha correlazione con la complessita' semantica.
+**Fix**: Aggiungere keyword analysis (domande tecniche → Claude, creativita' → GPT, fatti rapidi → Gemini) come layer aggiuntivo. Mantenere length come fallback.
+
+### 3.2 Aggiungere `maxTokens` parametrico ai provider
+**File**: `ai-provider-types.ts` + tutti i provider
+**Fix**: Aggiungere `maxTokens?: number` a `AICallParams`. Usarlo nei provider con fallback al valore attuale. L'orchestration loop lo passa dal config.
+
+### 3.3 `collapseConsecutiveMessages` non gestisce assistant consecutivi
+**File**: `supabase/functions/radio-chat-orchestrator/lib/utils.ts`
+**Bug**: Riga 82 collassa solo messaggi `user` consecutivi, ma Claude richiede alternanza stretta user/assistant. Se ci sono 2 assistant consecutivi (es. da turni precedenti), l'API Claude puo' rifiutare la request.
+**Fix**: Estendere il collapsing anche ai messaggi `assistant` consecutivi.
+
+---
+
+## SEQUENZA DI IMPLEMENTAZIONE
+
+```text
+Step  File                                    Rischio  Dipendenze
+────  ──────────────────────────────────────  ───────  ──────────
+1     prompt-builder.ts (globalPrompt fix)    Basso    Nessuna
+2     orchestration-loop.ts (startTime fix)   Basso    Nessuna
+3     index.ts (auth check)                   Medio    Nessuna
+4     config-loader.ts (isComposed flag)      Basso    Step 1
+5     index.ts (isComposed refactor)          Basso    Step 4
+6     Provider files (max_tokens unify)       Basso    Nessuna
+7     utils.ts (collapse assistant msgs)      Basso    Nessuna
+8     RadioCarousel3D.tsx (memory cleanup)    Basso    Nessuna
+9     agent-selector.ts (SMART_PRIORITY)      Medio    Nessuna
+```
 
 ## NON TOCCARE
-- Sidebar, layout, CRMLayout
-- Carousel 3D, Three.js
-- Edge functions, database
-- Contenuto sidebar, routing
+- CRMLayout, sidebar, routing
+- RadioAudioPlayer, RadioAudioPlayerMini (fix audio recente)
+- useRadioCarouselNav (fix recente)
+- Database schema
+- Componenti UI non citati
 
-## Rischio
-**Basso** — Modifica isolata al flusso audio. Nessun impatto su layout o dati.
+## BACKUP RICHIESTI
+- `index.ts` → `index-backup-pre-auth.ts`
+- `prompt-builder.ts` → gia' presente backup precedente
 

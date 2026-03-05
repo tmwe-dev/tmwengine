@@ -48,19 +48,29 @@ export const RadioAudioPlayerMini = ({
   }, [onPlayEnd, onPlayStart]);
 
   useEffect(() => {
-    // Capture previous audio BEFORE creating new one (for guard check)
-    const previousAudio = sharedAudioRef?.current;
-
-    const audio = new Audio(audioUrl);
+    // Reuse pre-unlocked audio element if available, otherwise create new
+    let audio: HTMLAudioElement;
+    const preUnlocked = sharedAudioRef?.current;
+    
+    if (preUnlocked && (!preUnlocked.src || preUnlocked.src === '' || preUnlocked.src === window.location.href)) {
+      // Reuse the pre-unlocked element (already authorized by browser gesture)
+      console.log(`🔄 [Mini Player] Reusing pre-unlocked audio element for: ${messageId}`);
+      audio = preUnlocked;
+      audio.src = audioUrl;
+    } else if (preUnlocked && !preUnlocked.paused) {
+      // Another audio is playing, create new but don't autoplay
+      audio = new Audio(audioUrl);
+    } else {
+      audio = new Audio(audioUrl);
+      if (sharedAudioRef) {
+        sharedAudioRef.current = audio;
+      }
+    }
+    
     audioRef.current = audio;
 
-    // Register in shared ref for centralized control
-    if (sharedAudioRef) {
-      sharedAudioRef.current = audio;
-    }
-
     // Guard: don't autoplay if another audio is already playing
-    const anotherPlaying = previousAudio && !previousAudio.paused;
+    const anotherPlaying = preUnlocked && preUnlocked !== audio && !preUnlocked.paused;
     if (autoPlay && canAutoPlay && isAudioEnabled && !anotherPlaying) {
       console.log(`🔊 [Mini Player] Autoplay: ${messageId}`);
       audio.play()

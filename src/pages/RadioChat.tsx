@@ -64,7 +64,7 @@ const RadioChatContent = () => {
   });
   const { generateSummary, generateFullReport } = useRadioSummary(loadConversations);
   const {
-    isAudioPlaying, currentPlayingId, audioElementRef, handleAudioStart, handleAudioEnd, handleAudioError, stopCurrentAudio
+    isAudioPlaying, currentPlayingId, audioElementRef, handleAudioStart, handleAudioEnd, handleAudioError, stopCurrentAudio, unlockAudioElement
   } = useRadioAudioPlayback();
   const {
     activeMessageId, setActiveMessageId, currentMessage, aiMessages,
@@ -117,11 +117,13 @@ const RadioChatContent = () => {
   // Handle send
   const handleSend = useCallback(async () => {
     if (!inputValue.trim() || isSending) return;
+    // 🔓 Unlock audio element NOW during user gesture, before async work
+    unlockAudioElement();
     const msg = inputValue;
     setInputValue('');
     ui.setInputVisible(false);
     await sendMessage(msg);
-  }, [inputValue, isSending, sendMessage, ui]);
+  }, [inputValue, isSending, sendMessage, ui, unlockAudioElement]);
 
   // Unified audio callbacks for Tabs/Messages views
   const handleTabsAudioStart = useCallback((messageId: string) => {

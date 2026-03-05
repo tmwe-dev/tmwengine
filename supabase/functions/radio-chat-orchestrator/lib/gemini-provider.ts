@@ -18,7 +18,7 @@ export async function callGemini(
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        max_tokens: 200,
+        max_tokens: 800,
         temperature: 0.7,
         messages: conversationHistory
       })

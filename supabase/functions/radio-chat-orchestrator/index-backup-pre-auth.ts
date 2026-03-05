@@ -19,31 +19,6 @@ serve(async (req) => {
   }
 
   try {
-    // ============ AUTH CHECK (FIX 1.2) ============
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: missing token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const anonClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    console.log(`✅ Auth OK: user ${claimsData.claims.sub}`);
-
     const { conversationId, userMessage, participants, cachedPrompts } = await req.json();
 
     // ============ VALIDATION ============
@@ -90,8 +65,9 @@ serve(async (req) => {
 
     const globalSystemPrompt = finalCachedPrompts.globalPrompt;
     const baseContent = finalCachedPrompts.baseSections;
-    // ✅ FIX 2.1: Detection basata su composed_prompt_id (non euristica testuale)
-    const isComposedPrompt = finalCachedPrompts.isComposedPrompt ?? false;
+    const isComposedPrompt = globalSystemPrompt?.length > 500 &&
+      !globalSystemPrompt.startsWith('Sei un assistente') &&
+      globalSystemPrompt.includes('IDENTITÀ:');
 
     const historyMessages = formatHistoryMessages(recentMessages);
     const activeParticipants = participants.filter((p: any) => p.is_active);

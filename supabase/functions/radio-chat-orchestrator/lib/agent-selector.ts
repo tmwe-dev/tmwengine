@@ -149,26 +149,46 @@ async function selectSmartPriority(
   supabaseClient: any,
   conversationId: string
 ): Promise<number> {
+  const userMsg = context.userMessage.toLowerCase();
   const msgLength = context.userMessage.length;
   
-  // Logica basata su lunghezza e complessità messaggio
+  // ✅ FIX 3.1: Keyword-based semantic analysis (priority over length)
+  const semanticPatterns: Array<{ keywords: string[]; agent: string; reason: string }> = [
+    // Claude → reasoning, analisi, sintesi, codice
+    { keywords: ['analizza', 'ragiona', 'confronta', 'sintetizza', 'riassumi', 'codice', 'errore', 'debug', 'perché', 'why', 'explain', 'reasoning', 'logica'], agent: 'claude', reason: 'semantic-reasoning' },
+    // GPT → creatività, scrittura, brainstorming
+    { keywords: ['scrivi', 'crea', 'inventa', 'storia', 'idea', 'brainstorm', 'creativo', 'proponi', 'suggerisci', 'write', 'create', 'imagine', 'design'], agent: 'gpt', reason: 'semantic-creative' },
+    // Gemini → fatti rapidi, ricerca, dati
+    { keywords: ['cos\'è', 'cosa è', 'definisci', 'quanto', 'quando', 'dove', 'chi è', 'cerca', 'trova', 'what is', 'how much', 'rapido', 'veloce'], agent: 'gemini', reason: 'semantic-factual' },
+  ];
+
+  for (const pattern of semanticPatterns) {
+    const matchCount = pattern.keywords.filter(kw => userMsg.includes(kw)).length;
+    if (matchCount >= 1) {
+      const agentIndex = participants.findIndex(p => 
+        p.type.toLowerCase().includes(pattern.agent)
+      );
+      if (agentIndex !== -1) {
+        console.log(`🧠 [SMART_PRIORITY] Semantic match: ${pattern.reason} (${matchCount} keywords) → ${participants[agentIndex].name}`);
+        return agentIndex;
+      }
+    }
+  }
+
+  // Fallback: length-based heuristic
   let targetAgentName = '';
   
   if (msgLength < 50) {
-    // Messaggi brevi → Gemini (fast)
     targetAgentName = 'gemini';
-    console.log(`⚡ [SMART_PRIORITY] Messaggio breve (${msgLength} char) → Gemini`);
+    console.log(`⚡ [SMART_PRIORITY] Fallback: breve (${msgLength} char) → Gemini`);
   } else if (msgLength < 200) {
-    // Messaggi medi → GPT
     targetAgentName = 'gpt';
-    console.log(`💬 [SMART_PRIORITY] Messaggio medio (${msgLength} char) → GPT`);
+    console.log(`💬 [SMART_PRIORITY] Fallback: medio (${msgLength} char) → GPT`);
   } else {
-    // Messaggi lunghi → Claude (reasoning)
     targetAgentName = 'claude';
-    console.log(`🧠 [SMART_PRIORITY] Messaggio lungo (${msgLength} char) → Claude`);
+    console.log(`🧠 [SMART_PRIORITY] Fallback: lungo (${msgLength} char) → Claude`);
   }
   
-  // Trova agente corrispondente per tipo (chatgpt, gemini, claude)
   const agentIndex = participants.findIndex(p => 
     p.type.toLowerCase().includes(targetAgentName)
   );
@@ -177,7 +197,6 @@ async function selectSmartPriority(
     return agentIndex;
   }
   
-  // Fallback: primo agente disponibile
   console.warn(`⚠️ [SMART_PRIORITY] Agente ${targetAgentName} non trovato, uso primo disponibile`);
   return 0;
 }

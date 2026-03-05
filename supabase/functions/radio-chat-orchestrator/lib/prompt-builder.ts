@@ -40,6 +40,12 @@ export function buildSystemPrompt(params: PromptParams): string {
   if (params.dynamicWordLimit) {
     composedPrompt += params.dynamicWordLimit + '\n\n';
   }
+
+  // ✅ FIX 1.1: Inietta globalPrompt (prima ignorato)
+  if (globalPrompt) {
+    composedPrompt += '=== ISTRUZIONI GLOBALI ===\n';
+    composedPrompt += globalPrompt + '\n\n';
+  }
   
   // Add BASE sections
   composedPrompt += '=== CONTESTO BASE ===\n';

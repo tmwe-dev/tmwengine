@@ -100,15 +100,15 @@ export async function runAgentLoop(params: OrchestratorLoopParams): Promise<Agen
 
     try {
       if (currentAgent.type === 'anthropic' || currentAgent.type === 'claude') {
-        const result = await callClaude({ apiKey: anthropicConfig.apiKey, model: anthropicConfig.model, conversationHistory, callStartTime });
+        const result = await callClaude({ apiKey: anthropicConfig.apiKey, model: anthropicConfig.model, conversationHistory, startTime: callStartTime });
         aiResponse = result.content;
         rawResponse = result;
       } else if (currentAgent.type === 'openai' || currentAgent.type === 'chatgpt') {
-        const result = await callChatGPT({ lovableApiKey: LOVABLE_API_KEY, openaiConfig, conversationHistory, callStartTime });
+        const result = await callChatGPT({ lovableApiKey: LOVABLE_API_KEY, openaiConfig, conversationHistory, startTime: callStartTime });
         aiResponse = result.content;
         rawResponse = result;
       } else if (currentAgent.type === 'lovable_ai' || currentAgent.type === 'gemini') {
-        const result = await callGemini({ lovableApiKey: LOVABLE_API_KEY, conversationHistory, callStartTime });
+        const result = await callGemini({ lovableApiKey: LOVABLE_API_KEY, conversationHistory, startTime: callStartTime });
         aiResponse = result.content;
         rawResponse = result;
       } else {

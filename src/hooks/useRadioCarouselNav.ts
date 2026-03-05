@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { RadioMessage } from '@/types/radio';
 
 export const useRadioCarouselNav = (
@@ -17,6 +17,9 @@ export const useRadioCarouselNav = (
 
   const firstAiMessageId = useMemo(() => aiMessages.length > 0 ? aiMessages[0].id : '', [aiMessages]);
 
+  // Track previous AI message count to detect new arrivals
+  const prevAiCountRef = useRef(0);
+
   // Auto-set first AI message
   useEffect(() => {
     if (firstAiMessageId && !activeMessageId) {
@@ -24,10 +27,28 @@ export const useRadioCarouselNav = (
     }
   }, [firstAiMessageId, activeMessageId]);
 
+  // Auto-navigate to newest AI message when new ones arrive
+  useEffect(() => {
+    const currentCount = aiMessages.length;
+    const prevCount = prevAiCountRef.current;
+    
+    if (currentCount > prevCount && prevCount > 0) {
+      // New AI message(s) arrived — navigate to the first new one
+      const newMessage = aiMessages[prevCount]; // first new message
+      if (newMessage) {
+        console.log(`🎯 [CarouselNav] New AI message detected, auto-navigating to: ${newMessage.id.substring(0, 8)}`);
+        setActiveMessageId(newMessage.id);
+      }
+    }
+    
+    prevAiCountRef.current = currentCount;
+  }, [aiMessages]);
+
   // BUG 4 fix: Reset when aiMessages becomes empty (new conversation)
   useEffect(() => {
     if (aiMessages.length === 0 && activeMessageId !== '') {
       setActiveMessageId('');
+      prevAiCountRef.current = 0;
     }
   }, [aiMessages.length, activeMessageId]);
 
@@ -36,6 +57,7 @@ export const useRadioCarouselNav = (
   // BUG 4 fix: Expose resetNavigation
   const resetNavigation = useCallback(() => {
     setActiveMessageId('');
+    prevAiCountRef.current = 0;
   }, []);
 
   const handleCarouselAudioEnd = useCallback(() => {

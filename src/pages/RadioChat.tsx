@@ -31,6 +31,7 @@ import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
 import { RadioCarouselAudioPlayerWrapper } from '@/components/radio-chat/RadioCarouselAudioPlayerWrapper';
 import { RadioAudioControls } from '@/components/radio-chat/RadioAudioControls';
 import { SidebarPortal } from '@/components/layout/SidebarPortal';
+import { SidebarFooterPortal } from '@/components/layout/SidebarFooterPortal';
 
 const RadioChat = () => (
   <RadioAudioPlayerProvider>
@@ -184,7 +185,9 @@ const RadioChatContent = () => {
           </SidebarPortal>
         }
         ghostIcons={
-          <RadioGhostIcons currentMessage={currentMessage} />
+          <SidebarFooterPortal>
+            <RadioGhostIcons currentMessage={currentMessage} />
+          </SidebarFooterPortal>
         }
         mainContent={
           <>

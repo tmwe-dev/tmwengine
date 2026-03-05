@@ -71,9 +71,9 @@ export async function callChatGPT(
 
       const body: any = { model: modelName, messages };
       if (isNewerModel) {
-        body.max_completion_tokens = 200;
+        body.max_completion_tokens = 800;
       } else {
-        body.max_tokens = 200;
+        body.max_tokens = 800;
         body.temperature = 0.7;
       }
 

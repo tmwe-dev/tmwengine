@@ -110,7 +110,18 @@ export const RadioCarousel3D = ({
     };
 
     requestAnimationFrame(checkAndInit);
-    return () => { hasInitializedSlotsRef.current = false; };
+    return () => {
+      hasInitializedSlotsRef.current = false;
+      // ✅ FIX 2.3: Cleanup texture memory on unmount
+      meshesRef.current.forEach((mesh) => {
+        const material = mesh.material as THREE.MeshBasicMaterial;
+        if (material.map) {
+          material.map.dispose();
+          material.map = null;
+        }
+      });
+      renderedMessagesRef.current.clear();
+    };
   }, []);
 
   // Populate messages into slots

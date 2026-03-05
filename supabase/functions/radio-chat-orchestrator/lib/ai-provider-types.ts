@@ -6,6 +6,7 @@
 export interface AICallParams {
   conversationHistory: any[];
   startTime: number;
+  maxTokens?: number;
 }
 
 export interface AICallResult {

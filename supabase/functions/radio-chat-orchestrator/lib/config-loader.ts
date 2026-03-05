@@ -11,6 +11,7 @@ interface PromptCache {
   conversationStyles: Map<string, string>;
   orchestratorRules: string;
   conversationPersonality: string | null;
+  isComposedPrompt: boolean;
   timestamp: number;
 }
 
@@ -27,6 +28,7 @@ export async function getCachedPrompts(supabase: any, conversationId?: string): 
   // ✅ PRIORITY 1: Check if conversation uses a COMPOSED PROMPT (ready prompt)
   let conversationPrompt: string | null = null;
   let conversationPersonality: string | null = null;
+  let isComposedPrompt = false;
   
   if (conversationId) {
     const { data: conv } = await supabase
@@ -45,6 +47,7 @@ export async function getCachedPrompts(supabase: any, conversationId?: string): 
       
       if (composedPrompt?.content) {
         conversationPrompt = composedPrompt.content;
+        isComposedPrompt = true;
         console.log(`🎯 [PROMPT] Usando PROMPT PRONTO per conversazione ${conversationId}`);
       }
     }
@@ -128,6 +131,7 @@ export async function getCachedPrompts(supabase: any, conversationId?: string): 
       ),
       orchestratorRules: orchestratorData.data?.content || 'Leggi l\'ultimo messaggio. Se contiene una DOMANDA o RICHIESTA verso altri, rispondi TRUE. Altrimenti FALSE.',
       conversationPersonality: null,
+      isComposedPrompt: false,
       timestamp: now
     };
     
@@ -138,7 +142,8 @@ export async function getCachedPrompts(supabase: any, conversationId?: string): 
   const finalCache = {
     ...promptCache,
     globalPrompt: conversationPrompt || promptCache.globalPrompt,
-    conversationPersonality: conversationPersonality
+    conversationPersonality: conversationPersonality,
+    isComposedPrompt: isComposedPrompt
   };
   
   if (conversationPrompt) {

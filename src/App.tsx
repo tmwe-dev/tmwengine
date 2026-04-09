@@ -69,9 +69,7 @@ import PromptSystemManager from "./pages/PromptSystemManager";
 import FunEmail from "./pages/FunEmail";
 import EmailHub from "./pages/EmailHub";
 import ApiFunctionsReference from "./pages/ApiFunctionsReference";
-import { SingleMailImporter } from "./components/email/SingleMailImporter";
-import SingleFast from "./pages/SingleFast";
-import DualDownload from "./pages/DualDownload";
+import EmailDownloadPage from "./pages/EmailDownloadPage";
 import EmailDebugTester from "./pages/EmailDebugTester";
 import AICommunicationHub from "./pages/AICommunicationHub";
 
@@ -318,24 +316,10 @@ const App = () => {
                 </CRMLayout>
               </ProtectedRoute>
             } />
-            <Route path="/single-mail" element={
+            <Route path="/email-download" element={
               <ProtectedRoute>
                 <CRMLayout>
-                  <SingleMailImporter />
-                </CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/single-fast" element={
-              <ProtectedRoute>
-                <CRMLayout>
-                  <SingleFast />
-                </CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dual-download" element={
-              <ProtectedRoute>
-                <CRMLayout>
-                  <DualDownload />
+                  <EmailDownloadPage />
                 </CRMLayout>
               </ProtectedRoute>
             } />

@@ -7,16 +7,16 @@ import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { X, Menu, Brain, ArrowLeft, Bug, Sparkles, Clock } from 'lucide-react';
+import { X, Menu, Brain, ArrowLeft, Bug, Sparkles, Clock, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
+
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
 import { FunEmailChat } from '@/components/email/FunEmailChat';
-import { FunEmailGlobalStats } from '@/components/email/FunEmailGlobalStats';
+
 import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { EmailManagementTab } from '@/components/email/EmailManagementTab';
 import { EmailGroupingSuggestionsTab } from '@/components/email/EmailGroupingSuggestionsTab';
-import { QuickEmailDownloader } from '@/components/email/QuickEmailDownloader';
+
 import { EmailIntegrityChecker } from '@/components/email/EmailIntegrityChecker';
 import { TmweBackendDebugger } from '@/components/email/TmweBackendDebugger';
 import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartInboxTabIntelligent';
@@ -29,9 +29,7 @@ import { AIGeneratedActivitiesPanel } from '@/components/email/automation/AIGene
 import { AutoExecuteConfigDialog } from '@/components/email/automation/AutoExecuteConfigDialog';
 import { LearningDashboard } from '@/components/email/automation/LearningDashboard';
 import { EmailCountDiagnostics } from '@/components/email/EmailCountDiagnostics';
-import { SingleMailImporter } from '@/components/email/SingleMailImporter';
 import { VerifyFolderNames } from '@/components/email/debug/VerifyFolderNames';
-import { LucaDownloadTester } from '@/components/email/LucaDownloadTester';
 import { ToolsDropdownMenu } from '@/components/email/ToolsDropdownMenu';
 import { TMWEMigrationAdmin } from '@/components/email/admin/TMWEMigrationAdmin';
 import { ZeroSyncTestPanel } from '@/components/email/testing/ZeroSyncTestPanel';
@@ -44,15 +42,9 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions' | 'learning' | 'ai-activities' | 'migration' | 'zero-sync-test' | 'zero-sync'>('management');
+  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'pending-actions' | 'learning' | 'ai-activities' | 'migration' | 'zero-sync-test' | 'zero-sync'>('management');
   const [automationsSubView, setAutomationsSubView] = useState<'dashboard' | 'pending' | 'learning' | 'ai-activities'>('dashboard');
-  const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [isAutoConfigOpen, setIsAutoConfigOpen] = useState(false);
-  const [globalStats, setGlobalStats] = useState({
-    totalDB: 0,
-    folders: [] as { name: string; count: number }[],
-  });
-  const [isDownloadActive, setIsDownloadActive] = useState(false);
   
   // AI Sidebar globale state - now from context
   const { aiSidebarOpen, setAiSidebarOpen, menuOpen: crmMenuOpen, setMenuOpen: setCrmMenuOpen } = useCRMLayout();
@@ -89,7 +81,7 @@ const FunEmail = () => {
   // Sincronizza currentView con query param "view" dal CRMLayout
   useEffect(() => {
     const viewParam = searchParams.get('view');
-    if (viewParam && ['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail', 'migration', 'zero-sync-test'].includes(viewParam)) {
+    if (viewParam && ['integrity', 'debugger', 'diagnostics', 'migration', 'zero-sync-test'].includes(viewParam)) {
       setCurrentView(viewParam as typeof currentView);
     }
   }, [searchParams]);
@@ -273,7 +265,7 @@ const FunEmail = () => {
     }
   };
 
-  const isToolView = ['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail', 'migration', 'zero-sync-test'].includes(currentView);
+  const isToolView = ['integrity', 'debugger', 'diagnostics', 'migration', 'zero-sync-test'].includes(currentView);
 
   return (
     <PageLayout 
@@ -313,17 +305,17 @@ const FunEmail = () => {
         <div className="w-full">
           {currentView === 'fun' ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
-              {/* COLONNA SINISTRA: Stats Globali + Downloader + Quick Stats */}
               <div className="lg:col-span-1 space-y-4">
-                <FunEmailGlobalStats
-                  totalDB={globalStats.totalDB}
-                  folders={globalStats.folders}
-                />
-                <FunEmailDownloader onStatsUpdate={setGlobalStats} />
                 <FunEmailQuickStats />
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <Button onClick={() => navigate('/email-download')} className="w-full gap-2">
+                      <Download className="h-4 w-4" />
+                      Vai a Download Email
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
-
-              {/* COLONNA DESTRA: Chat AI */}
               <div className="lg:col-span-2">
                 <Card className="h-[calc(100vh-12rem)]">
                   <CardHeader className="flex flex-row items-center justify-between">
@@ -344,36 +336,10 @@ const FunEmail = () => {
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)]">
               <EmailGroupingSuggestionsTab />
             </GradientBackground>
-          ) : currentView === 'quick-download' ? (
-            <div className="p-6">
-              <QuickEmailDownloader
-                preSelectedFolders={preSelectedFolders}
-                onDownloadComplete={(stats) => {
-                  console.log('✅ Quick download completato:', stats);
-                  setPreSelectedFolders([]);
-                }}
-                onStatsUpdate={(stats) => {
-                  console.log('📊 Stats aggiornate:', stats);
-                }}
-                onDownloadStatusChange={setIsDownloadActive}
-              />
-            </div>
           ) : currentView === 'integrity' ? (
             <div className="p-6">
               <EmailIntegrityChecker 
-                isDownloadActive={isDownloadActive}
-                onRequestDownload={(folderNames) => {
-              console.log('🎯 [FunEmail] Pre-selecting folders FIRST:', folderNames);
-              
-              // ✅ Step 1: Setta folders PRIMA
-              setPreSelectedFolders(folderNames);
-              
-              // ✅ Step 2: Delay per propagazione state
-              setTimeout(() => {
-                console.log('🎯 [FunEmail] Now switching to Quick Download view');
-                setCurrentView('quick-download');
-              }, 50);
-            }}
+                onRequestDownload={() => navigate('/email-download')}
               />
             </div>
           ) : currentView === 'debugger' ? (
@@ -383,13 +349,6 @@ const FunEmail = () => {
           ) : currentView === 'diagnostics' ? (
             <div className="p-6 max-w-4xl mx-auto">
               <EmailCountDiagnostics />
-            </div>
-          ) : currentView === 'single-mail' ? (
-            <div className="p-6 space-y-4">
-              <LucaDownloadTester />
-              <VerifyFolderNames />
-              {/* Force rebuild - SingleMailImporter - 2025-11-05 07:55 */}
-              <SingleMailImporter />
             </div>
           ) : currentView === 'migration' ? (
             <div className="p-6 max-w-4xl mx-auto">

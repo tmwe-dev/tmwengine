@@ -4142,6 +4142,57 @@ export type Database = {
         }
         Relationships: []
       }
+      email_sync_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_folder: string | null
+          downloaded_count: number
+          error_count: number
+          error_message: string | null
+          folders: string[]
+          id: string
+          skipped_count: number
+          started_at: string
+          status: string
+          total_to_download: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_folder?: string | null
+          downloaded_count?: number
+          error_count?: number
+          error_message?: string | null
+          folders?: string[]
+          id?: string
+          skipped_count?: number
+          started_at?: string
+          status?: string
+          total_to_download?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_folder?: string | null
+          downloaded_count?: number
+          error_count?: number
+          error_message?: string | null
+          folders?: string[]
+          id?: string
+          skipped_count?: number
+          started_at?: string
+          status?: string
+          total_to_download?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_sync_logs: {
         Row: {
           completed_batches: number | null

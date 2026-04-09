@@ -178,23 +178,9 @@ export const siteMapGroups: PageGroup[] = [
         requiresAuth: true
       },
       {
-        title: 'Single Mail Importer',
-        path: '/single-mail',
-        description: 'Importazione singola email da Microsoft Graph',
-        icon: Download,
-        requiresAuth: true
-      },
-      {
-        title: 'Single Fast',
-        path: '/single-fast',
-        description: 'Download veloce email con log real-time e sequenza automatica',
-        icon: Rocket,
-        requiresAuth: true
-      },
-      {
-        title: 'Dual Download',
-        path: '/dual-download',
-        description: 'Download dual-phase email con strategie multiple',
+        title: 'Email Download',
+        path: '/email-download',
+        description: 'Download server-side email con sincronizzazione in background',
         icon: Download,
         requiresAuth: true
       },

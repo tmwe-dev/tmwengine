@@ -28,8 +28,6 @@ import { AutoExecuteConfigDialog } from '@/components/email/automation/AutoExecu
 import { LearningDashboard } from '@/components/email/automation/LearningDashboard';
 import { FunEmailNavigation } from '@/components/email/FunEmailNavigation';
 import { useCRMLayout } from '@/contexts/CRMLayoutContext';
-import { FunEmailNavigation } from '@/components/email/FunEmailNavigation';
-import { useCRMLayout } from '@/contexts/CRMLayoutContext';
 
 const FunEmail = () => {
   const [searchParams] = useSearchParams();

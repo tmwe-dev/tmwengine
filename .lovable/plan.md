@@ -1,100 +1,114 @@
 
 
-# Piano: Fix Bug Critici + Miglioramenti Sistema Radio Chat
+# Piano: Sostituzione Sistema Download Email
 
-## FASE 1 — BUG CRITICI (Priorita' massima)
+## Obiettivo
+Eliminare tutti i motori e pagine di download email dal progetto attuale (4+ pagine, 6+ componenti, 5 strategie) e sostituirli con il sistema server-side del repo `wca-network-navigator`, adattato per usare `email_messages` + `tmwe-api-proxy` esistenti.
 
-### 1.1 `globalPrompt` ignorato in `buildSystemPrompt`
-**File**: `supabase/functions/radio-chat-orchestrator/lib/prompt-builder.ts`
-**Bug**: Il parametro `globalPrompt` viene destructured (riga 25) ma mai usato nel corpo della funzione. Il prompt globale selezionato dall'utente non viene mai iniettato nel system prompt finale.
-**Fix**: Aggiungere `globalPrompt` come sezione iniziale del `composedPrompt`, dopo il dynamic word limit e prima del base content:
-```
-composedPrompt += '=== ISTRUZIONI GLOBALI ===\n';
-composedPrompt += globalPrompt + '\n\n';
-```
+## Cosa viene ELIMINATO
 
-### 1.2 Auth check mancante nell'orchestrator
-**File**: `supabase/functions/radio-chat-orchestrator/index.ts`
-**Bug**: L'edge function usa `SUPABASE_SERVICE_ROLE_KEY` senza verificare l'identita' del chiamante. Chiunque con l'anon key puo' invocare l'orchestrator.
-**Fix**: Aggiungere validazione JWT all'inizio della funzione, dopo il CORS check:
-- Estrarre `Authorization` header
-- Validare con `supabase.auth.getUser(token)`
-- Ritornare 401 se non autenticato
-- Continuare a usare `SERVICE_ROLE_KEY` per le operazioni DB interne
+### Pagine (3 rotte da rimuovere da App.tsx)
+- `/single-mail` → `SingleMailImporter`
+- `/single-fast` → `SingleFast.tsx`
+- `/dual-download` → `DualDownload.tsx`
 
-### 1.3 Proprieta' `startTime` vs `callStartTime` mismatch
-**File**: `supabase/functions/radio-chat-orchestrator/lib/orchestration-loop.ts`
-**Bug**: Riga 103 passa `callStartTime` come proprieta', ma `AICallParams` definisce `startTime`. Il campo `callStartTime` non esiste nell'interfaccia — il provider lo riceve ma lo ignora e usa `startTime` (che e' `undefined`), producendo `duration: NaN`.
-**Fix**: Cambiare `callStartTime` → `startTime` nelle 3 chiamate ai provider (righe 103, 107, 111).
+### Componenti Download (6 file da eliminare)
+- `src/components/email/FunEmailDownloader.tsx` (311 righe)
+- `src/components/email/QuickEmailDownloader.tsx` (392 righe)
+- `src/components/email/SingleMailImporter.tsx` (1090 righe)
+- `src/components/email/DualPhaseDownloader.tsx` (374 righe)
+- `src/components/email/LucaDownloadTester.tsx` (228 righe)
+- `src/components/email/EmailSyncMonitor.tsx` (573 righe)
 
----
+### Engine / Strategie (10 file da eliminare)
+- `src/lib/email/strategies/CleanStrategy.ts`
+- `src/lib/email/strategies/LucaStrategy.ts`
+- `src/lib/email/strategies/MasterStrategy.ts`
+- `src/lib/email/strategies/EdgeSyncStrategy.ts`
+- `src/lib/email/strategies/DownloadStrategy.ts`
+- `src/lib/email/services/EmailDownloadService.ts`
+- `src/lib/email/services/EdgeFunctionSyncService.ts`
+- `src/lib/email/services/UIDRangeService.ts`
+- `src/lib/single-mail-api.ts`
+- `src/lib/parallel-download-controller.ts`
 
-## FASE 2 — BUG AD ALTO IMPATTO
+### Hook da eliminare
+- `src/hooks/useEmailDownload.ts` (466 righe)
+- `src/hooks/useSyncProgress.ts`
 
-### 2.1 `isComposedPrompt` detection fragile
-**File**: `supabase/functions/radio-chat-orchestrator/index.ts` (righe 68-70)
-**Bug**: La detection si basa su euristica testuale (`length > 500 && includes('IDENTITA:')`) che puo' facilmente dare falsi positivi/negativi.
-**Fix**: Usare il campo `composed_prompt_id` dalla conversazione (gia' caricato in `config-loader.ts`). Aggiungere un flag `isComposedPrompt` nel return di `getCachedPrompts` che si basa su `conv?.composed_prompt_id != null`.
+### View da rimuovere da FunEmail.tsx
+- `quick-download`, `single-mail` (e relativi import)
+- Il tab "fun" con `FunEmailDownloader` dentro
 
-### 2.2 `max_tokens` incoerenti tra provider
-**File**: Provider files
-**Stato attuale**:
-- Claude: `max_tokens: 800`
-- ChatGPT (Lovable Gateway): `max_completion_tokens: 1200`
-- ChatGPT (Direct): `max_tokens: 200` (troppo basso!)
-- Gemini: `max_tokens: 200` (troppo basso!)
+## Cosa viene CREATO (dal repo, adattato)
 
-**Fix**: Normalizzare a `800` per tutti i provider. Iniettare il valore come parametro dal loop, non hardcoded in ogni provider.
+### 1. Tabella DB: `email_sync_jobs`
+Migrazione SQL identica al repo. Tabella per gestire job server-side con stati `running/paused/completed/error`, contatori download/skip, realtime abilitato.
 
-### 2.3 Memory leak Three.js nel carousel
-**File**: `src/components/radio-chat/RadioCarousel3D.tsx`
-**Bug**: `renderedMessagesRef` non viene mai svuotato quando si cambia conversazione. Le texture vecchie restano in memoria.
-**Fix**: Aggiungere cleanup nel return del useEffect di inizializzazione slots e resettare `renderedMessagesRef` quando cambiano i messaggi in modo significativo (conversazione diversa).
+### 2. Nuova Pagina: `src/pages/EmailDownloadPage.tsx`
+Portata dal repo con modifiche:
+- Usa `email_messages` invece di `channel_messages` per conteggio
+- Layout adattato per `CRMLayout` + `PageLayout`
+- Rotta: `/email-download` (sostituisce le 3 rotte eliminate)
 
----
+### 3. Nuovi Hook (dal repo, adattati)
+- `src/hooks/useServerSyncJob.ts` — CRUD su `email_sync_jobs`, realtime subscription, polling
+- `src/hooks/useEmailCount.ts` — count su `email_messages` (non `channel_messages`)
+- `src/hooks/useDownloadedEmailsFeed.ts` — ultime 50 email scaricate da `email_messages`, realtime INSERT
 
-## FASE 3 — MIGLIORAMENTI STRUTTURALI
+### 4. Nuovi Componenti (dal repo)
+- `src/components/email/download/DownloadedEmailList.tsx` — lista virtualizzata con `@tanstack/react-virtual`
+- `src/components/email/download/DownloadedEmailPreview.tsx` — preview email con sanitizzazione HTML
 
-### 3.1 `SMART_PRIORITY` piu' intelligente
-**File**: `supabase/functions/radio-chat-orchestrator/lib/agent-selector.ts`
-**Problema**: Usa solo `msgLength` come criterio, che non ha correlazione con la complessita' semantica.
-**Fix**: Aggiungere keyword analysis (domande tecniche → Claude, creativita' → GPT, fatti rapidi → Gemini) come layer aggiuntivo. Mantenere length come fallback.
+### 5. Edge Function: `email-sync-worker`
+Portata dal repo, adattata per chiamare `tmwe-api-proxy` (con handler `tmwe-email-sync-master`) invece di `check-inbox`. Il worker:
+- Trova job `running` in `email_sync_jobs`
+- Chiama `tmwe-api-proxy` per batch di email
+- Aggiorna contatori nel job
+- Loop fino a 50s di wall-clock time
+- Continua anche a browser chiuso (invocato da pg_cron ogni minuto)
 
-### 3.2 Aggiungere `maxTokens` parametrico ai provider
-**File**: `ai-provider-types.ts` + tutti i provider
-**Fix**: Aggiungere `maxTokens?: number` a `AICallParams`. Usarlo nei provider con fallback al valore attuale. L'orchestration loop lo passa dal config.
+## Modifiche a File Esistenti
 
-### 3.3 `collapseConsecutiveMessages` non gestisce assistant consecutivi
-**File**: `supabase/functions/radio-chat-orchestrator/lib/utils.ts`
-**Bug**: Riga 82 collassa solo messaggi `user` consecutivi, ma Claude richiede alternanza stretta user/assistant. Se ci sono 2 assistant consecutivi (es. da turni precedenti), l'API Claude puo' rifiutare la request.
-**Fix**: Estendere il collapsing anche ai messaggi `assistant` consecutivi.
+### `src/App.tsx`
+- Rimuovere import e rotte: `SingleMailImporter`, `SingleFast`, `DualDownload`
+- Aggiungere rotta `/email-download` → `EmailDownloadPage`
 
----
+### `src/pages/FunEmail.tsx`
+- Rimuovere import: `FunEmailDownloader`, `QuickEmailDownloader`, `SingleMailImporter`, `LucaDownloadTester`
+- Rimuovere view `quick-download` e `single-mail` dal switch
+- Rimuovere stato `preSelectedFolders`, `isDownloadActive`, `globalStats`
+- Nel tab "fun", sostituire il downloader con link a `/email-download`
 
-## SEQUENZA DI IMPLEMENTAZIONE
+### `src/components/email/ToolsDropdownMenu.tsx`
+- Cambiare link da `quick-download` e `single-mail` a `/email-download`
+
+## Fasi di Implementazione
 
 ```text
-Step  File                                    Rischio  Dipendenze
-────  ──────────────────────────────────────  ───────  ──────────
-1     prompt-builder.ts (globalPrompt fix)    Basso    Nessuna
-2     orchestration-loop.ts (startTime fix)   Basso    Nessuna
-3     index.ts (auth check)                   Medio    Nessuna
-4     config-loader.ts (isComposed flag)      Basso    Step 1
-5     index.ts (isComposed refactor)          Basso    Step 4
-6     Provider files (max_tokens unify)       Basso    Nessuna
-7     utils.ts (collapse assistant msgs)      Basso    Nessuna
-8     RadioCarousel3D.tsx (memory cleanup)    Basso    Nessuna
-9     agent-selector.ts (SMART_PRIORITY)      Medio    Nessuna
+Fase  Cosa                                          Rischio
+────  ────────────────────────────────────────────  ───────
+1     Migrazione DB: creare email_sync_jobs          Basso
+2     Creare hook adattati (3 file)                  Basso
+3     Creare componenti download (2 file)            Basso
+4     Creare EmailDownloadPage.tsx                   Basso
+5     Creare edge function email-sync-worker         Medio
+6     Aggiornare App.tsx (rotte)                     Basso
+7     Pulire FunEmail.tsx (rimuovere import/view)    Medio
+8     Eliminare 18+ file vecchi                      Basso
+9     Setup pg_cron per email-sync-worker             Basso
 ```
 
 ## NON TOCCARE
-- CRMLayout, sidebar, routing
-- RadioAudioPlayer, RadioAudioPlayerMini (fix audio recente)
-- useRadioCarouselNav (fix recente)
-- Database schema
-- Componenti UI non citati
+- `EmailManagementTab`, `EmailGroupingSuggestionsTab`
+- `SmartInboxTabIntelligent`, `EmailIntegrityChecker`
+- `tmwe-api-proxy` edge function
+- `email_messages` table schema
+- CRMLayout, sidebar, header
+- RadioChat, ChatLaboratory
+- `src/lib/tmwe-email-search-api.ts`
+- `src/components/tmwe/email-fast/*`
 
-## BACKUP RICHIESTI
-- `index.ts` → `index-backup-pre-auth.ts`
-- `prompt-builder.ts` → gia' presente backup precedente
+## Rischio Complessivo
+**Medio** — Elimina molto codice legacy ma la nuova implementazione e' piu' semplice (1 pagina, 1 edge function, 3 hook). Backup obbligatorio prima dell'eliminazione.
 

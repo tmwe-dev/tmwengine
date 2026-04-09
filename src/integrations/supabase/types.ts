@@ -416,6 +416,66 @@ export type Database = {
           },
         ]
       }
+      ai_request_log: {
+        Row: {
+          agent_code: string | null
+          channel: string | null
+          completion_tokens: number | null
+          cost_usd: number | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          intent: string | null
+          latency_ms: number | null
+          metadata: Json | null
+          model: string | null
+          prompt_tokens: number | null
+          routed_to: string | null
+          status: string | null
+          total_tokens: number | null
+          trace_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agent_code?: string | null
+          channel?: string | null
+          completion_tokens?: number | null
+          cost_usd?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          intent?: string | null
+          latency_ms?: number | null
+          metadata?: Json | null
+          model?: string | null
+          prompt_tokens?: number | null
+          routed_to?: string | null
+          status?: string | null
+          total_tokens?: number | null
+          trace_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agent_code?: string | null
+          channel?: string | null
+          completion_tokens?: number | null
+          cost_usd?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          intent?: string | null
+          latency_ms?: number | null
+          metadata?: Json | null
+          model?: string | null
+          prompt_tokens?: number | null
+          routed_to?: string | null
+          status?: string | null
+          total_tokens?: number | null
+          trace_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       attivita: {
         Row: {
           ai_confidence: number | null
@@ -5578,6 +5638,45 @@ export type Database = {
           },
         ]
       }
+      page_events: {
+        Row: {
+          created_at: string | null
+          duration_ms: number | null
+          entity_id: string | null
+          entity_type: string | null
+          event_name: string
+          id: string
+          page: string
+          props: Json | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_ms?: number | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_name: string
+          id?: string
+          page: string
+          props?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_ms?: number | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_name?: string
+          id?: string
+          page?: string
+          props?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       page_system_prompts: {
         Row: {
           attivo: boolean
@@ -5748,6 +5847,316 @@ export type Database = {
           imports?: Json | null
           last_synced_at?: string | null
           line_count?: number
+        }
+        Relationships: []
+      }
+      ra_contacts: {
+        Row: {
+          codice_fiscale: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          prospect_id: string
+          role: string | null
+        }
+        Insert: {
+          codice_fiscale?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          prospect_id: string
+          role?: string | null
+        }
+        Update: {
+          codice_fiscale?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          prospect_id?: string
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ra_contacts_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "ra_prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ra_interactions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          interaction_type: string
+          outcome: string | null
+          prospect_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          interaction_type: string
+          outcome?: string | null
+          prospect_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          interaction_type?: string
+          outcome?: string | null
+          prospect_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ra_interactions_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "ra_prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ra_prospects: {
+        Row: {
+          address: string | null
+          anno_bilancio: number | null
+          cap: string | null
+          city: string | null
+          codice_ateco: string | null
+          codice_fiscale: string | null
+          company_name: string
+          created_at: string
+          credit_score: number | null
+          data_costituzione: string | null
+          descrizione_ateco: string | null
+          dipendenti: number | null
+          email: string | null
+          fatturato: number | null
+          forma_giuridica: string | null
+          id: string
+          lead_status: string
+          notes: string | null
+          partita_iva: string | null
+          pec: string | null
+          phone: string | null
+          province: string | null
+          rating_affidabilita: string | null
+          raw_profile_html: string | null
+          region: string | null
+          source_url: string | null
+          tags: string[] | null
+          updated_at: string
+          user_id: string | null
+          utile: number | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          anno_bilancio?: number | null
+          cap?: string | null
+          city?: string | null
+          codice_ateco?: string | null
+          codice_fiscale?: string | null
+          company_name: string
+          created_at?: string
+          credit_score?: number | null
+          data_costituzione?: string | null
+          descrizione_ateco?: string | null
+          dipendenti?: number | null
+          email?: string | null
+          fatturato?: number | null
+          forma_giuridica?: string | null
+          id?: string
+          lead_status?: string
+          notes?: string | null
+          partita_iva?: string | null
+          pec?: string | null
+          phone?: string | null
+          province?: string | null
+          rating_affidabilita?: string | null
+          raw_profile_html?: string | null
+          region?: string | null
+          source_url?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string | null
+          utile?: number | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          anno_bilancio?: number | null
+          cap?: string | null
+          city?: string | null
+          codice_ateco?: string | null
+          codice_fiscale?: string | null
+          company_name?: string
+          created_at?: string
+          credit_score?: number | null
+          data_costituzione?: string | null
+          descrizione_ateco?: string | null
+          dipendenti?: number | null
+          email?: string | null
+          fatturato?: number | null
+          forma_giuridica?: string | null
+          id?: string
+          lead_status?: string
+          notes?: string | null
+          partita_iva?: string | null
+          pec?: string | null
+          phone?: string | null
+          province?: string | null
+          rating_affidabilita?: string | null
+          raw_profile_html?: string | null
+          region?: string | null
+          source_url?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string | null
+          utile?: number | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      ra_scraping_jobs: {
+        Row: {
+          ateco_codes: string[] | null
+          batch_size: number
+          completed_at: string | null
+          created_at: string
+          delay_seconds: number
+          error_count: number
+          error_log: string | null
+          id: string
+          job_type: string
+          max_fatturato: number | null
+          min_fatturato: number | null
+          processed_items: number
+          provinces: string[] | null
+          regions: string[] | null
+          saved_items: number
+          started_at: string | null
+          status: string
+          total_items: number
+          user_id: string | null
+        }
+        Insert: {
+          ateco_codes?: string[] | null
+          batch_size?: number
+          completed_at?: string | null
+          created_at?: string
+          delay_seconds?: number
+          error_count?: number
+          error_log?: string | null
+          id?: string
+          job_type: string
+          max_fatturato?: number | null
+          min_fatturato?: number | null
+          processed_items?: number
+          provinces?: string[] | null
+          regions?: string[] | null
+          saved_items?: number
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          user_id?: string | null
+        }
+        Update: {
+          ateco_codes?: string[] | null
+          batch_size?: number
+          completed_at?: string | null
+          created_at?: string
+          delay_seconds?: number
+          error_count?: number
+          error_log?: string | null
+          id?: string
+          job_type?: string
+          max_fatturato?: number | null
+          min_fatturato?: number | null
+          processed_items?: number
+          provinces?: string[] | null
+          regions?: string[] | null
+          saved_items?: number
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      request_logs: {
+        Row: {
+          channel: string | null
+          created_at: string | null
+          error_code: string | null
+          error_message: string | null
+          function_name: string
+          http_status: number | null
+          id: string
+          ip_hash: string | null
+          latency_ms: number | null
+          metadata: Json | null
+          payload_hash: string | null
+          payload_size: number | null
+          response_size: number | null
+          status: string | null
+          trace_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          function_name: string
+          http_status?: number | null
+          id?: string
+          ip_hash?: string | null
+          latency_ms?: number | null
+          metadata?: Json | null
+          payload_hash?: string | null
+          payload_size?: number | null
+          response_size?: number | null
+          status?: string | null
+          trace_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          function_name?: string
+          http_status?: number | null
+          id?: string
+          ip_hash?: string | null
+          latency_ms?: number | null
+          metadata?: Json | null
+          payload_hash?: string | null
+          payload_size?: number | null
+          response_size?: number | null
+          status?: string | null
+          trace_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -7001,6 +7410,366 @@ export type Database = {
         }
         Relationships: []
       }
+      wca_bc_events: {
+        Row: {
+          created_at: string | null
+          event_date: string | null
+          event_name: string | null
+          id: number
+        }
+        Insert: {
+          created_at?: string | null
+          event_date?: string | null
+          event_name?: string | null
+          id?: number
+        }
+        Update: {
+          created_at?: string | null
+          event_date?: string | null
+          event_name?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
+      wca_business_cards: {
+        Row: {
+          ai_match_confidence: number | null
+          ai_match_type: string | null
+          ai_match_wca_id: string | null
+          ai_match_wca_name: string | null
+          city: string | null
+          company_name: string | null
+          contact_date: string | null
+          contact_name: string | null
+          country: string | null
+          country_code: string | null
+          created_at: string | null
+          email: string | null
+          event_name: string | null
+          id: number
+          notes: string | null
+          phone: string | null
+          position: string | null
+          raw_data: Json | null
+          source_file: string | null
+          upload_date: string | null
+          website: string | null
+        }
+        Insert: {
+          ai_match_confidence?: number | null
+          ai_match_type?: string | null
+          ai_match_wca_id?: string | null
+          ai_match_wca_name?: string | null
+          city?: string | null
+          company_name?: string | null
+          contact_date?: string | null
+          contact_name?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          email?: string | null
+          event_name?: string | null
+          id?: number
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          raw_data?: Json | null
+          source_file?: string | null
+          upload_date?: string | null
+          website?: string | null
+        }
+        Update: {
+          ai_match_confidence?: number | null
+          ai_match_type?: string | null
+          ai_match_wca_id?: string | null
+          ai_match_wca_name?: string | null
+          city?: string | null
+          company_name?: string | null
+          contact_date?: string | null
+          contact_name?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          email?: string | null
+          event_name?: string | null
+          id?: number
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          raw_data?: Json | null
+          source_file?: string | null
+          upload_date?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      wca_directory: {
+        Row: {
+          company_name: string | null
+          country_code: string | null
+          country_name: string | null
+          directory_synced_at: string | null
+          networks: Json | null
+          scrape_url: string | null
+          updated_at: string | null
+          wca_id: number
+        }
+        Insert: {
+          company_name?: string | null
+          country_code?: string | null
+          country_name?: string | null
+          directory_synced_at?: string | null
+          networks?: Json | null
+          scrape_url?: string | null
+          updated_at?: string | null
+          wca_id: number
+        }
+        Update: {
+          company_name?: string | null
+          country_code?: string | null
+          country_name?: string | null
+          directory_synced_at?: string | null
+          networks?: Json | null
+          scrape_url?: string | null
+          updated_at?: string | null
+          wca_id?: number
+        }
+        Relationships: []
+      }
+      wca_partners: {
+        Row: {
+          address: string | null
+          blacklist_checked_at: string | null
+          blacklist_status: string | null
+          branch: string | null
+          branch_cities: Json | null
+          certifications: Json | null
+          city: string | null
+          company_name: string | null
+          contacts: Json | null
+          country_code: string | null
+          country_name: string | null
+          directory_synced_at: string | null
+          email: string | null
+          emergency_call: string | null
+          enrolled_offices: Json | null
+          enrolled_since: string | null
+          expires: string | null
+          fax: string | null
+          gm_coverage: boolean | null
+          gm_status_text: string | null
+          id: number
+          logo_url: string | null
+          mailing: string | null
+          member_since: string | null
+          networks: Json | null
+          phone: string | null
+          profile_text: string | null
+          raw_data: Json | null
+          scrape_url: string | null
+          scraped_at: string | null
+          services: Json | null
+          updated_at: string | null
+          wca_id: number
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          blacklist_checked_at?: string | null
+          blacklist_status?: string | null
+          branch?: string | null
+          branch_cities?: Json | null
+          certifications?: Json | null
+          city?: string | null
+          company_name?: string | null
+          contacts?: Json | null
+          country_code?: string | null
+          country_name?: string | null
+          directory_synced_at?: string | null
+          email?: string | null
+          emergency_call?: string | null
+          enrolled_offices?: Json | null
+          enrolled_since?: string | null
+          expires?: string | null
+          fax?: string | null
+          gm_coverage?: boolean | null
+          gm_status_text?: string | null
+          id?: number
+          logo_url?: string | null
+          mailing?: string | null
+          member_since?: string | null
+          networks?: Json | null
+          phone?: string | null
+          profile_text?: string | null
+          raw_data?: Json | null
+          scrape_url?: string | null
+          scraped_at?: string | null
+          services?: Json | null
+          updated_at?: string | null
+          wca_id: number
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          blacklist_checked_at?: string | null
+          blacklist_status?: string | null
+          branch?: string | null
+          branch_cities?: Json | null
+          certifications?: Json | null
+          city?: string | null
+          company_name?: string | null
+          contacts?: Json | null
+          country_code?: string | null
+          country_name?: string | null
+          directory_synced_at?: string | null
+          email?: string | null
+          emergency_call?: string | null
+          enrolled_offices?: Json | null
+          enrolled_since?: string | null
+          expires?: string | null
+          fax?: string | null
+          gm_coverage?: boolean | null
+          gm_status_text?: string | null
+          id?: number
+          logo_url?: string | null
+          mailing?: string | null
+          member_since?: string | null
+          networks?: Json | null
+          phone?: string | null
+          profile_text?: string | null
+          raw_data?: Json | null
+          scrape_url?: string | null
+          scraped_at?: string | null
+          services?: Json | null
+          updated_at?: string | null
+          wca_id?: number
+          website?: string | null
+        }
+        Relationships: []
+      }
+      wca_profiles: {
+        Row: {
+          access_limited: boolean | null
+          address: string | null
+          blacklist_status: string | null
+          branch: string | null
+          branch_cities: Json | null
+          certifications: Json | null
+          city: string | null
+          company_name: string | null
+          contacts: Json | null
+          country_code: string | null
+          country_name: string | null
+          email: string | null
+          emergency_call: string | null
+          enriched_domain: string | null
+          enriched_from: string | null
+          enrolled_offices: Json | null
+          enrolled_since: string | null
+          expires: string | null
+          fax: string | null
+          gm_coverage: boolean | null
+          gm_status_text: string | null
+          logo_url: string | null
+          mailing: string | null
+          member_since: string | null
+          networks: Json | null
+          phone: string | null
+          profile_text: string | null
+          raw_data: Json | null
+          services: Json | null
+          updated_at: string | null
+          wca_id: number
+          website: string | null
+        }
+        Insert: {
+          access_limited?: boolean | null
+          address?: string | null
+          blacklist_status?: string | null
+          branch?: string | null
+          branch_cities?: Json | null
+          certifications?: Json | null
+          city?: string | null
+          company_name?: string | null
+          contacts?: Json | null
+          country_code?: string | null
+          country_name?: string | null
+          email?: string | null
+          emergency_call?: string | null
+          enriched_domain?: string | null
+          enriched_from?: string | null
+          enrolled_offices?: Json | null
+          enrolled_since?: string | null
+          expires?: string | null
+          fax?: string | null
+          gm_coverage?: boolean | null
+          gm_status_text?: string | null
+          logo_url?: string | null
+          mailing?: string | null
+          member_since?: string | null
+          networks?: Json | null
+          phone?: string | null
+          profile_text?: string | null
+          raw_data?: Json | null
+          services?: Json | null
+          updated_at?: string | null
+          wca_id: number
+          website?: string | null
+        }
+        Update: {
+          access_limited?: boolean | null
+          address?: string | null
+          blacklist_status?: string | null
+          branch?: string | null
+          branch_cities?: Json | null
+          certifications?: Json | null
+          city?: string | null
+          company_name?: string | null
+          contacts?: Json | null
+          country_code?: string | null
+          country_name?: string | null
+          email?: string | null
+          emergency_call?: string | null
+          enriched_domain?: string | null
+          enriched_from?: string | null
+          enrolled_offices?: Json | null
+          enrolled_since?: string | null
+          expires?: string | null
+          fax?: string | null
+          gm_coverage?: boolean | null
+          gm_status_text?: string | null
+          logo_url?: string | null
+          mailing?: string | null
+          member_since?: string | null
+          networks?: Json | null
+          phone?: string | null
+          profile_text?: string | null
+          raw_data?: Json | null
+          services?: Json | null
+          updated_at?: string | null
+          wca_id?: number
+          website?: string | null
+        }
+        Relationships: []
+      }
+      wca_session: {
+        Row: {
+          cookies: string | null
+          id: number
+          updated_at: string | null
+        }
+        Insert: {
+          cookies?: string | null
+          id?: number
+          updated_at?: string | null
+        }
+        Update: {
+          cookies?: string | null
+          id?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       kb_hot_documents: {
@@ -7078,6 +7847,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: number
       }
+      get_service_user_id: { Args: never; Returns: string }
       get_tables_with_counts: {
         Args: never
         Returns: {

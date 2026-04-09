@@ -5,8 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 interface FeedEmail {
   id: string;
   subject: string | null;
-  sender: string | null;
-  folder_name: string | null;
+  from_email: string;
+  cartella: string | null;
   created_at: string;
 }
 
@@ -18,7 +18,7 @@ export function useDownloadedEmailsFeed(limit = 50) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('email_messages')
-        .select('id, subject, sender, folder_name, created_at')
+        .select('id, subject, from_email, cartella, created_at')
         .order('created_at', { ascending: false })
         .limit(limit);
 

@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils';
 interface FeedEmail {
   id: string;
   subject: string | null;
-  sender: string | null;
-  folder_name: string | null;
+  from_email: string;
+  cartella: string | null;
   created_at: string;
 }
 
@@ -76,7 +76,7 @@ export function DownloadedEmailList({ emails, isLoading }: DownloadedEmailListPr
                         {email.subject || '(Senza oggetto)'}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {email.sender || 'Sconosciuto'} • {email.folder_name}
+                        {email.from_email || 'Sconosciuto'} • {email.cartella}
                       </p>
                     </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ComposeDialog } from './ComposeDialog';
 import { EmailDetail } from './EmailDetail';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
-import { EmailSyncMonitor } from '@/components/email/EmailSyncMonitor';
+
 import { SmartInboxDialog } from '@/components/email/smart-inbox/SmartInboxDialog';
 import type { QueryClient } from '@tanstack/react-query';
 
@@ -110,7 +110,7 @@ export const EmailDialogsManager = ({
           <DialogHeader>
             <DialogTitle>📊 Email Sync Monitor</DialogTitle>
           </DialogHeader>
-          <EmailSyncMonitor />
+          <p className="text-muted-foreground text-sm">Sync monitor è stato sostituito dal nuovo sistema di download. Vai a <a href="/email-download" className="text-primary underline">/email-download</a>.</p>
         </DialogContent>
       </Dialog>
 

@@ -1,114 +1,137 @@
 
 
-# Piano: Sostituzione Sistema Download Email
+# Analisi Completa: Pagine e Componenti Email da Eliminare
 
-## Obiettivo
-Eliminare tutti i motori e pagine di download email dal progetto attuale (4+ pagine, 6+ componenti, 5 strategie) e sostituirli con il sistema server-side del repo `wca-network-navigator`, adattato per usare `email_messages` + `tmwe-api-proxy` esistenti.
+## Situazione Attuale
 
-## Cosa viene ELIMINATO
+Con il nuovo motore `email-sync-worker` + `EmailDownloadPage` funzionante, hai un sistema pulito che scarica le email in background. Tutto il resto e' spazzatura legacy creata durante il debugging.
 
-### Pagine (3 rotte da rimuovere da App.tsx)
-- `/single-mail` → `SingleMailImporter`
-- `/single-fast` → `SingleFast.tsx`
-- `/dual-download` → `DualDownload.tsx`
-
-### Componenti Download (6 file da eliminare)
-- `src/components/email/FunEmailDownloader.tsx` (311 righe)
-- `src/components/email/QuickEmailDownloader.tsx` (392 righe)
-- `src/components/email/SingleMailImporter.tsx` (1090 righe)
-- `src/components/email/DualPhaseDownloader.tsx` (374 righe)
-- `src/components/email/LucaDownloadTester.tsx` (228 righe)
-- `src/components/email/EmailSyncMonitor.tsx` (573 righe)
-
-### Engine / Strategie (10 file da eliminare)
-- `src/lib/email/strategies/CleanStrategy.ts`
-- `src/lib/email/strategies/LucaStrategy.ts`
-- `src/lib/email/strategies/MasterStrategy.ts`
-- `src/lib/email/strategies/EdgeSyncStrategy.ts`
-- `src/lib/email/strategies/DownloadStrategy.ts`
-- `src/lib/email/services/EmailDownloadService.ts`
-- `src/lib/email/services/EdgeFunctionSyncService.ts`
-- `src/lib/email/services/UIDRangeService.ts`
-- `src/lib/single-mail-api.ts`
-- `src/lib/parallel-download-controller.ts`
-
-### Hook da eliminare
-- `src/hooks/useEmailDownload.ts` (466 righe)
-- `src/hooks/useSyncProgress.ts`
-
-### View da rimuovere da FunEmail.tsx
-- `quick-download`, `single-mail` (e relativi import)
-- Il tab "fun" con `FunEmailDownloader` dentro
-
-## Cosa viene CREATO (dal repo, adattato)
-
-### 1. Tabella DB: `email_sync_jobs`
-Migrazione SQL identica al repo. Tabella per gestire job server-side con stati `running/paused/completed/error`, contatori download/skip, realtime abilitato.
-
-### 2. Nuova Pagina: `src/pages/EmailDownloadPage.tsx`
-Portata dal repo con modifiche:
-- Usa `email_messages` invece di `channel_messages` per conteggio
-- Layout adattato per `CRMLayout` + `PageLayout`
-- Rotta: `/email-download` (sostituisce le 3 rotte eliminate)
-
-### 3. Nuovi Hook (dal repo, adattati)
-- `src/hooks/useServerSyncJob.ts` — CRUD su `email_sync_jobs`, realtime subscription, polling
-- `src/hooks/useEmailCount.ts` — count su `email_messages` (non `channel_messages`)
-- `src/hooks/useDownloadedEmailsFeed.ts` — ultime 50 email scaricate da `email_messages`, realtime INSERT
-
-### 4. Nuovi Componenti (dal repo)
-- `src/components/email/download/DownloadedEmailList.tsx` — lista virtualizzata con `@tanstack/react-virtual`
-- `src/components/email/download/DownloadedEmailPreview.tsx` — preview email con sanitizzazione HTML
-
-### 5. Edge Function: `email-sync-worker`
-Portata dal repo, adattata per chiamare `tmwe-api-proxy` (con handler `tmwe-email-sync-master`) invece di `check-inbox`. Il worker:
-- Trova job `running` in `email_sync_jobs`
-- Chiama `tmwe-api-proxy` per batch di email
-- Aggiorna contatori nel job
-- Loop fino a 50s di wall-clock time
-- Continua anche a browser chiuso (invocato da pg_cron ogni minuto)
-
-## Modifiche a File Esistenti
-
-### `src/App.tsx`
-- Rimuovere import e rotte: `SingleMailImporter`, `SingleFast`, `DualDownload`
-- Aggiungere rotta `/email-download` → `EmailDownloadPage`
-
-### `src/pages/FunEmail.tsx`
-- Rimuovere import: `FunEmailDownloader`, `QuickEmailDownloader`, `SingleMailImporter`, `LucaDownloadTester`
-- Rimuovere view `quick-download` e `single-mail` dal switch
-- Rimuovere stato `preSelectedFolders`, `isDownloadActive`, `globalStats`
-- Nel tab "fun", sostituire il downloader con link a `/email-download`
-
-### `src/components/email/ToolsDropdownMenu.tsx`
-- Cambiare link da `quick-download` e `single-mail` a `/email-download`
-
-## Fasi di Implementazione
+## COSA RESTA (le tue pagine utili)
 
 ```text
-Fase  Cosa                                          Rischio
-────  ────────────────────────────────────────────  ───────
-1     Migrazione DB: creare email_sync_jobs          Basso
-2     Creare hook adattati (3 file)                  Basso
-3     Creare componenti download (2 file)            Basso
-4     Creare EmailDownloadPage.tsx                   Basso
-5     Creare edge function email-sync-worker         Medio
-6     Aggiornare App.tsx (rotte)                     Basso
-7     Pulire FunEmail.tsx (rimuovere import/view)    Medio
-8     Eliminare 18+ file vecchi                      Basso
-9     Setup pg_cron per email-sync-worker             Basso
+PAGINA                  ROTTA                    FUNZIONE
+────────────────────    ───────────────────────   ─────────────────────────
+FunEmail / Management   /funnemail?tab=management Gestione email scaricate
+FunEmail / Fun          /funnemail?tab=fun         AI Assistant + Stats
+FunEmail / Suggestions  /funnemail?tab=suggestions Raggruppamento mittenti
+FunEmail / Inbox        /funnemail?tab=inbox       Smart Inbox intelligente
+FunEmail / Automations  /funnemail?tab=automations AI Automation dashboard
+FunEmail / Zero-Sync    /funnemail?tab=zero-sync   Live view da TMWE API
+Email Download          /email-download            NUOVO motore download
 ```
+
+## COSA VA ELIMINATO
+
+### A. Pagine Standalone (rotte da App.tsx)
+
+| Pagina | Rotta | Perche' eliminarla |
+|--------|-------|--------------------|
+| `EmailSyncTest` | `/email-sync-test` (in tmwenginej/App.tsx) | Test sync obsoleto |
+| `TMWEApiComparison` | `/api-comparison` | Tabella comparativa statica, mai usata in produzione |
+| `TMWEAuthTest` | `/tmwe-test` | Test autenticazione — l'auth funziona, non serve piu' |
+| `TMWEApiTester` | `/tmwe-api-tester` | Tester API manuale da 2066 righe — strumento dev |
+| `EmailDebugTester` | `/email-debug-tester` | Debug panel testing — obsoleto |
+| `EmailHub` | `/emailhub` | Duplicato API-only di FunEmail — superato da Zero-Sync |
+| `TMWEEmailDashboard` | `/email-manager` | Vecchia dashboard email — sostituita da FunEmail |
+
+**Totale: 7 pagine da eliminare**
+
+### B. View interne a FunEmail (sotto ToolsDropdownMenu)
+
+| View | Query param | Perche' |
+|------|-------------|---------|
+| Integrity Checker | `?view=integrity` | Verificava coerenza download — non serve con motore nuovo |
+| Backend Debugger | `?view=debugger` | Test manuale API — strumento dev |
+| Email Count Diagnostics | `?view=diagnostics` | Conteggio cartelle per debug — non serve |
+| TMWE ID Migration | `?view=migration` | Migrazione one-shot gia' fatta |
+| Zero-Sync Tests | `?view=zero-sync-test` | Test automatizzati — strumento dev |
+
+**Totale: 5 view interne da rimuovere da FunEmail.tsx**
+
+### C. Componenti da Eliminare
+
+```text
+COMPONENTI DIAGNOSTICA/TEST (da eliminare)
+──────────────────────────────────────────
+src/components/email/EmailIntegrityChecker.tsx
+src/components/email/EmailCountDiagnostics.tsx
+src/components/email/TmweBackendDebugger.tsx
+src/components/email/PerformanceTestSuite.tsx
+src/components/email/admin/TMWEMigrationAdmin.tsx
+src/components/email/testing/ZeroSyncTestPanel.tsx
+src/components/email/testing/ComparisonTable.tsx
+src/components/email/testing/DebugConfigPanel.tsx
+src/components/email/testing/EdgeFunctionMonitor.tsx
+src/components/email/testing/QuickDownloadTester.tsx
+src/components/email/debug/VerifyFolderNames.tsx
+
+COMPONENTI TESTING GENERICI (da eliminare)
+──────────────────────────────────────────
+src/components/testing/PerformanceAnalysisDashboard.tsx
+src/components/testing/PerformanceChart.tsx
+src/components/testing/PerformanceProfileConfigurator.tsx
+src/components/testing/EmailImportTester.tsx
+src/components/testing/EmailImportChart.tsx
+src/components/testing/EmailImportResults.tsx
+src/components/testing/OptimizationControls.tsx
+src/components/testing/OptimizationDashboard.tsx
+src/components/testing/OptimizationTestResults.tsx
+src/components/testing/OptimizationTestRunner.tsx
+src/components/testing/ResultCard.tsx
+src/components/testing/TestMethodCard.tsx
+src/components/testing/TestResultsTable.tsx
+src/components/testing/TestSuiteSelector.tsx
+
+COMPONENTI EMAILHUB (da eliminare)
+──────────────────────────────────────────
+src/components/email/api-only/EmailHubQuickStatsAPI.tsx
+src/components/email/api-only/EmailHubGlobalStatsAPI.tsx
+src/components/email/api-only/EmailHubFolderSelector.tsx
+```
+
+### D. Pagine da Eliminare
+
+```text
+src/pages/EmailSyncTest.tsx
+src/pages/TMWEApiComparison.tsx
+src/pages/TMWEAuthTest.tsx
+src/pages/TMWEApiTester.tsx
+src/pages/EmailDebugTester.tsx
+src/pages/EmailHub.tsx
+src/pages/TMWEEmailDashboard.tsx
+```
+
+## Piano di Implementazione
+
+```text
+Fase  Azione                                           File toccati
+────  ──────────────────────────────────────────────    ────────────
+1     Rimuovere 7 rotte da App.tsx                      App.tsx
+2     Rimuovere 7 import da App.tsx                     App.tsx
+3     Pulire FunEmail.tsx: rimuovere 5 view tool,       FunEmail.tsx
+      relativi import, e tipo dalla union type
+4     Svuotare/rimuovere ToolsDropdownMenu               ToolsDropdownMenu.tsx
+      (o lasciare solo link a /email-download)
+5     Eliminare 7 file pages                            src/pages/
+6     Eliminare 11 componenti email debug/test/admin    src/components/email/
+7     Eliminare 14 componenti testing generici          src/components/testing/
+8     Eliminare 3 componenti EmailHub api-only          src/components/email/api-only/
+9     Aggiornare siteMapData.ts                         src/data/siteMapData.ts
+```
+
+**Totale file da eliminare: ~35 file**
+**Totale stimato righe rimosse: ~8000+**
 
 ## NON TOCCARE
 - `EmailManagementTab`, `EmailGroupingSuggestionsTab`
-- `SmartInboxTabIntelligent`, `EmailIntegrityChecker`
-- `tmwe-api-proxy` edge function
-- `email_messages` table schema
-- CRMLayout, sidebar, header
-- RadioChat, ChatLaboratory
-- `src/lib/tmwe-email-search-api.ts`
-- `src/components/tmwe/email-fast/*`
+- `SmartInboxTabIntelligent`, `SmartInboxZeroSync`
+- `AIAutomationDashboard`, `PendingActionsPanel`, `LearningDashboard`
+- `FunEmailQuickStats`, `FunEmailChat`, `FunEmailNavigation`
+- `EmailDownloadPage` + hook associati
+- `tmwe-api-proxy`, `email-sync-worker`
+- `email_messages` table
+- CRMLayout, sidebar, RadioChat
 
-## Rischio Complessivo
-**Medio** — Elimina molto codice legacy ma la nuova implementazione e' piu' semplice (1 pagina, 1 edge function, 3 hook). Backup obbligatorio prima dell'eliminazione.
+## Rischio
+**Basso** — Si tratta solo di eliminazione codice morto. Nessuna logica di produzione viene toccata.
 

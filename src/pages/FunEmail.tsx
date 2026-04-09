@@ -9,14 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { X, Menu, Brain, ArrowLeft, Bug, Sparkles, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { FunEmailDownloader } from '@/components/email/FunEmailDownloader';
+
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
 import { FunEmailChat } from '@/components/email/FunEmailChat';
 import { FunEmailGlobalStats } from '@/components/email/FunEmailGlobalStats';
 import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { EmailManagementTab } from '@/components/email/EmailManagementTab';
 import { EmailGroupingSuggestionsTab } from '@/components/email/EmailGroupingSuggestionsTab';
-import { QuickEmailDownloader } from '@/components/email/QuickEmailDownloader';
+
 import { EmailIntegrityChecker } from '@/components/email/EmailIntegrityChecker';
 import { TmweBackendDebugger } from '@/components/email/TmweBackendDebugger';
 import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartInboxTabIntelligent';
@@ -29,9 +29,7 @@ import { AIGeneratedActivitiesPanel } from '@/components/email/automation/AIGene
 import { AutoExecuteConfigDialog } from '@/components/email/automation/AutoExecuteConfigDialog';
 import { LearningDashboard } from '@/components/email/automation/LearningDashboard';
 import { EmailCountDiagnostics } from '@/components/email/EmailCountDiagnostics';
-import { SingleMailImporter } from '@/components/email/SingleMailImporter';
 import { VerifyFolderNames } from '@/components/email/debug/VerifyFolderNames';
-import { LucaDownloadTester } from '@/components/email/LucaDownloadTester';
 import { ToolsDropdownMenu } from '@/components/email/ToolsDropdownMenu';
 import { TMWEMigrationAdmin } from '@/components/email/admin/TMWEMigrationAdmin';
 import { ZeroSyncTestPanel } from '@/components/email/testing/ZeroSyncTestPanel';

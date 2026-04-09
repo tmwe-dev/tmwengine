@@ -157,24 +157,10 @@ export const siteMapGroups: PageGroup[] = [
     color: 'green',
     pages: [
       {
-        title: 'Email Manager',
-        path: '/email-manager',
-        description: 'Dashboard email principale con integrazione TMWE (richiede auth Microsoft)',
-        icon: LayoutDashboard,
-        requiresAuth: true
-      },
-      {
         title: 'FunnEmail',
         path: '/funnemail',
         description: 'Analisi avanzata di email con categorizzazione intelligente AI',
         icon: Sparkles,
-        requiresAuth: true
-      },
-      {
-        title: 'Email Hub',
-        path: '/emailhub',
-        description: 'Hub centralizzato per gestione email con viste multiple',
-        icon: Inbox,
         requiresAuth: true
       },
       {
@@ -196,13 +182,6 @@ export const siteMapGroups: PageGroup[] = [
         path: '/email-rules',
         description: 'Regole di classificazione email con integrazione TMWE',
         icon: Filter,
-        requiresAuth: true
-      },
-      {
-        title: 'Email Debug Tester',
-        path: '/email-debug-tester',
-        description: 'Strumenti di debug e test per il sistema email',
-        icon: TestTube,
         requiresAuth: true
       }
     ]
@@ -338,13 +317,6 @@ export const siteMapGroups: PageGroup[] = [
         requiresAuth: true
       },
       {
-        title: 'TMWE API Tester',
-        path: '/tmwe-api-tester',
-        description: 'Test interattivo delle API TMWE (Microsoft Graph)',
-        icon: FlaskConical,
-        requiresAuth: true
-      },
-      {
         title: 'API Functions Reference',
         path: '/api-functions',
         description: 'Documentazione e riferimento funzioni API disponibili',
@@ -435,13 +407,6 @@ export const siteMapGroups: PageGroup[] = [
         description: 'Pagina di autenticazione utente',
         icon: Shield,
         requiresAuth: false
-      },
-      {
-        title: 'TMWE Auth Test',
-        path: '/tmwe-test',
-        description: 'Test autenticazione Microsoft (TMWE)',
-        icon: TestTube,
-        requiresAuth: true
       }
     ]
   }

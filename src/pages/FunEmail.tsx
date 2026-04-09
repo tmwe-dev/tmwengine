@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';
 import { FunEmailChat } from '@/components/email/FunEmailChat';
-import { FunEmailGlobalStats } from '@/components/email/FunEmailGlobalStats';
+
 import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicationBadge';
 import { EmailManagementTab } from '@/components/email/EmailManagementTab';
 import { EmailGroupingSuggestionsTab } from '@/components/email/EmailGroupingSuggestionsTab';

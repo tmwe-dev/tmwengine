@@ -16,7 +16,7 @@ import { GlobalVideoCallHandler } from "@/components/GlobalVideoCallHandler";
 import { CRMLayoutProvider } from "@/contexts/CRMLayoutContext";
 import '@/i18n/config';
 
-import Auth from "./pages/Auth";
+
 import NotFound from "./pages/NotFound";
 import CRMLayout from "./components/layout/CRMLayout";
 
@@ -40,8 +40,6 @@ import AIConfig from "./pages/AIConfig";
 import GeneralConfig from "./pages/GeneralConfig";
 import RecordImportati from "./pages/RecordImportati";
 import Tables from "./pages/Tables";
-import TMWEAuthCallbackIntegrated from "./pages/TMWEAuthCallbackIntegrated";
-import OAuthCallback from "./pages/OAuthCallback";
 import EmailSenders from "./pages/EmailSenders";
 import Intranet from "./pages/Intranet";
 import IntranetAdmin from "./pages/IntranetAdmin";
@@ -169,7 +167,7 @@ const App = () => {
                 <CRMLayout><ImportTemplates /></CRMLayout>
               </ProtectedRoute>
             } />
-            <Route path="/auth" element={<Auth />} />
+            
             <Route path="/settings" element={
               <ProtectedRoute>
                 <CRMLayout><Settings /></CRMLayout>
@@ -285,7 +283,7 @@ const App = () => {
                 <CRMLayout><Tables /></CRMLayout>
               </ProtectedRoute>
             } />
-            <Route path="/tmwe/callback" element={<OAuthCallback />} />
+            
             <Route path="/funnemail" element={
               <ProtectedRoute>
                 <CRMLayout>

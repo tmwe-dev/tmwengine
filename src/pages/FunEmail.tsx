@@ -17,8 +17,6 @@ import { UnifiedAICommunicationBadge } from '@/components/ai/UnifiedAICommunicat
 import { EmailManagementTab } from '@/components/email/EmailManagementTab';
 import { EmailGroupingSuggestionsTab } from '@/components/email/EmailGroupingSuggestionsTab';
 
-import { EmailIntegrityChecker } from '@/components/email/EmailIntegrityChecker';
-import { TmweBackendDebugger } from '@/components/email/TmweBackendDebugger';
 import { SmartInboxTabIntelligent } from '@/components/email/smart-inbox/SmartInboxTabIntelligent';
 import { SmartInboxZeroSync } from '@/components/email/smart-inbox/SmartInboxZeroSync';
 import { GradientBackground } from '@/components/design-system';
@@ -28,11 +26,8 @@ import { PendingActionsPanel } from '@/components/email/automation/PendingAction
 import { AIGeneratedActivitiesPanel } from '@/components/email/automation/AIGeneratedActivitiesPanel';
 import { AutoExecuteConfigDialog } from '@/components/email/automation/AutoExecuteConfigDialog';
 import { LearningDashboard } from '@/components/email/automation/LearningDashboard';
-import { EmailCountDiagnostics } from '@/components/email/EmailCountDiagnostics';
-import { VerifyFolderNames } from '@/components/email/debug/VerifyFolderNames';
-import { ToolsDropdownMenu } from '@/components/email/ToolsDropdownMenu';
-import { TMWEMigrationAdmin } from '@/components/email/admin/TMWEMigrationAdmin';
-import { ZeroSyncTestPanel } from '@/components/email/testing/ZeroSyncTestPanel';
+import { FunEmailNavigation } from '@/components/email/FunEmailNavigation';
+import { useCRMLayout } from '@/contexts/CRMLayoutContext';
 import { FunEmailNavigation } from '@/components/email/FunEmailNavigation';
 import { useCRMLayout } from '@/contexts/CRMLayoutContext';
 
@@ -42,7 +37,7 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'pending-actions' | 'learning' | 'ai-activities' | 'migration' | 'zero-sync-test' | 'zero-sync'>('management');
+  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'inbox' | 'automations' | 'zero-sync'>('management');
   const [automationsSubView, setAutomationsSubView] = useState<'dashboard' | 'pending' | 'learning' | 'ai-activities'>('dashboard');
   const [isAutoConfigOpen, setIsAutoConfigOpen] = useState(false);
   
@@ -79,12 +74,7 @@ const FunEmail = () => {
   const shouldShowLeftIcons = isNearLeftEdge || sidebarOpen || aiSidebarOpen || categoriesOpen;
 
   // Sincronizza currentView con query param "view" dal CRMLayout
-  useEffect(() => {
-    const viewParam = searchParams.get('view');
-    if (viewParam && ['integrity', 'debugger', 'diagnostics', 'migration', 'zero-sync-test'].includes(viewParam)) {
-      setCurrentView(viewParam as typeof currentView);
-    }
-  }, [searchParams]);
+  // (Legacy tool views removed - no longer needed)
 
   // Sincronizza currentView con query param "tab" dal CRMLayout
   useEffect(() => {
@@ -265,7 +255,7 @@ const FunEmail = () => {
     }
   };
 
-  const isToolView = ['integrity', 'debugger', 'diagnostics', 'migration', 'zero-sync-test'].includes(currentView);
+  const isToolView = false;
 
   return (
     <PageLayout 
@@ -287,11 +277,7 @@ const FunEmail = () => {
           </Button>
         ) : null
       }
-      actions={
-        !isToolView ? (
-          <ToolsDropdownMenu />
-        ) : null
-      }
+      actions={null}
     >
       {/* Tab Navigation - solo per view principali */}
       {!isToolView && (
@@ -336,28 +322,6 @@ const FunEmail = () => {
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)]">
               <EmailGroupingSuggestionsTab />
             </GradientBackground>
-          ) : currentView === 'integrity' ? (
-            <div className="p-6">
-              <EmailIntegrityChecker 
-                onRequestDownload={() => navigate('/email-download')}
-              />
-            </div>
-          ) : currentView === 'debugger' ? (
-            <div className="p-6 max-w-4xl mx-auto">
-              <TmweBackendDebugger />
-            </div>
-          ) : currentView === 'diagnostics' ? (
-            <div className="p-6 max-w-4xl mx-auto">
-              <EmailCountDiagnostics />
-            </div>
-          ) : currentView === 'migration' ? (
-            <div className="p-6 max-w-4xl mx-auto">
-              <TMWEMigrationAdmin />
-            </div>
-          ) : currentView === 'zero-sync-test' ? (
-            <div className="p-6 max-w-6xl mx-auto">
-              <ZeroSyncTestPanel />
-            </div>
           ) : currentView === 'zero-sync' ? (
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)]">
               <SmartInboxZeroSync onOpenAISidebar={openAISidebarForSender} />

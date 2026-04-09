@@ -81,7 +81,7 @@ const FunEmail = () => {
   // Sincronizza currentView con query param "view" dal CRMLayout
   useEffect(() => {
     const viewParam = searchParams.get('view');
-    if (viewParam && ['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail', 'migration', 'zero-sync-test'].includes(viewParam)) {
+    if (viewParam && ['integrity', 'debugger', 'diagnostics', 'migration', 'zero-sync-test'].includes(viewParam)) {
       setCurrentView(viewParam as typeof currentView);
     }
   }, [searchParams]);
@@ -265,7 +265,7 @@ const FunEmail = () => {
     }
   };
 
-  const isToolView = ['quick-download', 'integrity', 'debugger', 'diagnostics', 'single-mail', 'migration', 'zero-sync-test'].includes(currentView);
+  const isToolView = ['integrity', 'debugger', 'diagnostics', 'migration', 'zero-sync-test'].includes(currentView);
 
   return (
     <PageLayout 
@@ -305,17 +305,17 @@ const FunEmail = () => {
         <div className="w-full">
           {currentView === 'fun' ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
-              {/* COLONNA SINISTRA: Stats Globali + Downloader + Quick Stats */}
               <div className="lg:col-span-1 space-y-4">
-                <FunEmailGlobalStats
-                  totalDB={globalStats.totalDB}
-                  folders={globalStats.folders}
-                />
-                <FunEmailDownloader onStatsUpdate={setGlobalStats} />
                 <FunEmailQuickStats />
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <Button onClick={() => navigate('/email-download')} className="w-full gap-2">
+                      <Download className="h-4 w-4" />
+                      Vai a Download Email
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
-
-              {/* COLONNA DESTRA: Chat AI */}
               <div className="lg:col-span-2">
                 <Card className="h-[calc(100vh-12rem)]">
                   <CardHeader className="flex flex-row items-center justify-between">
@@ -336,36 +336,10 @@ const FunEmail = () => {
             <GradientBackground variant="primary" intensity="medium" className="h-[calc(100vh-8rem)]">
               <EmailGroupingSuggestionsTab />
             </GradientBackground>
-          ) : currentView === 'quick-download' ? (
-            <div className="p-6">
-              <QuickEmailDownloader
-                preSelectedFolders={preSelectedFolders}
-                onDownloadComplete={(stats) => {
-                  console.log('✅ Quick download completato:', stats);
-                  setPreSelectedFolders([]);
-                }}
-                onStatsUpdate={(stats) => {
-                  console.log('📊 Stats aggiornate:', stats);
-                }}
-                onDownloadStatusChange={setIsDownloadActive}
-              />
-            </div>
           ) : currentView === 'integrity' ? (
             <div className="p-6">
               <EmailIntegrityChecker 
-                isDownloadActive={isDownloadActive}
-                onRequestDownload={(folderNames) => {
-              console.log('🎯 [FunEmail] Pre-selecting folders FIRST:', folderNames);
-              
-              // ✅ Step 1: Setta folders PRIMA
-              setPreSelectedFolders(folderNames);
-              
-              // ✅ Step 2: Delay per propagazione state
-              setTimeout(() => {
-                console.log('🎯 [FunEmail] Now switching to Quick Download view');
-                setCurrentView('quick-download');
-              }, 50);
-            }}
+                onRequestDownload={() => navigate('/email-download')}
               />
             </div>
           ) : currentView === 'debugger' ? (
@@ -375,13 +349,6 @@ const FunEmail = () => {
           ) : currentView === 'diagnostics' ? (
             <div className="p-6 max-w-4xl mx-auto">
               <EmailCountDiagnostics />
-            </div>
-          ) : currentView === 'single-mail' ? (
-            <div className="p-6 space-y-4">
-              <LucaDownloadTester />
-              <VerifyFolderNames />
-              {/* Force rebuild - SingleMailImporter - 2025-11-05 07:55 */}
-              <SingleMailImporter />
             </div>
           ) : currentView === 'migration' ? (
             <div className="p-6 max-w-4xl mx-auto">

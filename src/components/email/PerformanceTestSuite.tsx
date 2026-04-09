@@ -18,6 +18,7 @@ import { Link } from 'react-router-dom';
 import { withTMWERetry, categorizeError, type ErrorCategory } from '@/lib/api-retry-advanced';
 import { logPerformanceMetrics } from '@/lib/performance-metrics-logger';
 import { FolderSelector } from '@/components/email/FolderSelector';
+import { getUnifiedFolderCounts, getTestableFolders, type UnifiedFolderCount } from '@/lib/email-count-service';
 
 // Simple rate-limited download wrapper (replaces deleted ParallelDownloadController)
 const downloadController = {

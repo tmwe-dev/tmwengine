@@ -236,6 +236,11 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('tmwe_user_profile');
     sessionStorage.removeItem('tmwe_supabase_user_id');
     
+    // 4. Limpiar cualquier estado de OAuth
+    sessionStorage.removeItem('oauth_state');
+    sessionStorage.removeItem('oauth_client_id');
+    sessionStorage.removeItem('oauth_client_secret');
+    sessionStorage.removeItem('oauth_redirect_uri');
     
     console.log('✅ Logout completado');
   };

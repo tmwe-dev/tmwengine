@@ -170,10 +170,10 @@ export function FolderSyncPreferencesManager({
             La tua sessione TMWE è scaduta. Devi ri-autenticarti per accedere alle cartelle email.
           </p>
           <Button 
-            onClick={() => window.location.reload()} 
+            onClick={() => window.location.href = '/tmwe/callback'} 
             className="mt-4"
           >
-            🔄 Riprova
+            🔐 Ri-autentica TMWE
           </Button>
         </div>
       );

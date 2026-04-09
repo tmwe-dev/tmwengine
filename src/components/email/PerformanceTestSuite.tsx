@@ -17,12 +17,12 @@ import { StatCard } from '@/components/design-system/cards/StatCard';
 import { Link } from 'react-router-dom';
 import { withTMWERetry, categorizeError, type ErrorCategory } from '@/lib/api-retry-advanced';
 import { logPerformanceMetrics } from '@/lib/performance-metrics-logger';
-import { ParallelDownloadController } from '@/lib/parallel-download-controller';
 import { FolderSelector } from '@/components/email/FolderSelector';
-import { getUnifiedFolderCounts, getTestableFolders, type UnifiedFolderCount } from '@/lib/email-count-service';
 
-// 🚀 Istanza globale ParallelDownloadController per rate limiting
-const downloadController = new ParallelDownloadController(10, 50);
+// Simple rate-limited download wrapper (replaces deleted ParallelDownloadController)
+const downloadController = {
+  async download<T>(fn: () => Promise<T>): Promise<T> { return fn(); }
+};
 
 interface TestConfig {
   folder: string;

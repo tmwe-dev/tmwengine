@@ -42,15 +42,9 @@ const FunEmail = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'quick-download' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'single-mail' | 'pending-actions' | 'learning' | 'ai-activities' | 'migration' | 'zero-sync-test' | 'zero-sync'>('management');
+  const [currentView, setCurrentView] = useState<'fun' | 'management' | 'suggestions' | 'integrity' | 'debugger' | 'inbox' | 'automations' | 'diagnostics' | 'pending-actions' | 'learning' | 'ai-activities' | 'migration' | 'zero-sync-test' | 'zero-sync'>('management');
   const [automationsSubView, setAutomationsSubView] = useState<'dashboard' | 'pending' | 'learning' | 'ai-activities'>('dashboard');
-  const [preSelectedFolders, setPreSelectedFolders] = useState<string[]>([]);
   const [isAutoConfigOpen, setIsAutoConfigOpen] = useState(false);
-  const [globalStats, setGlobalStats] = useState({
-    totalDB: 0,
-    folders: [] as { name: string; count: number }[],
-  });
-  const [isDownloadActive, setIsDownloadActive] = useState(false);
   
   // AI Sidebar globale state - now from context
   const { aiSidebarOpen, setAiSidebarOpen, menuOpen: crmMenuOpen, setMenuOpen: setCrmMenuOpen } = useCRMLayout();

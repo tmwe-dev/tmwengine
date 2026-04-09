@@ -7,7 +7,7 @@ import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { X, Menu, Brain, ArrowLeft, Bug, Sparkles, Clock } from 'lucide-react';
+import { X, Menu, Brain, ArrowLeft, Bug, Sparkles, Clock, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 import { FunEmailQuickStats } from '@/components/email/FunEmailQuickStats';

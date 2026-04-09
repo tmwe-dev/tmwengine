@@ -23,13 +23,9 @@ export function ToolsDropdownMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-sm border-border/50">
         <DropdownMenuLabel>Import Tools</DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => navigate('/funnemail?view=quick-download')}>
+        <DropdownMenuItem onClick={() => navigate('/email-download')}>
           <Zap className="mr-2 h-4 w-4" />
-          Quick Download
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate('/funnemail?view=single-mail')}>
-          <Mail className="mr-2 h-4 w-4" />
-          Single Mail Import
+          Download Email
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />

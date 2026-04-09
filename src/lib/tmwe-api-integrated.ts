@@ -106,25 +106,9 @@ export const clearApiConfigFromDB = async (): Promise<void> => {
     .eq('email', userEmail);
 };
 
-// OAuth2 Authorization Code Flow - Según OpenAPI spec 3.0.4
+// @deprecated OAuth2 Authorization Code Flow — deprecato, auth bypassed
 export const initiateAuthorizationCodeFlow = (): void => {
-  const clientId = OAUTH_CLIENT_ID;
-  const state = Math.random().toString(36).substring(7);
-  const redirectUri = `${window.location.origin}/tmwe/callback`;
-  
-  sessionStorage.setItem('oauth_state', state);
-  sessionStorage.setItem('oauth_redirect_uri', redirectUri);
-  
-  // ✅ CORRECCIÓN CRÍTICA: Endpoint correcto según proyecto Luca
-  const authUrl = new URL('https://findair.it/erp/tmwe_json/auth'); // NO /authorization
-  authUrl.searchParams.append('client_id', clientId);
-  authUrl.searchParams.append('redirect_uri', redirectUri);
-  authUrl.searchParams.append('response_type', 'code');
-  authUrl.searchParams.append('state', state);
-  authUrl.searchParams.append('scope', 'read write');
-  
-  console.log('🚀 Redirecting to TMWE authorization:', authUrl.toString());
-  window.location.href = authUrl.toString();
+  console.warn('⚠️ initiateAuthorizationCodeFlow is DEPRECATED. OAuth is disabled.');
 };
 
 // ============================================================================

@@ -40,9 +40,7 @@ import AIConfig from "./pages/AIConfig";
 import GeneralConfig from "./pages/GeneralConfig";
 import RecordImportati from "./pages/RecordImportati";
 import Tables from "./pages/Tables";
-import TMWEEmailDashboard from "./pages/TMWEEmailDashboard";
 import TMWEAuthCallbackIntegrated from "./pages/TMWEAuthCallbackIntegrated";
-import TMWEAuthTest from "./pages/TMWEAuthTest";
 import OAuthCallback from "./pages/OAuthCallback";
 import EmailSenders from "./pages/EmailSenders";
 import Intranet from "./pages/Intranet";
@@ -57,7 +55,7 @@ import DatabaseSettings from "./pages/DatabaseSettings";
 import CallRoom from "./pages/CallRoom";
 import EmailRules from "./pages/EmailRules";
 import CodeScreen from "./pages/admin/CodeScreen";
-import TMWEApiTester from "./pages/TMWEApiTester";
+
 import CodeReview from "./pages/CodeReview";
 import NotificationSettings from "./pages/NotificationSettings";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
@@ -67,10 +65,10 @@ import DesignLabScanner from "./pages/DesignLabScanner";
 import SiteMap from "./pages/SiteMap";
 import PromptSystemManager from "./pages/PromptSystemManager";
 import FunEmail from "./pages/FunEmail";
-import EmailHub from "./pages/EmailHub";
+
 import ApiFunctionsReference from "./pages/ApiFunctionsReference";
 import EmailDownloadPage from "./pages/EmailDownloadPage";
-import EmailDebugTester from "./pages/EmailDebugTester";
+
 import AICommunicationHub from "./pages/AICommunicationHub";
 
 const queryClient = new QueryClient();
@@ -287,32 +285,11 @@ const App = () => {
                 <CRMLayout><Tables /></CRMLayout>
               </ProtectedRoute>
             } />
-            <Route path="/tmwe-test" element={
-              <ProtectedRoute>
-                <TMWEAuthTest />
-              </ProtectedRoute>
-            } />
             <Route path="/tmwe/callback" element={<OAuthCallback />} />
-            <Route path="/email-manager" element={
-              <ProtectedRoute>
-                <IntegratedAuthGuard>
-                  <CRMLayout>
-                    <TMWEEmailDashboard />
-                  </CRMLayout>
-                </IntegratedAuthGuard>
-              </ProtectedRoute>
-            } />
             <Route path="/funnemail" element={
               <ProtectedRoute>
                 <CRMLayout>
                   <FunEmail />
-                </CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/emailhub" element={
-              <ProtectedRoute>
-                <CRMLayout>
-                  <EmailHub />
                 </CRMLayout>
               </ProtectedRoute>
             } />
@@ -374,15 +351,6 @@ const App = () => {
                 </IntegratedAuthGuard>
               </ProtectedRoute>
             } />
-            <Route path="/tmwe-api-tester" element={
-              <ProtectedRoute>
-                <IntegratedAuthGuard>
-                  <CRMLayout>
-                    <TMWEApiTester />
-                  </CRMLayout>
-                </IntegratedAuthGuard>
-              </ProtectedRoute>
-            } />
             <Route path="/code-review" element={
               <ProtectedRoute>
                 <CRMLayout>
@@ -429,13 +397,6 @@ const App = () => {
               <ProtectedRoute>
                 <CRMLayout>
                   <ApiFunctionsReference />
-                </CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/email-debug-tester" element={
-              <ProtectedRoute>
-                <CRMLayout>
-                  <EmailDebugTester />
                 </CRMLayout>
               </ProtectedRoute>
             } />

@@ -91,10 +91,6 @@ verify_jwt = true
 [functions.tmwe-api-proxy]
 verify_jwt = true
 
-# Public OAuth callback: no Supabase session exists before this exchange
-[functions.tmwe-oauth-auth]
-verify_jwt = false
-
 [functions.chat-with-ai]
 verify_jwt = true
 

@@ -41,9 +41,9 @@ const OAuthCallback = () => {
         }
 
         console.log('✅ State validated');
-        console.log('📤 Calling public tmwe-oauth-auth edge function...');
+        console.log('📤 Calling tmwe-oauth-auth edge function...');
 
-        // Llamar a la función pública OAuth para intercambiar el código por tokens
+        // Llamar al edge function para intercambiar el código por tokens
         const { data, error } = await supabase.functions.invoke('tmwe-oauth-auth', {
           body: { code, redirectUri },
         });

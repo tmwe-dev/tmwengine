@@ -14,22 +14,26 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 ### File Modificato
 - **Function:** `supabase/functions/tmwe-api-proxy/index.ts`
 - **Backup Creato:** `index-old11.ts`
+- **Function:** `supabase/functions/tmwe-oauth-auth/index.ts`
+- **Config Backup Creato:** `supabase/config_20260704_0655.toml.backup`
 
 ### Motivo Modifica
-Il callback frontend stava ancora chiamando la funzione legacy `tmwe-oauth-auth` invece del proxy consolidato `tmwe-api-proxy`.
-Inoltre il token exchange doveva essere tracciato e validato per replicare esattamente il curl funzionante verso sandbox.
+Il callback frontend deve poter scambiare il `code` prima che esista una sessione Supabase.
+`tmwe-api-proxy` resta protetto con `verify_jwt=true`, quindi il token exchange pubblico viene servito da `tmwe-oauth-auth` con `verify_jwt=false`.
 
 ### Modifiche Apportate
-1. `OAuthCallback` ora invoca `tmwe-api-proxy` con `handler: 'oauth_auth'`.
-2. `oauth_auth` valida `TMWE_CLIENT_ID` e `TMWE_CLIENT_SECRET` prima della chiamata token.
-3. Token exchange mantenuto come `application/x-www-form-urlencoded` con `grant_type`, `code`, `client_id`, `client_secret`, `redirect_uri`.
+1. `OAuthCallback` invoca `tmwe-oauth-auth`, funzione pubblica dedicata al callback.
+2. `tmwe-oauth-auth` valida `TMWE_CLIENT_ID` e `TMWE_CLIENT_SECRET` prima della chiamata token.
+3. Token exchange implementato come `application/x-www-form-urlencoded` con `grant_type`, `code`, `client_id`, `client_secret`, `redirect_uri`.
 4. Email utente derivata da `tokenData.email` o dal profilo TMWE.
 5. Rimosso client secret hardcoded dal frontend.
+6. `supabase/config.toml` ripristina `[functions.tmwe-oauth-auth] verify_jwt = false`.
 
 ### Rollback Plan
 ```bash
 cp supabase/functions/tmwe-api-proxy/index-old11.ts supabase/functions/tmwe-api-proxy/index.ts
-cp src/pages/OAuthCallback_20260704_0645.tsx.backup src/pages/OAuthCallback.tsx
+cp src/pages/OAuthCallback_20260704_0655.tsx.backup src/pages/OAuthCallback.tsx
+cp supabase/config_20260704_0655.toml.backup supabase/config.toml
 cp src/lib/tmwe-api-integrated_20260704_0645.ts.backup src/lib/tmwe-api-integrated.ts
 ```
 

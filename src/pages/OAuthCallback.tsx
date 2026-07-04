@@ -41,15 +41,11 @@ const OAuthCallback = () => {
         }
 
         console.log('✅ State validated');
-        console.log('📤 Calling tmwe-api-proxy oauth_auth handler...');
+        console.log('📤 Calling public tmwe-oauth-auth edge function...');
 
-        // Llamar al proxy consolidado para intercambiar el código por tokens
-        const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
-          body: {
-            handler: 'oauth_auth',
-            code,
-            redirectUri,
-          },
+        // Llamar a la función pública OAuth para intercambiar el código por tokens
+        const { data, error } = await supabase.functions.invoke('tmwe-oauth-auth', {
+          body: { code, redirectUri },
         });
 
         if (error) {

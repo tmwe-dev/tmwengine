@@ -9,6 +9,32 @@ Questo documento traccia tutte le modifiche alle Supabase Edge Functions del pro
 
 ---
 
+## [2026-07-04] - Fix TMWE OAuth authorization_code exchange route
+
+### File Modificato
+- **Function:** `supabase/functions/tmwe-api-proxy/index.ts`
+- **Backup Creato:** `index-old11.ts`
+
+### Motivo Modifica
+Il callback frontend stava ancora chiamando la funzione legacy `tmwe-oauth-auth` invece del proxy consolidato `tmwe-api-proxy`.
+Inoltre il token exchange doveva essere tracciato e validato per replicare esattamente il curl funzionante verso sandbox.
+
+### Modifiche Apportate
+1. `OAuthCallback` ora invoca `tmwe-api-proxy` con `handler: 'oauth_auth'`.
+2. `oauth_auth` valida `TMWE_CLIENT_ID` e `TMWE_CLIENT_SECRET` prima della chiamata token.
+3. Token exchange mantenuto come `application/x-www-form-urlencoded` con `grant_type`, `code`, `client_id`, `client_secret`, `redirect_uri`.
+4. Email utente derivata da `tokenData.email` o dal profilo TMWE.
+5. Rimosso client secret hardcoded dal frontend.
+
+### Rollback Plan
+```bash
+cp supabase/functions/tmwe-api-proxy/index-old11.ts supabase/functions/tmwe-api-proxy/index.ts
+cp src/pages/OAuthCallback_20260704_0645.tsx.backup src/pages/OAuthCallback.tsx
+cp src/lib/tmwe-api-integrated_20260704_0645.ts.backup src/lib/tmwe-api-integrated.ts
+```
+
+---
+
 ## [2025-12-03] - Fix UUID Error in Entity Extraction (Zero-Sync)
 
 ### File Modificato

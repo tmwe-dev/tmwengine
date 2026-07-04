@@ -597,15 +597,25 @@ serve(async (req) => {
       const clientId = Deno.env.get('TMWE_CLIENT_ID');
       const clientSecret = Deno.env.get('TMWE_CLIENT_SECRET');
       
+      if (!clientId) throw new Error('TMWE_CLIENT_ID not configured');
       if (!clientSecret) throw new Error('TMWE_CLIENT_SECRET not configured');
       
-      // Exchange code for tokens
+      // Exchange code for tokens - mirrors the working curl exactly:
+      // grant_type + code + client_id + client_secret + redirect_uri as form-urlencoded
       const tokenEndpoint = 'https://sandbox.findair.net/erp/tmwe_json/token';
       const formData = new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
         client_id: clientId,
         client_secret: clientSecret,
+        redirect_uri: redirectUri,
+      });
+      console.log('📤 OAuth token exchange request', {
+        tokenEndpoint,
+        grant_type: 'authorization_code',
+        has_code: Boolean(code),
+        client_id_prefix: clientId.slice(0, 8),
+        has_client_secret: Boolean(clientSecret),
         redirect_uri: redirectUri,
       });
       
@@ -625,7 +635,7 @@ serve(async (req) => {
         throw new Error('Invalid token response');
       }
       
-      const { access_token, expires_in, email } = tokenData;
+      const { access_token, expires_in } = tokenData;
       
       // Get user profile
       const myProfileResponse = await fetch('https://sandbox.findair.net/erp/tmwe_json/get_my_profile', {
@@ -635,6 +645,11 @@ serve(async (req) => {
       
       if (!myProfileResponse.ok) throw new Error('Failed to fetch profile');
       const profileData = await myProfileResponse.json();
+      const email = tokenData.email || profileData.email;
+
+      if (!email) {
+        throw new Error('Email not returned by TMWE token/profile response');
+      }
       
       // Find or create Supabase user
       const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
@@ -727,6 +742,8 @@ serve(async (req) => {
       const formData = new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: credentials.refresh_token,
+        client_id: credentials.client_id,
+        client_secret: credentials.client_secret,
       });
       
       const tokenResponse = await fetch(tokenEndpoint, {

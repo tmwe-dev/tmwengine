@@ -125,9 +125,9 @@ serve(async (req) => {
       const header = { alg: 'HS256', typ: 'JWT' };
       const now = Math.floor(Date.now() / 1000);
       const payload = {
-        iss: 'https://findair.net/erp/tmwe_json',
+        iss: 'https://sandbox.findair.net/erp/tmwe_json',
         sub: clientId,
-        aud: 'https://findair.net/erp/tmwe_json/token',
+        aud: 'https://sandbox.findair.net/erp/tmwe_json/token',
         exp: now + 300,
         iat: now,
         jti: crypto.randomUUID()
@@ -179,7 +179,7 @@ serve(async (req) => {
         throw new Error('Missing required credentials');
       }
       
-      const tokenResponse = await fetch('https://findair.net/erp/tmwe_json/token', {
+      const tokenResponse = await fetch('https://sandbox.findair.net/erp/tmwe_json/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
@@ -306,7 +306,7 @@ serve(async (req) => {
       
       if (!oauthToken) throw new Error('Token non trovato');
       
-      const baseUrl = 'https://findair.net/erp/tmwe_json';
+      const baseUrl = 'https://sandbox.findair.net/erp/tmwe_json';
       const folderUrl = `${baseUrl}/app.php?action=email_folder`;
       
       // Get folder info
@@ -376,7 +376,7 @@ serve(async (req) => {
         body_html: body_html || ''
       };
       
-      const apiUrl = 'https://findair.net/erp/tmwe_json/app.php?action=email_message';
+      const apiUrl = 'https://sandbox.findair.net/erp/tmwe_json/app.php?action=email_message';
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -481,7 +481,7 @@ serve(async (req) => {
       
       // Fetch and sync emails (simplified version)
       let totalImported = 0;
-      const baseUrl = 'https://findair.net/erp/tmwe_json';
+      const baseUrl = 'https://sandbox.findair.net/erp/tmwe_json';
       const allUIDs: Array<{uid: string, subject: string, from: string, date: string}> = [];
       
       // Step 1: Get UIDs list
@@ -600,7 +600,7 @@ serve(async (req) => {
       if (!clientSecret) throw new Error('TMWE_CLIENT_SECRET not configured');
       
       // Exchange code for tokens
-      const tokenEndpoint = 'https://findair.net/erp/tmwe_json/token';
+      const tokenEndpoint = 'https://sandbox.findair.net/erp/tmwe_json/token';
       const formData = new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
@@ -628,7 +628,7 @@ serve(async (req) => {
       const { access_token, expires_in, email } = tokenData;
       
       // Get user profile
-      const myProfileResponse = await fetch('https://findair.net/erp/tmwe_json/get_my_profile', {
+      const myProfileResponse = await fetch('https://sandbox.findair.net/erp/tmwe_json/get_my_profile', {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json' },
       });
@@ -723,7 +723,7 @@ serve(async (req) => {
       if (!credentials.refresh_token) throw new Error('No refresh token available');
       
       // Refresh token
-      const tokenEndpoint = 'https://findair.net/erp/tmwe_json/token';
+      const tokenEndpoint = 'https://sandbox.findair.net/erp/tmwe_json/token';
       const formData = new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: credentials.refresh_token,
@@ -838,7 +838,7 @@ serve(async (req) => {
         }
         
         // Fetch TMWE emails metadata
-        const response = await fetch('https://findair.net/erp/tmwe_json/email_search', {
+        const response = await fetch('https://sandbox.findair.net/erp/tmwe_json/email_search', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${creds.access_token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ handler: 'get_emails_metadata', folder: folder, limit: 500, page: 1 })
@@ -1094,7 +1094,7 @@ serve(async (req) => {
         console.log('[OAuth] 🔄 Starting inline token refresh...');
         
         try {
-          const tokenEndpoint = 'https://findair.net/erp/tmwe_json/token';
+          const tokenEndpoint = 'https://sandbox.findair.net/erp/tmwe_json/token';
           const formData = new URLSearchParams({
             grant_type: 'refresh_token',
             refresh_token: credentials.refresh_token,
@@ -1190,7 +1190,7 @@ serve(async (req) => {
         
         const chunkPromises = chunks.map(chunk => 
           Promise.all(chunk.map(msgId => 
-            fetch(`https://findair.net/erp/tmwe_json${endpoint}`, {
+            fetch(`https://sandbox.findair.net/erp/tmwe_json${endpoint}`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -1207,7 +1207,7 @@ serve(async (req) => {
         // SEQUENZIALE (lento)
         batchResults = [];
         for (const msgId of messageIds) {
-          const singleResponse = await fetch(`https://findair.net/erp/tmwe_json${endpoint}`, {
+          const singleResponse = await fetch(`https://sandbox.findair.net/erp/tmwe_json${endpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1222,7 +1222,7 @@ serve(async (req) => {
       } else {
         // PARALLELO (veloce per batch piccoli) 🚀
         const promises = messageIds.map(msgId => 
-          fetch(`https://findair.net/erp/tmwe_json${endpoint}`, {
+          fetch(`https://sandbox.findair.net/erp/tmwe_json${endpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1270,7 +1270,7 @@ serve(async (req) => {
         const chunks = chunkArray(messageIds, batchChunkSize);
         const chunkPromises = chunks.map(chunk => 
           Promise.all(chunk.map(msgId => 
-            fetch(`https://findair.net/erp/tmwe_json${endpoint}`, {
+            fetch(`https://sandbox.findair.net/erp/tmwe_json${endpoint}`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -1286,7 +1286,7 @@ serve(async (req) => {
       } else if (useSequentialExecution) {
         batchResults = [];
         for (const msgId of messageIds) {
-          const singleResponse = await fetch(`https://findair.net/erp/tmwe_json${endpoint}`, {
+          const singleResponse = await fetch(`https://sandbox.findair.net/erp/tmwe_json${endpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1300,7 +1300,7 @@ serve(async (req) => {
         }
       } else {
         const promises = messageIds.map(msgId => 
-          fetch(`https://findair.net/erp/tmwe_json${endpoint}`, {
+          fetch(`https://sandbox.findair.net/erp/tmwe_json${endpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1348,7 +1348,7 @@ serve(async (req) => {
         const chunks = chunkArray(messageIds, batchChunkSize);
         const chunkPromises = chunks.map(chunk => 
           Promise.all(chunk.map(msgId => 
-            fetch(`https://findair.net/erp/tmwe_json${endpoint}`, {
+            fetch(`https://sandbox.findair.net/erp/tmwe_json${endpoint}`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -1364,7 +1364,7 @@ serve(async (req) => {
       } else if (useSequentialExecution) {
         batchResults = [];
         for (const msgId of messageIds) {
-          const singleResponse = await fetch(`https://findair.net/erp/tmwe_json${endpoint}`, {
+          const singleResponse = await fetch(`https://sandbox.findair.net/erp/tmwe_json${endpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1378,7 +1378,7 @@ serve(async (req) => {
         }
       } else {
         const promises = messageIds.map(msgId => 
-          fetch(`https://findair.net/erp/tmwe_json${endpoint}`, {
+          fetch(`https://sandbox.findair.net/erp/tmwe_json${endpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1433,7 +1433,7 @@ serve(async (req) => {
         
         const chunkResults = await Promise.allSettled(
           chunk.map(uid => 
-            fetch(`https://findair.net/erp/tmwe_json${endpoint}`, {
+            fetch(`https://sandbox.findair.net/erp/tmwe_json${endpoint}`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -1550,7 +1550,7 @@ serve(async (req) => {
       console.log('═══════════════════════════════════════════════════════');
     }
     
-    const tmweUrl = `https://findair.net/erp/tmwe_json${endpoint}`;
+    const tmweUrl = `https://sandbox.findair.net/erp/tmwe_json${endpoint}`;
     
     // 🔍 v5.0 LOGGING: VALIDATED parameters sent to TMWE backend
     console.log('═══════════════════════════════════════════════════════');

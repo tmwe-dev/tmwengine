@@ -738,6 +738,42 @@ export type Database = {
         }
         Relationships: []
       }
+      authorized_users: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          display_name: string | null
+          email: string
+          id: string
+          is_active: boolean
+          last_login_at: string | null
+          login_count: number
+          updated_at: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          display_name?: string | null
+          email: string
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          login_count?: number
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          login_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       brain_ai_tasks: {
         Row: {
           agent_order: number
@@ -4699,6 +4735,126 @@ export type Database = {
           },
         ]
       }
+      funnemail_audit_events: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity: string | null
+          entity_id: string | null
+          id: number
+          ip_address: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity?: string | null
+          entity_id?: string | null
+          id?: number
+          ip_address?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity?: string | null
+          entity_id?: string | null
+          id?: number
+          ip_address?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      funnemail_kb: {
+        Row: {
+          attivo: boolean
+          categoria: string
+          contenuto: string
+          created_at: string
+          icona: string | null
+          id: string
+          titolo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attivo?: boolean
+          categoria?: string
+          contenuto: string
+          created_at?: string
+          icona?: string | null
+          id?: string
+          titolo: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          attivo?: boolean
+          categoria?: string
+          contenuto?: string
+          created_at?: string
+          icona?: string | null
+          id?: string
+          titolo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      funnemail_prompts: {
+        Row: {
+          attivo: boolean
+          azioni: string[] | null
+          contenuto: string
+          created_at: string
+          gruppo_attivo: boolean | null
+          icona: string | null
+          id: string
+          target: string | null
+          tipo: string
+          titolo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attivo?: boolean
+          azioni?: string[] | null
+          contenuto: string
+          created_at?: string
+          gruppo_attivo?: boolean | null
+          icona?: string | null
+          id?: string
+          target?: string | null
+          tipo?: string
+          titolo: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          attivo?: boolean
+          azioni?: string[] | null
+          contenuto?: string
+          created_at?: string
+          gruppo_attivo?: boolean | null
+          icona?: string | null
+          id?: string
+          target?: string | null
+          tipo?: string
+          titolo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       import_errors: {
         Row: {
           ai_suggestions: Json | null
@@ -6623,6 +6779,7 @@ export type Database = {
           email: string
           id: string
           is_active: boolean | null
+          is_team_shared: boolean
           updated_at: string | null
         }
         Insert: {
@@ -6632,6 +6789,7 @@ export type Database = {
           email: string
           id?: string
           is_active?: boolean | null
+          is_team_shared?: boolean
           updated_at?: string | null
         }
         Update: {
@@ -6641,6 +6799,7 @@ export type Database = {
           email?: string
           id?: string
           is_active?: boolean | null
+          is_team_shared?: boolean
           updated_at?: string | null
         }
         Relationships: []
@@ -7358,6 +7517,8 @@ export type Database = {
           preferred_elevenlabs_voice: string | null
           preferred_language: string
           reading_language: string
+          signature_html: string | null
+          signature_image_url: string | null
           status_color: string | null
           status_emoji: string | null
           status_message: string | null
@@ -7382,6 +7543,8 @@ export type Database = {
           preferred_elevenlabs_voice?: string | null
           preferred_language?: string
           reading_language?: string
+          signature_html?: string | null
+          signature_image_url?: string | null
           status_color?: string | null
           status_emoji?: string | null
           status_message?: string | null
@@ -7406,6 +7569,8 @@ export type Database = {
           preferred_elevenlabs_voice?: string | null
           preferred_language?: string
           reading_language?: string
+          signature_html?: string | null
+          signature_image_url?: string | null
           status_color?: string | null
           status_emoji?: string | null
           status_message?: string | null
@@ -7993,6 +8158,24 @@ export type Database = {
         Args: { activity_data: Json }
         Returns: undefined
       }
+      fn_add_shared_member: {
+        Args: {
+          p_can_read?: boolean
+          p_can_send?: boolean
+          p_shared_id: string
+          p_user_email: string
+        }
+        Returns: Json
+      }
+      fn_log_audit: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_entity?: string
+          p_entity_id?: string
+        }
+        Returns: number
+      }
       get_email_folder_counts: {
         Args: { p_sync_status?: string; p_user_email: string }
         Returns: {
@@ -8077,6 +8260,8 @@ export type Database = {
         Returns: number
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_email_authorized: { Args: { p_email: string }; Returns: boolean }
+      is_funnemail_admin: { Args: never; Returns: boolean }
       is_room_member: {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
@@ -8097,6 +8282,7 @@ export type Database = {
           text: string
         }[]
       }
+      record_user_login: { Args: { p_email: string }; Returns: undefined }
       reset_ai_invocations: { Args: { p_room_id: string }; Returns: undefined }
       reset_token_count: {
         Args: { p_id: string; p_table: string }

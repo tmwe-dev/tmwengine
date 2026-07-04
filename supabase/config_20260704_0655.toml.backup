@@ -1,0 +1,205 @@
+project_id = "dlldkrzoxvjxpgkkttxu"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+enabled = true
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = true
+ip_version = "ipv6"
+port = 54323
+
+[studio]
+enabled = true
+port = 54324
+api_url = "http://127.0.0.1:54321"
+openai_api_key = "env(OPENAI_API_KEY)"
+
+[inbucket]
+enabled = true
+port = 54325
+smtp_port = 54326
+pop3_port = 54327
+
+[storage]
+enabled = true
+port = 54328
+file_size_limit = "50MiB"
+image_transformation = { enabled = true }
+
+[auth]
+enabled = true
+port = 54329
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["https://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_signup = true
+email_double_confirm_changes = true
+enable_manual_linking = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = false
+template = "Your code is {{ .Code }}"
+
+[analytics]
+enabled = false
+port = 54327
+vector_port = 54328
+backend = "postgres"
+
+# =====================================================
+# EDGE FUNCTIONS - ACTIVE
+# =====================================================
+
+[functions.tmwe-email-webhook]
+verify_jwt = false
+
+# CONSOLIDATED (2025-01-29) - All TMWE functions consolidated into tmwe-api-proxy
+# Backup: docs/EDGE_FUNCTIONS_BACKUP/2025-01-29/
+
+[functions.process-ai-import]
+verify_jwt = true
+
+[functions.generate-normalized-file]
+verify_jwt = true
+
+[functions.process-import-file-ai]
+verify_jwt = true
+
+[functions.tmwe-api-proxy]
+verify_jwt = true
+
+[functions.chat-with-ai]
+verify_jwt = true
+
+[functions.process-import-errors-ai]
+verify_jwt = true
+
+[functions.confirm-corrected-errors]
+verify_jwt = true
+
+[functions.process-single-error-ai]
+verify_jwt = true
+
+[functions.intranet-ai-processor]
+verify_jwt = true
+
+[functions.email-campagne-scheduler]
+verify_jwt = false
+
+[functions.test-ai-connection]
+verify_jwt = true
+
+[functions.chat-laboratory-orchestrator]
+verify_jwt = true
+
+[functions.bar-chat-orchestrator]
+verify_jwt = true
+
+[functions.generate-conversation-summary]
+verify_jwt = true
+
+[functions.generate-audio]
+verify_jwt = true
+
+[functions.ai-crm-manager]
+verify_jwt = true
+
+[functions.auto-assign-admin]
+verify_jwt = true
+
+[functions.calculate-basic-convergence]
+verify_jwt = true
+
+[functions.process-saved-file-ai]
+verify_jwt = true
+
+[functions.send-push-notification]
+verify_jwt = true
+
+[functions.voice-to-text]
+verify_jwt = true
+
+[functions.sync-ai-pricing]
+verify_jwt = true
+
+[functions.radio-chat-orchestrator]
+verify_jwt = false
+
+[functions.fun-email-ai-analysis]
+verify_jwt = true
+
+[functions.email-ai-processor]
+verify_jwt = true
+
+[functions.execute-ai-actions]
+verify_jwt = true
+
+[functions.ai-canvas-chat]
+verify_jwt = true
+
+[functions.suggest-sender-grouping]
+verify_jwt = true
+
+[functions.generate-group-context]
+verify_jwt = true
+
+[functions.optimize-company-profile]
+verify_jwt = true
+
+[functions.generate-image]
+verify_jwt = true
+
+[functions.text-to-speech]
+verify_jwt = true
+
+[functions.migrate-classification-tmwe-ids]
+verify_jwt = false
+
+# =====================================================
+# REMOVED FUNCTIONS - 2025-01-31 Edge Function Cleanup
+# =====================================================
+# Eliminated to free deployment slots (6 functions removed):
+# - index-codebase → Broken (code_index table removed)
+# - intranet-ai-chat-assistant → Consolidated into intranet-ai-processor
+# - generate-chunked-summary → Consolidated into generate-conversation-summary
+# - check-ai-services-status → Consolidated into test-ai-connection
+# - bar-request-comment → Logic moved to bar-chat-orchestrator
+# - process-import-file → Replaced by process-ai-import (always use AI)
+# - process-saved-file → Replaced by process-ai-import (always use AI)
+#
+# Backup: None needed (code in git history)
+# Changelog: docs/EDGE_FUNCTIONS_CHANGELOG.md
+#
+# =====================================================
+# REMOVED FUNCTIONS - 2025-01-29 TMWE Consolidation
+# =====================================================
+# All TMWE functions consolidated into tmwe-api-proxy
+# Backup: docs/EDGE_FUNCTIONS_BACKUP/2025-01-29/
+#
+# =====================================================
+# REMOVED FUNCTIONS - 2025-11-25 Previous Cleanup
+# =====================================================
+# See changelog for historical removals

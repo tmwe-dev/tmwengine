@@ -12,7 +12,7 @@ export interface ApiConfig {
 
 // OAuth2 Configuration
 const OAUTH_CLIENT_ID = '04b4dedcffbf93c3364e4b72b46be350f7121b9b02b1f2b088883c35ac7fabde';
-const OAUTH_CLIENT_SECRET = '04d26799b3ec0a82dec492c2cb4a17a9ff20cabcde13166bd330e7ccd369c873a95b6d88c19cf4a6c592327aa191ab36769dded7b77b0396b93529b8b12035bd';
+const OAUTH_CLIENT_SECRET = '';
 
 // Load credentials from Supabase database with in-memory cache
 export const getApiConfigFromDB = async (): Promise<ApiConfig | null> => {

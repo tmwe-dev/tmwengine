@@ -28,6 +28,7 @@ Il callback frontend deve poter scambiare il `code` prima che esista una session
 4. Email utente derivata da `tokenData.email` o dal profilo TMWE.
 5. Rimosso client secret hardcoded dal frontend.
 6. `supabase/config.toml` ripristina `[functions.tmwe-oauth-auth] verify_jwt = false`.
+7. Mascherati client secret hardcoded residui nei backup sorgente.
 
 ### Rollback Plan
 ```bash

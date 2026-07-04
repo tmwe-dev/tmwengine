@@ -19,7 +19,7 @@ interface AnalysisRequest {
 
 // 🆕 ZERO-SYNC: Helper to fetch data from TMWE API
 async function fetchFromTMWEApi(handler: string, params: Record<string, any> = {}): Promise<any> {
-  const TMWE_API_URL = Deno.env.get('TMWE_API_URL') || 'https://findair.it/erp/tmwe_json';
+  const TMWE_API_URL = Deno.env.get('TMWE_API_URL') || 'https://sandbox.findair.net/erp/tmwe_json';
   const TMWE_API_KEY = Deno.env.get('TMWE_API_KEY');
   
   if (!TMWE_API_KEY) {

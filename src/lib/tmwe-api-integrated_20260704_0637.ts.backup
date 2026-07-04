@@ -116,7 +116,7 @@ export const initiateAuthorizationCodeFlow = (): void => {
   sessionStorage.setItem('oauth_redirect_uri', redirectUri);
   
   // ✅ CORRECCIÓN CRÍTICA: Endpoint correcto según proyecto Luca
-  const authUrl = new URL('https://sandbox.findair.net/erp/tmwe_json/auth'); // NO /authorization
+  const authUrl = new URL('https://findair.it/erp/tmwe_json/auth'); // NO /authorization
   authUrl.searchParams.append('client_id', clientId);
   authUrl.searchParams.append('redirect_uri', redirectUri);
   authUrl.searchParams.append('response_type', 'code');
@@ -151,7 +151,7 @@ const generateClientJWT = (clientId: string, clientSecret: string): string => {
   const payload = {
     iss: clientId,           // Issuer (client_id)
     sub: clientId,           // Subject (client_id)
-    aud: 'https://sandbox.findair.net/erp/tmwe_json/token', // Audience (token endpoint)
+    aud: 'https://findair.it/erp/tmwe_json/token', // Audience (token endpoint)
     exp: now + 300,          // Expiration (5 minuti)
     iat: now,                // Issued at
     jti: jti                 // JWT ID (unique)
@@ -254,7 +254,7 @@ export const authenticateWithJWT = async (): Promise<boolean> => {
     console.log('  - client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer');
     console.log('  - client_assertion:', signedJWT.substring(0, 50) + '...');
     
-    const response = await fetch('https://sandbox.findair.net/erp/tmwe_json/token', {
+    const response = await fetch('https://findair.it/erp/tmwe_json/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',

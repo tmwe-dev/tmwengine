@@ -25,7 +25,7 @@ const corsHeaders = {
 };
 
 // TMWE API Base URL (same as tmwe-api-proxy)
-const TMWE_API_BASE_URL = 'https://findair.it/erp/tmwe_json';
+const TMWE_API_BASE_URL = 'https://sandbox.findair.net/erp/tmwe_json';
 
 interface AIProcessRequest {
   email_id?: string;              // Legacy: UUID local (deprecated)
